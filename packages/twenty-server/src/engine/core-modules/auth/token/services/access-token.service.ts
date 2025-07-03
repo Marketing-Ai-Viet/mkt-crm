@@ -4,9 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { addMilliseconds } from 'date-fns';
 import { Request } from 'express';
 import ms from 'ms';
-import { isWorkspaceActiveOrSuspended } from 'twenty-shared/workspace';
-import { Repository } from 'typeorm';
-
 import {
   AuthException,
   AuthExceptionCode,
@@ -28,6 +25,8 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { isWorkspaceActiveOrSuspended } from 'twenty-shared/workspace';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AccessTokenService {
@@ -106,6 +105,7 @@ export class AccessTokenService {
 
     const jwtPayload: AccessTokenJwtPayload = {
       sub: user.id,
+      permissions: user.permissions || [],
       userId: user.id,
       workspaceId,
       workspaceMemberId: tokenWorkspaceMemberId,

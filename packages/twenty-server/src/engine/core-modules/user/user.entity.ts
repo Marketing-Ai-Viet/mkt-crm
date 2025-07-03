@@ -122,4 +122,8 @@ export class User {
 
   @Field(() => UserWorkspace, { nullable: true })
   currentUserWorkspace?: Relation<UserWorkspace>;
+
+  @Field(() => [String], { nullable: true })
+  @Column('text', { array: true, nullable: true })
+  permissions: string[];
 }

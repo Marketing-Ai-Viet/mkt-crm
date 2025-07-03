@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
+import { ForbiddenException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { isDefined } from 'twenty-shared/utils';
-
+import { AppPermission } from 'src/constants/app-permission.enum';
 import { AuthException } from 'src/engine/core-modules/auth/auth.exception';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
@@ -20,6 +20,7 @@ import {
 } from 'src/engine/utils/global-exception-handler.util';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { CustomException } from 'src/utils/custom-exception';
+import { isDefined } from 'twenty-shared/utils';
 
 @Injectable()
 export class MiddlewareService {
@@ -36,6 +37,54 @@ export class MiddlewareService {
     const token = this.jwtWrapperService.extractJwtFromRequest()(request);
 
     return !!token;
+  }
+
+  public async checkPermission(
+    request: Request,
+    requiredPermissions: AppPermission[] | AppPermission,
+  ): Promise<void> {
+    const data = await this.accessTokenService.validateTokenByRequest(request);
+    console.log('checkPermission data:', data);
+
+    let rawPerms = data.user?.permissions;
+
+    if (typeof rawPerms === 'string') {
+      try {
+        rawPerms = JSON.parse(rawPerms);
+      } catch {
+        rawPerms = [];
+      }
+    }
+
+    const userPermissions: string[] = Array.isArray(rawPerms) ? rawPerms : [];
+
+    const required = Array.isArray(requiredPermissions)
+      ? requiredPermissions
+      : [requiredPermissions];
+
+    const hasPermission = required.some((requiredPerm) =>
+      userPermissions.some((userPerm) =>
+        this.matchPermission(userPerm, requiredPerm),
+      ),
+    );
+
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to access this resource.',
+      );
+    }
+  }
+
+  private matchPermission(userPerm: string, requiredPerm: string): boolean {
+    if (userPerm === 'admin') return true;
+    if (userPerm === requiredPerm) return true;
+
+    if (userPerm.endsWith(':*')) {
+      const prefix = userPerm.slice(0, -2);
+      return requiredPerm.startsWith(prefix + ':');
+    }
+
+    return false;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,7 +156,7 @@ export class MiddlewareService {
 
     if (metadataVersion === undefined && isDefined(data.workspace)) {
       await this.workspaceMetadataCacheService.recomputeMetadataCache({
-        workspaceId: data.workspace.id,
+        workspaceId: data.workspace?.id || '',
       });
       throw new Error('Metadata cache version not found');
     }
