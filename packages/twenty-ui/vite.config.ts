@@ -1,5 +1,5 @@
 /// <reference types='vitest' />
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import wyw from '@wyw-in-js/vite';
 import * as path from 'path';
 import { defineConfig } from 'vite';
@@ -70,7 +70,9 @@ export default defineConfig(({ command }) => {
     plugins: [
       react({
         jsxImportSource: '@emotion/react',
-        plugins: [['@swc/plugin-emotion', {}]],
+        babel: {
+          plugins: ['@emotion/babel-plugin'],
+        },
       }),
       tsconfigPaths({
         projects: ['tsconfig.json'],

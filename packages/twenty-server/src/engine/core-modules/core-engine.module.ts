@@ -48,10 +48,10 @@ import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
 import { SubscriptionsModule } from 'src/engine/subscriptions/subscriptions.module';
 import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/workspace-event-emitter.module';
 
+import { MKTCoreModule } from 'src/mkt-core/mkt-core.module';
 import { AuditModule } from './audit/audit.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
-
 @Module({
   imports: [
     TwentyConfigModule.forRoot(),
@@ -76,6 +76,7 @@ import { FileModule } from './file/file.module';
     WorkflowApiModule,
     WorkspaceEventEmitterModule,
     ActorModule,
+    MKTCoreModule,
     TelemetryModule,
     AdminPanelModule,
     LabModule,
@@ -118,6 +119,7 @@ import { FileModule } from './file/file.module';
   exports: [
     AuditModule,
     AuthModule,
+    MKTCoreModule,
     FeatureFlagModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,
