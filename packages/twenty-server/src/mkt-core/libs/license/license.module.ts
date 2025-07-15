@@ -6,7 +6,7 @@ import { LicenseResolver } from './license.resolver';
 import { LicenseService } from './license.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([License, LicenseStatusHistory])],
+  imports: [TypeOrmModule.forFeature([License, LicenseStatusHistory], 'core')], 
   providers: [LicenseService, LicenseResolver],
   exports: [LicenseService],
 })
