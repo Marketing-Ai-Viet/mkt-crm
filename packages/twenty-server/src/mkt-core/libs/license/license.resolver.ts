@@ -1,4 +1,4 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { CreateLicenseInput } from './dto/create-license.input';
 import { License } from './entities/license.entity';
 import { LicenseService } from './license.service';
@@ -7,12 +7,12 @@ import { LicenseService } from './license.service';
 export class LicenseResolver {
   constructor(private readonly licenseService: LicenseService) {}
 
-  @Query(() => [License])
+  @Mutation(() => [License])
   async licenses(): Promise<License[]> {
     return this.licenseService.findAll();
   }
 
-  @Query(() => License, { nullable: true })
+  @Mutation(() => License, { nullable: true })
   async licenseByCode(@Args('licenseCode') code: string): Promise<License | null> {
     return this.licenseService.findByCode(code);
   }

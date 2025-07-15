@@ -6,9 +6,9 @@ import { License } from './libs/license/entities/license.entity';
 
 export default new DataSource({
   type: 'postgres',
-  url: 'postgres://postgres:postgres@localhost:5432/default',
+  url: 'postgres://postgres:73633a3f4566dd08b86dceedb7b9765df34e890178a4686f9dc10a31605e91d7@5.161.211.205:56932/default',
   schema: 'core',
-  entities: ['src/mkt-core/libs/**/*.entity.ts', License, LicenseStatusHistory],
-  migrations: ['src/mkt-core/migration/*.ts'],
+  entities: ['packages/twenty-server/src/mkt-core/libs/**/*.entity.ts', License, LicenseStatusHistory],
+  migrations: ['packages/twenty-server/src/mkt-core/migration/*.ts'],
   logging: true,
 });

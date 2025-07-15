@@ -10,7 +10,7 @@ import { License, LicenseStatus } from './entities/license.entity';
 @Injectable()
 export class LicenseService {
   constructor(
-    @InjectRepository(License)
+    @InjectRepository(License,'core')
     private readonly licenseRepo: Repository<License>,
   ) {}
 

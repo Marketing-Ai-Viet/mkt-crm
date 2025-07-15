@@ -9,16 +9,16 @@ export class MailerService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false, // true nếu dùng 465
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: 'kiennt1306.dev@gmail.com',
+        pass: 'mrjtjapcaaysbbdc', // phải viết LIỀN!
       },
     } as SMTPTransport.Options); // 👈 ép kiểu cho đúng
   }
-
+  
   async sendMail(to: string, subject: string, html: string) {
     return this.transporter.sendMail({
       from: `"MyApp" <${process.env.SMTP_USER}>`,
