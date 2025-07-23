@@ -8,6 +8,7 @@ import { prefillPeople } from 'src/engine/workspace-manager/standard-objects-pre
 import { prefillViews } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-views';
 import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
 import { prefillWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workflows';
+import { MKT_PREFILLS } from 'src/mkt-core/enums';
 
 export const standardObjectsPrefillData = async (
   mainDataSource: DataSource,
@@ -19,6 +20,10 @@ export const standardObjectsPrefillData = async (
 
     await prefillPeople(entityManager, schemaName);
 
+    await Promise.all(
+      MKT_PREFILLS.map(prefillFunction => prefillFunction(entityManager, schemaName))
+    );
+    
     await prefillWorkflows(entityManager, schemaName);
 
     const viewDefinitionsWithId = await prefillViews(
