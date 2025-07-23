@@ -108,11 +108,11 @@ export class CustomersService {
       totalCount,
       hasNextPage,
       hasPreviousPage,
-      pageInfo: {
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-      },
+      // pageInfo: {
+      //   page,
+      //   limit,
+      //   totalPages: Math.ceil(totalCount / limit),
+      // },
     };
   }
 
@@ -126,14 +126,14 @@ export class CustomersService {
     return {
       success: true,
       data: result.data,
-      meta: {
-        total: result.totalCount,
-        page: result.pageInfo.page,
-        limit: result.pageInfo.limit,
-        totalPages: result.pageInfo.totalPages,
-        hasNextPage: result.hasNextPage,
-        hasPreviousPage: result.hasPreviousPage,
-      },
+      // meta: {
+        // total: result.totalCount,
+        // page: result.pageInfo.page,
+        // limit: result.pageInfo.limit,
+        // totalPages: result.pageInfo.totalPages,
+        // hasNextPage: result.hasNextPage,
+        // hasPreviousPage: result.hasPreviousPage,
+      // },
       message: 'Customers retrieved successfully',
     };
   }

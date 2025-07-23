@@ -146,13 +146,13 @@ export interface CustomerRestResponse {
 export interface CustomerListRestResponse {
   success: boolean;
   data: Customer[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
+  // meta: {
+  //   total: number;
+  //   page: number;
+  //   limit: number;
+  //   totalPages: number;
+  //   hasNextPage: boolean;
+  //   hasPreviousPage: boolean;
+  // };
   message: string;
 }
