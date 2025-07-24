@@ -1,15 +1,19 @@
 import { Module } from '@nestjs/common';
-import { MailerModule } from './infrastructure/mailer/mailer.module';
-import { LicenseModule } from './libs/license/license.module';
+import { CustomersModule } from './libs/customers/customers.module';
 import { OtpModule } from './libs/otp/otp.module';
 @Module({
   imports: [
     OtpModule,
-    MailerModule,
-    LicenseModule
+    // MailerModule,
+    // LicenseModule,
+    // Module Example
+    CustomersModule
   ],
   controllers: [],
   providers: [],
-  exports: [],
+  exports: [
+    // Module Example
+    CustomersModule
+  ],
 })
 export class MKTCoreModule {}

@@ -19,12 +19,12 @@ export const typeORMCoreModuleOptions: TypeOrmModuleOptions = {
       ? [
           `${isJest ? '' : 'dist/'}src/engine/core-modules/**/*.entity{.ts,.js}`,
           `${isJest ? '' : 'dist/'}src/engine/metadata-modules/**/*.entity{.ts,.js}`,
-          `${isJest ? '' : 'dist/'}src/mkt-core/libs/**/entities/*.entity.{ts,js}`,
+          // `${isJest ? '' : 'dist/'}src/mkt-core/libs/**/entities/*.entity.{ts,js}`
         ]
       : [
           `${isJest ? '' : 'dist/'}src/engine/core-modules/**/!(billing-*).entity.{ts,js}`,
           `${isJest ? '' : 'dist/'}src/engine/metadata-modules/**/*.entity{.ts,.js}`,
-          `${isJest ? '' : 'dist/'}src/mkt-core/libs/**/entities/*.entity.{ts,js}`,
+          // `${isJest ? '' : 'dist/'}src/mkt-core/libs/**/entities/*.entity.{ts,js}`,
         ],
   synchronize: false,
   migrationsRun: false,

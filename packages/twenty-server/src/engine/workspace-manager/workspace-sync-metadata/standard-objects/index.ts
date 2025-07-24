@@ -1,3 +1,4 @@
+import { MKT_ENTITIES } from 'src/mkt-core/migration/mkt-entities';
 import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';
@@ -34,7 +35,6 @@ import { WorkflowRunWorkspaceEntity } from 'src/modules/workflow/common/standard
 import { WorkflowVersionWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
 import { WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
 // TODO: Maybe we should automate this with the DiscoverService of Nest.JS
 export const standardObjectMetadataDefinitions = [
   ApiKeyWorkspaceEntity,
@@ -73,4 +73,5 @@ export const standardObjectMetadataDefinitions = [
   PersonWorkspaceEntity,
   TaskWorkspaceEntity,
   TaskTargetWorkspaceEntity,
+  ...MKT_ENTITIES,
 ];
