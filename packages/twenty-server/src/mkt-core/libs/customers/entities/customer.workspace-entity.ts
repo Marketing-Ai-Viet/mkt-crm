@@ -7,10 +7,11 @@ import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-enti
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
-import { CUSTOMER_STANDARD_FIELD_IDS, MKT_CUSTOMER_STANDARD_OBJECT_ID } from 'src/mkt-core/customers/constants';
+import { CUSTOMER_STANDARD_FIELD_IDS } from 'src/mkt-core/common/constants/custom-field-ids';
+import { CUSTOM_OBJECT_IDS } from 'src/mkt-core/common/constants/custom-object-ids';
 
 @WorkspaceEntity({
-  standardId: MKT_CUSTOMER_STANDARD_OBJECT_ID,
+  standardId: CUSTOM_OBJECT_IDS.customer,
   namePlural: 'mktCustomers',
   labelSingular: msg`CustomerTest`,
   labelPlural: msg`CustomerTest`,

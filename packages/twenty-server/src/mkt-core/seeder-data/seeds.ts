@@ -1,4 +1,4 @@
-import { CUSTOMER_SEEDS_CONSTANT} from 'src/mkt-core/customers/constants';
+import { CUSTOMER_SEEDS_CONSTANT } from 'src/mkt-core/libs/customers/constants';
 
 export const MKT_SEEDS = [
   CUSTOMER_SEEDS_CONSTANT,

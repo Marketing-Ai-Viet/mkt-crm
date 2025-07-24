@@ -5,13 +5,13 @@ import { Repository } from 'typeorm';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { customersAllView } from 'src/mkt-core/customers/prefill-data/customers-all.view';
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
-import { v4 as uuidv4 } from 'uuid';
-import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
-import {prefillCustomers} from 'src/mkt-core/customers/prefill-data/prefill-customers';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { customersAllView } from 'src/mkt-core/libs/customers/prefill-data/customers-all.view';
+import { prefillCustomers } from 'src/mkt-core/libs/customers/prefill-data/prefill-customers';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import { v4 as uuidv4 } from 'uuid';
 
 interface SeedCustomerModuleOptions {
   workspaceId?: string;

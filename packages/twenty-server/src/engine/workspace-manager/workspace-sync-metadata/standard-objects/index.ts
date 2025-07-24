@@ -1,4 +1,4 @@
-import { MKT_ENTITIES } from 'src/mkt-core/enums';
+import { MKT_ENTITIES } from 'src/mkt-core/migration/mkt-entities';
 import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';

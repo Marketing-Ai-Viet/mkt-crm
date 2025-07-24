@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { MailerModule } from './infrastructure/mailer/mailer.module';
+import { CustomersModule } from './libs/customers/customers.module';
 import { OtpModule } from './libs/otp/otp.module';
-import {CustomersModule} from 'src/mkt-core/customers/customers.module';
 @Module({
   imports: [
-    // OtpModule,
+    OtpModule,
     // MailerModule,
     // LicenseModule,
     // Module Example

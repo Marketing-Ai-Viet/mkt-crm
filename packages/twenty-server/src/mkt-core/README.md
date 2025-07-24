@@ -19,7 +19,8 @@
 mkt-core/
 ├── common/
 │   ├── constants/
-│   │   └── app-permission.enum.ts
+│   │   └── custom-field-ids.ts
+│   │   └── custom-object-ids.ts
 │   ├── decorators/
 │   ├── filters/
 │   ├── guards/
@@ -46,80 +47,38 @@ mkt-core/
 │       └── otp-auth-app.service.ts
 │
 ├── migration/
-├── data-source.ts
+├── seeder-data/
 └── mkt-core.module.ts
 ```
 
 ---
 
-## 🚀 Cách sử dụng
-
-### 1. Tạo mới license
-
-* Gọi hàm trong `license.service.ts`
-* Truy cập qua API GraphQL khai báo trong `license.resolver.ts`
-
-### 2. Thêm cột mới
-
-* Sửa trong `license.entity.ts`
-* Tạo migration (xem bên dưới)
-
-### 3. Seed dữ liệu
-
-* File mẫu: `libs/license/seed/license.seed.ts`
-
----
-
 ## 🛠️ Hướng dẫn tạo Migration
 
-Giả sử đã khai báo entity trong `libs/license/entities/license.entity.ts`:
+Khai báo field_id và object_id tại custom-field-ids và custom-object-ids 
 
+Khai báo WorkspaceEntity, WorkspaceField trong folder entities của module trong libs (VD: `libs/license/entities/license.workspace-entity.ts`)
+
+Import workspace entity vào trong mkt-entities 
+
+Lưu ý: Join column thì sẽ dùng WorkspaceJoinColumn
+
+### Đồng bộ metadata workspace
 ```bash
-yarn typeorm migration:generate -d src/mkt-core/data-source.ts src/mkt-core/migration/CreateLicenseTable
+yarn command:prod workspace:sync-metadata
 ```
-
-> 📌 Lưu ý: cần đảm bảo entity được export và có trong `entities` array của DataSource.
 
 ---
 
 ## 🌱 Hướng dẫn Seed dữ liệu
 
-1. Tạo file `license.seed.ts`
+1. Tạo file seed data
 2. Ví dụ chạy seeder:
 
+## cho workspace cụ thể
 ```bash
-yarn dlx ts-node -r tsconfig-paths/register src/mkt-core/libs/license/seed/license.seed.ts
+yarn command:prod workspace:seed:customer-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
 ```
-
-3. Bên trong `license.seed.ts`:
-
-```ts
-import { DataSource } from 'typeorm';
-import { License } from '../entities/license.entity';
-
-export const seedLicenses = async (dataSource: DataSource) => {
-  const repo = dataSource.getRepository(License);
-  await repo.save(repo.create({
-    licenseCode: 'LIC-2025-001234',
-    // ... các trường còn lại
-  }));
-};
-```
-
----
-
-## 🔐 Phân quyền & Middleware
-
-* File `app-permission.enum.ts` định nghĩa toàn bộ quyền hệ thống.
-* Dùng cùng `permission.guard.ts` để giới hạn route truy cập.
-
----
-
-## 📬 Gợi ý mở rộng
-
-* Tách rõ ràng tầng controller/resolver ↔ service ↔ entity
-* Tạo `e2e` hoặc `integration-test` cho từng module
-* Bổ sung validation cho DTO bằng `class-validator`
 
 ---
 

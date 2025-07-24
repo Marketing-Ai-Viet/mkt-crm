@@ -1,14 +1,14 @@
 import { AggregateOperations } from 'src/engine/api/graphql/graphql-query-runner/constants/aggregate-operations.constant';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { BASE_OBJECT_STANDARD_FIELD_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-field-ids';
+import { CUSTOMER_STANDARD_FIELD_IDS } from 'src/mkt-core/common/constants/custom-field-ids';
+import { CUSTOM_OBJECT_IDS } from 'src/mkt-core/common/constants/custom-object-ids';
 import { ViewOpenRecordInType } from 'src/modules/view/standard-objects/view.workspace-entity';
-import { CUSTOMER_STANDARD_FIELD_IDS, MKT_CUSTOMER_STANDARD_OBJECT_ID } from 'src/mkt-core/customers/constants';
-
 export const customersAllView = (
   objectMetadataItems: ObjectMetadataEntity[],
 ) => {
   const customerObjectMetadata = objectMetadataItems.find(
-    (object) => object.standardId === MKT_CUSTOMER_STANDARD_OBJECT_ID,
+    (object) => object.standardId === CUSTOM_OBJECT_IDS.customer,
   );
 
   if (!customerObjectMetadata) {

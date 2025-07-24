@@ -6,9 +6,9 @@ import { shouldSeedWorkspaceFavorite } from 'src/engine/utils/should-seed-worksp
 import { prefillCompanies } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-companies';
 import { prefillPeople } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-people';
 import { prefillViews } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-views';
-import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
 import { prefillWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workflows';
-import { MKT_PREFILLS } from 'src/mkt-core/enums';
+import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
+import { MKT_PREFILLS } from 'src/mkt-core/common/constants';
 
 export const standardObjectsPrefillData = async (
   mainDataSource: DataSource,
