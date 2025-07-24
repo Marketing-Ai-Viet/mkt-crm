@@ -1,5 +1,4 @@
-import { LicenseStatusHistoryWorkspaceEntity } from 'src/mkt-core/libs/license/entities/license-status-history.workspace-entity';
-import { LicenseWorkspaceEntity } from 'src/mkt-core/libs/license/entities/license.workspace-entity';
+import { MKT_ENTITIES } from 'src/mkt-core/enums';
 import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';
@@ -74,6 +73,5 @@ export const standardObjectMetadataDefinitions = [
   PersonWorkspaceEntity,
   TaskWorkspaceEntity,
   TaskTargetWorkspaceEntity,
-  LicenseWorkspaceEntity,
-  LicenseStatusHistoryWorkspaceEntity,
+  ...MKT_ENTITIES,
 ];

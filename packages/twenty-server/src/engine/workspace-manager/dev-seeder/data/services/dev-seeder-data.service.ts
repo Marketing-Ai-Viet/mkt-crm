@@ -98,6 +98,7 @@ import {
 import { TimelineActivitySeederService } from 'src/engine/workspace-manager/dev-seeder/data/services/timeline-activity-seeder.service';
 import { prefillViews } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-views';
 import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
+import { MKT_SEEDS } from 'src/mkt-core/enums';
 
 const RECORD_SEEDS_CONFIGS = [
   {
@@ -115,6 +116,7 @@ const RECORD_SEEDS_CONFIGS = [
     pgColumns: PERSON_DATA_SEED_COLUMNS,
     recordSeeds: PERSON_DATA_SEEDS,
   },
+  ...MKT_SEEDS,
   {
     tableName: 'note',
     pgColumns: NOTE_DATA_SEED_COLUMNS,
