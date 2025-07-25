@@ -65,6 +65,32 @@ export const PRODUCT_DATA_SEEDS = [
     createdByWorkspaceMemberId: null,
     createdByName: 'System',
   },
+  {
+    id: 'b4d5e6f7-4444-4444-9444-777788889999',
+    productCode: 'P004',
+    productName: 'Email Marketing',
+    productCategory: 'Service',
+    basePrice: 149.99,
+    licenseDurationMonths: 12,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    createdBySource: 'SYSTEM',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'System',
+  },
+  {
+    id: 'c5e6f7a8-5555-4555-a555-888899990000',
+    productCode: 'P005',
+    productName: 'Social Media Scheduler',
+    productCategory: 'Software',
+    basePrice: 179.99,
+    licenseDurationMonths: 6,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    createdBySource: 'SYSTEM',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'System',
+  },
 ];
 
 export const PRODUCT_SEEDS_CONSTANT = {
