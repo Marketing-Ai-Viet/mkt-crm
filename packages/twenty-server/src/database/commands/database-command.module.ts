@@ -15,6 +15,7 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { DevSeederModule } from 'src/engine/workspace-manager/dev-seeder/dev-seeder.module';
 import { WorkspaceManagerModule } from 'src/engine/workspace-manager/workspace-manager.module';
 import { SeedCustomerModuleCommand } from 'src/mkt-core/libs/customers/seed-customer-module.command';
+import { SeedProductModuleCommand } from 'src/mkt-core/libs/products';
 import { CalendarEventImportManagerModule } from 'src/modules/calendar/calendar-event-import-manager/calendar-event-import-manager.module';
 import { MessagingImportManagerModule } from 'src/modules/messaging/message-import-manager/messaging-import-manager.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
@@ -41,7 +42,10 @@ import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/au
   ],
   providers: [
     DataSeedWorkspaceCommand,
+    // Mkt commands :start
     SeedCustomerModuleCommand,
+    SeedProductModuleCommand,
+    // Mkt commands :end
     ConfirmationQuestion,
     CronRegisterAllCommand,
   ],
