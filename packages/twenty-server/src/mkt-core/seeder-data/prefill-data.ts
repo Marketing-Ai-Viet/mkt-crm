@@ -1,12 +1,12 @@
 import { customersAllView, prefillCustomers } from 'src/mkt-core/libs/customers/prefill-data';
-import { prefillProducts, productsAllView } from 'src/mkt-core/libs/products';
+import { PRODUCT_PREFILLS, PRODUCT_VIEWS } from 'src/mkt-core/libs/products';
 
 export const MKT_VIEWS = [
   customersAllView,
-  productsAllView
+  ...PRODUCT_VIEWS
 ];
 
 export const MKT_PREFILLS = [
   prefillCustomers,
-  prefillProducts
+  ...PRODUCT_PREFILLS
 ];

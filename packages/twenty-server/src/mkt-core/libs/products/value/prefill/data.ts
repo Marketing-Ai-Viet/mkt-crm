@@ -1,7 +1,7 @@
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
-import { PRODUCT_DATA_SEEDS, TABLE_NAME } from '../constants';
+import { ATTRIBUTE_VALUE_DATA_SEEDS, ATTRIBUTE_VALUE_TABLE_NAME } from '../constants';
 
-export const prefillProducts = async (
+export const prefillAttributeValues = async (
   entityManager: WorkspaceEntityManager,
   schemaName: string,
 ) => {
@@ -10,21 +10,17 @@ export const prefillProducts = async (
       shouldBypassPermissionChecks: true,
     })
     .insert()
-    .into(`${schemaName}.${TABLE_NAME}`, [
+    .into(`${schemaName}.${ATTRIBUTE_VALUE_TABLE_NAME}`, [
       'id',
-      'productCode',
-      'productName',
-      'productCategory',
-      'productType',
-      'basePrice',
-      'licenseDurationMonths',
-      'isActive',
+      'attributeId',
+      'value',
+      'displayOrder',
       'createdAt',
       'createdBySource',
       'createdByWorkspaceMemberId',
       'createdByName',
     ])
     .orIgnore()
-    .values(PRODUCT_DATA_SEEDS)
+    .values(ATTRIBUTE_VALUE_DATA_SEEDS)
     .execute();
 };
