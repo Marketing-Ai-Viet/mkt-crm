@@ -2,7 +2,7 @@ import { AggregateOperations } from 'src/engine/api/graphql/graphql-query-runner
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { BASE_OBJECT_STANDARD_FIELD_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-field-ids';
 import { ViewOpenRecordInType } from 'src/modules/view/standard-objects/view.workspace-entity';
-import { PRODUCT_STANDARD_FIELD_IDS } from '../constants';
+import { PRODUCT_STANDARD_FIELD_IDS } from './index';
 
 export const productsAllView = (
   objectMetadataItems: ObjectMetadataEntity[],

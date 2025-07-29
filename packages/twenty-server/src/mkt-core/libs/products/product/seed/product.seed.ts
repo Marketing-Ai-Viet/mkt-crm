@@ -1,5 +1,5 @@
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
-import { PRODUCT_DATA_SEEDS, TABLE_NAME } from '../constants';
+import { PRODUCT_DATA_SEEDS, TABLE_NAME } from './index';
 
 export const prefillProducts = async (
   entityManager: WorkspaceEntityManager,

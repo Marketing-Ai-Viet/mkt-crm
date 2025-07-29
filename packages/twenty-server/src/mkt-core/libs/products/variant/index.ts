@@ -1,7 +1,7 @@
 export { MktProductVariantWorkspaceEntity } from './entity';
-export { prefillProductVariants } from './prefill/data';
-export { productVariantsAllView } from './prefill/view';
-export { SeedVariantModuleCommand } from './prefill/command';
+export { prefillProductVariants } from './seed/data';
+export { productVariantsAllView } from './seed/view';
+export { SeedVariantModuleCommand } from './seed/command';
 export { PRODUCT_VARIANT_SEEDS_CONSTANT } from './constants';
 
 //internal

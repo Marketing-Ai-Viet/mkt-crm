@@ -9,8 +9,8 @@ import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/compos
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-import { PRODUCT_STANDARD_FIELD_IDS, TABLE_NAME, PRODUCT_TYPE, PRODUCT_TYPE_OPTIONS } from './constants';
-import {MktProductVariantWorkspaceEntity} from 'src/mkt-core/libs/products/variant';
+import { PRODUCT_STANDARD_FIELD_IDS, TABLE_NAME, PRODUCT_TYPE, PRODUCT_TYPE_OPTIONS } from './seed';
+import { MktProductVariantWorkspaceEntity } from 'src/mkt-core/libs/products/variant';
 
 
 @WorkspaceEntity({
@@ -32,6 +32,7 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconTags',
     options: PRODUCT_TYPE_OPTIONS
   })
+  @WorkspaceIsNullable()
   productType: PRODUCT_TYPE;
 
   @WorkspaceField({
@@ -41,6 +42,7 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Product code`,
     icon: 'IconBarcode',
   })
+  @WorkspaceIsNullable()
   productCode: string;
 
   @WorkspaceField({
@@ -50,6 +52,7 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Product name`,
     icon: 'IconBox',
   })
+  @WorkspaceIsNullable()
   productName: string;
 
   @WorkspaceField({
@@ -69,6 +72,7 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Base price`,
     icon: 'IconCurrencyDollar',
   })
+  @WorkspaceIsNullable()
   basePrice: number;
 
   @WorkspaceField({
@@ -88,6 +92,7 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Is product active?`,
     icon: 'IconCheck',
   })
+  @WorkspaceIsNullable()
   isActive: boolean;
 
   @WorkspaceField({

@@ -10,8 +10,8 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { v4 as uuidv4 } from 'uuid';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
-import { prefillProducts } from './data';
-import { productsAllView } from './view';
+import { prefillProducts } from './index';
+import { productsAllView } from './index';
 
 interface SeedProductModuleOptions {
   workspaceId?: string;
