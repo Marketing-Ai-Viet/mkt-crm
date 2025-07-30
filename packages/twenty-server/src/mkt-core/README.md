@@ -78,6 +78,11 @@ yarn command:prod workspace:sync-metadata
 ## cho workspace cụ thể
 ```bash
 yarn command:prod workspace:seed:customer-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
+yarn command:prod workspace:seed:product-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
+yarn command:prod workspace:seed:attribute-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
+yarn command:prod workspace:seed:variant-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
+yarn command:prod workspace:seed:attribute-value-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
+yarn command:prod workspace:seed:variant-attribute-value-module -w 3b8e6458-5fc1-4e63-8563-008ccddaa6db
 ```
 
 ---
