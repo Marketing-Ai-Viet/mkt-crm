@@ -3,5 +3,3 @@ export { prefillAttributeValues } from './seed/data';
 export { attributeValuesAllView } from './seed/view';
 export { SeedAttributeValueModuleCommand } from './seed/command';
 export { ATTRIBUTE_VALUE_SEEDS_CONSTANT } from './constants';
-
-export { ATTRIBUTE_VALUE_IDS } from './constants';

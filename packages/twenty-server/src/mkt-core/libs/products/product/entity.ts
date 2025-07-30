@@ -11,6 +11,7 @@ import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfa
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 import { PRODUCT_STANDARD_FIELD_IDS, TABLE_NAME, PRODUCT_TYPE, PRODUCT_TYPE_OPTIONS } from './seed';
 import { MktProductVariantWorkspaceEntity } from 'src/mkt-core/libs/products/variant';
+import { MktProductAttributeWorkspaceEntity } from 'src/mkt-core/libs/products/attribute';
 
 
 @WorkspaceEntity({
@@ -116,4 +117,17 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   variants: Relation<MktProductVariantWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: PRODUCT_STANDARD_FIELD_IDS.attributes,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Attributes`,
+    description: msg`List of product attributes`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktProductAttributeWorkspaceEntity,
+    inverseSideFieldKey: 'product',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  attributes: Relation<MktProductAttributeWorkspaceEntity[]>;
 }

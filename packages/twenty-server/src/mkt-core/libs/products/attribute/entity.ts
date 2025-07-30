@@ -4,9 +4,16 @@ import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
+import { MktProductWorkspaceEntity } from 'src/mkt-core/libs/products/product/entity';
+import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 
 import { PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS, ATTRIBUTE_TABLE_NAME } from './constants';
 import {ActorMetadata} from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import {RelationOnDeleteAction} from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
+import {MktVariantAttributeValueWorkspaceEntity} from 'src/mkt-core/libs/products/variant_attribute_value/entity';
+import {Relation} from 'typeorm';
 
 @WorkspaceEntity({
   standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.id,
@@ -26,14 +33,6 @@ export class MktProductAttributeWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconTag',
   })
   name: string;
-  @WorkspaceField({
-    standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.productId,
-    type: FieldMetadataType.UUID,
-    label: msg`Product`,
-    description: msg`ID của sản phẩm`,
-    icon: 'IconBox',
-  })
-  productId: string;
 
   @WorkspaceField({
     standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.displayOrder,
@@ -53,4 +52,33 @@ export class MktProductAttributeWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`The creator of the record`,
   })
   createdBy: ActorMetadata;
+
+  @WorkspaceRelation({
+    standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.product,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Product`,
+    description: msg`Parent product`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktProductWorkspaceEntity,
+    inverseSideFieldKey: 'attributes',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  product: MktProductWorkspaceEntity | null;
+
+  @WorkspaceJoinColumn('product')
+  productId: string | null;
+  
+  @WorkspaceRelation({
+    standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.variantAttributeValues,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variant Attribute Values`,
+    description: msg`Các liên kết giá trị thuộc tính của biến thể sử dụng thuộc tính này`,
+    icon: 'IconListDetails',
+    inverseSideTarget: () => MktVariantAttributeValueWorkspaceEntity,
+    inverseSideFieldKey: 'attribute',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  variantAttributeValues: Relation<MktVariantAttributeValueWorkspaceEntity[]>;
 }

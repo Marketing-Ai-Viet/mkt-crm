@@ -36,7 +36,7 @@ export const variantAttributeValuesAllView = (
       {
         fieldMetadataId:
           valueObjectMetadata.fields.find(
-            (field) => field.standardId === VARIANT_ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.variantId,
+            (field) => field.standardId === VARIANT_ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.variant,
           )?.id ?? '',
         position: 1,
         isVisible: true,

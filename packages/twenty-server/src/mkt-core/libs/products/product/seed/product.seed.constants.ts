@@ -1,4 +1,5 @@
 import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+import { PRODUCT_SEED_IDS } from 'src/mkt-core/libs/products/constants';
 
 export const TABLE_NAME = 'mktProduct';
 
@@ -30,7 +31,8 @@ export const PRODUCT_STANDARD_FIELD_IDS = {
   licenseDurationMonths: 'a9b8c7d0-7890-1234-f123-456789012345',
   isActive: 'b0c9d8e1-8901-2345-1234-567890123456',
   createdBy: 'c1d0e9f2-9012-3456-2345-678901234567',
-  variants: 'e5f1a4d2-7c6f-4c31-bc2e-52d192f1fcd9'
+  variants: 'e5f1a4d2-7c6f-4c31-bc2e-52d192f1fcd9',
+  attributes: 'd1e2f3a4-1111-2222-3333-444455556667', // new field for attributes relation
 };
 
 export const PRODUCT_DATA_SEED_COLUMNS = [
@@ -47,14 +49,6 @@ export const PRODUCT_DATA_SEED_COLUMNS = [
   'createdByWorkspaceMemberId',
   'createdByName',
 ];
-
-export const PRODUCT_SEED_IDS = {
-  P001: 'e1a2b3c4-1111-4111-8111-444455556666',
-  P002: 'f2b3c4d5-2222-4222-8222-555566667777',
-  P003: 'a3c4d5e6-3333-4333-8333-666677778888',
-  P004: 'b4d5e6f7-4444-4444-9444-777788889999',
-  P005: 'c5e6f7a8-5555-4555-a555-888899990000',
-};
 
 export const PRODUCT_DATA_SEEDS = [
   {

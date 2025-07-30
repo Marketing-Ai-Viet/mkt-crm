@@ -38,7 +38,7 @@ export const productAttributesAllView = (
       {
         fieldMetadataId:
           attributeObjectMetadata.fields.find(
-            (field) => field.standardId === PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.productId,
+            (field) => field.standardId === PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.product,
           )?.id ?? '',
         position: 1,
         isVisible: true,

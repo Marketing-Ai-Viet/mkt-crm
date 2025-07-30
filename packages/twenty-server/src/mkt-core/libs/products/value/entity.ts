@@ -6,6 +6,10 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { ATTRIBUTE_VALUE_STANDARD_FIELD_IDS, ATTRIBUTE_VALUE_TABLE_NAME } from './constants';
 import {ActorMetadata} from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
+import {MktVariantAttributeValueWorkspaceEntity} from 'src/mkt-core/libs/products/variant_attribute_value/entity';
+import {Relation} from 'typeorm';
 
 @WorkspaceEntity({
   standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.id,
@@ -53,4 +57,15 @@ export class MktAttributeValueWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconUserCircle',
   })
   createdBy: ActorMetadata;
+
+  @WorkspaceRelation({
+    standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.id, // hoặc tạo mới nếu cần riêng cho relation này
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variant Attribute Values`,
+    description: msg`Các liên kết giá trị thuộc tính của biến thể sử dụng giá trị này`,
+    inverseSideTarget: () => MktVariantAttributeValueWorkspaceEntity,
+    inverseSideFieldKey: 'attributeValue',
+  })
+  @WorkspaceIsNullable()
+  variantAttributeValues: Relation<MktVariantAttributeValueWorkspaceEntity[]>;
 }

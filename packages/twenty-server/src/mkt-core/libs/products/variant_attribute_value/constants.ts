@@ -1,13 +1,13 @@
-import { ATTRIBUTE_VALUE_IDS } from '../value';
-import { PRODUCT_VARIANT_IDS } from '../variant';
+import { ATTRIBUTE_VALUE_IDS, ATTRIBUTE_SEED_IDS, PRODUCT_VARIANT_IDS } from 'src/mkt-core/libs/products/constants';
 
 export const VARIANT_ATTRIBUTE_VALUE_TABLE_NAME = 'mktVariantAttributeValue';
 
 export const VARIANT_ATTRIBUTE_VALUE_STANDARD_FIELD_IDS = {
   id: 'b2e3c4d5-6f87-4b01-9bcd-2234567890ab',
   name: 'c3d4e5f6-4f90-4c34-8bcd-3345678901bc',
-  variantId: 'd4e5f6a7-8c01-4d45-9bcd-4345678902cd',
+  variant: 'd4e5f6a7-8c01-4d45-9bcd-4345678902cd',
   attributeValueId: 'e5f6a7b8-9d12-4e56-8bcd-5345678903de',
+  attributeId: 'e5f6a7b8-9d12-4e56-8bcd-5345678903df',
   createdBy: 'f6a7b8c9-0e23-4f67-8bcd-6345678904ef',
 };
 
@@ -16,6 +16,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEED_COLUMNS = [
   'name',
   'variantId',
   'attributeValueId',
+  'attributeId',
   'createdAt',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -134,6 +135,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Màu Đỏ cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.COLOR_DO,
+        attributeId: ATTRIBUTE_SEED_IDS.COLOR,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,
@@ -144,6 +146,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Màu Xanh cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.COLOR_XANH,
+        attributeId: ATTRIBUTE_SEED_IDS.COLOR,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,
@@ -154,6 +157,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Màu Vàng cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.COLOR_VANG,
+        attributeId: ATTRIBUTE_SEED_IDS.COLOR,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,
@@ -164,6 +168,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Size S cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.SIZE_S,
+        attributeId: ATTRIBUTE_SEED_IDS.SIZE,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,
@@ -174,6 +179,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Size M cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.SIZE_M,
+        attributeId: ATTRIBUTE_SEED_IDS.SIZE,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,
@@ -184,6 +190,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Size L cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.SIZE_L,
+        attributeId: ATTRIBUTE_SEED_IDS.SIZE,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,
@@ -194,6 +201,7 @@ export const VARIANT_ATTRIBUTE_VALUE_DATA_SEEDS = [
         name: `Chất liệu Cotton cho Variant ${idx + 1}`,
         variantId,
         attributeValueId: ATTRIBUTE_VALUE_IDS.MATERIAL_COTTON,
+        attributeId: ATTRIBUTE_SEED_IDS.MATERIAL,
         createdAt: new Date().toISOString(),
         createdBySource: 'SYSTEM',
         createdByWorkspaceMemberId: null,

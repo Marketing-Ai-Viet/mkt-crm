@@ -10,8 +10,9 @@ import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-re
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { Relation } from 'typeorm';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/libs/products/product/entity';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
+import { MktVariantAttributeValueWorkspaceEntity } from '../variant_attribute_value';
+import { MktProductWorkspaceEntity } from '../product';
 
 @WorkspaceEntity({
   standardId: PRODUCT_VARIANT_STANDARD_FIELD_IDS.id,
@@ -105,4 +106,17 @@ export class MktProductVariantWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('product')
   productId: string | null;
+  
+  @WorkspaceRelation({
+    standardId: PRODUCT_VARIANT_STANDARD_FIELD_IDS.variantAttributeValues,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variant Attribute Values`,
+    description: msg`Các giá trị thuộc tính của biến thể này`,
+    icon: 'IconListDetails',
+    inverseSideTarget: () => MktVariantAttributeValueWorkspaceEntity,
+    inverseSideFieldKey: 'variant',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  variantAttributeValues: Relation<MktVariantAttributeValueWorkspaceEntity[]>;
 }

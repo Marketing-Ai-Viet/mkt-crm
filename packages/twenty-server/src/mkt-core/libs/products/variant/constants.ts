@@ -1,11 +1,11 @@
-import { PRODUCT_SEED_IDS } from '../product';
+import { PRODUCT_SEED_IDS } from 'src/mkt-core/libs/products/constants';
+import { PRODUCT_VARIANT_IDS } from 'src/mkt-core/libs/products/constants';
 
 export const VARIANT_TABLE_NAME = 'mktProductVariant';
 
 export const PRODUCT_VARIANT_STANDARD_FIELD_IDS = {
   id: 'be40d66e-b97c-4d1b-90a2-3e09a213aabc',
   name: 'a2b3c4d5-9999-4888-b777-666655554444',
-  // productId: '1c25dc90-3f86-44e7-9f13-815f5a06ed4d',
   sku: 'f6fa7566-8e9d-4c45-b62e-3d63f5893bb4',
   price: 'dfe69b8c-21df-45d3-8516-f4cb86b2e414',
   stock: '73f61d5a-1e7b-4c84-8fcf-5eb52bdbdd6b',
@@ -15,19 +15,8 @@ export const PRODUCT_VARIANT_STANDARD_FIELD_IDS = {
   createdByWorkspaceMemberId: '5b5023cb-c8ac-4807-9fd9-e7a98e8df2dc',
   createdByName: 'c6d3f69d-b0f6-44b3-a83c-3b367d91274c',
   product: 'e5f1a4d2-7c6f-4c31-bc2e-52d192f1fcd9',
+  variantAttributeValues: '1c25dc90-3f86-44e7-9f13-815f5a06ed4d',
 };
-
-export const PRODUCT_VARIANT_IDS = [
-"af07b715-fbaf-4157-95ab-cbb991dbd8f4",
-"211d5dc7-efb9-4808-a4c2-97f59e09b9a9",
-"8809b624-60b0-4532-9f5c-6c18bd2beff1",
-"d5bc9b17-ac7c-4473-99b2-0545e9f96c78",
-"65f24aa5-c123-4204-b7aa-4ae3b1d80346",
-"25125750-1079-49c2-9c56-351eac3a75e1",
-"a06c6aa2-238e-4e5c-9989-17593673179c",
-"940a22ea-df6c-46d2-b94f-95b7223620f0",
-"4ce4113f-fa2b-4ca0-8465-e2ee06133e96",
-];
 
 export const PRODUCT_VARIANT_DATA_SEED_COLUMNS = [
   'id',

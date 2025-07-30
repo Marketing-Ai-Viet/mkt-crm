@@ -1,4 +1,4 @@
-import { ATTRIBUTE_SEED_IDS } from '../attribute';
+import { ATTRIBUTE_SEED_IDS } from 'src/mkt-core/libs/products/constants';
 
 export const ATTRIBUTE_VALUE_TABLE_NAME = 'mktAttributeValue';
 
