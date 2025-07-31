@@ -9,6 +9,7 @@ export const PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS = {
   displayOrder: 'a4b5c6d7-4444-5555-6666-777788889999',
   createdBy: 'b5c6d7e8-5555-6666-7777-888899990000',
   variantAttributeValues: 'f5a37a14-f6b9-40c6-9006-6b9271c478d9',
+  values: '64b4f399-4799-44ac-920f-549bc42b6df4'
 };
 
 export const PRODUCT_ATTRIBUTE_DATA_SEED_COLUMNS = [

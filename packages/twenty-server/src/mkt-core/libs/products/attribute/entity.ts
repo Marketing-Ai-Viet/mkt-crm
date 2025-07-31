@@ -14,6 +14,7 @@ import {ActorMetadata} from 'src/engine/metadata-modules/field-metadata/composit
 import {RelationOnDeleteAction} from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import {MktVariantAttributeValueWorkspaceEntity} from 'src/mkt-core/libs/products/variant_attribute_value/entity';
 import {Relation} from 'typeorm';
+import {MktAttributeValueWorkspaceEntity} from 'src/mkt-core/libs/products/value/entity';
 
 @WorkspaceEntity({
   standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.id,
@@ -81,4 +82,17 @@ export class MktProductAttributeWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   variantAttributeValues: Relation<MktVariantAttributeValueWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: PRODUCT_ATTRIBUTE_STANDARD_FIELD_IDS.values,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Attribute Values`,
+    description: msg`Các giá trị thuộc tính sử dụng thuộc tính này`,
+    icon: 'IconListDetails',
+    inverseSideTarget: () => MktAttributeValueWorkspaceEntity,
+    inverseSideFieldKey: 'attribute',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  attributeValues: Relation<MktAttributeValueWorkspaceEntity[]>;
 }

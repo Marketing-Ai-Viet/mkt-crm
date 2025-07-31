@@ -41,16 +41,7 @@ export const variantAttributeValuesAllView = (
         position: 1,
         isVisible: true,
         size: 180,
-      },
-      {
-        fieldMetadataId:
-          valueObjectMetadata.fields.find(
-            (field) => field.standardId === VARIANT_ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.attributeValueId,
-          )?.id ?? '',
-        position: 2,
-        isVisible: true,
-        size: 180,
-      },
+      }
       // Bỏ trường createdAt vì đã tự tạo từ createdBy
     ],
   };

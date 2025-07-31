@@ -74,20 +74,4 @@ export class MktVariantAttributeValueWorkspaceEntity extends BaseWorkspaceEntity
 
   @WorkspaceJoinColumn('attribute')
   attributeId: string | null;
-
-  @WorkspaceRelation({
-    standardId: VARIANT_ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.attributeValueId,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Attribute Value`,
-    description: msg`Giá trị thuộc tính liên kết`,
-    icon: 'IconList',
-    inverseSideTarget: () => MktAttributeValueWorkspaceEntity,
-    inverseSideFieldKey: 'variantAttributeValues',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  attributeValue: Relation<MktAttributeValueWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('attributeValue')
-  attributeValueId: string | null;
 }

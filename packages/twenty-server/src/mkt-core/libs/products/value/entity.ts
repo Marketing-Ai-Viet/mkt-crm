@@ -10,6 +10,9 @@ import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-re
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import {MktVariantAttributeValueWorkspaceEntity} from 'src/mkt-core/libs/products/variant_attribute_value/entity';
 import {Relation} from 'typeorm';
+import {MktProductAttributeWorkspaceEntity} from 'src/mkt-core/libs/products/attribute/entity';
+import {RelationOnDeleteAction} from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
+import {WorkspaceJoinColumn} from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 
 @WorkspaceEntity({
   standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.id,
@@ -21,15 +24,6 @@ import {Relation} from 'typeorm';
   labelIdentifierStandardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.value,
 })
 export class MktAttributeValueWorkspaceEntity extends BaseWorkspaceEntity {
-  @WorkspaceField({
-    standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.attributeId,
-    type: FieldMetadataType.UUID,
-    label: msg`Attribute`,
-    description: msg`ID của thuộc tính`,
-    icon: 'IconList',
-  })
-  attributeId: string;
-
   @WorkspaceField({
     standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.value,
     type: FieldMetadataType.TEXT,
@@ -59,13 +53,17 @@ export class MktAttributeValueWorkspaceEntity extends BaseWorkspaceEntity {
   createdBy: ActorMetadata;
 
   @WorkspaceRelation({
-    standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.id, // hoặc tạo mới nếu cần riêng cho relation này
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Variant Attribute Values`,
-    description: msg`Các liên kết giá trị thuộc tính của biến thể sử dụng giá trị này`,
-    inverseSideTarget: () => MktVariantAttributeValueWorkspaceEntity,
-    inverseSideFieldKey: 'attributeValue',
+    standardId: ATTRIBUTE_VALUE_STANDARD_FIELD_IDS.attributeId,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Attribute`,
+    description: msg`Thuộc tính của giá trị này`,
+    icon: 'IconList',
+    inverseSideTarget: () => MktProductAttributeWorkspaceEntity,
+    inverseSideFieldKey: 'attributeValues',
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  @WorkspaceIsNullable()
-  variantAttributeValues: Relation<MktVariantAttributeValueWorkspaceEntity[]>;
+  attribute: Relation<MktProductAttributeWorkspaceEntity>;
+
+  @WorkspaceJoinColumn('attribute')
+  attributeId: string | null;
 }

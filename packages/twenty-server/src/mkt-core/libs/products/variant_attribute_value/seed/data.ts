@@ -14,7 +14,6 @@ export const prefillVariantAttributeValues = async (
       'id',
       'name',
       'variantId',
-      'attributeValueId',
       'attributeId',
       'createdAt',
       'createdBySource',
