@@ -5,6 +5,7 @@
  * For readability keys can be edited but the values should not be changed.
  */
 
+import { CUSTOM_FIELD } from "src/mkt-core/common/constants/custom-field-timeline-activity";
 // TODO: check if this can be deleted
 export const ACTIVITY_TARGET_STANDARD_FIELD_IDS = {
   activity: '20202020-ca58-478c-a4f5-ae825671c30e',
@@ -202,6 +203,7 @@ export const TIMELINE_ACTIVITY_STANDARD_FIELD_IDS = {
   linkedRecordCachedName: '20202020-cfdb-4bef-bbce-a29f41230934',
   linkedRecordId: '20202020-2e0e-48c0-b445-ee6c1e61687d',
   linkedObjectMetadataId: '20202020-c595-449d-9f89-562758c9ee69',
+  ...CUSTOM_FIELD
 };
 
 export const FAVORITE_STANDARD_FIELD_IDS = {
