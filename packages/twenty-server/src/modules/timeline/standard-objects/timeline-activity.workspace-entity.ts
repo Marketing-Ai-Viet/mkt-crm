@@ -1,9 +1,9 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { CustomWorkspaceEntity } from 'src/engine/twenty-orm/custom.workspace-entity';
@@ -18,6 +18,9 @@ import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-re
 import { TIMELINE_ACTIVITY_STANDARD_FIELD_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-field-ids';
 import { STANDARD_OBJECT_ICONS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-object-icons';
 import { STANDARD_OBJECT_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-object-ids';
+import { FulfillmentWorkspaceEntity } from 'src/mkt-core/libs/orders/entities/fulfillment.workspace-entity';
+import { OrderWorkspaceEntity } from 'src/mkt-core/libs/orders/entities/order.workspace-entity';
+import { PaymentWorkspaceEntity } from 'src/mkt-core/libs/orders/entities/payment.workspace-entity';
 import { CompanyWorkspaceEntity } from 'src/modules/company/standard-objects/company.workspace-entity';
 import { NoteWorkspaceEntity } from 'src/modules/note/standard-objects/note.workspace-entity';
 import { OpportunityWorkspaceEntity } from 'src/modules/opportunity/standard-objects/opportunity.workspace-entity';
@@ -27,7 +30,6 @@ import { WorkflowRunWorkspaceEntity } from 'src/modules/workflow/common/standard
 import { WorkflowVersionWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
 import { WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
 @WorkspaceEntity({
   standardId: STANDARD_OBJECT_IDS.timelineActivity,
   namePlural: 'timelineActivities',
@@ -146,6 +148,70 @@ export class TimelineActivityWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('company')
   companyId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.order,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Order`,
+    description: msg`Event order`,
+    icon: 'IconBuildingSkyscraper',
+    inverseSideTarget: () => OrderWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  order: Relation<OrderWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('order')
+  orderId: string | null;
+
+  // @WorkspaceRelation({
+  //   standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.orderItem,
+  //   type: RelationType.MANY_TO_ONE,
+  //   label: msg`Order`,
+  //   description: msg`Event order`,
+  //   icon: 'IconBuildingSkyscraper',
+  //   inverseSideTarget: () => OrderItemWorkspaceEntity,
+  //   inverseSideFieldKey: 'timelineActivities',
+  //   onDelete: RelationOnDeleteAction.CASCADE,
+  // })
+  // @WorkspaceIsNullable()
+  // orderItem: Relation<OrderItemWorkspaceEntity> | null;
+
+  // @WorkspaceJoinColumn('orderItem')
+  // orderItemId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.fulfillment,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`fulfillment`,
+    description: msg`Event fulfillment`,
+    icon: 'IconBuildingSkyscraper',
+    inverseSideTarget: () => FulfillmentWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  fulfillment: Relation<FulfillmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('fulfillment')
+  fulfillmentId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.payment,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`payment`,
+    description: msg`Event payment`,
+    icon: 'IconBuildingSkyscraper',
+    inverseSideTarget: () => PaymentWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  payment: Relation<PaymentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('payment')
+  paymentId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.opportunity,

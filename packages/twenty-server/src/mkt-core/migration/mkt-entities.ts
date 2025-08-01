@@ -1,8 +1,11 @@
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/libs/customers/entities/customer.workspace-entity';
-import { LicenseStatusHistoryWorkspaceEntity } from '../libs/license/entities/license-status-history.workspace-entity';
-import { LicenseWorkspaceEntity } from '../libs/license/entities/license.workspace-entity';
+import { FulfillmentWorkspaceEntity } from 'src/mkt-core/libs/orders/entities/fulfillment.workspace-entity';
+import { OrderWorkspaceEntity } from 'src/mkt-core/libs/orders/entities/order.workspace-entity';
+import { PaymentWorkspaceEntity } from 'src/mkt-core/libs/orders/entities/payment.workspace-entity';
 export const MKT_ENTITIES = [
   MktCustomerWorkspaceEntity,
-  LicenseWorkspaceEntity,
-  LicenseStatusHistoryWorkspaceEntity,
+  OrderWorkspaceEntity,
+  // OrderItemWorkspaceEntity,
+  FulfillmentWorkspaceEntity,
+  PaymentWorkspaceEntity,
 ];
