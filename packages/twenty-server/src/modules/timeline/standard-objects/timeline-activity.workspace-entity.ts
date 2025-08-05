@@ -19,6 +19,8 @@ import { TIMELINE_ACTIVITY_STANDARD_FIELD_IDS } from 'src/engine/workspace-manag
 import { STANDARD_OBJECT_ICONS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-object-icons';
 import { STANDARD_OBJECT_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-object-ids';
 import { CompanyWorkspaceEntity } from 'src/modules/company/standard-objects/company.workspace-entity';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/mkt-example/libs/customers/entities/customer.workspace-entity';
+import { MktProductWorkspaceEntity } from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
 import { NoteWorkspaceEntity } from 'src/modules/note/standard-objects/note.workspace-entity';
 import { OpportunityWorkspaceEntity } from 'src/modules/opportunity/standard-objects/opportunity.workspace-entity';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
@@ -146,6 +148,38 @@ export class TimelineActivityWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('company')
   companyId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.mktCustomer,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Customer`,
+    description: msg`Event customer`,
+    icon: 'IconUser',
+    inverseSideTarget: () => MktCustomerWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktCustomer: Relation<MktCustomerWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktCustomer')
+  mktCustomerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.mktProduct,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Product`,
+    description: msg`Event product`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktProductWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktProduct: Relation<MktProductWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktProduct')
+  mktProductId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_STANDARD_FIELD_IDS.opportunity,
