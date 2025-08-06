@@ -12,19 +12,19 @@ import {WorkspaceDataSourceService} from 'src/engine/workspace-datasource/worksp
 import {WorkspaceActivationStatus} from 'twenty-shared/workspace';
 import {v4 as uuidv4} from 'uuid';
 
-import {mktProductsAllView} from 'src/mkt-core/dev-seeder/prefill-data/mkt-product-all.view';
-import {prefillMktProducts} from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-products';
+import {mktAttributesAllView} from 'src/mkt-core/dev-seeder/prefill-data/mkt-attribute-all.view';
+import {prefillMktAttributes} from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-attributes';
 
-interface SeedProductModuleOptions {
+interface SeedAttributeModuleOptions {
   workspaceId?: string;
 }
 
 @Command({
-  name: 'workspace:seed:product-module',
-  description: 'Seed product module views and data for existing workspace',
+  name: 'workspace:seed:attribute-module',
+  description: 'Seed attribute module views and data for existing workspace',
 })
-export class SeedProductModuleCommand extends CommandRunner {
-  private readonly logger = new Logger(SeedProductModuleCommand.name);
+export class SeedAttributeModuleCommand extends CommandRunner {
+  private readonly logger = new Logger(SeedAttributeModuleCommand.name);
 
   constructor(
     @InjectRepository(Workspace, 'core')
@@ -38,7 +38,7 @@ export class SeedProductModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed product module for',
+    description: 'workspace id to seed attribute module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
@@ -46,7 +46,7 @@ export class SeedProductModuleCommand extends CommandRunner {
 
   async run(
     passedParam: string[],
-    options: SeedProductModuleOptions,
+    options: SeedAttributeModuleOptions,
   ): Promise<void> {
     let workspaces: Workspace[] = [];
 
@@ -71,40 +71,40 @@ export class SeedProductModuleCommand extends CommandRunner {
 
     for (const workspace of workspaces) {
       try {
-        await this.seedProductModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All Products' sau khi seed
+        await this.seedAttributeModuleForWorkspace(workspace.id);
+        // Lấy viewId của view 'All attributes' sau khi seed
         const mainDataSource = await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
         const viewRow = await mainDataSource
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Products' })
+          .where('view.name = :name', { name: 'All attributes' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
-        const productViewId = viewRow?.id;
-        if (productViewId) {
-          // Insert mới Favorite với viewId này
+        const attributeViewId = viewRow?.id;
+        if (attributeViewId) {
+          // Insert mới attribute với viewId này
           await mainDataSource
             .createQueryBuilder()
             .insert()
             .into(`${schemaName}.favorite`, ['viewId'])
-            .values([{ viewId: productViewId }])
+            .values([{ viewId: attributeViewId }])
             .execute();
-          this.logger.log(`✅ Inserted new Favorite record with viewId: ${productViewId}`);
+          this.logger.log(`✅ Inserted new attribute record with viewId: ${attributeViewId}`);
         } else {
-          this.logger.warn('⚠️ Could not find viewId for All Products view to update Favorite records');
+          this.logger.warn('⚠️ Could not find viewId for All attributes view to update attribute records');
         }
-        this.logger.log(`✅ Product module seeded for workspace: ${workspace.id}`);
+        this.logger.log(`✅ Attribute module seeded for workspace: ${workspace.id}`);
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
-        this.logger.error(`❌ Failed to seed product module for workspace ${workspace.id}:`, error);
+        this.logger.error(`❌ Failed to seed attribute module for workspace ${workspace.id}:`, error);
       }
     }
   }
 
-  private async seedProductModuleForWorkspace(workspaceId: string): Promise<void> {
-    this.logger.log(`🚀 Starting product module seeding for workspace ${workspaceId}`);
+  private async seedAttributeModuleForWorkspace(workspaceId: string): Promise<void> {
+    this.logger.log(`🚀 Starting attribute module seeding for workspace ${workspaceId}`);
 
     const mainDataSource = await this.workspaceDataSourceService.connectToMainDataSource();
     
@@ -114,36 +114,36 @@ export class SeedProductModuleCommand extends CommandRunner {
 
     const objectMetadataItems = await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
     
-    // Find product object metadata
-    const productObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktProduct'
+    // Find attribute object metadata
+    const attributeObjectMetadata = objectMetadataItems.find(
+      (item) => item.nameSingular === 'mktAttribute'
     );
 
     this.logger.log(`🔍 Debug - All objects in workspace: ${objectMetadataItems.map(item => `${item.nameSingular}(${item.standardId})`).join(', ')}`);
-    this.logger.log(`🔍 Debug - Looking for product object with nameSingular: 'mktProduct'`);
-    this.logger.log(`🔍 Debug - Product object found: ${productObjectMetadata ? 'YES' : 'NO'}`);
+    this.logger.log(`🔍 Debug - Looking for attribute object with nameSingular: 'mktAttribute'`);
+    this.logger.log(`🔍 Debug - Attribute object found: ${attributeObjectMetadata ? 'YES' : 'NO'}`);
 
-    if (!productObjectMetadata) {
-      this.logger.log(`Product object not found in workspace ${workspaceId}, skipping...`);
+    if (!attributeObjectMetadata) {
+      this.logger.log(`Attribute object not found in workspace ${workspaceId}, skipping...`);
       return;
     }
 
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     await mainDataSource.transaction(async (entityManager: WorkspaceEntityManager) => {
-      // Check if product view already exists by looking for a view with name 'All Products'
+      // Check if attribute view already exists by looking for a view with name 'All attributes'
       const existingView = await entityManager
         .createQueryBuilder(undefined, undefined, undefined, {
           shouldBypassPermissionChecks: true,
         })
         .select('*')
         .from(`${schemaName}.view`, 'view')
-        .where('view.name = :name', { name: 'All Products' })
+        .where('view.name = :name', { name: 'All attributes' })
         .andWhere('view.key = :key', { key: 'INDEX' })
         .getRawOne();
 
       if (existingView) {
-        this.logger.log(`Product view already exists for workspace ${workspaceId}. Deleting and recreating...`);
+        this.logger.log(`Attribute view already exists for workspace ${workspaceId}. Deleting and recreating...`);
         
         // Delete existing view (cascade will delete viewFields)
         await entityManager
@@ -152,25 +152,25 @@ export class SeedProductModuleCommand extends CommandRunner {
           })
           .delete()
           .from(`${schemaName}.view`)
-          .where('name = :name', { name: 'All Products' })
+          .where('name = :name', { name: 'All attributes' })
           .andWhere('key = :key', { key: 'INDEX' })
           .execute();
       }
 
-      // Create product view
-      const productViewDefinition = mktProductsAllView(objectMetadataItems);
-      // Seed mkt products
-      await prefillMktProducts(entityManager, schemaName);
+      // Create attribute view
+      const attributeViewDefinition = mktAttributesAllView(objectMetadataItems);
+      // Seed mkt attributes
+      await prefillMktAttributes(entityManager, schemaName);
       
-      if (!productViewDefinition) {
-        this.logger.log(`Could not create product view definition for workspace ${workspaceId}`);
+      if (!attributeViewDefinition) {
+        this.logger.log(`Could not create attribute view definition for workspace ${workspaceId}`);
         return;
       }
 
-      this.logger.log(`🔍 Debug - View definition created with ${productViewDefinition.fields?.length || 0} fields`);
+      this.logger.log(`🔍 Debug - View definition created with ${attributeViewDefinition.fields?.length || 0} fields`);
 
       const viewDefinitionWithId = {
-        ...productViewDefinition,
+        ...attributeViewDefinition,
         id: uuidv4(),
       };
 
@@ -260,7 +260,7 @@ export class SeedProductModuleCommand extends CommandRunner {
           .execute();
       }
 
-      this.logger.log(`✅ Product view created for workspace ${workspaceId}`);
+      this.logger.log(`✅ Attribute view created for workspace ${workspaceId}`);
     });
   }
 }
