@@ -1,5 +1,3 @@
-import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
-
 type MktProductDataSeed = {
   id: string;
   type: MKT_PRODUCT_TYPE;
@@ -14,9 +12,8 @@ type MktProductDataSeed = {
   inStock: boolean;
   position: number;
   createdBySource: string;
-  createdByWorkspaceMemberId: string;
+  createdByWorkspaceMemberId: string | null;
   createdByName: string;
-  accountOwnerId: string;
 };
 
 // prettier-ignore
@@ -46,7 +43,6 @@ export const MKT_PRODUCT_DATA_SEED_COLUMNS: (keyof MktProductDataSeed)[] = [
   'createdBySource',
   'createdByWorkspaceMemberId',
   'createdByName',
-  'accountOwnerId',
 ];
 
 // prettier-ignore
@@ -73,9 +69,8 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     inStock: true,
     position: 1,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
@@ -91,9 +86,8 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     inStock: true,
     position: 2,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
@@ -109,9 +103,8 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     inStock: true,
     position: 3,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
@@ -127,9 +120,8 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     inStock: true,
     position: 4,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
@@ -145,8 +137,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     inStock: true,
     position: 5,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
 ];

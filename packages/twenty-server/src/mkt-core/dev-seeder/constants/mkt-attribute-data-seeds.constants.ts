@@ -1,5 +1,4 @@
-import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
-import { MKT_PRODUCT_DATA_SEEDS_IDS } from './mkt-product-data-seeds.constants';
+import {MKT_PRODUCT_DATA_SEEDS_IDS} from './mkt-product-data-seeds.constants';
 
 type MktAttributeDataSeed = {
   id: string;
@@ -7,9 +6,8 @@ type MktAttributeDataSeed = {
   position: number;
   mktProductId: string;
   createdBySource: string;
-  createdByWorkspaceMemberId: string;
+  createdByWorkspaceMemberId: string | null;
   createdByName: string;
-  accountOwnerId: string;
 };
 
 // prettier-ignore
@@ -21,7 +19,6 @@ export const MKT_ATTRIBUTE_DATA_SEED_COLUMNS: (keyof MktAttributeDataSeed)[] = [
   'createdBySource',
   'createdByWorkspaceMemberId',
   'createdByName',
-  'accountOwnerId',
 ];
 // prettier-ignore
 export const MKT_ATTRIBUTE_DATA_SEEDS_IDS = {
@@ -49,9 +46,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_2,
@@ -59,9 +55,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_3,
@@ -69,9 +64,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 3,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   
   // Product 2: Organic Arabica Coffee Beans (Groceries) - 2 attributes
@@ -81,9 +75,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_5,
@@ -91,9 +84,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   
   // Product 3: Ergonomic Office Chair (Furniture) - 3 attributes
@@ -103,9 +95,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_7,
@@ -113,9 +104,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_8,
@@ -123,9 +113,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 3,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   
   // Product 4: Stainless Steel Water Bottle (Outdoor & Travel) - 2 attributes
@@ -135,9 +124,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_10,
@@ -145,9 +133,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   
   // Product 5: LED Desk Lamp (Home & Living) - 3 attributes
@@ -157,9 +144,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_12,
@@ -167,9 +153,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   },
   {
     id: MKT_ATTRIBUTE_DATA_SEEDS_IDS.ID_13,
@@ -177,9 +162,8 @@ export const MKT_ATTRIBUTE_DATA_SEEDS: MktAttributeDataSeed[] = [
     position: 3,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim A',
-    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
   }
   
 ];
