@@ -22,6 +22,7 @@ export const MKT_PRODUCT_FIELD_IDS = {
   createdBy: '8ad53940-cd6a-45cf-a4bd-46611f04b20b',
   // TODO: check if this can be deleted
   mktAttributes: 'bd58f103-651f-44a3-892e-5431248addfe',
+  mktVariants: 'fa92f83f-888d-4ab7-a2ba-4fc034bcadd8',
   accountOwner: 'f836dd4e-1a6e-40ec-b8ce-4bcee5125fe0',
   timelineActivities: 'e4ecfb53-2ad5-4a78-ae3f-a293a8478405',
   searchVector: 'dc61cde2-4483-4418-91e4-bb7bc8ded759',
@@ -46,5 +47,19 @@ export const MKT_VALUE_FIELD_IDS = {
   createdBy: 'f5a6b7c8-9f12-4e56-8acd-5678901234fe',
   // TODO: check if this can be deleted
   mktAttribute: 'c2d3e4f5-3f89-4b23-8bcd-2345678901fb',
-  searchVector: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  searchVector: 'fa2199eb-2793-425c-9075-2b1b3bfae5dd',
+};
+
+export const MKT_VARIANT_FIELD_IDS = {
+  name: 'd6c89b25-a22b-44ad-8069-793e596d39b4',
+  description: '6d571e40-46e0-43ff-a9dc-3b9697051187',
+  sku: 'fbf401ab-6f1b-47eb-86e9-1ac2d422d938',
+  price: '37fda670-3261-4b47-b184-2a1224dcb832',
+  inStock: 'edd56ccf-2997-4098-9440-cb48783d77a8',
+  isActive: '270edf3a-1c06-445f-93a9-7d7315aa4d52',
+  position: '03ed978a-61d9-46a6-8d28-bf0964437849',
+  createdBy: 'e87d1e5d-e0f5-4ed0-ab23-3ebbb0a1beae',
+  // TODO: check if this can be deleted
+  mktProduct: '7cfa6d7b-db26-4fb5-9beb-3ec348f9fed7',
+  searchVector: '1b50d19d-459d-466f-8560-c1ec12470936',
 };

@@ -21,9 +21,10 @@ import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
+
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-object-ids';
 import { MKT_PRODUCT_FIELD_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-field-ids';
-
 const TABLE_PRODUCT_NAME = 'mktProduct';
 const NAME_FIELD_NAME = 'name';
 const DESCRIPTION_FIELD_NAME = 'description';
@@ -228,6 +229,19 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktAttributes: Relation<MktAttributeWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PRODUCT_FIELD_IDS.mktVariants,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variants`,
+    description: msg`List of product variants`,
+    icon: 'IconBoxMultiple',
+    inverseSideTarget: () => MktVariantWorkspaceEntity,
+    inverseSideFieldKey: 'mktProduct',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVariants: Relation<MktVariantWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_PRODUCT_FIELD_IDS.searchVector,
