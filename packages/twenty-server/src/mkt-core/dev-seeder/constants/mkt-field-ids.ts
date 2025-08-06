@@ -35,7 +35,7 @@ export const MKT_ATTRIBUTE_FIELD_IDS = {
   // TODO: check if this can be deleted
   mktProduct: '2ed27de7-4f70-4af2-82e3-6c987561b06e',
   mktValues: '93bf64b2-6d26-4f82-b504-9ec6c804d1f8',
-  mktVariantAttributeValues: 'b92536b2-59bd-46d3-bb78-7525d51b0570',
+  mktVariantAttributes: 'b92536b2-59bd-46d3-bb78-7525d51b0570',
   accountOwner: 'dd99e723-8fc6-48fc-8bd1-e9d3001f2aab',
   timelineActivities: 'd64fa54f-30dd-40ff-9813-c09eca9c587d',
   searchVector: '501862d6-de43-4dd5-a5ed-c7130d9652e0',
@@ -61,5 +61,16 @@ export const MKT_VARIANT_FIELD_IDS = {
   createdBy: 'e87d1e5d-e0f5-4ed0-ab23-3ebbb0a1beae',
   // TODO: check if this can be deleted
   mktProduct: '7cfa6d7b-db26-4fb5-9beb-3ec348f9fed7',
+  mktVariantAttribute: 'b57069ab-7e21-4823-a61f-8de0726bfbe1',
   searchVector: '1b50d19d-459d-466f-8560-c1ec12470936',
+};
+
+export const MKT_VARIANT_ATTRIBUTE_FIELD_IDS = {
+  name: '0a41f166-a5c1-43e4-ac72-d2249d4355a4',
+  position: 'e6b79bb3-f9cb-4795-958a-c8abb2e7d6d6',
+  createdBy: '050b0590-781a-42d9-90b5-bbc8cd902448',
+  // TODO: check if this can be deleted
+  mktVariant: 'fa8e0243-fd39-4bc2-a4ea-d27922bb99f7',
+  mktAttribute: 'd2b08210-69ab-4809-a73c-9b3a7898e037',
+  searchVector: '4d4928e3-c0f1-4bc7-a777-a051f54f0e3a',
 };

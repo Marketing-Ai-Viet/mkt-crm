@@ -21,6 +21,7 @@ import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspac
 
 import { MKT_OBJECT_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-object-ids';
 import { MKT_ATTRIBUTE_FIELD_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-field-ids';
+import {MktVariantAttributeWorkspaceEntity} from 'src/mkt-core/variant_attribute/mkt-variant-attribute.workspace-entity';
 import { MktValueWorkspaceEntity } from 'src/mkt-core/value/mkt-value.workspace-entity';
 
 const TABLE_ATTRIBUTE_NAME = 'mktAttribute';
@@ -113,6 +114,19 @@ export class MktAttributeWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('accountOwner')
   accountOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_ATTRIBUTE_FIELD_IDS.mktVariantAttributes,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variant Attributes`,
+    description: msg`Variant attributes of the attribute`,
+    icon: 'IconList',
+    inverseSideTarget: () => MktVariantAttributeWorkspaceEntity,
+    inverseSideFieldKey: 'mktAttribute',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVariantAttributes: Relation<MktVariantAttributeWorkspaceEntity>[];
 
   @WorkspaceField({
     standardId: MKT_ATTRIBUTE_FIELD_IDS.searchVector,

@@ -18,9 +18,10 @@ import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
-import { MKT_OBJECT_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-object-ids';
-import { MKT_VARIANT_FIELD_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-field-ids';
+import {MKT_VARIANT_FIELD_IDS} from 'src/mkt-core/dev-seeder/constants/mkt-field-ids';
+import {MKT_OBJECT_IDS} from 'src/mkt-core/dev-seeder/constants/mkt-object-ids';
+import {MktProductWorkspaceEntity} from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
+import {MktVariantAttributeWorkspaceEntity} from 'src/mkt-core/variant_attribute/mkt-variant-attribute.workspace-entity';
 
 const TABLE_ATTRIBUTE_NAME = 'mktVariant';
 const NAME_FIELD_NAME = 'name';
@@ -140,18 +141,18 @@ export class MktVariantWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktProduct')
   mktProductId: string | null;
   
-//   @WorkspaceRelation({
-//     standardId: MKT_OBJECT_IDS.variantAttributeValues,
-//     type: RelationType.ONE_TO_MANY,
-//     label: msg`Variant Attribute Values`,
-//     description: msg`Các giá trị thuộc tính của biến thể này`,
-//     icon: 'IconListDetails',
-//     inverseSideTarget: () => MktVariantAttributeValueWorkspaceEntity,
-//     inverseSideFieldKey: 'variant',
-//     onDelete: RelationOnDeleteAction.SET_NULL,
-//   })
-//   @WorkspaceIsNullable()
-//   variantAttributeValues: Relation<MktVariantAttributeValueWorkspaceEntity[]>;
+  @WorkspaceRelation({
+    standardId: MKT_VARIANT_FIELD_IDS.mktVariantAttribute,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variant Attributes`,
+    description: msg`Properties of this variant`,
+    icon: 'IconListDetails',
+    inverseSideTarget: () => MktVariantAttributeWorkspaceEntity,
+    inverseSideFieldKey: 'mktVariant',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVariantAttributes: Relation<MktVariantAttributeWorkspaceEntity[]>;
 
 @WorkspaceField({
     standardId: MKT_VARIANT_FIELD_IDS.searchVector,
