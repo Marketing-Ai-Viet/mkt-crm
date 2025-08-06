@@ -11,13 +11,32 @@ import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/compos
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
+import { MktAttributeWorkspaceEntity } from 'src/mkt-core/attribute/mkt-attribute.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+import { FieldTypeAndNameMetadata, getTsVectorColumnExpressionFromFields } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
+import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
+import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
+import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-object-ids';
 import { MKT_PRODUCT_FIELD_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-field-ids';
 
-export const TABLE_PRODUCT_NAME = 'mktProduct';
+const TABLE_PRODUCT_NAME = 'mktProduct';
+const NAME_FIELD_NAME = 'name';
+const DESCRIPTION_FIELD_NAME = 'description';
+const CATEGORY_FIELD_NAME = 'category';
+const SKU_FIELD_NAME = 'sku';
+
+export const SEARCH_FIELDS_FOR_MKT_PRODUCT: FieldTypeAndNameMetadata[] = [
+  { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
+  { name: DESCRIPTION_FIELD_NAME, type: FieldMetadataType.TEXT },
+  { name: CATEGORY_FIELD_NAME, type: FieldMetadataType.TEXT },
+  { name: SKU_FIELD_NAME, type: FieldMetadataType.TEXT },
+];
+
 export enum PRODUCT_TYPE {
   PHYSICAL = 'PHYSICAL',
   DIGITAL = 'DIGITAL',
@@ -36,7 +55,7 @@ export const PRODUCT_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
 ];
 
 @WorkspaceEntity({
-  standardId: MKT_OBJECT_IDS.product, 
+  standardId: MKT_OBJECT_IDS.mktProduct, 
   namePlural: `${TABLE_PRODUCT_NAME}s`,
   labelSingular: msg`Product`,
   labelPlural: msg`Products`,
@@ -44,7 +63,8 @@ export const PRODUCT_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
   icon: 'IconBox',
   labelIdentifierStandardId: MKT_PRODUCT_FIELD_IDS.name,
 })
-
+@WorkspaceDuplicateCriteria([['name'], ['sku']])  
+@WorkspaceIsSearchable()
 export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
     standardId: MKT_PRODUCT_FIELD_IDS.type,
@@ -195,4 +215,33 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   @WorkspaceIsSystem()
   timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PRODUCT_FIELD_IDS.mktAttributes,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Attributes`,
+    description: msg`List of product attributes`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktAttributeWorkspaceEntity,
+    inverseSideFieldKey: 'mktProduct',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktAttributes: Relation<MktAttributeWorkspaceEntity[]>;
+
+  @WorkspaceField({
+    standardId: MKT_PRODUCT_FIELD_IDS.searchVector,
+    type: FieldMetadataType.TS_VECTOR,
+    label: SEARCH_VECTOR_FIELD.label,
+    description: SEARCH_VECTOR_FIELD.description,
+    icon: 'IconUser',
+    generatedType: 'STORED',
+    asExpression: getTsVectorColumnExpressionFromFields(
+      SEARCH_FIELDS_FOR_MKT_PRODUCT,
+    ),
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  @WorkspaceFieldIndex({ indexType: IndexType.GIN })
+  searchVector: string;
 }

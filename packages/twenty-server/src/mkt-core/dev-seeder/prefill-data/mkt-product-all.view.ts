@@ -9,7 +9,7 @@ export const mktProductsAllView = (
   objectMetadataItems: ObjectMetadataEntity[],
 ) => {
   const productObjectMetadata = objectMetadataItems.find(
-    (object) => object.standardId === MKT_OBJECT_IDS.product,
+    (object) => object.standardId === MKT_OBJECT_IDS.mktProduct,
   );
 
   if (!productObjectMetadata) {

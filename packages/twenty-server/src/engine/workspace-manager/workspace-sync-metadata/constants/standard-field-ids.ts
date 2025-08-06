@@ -522,6 +522,7 @@ export const WORKSPACE_MEMBER_STANDARD_FIELD_IDS = {
   favorites: '20202020-f3c1-4faf-b343-cf7681038757',
   accountOwnerForCompanies: '20202020-dc29-4bd4-a3c1-29eafa324bee',
   accountOwnerForMktProducts: '43d6428b-dc09-48bd-9a66-e1d479e27050',
+  accountOwnerForMktAttributes: '43d6428b-dc09-48bd-9a66-e1d479e27051',
   authoredAttachments: '20202020-000f-4947-917f-1b09851024fe',
   authoredComments: '20202020-5536-4f59-b837-51c45ef43b05',
   connectedAccounts: '20202020-e322-4bde-a525-727079b4a100',
