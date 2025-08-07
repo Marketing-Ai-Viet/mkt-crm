@@ -38,7 +38,7 @@ export class SeedVariantModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed variant module for',
+    description: 'workspace id to seed product variant module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
@@ -72,39 +72,39 @@ export class SeedVariantModuleCommand extends CommandRunner {
     for (const workspace of workspaces) {
       try {
         await this.seedVariantModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All variants' sau khi seed
+        // Get viewId of view 'All Product Variants' after seed
         const mainDataSource = await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
         const viewRow = await mainDataSource
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All variants' })
+          .where('view.name = :name', { name: 'All Product Variants' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
         const variantViewId = viewRow?.id;
         if (variantViewId) {
-          // Insert mới variant với viewId này
+          // Insert new variant with viewId
           await mainDataSource
             .createQueryBuilder()
             .insert()
             .into(`${schemaName}.favorite`, ['viewId'])
             .values([{ viewId: variantViewId }])
             .execute();
-          this.logger.log(`✅ Inserted new variant record with viewId: ${variantViewId}`);
+          this.logger.log(`✅ Inserted new product variant record with viewId: ${variantViewId}`);
         } else {
-          this.logger.warn('⚠️ Could not find viewId for All variants view to update variant records');
+          this.logger.warn('⚠️ Could not find viewId for All Product Variants view to update product variant records');
         }
-        this.logger.log(`✅ Variant module seeded for workspace: ${workspace.id}`);
+        this.logger.log(`✅ Product Variant module seeded for workspace: ${workspace.id}`);
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
-        this.logger.error(`❌ Failed to seed variant module for workspace ${workspace.id}:`, error);
+        this.logger.error(`❌ Failed to seed product variant module for workspace ${workspace.id}:`, error);
       }
     }
   }
 
   private async seedVariantModuleForWorkspace(workspaceId: string): Promise<void> {
-    this.logger.log(`🚀 Starting variant module seeding for workspace ${workspaceId}`);
+    this.logger.log(`🚀 Starting product variant module seeding for workspace ${workspaceId}`);
 
     const mainDataSource = await this.workspaceDataSourceService.connectToMainDataSource();
     
@@ -120,30 +120,30 @@ export class SeedVariantModuleCommand extends CommandRunner {
     );
 
     this.logger.log(`🔍 Debug - All objects in workspace: ${objectMetadataItems.map(item => `${item.nameSingular}(${item.standardId})`).join(', ')}`);
-    this.logger.log(`🔍 Debug - Looking for variant object with nameSingular: 'mktVariant'`);
-    this.logger.log(`🔍 Debug - Variant object found: ${variantObjectMetadata ? 'YES' : 'NO'}`);
+    this.logger.log(`🔍 Debug - Looking for product variant object with nameSingular: 'mktVariant'`);
+    this.logger.log(`🔍 Debug - Product variant object found: ${variantObjectMetadata ? 'YES' : 'NO'}`);
 
     if (!variantObjectMetadata) {   
-      this.logger.log(`Variant object not found in workspace ${workspaceId}, skipping...`);
+      this.logger.log(`Product variant object not found in workspace ${workspaceId}, skipping...`);
       return;
     }
 
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     await mainDataSource.transaction(async (entityManager: WorkspaceEntityManager) => {
-      // Check if variant view already exists by looking for a view with name 'All Variants'
+      // Check if product variant view already exists by looking for a view with name 'All Product Variants'
       const existingView = await entityManager
         .createQueryBuilder(undefined, undefined, undefined, {
           shouldBypassPermissionChecks: true,
         })
         .select('*')
         .from(`${schemaName}.view`, 'view')
-        .where('view.name = :name', { name: 'All variants' })
+        .where('view.name = :name', { name: 'All Product Variants' })
         .andWhere('view.key = :key', { key: 'INDEX' })
         .getRawOne();
 
       if (existingView) {
-        this.logger.log(`Variant view already exists for workspace ${workspaceId}. Deleting and recreating...`);
+        this.logger.log(`Product variant view already exists for workspace ${workspaceId}. Deleting and recreating...`);
         
         // Delete existing view (cascade will delete viewFields)
         await entityManager
@@ -152,7 +152,7 @@ export class SeedVariantModuleCommand extends CommandRunner {
           })
           .delete()
           .from(`${schemaName}.view`)
-          .where('name = :name', { name: 'All variants' })
+          .where('name = :name', { name: 'All Product Variants' })
           .andWhere('key = :key', { key: 'INDEX' })
           .execute();
       }
@@ -163,7 +163,7 @@ export class SeedVariantModuleCommand extends CommandRunner {
       await prefillMktVariants(entityManager, schemaName);
       
       if (!variantViewDefinition) {
-        this.logger.log(`Could not create variant view definition for workspace ${workspaceId}`);
+        this.logger.log(`Could not create product variant view definition for workspace ${workspaceId}`);
         return;
       }
 
@@ -231,7 +231,7 @@ export class SeedVariantModuleCommand extends CommandRunner {
             })),
           )
           .execute();
-        this.logger.log(`✅ View fields created successfully`);
+        this.logger.log(`✅ Product Variant view fields created successfully`);
       }
 
       // Insert view filters if any
@@ -260,7 +260,7 @@ export class SeedVariantModuleCommand extends CommandRunner {
           .execute();
       }
 
-      this.logger.log(`✅ Variant view created for workspace ${workspaceId}`);
+      this.logger.log(`✅ Product Variant view created for workspace ${workspaceId}`);
     });
   }
 }

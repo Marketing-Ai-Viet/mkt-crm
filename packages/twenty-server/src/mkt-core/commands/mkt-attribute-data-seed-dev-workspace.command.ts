@@ -72,14 +72,14 @@ export class SeedAttributeModuleCommand extends CommandRunner {
     for (const workspace of workspaces) {
       try {
         await this.seedAttributeModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All attributes' sau khi seed
+        // Lấy viewId của view 'All Product Attributes' sau khi seed
         const mainDataSource = await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
         const viewRow = await mainDataSource
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All attributes' })
+          .where('view.name = :name', { name: 'All Product Attributes' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
         const attributeViewId = viewRow?.id;
@@ -93,7 +93,7 @@ export class SeedAttributeModuleCommand extends CommandRunner {
             .execute();
           this.logger.log(`✅ Inserted new attribute record with viewId: ${attributeViewId}`);
         } else {
-          this.logger.warn('⚠️ Could not find viewId for All attributes view to update attribute records');
+          this.logger.warn('⚠️ Could not find viewId for All Product Attributes view to update attribute records');
         }
         this.logger.log(`✅ Attribute module seeded for workspace: ${workspace.id}`);
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
@@ -131,14 +131,14 @@ export class SeedAttributeModuleCommand extends CommandRunner {
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     await mainDataSource.transaction(async (entityManager: WorkspaceEntityManager) => {
-      // Check if attribute view already exists by looking for a view with name 'All attributes'
+      // Check if attribute view already exists by looking for a view with name 'All Product Attributes'
       const existingView = await entityManager
         .createQueryBuilder(undefined, undefined, undefined, {
           shouldBypassPermissionChecks: true,
         })
         .select('*')
         .from(`${schemaName}.view`, 'view')
-        .where('view.name = :name', { name: 'All attributes' })
+        .where('view.name = :name', { name: 'All Product Attributes' })
         .andWhere('view.key = :key', { key: 'INDEX' })
         .getRawOne();
 
@@ -152,7 +152,7 @@ export class SeedAttributeModuleCommand extends CommandRunner {
           })
           .delete()
           .from(`${schemaName}.view`)
-          .where('name = :name', { name: 'All attributes' })
+          .where('name = :name', { name: 'All Product Attributes' })
           .andWhere('key = :key', { key: 'INDEX' })
           .execute();
       }

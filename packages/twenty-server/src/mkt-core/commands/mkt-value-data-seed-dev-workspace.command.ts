@@ -72,14 +72,14 @@ export class SeedValueModuleCommand extends CommandRunner {
     for (const workspace of workspaces) {
       try {
         await this.seedValueModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All values' sau khi seed
+        // Lấy viewId của view 'All Product Values' sau khi seed
         const mainDataSource = await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
         const viewRow = await mainDataSource
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All values' })
+          .where('view.name = :name', { name: 'All Product Values' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
         const valueViewId = viewRow?.id;
@@ -93,7 +93,7 @@ export class SeedValueModuleCommand extends CommandRunner {
             .execute();
           this.logger.log(`✅ Inserted new value record with viewId: ${valueViewId}`);
         } else {
-          this.logger.warn('⚠️ Could not find viewId for All values view to update value records');
+          this.logger.warn('⚠️ Could not find viewId for All Product Values view to update value records');
         }
         this.logger.log(`✅ Value module seeded for workspace: ${workspace.id}`);
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
@@ -131,14 +131,14 @@ export class SeedValueModuleCommand extends CommandRunner {
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     await mainDataSource.transaction(async (entityManager: WorkspaceEntityManager) => {
-      // Check if value view already exists by looking for a view with name 'All values'
+      // Check if value view already exists by looking for a view with name 'All Product Values'
       const existingView = await entityManager
         .createQueryBuilder(undefined, undefined, undefined, {
           shouldBypassPermissionChecks: true,
         })
         .select('*')
         .from(`${schemaName}.view`, 'view')
-        .where('view.name = :name', { name: 'All values' })
+        .where('view.name = :name', { name: 'All Product Values' })
         .andWhere('view.key = :key', { key: 'INDEX' })
         .getRawOne();
 
@@ -152,7 +152,7 @@ export class SeedValueModuleCommand extends CommandRunner {
           })
           .delete()
           .from(`${schemaName}.view`)
-          .where('name = :name', { name: 'All values' })
+          .where('name = :name', { name: 'All Product Values' })
           .andWhere('key = :key', { key: 'INDEX' })
           .execute();
       }

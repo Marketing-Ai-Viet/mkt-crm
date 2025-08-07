@@ -12,11 +12,11 @@ export const mktVariantAttributesAllView = (
   );
 
   if (!valueObjectMetadata) {
-    throw new Error('Product Variant Attribute object metadata not found');
+    throw new Error('Variant Attribute object metadata not found');
   }
 
   return {
-    name: 'All Product Variant Attributes',
+    name: 'All Variant Attributes',
     objectMetadataId: valueObjectMetadata.id ?? '',
     type: 'table',
     key: 'INDEX',
