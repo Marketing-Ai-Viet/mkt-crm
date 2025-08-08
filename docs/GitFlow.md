@@ -54,16 +54,25 @@ Git Flow là một mô hình phân nhánh Git được thiết kế để quản
 2. **Ghi nhận Issue ID** (ví dụ: `#123`)
    - GitHub tự động tạo ID số tự tăng
    - Sử dụng ID này trong branch name và commit message
+   - **BẮT BUỘC**: Sử dụng Issue ID này làm tiền tố cho task trên Lark
 
-3. **Phân loại issue theo loại:**
+3. **Tạo task trên Lark với Issue ID làm tiền tố:**
+   - **Format bắt buộc**: `#[issue-id] - [mô tả task trên Lark]`
+   - **Ví dụ**: 
+     - GitHub Issue #123: "Implement user authentication system"
+     - Lark Task: "#123 - Phát triển hệ thống xác thực người dùng"
+   - **Lưu ý**: Task trên Lark phải được tạo CHỈ SAU KHI đã có GitHub Issue
+
+4. **Phân loại issue theo loại:**
    - **Feature Issue**: Issue cha cho một tính năng lớn
    - **Task Issue**: Các nhiệm vụ con thuộc feature
    - **Bug Issue**: Báo cáo và sửa lỗi
    - **Enhancement**: Cải thiện tính năng hiện có
 
-4. **Liên kết các issue liên quan:**
+5. **Liên kết các issue liên quan:**
    - Sử dụng "Related to #124" để liên kết
    - Tạo project board để tracking progress
+   - Đồng bộ trạng thái giữa GitHub Issue và Lark Task
 
 ### Bước 2: Tạo nhánh Feature
 
@@ -483,7 +492,8 @@ git push --force-with-lease origin task/johndoe-128-login-validation
 ```mermaid
 flowchart TD
     A[📋 Tạo Issue trên GitHub] --> B[🔍 Lấy Issue ID: #123]
-    B --> C{🤔 Task thuộc Feature nào?}
+    B --> B1[📝 Tạo Task trên Lark<br/>#123 - Mô tả task]
+    B1 --> C{🤔 Task thuộc Feature nào?}
     
     C -->|Feature mới| D[🌿 Tạo Feature Branch<br/>feature/johndoe-123-user-auth]
     C -->|Feature có sẵn| E[🔄 Checkout Feature Branch hiện tại]
@@ -720,13 +730,46 @@ sequenceDiagram
   GH->>TEAM: Progress report
 ```
 
+## Quy trình tích hợp GitHub - Lark
+
+### Tại sao phải tạo GitHub Issue trước?
+
+1. **Tính nhất quán**: Đảm bảo mọi công việc đều có documentation và tracking trên GitHub
+2. **Truy vết nguồn gốc**: Mỗi thay đổi code đều liên kết với một issue cụ thể
+3. **Quản lý project**: Sử dụng GitHub Project Boards để theo dõi tiến độ
+4. **Integration**: Tự động đóng issues khi merge PR với commit message "Closes #123"
+5. **Báo cáo**: Dễ dàng tạo báo cáo từ GitHub issues và commits
+
+### Workflow tích hợp GitHub - Lark
+
+```mermaid
+flowchart LR
+    A[👤 Product Owner<br/>tạo requirement] --> B[📋 GitHub Issue<br/>#123 - Feature A]
+    B --> C[📝 Lark Task<br/>#123 - Phát triển Feature A]
+    C --> D[👨‍💻 Developer<br/>làm việc trên code]
+    D --> E[💻 Git Branch<br/>feature/dev-123-feature-a]
+    E --> F[🔀 Pull Request<br/>Closes #123]
+    F --> G[✅ Merge<br/>Tự động đóng Issue #123]
+    G --> H[📊 Lark Task<br/>Cập nhật hoàn thành]
+```
+
+### Lưu ý quan trọng về quy trình
+
+- **Không được** tạo task trên Lark mà không có GitHub Issue trước
+- **Phải sử dụng** Issue ID làm tiền tố cho task trên Lark
+- **Đồng bộ trạng thái** giữa GitHub Issue và Lark Task
+- **Commit message** phải reference đến Issue ID
+- **Pull Request** phải link đến Issue để tự động đóng
+
 ## Kết luận
 
 Git Flow này giúp đảm bảo:
 - **Tổ chức code rõ ràng** theo từng tính năng và task
-- **Truy vết được nguồn gốc** của mỗi thay đổi
+- **Truy vết được nguồn gốc** của mỗi thay đổi thông qua GitHub Issues
 - **Kiểm soát chất lượng** thông qua code review
 - **Phát triển song song** nhiều tính năng
 - **Release ổn định** và có thể rollback
+- **Tích hợp hoàn chỉnh** giữa GitHub và Lark cho quản lý project
+- **Workflow nhất quán** từ planning đến deployment
 
-Tuân thủ quy trình này sẽ giúp team làm việc hiệu quả và giảm thiểu conflicts trong quá trình phát triển.
+Tuân thủ quy trình này sẽ giúp team làm việc hiệu quả, giảm thiểu conflicts trong quá trình phát triển, và đảm bảo mọi công việc đều được tracking và documented đầy đủ.
