@@ -169,18 +169,8 @@ Dự án sử dụng **Husky** để tự động chạy code quality checks tr�
 ### Các script kiểm tra code quality:
 
 ```bash
-# Kiểm tra (không sửa)
-yarn run format:check          # Kiểm tra format Prettier
-yarn run lint                  # Kiểm tra ESLint
-yarn run type-check            # Kiểm tra TypeScript
-
 # Sửa tự động
-yarn run format               # Format tất cả files với Prettier  
-yarn run lint:fix             # Fix ESLint issues tự động
 yarn run fix:changed          # Fix chỉ files đã thay đổi (recommend)
-
-# Combo commands
-yarn run lint:ts              # TypeScript check + ESLint fix
 ```
 
 ### Workflow với Code Quality:
