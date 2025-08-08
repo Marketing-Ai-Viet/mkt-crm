@@ -33,21 +33,46 @@ Git Flow là một mô hình phân nhánh Git được thiết kế để quản
 
 #### 4. `feature/*`
 - **Mục đích**: Phát triển các tính năng cụ thể
-- **Quy tắc đặt tên**: `feature/[github-username]-[larkid]-[mô-tả-ngắn]`
+- **Quy tắc đặt tên**: `feature/[github-username]-[issue-id]-[mô-tả-ngắn]`
 - **Chu trình**: Tạo từ `develop` → Merge về `develop`
 
 #### 5. `task/*`
 - **Mục đích**: Thực hiện các task cụ thể trong feature
-- **Quy tắc đặt tên**: `task/[github-username]-[larkid]-[mô-tả-ngắn]`
+- **Quy tắc đặt tên**: `task/[github-username]-[issue-id]-[mô-tả-ngắn]`
 - **Chu trình**: Tạo từ nhánh `feature` → Merge về nhánh `feature`
 
 ## Quy trình làm việc chi tiết
 
-### Bước 1: Tạo và quản lý Task trên Larksuite
+### Bước 1: Tạo và quản lý Issue trên GitHub
 
-1. **Tạo task mới** trên Larksuite với mô tả chi tiết
-2. **Ghi nhận Task ID** (ví dụ: `12345`)
-3. **Phân loại task** thuộc feature nào
+1. **Tạo issue mới** trên GitHub repository với mô tả chi tiết
+   - Sử dụng template issue nếu có
+   - Gắn labels phù hợp: `feature`, `bug`, `enhancement`, `task`
+   - Assign cho developer phụ trách
+   - Đặt milestone cho sprint/release
+
+2. **Ghi nhận Issue ID** (ví dụ: `#123`)
+   - GitHub tự động tạo ID số tự tăng
+   - Sử dụng ID này trong branch name và commit message
+   - **BẮT BUỘC**: Sử dụng Issue ID này làm tiền tố cho task trên Lark
+
+3. **Tạo task trên Lark với Issue ID làm tiền tố:**
+   - **Format bắt buộc**: `#[issue-id] - [mô tả task trên Lark]`
+   - **Ví dụ**: 
+     - GitHub Issue #123: "Implement user authentication system"
+     - Lark Task: "#123 - Phát triển hệ thống xác thực người dùng"
+   - **Lưu ý**: Task trên Lark phải được tạo CHỈ SAU KHI đã có GitHub Issue
+
+4. **Phân loại issue theo loại:**
+   - **Feature Issue**: Issue cha cho một tính năng lớn
+   - **Task Issue**: Các nhiệm vụ con thuộc feature
+   - **Bug Issue**: Báo cáo và sửa lỗi
+   - **Enhancement**: Cải thiện tính năng hiện có
+
+5. **Liên kết các issue liên quan:**
+   - Sử dụng "Related to #124" để liên kết
+   - Tạo project board để tracking progress
+   - Đồng bộ trạng thái giữa GitHub Issue và Lark Task
 
 ### Bước 2: Tạo nhánh Feature
 
@@ -56,35 +81,35 @@ Git Flow là một mô hình phân nhánh Git được thiết kế để quản
 git checkout develop
 git pull origin develop
 
-# Tạo nhánh feature mới với tên GitHub và Lark ID
-git checkout -b feature/johndoe-12300-user-authentication
-git push -u origin feature/johndoe-12300-user-authentication
+# Tạo nhánh feature mới với tên GitHub và Issue ID
+git checkout -b feature/johndoe-123-user-authentication
+git push -u origin feature/johndoe-123-user-authentication
 ```
 
 **Quy tắc đặt tên nhánh Feature:**
-- `feature/johndoe-12300-user-management` - Quản lý người dùng
-- `feature/janesmith-12301-api-integration` - Tích hợp API
-- `feature/mikewilson-12302-dashboard-ui` - Giao diện dashboard
-- `feature/alicebrown-12303-payment-system` - Hệ thống thanh toán
-- `feature/davidlee-12304-notification-service` - Dịch vụ thông báo
+- `feature/johndoe-123-user-management` - Quản lý người dùng
+- `feature/janesmith-124-api-integration` - Tích hợp API
+- `feature/mikewilson-125-dashboard-ui` - Giao diện dashboard
+- `feature/alicebrown-126-payment-system` - Hệ thống thanh toán
+- `feature/davidlee-127-notification-service` - Dịch vụ thông báo
 
 ### Bước 3: Tạo nhánh Task từ Feature
 
 ```bash
 # Đảm bảo đang ở nhánh feature
-git checkout feature/johndoe-12300-user-authentication
-git pull origin feature/johndoe-12300-user-authentication
+git checkout feature/johndoe-123-user-authentication
+git pull origin feature/johndoe-123-user-authentication
 
-# Tạo nhánh task với GitHub username và ID từ Larksuite
-git checkout -b task/johndoe-12345-login-validation
-git push -u origin task/johndoe-12345-login-validation
+# Tạo nhánh task với GitHub username và Issue ID
+git checkout -b task/johndoe-128-login-validation
+git push -u origin task/johndoe-128-login-validation
 ```
 
 **Quy tắc đặt tên nhánh Task:**
-- `task/johndoe-12345-login-form` - Form đăng nhập
-- `task/janesmith-12346-password-reset` - Reset mật khẩu
-- `task/mikewilson-12347-oauth-integration` - Tích hợp OAuth
-- `task/alicebrown-12348-user-profile-api` - API thông tin người dùng
+- `task/johndoe-128-login-form` - Form đăng nhập
+- `task/janesmith-129-password-reset` - Reset mật khẩu
+- `task/mikewilson-130-oauth-integration` - Tích hợp OAuth
+- `task/alicebrown-131-user-profile-api` - API thông tin người dùng
 
 ### Bước 4: Phát triển và Commit Code
 
@@ -92,7 +117,20 @@ git push -u origin task/johndoe-12345-login-validation
 # Thực hiện thay đổi code
 # ...
 
-# Commit với message rõ ràng
+# Kiểm tra code quality trước khi commit
+yarn run fix-twenty-server # Sử dụng khi dùng window và ko sử dụng git bash
+
+# Kiểm tra và fix code quality trước commit
+yarn run format:check          # Kiểm tra format
+yarn run lint                 # Kiểm tra linting
+yarn run type-check           # Kiểm tra TypeScript
+
+# Hoặc fix tự động các lỗi có thể fix được
+yarn run format              # Format tất cả files
+yarn run lint:fix            # Fix ESLint issues tự động
+yarn run fix:changed         # Fix chỉ files thay đổi (nhanh hơn)
+
+# Commit với message rõ ràng (Husky sẽ tự động chạy pre-commit hooks)
 git add .
 git commit -m "feat(auth): implement login validation logic
 
@@ -101,10 +139,10 @@ git commit -m "feat(auth): implement login validation logic
 - Handle authentication errors
 - Update tests for login component
 
-Task: 12345"
+Closes #128"
 
 # Đẩy code lên remote
-git push origin task/johndoe-12345-login-validation
+git push origin task/johndoe-128-login-validation
 ```
 
 **Quy tắc Commit Message:**
@@ -113,7 +151,8 @@ git push origin task/johndoe-12345-login-validation
 
 <body>
 
-Task: <larksuite-id>
+Closes #<issue-id>
+Refs #<parent-feature-issue-id> (nếu là task thuộc feature)
 ```
 
 **Các loại commit:**
@@ -125,6 +164,87 @@ Task: <larksuite-id>
 - `test`: Thêm hoặc sửa tests
 - `chore`: Cập nhật build tools, dependencies
 
+**Lưu ý về GitHub Issues:**
+- Sử dụng `Closes #123` để tự động đóng issue khi merge PR
+- Sử dụng `Refs #124` để tham chiếu đến feature issue mà không đóng nó
+- Có thể tham chiếu nhiều issue: `Closes #123, Refs #124`
+
+## Code Quality Tools và Pre-commit Hooks
+
+Dự án sử dụng **Husky** để tự động chạy code quality checks trước khi commit:
+
+### Pre-commit Hooks tự động chạy:
+1. **Prettier** - Format code tự động
+2. **ESLint** - Kiểm tra và fix các lỗi có thể sửa được
+3. **TypeScript** - Kiểm tra type checking
+
+### Các script kiểm tra code quality:
+
+```bash
+# Sửa tự động
+yarn run fix:changed          # Fix chỉ files đã thay đổi (recommend)
+```
+
+### Workflow với Code Quality:
+
+```bash
+# Trước khi commit (tùy chọn - Husky sẽ tự động chạy)
+yarn run fix:changed          # Fix các files thay đổi
+
+# Commit (Husky tự động chạy pre-commit hooks)
+git add .
+git commit -m "feat: your commit message"
+
+# Nếu commit bị chặn do lỗi ESLint errors:
+yarn run lint:fix             # Fix lỗi
+git add .                      # Stage lại files đã fix
+git commit -m "feat: your commit message"  # Commit lại
+```
+
+### Quy tắc chặn commit:
+- ✅ **ESLint warnings**: Được phép, không chặn commit
+- ❌ **ESLint errors**: Bị chặn, phải fix trước khi commit
+- ❌ **Prettier formatting**: Tự động fix, không chặn
+- ❌ **TypeScript errors**: Được kiểm tra nhưng không chặn commit
+
+### Troubleshooting - Khi commit bị chặn:
+
+**Lỗi: "ESLint errors found - blocking commit"**
+```bash
+# Fix lỗi ESLint tự động
+yarn run lint:fix
+
+# Hoặc fix chỉ files thay đổi
+yarn run fix:changed
+
+# Stage lại và commit
+git add .
+git commit -m "your message"
+```
+
+**Lỗi: "No parser could be inferred for file"**
+```bash
+# Thường xảy ra với yarn.lock, package-lock.json
+# Đã được fix trong script fix:changed
+yarn run fix:changed  # Script đã loại trừ các file không cần thiết
+```
+
+**Lỗi TypeScript compilation**
+```bash
+# Kiểm tra lỗi TypeScript
+yarn run type-check
+
+# Fix theo từng package
+npx nx typecheck twenty-front
+npx nx typecheck twenty-server
+```
+
+**Skip pre-commit hooks (không khuyến khích)**
+```bash
+# Chỉ sử dụng trong trường hợp khẩn cấp
+git commit -m "emergency fix" --no-verify
+```
+
 ### Bước 5: Tạo Pull Request và Merge
 
 #### 5.1: Merge Task → Feature
@@ -134,18 +254,18 @@ Task: <larksuite-id>
 # Review code và merge
 
 # Sau khi merge, xóa nhánh task
-git checkout feature/johndoe-12300-user-authentication
-git pull origin feature/johndoe-12300-user-authentication
-git branch -d task/johndoe-12345-login-validation
-git push origin --delete task/johndoe-12345-login-validation
+git checkout feature/johndoe-123-user-authentication
+git pull origin feature/johndoe-123-user-authentication
+git branch -d task/johndoe-128-login-validation
+git push origin --delete task/johndoe-128-login-validation
 ```
 
 #### 5.2: Merge Feature → Develop
 
 ```bash
 # Đảm bảo feature hoàn thành và đã test
-git checkout feature/johndoe-12300-user-authentication
-git pull origin feature/johndoe-12300-user-authentication
+git checkout feature/johndoe-123-user-authentication
+git pull origin feature/johndoe-123-user-authentication
 
 # Tạo Pull Request từ feature về develop
 # Review code, chạy CI/CD và merge
@@ -153,8 +273,8 @@ git pull origin feature/johndoe-12300-user-authentication
 # Sau khi merge, xóa nhánh feature
 git checkout develop
 git pull origin develop
-git branch -d feature/johndoe-12300-user-authentication
-git push origin --delete feature/johndoe-12300-user-authentication
+git branch -d feature/johndoe-123-user-authentication
+git push origin --delete feature/johndoe-123-user-authentication
 ```
 
 #### 5.3: Merge Develop → Release
@@ -176,13 +296,13 @@ git push -u origin release/v1.2.0
 
 ### Format chung
 ```
-feature/[github-username]-[larkid]-[mô-tả-ngắn]
-task/[github-username]-[larkid]-[mô-tả-ngắn]
+feature/[github-username]-[issue-id]-[mô-tả-ngắn]
+task/[github-username]-[issue-id]-[mô-tả-ngắn]
 ```
 
 ### Quy tắc chi tiết
 - **GitHub username**: Tên username chính xác trên GitHub (giữ nguyên format)
-- **Lark ID**: Mã ID từ Larksuite (ví dụ: 12345) - chỉ số, không prefix
+- **Issue ID**: Mã ID của GitHub Issue (ví dụ: 123) - chỉ số, không dấu #
 - **Mô tả ngắn**: Tóm tắt nội dung bằng tiếng Anh, dùng dấu gạch nối `-`
 - **Chữ thường**: Mô tả viết thường, không dấu cách
 - **Dấu phân cách**: Sử dụng dấu gạch nối `-` giữa các phần
@@ -198,14 +318,14 @@ task/[github-username]-[larkid]-[mô-tả-ngắn]
 
 ### Ví dụ tên nhánh hoàn chỉnh
 **Feature branches:**
-- `feature/johndoe-12300-user-authentication`
-- `feature/janesmith-12301-payment-integration`
-- `feature/mikewilson-12302-dashboard-redesign`
+- `feature/johndoe-123-user-authentication`
+- `feature/janesmith-124-payment-integration`
+- `feature/mikewilson-125-dashboard-redesign`
 
 **Task branches:**
-- `task/johndoe-12345-login-form-validation`
-- `task/alice-brown-12346-password-reset-api`
-- `task/davidlee91-12347-oauth-google-integration`
+- `task/johndoe-128-login-form-validation`
+- `task/alice-brown-129-password-reset-api`
+- `task/davidlee91-130-oauth-google-integration`
 
 ### Quy tắc đặt tên và Lưu ý
 
@@ -260,7 +380,7 @@ Khi tạo Merge Request từ feature → develop mà gặp conflicts, **luôn s�
 
 ```bash
 # Bước 1: Checkout về nhánh feature
-git checkout feature/johndoe-LS-12300-user-authentication
+git checkout feature/johndoe-123-user-authentication
 git fetch origin
 
 # Bước 2: Rebase từ develop để cập nhật
@@ -330,7 +450,7 @@ git rebase -i origin/develop
 # Chọn "squash" cho các commits liên quan để giảm conflicts
 
 # Backup branch trước khi rebase (an toàn)
-git branch backup-feature-johndoe-LS-12300
+git branch backup-feature-johndoe-123
 git rebase origin/develop
 ```
 
@@ -340,40 +460,48 @@ git rebase origin/develop
 # Kiểm tra log để đảm bảo history đúng
 git log --oneline -10
 
-# Test lại application
-npm test
-npm run build
+# Test lại application và code quality
+yarn run format:check          # Kiểm tra format
+yarn run lint                  # Kiểm tra linting  
+yarn run type-check            # Kiểm tra TypeScript
+
+# Hoặc sử dụng Nx commands cụ thể cho từng package
+npx nx test twenty-front        # Test frontend
+npx nx test twenty-server       # Test backend
+npx nx build twenty-front       # Build frontend
+npx nx build twenty-server      # Build backend
 
 # Push và kiểm tra MR
-git push --force-with-lease origin feature/johndoe-LS-12300-user-authentication
+git push --force-with-lease origin feature/johndoe-123-user-authentication
 ```
 
 ### Cập nhật nhánh từ base
 
 ```bash
 # Cập nhật task từ feature
-git checkout task/johndoe-12345-login-validation
+git checkout task/johndoe-128-login-validation
 git fetch origin
-git rebase origin/feature/johndoe-12300-user-authentication
+git rebase origin/feature/johndoe-123-user-authentication
 
 # Nếu có conflicts, giải quyết và tiếp tục
 git rebase --continue
-git push --force-with-lease origin task/johndoe-12345-login-validation
+git push --force-with-lease origin task/johndoe-128-login-validation
 ```
 
 ## Sơ đồ Git Flow
 
-### Workflow chi tiết từ Larksuite đến Deploy
+### Workflow chi tiết từ GitHub Issues đến Deploy
 
 ```mermaid
 flowchart TD
-    A[📋 Tạo Task trên Larksuite] --> B[🔍 Lấy Task ID: 12345]
-    B --> C{🤔 Task thuộc Feature nào?}
+    A[📋 Tạo Issue trên GitHub] --> B[🔍 Lấy Issue ID: #123]
+    B --> B1[📝 Tạo Task trên Lark<br/>#123 - Mô tả task]
+    B1 --> C{🤔 Task thuộc Feature nào?}
     
-    C -->|Feature mới| D[🌿 Tạo Feature Branch<br/>feature/johndoe-12300-user-auth]
+    C -->|Feature mới| D[🌿 Tạo Feature Branch<br/>feature/johndoe-123-user-auth]
     C -->|Feature có sẵn| E[🔄 Checkout Feature Branch hiện tại]
     
-    D --> F[🌱 Tạo Task Branch<br/>task/johndoe-12345-login-form]
+    D --> F[🌱 Tạo Task Branch<br/>task/johndoe-128-login-form]
     E --> F
     
     F --> G[💻 Phát triển Code]
@@ -502,23 +630,23 @@ graph TB
     end
     
     subgraph "👤 johndoe Features"
-        F1[feature/johndoe-12300-user-auth<br/>🌿 User Authentication]
-        F2[feature/johndoe-12400-dashboard<br/>🌿 Dashboard UI]
+        F1[feature/johndoe-123-user-auth<br/>🌿 User Authentication]
+        F2[feature/johndoe-140-dashboard<br/>🌿 Dashboard UI]
     end
     
     subgraph "👤 janesmith Features"
-        F3[feature/janesmith-12301-payment<br/>🌿 Payment System]
+        F3[feature/janesmith-124-payment<br/>🌿 Payment System]
     end
     
     subgraph "📋 johndoe Tasks"
-        T1[task/johndoe-12345-login-form<br/>📝 Login Form]
-        T2[task/johndoe-12346-auth-api<br/>📝 Auth API]
-        T3[task/johndoe-12347-jwt-logic<br/>📝 JWT Logic]
+        T1[task/johndoe-128-login-form<br/>📝 Login Form]
+        T2[task/johndoe-129-auth-api<br/>📝 Auth API]
+        T3[task/johndoe-130-jwt-logic<br/>📝 JWT Logic]
     end
     
     subgraph "📋 janesmith Tasks"
-        T4[task/janesmith-12348-stripe-integration<br/>📝 Stripe Integration]
-        T5[task/janesmith-12349-payment-ui<br/>📝 Payment UI]
+        T4[task/janesmith-131-stripe-integration<br/>📝 Stripe Integration]
+        T5[task/janesmith-132-payment-ui<br/>📝 Payment UI]
     end
     
     %% Flow arrows
@@ -562,94 +690,89 @@ graph TB
     class T1,T2,T3,T4,T5 taskBranch
 ```
 
-### Timeline phát triển dự án
-
-```mermaid
-timeline
-    title Git Flow Timeline - Phát triển dự án
-    
-    section Sprint Planning
-        Tuần 1 : Tạo Tasks trên Larksuite
-               : Phân chia Features cho team
-               : Setup Git Flow
-    
-    section Development Phase
-        Tuần 2 : Tạo Feature branches
-               : Bắt đầu Task branches
-               : Daily rebase & sync
-        
-        Tuần 3 : Code Review & Merge tasks
-               : Integration testing
-               : Fix conflicts & bugs
-        
-        Tuần 4 : Complete features
-               : Merge to develop
-               : Prepare for release
-    
-    section Release Phase
-        Tuần 5 : Create release branch
-               : Final testing & bug fixes
-               : Deploy to staging
-        
-        Tuần 6 : Merge to main
-               : Deploy to production
-               : Tag release version
-    
-    section Post Release
-        Tuần 7 : Monitor production
-               : Hotfix if needed
-               : Plan next sprint
-```
 
 ### Quy trình Daily Workflow
 
 ```mermaid
 sequenceDiagram
-  participant LS as 📋 Larksuite
+  participant GH as 📋 GitHub Issues
   participant DEV as 👨‍💻 Developer
   participant LOCAL as 💻 Local Git
   participant REMOTE as ☁️ Remote Git
   participant TEAM as 👥 Team
 
-  Note over LS,TEAM: 🌅 Morning Routine
+  Note over GH,TEAM: 🌅 Morning Routine
 
-  LS->>DEV: Check assigned tasks
-  DEV->>LOCAL: git checkout task/johndoe-12345
+  GH->>DEV: Check assigned issues
+  DEV->>LOCAL: git checkout task/johndoe-128
   LOCAL->>REMOTE: git fetch origin
-  LOCAL->>LOCAL: git rebase origin/feature/johndoe-12300
+  LOCAL->>LOCAL: git rebase origin/feature/johndoe-123
 
   Note over DEV,LOCAL: 💻 Development Work
 
   DEV->>LOCAL: Code implementation
   LOCAL->>LOCAL: git add . && git commit
-  LOCAL->>REMOTE: git push origin task/johndoe-12345
+  LOCAL->>REMOTE: git push origin task/johndoe-128
 
   Note over DEV,TEAM: 🔄 Collaboration
 
   DEV->>TEAM: Create Pull Request
   TEAM->>DEV: Code Review feedback
   DEV->>LOCAL: Apply feedback
-  LOCAL->>REMOTE: git push origin task/johndoe-12345
+  LOCAL->>REMOTE: git push origin task/johndoe-128
 
   Note over TEAM,REMOTE: ✅ Integration
 
   TEAM->>REMOTE: Approve & Merge
   REMOTE->>REMOTE: task → feature → develop
-  DEV->>LOCAL: git branch -d task/johndoe-12345
+  DEV->>LOCAL: git branch -d task/johndoe-128
 
-  Note over LS,TEAM: 🌆 End of Day
+  Note over GH,TEAM: 🌆 End of Day
 
-  DEV->>LS: Update task status
-  LS->>TEAM: Progress report
+  DEV->>GH: Update issue status
+  GH->>TEAM: Progress report
 ```
+
+## Quy trình tích hợp GitHub - Lark
+
+### Tại sao phải tạo GitHub Issue trước?
+
+1. **Tính nhất quán**: Đảm bảo mọi công việc đều có documentation và tracking trên GitHub
+2. **Truy vết nguồn gốc**: Mỗi thay đổi code đều liên kết với một issue cụ thể
+3. **Quản lý project**: Sử dụng GitHub Project Boards để theo dõi tiến độ
+4. **Integration**: Tự động đóng issues khi merge PR với commit message "Closes #123"
+5. **Báo cáo**: Dễ dàng tạo báo cáo từ GitHub issues và commits
+
+### Workflow tích hợp GitHub - Lark
+
+```mermaid
+flowchart LR
+    A[👤 Product Owner<br/>tạo requirement] --> B[📋 GitHub Issue<br/>#123 - Feature A]
+    B --> C[📝 Lark Task<br/>#123 - Phát triển Feature A]
+    C --> D[👨‍💻 Developer<br/>làm việc trên code]
+    D --> E[💻 Git Branch<br/>feature/dev-123-feature-a]
+    E --> F[🔀 Pull Request<br/>Closes #123]
+    F --> G[✅ Merge<br/>Tự động đóng Issue #123]
+    G --> H[📊 Lark Task<br/>Cập nhật hoàn thành]
+```
+
+### Lưu ý quan trọng về quy trình
+
+- **Không được** tạo task trên Lark mà không có GitHub Issue trước
+- **Phải sử dụng** Issue ID làm tiền tố cho task trên Lark
+- **Đồng bộ trạng thái** giữa GitHub Issue và Lark Task
+- **Commit message** phải reference đến Issue ID
+- **Pull Request** phải link đến Issue để tự động đóng
 
 ## Kết luận
 
 Git Flow này giúp đảm bảo:
 - **Tổ chức code rõ ràng** theo từng tính năng và task
-- **Truy vết được nguồn gốc** của mỗi thay đổi
+- **Truy vết được nguồn gốc** của mỗi thay đổi thông qua GitHub Issues
 - **Kiểm soát chất lượng** thông qua code review
 - **Phát triển song song** nhiều tính năng
 - **Release ổn định** và có thể rollback
+- **Tích hợp hoàn chỉnh** giữa GitHub và Lark cho quản lý project
+- **Workflow nhất quán** từ planning đến deployment
 
-Tuân thủ quy trình này sẽ giúp team làm việc hiệu quả và giảm thiểu conflicts trong quá trình phát triển.
+Tuân thủ quy trình này sẽ giúp team làm việc hiệu quả, giảm thiểu conflicts trong quá trình phát triển, và đảm bảo mọi công việc đều được tracking và documented đầy đủ.
