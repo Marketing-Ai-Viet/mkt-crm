@@ -117,6 +117,9 @@ git push -u origin task/johndoe-128-login-validation
 # Thực hiện thay đổi code
 # ...
 
+# Kiểm tra code quality trước khi commit
+yarn run fix-twenty-server # Sử dụng khi dùng window và ko sử dụng git bash
+
 # Kiểm tra và fix code quality trước commit
 yarn run format:check          # Kiểm tra format
 yarn run lint                 # Kiểm tra linting
