@@ -30,13 +30,15 @@ export const MKT_PRODUCT_FIELD_IDS = {
 };
 
 export const MKT_ATTRIBUTE_FIELD_IDS = {
+  // fields
   name: '3b51b01f-a14b-4b2a-94d3-14c8de478175',
-  position: 'e6d77b37-d693-4e1a-bc40-c036865710ad',
-  createdBy: '7fdc0236-4b38-4be2-af20-291b138c5f94',
-  // TODO: check if this can be deleted
-  mktProduct: '2ed27de7-4f70-4af2-82e3-6c987561b06e',
+  description: 'dc049ccf-0bb2-4a07-bd98-47bac689e918',
+  // relations
   mktValues: '93bf64b2-6d26-4f82-b504-9ec6c804d1f8',
   mktVariantAttributes: 'b92536b2-59bd-46d3-bb78-7525d51b0570',
+  // common relations or fields
+  position: 'e6d77b37-d693-4e1a-bc40-c036865710ad',
+  createdBy: '7fdc0236-4b38-4be2-af20-291b138c5f94',
   accountOwner: 'dd99e723-8fc6-48fc-8bd1-e9d3001f2aab',
   timelineActivities: 'd64fa54f-30dd-40ff-9813-c09eca9c587d',
   searchVector: '501862d6-de43-4dd5-a5ed-c7130d9652e0',
