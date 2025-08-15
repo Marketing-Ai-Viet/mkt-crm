@@ -39,6 +39,7 @@ import {
   MKT_ORDER_ITEM_DATA_SEED_COLUMNS,
   MKT_ORDER_ITEM_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-order-item-data-seeds.constants';
+import { MKT_TEMPLATE_DATA_SEED_COLUMNS,MKT_TEMPLATE_DATA_SEEDS } from 'src/mkt-core/dev-seeder/constants/mkt-template-data-seeds.constants';
 export const MKT_RECORD_SEEDS_CONFIGS = [
   // Product configs
   {
@@ -65,6 +66,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktVariantAttribute',
     pgColumns: MKT_VARIANT_ATTRIBUTE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_VARIANT_ATTRIBUTE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktTemplate',
+    pgColumns: MKT_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_TEMPLATE_DATA_SEEDS,
   },
   {
     tableName: 'mktOrder',

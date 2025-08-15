@@ -151,7 +151,7 @@ export const MKT_INVOICE_FIELD_IDS = {
   sInvoiceCode: '671561b1-ddf5-4a31-a66e-969135648638',
   sentAt: '0adeb47b-0c7d-43ec-890f-19ecf8e3714a',
   // relations
-
+  mktTemplate: '768581ac-7240-4fd1-bc4c-6a49445d8ad0',
   mktOrder: '3cf48a8e-fa6d-41c2-bcb9-302e90dbe03c',
 
   // common relations or fields
@@ -160,6 +160,24 @@ export const MKT_INVOICE_FIELD_IDS = {
   accountOwner: '244704b8-1beb-400e-be86-ebc92c165a07',
   timelineActivities: 'fafa89ea-f3d3-439e-a3c2-8d42939aa6e8',
   searchVector: '7df8f89a-374c-4ba1-8326-a8a78c5d6b6c',
+};
+
+export const MKT_TEMPLATE_FIELD_IDS = {
+  //fields
+  name: '9b5a19c7-fa6c-4a31-ab8f-7e0e83fb678b',
+  type: '35760f3b-3bb8-48df-9eef-1ca4c05f12c7',
+  content: '3a3b49a8-6fed-4f99-a8c2-d3df9a4efa09',
+  version: '2e6ade87-6f35-4dbc-8eb0-c3f4b25dc5c8',
+
+  //relations
+  mktContracts: '5ff3cd2e-32f0-48f8-8196-2c879e15e7b8',
+  mktInvoices: '6b51b55c-e22c-4472-91a8-c9e920cf942b',
+  //common relations or fields
+  position: '81ba7aae-3b8f-41b0-891a-dc0d003d52bf',
+  createdBy: '8bf41ea9-eaaf-4718-a8c9-4a071e51b840',
+  accountOwner: '2ad28a81-0905-4592-9070-708aa6920e82',
+  timelineActivities: '9ec4140d-a6dd-42e0-b882-5f6b35556530',
+  searchVector: '7efe35b6-1956-48e2-9e43-183998ebc800',
 };
 
 export const MKT_CONTRACT_FIELD_IDS = {
@@ -195,6 +213,7 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktOrderItem: 'c8d7e6f5-4321-0987-6543-21098765432a',
   //invoices
   mktInvoice: 'a0b038a6-cab6-4777-b51c-861c5671bb49',
+  mktTemplate: 'f0fb46f9-c26f-4154-b17e-326ca166f8c9',
 };
 
 //EXTENDS FROM WORKSPACE_MEMBER_STANDARD_FIELD_IDS
@@ -212,4 +231,5 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktOrderItems: '5f4e3d2c-1b0a-9876-5432-109876543210',
   //invoices
   accountOwnerForMktInvoices: 'ab600d66-5755-4934-b5c3-19036927cf92',
+  accountOwnerForMktTemplates: 'a88096b8-e818-4421-afc2-5b1ab207aca3',
 };

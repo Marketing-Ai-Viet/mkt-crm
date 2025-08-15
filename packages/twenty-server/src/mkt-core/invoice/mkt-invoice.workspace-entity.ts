@@ -26,6 +26,7 @@ import {
 import { MKT_INVOICE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/template/mkt-template.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -234,4 +235,20 @@ export class MktInvoiceWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsSystem()
   @WorkspaceFieldIndex({ indexType: IndexType.GIN })
   searchVector: string;
+
+  @WorkspaceRelation({
+    standardId: MKT_INVOICE_FIELD_IDS.mktTemplate,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Template`,
+    description: msg`Invoice template`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'mktInvoices',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktTemplate: Relation<MktTemplateWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktTemplate')
+  mktTemplateId: string | null;
 }

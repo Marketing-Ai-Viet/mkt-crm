@@ -5,6 +5,7 @@ import { SeedLicenseModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-l
 import { SeedOrderModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-data-seed-dev-workspace.command';
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-product-data-seed-dev-workspace.command';
+import { SeedTemplateModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-data-seed-dev-workspace.command';
 import { SeedValueModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-value-data-seed-dev-workspace.command';
 import { SeedVariantAttributeModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-variant-attribute-data-seed-dev-workspace.command';
 import { SeedVariantModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-variant-data-seed-dev-workspace.command';
@@ -17,6 +18,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedValueModuleCommand,
   SeedVariantAttributeModuleCommand,
   // order commands
+  SeedTemplateModuleCommand,
   SeedOrderModuleCommand,
   SeedOrderItemModuleCommand,
   SeedContractModuleCommand,

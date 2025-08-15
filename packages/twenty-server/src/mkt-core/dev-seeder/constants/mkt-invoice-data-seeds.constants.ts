@@ -1,4 +1,5 @@
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
+import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-template-data-seeds.constants';
 
 type MktInvoiceDataSeed = {
   id: string;
@@ -11,6 +12,7 @@ type MktInvoiceDataSeed = {
   sentAt: string;
 
   mktOrderId: string;
+  mktTemplateId: string;
 
   position: number;
   createdBySource: string;
@@ -37,6 +39,7 @@ export const MKT_INVOICE_DATA_SEED_COLUMNS: (keyof MktInvoiceDataSeed)[] = [
   'sInvoiceCode',
   'sentAt',
   'mktOrderId',
+  'mktTemplateId',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -74,6 +77,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-001',
     sentAt: '2024-01-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_1,
     position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -89,6 +93,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-002',
     sentAt: '2024-02-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_2,
     position: 2,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -104,6 +109,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-003',
     sentAt: '2024-02-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_3,
     position: 3,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -119,6 +125,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-004',
     sentAt: '2024-03-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_4,
     position: 4,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -134,6 +141,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-005',
     sentAt: '2024-03-10T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_5,
     position: 5,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -149,6 +157,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-006',
     sentAt: '2024-03-20T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_6,
     position: 6,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -164,6 +173,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-007',
     sentAt: '2024-04-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_7,
     position: 7,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -179,6 +189,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-008',
     sentAt: '2024-04-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_8,
     position: 8,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -194,6 +205,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-009',
     sentAt: '2024-05-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_9,
     position: 9,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -209,6 +221,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-010',
     sentAt: '2024-05-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_10,
     position: 10,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -224,6 +237,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-011',
     sentAt: '2024-06-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_11,
     position: 11,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -239,6 +253,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-012',
     sentAt: '2024-06-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_12,
     position: 12,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -254,6 +269,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-013',
     sentAt: '2024-07-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_13,
     position: 13,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -269,6 +285,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-014',
     sentAt: '2024-07-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_14,
     position: 14,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -284,6 +301,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-015',
     sentAt: '2024-08-01T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_15,
     position: 15,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
