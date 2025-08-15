@@ -94,7 +94,6 @@ export const PRODUCT_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
     position: 6,
     color: 'gray',
   },
-  { value: PRODUCT_TYPE.OTHER, label: 'Other', position: 5, color: 'gray' },
 ];
 
 @WorkspaceEntity({
