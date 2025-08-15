@@ -16,12 +16,10 @@ export const MKT_PRODUCT_FIELD_IDS = {
   sku: '9b24a4d4-5ac1-45f7-8a5c-965d56cab9b4',
   inStock: '1acd77e3-6ee5-4570-984b-c884777d34b4',
   price: '42337fcf-349b-4c77-885e-4dd80afb9e27',
-  licenseDurationMonths: '2cc35152-7f77-4659-872d-7aecfd7f7d16',
   isActive: 'a5cc9c09-5825-4311-85d8-804227ff0cf6',
   position: '6b515d7c-778e-4806-ba73-f8c3fec57e7d',
   createdBy: '8ad53940-cd6a-45cf-a4bd-46611f04b20b',
   // TODO: check if this can be deleted
-  mktAttributes: 'bd58f103-651f-44a3-892e-5431248addfe',
   mktVariants: 'fa92f83f-888d-4ab7-a2ba-4fc034bcadd8',
   orderItems: 'c9d8e7f6-5432-1098-7654-321098765432',
   accountOwner: 'f836dd4e-1a6e-40ec-b8ce-4bcee5125fe0',
