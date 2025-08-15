@@ -14,12 +14,12 @@ type MktOrderDataSeed = {
 };
 
 export enum OrderStatus {
-    PENDING = 'pending',
-    PAID = 'paid',
-    FAILED = 'failed',
-    CANCELLED = 'cancelled',
-    FULFILLED = 'fulfilled',
-  }
+  PENDING = 'pending',
+  PAID = 'paid',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+  FULFILLED = 'fulfilled',
+}
 
 // prettier-ignore
 export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
@@ -85,7 +85,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     createdByName: 'Jane Smith',
   },
   {
-    id: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    id: MKT_ORDER_DATA_SEEDS_IDS.ID_3,  
     name: 'Marketing Automation Platform',
     position: 3,
     orderCode: 'MKT-2024-003',
