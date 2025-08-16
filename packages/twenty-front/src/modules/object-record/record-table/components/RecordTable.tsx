@@ -9,6 +9,7 @@ import { RecordTableContent } from '@/object-record/record-table/components/Reco
 import { RecordTableEmpty } from '@/object-record/record-table/components/RecordTableEmpty';
 import { RecordTableScrollToFocusedCellEffect } from '@/object-record/record-table/components/RecordTableScrollToFocusedCellEffect';
 import { RecordTableScrollToFocusedRowEffect } from '@/object-record/record-table/components/RecordTableScrollToFocusedRowEffect';
+import { VariantGroupByDisplay } from '@/object-record/record-table/components/VariantGroupByDisplay';
 import { RECORD_TABLE_CLICK_OUTSIDE_LISTENER_ID } from '@/object-record/record-table/constants/RecordTableClickOutsideListenerId';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';
 import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
@@ -77,6 +78,7 @@ export const RecordTable = () => {
           <RecordTableScrollToFocusedRowEffect />
         </>
       )}
+      <VariantGroupByDisplay />
       {recordTableIsEmpty && !hasRecordGroups ? (
         <RecordTableEmpty tableBodyRef={tableBodyRef} />
       ) : (
