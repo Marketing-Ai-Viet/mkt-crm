@@ -54,6 +54,7 @@ import { GeoMapModule } from 'src/engine/core-modules/geo-map/geo-map-module';
 import { AuditModule } from './audit/audit.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
+import { MktCoreModule } from 'src/mkt-core/mkt-core.module';
 
 @Module({
   imports: [
@@ -88,6 +89,8 @@ import { FileModule } from './file/file.module';
     GeoMapModule,
     SubscriptionsModule,
     ImapSmtpCaldavModule,
+    // Mkt core module for marketing CRM features
+    MktCoreModule,
     FileStorageModule.forRoot(),
     LoggerModule.forRootAsync({
       useFactory: loggerModuleFactory,
