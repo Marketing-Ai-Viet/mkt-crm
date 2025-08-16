@@ -1,5 +1,5 @@
+import { useDataModelObjectMetadataItems } from '@/object-metadata/hooks/useDataModelObjectMetadataItems';
 import { useDeleteOneObjectMetadataItem } from '@/object-metadata/hooks/useDeleteOneObjectMetadataItem';
-import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
 import { useUpdateOneObjectMetadataItem } from '@/object-metadata/hooks/useUpdateOneObjectMetadataItem';
 import { useCombinedGetTotalCount } from '@/object-record/multiple-objects/hooks/useCombinedGetTotalCount';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -20,9 +20,9 @@ import { TableSection } from '@/ui/layout/table/components/TableSection';
 import { useSortedArray } from '@/ui/layout/table/hooks/useSortedArray';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Trans,useLingui } from '@lingui/react/macro';
 import { isNonEmptyArray } from '@sniptt/guards';
-import { useMemo, useState } from 'react';
+import { useMemo,useState } from 'react';
 import {
   H2Title,
   IconChevronRight,
@@ -55,7 +55,7 @@ export const SettingsObjects = () => {
   const {
     activeNonSystemObjectMetadataItems,
     inactiveNonSystemObjectMetadataItems,
-  } = useFilteredObjectMetadataItems();
+  } = useDataModelObjectMetadataItems();
 
   const { totalCountByObjectMetadataItemNamePlural } = useCombinedGetTotalCount(
     {
