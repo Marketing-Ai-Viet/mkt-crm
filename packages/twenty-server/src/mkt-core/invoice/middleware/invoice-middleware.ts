@@ -15,9 +15,6 @@ export class InvoiceMiddleware implements NestMiddleware {
       
       // check if it is CreateOneMktInvoice mutation
       if (body?.operationName === 'CreateOneMktInvoice') {
-        console.log('🔄 InvoiceMiddleware: Intercepted CreateOneMktInvoice request');
-        console.log('📋 Request body:', JSON.stringify(body, null, 2));
-        
         // save original response to intercept
         const originalSend = res.send;
         res.send = function(data: any) {
@@ -27,12 +24,10 @@ export class InvoiceMiddleware implements NestMiddleware {
             // if there is data and invoice is created
             if (responseData?.data?.createMktInvoice?.id) {
               const invoiceId = responseData.data.createMktInvoice.id;
-              console.log(`🔄 InvoiceMiddleware: Invoice created with ID: ${invoiceId}`);
               
               // call service to update name from orderItem
               this.invoiceHookService.afterInvoiceCreated(invoiceId)
                 .then(() => {
-                  console.log(`✅ InvoiceMiddleware: Successfully processed invoice ${invoiceId}`);
                 })
                 .catch((error: any) => {
                   console.error(`❌ InvoiceMiddleware: Error processing invoice ${invoiceId}:`, error);

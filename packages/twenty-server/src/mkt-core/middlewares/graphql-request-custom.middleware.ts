@@ -22,10 +22,6 @@ export class GraphQLRequestCustomMiddleware implements NestMiddleware {
   private async customizeGraphQLRequest(req: Request): Promise<void> {
     // read body of request
     const body = req.body;
-    
-    console.log('🔄 Middleware triggered for GraphQL request');
-    console.log('📋 Request body:', JSON.stringify(body, null, 2));
-    
     if (!body || !body.variables || !body.variables.input) {
       console.log('⚠️ No input variables found, skipping customization');
       return;

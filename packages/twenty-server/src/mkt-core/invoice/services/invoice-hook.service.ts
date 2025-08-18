@@ -14,10 +14,8 @@ export class InvoiceHookService {
 	) {}
 
 	async afterInvoiceCreated(invoiceId: string) {
-		console.log(`🔄 InvoiceHookService: After invoice created ${invoiceId}`);
 		try {
 			await this.updateInvoiceNameFromOrderItem(invoiceId);
-			console.log(`✅ InvoiceHookService: Successfully updated invoice ${invoiceId} name from orderItem`);
 		} catch (error: any) {
 			console.error(`❌ InvoiceHookService: Error updating invoice ${invoiceId} name:`, error);
 		}
@@ -25,11 +23,8 @@ export class InvoiceHookService {
 
 	// method to be called directly from GraphQLRequestCustomService
 	async updateInvoiceNameFromOrderItemDirectly(mktOrderId: string, authorizationHeader?: string): Promise<string | null> {
-		console.log(`🔄 InvoiceHookService: Getting orderItem names for mktOrderId: ${mktOrderId}`);
-		
 		try {
 			const orderItemNames = await this.getAllOrderItemNames(mktOrderId, authorizationHeader);
-			console.log(`✅ InvoiceHookService: Retrieved orderItem names: ${orderItemNames}`);
 			return orderItemNames;
 		} catch (error) {
 			console.error(`❌ InvoiceHookService: Error getting orderItem names:`, error);
@@ -39,8 +34,6 @@ export class InvoiceHookService {
 
 	// get orderItem.name from database and update invoice name
 	private async updateInvoiceNameFromOrderItem(invoiceId: string) {
-		console.log(`[DEBUG] Starting updateInvoiceNameFromOrderItem for invoice ${invoiceId}`);
-		
 		const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
 		if (!workspaceId) {
@@ -59,19 +52,13 @@ export class InvoiceHookService {
 			where: { id: invoiceId, deletedAt: null as any },
 		});
 
-		console.log(`[DEBUG] Found invoice:`, invoice);
-
 		if (!invoice || !invoice.mktOrderId) {
 			console.log(`Invoice ${invoiceId} not found or no mktOrderId`);
 			return;
 		}
 
-		console.log(`[DEBUG] Invoice mktOrderId: ${invoice.mktOrderId}`);
-
 		// get orderItem.name from database
 		const orderItemName = await this.getOrderItemName(invoice.mktOrderId);
-		
-		console.log(`[DEBUG] Retrieved orderItemName: ${orderItemName}`);
 		
 		if (orderItemName) {
 			// update invoice name with orderItem.name
@@ -82,8 +69,6 @@ export class InvoiceHookService {
 					updatedAt: new Date().toISOString()
 				}
 			);
-
-			console.log(`Updated invoice ${invoiceId} name to "${orderItemName}" from orderItem`);
 		} else {
 			console.log(`No orderItem found for order ${invoice.mktOrderId}`);
 		}
@@ -92,8 +77,6 @@ export class InvoiceHookService {
 	// get orderItem.name from database
 	private async getOrderItemName(mktOrderId: string): Promise<string | null> {
 		try {
-			console.log(`[DEBUG] Getting orderItem name for mktOrderId: ${mktOrderId}`);
-			
 			const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
 			if (!workspaceId) {
@@ -108,8 +91,6 @@ export class InvoiceHookService {
 					{ shouldBypassPermissionChecks: true },
 				);
 
-			console.log(`[DEBUG] Got orderItemRepository`);
-
 			// query to get orderItem.name from mktOrderId
 			const orderItem = await orderItemRepository.findOne({
 				where: { 
@@ -118,9 +99,6 @@ export class InvoiceHookService {
 				},
 				select: ['name'] // only get field name
 			});
-
-			console.log(`[DEBUG] Found orderItem:`, orderItem);
-
 			return orderItem?.name || null;
 		} catch (error) {
 			console.error('Error getting orderItem name:', error);
@@ -131,8 +109,6 @@ export class InvoiceHookService {
 	// get all orderItem names from database
 	private async getAllOrderItemNames(mktOrderId: string, authorizationHeader?: string): Promise<string | null> {
 		try {
-			console.log(`[DEBUG] Getting all orderItem names for mktOrderId: ${mktOrderId}`);
-			
 			// get workspace ID from JWT token
 			let workspaceId: string | null = null;
 			
@@ -141,7 +117,6 @@ export class InvoiceHookService {
 					const token = authorizationHeader.replace('Bearer ', '');
 					const decoded = this.jwtWrapperService.decode(token) as any;
 					workspaceId = decoded?.workspaceId;
-					console.log(`[DEBUG] Got workspaceId from JWT: ${workspaceId}`);
 				} catch (error) {
 					console.error('[DEBUG] Error decoding JWT:', error);
 				}
@@ -151,7 +126,6 @@ export class InvoiceHookService {
 			if (!workspaceId) {
 				try {
 					workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
-					console.log(`[DEBUG] Got workspaceId from ScopedWorkspaceContextFactory: ${workspaceId}`);
 				} catch (error) {
 					console.error('[DEBUG] Error getting workspaceId from ScopedWorkspaceContextFactory:', error);
 				}
@@ -168,9 +142,6 @@ export class InvoiceHookService {
 					MktOrderItemWorkspaceEntity,
 					{ shouldBypassPermissionChecks: true },
 				);
-
-			console.log(`[DEBUG] Got orderItemRepository`);
-
 			// query to get all orderItem names from mktOrderId
 			const orderItems = await orderItemRepository.find({
 				where: { 
@@ -179,8 +150,6 @@ export class InvoiceHookService {
 				},
 				select: ['name'] // only get field name
 			});
-
-			console.log(`[DEBUG] Found orderItems:`, orderItems);
 
 			if (!orderItems || orderItems.length === 0) {
 				console.log(`No orderItems found for order ${mktOrderId}`);
@@ -193,8 +162,6 @@ export class InvoiceHookService {
 				.map((item: any) => item.name)
 				.filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index); // Remove duplicates
 
-			console.log(`[DEBUG] Order item names:`, orderItemNames);
-
 			if (orderItemNames.length === 0) {
 				console.log(`No valid orderItem names found for order ${mktOrderId}`);
 				return null;
@@ -202,7 +169,6 @@ export class InvoiceHookService {
 
 			// merge order item names
 			const result = orderItemNames.join(' ');
-			console.log(`[DEBUG] Combined orderItem names: ${result}`);
 			return result;
 		} catch (error) {
 			console.error('Error getting orderItem names:', error);

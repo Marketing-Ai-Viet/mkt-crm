@@ -13,8 +13,8 @@ import { VariantModule } from './variant/variant.module';
     ConfigurationModule, 
     InvoiceModule, 
     MiddlewareModule,
-    MktOrderModule, // import MktOrderModule to use MktOrderService
-    InvoiceModule, // import InvoiceModule to use InvoiceHookService
+    MktOrderModule,
+    InvoiceModule,
   ],
   providers: [
     GraphQLRequestCustomMiddleware, 
@@ -30,7 +30,6 @@ import { VariantModule } from './variant/variant.module';
 })
 export class MktCoreModule {
   configure(consumer: MiddlewareConsumer) {
-    // custom GraphQL request middleware for mkt-core
     consumer
       .apply(GraphQLRequestCustomMiddleware)
       .forRoutes({ path: 'graphql', method: RequestMethod.ALL });
