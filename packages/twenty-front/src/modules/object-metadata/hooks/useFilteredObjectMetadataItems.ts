@@ -2,21 +2,16 @@ import { useRecoilValue } from 'recoil';
 
 import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { useMemo } from 'react';
-import { useHiddenNavigationObjects } from './useHiddenNavigationObjects';
 
 export const useFilteredObjectMetadataItems = () => {
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
-  const { hiddenObjects } = useHiddenNavigationObjects();
 
   const activeNonSystemObjectMetadataItems = useMemo(
     () =>
       objectMetadataItems.filter(
-        ({ isActive, isSystem, namePlural }) => 
-          isActive && 
-          !isSystem && 
-          !hiddenObjects.includes(namePlural),
+        ({ isActive, isSystem }) => isActive && !isSystem,
       ),
-    [objectMetadataItems, hiddenObjects],
+    [objectMetadataItems],
   );
 
   const activeObjectMetadataItems = useMemo(
