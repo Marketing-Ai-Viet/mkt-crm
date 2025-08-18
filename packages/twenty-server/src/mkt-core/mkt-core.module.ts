@@ -20,13 +20,7 @@ import { VariantModule } from './variant/variant.module';
     GraphQLRequestCustomMiddleware, 
     GraphQLRequestCustomService,
   ],
-  exports: [
-    VariantModule, 
-    ConfigurationModule, 
-    InvoiceModule,
-    GraphQLRequestCustomMiddleware, 
-    GraphQLRequestCustomService,
-  ],
+  exports: [],
 })
 export class MktCoreModule {
   configure(consumer: MiddlewareConsumer) {
