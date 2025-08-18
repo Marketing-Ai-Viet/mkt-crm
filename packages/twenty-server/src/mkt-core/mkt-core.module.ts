@@ -1,6 +1,6 @@
 import { MiddlewareConsumer,Module,RequestMethod } from '@nestjs/common';
 import { GraphQLRequestCustomMiddleware } from 'src/mkt-core/middlewares/graphql-request-custom.middleware';
-import { MktMiddlewareModule } from 'src/mkt-core/middlewares/middleware.module';
+import { MktMiddlewareModule } from 'src/mkt-core/middlewares/mkt-middleware.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { InvoiceModule } from './invoice/invoice.module';
@@ -10,10 +10,9 @@ import { VariantModule } from './variant/variant.module';
   imports: [
     VariantModule, 
     ConfigurationModule, 
-    InvoiceModule, 
-    MktMiddlewareModule,
     MktOrderModule,
     InvoiceModule,
+    MktMiddlewareModule,
   ],
 })
 export class MktCoreModule {
