@@ -1,5 +1,4 @@
-import { MiddlewareConsumer,Module,RequestMethod } from '@nestjs/common';
-import { GraphQLRequestCustomMiddleware } from 'src/mkt-core/middlewares/graphql-request-custom.middleware';
+import { Module } from '@nestjs/common';
 import { MktMiddlewareModule } from 'src/mkt-core/middlewares/mkt-middleware.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -15,10 +14,4 @@ import { VariantModule } from './variant/variant.module';
     MktMiddlewareModule,
   ],
 })
-export class MktCoreModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(GraphQLRequestCustomMiddleware)
-      .forRoutes({ path: 'graphql', method: RequestMethod.ALL });
-  }
-}
+export class MktCoreModule {}
