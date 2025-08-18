@@ -6,6 +6,7 @@ import { RecordTableHeaderCell } from '@/object-record/record-table/record-table
 import { RecordTableHeaderCheckboxColumn } from '@/object-record/record-table/record-table-header/components/RecordTableHeaderCheckboxColumn';
 import { RecordTableHeaderDragDropColumn } from '@/object-record/record-table/record-table-header/components/RecordTableHeaderDragDropColumn';
 import { RecordTableHeaderLastColumn } from '@/object-record/record-table/record-table-header/components/RecordTableHeaderLastColumn';
+import { VariantGroupByDropdown } from '@/object-record/record-table/record-table-header/components/VariantGroupByDropdown';
 import { MOBILE_VIEWPORT } from 'twenty-ui/theme';
 
 export const FIRST_TH_WIDTH = '10px';
@@ -91,6 +92,11 @@ export const RecordTableHeader = () => {
           <RecordTableHeaderCell key={column.fieldMetadataId} column={column} />
         ))}
         <RecordTableHeaderLastColumn />
+      </tr>
+      <tr>
+        <td colSpan={visibleTableColumns.length + 3} style={{ padding: '8px 16px' }}>
+          <VariantGroupByDropdown />
+        </td>
       </tr>
     </StyledTableHead>
   );
