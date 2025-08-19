@@ -10,6 +10,8 @@ type MktInvoiceDataSeed = {
   totalAmount: number;
   sInvoiceCode: string;
   sentAt: string;
+  mktOrderId: string;
+  mktTemplateId: string;
   supplierTaxCode: string | null;
   invoiceType: string;
   templateCode: string;
@@ -21,10 +23,6 @@ type MktInvoiceDataSeed = {
   totalTax: number;
   totalWithTax: number;
   taxInWords: string;
-
-  mktOrderId: string;
-  mktTemplateId: string;
-
   position: number;
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
@@ -49,6 +47,8 @@ export const MKT_INVOICE_DATA_SEED_COLUMNS: (keyof MktInvoiceDataSeed)[] = [
   'totalAmount',
   'sInvoiceCode',
   'sentAt',
+  'mktOrderId',
+  'mktTemplateId',
   'supplierTaxCode',
   'invoiceType',
   'templateCode',
@@ -60,8 +60,6 @@ export const MKT_INVOICE_DATA_SEED_COLUMNS: (keyof MktInvoiceDataSeed)[] = [
   'totalTax',
   'totalWithTax',
   'taxInWords',
-  'mktOrderId',
-  'mktTemplateId',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -99,18 +97,18 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     sInvoiceCode: 'INV-2024-001',
     sentAt: '2024-01-15T00:00:00.000Z',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_1,
     supplierTaxCode: '1234567890',
     invoiceType: 'invoice',
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '3dc519e6-1264-4214-9c57-bc6e203785e9',
     issueDate: '2024-01-15T00:00:00.000Z',
     totalWithoutTax: 25000,
     totalTax: 2500,
     totalWithTax: 27500,
-    taxInWords: 'two thousand five hundred',
-    mktTemplateId: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_1,
+    taxInWords: 'tw tousad five hundred',
     position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -132,7 +130,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '7e3c039c-ac3a-4be6-8471-b03734fabc8e',
     issueDate: '2024-02-01T00:00:00.000Z',
     totalWithoutTax: 15000,
     totalTax: 1500,
@@ -159,7 +157,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '6da15512-a1cf-4e26-af87-ec8dd107a595',
     issueDate: '2024-02-15T00:00:00.000Z',
     totalWithoutTax: 8500,
     totalTax: 850,
@@ -186,7 +184,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: 'a05bfc3f-1ec4-4d29-9e28-f5c74d754465',
     issueDate: '2024-03-01T00:00:00.000Z',
     totalWithoutTax: 12000,
     totalTax: 1200,
@@ -213,7 +211,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '034e5ee6-44b1-44aa-acdc-833c8ab12cda',
     issueDate: '2024-03-10T00:00:00.000Z',
     totalWithoutTax: 7500,
     totalTax: 750,
@@ -240,7 +238,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '85339866-b22a-4e29-84c7-fab2d92c366b',
     issueDate: '2024-03-20T00:00:00.000Z',
     totalWithoutTax: 18000,
     totalTax: 1800,
@@ -267,7 +265,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '4a10b7fb-3bd2-4cea-af38-2f1ba3eeaf06',
     issueDate: '2024-04-01T00:00:00.000Z',
     totalWithoutTax: 35000,
     totalTax: 3500,
@@ -294,7 +292,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '59d3fb40-f94e-47a3-9be7-54fbd0bfb515',
     issueDate: '2024-04-15T00:00:00.000Z',
     totalWithoutTax: 9500,
     totalTax: 950,
@@ -321,7 +319,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '666b9fc2-385c-4a95-85cb-c4c0793074a6',
     issueDate: '2024-05-01T00:00:00.000Z',
     totalWithoutTax: 6500,
     totalTax: 650,
@@ -348,7 +346,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '56d3c64e-7842-426f-bffe-a057d46b962d',
     issueDate: '2024-05-15T00:00:00.000Z',
     totalWithoutTax: 11000,
     totalTax: 1100,
@@ -375,7 +373,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '9b9dcc7e-9de8-4f90-abaf-1cb582d3162f',
     issueDate: '2024-06-01T00:00:00.000Z',
     totalWithoutTax: 22000,
     totalTax: 2200,
@@ -402,7 +400,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '9f2bb684-c763-4066-aaf6-514e3776883f',
     issueDate: '2024-06-15T00:00:00.000Z',
     totalWithoutTax: 13500,
     totalTax: 1350,
@@ -429,7 +427,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '193b9ed9-5947-412d-a6ef-fadfbcfd2ac1',
     issueDate: '2024-07-01T00:00:00.000Z',
     totalWithoutTax: 4800,
     totalTax: 480,
@@ -456,7 +454,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: 'b1662bc3-ed22-41a5-b32b-d0818b67c3c1',
     issueDate: '2024-07-15T00:00:00.000Z',
     totalWithoutTax: 25000,
     totalTax: 2500,
@@ -483,7 +481,7 @@ export const MKT_INVOICE_DATA_SEEDS: MktInvoiceDataSeed[] = [
     templateCode: 'template1',
     invoiceSeries: 'series1',
     invoiceNo: '1234567890',
-    transactionUuid: '1234567890',
+    transactionUuid: '94ef502e-e1b8-414e-b8cf-f9d170a5ada1',
     issueDate: '2024-08-01T00:00:00.000Z',
     totalWithoutTax: 15000,
     totalTax: 1500,
