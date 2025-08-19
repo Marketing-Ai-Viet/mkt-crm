@@ -164,6 +164,18 @@ export const MKT_INVOICE_FIELD_IDS = {
   totalAmount: 'ce102ddf-26af-4dd5-aa44-53aeab7a20eb',
   sInvoiceCode: '671561b1-ddf5-4a31-a66e-969135648638',
   sentAt: '0adeb47b-0c7d-43ec-890f-19ecf8e3714a',
+  supplierTaxCode: '58422f09-b22f-4f60-bc18-1437dd94e1b7',
+  invoiceType: '50ba3465-0697-4066-b257-b77899bae78b',
+  templateCode: 'df3b3f45-f560-4a20-9f74-b39ec77040e9',
+  invoiceSeries: 'f8c75e9d-2689-4f5b-a40e-7d0faee7c9e7',
+  invoiceNo: '6c0702a9-36af-42ad-9b3d-e7d32d4806c1',
+  transactionUuid: '36c6c1e3-1aab-4c50-b544-ccb13f5216f3',
+  issueDate: 'ba5552fd-dfa7-44fd-b8e4-dc31c50fdd9a',
+  totalWithoutTax: 'd0e3fb71-08a6-44f1-9cd7-46cc14963782',
+  totalTax: 'cfd0765b-f7fb-4217-9244-92a81d520030',
+  totalWithTax: 'e21d045a-8a27-4c46-a9c8-6cb96edb3fd0',
+  taxInWords: '35214b59-87a5-4548-8b78-8e275629473f',
+
   // relations
   mktTemplate: '768581ac-7240-4fd1-bc4c-6a49445d8ad0',
   mktOrder: '3cf48a8e-fa6d-41c2-bcb9-302e90dbe03c',
