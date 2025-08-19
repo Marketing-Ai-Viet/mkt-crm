@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_INVOICE_STATUS } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
+import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/s-invoice.integration.service';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 
 type InputData = {
@@ -18,6 +19,7 @@ export class MktInvoiceService {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
   ) {}
 
   async customizeGraphQLRequest(
@@ -52,7 +54,7 @@ export class MktInvoiceService {
     try {
       const orderItemName =
         await this.updateInvoiceNameFromOrderItemDirectly(orderId);
-
+        await this.sInvoiceIntegrationService.createInvoiceForOrder(orderId);
       if (!orderItemName) {
         return this.generateInvoiceName(orderId);
       }

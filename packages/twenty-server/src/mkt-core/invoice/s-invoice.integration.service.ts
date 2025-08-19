@@ -24,7 +24,7 @@ export class SInvoiceIntegrationService {
   private readonly taxCode = process.env.S_INVOICE_TAX_CODE || '0100109106-507';
   private readonly templateCode = process.env.S_INVOICE_TEMPLATE_CODE || '1/770';
   private readonly invoiceSeries = process.env.S_INVOICE_SERIES || 'K23TXM';
-  private readonly authToken = process.env.S_INVOICE_AUTH_TOKEN || '';
+  private readonly authToken = process.env.S_INVOICE_AUTH_TOKEN || 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJleHAiOjE3NTU1OTk5MzEsInR5cGUiOjEsImlhdCI6MTc1NTU5ODczMSwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiMTA1ZDUzY2EtYmYxZS00ZDNmLThiYmEtODgwZmRjNTRlMGQxIiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.AUheddss66Ppj1KYK2VtJOq5cDhKg4MY-nUpBTgDUCSSVclPO8r0KUAg9NoImvWKyDU1MpiMTGOJqFh-RkFzb3MXSQh4e8ME0HHyoV69wl0Z0CpU9N31c92LBUiT4UmaN8Oyn6EsGeMEMMc1XWEEiMP7h6ezVE0J8ZPrra2CKoVwgXvJUocMoYf6PNTi_scr6Lj2r5x0lpDkySIu87MBt5-uV_kK58y9dkMppYYBsmEn4iI27V-jdXA36HEPVxJZ1_70LqiMJnZJukH-0Lt139J-7Fy9VTcdLcFv6DDjLpMkWKOrhSZsZe5A_rprn4M28jcZqxUExMKZnoo5-EKQ3g';
   private readonly cookieToken = process.env.S_INVOICE_COOKIE || '';
 
   constructor(
