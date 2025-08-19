@@ -117,13 +117,13 @@ export class MktInvoiceWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.vat,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.NUMBER,
     label: msg`Invoice VAT`,
     description: msg`Invoice VAT`,
     icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  vat?: string;
+  vat?: number;
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.sInvoiceCode,
@@ -217,33 +217,33 @@ export class MktInvoiceWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.totalWithoutTax,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Without Tax`,
     description: msg`Total without tax`,
     icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  totalWithoutTax?: string;
+  totalWithoutTax?: number;
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.totalTax,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Tax`,
     description: msg`Total tax`,
     icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  totalTax?: string;
+  totalTax?: number;
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.totalWithTax,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total With Tax`,
     description: msg`Total with tax`,
     icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  totalWithTax?: string;
+  totalWithTax?: number;
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.taxInWords,
@@ -257,13 +257,13 @@ export class MktInvoiceWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.totalAmount,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Amount`,
     description: msg`Invoice total amount`,
     icon: 'IconClock',
   })
   @WorkspaceIsNullable()
-  totalAmount?: string;
+  totalAmount?: number;
 
   @WorkspaceRelation({
     standardId: MKT_INVOICE_FIELD_IDS.mktOrder,
