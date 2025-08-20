@@ -7,13 +7,31 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MKT_INVOICE_STATUS,MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
-import { v4 } from 'uuid';
 
 type CreateInvoiceResponse = {
   transactionUuid?: string;
   invoiceNo?: string;
   message?: string;
   [key: string]: any;
+  result: any;
+};
+
+type sInvoiceType = {
+  name?: string;
+  status?: string;
+  amount?: string;
+  vat?: string;
+  totalWithoutTax?: string;
+  totalTax?: string;
+  totalWithTax?: string;
+  sInvoiceCode?: string;
+  supplierTaxCode?: string;
+  templateCode?: string;
+  invoiceSeries?: string;
+  invoiceNo?: string;
+  transactionUuid?: string;
+  issueDate?: string;
+  mktOrderId?: string;
 };
 
 @Injectable()
@@ -39,13 +57,13 @@ export class SInvoiceIntegrationService {
   /**
    * Auto-generate e-invoice on S-Invoice when an order becomes PAID
    */
-  async createInvoiceForOrder(orderId: string): Promise<void> {
+  async createInvoiceForOrder(orderId: string): Promise<sInvoiceType> {
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
     if (!workspaceId) {
       this.logger.error('Workspace ID not found when creating S-Invoice');
-      return;
+      return {} as sInvoiceType;
     }
-
+    let sInvoice: sInvoiceType = {} as sInvoiceType;
     const orderRepository = await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
       workspaceId,
       'mktOrder',
@@ -65,7 +83,7 @@ export class SInvoiceIntegrationService {
     const order = await orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
       this.logger.warn(`Order ${orderId} not found when creating S-Invoice`);
-      return;
+      return {} as sInvoiceType;
     }
 
     // Idempotency: skip if an invoice already exists for this order
@@ -78,7 +96,7 @@ export class SInvoiceIntegrationService {
     const items = await orderItemRepository.find({ where: { mktOrderId: orderId } as any });
     if (!items || items.length === 0) {
       this.logger.warn(`Order ${orderId} has no items; skip S-Invoice creation`);
-      return;
+      return {} as sInvoiceType;
     }
 
     const nowMs = Date.now();
@@ -193,10 +211,9 @@ export class SInvoiceIntegrationService {
 
       const res = await this.http.post<CreateInvoiceResponse>(url, payload, { headers });
 
-      const response = res.data || {};
+      const response = res.data.result || {};
       this.logger.log(`[S-INVOICE] Response: ${JSON.stringify(response)}`);
-      const saved = await invoiceRepository.save({
-        id: v4(),
+      sInvoice = {
         name: `INV-${order.orderCode || order.id}`,
         status: MKT_INVOICE_STATUS.SENT,
         amount: String(totalAmountWithTax),
@@ -212,16 +229,13 @@ export class SInvoiceIntegrationService {
         transactionUuid: response.transactionUuid || transactionUuid,
         issueDate: String(nowMs),
         mktOrderId: orderId,
-      } as any);
-
-      this.logger.log(`S-Invoice created. Order ${orderId} -> invoice ${saved.invoiceNo || ''}`);
+      }
     } catch (error: any) {
       const errMsg = error?.response?.data || error?.message;
       this.logger.error(`Create S-Invoice failed for order ${orderId}: ${JSON.stringify(errMsg)}`);
       // Persist a draft/error invoice for traceability
       try {
-        await invoiceRepository.save({
-          id: v4(),
+        sInvoice = {
           name: `INV-${order.orderCode || order.id}`,
           status: MKT_INVOICE_STATUS.DRAFT,
           amount: String(totalAmountWithTax),
@@ -236,11 +250,12 @@ export class SInvoiceIntegrationService {
           transactionUuid,
           issueDate: String(nowMs),
           mktOrderId: orderId,
-        } as any);
+        }
       } catch (persistErr) {
         this.logger.error(`Failed to save draft invoice after API error: ${persistErr?.message}`);
       }
     }
+    return sInvoice;
   }
 }
 

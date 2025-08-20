@@ -14,6 +14,24 @@ type InputData = {
   amount?: string;
 };
 
+type sInvoiceType = {
+  name?: string;
+  status?: string;
+  amount?: string;
+  vat?: string;
+  totalWithoutTax?: string;
+  totalTax?: string;
+  totalWithTax?: string;
+  sInvoiceCode?: string;
+  supplierTaxCode?: string;
+  templateCode?: string;
+  invoiceSeries?: string;
+  invoiceNo?: string;
+  transactionUuid?: string;
+  issueDate?: string;
+  mktOrderId?: string;
+};
+
 @Injectable()
 export class MktInvoiceService {
   constructor(
@@ -37,6 +55,11 @@ export class MktInvoiceService {
   async customizeMktInvoiceRequest(input: InputData): Promise<void> {
     if (input.name === '' || !input.name) {
       if (input.mktOrderId) {
+      const sInvoice: sInvoiceType = await this.sInvoiceIntegrationService.createInvoiceForOrder(input.mktOrderId);
+      console.log('sInvoice', sInvoice);
+      if (sInvoice.invoiceNo) {
+        input.name = sInvoice.invoiceNo;
+      }
         input.name = await this.generateInvoiceNameFromOrder(input.mktOrderId);
       }
     }
@@ -54,7 +77,6 @@ export class MktInvoiceService {
     try {
       const orderItemName =
         await this.updateInvoiceNameFromOrderItemDirectly(orderId);
-        await this.sInvoiceIntegrationService.createInvoiceForOrder(orderId);
       if (!orderItemName) {
         return this.generateInvoiceName(orderId);
       }

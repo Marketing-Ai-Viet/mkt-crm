@@ -6,7 +6,6 @@ import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/s-invoice.integ
 
 @Module({
   providers: [MktInvoiceService, SInvoiceIntegrationService],
-  exports: [SInvoiceIntegrationService],
 })
 export class MktInvoiceModule {
   configure(consumer: MiddlewareConsumer) {
