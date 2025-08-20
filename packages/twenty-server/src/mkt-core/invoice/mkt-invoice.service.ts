@@ -15,6 +15,7 @@ type InputData = {
 };
 
 type sInvoiceType = {
+  id?: string;
   name?: string;
   status?: string;
   amount?: string;
@@ -42,7 +43,7 @@ export class MktInvoiceService {
 
   async customizeGraphQLRequest(
     operationName: string,
-    variables: { input: InputData },
+    variables: { input: sInvoiceType },
   ): Promise<void> {
     if (!variables || !variables.input) {
       return;
@@ -52,14 +53,11 @@ export class MktInvoiceService {
     }
   }
 
-  async customizeMktInvoiceRequest(input: InputData): Promise<void> {
+  async customizeMktInvoiceRequest(input: sInvoiceType): Promise<void> {
     if (input.name === '' || !input.name) {
       if (input.mktOrderId) {
-      const sInvoice: sInvoiceType = await this.sInvoiceIntegrationService.createInvoiceForOrder(input.mktOrderId);
-      console.log('sInvoice', sInvoice);
-      if (sInvoice.invoiceNo) {
-        input.name = sInvoice.invoiceNo;
-      }
+        const sInvoice: sInvoiceType = await this.sInvoiceIntegrationService.createInvoiceForOrder(input.mktOrderId);
+        Object.assign(input, sInvoice);
         input.name = await this.generateInvoiceNameFromOrder(input.mktOrderId);
       }
     }
