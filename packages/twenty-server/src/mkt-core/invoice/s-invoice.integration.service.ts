@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_INVOICE_STATUS,MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
+import { MKT_INVOICE_STATUS } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
 
@@ -17,20 +17,25 @@ type CreateInvoiceResponse = {
 };
 
 type sInvoiceType = {
+  id?: string;
   name?: string;
-  status?: string;
   amount?: string;
-  vat?: string;
-  totalWithoutTax?: string;
-  totalTax?: string;
-  totalWithTax?: string;
+  status?: string;
+  vat?: number;
+  totalAmount?: number;
   sInvoiceCode?: string;
-  supplierTaxCode?: string;
+  sentAt?: string;
+  supplierTaxCode?: string | null;
+  invoiceType?: string;
   templateCode?: string;
   invoiceSeries?: string;
   invoiceNo?: string;
   transactionUuid?: string;
   issueDate?: string;
+  totalWithoutTax?: number;
+  totalTax?: number;
+  totalWithTax?: number;
+  taxInWords?: string;
   mktOrderId?: string;
 };
 
@@ -74,24 +79,13 @@ export class SInvoiceIntegrationService {
       'mktOrderItem',
       { shouldBypassPermissionChecks: true },
     );
-    const invoiceRepository = await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktInvoiceWorkspaceEntity>(
-      workspaceId,
-      'mktInvoice',
-      { shouldBypassPermissionChecks: true },
-    );
+
 
     const order = await orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
       this.logger.warn(`Order ${orderId} not found when creating S-Invoice`);
       return {} as sInvoiceType;
     }
-
-    // Idempotency: skip if an invoice already exists for this order
-    // const existingInvoice = await invoiceRepository.findOne({ where: { mktOrderId: orderId } as any });
-    // if (existingInvoice?.transactionUuid || existingInvoice?.invoiceNo) {
-    //   this.logger.log(`Invoice already exists for order ${orderId}, skip creation.`);
-    //   return;
-    // }
 
     const items = await orderItemRepository.find({ where: { mktOrderId: orderId } as any });
     if (!items || items.length === 0) {
@@ -214,13 +208,12 @@ export class SInvoiceIntegrationService {
       const response = res.data.result || {};
       this.logger.log(`[S-INVOICE] Response: ${JSON.stringify(response)}`);
       sInvoice = {
-        name: `INV-${order.orderCode || order.id}`,
         status: MKT_INVOICE_STATUS.SENT,
         amount: String(totalAmountWithTax),
-        vat: String(totalTaxAmount),
-        totalWithoutTax: String(totalAmountWithoutTax),
-        totalTax: String(totalTaxAmount),
-        totalWithTax: String(totalAmountWithTax),
+        vat: totalTaxAmount,
+        totalWithoutTax: totalAmountWithoutTax,
+        totalTax: totalTaxAmount,
+        totalWithTax: totalAmountWithTax,
         sInvoiceCode: this.taxCode,
         supplierTaxCode: this.taxCode,
         templateCode: this.templateCode,
@@ -228,7 +221,6 @@ export class SInvoiceIntegrationService {
         invoiceNo: response.invoiceNo,
         transactionUuid: response.transactionUuid || transactionUuid,
         issueDate: String(nowMs),
-        mktOrderId: orderId,
       }
     } catch (error: any) {
       const errMsg = error?.response?.data || error?.message;
@@ -236,20 +228,18 @@ export class SInvoiceIntegrationService {
       // Persist a draft/error invoice for traceability
       try {
         sInvoice = {
-          name: `INV-${order.orderCode || order.id}`,
           status: MKT_INVOICE_STATUS.DRAFT,
           amount: String(totalAmountWithTax),
-          vat: String(totalTaxAmount),
-          totalWithoutTax: String(totalAmountWithoutTax),
-          totalTax: String(totalTaxAmount),
-          totalWithTax: String(totalAmountWithTax),
+          vat: totalTaxAmount,
+          totalWithoutTax: totalAmountWithoutTax,
+          totalTax: totalTaxAmount,
+          totalWithTax: totalAmountWithTax,
           sInvoiceCode: this.taxCode,
           supplierTaxCode: this.taxCode,
           templateCode: this.templateCode,
           invoiceSeries: this.invoiceSeries,
           transactionUuid,
           issueDate: String(nowMs),
-          mktOrderId: orderId,
         }
       } catch (persistErr) {
         this.logger.error(`Failed to save draft invoice after API error: ${persistErr?.message}`);
