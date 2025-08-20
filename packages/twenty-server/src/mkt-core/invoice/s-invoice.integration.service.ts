@@ -7,6 +7,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MKT_INVOICE_STATUS,MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
+import { v4 } from 'uuid';
 
 type CreateInvoiceResponse = {
   transactionUuid?: string;
@@ -68,11 +69,11 @@ export class SInvoiceIntegrationService {
     }
 
     // Idempotency: skip if an invoice already exists for this order
-    const existingInvoice = await invoiceRepository.findOne({ where: { mktOrderId: orderId } as any });
-    if (existingInvoice?.transactionUuid || existingInvoice?.invoiceNo) {
-      this.logger.log(`Invoice already exists for order ${orderId}, skip creation.`);
-      return;
-    }
+    // const existingInvoice = await invoiceRepository.findOne({ where: { mktOrderId: orderId } as any });
+    // if (existingInvoice?.transactionUuid || existingInvoice?.invoiceNo) {
+    //   this.logger.log(`Invoice already exists for order ${orderId}, skip creation.`);
+    //   return;
+    // }
 
     const items = await orderItemRepository.find({ where: { mktOrderId: orderId } as any });
     if (!items || items.length === 0) {
@@ -193,7 +194,9 @@ export class SInvoiceIntegrationService {
       const res = await this.http.post<CreateInvoiceResponse>(url, payload, { headers });
 
       const response = res.data || {};
+      this.logger.log(`[S-INVOICE] Response: ${JSON.stringify(response)}`);
       const saved = await invoiceRepository.save({
+        id: v4(),
         name: `INV-${order.orderCode || order.id}`,
         status: MKT_INVOICE_STATUS.SENT,
         amount: String(totalAmountWithTax),
@@ -218,6 +221,7 @@ export class SInvoiceIntegrationService {
       // Persist a draft/error invoice for traceability
       try {
         await invoiceRepository.save({
+          id: v4(),
           name: `INV-${order.orderCode || order.id}`,
           status: MKT_INVOICE_STATUS.DRAFT,
           amount: String(totalAmountWithTax),
