@@ -1,6 +1,8 @@
-import { Injectable,Logger } from '@nestjs/common';
-import axios,{ AxiosInstance } from 'axios';
+import { Injectable, Logger } from '@nestjs/common';
+
 import { randomUUID } from 'crypto';
+
+import axios, { AxiosInstance } from 'axios';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -44,13 +46,18 @@ export class SInvoiceIntegrationService {
   private readonly logger = new Logger(SInvoiceIntegrationService.name);
   private readonly http: AxiosInstance;
 
-  private readonly baseUrl = process.env.S_INVOICE_BASE_URL || 'https://api-vinvoice.viettel.vn';
+  private readonly baseUrl =
+    process.env.S_INVOICE_BASE_URL || 'https://api-vinvoice.viettel.vn';
   private readonly taxCode = process.env.S_INVOICE_TAX_CODE || '0100109106-507';
-  private readonly templateCode = process.env.S_INVOICE_TEMPLATE_CODE || '1/770';
+  private readonly templateCode =
+    process.env.S_INVOICE_TEMPLATE_CODE || '1/770';
   private readonly invoiceSeries = process.env.S_INVOICE_SERIES || 'K23TXM';
-  private readonly username = process.env.S_INVOICE_USERNAME || '0100109106-507';
+  private readonly username =
+    process.env.S_INVOICE_USERNAME || '0100109106-507';
   private readonly password = process.env.S_INVOICE_PASSWORD || '2wsxCDE#';
-  private readonly cookieToken = process.env.S_INVOICE_COOKIE || 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJleHAiOjE3NTU1ODgyMjIsInR5cGUiOjEsImlhdCI6MTc1NTU4NzAyMiwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiNzBiYjNkNGUtYTk1MS00ZjdkLTlhMjUtZTM1OTkzMmJmNTI1IiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.hKMKysoXF06sIIKVasodNFY0hh8ETbBv0iaUTy0z3ldxk-S4shYFZdZLjxYKyLuqxz6XVTNSuD1q3bvUzxMdug3ejQ9MjNlAl-Ax2Dfb_NNh6Dqm2HMrMA75OHwRJTlbfAHxCxnmOnmgp9aUIVne2mZdEbharkytePOx8j_OZrnfG01wxAqqJLpHETlmOnebEj4hPdNKQ21X6QImIrNH_N8tZLNMdsBsLwSniSrpemrLOLjrHdvxmjwF8yFy6LcoM14BdZwi7VLP2gz5fxvakMf4OJQkWzln8-mbUlMaAzAaH7-HUd921DyryEmZyUQbSR1ddOyE5xuv6WVMhur6Og; session_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJhdGkiOiI3MGJiM2Q0ZS1hOTUxLTRmN2QtOWEyNS1lMzU5OTMyYmY1MjUiLCJleHAiOjE3NTYxOTE4MjIsInR5cGUiOjEsImlhdCI6MTc1NTU4NzAyMiwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiN2Q3OTAyODEtNGEzNS00NjFhLTk5NjAtMGQwYTljZGRiZTdmIiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.hYM3E8PAFHBkVx0oW60NLmu100-ktDYAt1caMGsuT6N9SmE4akNHNd39xyoDnWXEVJJxUi_-NCbdLs8ZWq0qZZComr-CvoVkjEoUQtyOrz3jOhAYxdfgiilezL9wTGO0DFhwHFC9JGsYBs_8CiMbYxrStNuf_MquKgvP7P3TqhuRnd4umIkNAQKWcyLFAK4Vc1r9ZmupL1Brg_9zGQoXEZPyAn_LItLxYt4-uLRF8fovgE0HKqcw9gV4GSN-2OsRjzntF8XvIAl40cEDtEVj5cuVUMJHUc5--Ev0t0n5t6NG2U2m4a4bS8ECn_1iVPXJaAiCN5YpvrwE-AJjkdXHrg; JSESSIONID=wIUlX421pi2fh1mevlLEK8jP8mhbvmKluf18Qo5A';
+  private readonly cookieToken =
+    process.env.S_INVOICE_COOKIE ||
+    'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJleHAiOjE3NTU1ODgyMjIsInR5cGUiOjEsImlhdCI6MTc1NTU4NzAyMiwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiNzBiYjNkNGUtYTk1MS00ZjdkLTlhMjUtZTM1OTkzMmJmNTI1IiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.hKMKysoXF06sIIKVasodNFY0hh8ETbBv0iaUTy0z3ldxk-S4shYFZdZLjxYKyLuqxz6XVTNSuD1q3bvUzxMdug3ejQ9MjNlAl-Ax2Dfb_NNh6Dqm2HMrMA75OHwRJTlbfAHxCxnmOnmgp9aUIVne2mZdEbharkytePOx8j_OZrnfG01wxAqqJLpHETlmOnebEj4hPdNKQ21X6QImIrNH_N8tZLNMdsBsLwSniSrpemrLOLjrHdvxmjwF8yFy6LcoM14BdZwi7VLP2gz5fxvakMf4OJQkWzln8-mbUlMaAzAaH7-HUd921DyryEmZyUQbSR1ddOyE5xuv6WVMhur6Og; session_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJhdGkiOiI3MGJiM2Q0ZS1hOTUxLTRmN2QtOWEyNS1lMzU5OTMyYmY1MjUiLCJleHAiOjE3NTYxOTE4MjIsInR5cGUiOjEsImlhdCI6MTc1NTU4NzAyMiwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiN2Q3OTAyODEtNGEzNS00NjFhLTk5NjAtMGQwYTljZGRiZTdmIiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.hYM3E8PAFHBkVx0oW60NLmu100-ktDYAt1caMGsuT6N9SmE4akNHNd39xyoDnWXEVJJxUi_-NCbdLs8ZWq0qZZComr-CvoVkjEoUQtyOrz3jOhAYxdfgiilezL9wTGO0DFhwHFC9JGsYBs_8CiMbYxrStNuf_MquKgvP7P3TqhuRnd4umIkNAQKWcyLFAK4Vc1r9ZmupL1Brg_9zGQoXEZPyAn_LItLxYt4-uLRF8fovgE0HKqcw9gV4GSN-2OsRjzntF8XvIAl40cEDtEVj5cuVUMJHUc5--Ev0t0n5t6NG2U2m4a4bS8ECn_1iVPXJaAiCN5YpvrwE-AJjkdXHrg; JSESSIONID=wIUlX421pi2fh1mevlLEK8jP8mhbvmKluf18Qo5A';
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
@@ -64,32 +71,43 @@ export class SInvoiceIntegrationService {
    */
   async createInvoiceForOrder(orderId: string): Promise<sInvoiceType> {
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
     if (!workspaceId) {
       this.logger.error('Workspace ID not found when creating S-Invoice');
+
       return {} as sInvoiceType;
     }
     let sInvoice: sInvoiceType = {} as sInvoiceType;
-    const orderRepository = await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-      workspaceId,
-      'mktOrder',
-      { shouldBypassPermissionChecks: true },
-    );
-    const orderItemRepository = await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
-      workspaceId,
-      'mktOrderItem',
-      { shouldBypassPermissionChecks: true },
-    );
-
+    const orderRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
+        workspaceId,
+        'mktOrder',
+        { shouldBypassPermissionChecks: true },
+      );
+    const orderItemRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
+        workspaceId,
+        'mktOrderItem',
+        { shouldBypassPermissionChecks: true },
+      );
 
     const order = await orderRepository.findOne({ where: { id: orderId } });
+
     if (!order) {
       this.logger.warn(`Order ${orderId} not found when creating S-Invoice`);
+
       return {} as sInvoiceType;
     }
 
-    const items = await orderItemRepository.find({ where: { mktOrderId: orderId } as any });
+    const items = await orderItemRepository.find({
+      where: { mktOrderId: orderId } as any,
+    });
+
     if (!items || items.length === 0) {
-      this.logger.warn(`Order ${orderId} has no items; skip S-Invoice creation`);
+      this.logger.warn(
+        `Order ${orderId} has no items; skip S-Invoice creation`,
+      );
+
       return {} as sInvoiceType;
     }
 
@@ -121,21 +139,31 @@ export class SInvoiceIntegrationService {
     });
 
     // Compute tax breakdowns (group by taxPercentage)
-    const taxMap = new Map<number, { taxableAmount: number; taxAmount: number }>();
+    const taxMap = new Map<
+      number,
+      { taxableAmount: number; taxAmount: number }
+    >();
+
     for (const line of itemInfo) {
       const key = line.taxPercentage || 0;
       const current = taxMap.get(key) || { taxableAmount: 0, taxAmount: 0 };
+
       current.taxableAmount += line.itemTotalAmountWithoutTax;
       current.taxAmount += line.taxAmount;
       taxMap.set(key, current);
     }
-    const taxBreakdowns = Array.from(taxMap.entries()).map(([taxPercentage, v]) => ({
-      taxPercentage,
-      taxableAmount: v.taxableAmount,
-      taxAmount: v.taxAmount,
-    }));
+    const taxBreakdowns = Array.from(taxMap.entries()).map(
+      ([taxPercentage, v]) => ({
+        taxPercentage,
+        taxableAmount: v.taxableAmount,
+        taxAmount: v.taxAmount,
+      }),
+    );
 
-    const totalAmountWithoutTax = itemInfo.reduce((s, l) => s + l.itemTotalAmountWithoutTax, 0);
+    const totalAmountWithoutTax = itemInfo.reduce(
+      (s, l) => s + l.itemTotalAmountWithoutTax,
+      0,
+    );
     const totalTaxAmount = itemInfo.reduce((s, l) => s + l.taxAmount, 0);
     const totalAmountWithTax = totalAmountWithoutTax + totalTaxAmount;
 
@@ -187,25 +215,40 @@ export class SInvoiceIntegrationService {
 
     try {
       // Create Basic Auth header
-      const basicAuth = Buffer.from(`${this.username}:${this.password}`).toString('base64');
-      this.logger.log(`[S-INVOICE] Using Basic Auth with username: ${this.username}`);
+      const basicAuth = Buffer.from(
+        `${this.username}:${this.password}`,
+      ).toString('base64');
+
+      this.logger.log(
+        `[S-INVOICE] Using Basic Auth with username: ${this.username}`,
+      );
       this.logger.log(`[S-INVOICE] Basic Auth header: Basic ${basicAuth}`);
 
       // Set headers with Basic Auth and Cookie
-      const headers: Record<string, string> = { 
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${basicAuth}`,
-        'Cookie': this.cookieToken,
+        Authorization: `Basic ${basicAuth}`,
+        Cookie: this.cookieToken,
       };
 
       const url = `/services/einvoiceapplication/api/InvoiceAPI/InvoiceWS/createInvoice/${this.taxCode}`;
-      this.logger.log(`[S-INVOICE] Creating invoice with URL: ${this.baseUrl}${url}`);
-      this.logger.log(`[S-INVOICE] Request headers: ${JSON.stringify(headers)}`);
-      this.logger.log(`[S-INVOICE] Invoice payload: ${JSON.stringify(payload)}`);
 
-      const res = await this.http.post<CreateInvoiceResponse>(url, payload, { headers });
+      this.logger.log(
+        `[S-INVOICE] Creating invoice with URL: ${this.baseUrl}${url}`,
+      );
+      this.logger.log(
+        `[S-INVOICE] Request headers: ${JSON.stringify(headers)}`,
+      );
+      this.logger.log(
+        `[S-INVOICE] Invoice payload: ${JSON.stringify(payload)}`,
+      );
+
+      const res = await this.http.post<CreateInvoiceResponse>(url, payload, {
+        headers,
+      });
 
       const response = res.data.result || {};
+
       this.logger.log(`[S-INVOICE] Response: ${JSON.stringify(response)}`);
       sInvoice = {
         status: MKT_INVOICE_STATUS.SENT,
@@ -221,10 +264,13 @@ export class SInvoiceIntegrationService {
         invoiceNo: response.invoiceNo,
         transactionUuid: response.transactionUuid || transactionUuid,
         issueDate: String(nowMs),
-      }
+      };
     } catch (error: any) {
       const errMsg = error?.response?.data || error?.message;
-      this.logger.error(`Create S-Invoice failed for order ${orderId}: ${JSON.stringify(errMsg)}`);
+
+      this.logger.error(
+        `Create S-Invoice failed for order ${orderId}: ${JSON.stringify(errMsg)}`,
+      );
       // Persist a draft/error invoice for traceability
       try {
         sInvoice = {
@@ -240,13 +286,14 @@ export class SInvoiceIntegrationService {
           invoiceSeries: this.invoiceSeries,
           transactionUuid,
           issueDate: String(nowMs),
-        }
+        };
       } catch (persistErr) {
-        this.logger.error(`Failed to save draft invoice after API error: ${persistErr?.message}`);
+        this.logger.error(
+          `Failed to save draft invoice after API error: ${persistErr?.message}`,
+        );
       }
     }
+
     return sInvoice;
   }
 }
-
-

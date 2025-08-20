@@ -28,7 +28,7 @@ import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.work
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 
-import { ORDER_STATUS_OPTIONS,OrderStatus } from './constants';
+import { ORDER_STATUS_OPTIONS, OrderStatus } from './constants';
 
 // Define fields to be used for search
 const SEARCH_FIELDS_FOR_ORDER: FieldTypeAndNameMetadata[] = [

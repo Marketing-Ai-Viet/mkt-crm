@@ -52,7 +52,11 @@ export class MktInvoiceService {
     if (input.name === '' || !input.name) {
       if (input.mktOrderId) {
         input.name = await this.generateInvoiceNameFromOrder(input.mktOrderId);
-        const sInvoice: sInvoiceType = await this.sInvoiceIntegrationService.createInvoiceForOrder(input.mktOrderId);
+        const sInvoice: sInvoiceType =
+          await this.sInvoiceIntegrationService.createInvoiceForOrder(
+            input.mktOrderId,
+          );
+
         Object.assign(input, sInvoice);
       }
     }
@@ -62,6 +66,7 @@ export class MktInvoiceService {
     try {
       const orderItemName =
         await this.updateInvoiceNameFromOrderItemDirectly(orderId);
+
       if (!orderItemName) {
         return this.generateInvoiceName(orderId);
       }
