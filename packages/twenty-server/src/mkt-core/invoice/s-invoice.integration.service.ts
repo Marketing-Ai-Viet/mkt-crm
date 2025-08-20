@@ -24,8 +24,9 @@ export class SInvoiceIntegrationService {
   private readonly taxCode = process.env.S_INVOICE_TAX_CODE || '0100109106-507';
   private readonly templateCode = process.env.S_INVOICE_TEMPLATE_CODE || '1/770';
   private readonly invoiceSeries = process.env.S_INVOICE_SERIES || 'K23TXM';
-  private readonly authToken = process.env.S_INVOICE_AUTH_TOKEN || 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJleHAiOjE3NTU1OTk5MzEsInR5cGUiOjEsImlhdCI6MTc1NTU5ODczMSwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiMTA1ZDUzY2EtYmYxZS00ZDNmLThiYmEtODgwZmRjNTRlMGQxIiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.AUheddss66Ppj1KYK2VtJOq5cDhKg4MY-nUpBTgDUCSSVclPO8r0KUAg9NoImvWKyDU1MpiMTGOJqFh-RkFzb3MXSQh4e8ME0HHyoV69wl0Z0CpU9N31c92LBUiT4UmaN8Oyn6EsGeMEMMc1XWEEiMP7h6ezVE0J8ZPrra2CKoVwgXvJUocMoYf6PNTi_scr6Lj2r5x0lpDkySIu87MBt5-uV_kK58y9dkMppYYBsmEn4iI27V-jdXA36HEPVxJZ1_70LqiMJnZJukH-0Lt139J-7Fy9VTcdLcFv6DDjLpMkWKOrhSZsZe5A_rprn4M28jcZqxUExMKZnoo5-EKQ3g';
-  private readonly cookieToken = process.env.S_INVOICE_COOKIE || '';
+  private readonly username = process.env.S_INVOICE_USERNAME || '0100109106-507';
+  private readonly password = process.env.S_INVOICE_PASSWORD || '2wsxCDE#';
+  private readonly cookieToken = process.env.S_INVOICE_COOKIE || 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJleHAiOjE3NTU1ODgyMjIsInR5cGUiOjEsImlhdCI6MTc1NTU4NzAyMiwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiNzBiYjNkNGUtYTk1MS00ZjdkLTlhMjUtZTM1OTkzMmJmNTI1IiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.hKMKysoXF06sIIKVasodNFY0hh8ETbBv0iaUTy0z3ldxk-S4shYFZdZLjxYKyLuqxz6XVTNSuD1q3bvUzxMdug3ejQ9MjNlAl-Ax2Dfb_NNh6Dqm2HMrMA75OHwRJTlbfAHxCxnmOnmgp9aUIVne2mZdEbharkytePOx8j_OZrnfG01wxAqqJLpHETlmOnebEj4hPdNKQ21X6QImIrNH_N8tZLNMdsBsLwSniSrpemrLOLjrHdvxmjwF8yFy6LcoM14BdZwi7VLP2gz5fxvakMf4OJQkWzln8-mbUlMaAzAaH7-HUd921DyryEmZyUQbSR1ddOyE5xuv6WVMhur6Og; session_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiIwMTAwMTA5MTA2LTUwNyIsInNjb3BlIjpbIm9wZW5pZCJdLCJhdGkiOiI3MGJiM2Q0ZS1hOTUxLTRmN2QtOWEyNS1lMzU5OTMyYmY1MjUiLCJleHAiOjE3NTYxOTE4MjIsInR5cGUiOjEsImlhdCI6MTc1NTU4NzAyMiwiaW52b2ljZV9jbHVzdGVyIjoiY2x1c3RlcjciLCJhdXRob3JpdGllcyI6WyJST0xFX1VTRVIiXSwianRpIjoiN2Q3OTAyODEtNGEzNS00NjFhLTk5NjAtMGQwYTljZGRiZTdmIiwiY2xpZW50X2lkIjoid2ViX2FwcCJ9.hYM3E8PAFHBkVx0oW60NLmu100-ktDYAt1caMGsuT6N9SmE4akNHNd39xyoDnWXEVJJxUi_-NCbdLs8ZWq0qZZComr-CvoVkjEoUQtyOrz3jOhAYxdfgiilezL9wTGO0DFhwHFC9JGsYBs_8CiMbYxrStNuf_MquKgvP7P3TqhuRnd4umIkNAQKWcyLFAK4Vc1r9ZmupL1Brg_9zGQoXEZPyAn_LItLxYt4-uLRF8fovgE0HKqcw9gV4GSN-2OsRjzntF8XvIAl40cEDtEVj5cuVUMJHUc5--Ev0t0n5t6NG2U2m4a4bS8ECn_1iVPXJaAiCN5YpvrwE-AJjkdXHrg; JSESSIONID=wIUlX421pi2fh1mevlLEK8jP8mhbvmKluf18Qo5A';
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
@@ -140,23 +141,26 @@ export class SInvoiceIntegrationService {
       },
       buyerInfo: {
         buyerName: order.name || 'Khách hàng',
+        buyerLegalName: null,
         buyerTaxCode: null,
         buyerAddressLine: '',
-        buyerPhoneNumber: '',
-        buyerEmail: '',
+        buyerPhoneNumber: null,
+        buyerEmail: null,
+        buyerIdNo: null,
+        buyerIdType: null,
         buyerNotGetInvoice: '0',
       },
-      payments: [{ paymentMethodName: 'Chuyển khoản' }],
+      payments: [{ paymentMethodName: 'Tiền mặt' }],
       itemInfo,
       taxBreakdowns,
       summarizeInfo: {
+        sumOfTotalLineAmountWithoutTax: totalAmountWithoutTax,
+        totalAmountAfterDiscount: totalAmountWithTax,
         totalAmountWithoutTax,
         totalTaxAmount,
         totalAmountWithTax,
-        totalAmountAfterDiscount: totalAmountWithTax,
-        sumOfTotalLineAmountWithoutTax: totalAmountWithoutTax,
+        totalAmountWithTaxInWords: null,
         discountAmount: 0,
-        totalAmountWithTaxInWords: '',
       },
       metadata: [
         {
@@ -169,11 +173,23 @@ export class SInvoiceIntegrationService {
     };
 
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (this.authToken) headers['Authorization'] = `Bearer ${this.authToken}`;
-      if (this.cookieToken) headers['Cookie'] = `access_token=${this.cookieToken}`;
+      // Create Basic Auth header
+      const basicAuth = Buffer.from(`${this.username}:${this.password}`).toString('base64');
+      this.logger.log(`[S-INVOICE] Using Basic Auth with username: ${this.username}`);
+      this.logger.log(`[S-INVOICE] Basic Auth header: Basic ${basicAuth}`);
+
+      // Set headers with Basic Auth and Cookie
+      const headers: Record<string, string> = { 
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${basicAuth}`,
+        'Cookie': this.cookieToken,
+      };
 
       const url = `/services/einvoiceapplication/api/InvoiceAPI/InvoiceWS/createInvoice/${this.taxCode}`;
+      this.logger.log(`[S-INVOICE] Creating invoice with URL: ${this.baseUrl}${url}`);
+      this.logger.log(`[S-INVOICE] Request headers: ${JSON.stringify(headers)}`);
+      this.logger.log(`[S-INVOICE] Invoice payload: ${JSON.stringify(payload)}`);
+
       const res = await this.http.post<CreateInvoiceResponse>(url, payload, { headers });
 
       const response = res.data || {};
