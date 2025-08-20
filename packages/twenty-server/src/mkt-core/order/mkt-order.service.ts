@@ -1,22 +1,20 @@
-import { Injectable,NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/s-invoice.integration.service';
 import { In } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
+import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 
-import { OrderStatus } from './constants';
 import {
   CreateOrderWithItemsInput,
-  DeleteOrderInput,
   GetOrderInput,
   GetOrdersInput,
+  UpdateOrderInput,
+  DeleteOrderInput,
   OrderSortBy,
   SortOrder,
-  UpdateOrderInput,
 } from './dto';
 import { MktOrderWorkspaceEntity } from './mkt-order.workspace-entity';
 
@@ -27,7 +25,6 @@ export class MktOrderService {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-    private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
   ) {}
 
   async createOrderWithItems(
@@ -320,16 +317,6 @@ export class MktOrderService {
 
       if (!updatedOrder) {
         throw new Error('Failed to retrieve updated order');
-      }
-
-      // Trigger auto e-invoice when order becomes PAID
-      if (updatedOrder.status === OrderStatus.PAID) {
-        // Fire and forget (no await) to avoid blocking update flow
-        this.sInvoiceIntegrationService
-          .createInvoiceForOrder(id)
-          .catch((err) => {
-            console.error('Failed to auto-create S-Invoice:', err?.message || err);
-          });
       }
 
       return updatedOrder;
