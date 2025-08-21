@@ -7,7 +7,7 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-
 type licenseType = {
   licenseKey: string;
   name: string;
-  status: MKT_LICENSE_STATUS;
+  status: MKT_LICENSE_STATUS | null;
   activatedAt: string;
   expiresAt: string;
   lastLoginAt: string;
@@ -49,7 +49,7 @@ export class MktLicenseService {
       license = {
         licenseKey: this.generateLicenseName(order.name),
         name: this.generateLicenseName(order.name),
-        status: MKT_LICENSE_STATUS.PENDING,
+        status: null,
         activatedAt: new Date().toISOString(),
         expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         lastLoginAt: '',
