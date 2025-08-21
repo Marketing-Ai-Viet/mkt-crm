@@ -142,6 +142,9 @@ export const MKT_LICENSE_FIELD_IDS = {
   status: 'b992d78d-27cd-42a9-a91e-0f5422a14ca2',
   activatedAt: '38d52287-727f-479a-a970-2ac0e869f39b',
   expiresAt: '5c490b82-749b-41a1-908e-254f53ab19a4',
+  lastLoginAt: '803df1b5-d057-438e-abcf-d6e4840df0a4',
+  deviceInfo: '7dc3c246-0a81-48b0-9343-70bf0431dfca',
+  notes: 'dbf0752c-ed7c-45eb-88c0-e390ec42aed0',
   // relations
   person: '11a10308-2c5c-4322-847d-4ec12d056d9c',
   mktSales: '4bb927d7-a6d2-4746-b771-731cb6ab9950', // nullable

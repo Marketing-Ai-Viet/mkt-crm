@@ -125,6 +125,36 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   activatedAt?: string;
 
   @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.lastLoginAt,
+    type: FieldMetadataType.TEXT,
+    label: msg`Last Login At`,
+    description: msg`License last login at`,
+    icon: 'IconClock',
+  })
+  @WorkspaceIsNullable()
+  lastLoginAt?: string;
+
+  @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.deviceInfo,
+    type: FieldMetadataType.TEXT,
+    label: msg`Device Info`,
+    description: msg`License device info`,
+    icon: 'IconDeviceDesktop',
+  })
+  @WorkspaceIsNullable()
+  deviceInfo?: string;
+
+  @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.notes,
+    type: FieldMetadataType.TEXT,
+    label: msg`Notes`,
+    description: msg`License notes`,
+    icon: 'IconFileText',
+  })
+  @WorkspaceIsNullable()
+  notes?: string;
+
+  @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.expiresAt,
     type: FieldMetadataType.TEXT,
     label: msg`Expires At`,
