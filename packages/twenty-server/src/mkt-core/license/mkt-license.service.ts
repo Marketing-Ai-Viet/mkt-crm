@@ -1,7 +1,7 @@
 import { Injectable,Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_LICENSE_STATUS,MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
 
 type licenseType = {
@@ -22,31 +22,6 @@ export class MktLicenseService {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
-
-  async customizeGraphQLRequest(
-    operationName: string,
-    variables: { input: MktLicenseWorkspaceEntity },
-  ): Promise<void> {
-    if (!variables || !variables.input) {
-      return;
-    }
-    if (operationName === 'CreateOneMktLicense') {
-      await this.customizeMktLicenseRequest(variables.input);
-    }
-  }
-
-  async customizeMktLicenseRequest(input: MktLicenseWorkspaceEntity): Promise<void> {
-    if (input.name === '' || !input.name) {
-      if (input.mktOrderId) {
-        // input.name = await this.generateLicenseNameFromOrder(input.mktOrderId);
-        const newLicense: licenseType =
-          await this.createLicenseForOrder(
-            input.mktOrderId,
-          );
-        Object.assign(input, newLicense);
-      }
-    }
-  }
 
   async createLicenseForOrder(orderId: string): Promise<licenseType> {
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
