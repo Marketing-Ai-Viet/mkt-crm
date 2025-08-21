@@ -1,4 +1,5 @@
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
+import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-variant-data-seeds.constants';
 
 type MktLicenseDataSeed = {
   id: string;
@@ -12,6 +13,7 @@ type MktLicenseDataSeed = {
   notes: string;
 
   mktOrderId: string;
+  mktVariantId: string;
 
   position: number;
   createdBySource: string;
@@ -39,6 +41,7 @@ export const MKT_LICENSE_DATA_SEED_COLUMNS: (keyof MktLicenseDataSeed)[] = [
   'deviceInfo',
   'notes',
   'mktOrderId',
+  'mktVariantId',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -77,6 +80,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 1',
     notes: 'Notes 1',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_1,
     position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -93,6 +97,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 2',
     notes: 'Notes 2',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_2,
     position: 2,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -109,6 +114,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 3',
     notes: 'Notes 3',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_3,
     position: 3,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -125,6 +131,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 4',
     notes: 'Notes 4',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_4,
     position: 4,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -141,6 +148,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 5',
     notes: 'Notes 5',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_5,
     position: 5,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -157,6 +165,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 6',
     notes: 'Notes 6',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_6,
     position: 6,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -173,6 +182,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 7',
     notes: 'Notes 7',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_7,
     position: 7,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -189,6 +199,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 8',
     notes: 'Notes 8',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_8,
     position: 8,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -205,6 +216,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 9',
     notes: 'Notes 9',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_9,
     position: 9,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -221,6 +233,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 10',
     notes: 'Notes 10',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_10,
     position: 10,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -237,6 +250,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 11',
     notes: 'Notes 11',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_11,
     position: 11,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -253,6 +267,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 12',
     notes: 'Notes 12',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_6_MONTHS_ID,
     position: 12,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -269,6 +284,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 13',
     notes: 'Notes 13',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_12_MONTHS_ID,
     position: 13,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -285,6 +301,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 14',
     notes: 'Notes 14',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_PREMIUM_12_MONTHS_ID,
     position: 14,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -301,6 +318,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     deviceInfo: 'Device Info 15',
     notes: 'Notes 15',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_EMAIL_PLUS_VN_ID,
     position: 15,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,

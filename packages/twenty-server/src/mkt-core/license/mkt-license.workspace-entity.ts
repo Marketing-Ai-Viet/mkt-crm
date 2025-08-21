@@ -26,6 +26,7 @@ import {
 import { MKT_LICENSE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -163,6 +164,22 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   expiresAt?: string;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.mktVariant,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Variant`,
+    description: msg`License variant`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktVariantWorkspaceEntity,
+    inverseSideFieldKey: 'mktLicenses',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVariant: Relation<MktVariantWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktVariant')
+  mktVariantId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktOrder,
