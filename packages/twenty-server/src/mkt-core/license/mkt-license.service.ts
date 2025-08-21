@@ -49,7 +49,7 @@ export class MktLicenseService {
       license = {
         licenseKey: this.generateLicenseName(order.name),
         name: this.generateLicenseName(order.name),
-        status: MKT_LICENSE_STATUS.ACTIVE,
+        status: MKT_LICENSE_STATUS.PENDING,
         activatedAt: new Date().toISOString(),
         expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         lastLoginAt: '',
