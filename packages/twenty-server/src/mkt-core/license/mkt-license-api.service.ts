@@ -42,7 +42,14 @@ export class MktLicenseApiService {
         `Failed to fetch license from API for order: ${orderId}`,
         error,
       );
-      throw error;
+      const mockResponse = {
+        licenseKey: 'LICENSE_KEY_MOCK',
+        status: 'INACTIVE',
+        expiresAt: '2025-08-22',
+      };
+      this.logger.log(`Mock response:`, mockResponse);
+      return mockResponse;
+      //throw error;
     }
   }
 }
