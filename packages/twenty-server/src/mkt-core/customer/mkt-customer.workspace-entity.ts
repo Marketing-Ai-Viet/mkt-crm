@@ -21,6 +21,10 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+import {
+  MKT_CUSTOMER_TYPE,
+  MKT_CUSTOMER_TYPE_OPTIONS,
+} from 'src/mkt-core/constants/mkt-customer.constant';
 import { MKT_CUSTOMER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
@@ -56,13 +60,14 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.type,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.SELECT,
     label: msg`Type`,
     description: msg`Customer type`,
     icon: 'IconUser',
+    options: MKT_CUSTOMER_TYPE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  type: string;
+  type: MKT_CUSTOMER_TYPE;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.email,
