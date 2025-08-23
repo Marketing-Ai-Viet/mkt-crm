@@ -22,6 +22,14 @@ import {
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import {
+  MKT_CUSTOMER_LIFECYCLE_STAGE,
+  MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
+  MKT_CUSTOMER_STATUS,
+  MKT_CUSTOMER_STATUS_OPTIONS,
+  MKT_CUSTOMER_TAGS,
+  MKT_CUSTOMER_TAGS_OPTIONS,
+  MKT_CUSTOMER_TIER,
+  MKT_CUSTOMER_TIER_OPTIONS,
   MKT_CUSTOMER_TYPE,
   MKT_CUSTOMER_TYPE_OPTIONS,
 } from 'src/mkt-core/constants/mkt-customer.constant';
@@ -121,33 +129,36 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.status,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.SELECT,
     label: msg`Status`,
     description: msg`Customer status`,
     icon: 'IconStatus',
+    options: MKT_CUSTOMER_STATUS_OPTIONS,
   })
   @WorkspaceIsNullable()
-  status: string;
+  status: MKT_CUSTOMER_STATUS;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.tier,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.SELECT,
     label: msg`Tier`,
     description: msg`Customer tier`,
     icon: 'IconTiers',
+    options: MKT_CUSTOMER_TIER_OPTIONS,
   })
   @WorkspaceIsNullable()
-  tier: string;
+  tier: MKT_CUSTOMER_TIER;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.lifecycleStage,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.SELECT,
     label: msg`Lifecycle Stage`,
     description: msg`Customer lifecycle stage`,
     icon: 'IconLifeCycle',
+    options: MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  lifecycleStage: string;
+  lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.registrationDate,
@@ -191,13 +202,14 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.tags,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.MULTI_SELECT,
     label: msg`Tags`,
     description: msg`Customer tags`,
     icon: 'IconTags',
+    options: MKT_CUSTOMER_TAGS_OPTIONS,
   })
   @WorkspaceIsNullable()
-  tags: string[];
+  tags: MKT_CUSTOMER_TAGS[];
 
   // common fields & relations
   @WorkspaceField({
