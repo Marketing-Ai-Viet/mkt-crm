@@ -23,6 +23,7 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   totalOrderValue: '3142cb73-ef17-4d43-87e5-d32551bea490',
   churnRiskScore: '04537b93-1bb2-47d7-b5b6-46f37c07dc4b',
   engagementScore: 'fa17e8e2-a908-48c0-aad6-81a220a99946',
+  tags: '940e3766-a147-4cf4-bd50-805b1c8c8880',
   // relations
   salesId: '78be7072-50eb-4edc-81fc-c3e25658d7bd',
   supportId: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
@@ -33,7 +34,6 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   accountOwner: '3fcca96f-443b-4a9e-a75a-47bb67f43762',
   timelineActivities: '78be7072-50eb-4edc-81fc-c3e25658d7bd',
   searchVector: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
-  tags: '940e3766-a147-4cf4-bd50-805b1c8c8880',
 };
 
 export const MKT_PRODUCT_FIELD_IDS = {
@@ -341,6 +341,8 @@ export const MKT_KPI_TEMPLATE_HISTORY_FIELD_IDS = {
 
 //EXTENDS FROM WORKSPACE_MEMBER_STANDARD_FIELD_IDS
 export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
+  //customers
+  accountOwnerForMktCustomers: 'a5699a8d-76fb-48fe-927e-04ce3a8b990c',
   //products
   accountOwnerForMktProducts: 'fa7e06e6-3d12-4185-928a-db45e0257b95',
   accountOwnerForMktAttributes: '84954c00-5b31-46ab-9b6c-e95b81ae8d94',
