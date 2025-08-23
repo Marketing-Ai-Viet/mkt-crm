@@ -10,7 +10,6 @@ import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/attribute/mkt-attribute.workspace-entity';
 import { TIMELINE_ACTIVITY_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
@@ -19,6 +18,7 @@ import { MktTemplateWorkspaceEntity } from 'src/mkt-core/template/mkt-template.w
 import { MktValueWorkspaceEntity } from 'src/mkt-core/value/mkt-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/variant_attribute/mkt-variant-attribute.workspace-entity';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
 
 export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   @WorkspaceRelation({
@@ -33,6 +33,9 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktCustomer: Relation<MktCustomerWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktCustomer')
+  mktCustomerId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktProduct,

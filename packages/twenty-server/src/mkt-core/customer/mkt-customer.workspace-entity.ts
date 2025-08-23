@@ -1,13 +1,11 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
-import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
-import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
-import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
@@ -25,20 +23,21 @@ import { MKT_CUSTOMER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { Relation } from 'typeorm';
 
-const TABLE_ATTRIBUTE_NAME = 'mktCustomer';
+const TABLE_NAME = 'mktCustomer';
 const NAME_FIELD_NAME = 'name';
 
-export const SEARCH_FIELDS_FOR_MKT_ATTRIBUTE: FieldTypeAndNameMetadata[] = [
+export const SEARCH_FIELDS_FOR_MKT_CUSTOMER: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
 ];
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktCustomer,
-  namePlural: `${TABLE_ATTRIBUTE_NAME}s`,
+  namePlural: `${TABLE_NAME}s`,
   labelSingular: msg`Customer`,
   labelPlural: msg`Customers`,
-  description: msg`Customers`,
+  description: msg`Customer entity for marketing`,
   icon: 'IconUser',
   labelIdentifierStandardId: MKT_CUSTOMER_FIELD_IDS.name,
 })
@@ -252,7 +251,7 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconUser',
     generatedType: 'STORED',
     asExpression: getTsVectorColumnExpressionFromFields(
-      SEARCH_FIELDS_FOR_MKT_ATTRIBUTE,
+      SEARCH_FIELDS_FOR_MKT_CUSTOMER,
     ),
   })
   @WorkspaceIsNullable()
