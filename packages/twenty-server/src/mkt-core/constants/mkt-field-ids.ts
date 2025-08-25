@@ -195,7 +195,7 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',
   mktProduct: '81a3b4c5-d6e7-f890-9012-345678901234',
   mktVariant: '63c0be01-54b2-4b5e-b24c-7879c881b479',
-  mktCombo: 'b912f0f6-338d-4baf-a207-3bbca1dff4ee',
+  mktCombo: '45c7d839-e7f7-44db-9d86-37dc84415dd5',
   // common relations or fields
   position: '5e6f7081-9293-b4c5-6789-012345678901',
   createdBy: '6f708192-a3b4-c5d6-7890-123456789012',

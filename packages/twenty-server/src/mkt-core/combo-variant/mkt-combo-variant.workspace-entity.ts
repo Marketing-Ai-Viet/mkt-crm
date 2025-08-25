@@ -77,7 +77,7 @@ export class MktComboVariantWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconClock',
     inverseSideTarget: () => MktComboWorkspaceEntity,
     inverseSideFieldKey: 'mktComboVariants',
-    onDelete: RelationOnDeleteAction.CASCADE,
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
   mktCombo?: Relation<MktComboWorkspaceEntity>;
@@ -93,7 +93,7 @@ export class MktComboVariantWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconBox',
     inverseSideTarget: () => MktVariantWorkspaceEntity,
     inverseSideFieldKey: 'mktComboVariants',
-    onDelete: RelationOnDeleteAction.CASCADE,
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
   mktVariant?: Relation<MktVariantWorkspaceEntity>;

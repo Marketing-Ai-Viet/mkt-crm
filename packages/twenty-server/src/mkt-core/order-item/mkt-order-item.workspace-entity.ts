@@ -192,7 +192,7 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconBox',
     inverseSideTarget: () => MktComboWorkspaceEntity,
     inverseSideFieldKey: 'mktOrderItems',
-    onDelete: RelationOnDeleteAction.CASCADE,
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
   mktCombo?: Relation<MktComboWorkspaceEntity>;
