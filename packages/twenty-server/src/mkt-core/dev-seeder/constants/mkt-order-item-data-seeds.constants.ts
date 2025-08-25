@@ -13,6 +13,7 @@ type MktOrderItemDataSeed = {
   mktOrderId: string;
   mktProductId: string | null;
   mktVariantId: string | null;
+  mktComboId: string | null;
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
   createdByName: string;
@@ -34,6 +35,7 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] = 
   'mktOrderId',
   'mktProductId',
   'mktVariantId',
+  'mktComboId',
   'createdBySource',
   'createdByWorkspaceMemberId',
   'createdByName',
@@ -66,6 +68,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS_IDS = {
 import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-variant-data-seeds.constants';
 
 // Import order and product seed IDs for relationships
+import { MKT_COMBO_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-combo-data-seeds.constants';
 import { MKT_ORDER_DATA_SEEDS_IDS } from './mkt-order-data-seeds.constants';
 import { MKT_PRODUCT_DATA_SEEDS_IDS } from './mkt-product-data-seeds.constants';
 
@@ -87,6 +90,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_1,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -106,6 +110,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_2,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -127,7 +132,8 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_3,
-    createdBySource: 'API',
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
+    createdBySource: 'API', 
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
   },
@@ -146,6 +152,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_4,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
@@ -167,6 +174,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_5,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Mike Johnson',
@@ -188,6 +196,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_6,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_6,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -207,6 +216,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_7,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -228,6 +238,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_8,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_5,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
@@ -247,6 +258,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_9,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
@@ -268,6 +280,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_10,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_4,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Mike Johnson',
@@ -287,6 +300,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.ID_11,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Mike Johnson',
@@ -308,6 +322,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_6_MONTHS_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -327,6 +342,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_12_MONTHS_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -348,6 +364,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_PREMIUM_12_MONTHS_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
@@ -367,6 +384,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_LICENSE_BIZ_1_YEAR_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
@@ -388,6 +406,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_1,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_LICENSE_BIZ_1_YEAR_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Mike Johnson',
@@ -409,6 +428,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_2,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_EMAIL_PLUS_VN_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -428,6 +448,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_3,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_LICENSE_BIZ_1_YEAR_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_3,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'John Doe',
@@ -449,6 +470,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_4,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_LICENSE_BIZ_1_YEAR_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Jane Smith',
@@ -470,6 +492,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
     mktProductId: MKT_PRODUCT_DATA_SEEDS_IDS.ID_5,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_LICENSE_BIZ_1_YEAR_ID,
+    mktComboId: MKT_COMBO_DATA_SEEDS_IDS.ID_2,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Mike Johnson',
