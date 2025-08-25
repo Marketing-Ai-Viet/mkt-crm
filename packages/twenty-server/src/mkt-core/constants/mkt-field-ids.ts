@@ -333,6 +333,9 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktVariant: 'b6ecb5e1-14c8-4aaa-b715-e26ed4e81e62',
   mktValue: '9022a8c1-5948-473e-a361-1ddfb017a4f2',
   mktVariantAttribute: 'f656fa33-96e7-42a0-8f4f-f35dfcb0acae',
+  //combos
+  mktCombo: '94442c1a-1e57-4038-9e5c-dac724d92a74',
+  mktComboVariant: 'dffcadf4-8f5e-4530-8794-61230d68324a',
   //orders
   mktOrder: 'e0919045-74af-4800-bb40-ccef297253a9',
   mktLicense: '4b8283ce-daa4-4f11-87d0-2ade1cd6dc81',
@@ -382,6 +385,9 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktVariants: '27b1e5ab-980b-4c3c-8168-c8ed77e86363',
   accountOwnerForMktValues: '7bdf395c-9f67-4fc9-9149-e58ba5c135de',
   accountOwnerForMktVariantAttributes: '6cd393a4-db2a-4cc6-b444-8e9ca99f93ec',
+  //combos
+  accountOwnerForMktCombos: '90e6970d-8c23-4562-8c25-cece175b20e8',
+  accountOwnerForMktComboVariants: '35abe762-d4e7-4c16-b4c6-e22c990dc0b5',
   //orders
   accountOwnerForMktOrders: 'dbbf2703-8803-4c21-9b10-2cf38b045d4b',
   accountOwnerForMktLicenses: 'a343e640-2214-4896-a0e2-830ee854a778',
