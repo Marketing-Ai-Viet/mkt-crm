@@ -9,7 +9,6 @@ import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/attribute/mkt-attribute.workspace-entity';
-import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { TIMELINE_ACTIVITY_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
@@ -233,19 +232,19 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktCombo')
   mktComboId: string | null;
 
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktComboVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Combo Variant`,
-    description: msg`Event combo variant`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktComboVariant: Relation<MktComboVariantWorkspaceEntity> | null;
+  // @WorkspaceRelation({
+  //   standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktComboVariant,
+  //   type: RelationType.MANY_TO_ONE,
+  //   label: msg`Combo Variant`,
+  //   description: msg`Event combo variant`,
+  //   icon: 'IconBox',
+  //   inverseSideTarget: () => MktComboVariantWorkspaceEntity,
+  //   inverseSideFieldKey: 'timelineActivities',
+  //   onDelete: RelationOnDeleteAction.CASCADE,
+  // })
+  // @WorkspaceIsNullable()
+  // mktComboVariant: Relation<MktComboVariantWorkspaceEntity> | null;
 
-  @WorkspaceJoinColumn('mktComboVariant')
-  mktComboVariantId: string | null;
+  // @WorkspaceJoinColumn('mktComboVariant')
+  // mktComboVariantId: string | null;
 }

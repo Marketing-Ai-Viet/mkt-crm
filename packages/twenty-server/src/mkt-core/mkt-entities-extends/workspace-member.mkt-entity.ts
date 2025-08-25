@@ -7,7 +7,6 @@ import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/i
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/attribute/mkt-attribute.workspace-entity';
-import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { WORKSPACE_MEMBER_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/mkt-contract.workspace-entity';
@@ -82,17 +81,17 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   accountOwnerForMktCombos: Relation<MktComboWorkspaceEntity[]>;
 
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktComboVariants,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Combo Variants`,
-    description: msg`Account owner for combo variants`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktComboVariants: Relation<MktComboVariantWorkspaceEntity[]>;
+  // @WorkspaceRelation({
+  //   standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktComboVariants,
+  //   type: RelationType.ONE_TO_MANY,
+  //   label: msg`Account Owner For Combo Variants`,
+  //   description: msg`Account owner for combo variants`,
+  //   icon: 'IconBox',
+  //   inverseSideTarget: () => MktComboVariantWorkspaceEntity,
+  //   inverseSideFieldKey: 'accountOwner',
+  //   onDelete: RelationOnDeleteAction.SET_NULL,
+  // })
+  // accountOwnerForMktComboVariants: Relation<MktComboVariantWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktValues,

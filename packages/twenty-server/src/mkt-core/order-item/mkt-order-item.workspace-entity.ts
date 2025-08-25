@@ -21,7 +21,6 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
-import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
@@ -184,21 +183,21 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktVariant')
   mktVariantId: string | null;
 
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktCombo,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Combo`,
-    description: msg`Combo for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktCombo?: Relation<MktComboWorkspaceEntity>;
+  // @WorkspaceRelation({
+  //   standardId: MKT_ORDER_ITEM_FIELD_IDS.mktCombo,
+  //   type: RelationType.MANY_TO_ONE,
+  //   label: msg`Combo`,
+  //   description: msg`Combo for this order item`,
+  //   icon: 'IconBox',
+  //   inverseSideTarget: () => MktComboWorkspaceEntity,
+  //   inverseSideFieldKey: 'mktOrderItems',
+  //   onDelete: RelationOnDeleteAction.SET_NULL,
+  // })
+  // @WorkspaceIsNullable()
+  // mktCombo?: Relation<MktComboWorkspaceEntity>;
 
-  @WorkspaceJoinColumn('mktCombo')
-  mktComboId: string | null;
+  // @WorkspaceJoinColumn('mktCombo')
+  // mktComboId: string | null;
 
   // Temporarily commented out due to TimelineActivityMktEntity not being a registered entity
   // @WorkspaceRelation({

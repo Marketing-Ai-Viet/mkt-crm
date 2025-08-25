@@ -25,7 +25,6 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_COMBO_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -117,28 +116,28 @@ export class MktComboWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   price?: number;
 
-  @WorkspaceField({
-    standardId: MKT_COMBO_FIELD_IDS.mktComboVariants,
-    type: FieldMetadataType.TEXT,
-    label: msg`Combo Variants`,
-    description: msg`Combo variants`,
-    icon: 'IconBox',
-  })
-  @WorkspaceIsNullable()
-  mktComboVariants?: string;
+  // @WorkspaceField({
+  //   standardId: MKT_COMBO_FIELD_IDS.mktComboVariants,
+  //   type: FieldMetadataType.TEXT,
+  //   label: msg`Combo Variants`,
+  //   description: msg`Combo variants`,
+  //   icon: 'IconBox',
+  // })
+  // @WorkspaceIsNullable()
+  // mktComboVariants?: string;
 
-  @WorkspaceRelation({
-    standardId: MKT_COMBO_FIELD_IDS.mktOrderItems,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Order Items`,
-    description: msg`Combo order items`,
-    icon: 'IconDeviceDesktop',
-    inverseSideTarget: () => MktOrderItemWorkspaceEntity,
-    inverseSideFieldKey: 'mktCombo',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktOrderItems?: Relation<MktOrderItemWorkspaceEntity[]>;
+  // @WorkspaceRelation({
+  //   standardId: MKT_COMBO_FIELD_IDS.mktOrderItems,
+  //   type: RelationType.ONE_TO_MANY,
+  //   label: msg`Order Items`,
+  //   description: msg`Combo order items`,
+  //   icon: 'IconDeviceDesktop',
+  //   inverseSideTarget: () => MktOrderItemWorkspaceEntity,
+  //   inverseSideFieldKey: 'mktCombo',
+  //   onDelete: RelationOnDeleteAction.CASCADE,
+  // })
+  // @WorkspaceIsNullable()
+  // mktOrderItems?: Relation<MktOrderItemWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_COMBO_FIELD_IDS.position,
