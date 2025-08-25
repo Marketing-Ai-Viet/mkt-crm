@@ -127,9 +127,9 @@ export class MktComboWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   mktComboVariants?: string;
 
-  @WorkspaceField({
+  @WorkspaceRelation({
     standardId: MKT_COMBO_FIELD_IDS.mktOrderItems,
-    type: FieldMetadataType.TEXT,
+    type: RelationType.ONE_TO_MANY,
     label: msg`Order Items`,
     description: msg`Combo order items`,
     icon: 'IconDeviceDesktop',
@@ -138,7 +138,7 @@ export class MktComboWorkspaceEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
-  mktOrderItems?: string;
+  mktOrderItems?: Relation<MktOrderItemWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_COMBO_FIELD_IDS.position,

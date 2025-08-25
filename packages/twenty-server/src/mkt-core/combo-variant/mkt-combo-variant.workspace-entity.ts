@@ -22,8 +22,10 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { MKT_COMBO_VARIANT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -67,28 +69,34 @@ export class MktComboVariantWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   quantity?: number;
 
-  @WorkspaceField({
+  @WorkspaceRelation({
     standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktCombo,
-    type: FieldMetadataType.TEXT,
+    type: RelationType.MANY_TO_ONE,
     label: msg`Combo`,
     description: msg`Combo`,
     icon: 'IconClock',
+    inverseSideTarget: () => MktComboWorkspaceEntity,
+    inverseSideFieldKey: 'mktComboVariants',
+    onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
-  mktCombo?: string;
+  mktCombo?: Relation<MktComboWorkspaceEntity>;
 
   @WorkspaceJoinColumn('mktCombo')
   mktComboId: string | null;
 
-  @WorkspaceField({
+  @WorkspaceRelation({
     standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktVariant,
-    type: FieldMetadataType.TEXT,
+    type: RelationType.MANY_TO_ONE,
     label: msg`Variant`,
     description: msg`Variant`,
     icon: 'IconBox',
+    inverseSideTarget: () => MktVariantWorkspaceEntity,
+    inverseSideFieldKey: 'mktComboVariants',
+    onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
-  mktVariant?: string;
+  mktVariant?: Relation<MktVariantWorkspaceEntity>;
 
   @WorkspaceJoinColumn('mktVariant')
   mktVariantId: string | null;

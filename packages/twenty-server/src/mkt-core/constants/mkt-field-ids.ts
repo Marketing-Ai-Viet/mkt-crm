@@ -97,7 +97,7 @@ export const MKT_VARIANT_FIELD_IDS = {
   mktProduct: '7cfa6d7b-db26-4fb5-9beb-3ec348f9fed7',
   mktVariantAttribute: 'b57069ab-7e21-4823-a61f-8de0726bfbe1',
   mktOrderItems: 'f0e7b2d7-aa06-4173-bb81-0b0060da95ae',
-
+  mktComboVariants: 'b594a150-07df-4c1e-aae1-86c25e195a63',
   // common relations or fields
   position: '03ed978a-61d9-46a6-8d28-bf0964437849',
   createdBy: 'e87d1e5d-e0f5-4ed0-ab23-3ebbb0a1beae',
@@ -169,6 +169,7 @@ export const MKT_ORDER_FIELD_IDS = {
   mktInvoices: '0d4664c7-90ef-491a-8a34-02cdf51ef518',
   items: '5c818b2a-bd61-4423-b1bc-ac89781f4324',
   person: '4d6b6ef3-6d6b-4323-9e4f-a7f01d97e68d',
+  mktComboVariants: '28a25b7e-3b7e-4746-ac46-7ac7a2a1d67b',
   //common relations or fields
   position: '9d970deb-f1e5-4cc4-8b36-9ad83ca03ee5',
   createdBy: '6d52adfa-9230-4df0-84fc-d51c646e8538',
@@ -194,7 +195,7 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',
   mktProduct: '81a3b4c5-d6e7-f890-9012-345678901234',
   mktVariant: '63c0be01-54b2-4b5e-b24c-7879c881b479',
-
+  mktCombo: 'b912f0f6-338d-4baf-a207-3bbca1dff4ee',
   // common relations or fields
   position: '5e6f7081-9293-b4c5-6789-012345678901',
   createdBy: '6f708192-a3b4-c5d6-7890-123456789012',
