@@ -3,7 +3,9 @@ import { FieldMetadataType } from 'twenty-shared/types';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
@@ -12,12 +14,16 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
+import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { MKT_COMBO_VARIANT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { Relation } from 'typeorm';
 
 const TABLE_COMBO_VARIANT_NAME = 'mktComboVariant';
 const NAME_FIELD_NAME = 'name';
@@ -57,21 +63,21 @@ export class MktComboVariantWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   quantity?: number;
 
-  // @WorkspaceRelation({
-  //   standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktCombo,
-  //   type: RelationType.MANY_TO_ONE,
-  //   label: msg`Combo`,
-  //   description: msg`Combo`,
-  //   icon: 'IconClock',
-  //   inverseSideTarget: () => MktComboWorkspaceEntity,
-  //   inverseSideFieldKey: 'mktComboVariants',
-  //   onDelete: RelationOnDeleteAction.SET_NULL,
-  // })
-  // @WorkspaceIsNullable()
-  // mktCombo?: Relation<MktComboWorkspaceEntity>;
+  @WorkspaceRelation({
+    standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktCombo,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Combo`,
+    description: msg`Combo`,
+    icon: 'IconClock',
+    inverseSideTarget: () => MktComboWorkspaceEntity,
+    inverseSideFieldKey: 'mktComboVariants',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktCombo?: Relation<MktComboWorkspaceEntity>;
 
-  // @WorkspaceJoinColumn('mktCombo')
-  // mktComboId: string | null;
+  @WorkspaceJoinColumn('mktCombo')
+  mktComboId: string | null;
 
   // @WorkspaceRelation({
   //   standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktVariant,

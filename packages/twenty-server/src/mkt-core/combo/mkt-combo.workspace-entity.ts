@@ -27,6 +27,7 @@ import { MKT_COMBO_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 
 const TABLE_COMBO_NAME = 'mktCombo';
 const NAME_FIELD_NAME = 'name';
@@ -116,15 +117,18 @@ export class MktComboWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   price?: number;
 
-  // @WorkspaceField({
-  //   standardId: MKT_COMBO_FIELD_IDS.mktComboVariants,
-  //   type: FieldMetadataType.TEXT,
-  //   label: msg`Combo Variants`,
-  //   description: msg`Combo variants`,
-  //   icon: 'IconBox',
-  // })
-  // @WorkspaceIsNullable()
-  // mktComboVariants?: string;
+  @WorkspaceRelation({
+    standardId: MKT_COMBO_FIELD_IDS.mktComboVariants,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Combo Variants`,
+    description: msg`Combo variants`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
+    inverseSideFieldKey: 'mktCombo',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktComboVariants?: Relation<MktComboVariantWorkspaceEntity[]>;
 
   // @WorkspaceRelation({
   //   standardId: MKT_COMBO_FIELD_IDS.mktOrderItems,
