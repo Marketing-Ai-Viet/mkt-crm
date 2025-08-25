@@ -23,7 +23,10 @@ import {
 import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { MKT_COMBO_VARIANT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { Relation } from 'typeorm';
+import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 const TABLE_COMBO_VARIANT_NAME = 'mktComboVariant';
 const NAME_FIELD_NAME = 'name';
@@ -79,21 +82,21 @@ export class MktComboVariantWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktCombo')
   mktComboId: string | null;
 
-  // @WorkspaceRelation({
-  //   standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktVariant,
-  //   type: RelationType.MANY_TO_ONE,
-  //   label: msg`Variant`,
-  //   description: msg`Variant`,
-  //   icon: 'IconBox',
-  //   inverseSideTarget: () => MktVariantWorkspaceEntity,
-  //   inverseSideFieldKey: 'mktComboVariants',
-  //   onDelete: RelationOnDeleteAction.SET_NULL,
-  // })
-  // @WorkspaceIsNullable()
-  // mktVariant?: Relation<MktVariantWorkspaceEntity>;
+  @WorkspaceRelation({
+    standardId: MKT_COMBO_VARIANT_FIELD_IDS.mktVariant,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Variant`,
+    description: msg`Variant`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktVariantWorkspaceEntity,
+    inverseSideFieldKey: 'mktComboVariants',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVariant?: Relation<MktVariantWorkspaceEntity>;
 
-  // @WorkspaceJoinColumn('mktVariant')
-  // mktVariantId: string | null;
+  @WorkspaceJoinColumn('mktVariant')
+  mktVariantId: string | null;
 
   @WorkspaceField({
     standardId: MKT_COMBO_VARIANT_FIELD_IDS.position,
@@ -114,35 +117,35 @@ export class MktComboVariantWorkspaceEntity extends BaseWorkspaceEntity {
   })
   createdBy: ActorMetadata;
 
-  // @WorkspaceRelation({
-  //   standardId: MKT_COMBO_VARIANT_FIELD_IDS.accountOwner,
-  //   type: RelationType.MANY_TO_ONE,
-  //   label: msg`Account Owner`,
-  //   description: msg`Your team member responsible for managing the combo`,
-  //   icon: 'IconUserCircle',
-  //   inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-  //   inverseSideFieldKey: 'accountOwnerForMktComboVariants',
-  //   onDelete: RelationOnDeleteAction.SET_NULL,
-  // })
-  // @WorkspaceIsNullable()
-  // accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
+  @WorkspaceRelation({
+    standardId: MKT_COMBO_VARIANT_FIELD_IDS.accountOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Account Owner`,
+    description: msg`Your team member responsible for managing the combo`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwnerForMktComboVariants',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
 
-  // @WorkspaceJoinColumn('accountOwner')
-  // accountOwnerId: string | null;
+  @WorkspaceJoinColumn('accountOwner')
+  accountOwnerId: string | null;
 
-  // @WorkspaceRelation({
-  //   standardId: MKT_COMBO_VARIANT_FIELD_IDS.timelineActivities,
-  //   type: RelationType.ONE_TO_MANY,
-  //   label: msg`Timeline Activities`,
-  //   description: msg`Timeline Activities linked to the combo`,
-  //   icon: 'IconIconTimelineEvent',
-  //   inverseSideTarget: () => TimelineActivityWorkspaceEntity,
-  //   inverseSideFieldKey: 'mktComboVariant',
-  //   onDelete: RelationOnDeleteAction.CASCADE,
-  // })
-  // @WorkspaceIsNullable()
-  // @WorkspaceIsSystem()
-  // timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
+  @WorkspaceRelation({
+    standardId: MKT_COMBO_VARIANT_FIELD_IDS.timelineActivities,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Timeline Activities`,
+    description: msg`Timeline Activities linked to the combo`,
+    icon: 'IconIconTimelineEvent',
+    inverseSideTarget: () => TimelineActivityWorkspaceEntity,
+    inverseSideFieldKey: 'mktComboVariant',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_COMBO_VARIANT_FIELD_IDS.searchVector,

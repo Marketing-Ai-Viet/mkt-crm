@@ -19,6 +19,7 @@ import { MktTemplateWorkspaceEntity } from 'src/mkt-core/template/mkt-template.w
 import { MktValueWorkspaceEntity } from 'src/mkt-core/value/mkt-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/variant_attribute/mkt-variant-attribute.workspace-entity';
+import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceRelation({
@@ -81,17 +82,17 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   accountOwnerForMktCombos: Relation<MktComboWorkspaceEntity[]>;
 
-  // @WorkspaceRelation({
-  //   standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktComboVariants,
-  //   type: RelationType.ONE_TO_MANY,
-  //   label: msg`Account Owner For Combo Variants`,
-  //   description: msg`Account owner for combo variants`,
-  //   icon: 'IconBox',
-  //   inverseSideTarget: () => MktComboVariantWorkspaceEntity,
-  //   inverseSideFieldKey: 'accountOwner',
-  //   onDelete: RelationOnDeleteAction.SET_NULL,
-  // })
-  // accountOwnerForMktComboVariants: Relation<MktComboVariantWorkspaceEntity[]>;
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktComboVariants,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Combo Variants`,
+    description: msg`Account owner for combo variants`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktComboVariants: Relation<MktComboVariantWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktValues,

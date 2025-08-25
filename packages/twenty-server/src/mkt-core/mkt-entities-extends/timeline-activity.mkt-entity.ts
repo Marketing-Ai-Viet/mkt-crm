@@ -20,6 +20,7 @@ import { MktTemplateWorkspaceEntity } from 'src/mkt-core/template/mkt-template.w
 import { MktValueWorkspaceEntity } from 'src/mkt-core/value/mkt-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/variant_attribute/mkt-variant-attribute.workspace-entity';
+import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 
 export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   @WorkspaceRelation({
@@ -232,19 +233,19 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktCombo')
   mktComboId: string | null;
 
-  // @WorkspaceRelation({
-  //   standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktComboVariant,
-  //   type: RelationType.MANY_TO_ONE,
-  //   label: msg`Combo Variant`,
-  //   description: msg`Event combo variant`,
-  //   icon: 'IconBox',
-  //   inverseSideTarget: () => MktComboVariantWorkspaceEntity,
-  //   inverseSideFieldKey: 'timelineActivities',
-  //   onDelete: RelationOnDeleteAction.CASCADE,
-  // })
-  // @WorkspaceIsNullable()
-  // mktComboVariant: Relation<MktComboVariantWorkspaceEntity> | null;
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktComboVariant,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Combo Variant`,
+    description: msg`Event combo variant`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktComboVariant: Relation<MktComboVariantWorkspaceEntity> | null;
 
-  // @WorkspaceJoinColumn('mktComboVariant')
-  // mktComboVariantId: string | null;
+  @WorkspaceJoinColumn('mktComboVariant')
+  mktComboVariantId: string | null;
 }
