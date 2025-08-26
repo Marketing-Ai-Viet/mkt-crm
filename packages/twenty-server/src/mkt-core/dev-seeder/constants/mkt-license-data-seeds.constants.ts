@@ -25,11 +25,14 @@ type MktLicenseDataSeed = {
 
 // prettier-ignore
 export enum MKT_LICENSE_STATUS {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  EXPIRED = 'expired',
-  REVOKED = 'revoked',
-  ERROR = 'error',
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  EXPIRED = 'EXPIRED',
+  REVOKED = 'REVOKED',
+  ERROR = 'ERROR',
+  DELETED = 'DELETED',
+  PENDING = 'PENDING',
+  OTHER = 'OTHER',
 }
 
 // prettier-ignore

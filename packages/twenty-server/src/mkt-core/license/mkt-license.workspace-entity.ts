@@ -41,12 +41,14 @@ export const SEARCH_FIELDS_FOR_MKT_LICENSE: FieldTypeAndNameMetadata[] = [
 ];
 
 export enum MKT_LICENSE_STATUS {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  EXPIRED = 'expired',
-  REVOKED = 'revoked',
-  PENDING = 'pending',
-  ERROR = 'error',
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  EXPIRED = 'EXPIRED',
+  REVOKED = 'REVOKED',
+  ERROR = 'ERROR',
+  DELETED = 'DELETED',
+  PENDING = 'PENDING',
+  OTHER = 'OTHER',
 }
 
 export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
@@ -85,6 +87,18 @@ export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
     label: 'Error',
     position: 5,
     color: 'red',
+  },
+  {
+    value: MKT_LICENSE_STATUS.DELETED,
+    label: 'Deleted',
+    position: 6,
+    color: 'gray',
+  },
+  {
+    value: MKT_LICENSE_STATUS.OTHER,
+    label: 'Other',
+    position: 7,
+    color: 'turquoise',
   },
 ];
 
