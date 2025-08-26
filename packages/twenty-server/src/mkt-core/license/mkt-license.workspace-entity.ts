@@ -125,23 +125,23 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.activatedAt,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.DATE,
     label: msg`Activated At`,
     description: msg`License activated at`,
     icon: 'IconClock',
   })
   @WorkspaceIsNullable()
-  activatedAt?: string;
+  activatedAt?: Date;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.lastLoginAt,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.DATE,
     label: msg`Last Login At`,
     description: msg`License last login at`,
     icon: 'IconClock',
   })
   @WorkspaceIsNullable()
-  lastLoginAt?: string;
+  lastLoginAt?: Date;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.deviceInfo,
@@ -165,13 +165,13 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.expiresAt,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.DATE,
     label: msg`Expires At`,
     description: msg`License expires at`,
     icon: 'IconClock',
   })
   @WorkspaceIsNullable()
-  expiresAt?: string;
+  expiresAt?: Date;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktVariant,
