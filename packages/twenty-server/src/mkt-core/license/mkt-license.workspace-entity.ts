@@ -46,6 +46,7 @@ export enum MKT_LICENSE_STATUS {
   EXPIRED = 'expired',
   REVOKED = 'revoked',
   PENDING = 'pending',
+  ERROR = 'error',
 }
 
 export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
@@ -78,6 +79,12 @@ export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
     label: 'Pending',
     position: 4,
     color: 'yellow',
+  },
+  {
+    value: MKT_LICENSE_STATUS.ERROR,
+    label: 'Error',
+    position: 5,
+    color: 'red',
   },
 ];
 

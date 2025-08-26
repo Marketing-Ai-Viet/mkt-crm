@@ -29,6 +29,7 @@ export enum MKT_LICENSE_STATUS {
   INACTIVE = 'inactive',
   EXPIRED = 'expired',
   REVOKED = 'revoked',
+  ERROR = 'error',
 }
 
 // prettier-ignore
