@@ -1,8 +1,11 @@
+import { MKT_CUSTOMER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-customer-data-seeds.constants';
+
 type MKT_CUSTOMER_TAG_DATA_SEED = {
   id: string;
   name: string;
   type: MKT_CUSTOMER_TAGS;
-  // mktCustomerId: string;
+
+  mktCustomerId: string;
 
   position: number;
   createdBySource: string;
@@ -20,6 +23,7 @@ export const MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS: (keyof MKT_CUSTOMER_TAG_DATA_SE
     'id',
     'name',
     'type',
+    'mktCustomerId',
     'position',
     'createdBySource',
     'createdByWorkspaceMemberId',
@@ -40,6 +44,7 @@ export const MKT_CUSTOMER_TAG_DATA_SEEDS: MKT_CUSTOMER_TAG_DATA_SEED[] = [
     id: MKT_CUSTOMER_TAG_DATA_SEEDS_IDS.ID_1,
     name: 'New',
     type: MKT_CUSTOMER_TAGS.SYSTEM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
     position: 1,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -49,6 +54,7 @@ export const MKT_CUSTOMER_TAG_DATA_SEEDS: MKT_CUSTOMER_TAG_DATA_SEED[] = [
     id: MKT_CUSTOMER_TAG_DATA_SEEDS_IDS.ID_2,
     name: 'Returning',
     type: MKT_CUSTOMER_TAGS.SYSTEM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
     position: 2,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -58,6 +64,7 @@ export const MKT_CUSTOMER_TAG_DATA_SEEDS: MKT_CUSTOMER_TAG_DATA_SEED[] = [
     id: MKT_CUSTOMER_TAG_DATA_SEEDS_IDS.ID_3,
     name: 'Loyal',
     type: MKT_CUSTOMER_TAGS.SYSTEM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
     position: 3,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -67,6 +74,7 @@ export const MKT_CUSTOMER_TAG_DATA_SEEDS: MKT_CUSTOMER_TAG_DATA_SEED[] = [
     id: MKT_CUSTOMER_TAG_DATA_SEEDS_IDS.ID_4,
     name: 'Churned',
     type: MKT_CUSTOMER_TAGS.SYSTEM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
     position: 4,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -76,6 +84,7 @@ export const MKT_CUSTOMER_TAG_DATA_SEEDS: MKT_CUSTOMER_TAG_DATA_SEED[] = [
     id: MKT_CUSTOMER_TAG_DATA_SEEDS_IDS.ID_5,
     name: 'VIP',
     type: MKT_CUSTOMER_TAGS.SYSTEM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,

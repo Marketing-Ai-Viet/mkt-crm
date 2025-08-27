@@ -24,6 +24,7 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_CUSTOMER_TAG_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -76,14 +77,14 @@ export class MktCustomerTagWorkspaceEntity extends BaseWorkspaceEntity {
   name: string;
 
   @WorkspaceField({
-    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.mktCustomerId,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.mktCustomerCode,
     type: FieldMetadataType.TEXT,
     label: msg`MKT Customer ID`,
     description: msg`MKT Customer ID`,
     icon: 'IconUser',
   })
   @WorkspaceIsNullable()
-  mktCustomerId: string;
+  mktCustomerCode: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_TAG_FIELD_IDS.type,
@@ -115,6 +116,21 @@ export class MktCustomerTagWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`The creator of the record`,
   })
   createdBy: ActorMetadata;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.mktCustomer,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Customer`,
+    description: msg`Customer`,
+    icon: 'IconUser',
+    inverseSideTarget: () => MktCustomerWorkspaceEntity,
+    inverseSideFieldKey: 'mktCustomerTags',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktCustomer: Relation<MktCustomerWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktCustomer')
+  mktCustomerId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_CUSTOMER_TAG_FIELD_IDS.accountOwner,

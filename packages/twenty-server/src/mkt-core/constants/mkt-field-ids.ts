@@ -10,7 +10,7 @@
 export const MKT_CUSTOMER_FIELD_IDS = {
   // fields
   name: 'bc3ac7d1-2e1c-4fe0-a43d-0fa961552cb6',
-  mktCustomerId: 'b4c82d9d-c204-4ef1-a636-0c9f2779c1ff',
+  mktCustomerCode: 'b4c82d9d-c204-4ef1-a636-0c9f2779c1ff',
   mktWorkspaceId: '3393c870-41c7-4efd-b57a-cb497569a30a',
   type: '204aef63-5db1-43d4-b1d6-d01f36df5558',
   email: 'fbd13f57-d03b-48c4-9e23-ef6c0a412244',
@@ -25,7 +25,7 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   totalOrderValue: '3142cb73-ef17-4d43-87e5-d32551bea490',
   churnRiskScore: '04537b93-1bb2-47d7-b5b6-46f37c07dc4b',
   engagementScore: 'fa17e8e2-a908-48c0-aad6-81a220a99946',
-  tags: '940e3766-a147-4cf4-bd50-805b1c8c8880',
+  mktCustomerTags: '940e3766-a147-4cf4-bd50-805b1c8c8880',
   // relations
   salesId: '78be7072-50eb-4edc-81fc-c3e25658d7bd',
   supportId: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
@@ -43,9 +43,9 @@ export const MKT_CUSTOMER_TAG_FIELD_IDS = {
   // fields
   name: 'a6346e30-e700-44bf-96b8-61dac09c59f8',
   type: 'eeef941e-7826-4152-88c9-ab203f445076',
-  mktCustomerId: 'ee6458a8-173c-4d12-b241-c092ec067590',
+  mktCustomerCode: 'df47c23d-5d3c-48d9-82f2-baf8f7d0d8b0',
   // relations
-  mktCustomers: '98f430c9-7527-4304-b6b2-13981fa99fe1',
+  mktCustomer: '02347070-b40d-4624-9606-3ec621352e20',
   // common relations or fields
   position: 'c22a8a2e-9d4d-4962-93bf-1d934a36afb5',
   createdBy: '3be70054-87f5-48ad-92b0-db3da8bd5e6f',
