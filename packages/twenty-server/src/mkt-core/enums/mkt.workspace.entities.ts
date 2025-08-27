@@ -2,6 +2,7 @@ import { MktAttributeWorkspaceEntity } from 'src/mkt-core/attribute/mkt-attribut
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/mkt-contract.workspace-entity';
+import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer-tag/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
@@ -28,6 +29,7 @@ import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/variant_attribu
 export const MKT_WORKSPACE_ENTITIES = [
   // Customer
   MktCustomerWorkspaceEntity,
+  MktCustomerTagWorkspaceEntity,
   // Product
   MktProductWorkspaceEntity,
   MktAttributeWorkspaceEntity,

@@ -40,4 +40,5 @@ export const MKT_OBJECT_IDS = {
   mktKpiTemplateHistory: 'e1f2a3b4-5c6d-7e8f-9a0b-1c2d3e4f5a6b',
   // customers
   mktCustomer: '2c720af2-4412-4317-8a48-0acdaf66bc90',
+  mktCustomerTag: '6d18dfa8-60f7-4057-8b3c-c0a5d7e7c35f',
 };

@@ -39,6 +39,21 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   searchVector: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
 };
 
+export const MKT_CUSTOMER_TAG_FIELD_IDS = {
+  // fields
+  name: 'a6346e30-e700-44bf-96b8-61dac09c59f8',
+  type: 'eeef941e-7826-4152-88c9-ab203f445076',
+  mktCustomerId: 'ee6458a8-173c-4d12-b241-c092ec067590',
+  // relations
+  mktCustomers: '98f430c9-7527-4304-b6b2-13981fa99fe1',
+  // common relations or fields
+  position: 'c22a8a2e-9d4d-4962-93bf-1d934a36afb5',
+  createdBy: '3be70054-87f5-48ad-92b0-db3da8bd5e6f',
+  accountOwner: '0a057a17-d56b-4d9d-8c2d-a00296205f71',
+  timelineActivities: '0c94dd56-b58b-45ed-9027-5f7d33f64c52',
+  searchVector: '69822d19-a1d9-453d-ada4-2fbfe3d59a55',
+};
+
 export const MKT_PRODUCT_FIELD_IDS = {
   name: 'f96cff34-9749-4e6e-bdf1-87feb2d63c5b',
   code: '18f99112-4829-4c38-a455-d7be4ad976a2',
@@ -329,8 +344,10 @@ export const MKT_PAYMENT_METHOD_FIELD_IDS = {
 
 //EXTENDS FROM TIMELINE_ACTIVITY_STANDARD_FIELD_IDS
 export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
-  //products
+  //customers
   mktCustomer: 'e42c00cb-dcc8-4682-ab98-2fa5f5c03f08',
+  mktCustomerTag: '3bba154a-8267-4c6e-8ef8-f4170938d9f0',
+  //products
   mktProduct: 'fb70cd51-fca9-414c-ac2e-41c00fcb1d45',
   mktAttribute: '18a51a5f-122f-4536-a4c5-cc4672664f93',
   mktVariant: 'b6ecb5e1-14c8-4aaa-b715-e26ed4e81e62',
@@ -382,6 +399,7 @@ export const MKT_KPI_TEMPLATE_HISTORY_FIELD_IDS = {
 export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   //customers
   accountOwnerForMktCustomers: '06129dff-8941-4cd4-aed8-e5e89e986fd2',
+  accountOwnerForMktCustomerTags: '0a057a17-d56b-4d9d-8c2d-a00296205f71',
   //products
   accountOwnerForMktProducts: 'fa7e06e6-3d12-4185-928a-db45e0257b95',
   accountOwnerForMktAttributes: '84954c00-5b31-46ab-9b6c-e95b81ae8d94',
