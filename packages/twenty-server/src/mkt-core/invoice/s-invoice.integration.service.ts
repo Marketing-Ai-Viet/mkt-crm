@@ -115,7 +115,7 @@ export class SInvoiceIntegrationService {
     // Build item lines
     const itemInfo = items.map((it, idx) => {
       const quantity = it.quantity ?? 1;
-      const unitPrice = it.unitPrice ?? 0;
+      const unitPrice = (it.unitPrice ?? 0) as number;
       const amountWithoutTax = unitPrice * quantity;
       const taxPercent = (it.taxPercentage ?? 0) as number;
       const taxAmount = Math.round((amountWithoutTax * taxPercent) / 100);

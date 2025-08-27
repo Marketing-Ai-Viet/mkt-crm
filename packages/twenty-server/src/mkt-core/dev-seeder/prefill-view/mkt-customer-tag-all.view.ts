@@ -46,16 +46,6 @@ export const mktCustomerTagsAllView = (
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
-            (field) =>
-              field.standardId === MKT_CUSTOMER_TAG_FIELD_IDS.mktCustomerId,
-          )?.id ?? '',
-        position: 2,
-        isVisible: true,
-        size: 150,
-      },
-      {
-        fieldMetadataId:
-          itemObjectMetadata.fields.find(
             (field) => field.standardId === MKT_CUSTOMER_TAG_FIELD_IDS.position,
           )?.id ?? '',
         position: 3,
