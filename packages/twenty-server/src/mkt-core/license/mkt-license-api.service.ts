@@ -2,7 +2,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { firstValueFrom } from 'rxjs';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/mkt-license.workspace-entity';
 
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/mkt-license.workspace-entity';
 
