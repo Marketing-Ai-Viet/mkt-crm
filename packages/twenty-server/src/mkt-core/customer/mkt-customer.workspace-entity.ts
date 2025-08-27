@@ -200,10 +200,9 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     label: msg`Total Order Value`,
     description: msg`Customer total order value`,
     icon: 'IconMoney',
-    defaultValue: '0',
   })
   @WorkspaceIsNullable()
-  total_order_value: string;
+  totalOrderValue: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.churnRiskScore,
@@ -213,7 +212,7 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconChurn',
   })
   @WorkspaceIsNullable()
-  churn_risk_score: number;
+  churnRiskScore: number;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.engagementScore,
