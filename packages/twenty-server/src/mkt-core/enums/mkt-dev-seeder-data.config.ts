@@ -36,6 +36,10 @@ import {
   MKT_CUSTOMER_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-customer-data-seeds.constants';
 import {
+  MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
+  MKT_CUSTOMER_TAG_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-customer-tag-data-seeds.constants';
+import {
   MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
   MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-data-access-policy-data-seeds.constants';
@@ -150,6 +154,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktTag',
     pgColumns: MKT_TAG_DATA_SEED_COLUMNS,
     recordSeeds: MKT_TAG_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktCustomerTag',
+    pgColumns: MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_CUSTOMER_TAG_DATA_SEEDS,
   },
   // Product configs
   {

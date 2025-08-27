@@ -51,6 +51,19 @@ export const MKT_TAG_FIELD_IDS = {
   searchVector: '69822d19-a1d9-453d-ada4-2fbfe3d59a55',
 };
 
+export const MKT_CUSTOMER_TAG_FIELD_IDS = {
+  name: '0d6158ca-37b5-4976-9ace-add1e0021079',
+  // relations
+  mktCustomer: '1b94d69b-c19b-4f3d-808a-e3e170c3bfba',
+  mktTag: 'c4ce5adc-e3cb-4d5b-98f9-f32d879376ee',
+  // common relations or fields
+  position: '1ebaa8e0-b02f-498a-b6b6-7f2c9b24b27f',
+  createdBy: '768ae5f7-aedc-452a-8a28-cea7a7114a85',
+  accountOwner: '8432f68e-f035-4317-aa0a-9e87e85c0298',
+  timelineActivities: '5f453d37-6166-466c-ba07-0caa2b9e6f74',
+  searchVector: 'e7145f31-c1d1-421d-be08-1b183ef7ae8a',
+};
+
 export const MKT_PRODUCT_FIELD_IDS = {
   name: 'f96cff34-9749-4e6e-bdf1-87feb2d63c5b',
   code: '18f99112-4829-4c38-a455-d7be4ad976a2',
@@ -344,6 +357,7 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   //customers
   mktCustomer: 'e42c00cb-dcc8-4682-ab98-2fa5f5c03f08',
   mktTag: '3bba154a-8267-4c6e-8ef8-f4170938d9f0',
+  mktCustomerTag: 'b4521675-814d-4f9e-bd49-e77932eca67b',
   //products
   mktProduct: 'fb70cd51-fca9-414c-ac2e-41c00fcb1d45',
   mktAttribute: '18a51a5f-122f-4536-a4c5-cc4672664f93',
@@ -397,6 +411,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   //customers
   accountOwnerForMktCustomers: '06129dff-8941-4cd4-aed8-e5e89e986fd2',
   accountOwnerForMktTags: '0a057a17-d56b-4d9d-8c2d-a00296205f71',
+  accountOwnerForMktCustomerTags: '316eaa82-e210-4663-ad62-ef058862ce52',
   //products
   accountOwnerForMktProducts: 'fa7e06e6-3d12-4185-928a-db45e0257b95',
   accountOwnerForMktAttributes: '84954c00-5b31-46ab-9b6c-e95b81ae8d94',
