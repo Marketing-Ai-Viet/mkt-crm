@@ -2,6 +2,7 @@ import { prefillMktAttributes } from 'src/mkt-core/dev-seeder/prefill-data/prefi
 import { prefillMktComboVariants } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-combo-variants';
 import { prefillMktCombos } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-combos';
 import { prefillMktContracts } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-contracts';
+import { prefillMktCustomerTags } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-customer-tags';
 import { prefillMktCustomers } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-customers';
 import { prefillMktDepartments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-departments';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-employment-statuses';
@@ -31,6 +32,7 @@ import { prefillMktPermissionAudits } from 'src/mkt-core/dev-seeder/prefill-data
 export const MKT_PREFILLS = [
   // customer prefills
   prefillMktCustomers,
+  prefillMktCustomerTags,
   // product prefills
   prefillMktProducts,
   prefillMktAttributes,

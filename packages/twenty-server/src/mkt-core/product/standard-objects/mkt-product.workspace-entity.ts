@@ -181,13 +181,13 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_PRODUCT_FIELD_IDS.price,
-    type: FieldMetadataType.NUMBER,
+    type: FieldMetadataType.NUMERIC,
     label: msg`Price`,
     description: msg`Price`,
     icon: 'IconCurrencyDollar',
   })
   @WorkspaceIsNullable()
-  price: number;
+  price: string;
 
   @WorkspaceField({
     standardId: MKT_PRODUCT_FIELD_IDS.isActive,

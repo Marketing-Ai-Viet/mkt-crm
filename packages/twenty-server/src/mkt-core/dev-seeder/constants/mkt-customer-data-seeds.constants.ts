@@ -19,14 +19,14 @@ export type MKT_CUSTOMER_DATA_SEED = {
   status: MKT_CUSTOMER_STATUS;
   tier: MKT_CUSTOMER_TIER;
   lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE;
+  tags: MKT_CUSTOMER_TAGS[];
   // salesId: string | null;
   // supportId: string | null;
   // affiliateId: string | null;
   registrationDate: string;
-  totalOrderValue: number;
+  totalOrderValue: string;
   churnRiskScore: number;
   engagementScore: number;
-  tags: MKT_CUSTOMER_TAGS[];
 };
 
 // prettier-ignore
@@ -83,9 +83,9 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.PROSPECTIVE,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
-    engagementScore: 0.5, 
+    engagementScore: 0.5,
     tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
@@ -101,13 +101,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.SMALL,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.PROSPECTIVE,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
@@ -122,15 +119,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.MEDIUM,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.TRIAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_4,
@@ -145,15 +137,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.ENTERPRISE,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.CHURNED,
-      MKT_CUSTOMER_TAGS.RETENTION,
-      MKT_CUSTOMER_TAGS.TECHNICAL,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_5,
@@ -168,15 +155,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_6,
@@ -191,15 +173,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.CHURNED,
-      MKT_CUSTOMER_TAGS.RETENTION,
-      MKT_CUSTOMER_TAGS.TECHNICAL,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_7,
@@ -214,15 +191,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_8,
@@ -237,15 +209,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000' ,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_9,
@@ -260,15 +227,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_10,
@@ -283,15 +245,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_11,
@@ -307,15 +264,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
 
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_12,
@@ -330,15 +282,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     tier: MKT_CUSTOMER_TIER.OTHER,
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_13,
@@ -354,15 +301,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
 
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.NEW,
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_14,
@@ -378,14 +320,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
 
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.RETURNING,
-      MKT_CUSTOMER_TAGS.LOYAL,
-      MKT_CUSTOMER_TAGS.VIP,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_15,
@@ -401,14 +339,9 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
 
     registrationDate: '2021-01-01',
-    totalOrderValue: 1000,
+    totalOrderValue: '1000',
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [
-      MKT_CUSTOMER_TAGS.VIP,
-      MKT_CUSTOMER_TAGS.CHURNED,
-      MKT_CUSTOMER_TAGS.RETENTION,
-      MKT_CUSTOMER_TAGS.TECHNICAL,
-    ],
+    tags: [MKT_CUSTOMER_TAGS.NEW],
   },
 ];

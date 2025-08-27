@@ -9,6 +9,7 @@ import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/compos
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
@@ -23,6 +24,7 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_CUSTOMER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer-tag/mkt-customer-tag.workspace-entity';
 import {
   MKT_CUSTOMER_LIFECYCLE_STAGE,
   MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
@@ -55,6 +57,7 @@ export const SEARCH_FIELDS_FOR_MKT_CUSTOMER: FieldTypeAndNameMetadata[] = [
   icon: 'IconUser',
   labelIdentifierStandardId: MKT_CUSTOMER_FIELD_IDS.name,
 })
+@WorkspaceDuplicateCriteria([['email'], ['taxCode']])
 @WorkspaceIsSearchable()
 export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   // customer fields
@@ -66,6 +69,26 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconUser',
   })
   name: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.mktCustomerCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`MKT Customer ID`,
+    description: msg`MKT Customer ID`,
+    icon: 'IconUser',
+  })
+  @WorkspaceIsNullable()
+  mktCustomerCode: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.mktWorkspaceId,
+    type: FieldMetadataType.TEXT,
+    label: msg`MKT Workspace ID`,
+    description: msg`MKT Workspace ID`,
+    icon: 'IconUser',
+  })
+  @WorkspaceIsNullable()
+  mktWorkspaceId: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.type,
@@ -173,19 +196,19 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.totalOrderValue,
-    type: FieldMetadataType.NUMBER,
+    type: FieldMetadataType.NUMERIC,
     label: msg`Total Order Value`,
     description: msg`Customer total order value`,
     icon: 'IconMoney',
   })
   @WorkspaceIsNullable()
-  totalOrderValue: number;
+  totalOrderValue: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.churnRiskScore,
     type: FieldMetadataType.NUMBER,
     label: msg`Churn Risk Score`,
-    description: msg`Customer churn risk score`,
+    description: msg`Customer churn risk score (0-1)`,
     icon: 'IconChurn',
   })
   @WorkspaceIsNullable()
@@ -212,7 +235,6 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   tags: MKT_CUSTOMER_TAGS[];
 
-  // common fields & relations
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
@@ -244,6 +266,19 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktLicenses: Relation<MktLicenseWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.mktCustomerTags,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Customer Tags`,
+    description: msg`Customer Tags of the customer`,
+    icon: 'IconTags',
+    inverseSideTarget: () => MktCustomerTagWorkspaceEntity,
+    inverseSideFieldKey: 'mktCustomer',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktCustomerTags: Relation<MktCustomerTagWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_CUSTOMER_FIELD_IDS.accountOwner,
