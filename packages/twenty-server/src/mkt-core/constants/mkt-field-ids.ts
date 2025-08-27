@@ -10,6 +10,8 @@
 export const MKT_CUSTOMER_FIELD_IDS = {
   // fields
   name: 'bc3ac7d1-2e1c-4fe0-a43d-0fa961552cb6',
+  mktCustomerId: 'b4c82d9d-c204-4ef1-a636-0c9f2779c1ff',
+  mktWorkspaceId: '3393c870-41c7-4efd-b57a-cb497569a30a',
   type: '204aef63-5db1-43d4-b1d6-d01f36df5558',
   email: 'fbd13f57-d03b-48c4-9e23-ef6c0a412244',
   phone: '9e0b45ef-5ca8-4d71-a087-96aae069287f',
