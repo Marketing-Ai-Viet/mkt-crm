@@ -196,13 +196,13 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.totalOrderValue,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Order Value`,
     description: msg`Customer total order value`,
     icon: 'IconMoney',
   })
   @WorkspaceIsNullable()
-  totalOrderValue: string;
+  totalOrderValue: number;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.churnRiskScore,
