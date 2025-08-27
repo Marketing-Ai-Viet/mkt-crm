@@ -110,13 +110,13 @@ export class MktComboWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_COMBO_FIELD_IDS.price,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Price`,
     description: msg`Combo price`,
     icon: 'IconClock',
   })
   @WorkspaceIsNullable()
-  price?: string;
+  price?: number;
 
   @WorkspaceRelation({
     standardId: MKT_COMBO_FIELD_IDS.mktComboVariants,
