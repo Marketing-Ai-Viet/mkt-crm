@@ -9,6 +9,7 @@ import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/compos
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
@@ -29,6 +30,8 @@ import {
   MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
   MKT_CUSTOMER_STATUS,
   MKT_CUSTOMER_STATUS_OPTIONS,
+  MKT_CUSTOMER_TAGS,
+  MKT_CUSTOMER_TAGS_OPTIONS,
   MKT_CUSTOMER_TIER,
   MKT_CUSTOMER_TIER_OPTIONS,
   MKT_CUSTOMER_TYPE,
@@ -54,6 +57,7 @@ export const SEARCH_FIELDS_FOR_MKT_CUSTOMER: FieldTypeAndNameMetadata[] = [
   icon: 'IconUser',
   labelIdentifierStandardId: MKT_CUSTOMER_FIELD_IDS.name,
 })
+@WorkspaceDuplicateCriteria([['email'], ['taxCode']])
 @WorkspaceIsSearchable()
 export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   // customer fields
@@ -192,23 +196,24 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.totalOrderValue,
-    type: FieldMetadataType.NUMBER,
+    type: FieldMetadataType.NUMERIC,
     label: msg`Total Order Value`,
     description: msg`Customer total order value`,
     icon: 'IconMoney',
+    defaultValue: '0',
   })
   @WorkspaceIsNullable()
-  totalOrderValue: number;
+  total_order_value: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.churnRiskScore,
     type: FieldMetadataType.NUMBER,
     label: msg`Churn Risk Score`,
-    description: msg`Customer churn risk score`,
+    description: msg`Customer churn risk score (0-1)`,
     icon: 'IconChurn',
   })
   @WorkspaceIsNullable()
-  churnRiskScore: number;
+  churn_risk_score: number;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.engagementScore,
@@ -219,6 +224,17 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   engagementScore: number;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.tags,
+    type: FieldMetadataType.MULTI_SELECT,
+    label: msg`Tags`,
+    description: msg`Customer tags`,
+    icon: 'IconTags',
+    options: MKT_CUSTOMER_TAGS_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  tags: MKT_CUSTOMER_TAGS[];
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.position,

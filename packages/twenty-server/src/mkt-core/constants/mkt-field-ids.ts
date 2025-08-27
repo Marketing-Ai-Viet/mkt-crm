@@ -25,12 +25,13 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   totalOrderValue: '3142cb73-ef17-4d43-87e5-d32551bea490',
   churnRiskScore: '04537b93-1bb2-47d7-b5b6-46f37c07dc4b',
   engagementScore: 'fa17e8e2-a908-48c0-aad6-81a220a99946',
-  mktCustomerTags: '940e3766-a147-4cf4-bd50-805b1c8c8880',
+  tags: 'f72a2dcf-516c-48f6-a013-0a83ba3ce50a',
   // relations
   salesId: '78be7072-50eb-4edc-81fc-c3e25658d7bd',
   supportId: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
   affiliateId: '940e3766-a147-4cf4-bd50-805b1c8c8880',
   mktLicenses: '4ac28e1a-089a-45d3-9725-b40861e98b15',
+  mktCustomerTags: '940e3766-a147-4cf4-bd50-805b1c8c8880',
   // common relations or fields
   position: 'e3ca3ebd-4812-4c82-abde-e14b13a01829',
   createdBy: '4e6d0176-22f4-4b25-bbf2-0a3ed6d7a5e1',
