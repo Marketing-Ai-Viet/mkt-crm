@@ -4,17 +4,17 @@ import { In } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order-item/mkt-order-item.workspace-entity';
+import { MktProductWorkspaceEntity } from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
 
 import {
   CreateOrderWithItemsInput,
+  DeleteOrderInput,
   GetOrderInput,
   GetOrdersInput,
-  UpdateOrderInput,
-  DeleteOrderInput,
   OrderSortBy,
   SortOrder,
+  UpdateOrderInput,
 } from './dto';
 import { MktOrderWorkspaceEntity } from './mkt-order.workspace-entity';
 
@@ -101,7 +101,7 @@ export class MktOrderService {
           throw new Error(`Product ${item.mktProductId} not found in map`);
         }
 
-        const unitPrice = product.price ?? 0;
+        const unitPrice = (product.price ?? 0) as unknown as number;
         const itemTotalPrice = unitPrice * item.quantity;
 
         totalAmount += itemTotalPrice;
@@ -288,7 +288,7 @@ export class MktOrderService {
         let totalAmount = 0;
         const orderItemsData = items.map((item) => {
           const product = productMap.get(item.mktProductId);
-          const unitPrice = product?.price ?? 0;
+          const unitPrice = (product?.price ?? 0) as unknown as number;
           const itemTotalPrice = unitPrice * item.quantity;
 
           totalAmount += itemTotalPrice;
