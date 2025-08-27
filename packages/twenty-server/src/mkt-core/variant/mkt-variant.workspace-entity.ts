@@ -83,13 +83,13 @@ export class MktVariantWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_VARIANT_FIELD_IDS.price,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Price`,
     description: msg`Price of the variant`,
     icon: 'IconCurrencyDollar',
   })
   @WorkspaceIsNullable()
-  price?: string;
+  price?: number;
 
   @WorkspaceField({
     standardId: MKT_VARIANT_FIELD_IDS.inStock,
