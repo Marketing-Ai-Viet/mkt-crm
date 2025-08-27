@@ -21,13 +21,13 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
-import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/mkt-order.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/standard-objects/mkt-product.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/variant/mkt-variant.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 
 const SEARCH_FIELDS_FOR_ORDER_ITEM: FieldTypeAndNameMetadata[] = [
   { name: 'name', type: FieldMetadataType.TEXT },
@@ -74,13 +74,13 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.unitPrice,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Unit Price`,
     description: msg`Price per unit of the product`,
     icon: 'IconCurrencyDollar',
   })
   @WorkspaceIsNullable()
-  unitPrice?: string;
+  unitPrice?: number;
 
   @WorkspaceField({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotProductName,
@@ -111,31 +111,31 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.taxAmount,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Tax Amount`,
     description: msg`Tax amount for this line item`,
   })
   @WorkspaceIsNullable()
-  taxAmount: string;
+  taxAmount: number;
 
   @WorkspaceField({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.totalAmountWithTax,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Amount with Tax`,
     description: msg`Total amount with tax for this line item`,
   })
   @WorkspaceIsNullable()
-  totalAmountWithTax: string;
+  totalAmountWithTax: number;
 
   @WorkspaceField({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.totalPrice,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Price`,
     description: msg`Total price for this line item (quantity * unit price)`,
     icon: 'IconCurrencyDollar',
   })
   @WorkspaceIsNullable()
-  totalPrice?: string;
+  totalPrice?: number;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.mktOrder,

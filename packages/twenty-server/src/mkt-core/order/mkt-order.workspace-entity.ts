@@ -84,17 +84,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.totalAmount,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Total Amount`,
   })
   @WorkspaceIsNullable()
-  totalAmount?: string;
+  totalAmount?: number;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.currency,
     type: FieldMetadataType.TEXT,
     label: msg`Currency`,
-    defaultValue: "'VND'",
+    defaultValue: "'USD'",
   })
   currency: string;
 
@@ -108,11 +108,11 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.subtotal,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Subtotal`,
   })
   @WorkspaceIsNullable()
-  subtotal?: string;
+  subtotal?: number;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.tax,
@@ -124,11 +124,11 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.discount,
-    type: FieldMetadataType.NUMERIC,
+    type: FieldMetadataType.NUMBER,
     label: msg`Discount`,
   })
   @WorkspaceIsNullable()
-  discount?: string;
+  discount?: number;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.requireContract,
