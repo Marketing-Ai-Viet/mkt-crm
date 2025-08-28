@@ -30,6 +30,7 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   supportId: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
   affiliateId: '940e3766-a147-4cf4-bd50-805b1c8c8880',
   mktLicenses: '4ac28e1a-089a-45d3-9725-b40861e98b15',
+  mktCustomerTags: '697d8df5-d0a2-4d28-af51-bfa55be23934',
   // common relations or fields
   position: 'e3ca3ebd-4812-4c82-abde-e14b13a01829',
   createdBy: '4e6d0176-22f4-4b25-bbf2-0a3ed6d7a5e1',
@@ -43,6 +44,7 @@ export const MKT_TAG_FIELD_IDS = {
   name: 'a6346e30-e700-44bf-96b8-61dac09c59f8',
   type: 'eeef941e-7826-4152-88c9-ab203f445076',
   // relations
+  mktCustomerTags: '7af63ac8-fadc-4f13-a510-d2e7c397bd2a',
   // common relations or fields
   position: 'c22a8a2e-9d4d-4962-93bf-1d934a36afb5',
   createdBy: '3be70054-87f5-48ad-92b0-db3da8bd5e6f',

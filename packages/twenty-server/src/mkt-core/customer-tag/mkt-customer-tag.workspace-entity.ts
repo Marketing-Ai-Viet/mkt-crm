@@ -1,15 +1,15 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
-import { Relation } from 'typeorm';
 
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
+import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
-import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
@@ -22,84 +22,53 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
-import { MKT_TAG_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { MKT_CUSTOMER_TAG_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer-tag/mkt-customer-tag.workspace-entity';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
+import { MktTagWorkspaceEntity } from 'src/mkt-core/tag/mkt-tag.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-const TABLE_NAME = 'mktTag';
+const TABLE_CUSTOMER_TAG_NAME = 'mktCustomerTag';
 const NAME_FIELD_NAME = 'name';
 
-export enum MKT_TAG_TYPE {
-  SYSTEM = 'SYSTEM',
-  CUSTOM = 'CUSTOM',
-}
-
-export const MKT_TAG_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
-  {
-    value: MKT_TAG_TYPE.SYSTEM,
-    label: 'System',
-    color: 'gray',
-    position: 1,
-  },
-  {
-    value: MKT_TAG_TYPE.CUSTOM,
-    label: 'Custom',
-    color: 'green',
-    position: 2,
-  },
-];
-
-export const SEARCH_FIELDS_FOR_MKT_TAG: FieldTypeAndNameMetadata[] = [
+export const SEARCH_FIELDS_FOR_MKT_CUSTOMER_TAG: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
 ];
 
 @WorkspaceEntity({
-  standardId: MKT_OBJECT_IDS.mktTag,
-  namePlural: `${TABLE_NAME}s`,
-  labelSingular: msg`Tag`,
-  labelPlural: msg`Tags`,
-  description: msg`Tag entity for marketing`,
-  icon: 'IconUser',
-  labelIdentifierStandardId: MKT_TAG_FIELD_IDS.name,
+  standardId: MKT_OBJECT_IDS.mktCustomerTag,
+  namePlural: `${TABLE_CUSTOMER_TAG_NAME}s`,
+  labelSingular: msg`Customer Tag`,
+  labelPlural: msg`Customer Tags`,
+  description: msg`Customer Tag entity for catalog`,
+  icon: 'IconBox',
+  labelIdentifierStandardId: MKT_CUSTOMER_TAG_FIELD_IDS.name,
 })
+@WorkspaceDuplicateCriteria([['name'], ['mktCustomerId'], ['mktTagId']])
 @WorkspaceIsSearchable()
-export class MktTagWorkspaceEntity extends BaseWorkspaceEntity {
-  // tag fields
+export class MktCustomerTagWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
-    standardId: MKT_TAG_FIELD_IDS.name,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.name,
     type: FieldMetadataType.TEXT,
-    label: msg`Name`,
-    description: msg`Tag name`,
-    icon: 'IconUser',
+    label: msg`Customer Tag Name`,
+    description: msg`Customer Tag name`,
+    icon: 'IconFileText',
   })
   name: string;
 
   @WorkspaceField({
-    standardId: MKT_TAG_FIELD_IDS.type,
-    type: FieldMetadataType.SELECT,
-    label: msg`Type`,
-    description: msg`Tag type`,
-    icon: 'IconUser',
-    options: MKT_TAG_TYPE_OPTIONS,
-  })
-  @WorkspaceIsNullable()
-  type: MKT_TAG_TYPE;
-
-  // common fields & relations
-  @WorkspaceField({
-    standardId: MKT_TAG_FIELD_IDS.position,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,
-    description: msg`Position in the list`,
-    icon: 'IconHierarchy2',
+    description: msg`Position in list`,
+    icon: 'IconHierarchy',
   })
   @WorkspaceIsNullable()
-  position?: number;
+  position: number;
 
   @WorkspaceField({
-    standardId: MKT_TAG_FIELD_IDS.createdBy,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.createdBy,
     type: FieldMetadataType.ACTOR,
     label: msg`Created by`,
     icon: 'IconCreativeCommonsSa',
@@ -108,26 +77,41 @@ export class MktTagWorkspaceEntity extends BaseWorkspaceEntity {
   createdBy: ActorMetadata;
 
   @WorkspaceRelation({
-    standardId: MKT_TAG_FIELD_IDS.mktCustomerTags,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Customer Tags`,
-    description: msg`Customer tags of the tag`,
-    icon: 'IconTag',
-    inverseSideTarget: () => MktCustomerTagWorkspaceEntity,
-    inverseSideFieldKey: 'mktTag',
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.mktCustomer,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Customer`,
+    description: msg`Customer tag customer`,
+    icon: 'IconUser',
+    inverseSideTarget: () => MktCustomerWorkspaceEntity,
+    inverseSideFieldKey: 'mktCustomerTags',
     onDelete: RelationOnDeleteAction.CASCADE,
   })
-  @WorkspaceIsNullable()
-  mktCustomerTags: Relation<MktCustomerTagWorkspaceEntity[]>;
+  mktCustomer: Relation<MktCustomerWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktCustomer')
+  mktCustomerId: string | null;
 
   @WorkspaceRelation({
-    standardId: MKT_TAG_FIELD_IDS.accountOwner,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.mktTag,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Tag`,
+    description: msg`Customer tag tag`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktTagWorkspaceEntity,
+    inverseSideFieldKey: 'mktCustomerTags',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  mktTag: Relation<MktTagWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktTag')
+  mktTagId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.accountOwner,
     type: RelationType.MANY_TO_ONE,
     label: msg`Account Owner`,
-    description: msg`Your team member responsible for managing the tag`,
+    description: msg`Your team member responsible for managing the customer tag`,
     icon: 'IconUserCircle',
     inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwnerForMktTags',
+    inverseSideFieldKey: 'accountOwnerForMktCustomerTags',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
@@ -137,13 +121,13 @@ export class MktTagWorkspaceEntity extends BaseWorkspaceEntity {
   accountOwnerId: string | null;
 
   @WorkspaceRelation({
-    standardId: MKT_TAG_FIELD_IDS.timelineActivities,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.timelineActivities,
     type: RelationType.ONE_TO_MANY,
     label: msg`Timeline Activities`,
-    description: msg`Timeline Activities linked to the tag`,
+    description: msg`Timeline Activities linked to the customer tag`,
     icon: 'IconIconTimelineEvent',
     inverseSideTarget: () => TimelineActivityWorkspaceEntity,
-    inverseSideFieldKey: 'mktTag',
+    inverseSideFieldKey: 'mktCustomerTag',
     onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
@@ -151,14 +135,14 @@ export class MktTagWorkspaceEntity extends BaseWorkspaceEntity {
   timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
 
   @WorkspaceField({
-    standardId: MKT_TAG_FIELD_IDS.searchVector,
+    standardId: MKT_CUSTOMER_TAG_FIELD_IDS.searchVector,
     type: FieldMetadataType.TS_VECTOR,
     label: SEARCH_VECTOR_FIELD.label,
     description: SEARCH_VECTOR_FIELD.description,
     icon: 'IconUser',
     generatedType: 'STORED',
     asExpression: getTsVectorColumnExpressionFromFields(
-      SEARCH_FIELDS_FOR_MKT_TAG,
+      SEARCH_FIELDS_FOR_MKT_CUSTOMER_TAG,
     ),
   })
   @WorkspaceIsNullable()

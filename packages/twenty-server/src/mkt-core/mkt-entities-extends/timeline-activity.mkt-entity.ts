@@ -12,6 +12,7 @@ import { MktAttributeWorkspaceEntity } from 'src/mkt-core/attribute/mkt-attribut
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/combo-variant/mkt-combo-variant.workspace-entity';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/combo/mkt-combo.workspace-entity';
 import { TIMELINE_ACTIVITY_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer-tag/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/mkt-customer.workspace-entity';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/mkt-invoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
@@ -54,6 +55,21 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   mktTag: Relation<MktTagWorkspaceEntity> | null;
   @WorkspaceJoinColumn('mktTag')
   mktTagId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktCustomerTag,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Customer Tag`,
+    description: msg`Event customer tag`,
+    icon: 'IconUser',
+    inverseSideTarget: () => MktCustomerTagWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktCustomerTag: Relation<MktCustomerTagWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktCustomerTag')
+  mktCustomerTagId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktProduct,
