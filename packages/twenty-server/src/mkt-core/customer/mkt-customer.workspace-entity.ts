@@ -213,6 +213,16 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   engagementScore: number;
 
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.notes,
+    type: FieldMetadataType.TEXT,
+    label: msg`Notes`,
+    description: msg`Customer notes`,
+    icon: 'IconNote',
+  })
+  @WorkspaceIsNullable()
+  notes: string;
+
   // common fields & relations
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.position,

@@ -26,6 +26,7 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   churnRiskScore: '04537b93-1bb2-47d7-b5b6-46f37c07dc4b',
   engagementScore: 'fa17e8e2-a908-48c0-aad6-81a220a99946',
   tags: '91d6687b-a5a5-490c-ba07-970c6dce9d9b',
+  notes: '5083861a-a392-49bb-96fc-18058d4edb52',
   // relations
   salesId: '78be7072-50eb-4edc-81fc-c3e25658d7bd',
   supportId: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
