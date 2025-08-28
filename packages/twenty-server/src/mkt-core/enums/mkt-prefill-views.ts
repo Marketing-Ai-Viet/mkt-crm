@@ -12,6 +12,7 @@ import { mktVariantAttributesAllView } from 'src/mkt-core/dev-seeder/prefill-dat
 import { mktCombosAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-combo-all.view';
 import { mktComboVariantsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-combo-variant-all.view';
 import { mktCustomersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-customer-all.view';
+import { mktCustomerTagsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-customer-tag-all.view';
 import { mktDataAccessPoliciesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-data-access-policy-all.view';
 import { mktDepartmentsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-all.view';
 import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-hierarchy-all.view';
@@ -32,6 +33,7 @@ export const MKT_ALL_VIEWS = [
   // customer views
   mktCustomersAllView,
   mktTagsAllView,
+  mktCustomerTagsAllView,
   // product views
   mktProductsAllView,
   mktAttributesAllView,

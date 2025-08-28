@@ -3,6 +3,7 @@ import { SeedComboModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-com
 import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-combo-variant-data-seed-dev-workspace.command';
 import { SeedContractModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-contract-data-seed-dev-workspace.command';
 import { SeedCustomerModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-customer-data-seed-dev-workspace.command';
+import { SeedCustomerTagModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-customer-tag-data-seed-dev-workspace.command';
 import { SeedMktDataAccessPolicyCommand } from 'src/mkt-core/dev-seeder/commands/mkt-data-access-policy-data-seed-dev-workspace.command';
 import { SeedDepartmentModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-department-data-seed-dev-workspace.command';
 import { SeedMktDepartmentHierarchyCommand } from 'src/mkt-core/dev-seeder/commands/mkt-department-hierarchy-data-seed-dev-workspace.command';
@@ -32,6 +33,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // customer commands
   SeedCustomerModuleCommand,
   SeedTagModuleCommand,
+  SeedCustomerTagModuleCommand,
   // product commands
   SeedProductModuleCommand,
   SeedAttributeModuleCommand,
