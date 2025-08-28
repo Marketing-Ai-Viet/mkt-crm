@@ -45,7 +45,7 @@ export const SEARCH_FIELDS_FOR_MKT_CUSTOMER_TAG: FieldTypeAndNameMetadata[] = [
   icon: 'IconBox',
   labelIdentifierStandardId: MKT_CUSTOMER_TAG_FIELD_IDS.name,
 })
-@WorkspaceDuplicateCriteria([['name'], ['mktCustomerId'], ['mktTagId']])
+@WorkspaceDuplicateCriteria([['mktCustomerId'], ['mktTagId']])
 @WorkspaceIsSearchable()
 export class MktCustomerTagWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
