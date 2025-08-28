@@ -102,7 +102,7 @@ export const MKT_TAG_DATA_SEEDS: MKT_TAG_DATA_SEED[] = [
     name: MKT_TAG_CUSTOM_EXAMPLE.SOURCE,
     type: MKT_TAGS.CUSTOM,
     position: 5,
-    createdBySource: 'CUSTOM',
+    createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
     createdByName: 'Custom',
   },
@@ -149,7 +149,7 @@ export const MKT_TAG_DATA_SEEDS: MKT_TAG_DATA_SEED[] = [
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
-    createdByName: 'Custom',
+    createdByName: 'System',
   },
   {
     id: MKT_TAG_DATA_SEEDS_IDS.BEHAVIOR,
@@ -158,7 +158,7 @@ export const MKT_TAG_DATA_SEEDS: MKT_TAG_DATA_SEED[] = [
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
-    createdByName: 'Custom',
+    createdByName: 'System',
   },
   {
     id: MKT_TAG_DATA_SEEDS_IDS.CAMPAIGN,
@@ -167,7 +167,7 @@ export const MKT_TAG_DATA_SEEDS: MKT_TAG_DATA_SEED[] = [
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
-    createdByName: 'Custom',
+    createdByName: 'System',
   },
   {
     id: MKT_TAG_DATA_SEEDS_IDS.GEOGRAPHIC,
@@ -176,6 +176,6 @@ export const MKT_TAG_DATA_SEEDS: MKT_TAG_DATA_SEED[] = [
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
-    createdByName: 'Custom',
+    createdByName: 'System',
   },
 ];
