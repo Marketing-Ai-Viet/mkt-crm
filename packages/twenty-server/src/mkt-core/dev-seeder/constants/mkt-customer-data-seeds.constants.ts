@@ -85,7 +85,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.VIP],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_2,
@@ -103,7 +103,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.HIGH_VALUE],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
@@ -121,7 +121,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_4,
@@ -139,7 +139,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.SUPPORT_INTENSIVE],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_5,
@@ -157,7 +157,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.REFERRAL_SOURCE],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_6,
@@ -175,7 +175,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.QUICK_PAYER],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_7,
@@ -193,7 +193,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.NEGOTIATOR],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_8,
@@ -211,7 +211,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.ENTERPRISE_PROSPECT],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_9,
@@ -229,7 +229,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_10,
@@ -247,7 +247,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.QUICK_PAYER],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_11,
@@ -266,7 +266,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.REFERRAL_SOURCE],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_12,
@@ -284,7 +284,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.NEGOTIATOR],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_13,
@@ -303,7 +303,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.ENTERPRISE_PROSPECT],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_14,
@@ -322,7 +322,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_15,
@@ -341,6 +341,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
     totalOrderValue: 1000,
     churnRiskScore: 0.5,
     engagementScore: 0.5,
-    tags: [MKT_CUSTOMER_TAGS.NEW],
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
   },
 ];
