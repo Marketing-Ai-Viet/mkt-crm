@@ -29,6 +29,8 @@ import {
   MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
   MKT_CUSTOMER_STATUS,
   MKT_CUSTOMER_STATUS_OPTIONS,
+  MKT_CUSTOMER_TAGS,
+  MKT_CUSTOMER_TAGS_OPTIONS,
   MKT_CUSTOMER_TIER,
   MKT_CUSTOMER_TIER_OPTIONS,
   MKT_CUSTOMER_TYPE,
@@ -76,6 +78,17 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   type: MKT_CUSTOMER_TYPE;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.tags,
+    type: FieldMetadataType.MULTI_SELECT,
+    label: msg`Tags`,
+    description: msg`Customer tags`,
+    icon: 'IconTag',
+    options: MKT_CUSTOMER_TAGS_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  tags: MKT_CUSTOMER_TAGS[];
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.email,
