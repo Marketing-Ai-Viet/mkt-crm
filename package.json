@@ -367,7 +367,7 @@
   "version": "0.2.1",
   "nx": {},
   "scripts": {
-    "start": "npx concurrently --kill-others 'npx nx run-many -t start -p twenty-server twenty-front' 'npx wait-on tcp:3000 && npx nx run twenty-server:worker'",
+    "start": "npx concurrently --kill-others 'npx nx run-many -t start -p twenty-server twenty-front' 'npx wait-on tcp:192.168.1.226:4002 && npx nx run twenty-server:worker'",
     "fix-twenty-server": "npx prettier \"packages/twenty-server/src/**/*.ts\" --write && npx nx lint twenty-server --fix",
     "prepare": "husky",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",

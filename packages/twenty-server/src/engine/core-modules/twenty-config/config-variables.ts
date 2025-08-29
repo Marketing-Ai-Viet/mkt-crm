@@ -880,7 +880,7 @@ export class ConfigVariables {
   })
   @CastToPositiveNumber()
   @IsOptional()
-  NODE_PORT = 3000;
+  NODE_PORT = 4002;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ServerConfig,
@@ -890,7 +890,7 @@ export class ConfigVariables {
   })
   @IsUrl({ require_tld: false, require_protocol: true })
   @IsOptional()
-  SERVER_URL = 'http://localhost:3000';
+  SERVER_URL = 'http://192.168.1.226:4002';
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ServerConfig,
