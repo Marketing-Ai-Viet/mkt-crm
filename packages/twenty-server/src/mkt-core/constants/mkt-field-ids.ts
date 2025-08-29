@@ -56,6 +56,33 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   accountOwner: '0ccf0130-8651-4165-b061-a1d1c3bd7aa7',
   timelineActivities: '78be7072-50eb-4edc-81fc-c3e25658d7bd',
   searchVector: 'a1ed4146-269d-46a5-ac7e-7cba043974e1',
+
+  // personal_info
+  personalIdNumber: 'b0a84eb5-ab93-4c2e-990a-b3f47953b51f', // CCCD/CMND
+
+  // payment_info
+  billingAddress: '5d298c21-9f32-4670-a9ef-8123b8f8a201', // billing address
+  bankInfo: '1b7c2cae-e65e-43f5-b061-2e416a4e2b2d', // JSON: {bankName, accountNumber, swiftCode}
+  paymentPreferences: '3a2aba2c-a36d-4117-af00-8e0929148f2e', // example: "credit_card", "bank_transfer"
+
+  // social_info
+  fanpage: 'e6cf2880-144d-4dff-bd9f-d4eecb822e59', // Facebook page or social link
+  socialLinks: 'd49e183d-0fbc-40a6-93cd-8cf653822ac5', // JSON: {facebook, linkedin, zalo}
+
+  // tracking_info
+  trialStatus: '95e58f9f-5281-4df9-9e38-cfcad2acd808', // Current/Expired/Converted
+  customerAcquisitionCost: 'acaca736-9651-423e-a1d4-1a79936020b0', // CAC
+
+  // assignment_history
+  assignmentHistory: '434bbfb7-6bc5-40f8-8726-06aa7812269d',
+  // JSON array [{salesId, supportId, reason, assignedDate}]
+
+  // validation_info
+  emailValidated: 'c6bfeb94-d822-457a-87d9-c8e4db6b4317', // boolean
+  phoneValidated: '1ff58d4d-9c10-45a1-a7b2-42f6d83dccd2', // boolean
+  idNumberValidated: '3afb4d6f-2e95-42f9-9297-6dbc70242e82', // boolean
+  taxCodeValidated: 'e3ea4d21-09a0-4f2a-872e-4f00cd7a621c', // boolean
+  mergeSuggestion: 'ee1d2375-75fc-4575-8374-18120e31d740', // JSON: suggested duplicate customers
 };
 
 export const MKT_TAG_FIELD_IDS = {

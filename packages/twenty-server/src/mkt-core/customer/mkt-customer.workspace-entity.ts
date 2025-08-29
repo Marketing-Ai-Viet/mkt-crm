@@ -451,4 +451,148 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsSystem()
   @WorkspaceFieldIndex({ indexType: IndexType.GIN })
   searchVector: string;
+
+  // personal_info
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.personalIdNumber,
+    type: FieldMetadataType.TEXT,
+    label: msg`Personal ID Number`,
+    description: msg`Customer personal ID number`,
+    icon: 'IconId',
+  })
+  @WorkspaceIsNullable()
+  personalIdNumber: string;
+
+  // payment_info
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.billingAddress,
+    type: FieldMetadataType.TEXT,
+    label: msg`Billing Address`,
+    description: msg`Customer billing address`,
+    icon: 'IconMapPin',
+  })
+  @WorkspaceIsNullable()
+  billingAddress: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.bankInfo,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Bank Info`,
+    description: msg`Customer bank info`,
+    icon: 'IconBank',
+  })
+  @WorkspaceIsNullable()
+  bankInfo: JSON;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.paymentPreferences,
+    type: FieldMetadataType.TEXT,
+    label: msg`Payment Preferences`,
+    description: msg`Customer payment preferences`,
+    icon: 'IconPayment',
+  })
+  @WorkspaceIsNullable()
+  paymentPreferences: string;
+
+  // social_info
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.fanpage,
+    type: FieldMetadataType.TEXT,
+    label: msg`Fanpage`,
+    description: msg`Customer fanpage`,
+    icon: 'IconFanpage',
+  })
+  @WorkspaceIsNullable()
+  fanpage: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.socialLinks,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Social Links`,
+    description: msg`Customer social links`,
+    icon: 'IconSocial',
+  })
+  @WorkspaceIsNullable()
+  socialLinks: JSON;
+
+  // tracking_info
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.trialStatus,
+    type: FieldMetadataType.TEXT,
+    label: msg`Trial Status`,
+    description: msg`Customer trial status`,
+    icon: 'IconTrial',
+  })
+  @WorkspaceIsNullable()
+  trialStatus: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.customerAcquisitionCost,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Customer Acquisition Cost`,
+    description: msg`Customer acquisition cost`,
+  })
+  @WorkspaceIsNullable()
+  customerAcquisitionCost: number;
+
+  // assignment_history
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.assignmentHistory,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Assignment History`,
+    description: msg`Customer assignment history`,
+    icon: 'IconHistory',
+  })
+  @WorkspaceIsNullable()
+  assignmentHistory: JSON;
+
+  // validation_info
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.emailValidated,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Email Validated`,
+    description: msg`Customer email validated`,
+    icon: 'IconEmail',
+  })
+  @WorkspaceIsNullable()
+  emailValidated: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.phoneValidated,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Phone Validated`,
+    description: msg`Customer phone validated`,
+    icon: 'IconPhone',
+  })
+  @WorkspaceIsNullable()
+  phoneValidated: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.idNumberValidated,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`ID Number Validated`,
+    description: msg`Customer ID number validated`,
+    icon: 'IconId',
+  })
+  @WorkspaceIsNullable()
+  idNumberValidated: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.taxCodeValidated,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Tax Code Validated`,
+    description: msg`Customer tax code validated`,
+  })
+  @WorkspaceIsNullable()
+  taxCodeValidated: boolean;
+
+  // merge_suggestion
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.mergeSuggestion,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Merge Suggestion`,
+    description: msg`Customer merge suggestion`,
+  })
+  @WorkspaceIsNullable()
+  mergeSuggestion: JSON;
 }
