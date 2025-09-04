@@ -5,7 +5,7 @@ import {
   PermissionAuditAction,
   PermissionSource,
   CheckResult,
-} from 'src/mkt-core/mkt-permission-audit/mkt-permission-audit.workspace-entity';
+} from 'src/mkt-core/mkt-rbac/enums/rbac.enums';
 
 type MktPermissionAuditDataSeed = {
   id: string;

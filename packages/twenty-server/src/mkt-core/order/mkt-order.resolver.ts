@@ -6,6 +6,11 @@ import {
   toMktOrderOutput,
   toMktOrdersOutput,
 } from 'src/mkt-core/order/dto/mkt-order.mapper';
+import {
+  ModuleAccessGuard,
+  RequireModuleAccess,
+} from 'src/mkt-core/mkt-rbac/guards/module-access.guard';
+import { ModuleName } from 'src/mkt-core/mkt-rbac';
 
 import { MktOrderService } from './mkt-order.service';
 import {
@@ -19,6 +24,7 @@ import {
   UpdateOrderInput,
 } from './dto';
 
+@RequireModuleAccess(ModuleName.ORDER)
 @Resolver(() => MktOrderOutput)
 export class MktOrderResolver {
   constructor(private readonly orderService: MktOrderService) {}
@@ -34,7 +40,7 @@ export class MktOrderResolver {
   }
 
   @Query(() => MktOrderOutput)
-  @UseGuards(UserAuthGuard)
+  @UseGuards(UserAuthGuard, ModuleAccessGuard)
   async getMktOrderWithItems(
     @Args('input') input: GetOrderInput,
   ): Promise<MktOrderOutput> {

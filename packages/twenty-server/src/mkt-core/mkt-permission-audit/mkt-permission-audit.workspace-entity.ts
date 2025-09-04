@@ -13,30 +13,14 @@ import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspac
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
-import { MKT_PERMISSION_AUDIT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MKT_PERMISSION_AUDIT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import {
+  PermissionAuditAction,
+  PermissionSource,
+  CheckResult,
+} from 'src/mkt-core/mkt-rbac/enums/rbac.enums';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
-export enum PermissionAuditAction {
-  READ = 'read',
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  EXPORT = 'export',
-}
-
-export enum PermissionSource {
-  ROLE = 'role',
-  TEMPORARY = 'temporary',
-  SUPPORT_ASSIGNMENT = 'support_assignment',
-  DEPARTMENT = 'department',
-  DATA_ACCESS_POLICY = 'data_access_policy',
-}
-
-export enum CheckResult {
-  GRANTED = 'granted',
-  DENIED = 'denied',
-}
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAudit,
@@ -196,6 +180,12 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
         label: 'Denied',
         position: 1,
         color: 'red',
+      },
+      {
+        value: CheckResult.PARTIAL,
+        label: 'Partial',
+        position: 2,
+        color: 'yellow',
       },
     ],
   })
