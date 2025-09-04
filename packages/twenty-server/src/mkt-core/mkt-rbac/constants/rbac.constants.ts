@@ -99,6 +99,8 @@ export const SENSITIVE_OBJECTS = [
   'mktTemporaryPermission',
   'workspaceMember',
   'mktPermissionAudit',
+  'mktDepartment',
+  'mktDepartmentHierarchy',
 ] as const;
 
 // Sensitive metadata keys to redact in logs

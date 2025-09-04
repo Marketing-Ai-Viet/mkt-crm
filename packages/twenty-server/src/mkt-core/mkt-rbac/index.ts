@@ -59,6 +59,7 @@ export {
   PERMISSION_RESULT_MAPPING,
   DEFAULT_PERMISSION_SETTINGS,
   GRAPHQL_OPERATIONS,
+  SENSITIVE_OBJECTS,
 } from './constants/rbac.constants';
 
 // Module
