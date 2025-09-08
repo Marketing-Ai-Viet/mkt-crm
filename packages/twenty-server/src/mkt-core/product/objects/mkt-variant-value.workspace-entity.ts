@@ -13,6 +13,10 @@ import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-enti
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
+<<<<<<<< HEAD:packages/twenty-server/src/mkt-core/product/objects/mkt-variant-value.workspace-entity.ts
+========
+import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
+>>>>>>>> 439ba3ffe2 (refactor: reorganize workspace entity imports and remove deprecated files):packages/twenty-server/src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity.ts
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
@@ -20,9 +24,15 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+<<<<<<<< HEAD:packages/twenty-server/src/mkt-core/product/objects/mkt-variant-value.workspace-entity.ts
 import { MKT_VARIANT_VALUE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
+========
+import { MKT_VARIANT_ATTRIBUTE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
+>>>>>>>> 439ba3ffe2 (refactor: reorganize workspace entity imports and remove deprecated files):packages/twenty-server/src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity.ts
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
