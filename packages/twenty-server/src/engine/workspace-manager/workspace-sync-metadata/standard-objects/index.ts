@@ -1,7 +1,8 @@
 import {
-  MKT_FINAL_WORKSPACE_ENTITIES,
-  MKT_WORKSPACE_ENTITIES,
+    MKT_FINAL_WORKSPACE_ENTITIES,
+    MKT_WORKSPACE_ENTITIES,
 } from 'src/mkt-core/enums/mkt.workspace.entities';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';
