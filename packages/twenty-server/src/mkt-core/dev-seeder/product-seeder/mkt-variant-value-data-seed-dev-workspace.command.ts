@@ -12,8 +12,13 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+<<<<<<<< HEAD:packages/twenty-server/src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-data-seed-dev-workspace.command.ts
 import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
 import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
+========
+import { mktVariantAttributesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-attribute-all.view';
+import { prefillMktVariantAttributes } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-attribute';
+>>>>>>>> b53fd15b46 (feat: enhance order management and clean up deprecated files):packages/twenty-server/src/mkt-core/dev-seeder/product-seeder/mkt-variant-attribute-data-seed-dev-workspace.command.ts
 
 interface SeedVariantValueModuleOptions {
   workspaceId?: string;
