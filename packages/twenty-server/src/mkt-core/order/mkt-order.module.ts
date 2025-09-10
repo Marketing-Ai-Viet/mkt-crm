@@ -1,16 +1,21 @@
 import { Module } from '@nestjs/common';
 
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
-import { MktRbacModule } from 'src/mkt-core/mkt-rbac/mkt-rbac.module';
 
 import { MktOrderResolver } from './mkt-order.resolver';
 import { MktOrderService } from './mkt-order.service';
 
+import { MktOrderItemUpdateOnePreQueryHook } from './hooks/mkt-order-item-update-one.pre-query.hook';
 import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-query.hook';
 
 @Module({
-  imports: [MessageQueueModule, MktRbacModule.forRoot()],
-  providers: [MktOrderResolver, MktOrderService, MktOrderUpdateOnePreQueryHook],
+  imports: [MessageQueueModule],
+  providers: [
+    MktOrderResolver,
+    MktOrderService,
+    MktOrderUpdateOnePreQueryHook,
+    MktOrderItemUpdateOnePreQueryHook,
+  ],
   exports: [MktOrderService],
 })
 export class MktOrderModule {}
