@@ -16,7 +16,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { Request,Response } from 'express';
+import { Request, Response } from 'express';
 
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
