@@ -10,7 +10,6 @@ import {
   Max,
   Matches,
   IsUUID,
-  IsObject,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -18,10 +17,6 @@ import {
   OrganizationHierarchyLevel,
   ORGANIZATION_LEVEL_VALIDATION_CONSTANTS,
 } from 'src/mkt-core/mkt-organization-level/constants';
-import {
-  DefaultPermissions,
-  AccessLimitations,
-} from 'src/mkt-core/mkt-organization-level/types';
 
 export class UpdateOrganizationLevelDto {
   @IsOptional()
@@ -92,12 +87,4 @@ export class UpdateOrganizationLevelDto {
   @IsOptional()
   @IsBoolean({ message: 'Is active must be a boolean' })
   isActive?: boolean;
-
-  @IsOptional()
-  @IsObject({ message: 'Default permissions must be an object' })
-  defaultPermissions?: DefaultPermissions;
-
-  @IsOptional()
-  @IsObject({ message: 'Access limitations must be an object' })
-  accessLimitations?: AccessLimitations;
 }

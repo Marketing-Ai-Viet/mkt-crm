@@ -470,8 +470,6 @@ export class OrganizationLevelService {
       description: level.description,
       hierarchyLevel: level.hierarchyLevel,
       parentLevelId: level.parentLevelId,
-      defaultPermissions: level.defaultPermissions,
-      accessLimitations: level.accessLimitations,
       displayOrder: level.displayOrder,
       isActive: level.isActive,
       children: [],

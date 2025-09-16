@@ -356,7 +356,6 @@ export class MktRbacService implements IRbacService {
         },
       });
 
-      console.log('audit', audit);
       await repository.save(audit);
     } catch (error) {
       this.logger.error(
@@ -408,26 +407,7 @@ export class MktRbacService implements IRbacService {
   }
 
   private mapToAuditAction(action: PermissionAction): PermissionAuditAction {
-    const actionMap: Record<PermissionAction, PermissionAuditAction> = {
-      QUERY: PermissionAuditAction.READ,
-      MUTATION: PermissionAuditAction.UPDATE,
-      SUBSCRIPTION: PermissionAuditAction.READ,
-      FIELD_READ: PermissionAuditAction.READ,
-      FIELD_WRITE: PermissionAuditAction.UPDATE,
-      MODULE_ACCESS: PermissionAuditAction.READ,
-      CREATE: PermissionAuditAction.CREATE,
-      UPDATE: PermissionAuditAction.UPDATE,
-      DELETE: PermissionAuditAction.DELETE,
-      LIST: PermissionAuditAction.READ,
-      EXPORT: PermissionAuditAction.READ,
-      IMPORT: PermissionAuditAction.CREATE,
-      BULK_UPDATE: PermissionAuditAction.UPDATE,
-      BULK_DELETE: PermissionAuditAction.DELETE,
-      RESTORE: PermissionAuditAction.UPDATE,
-      ARCHIVE: PermissionAuditAction.UPDATE,
-    };
-
-    return actionMap[action];
+    return RbacEnumMapper.toAuditAction(action);
   }
 
   private mapToAuditSource(

@@ -10,7 +10,6 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
 import { OrganizationLevelValidationService } from 'src/mkt-core/mkt-organization-level/services/organization-level-validation.service';
 import { CreateOrganizationLevelDto } from 'src/mkt-core/mkt-organization-level/dto/create-organization-level.dto';
-import { PERMISSION_TEMPLATES } from 'src/mkt-core/mkt-organization-level/constants/permission-templates.constants';
 
 @WorkspaceQueryHook('mktOrganizationLevel.createOne')
 export class MktOrganizationLevelCreateOnePreQueryHook
@@ -121,15 +120,9 @@ export class MktOrganizationLevelCreateOnePreQueryHook
     }
   }
 
-  private getDefaultPermissionsTemplate() {
-    return PERMISSION_TEMPLATES.JUNIOR_STAFF;
-  }
-
   private transformDtoToEntity(
     dto: CreateOrganizationLevelDto,
   ): Partial<MktOrganizationLevelWorkspaceEntity> {
-    const defaultTemplate = this.getDefaultPermissionsTemplate();
-
     return {
       levelCode: dto.levelCode,
       levelName: dto.levelName,
@@ -139,10 +132,8 @@ export class MktOrganizationLevelCreateOnePreQueryHook
       description: dto.description ?? undefined,
       parentLevelId: dto.parentLevelId ?? undefined,
       isActive: dto.isActive ?? true,
-      defaultPermissions:
-        dto.defaultPermissions ?? defaultTemplate.defaultPermissions,
-      accessLimitations:
-        dto.accessLimitations ?? defaultTemplate.accessLimitations,
+      // defaultPermissions và accessLimitations đã được remove khỏi entity
+      // Permissions được quản lý thông qua Data Access Policy (tạo trong post-query hook)
       position: 0,
     };
   }

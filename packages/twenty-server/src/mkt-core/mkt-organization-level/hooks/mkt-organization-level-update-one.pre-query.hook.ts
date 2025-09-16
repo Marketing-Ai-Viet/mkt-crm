@@ -324,10 +324,8 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
       entity.parentLevelId = dto.parentLevelId;
     if (dto.displayOrder !== undefined) entity.displayOrder = dto.displayOrder;
     if (dto.isActive !== undefined) entity.isActive = dto.isActive;
-    if (dto.defaultPermissions !== undefined)
-      entity.defaultPermissions = dto.defaultPermissions;
-    if (dto.accessLimitations !== undefined)
-      entity.accessLimitations = dto.accessLimitations;
+    // defaultPermissions và accessLimitations đã được remove khỏi entity
+    // Permissions được quản lý thông qua Data Access Policy
 
     return entity;
   }

@@ -1,9 +1,3 @@
-import {
-  DefaultPermissions,
-  AccessLimitations,
-} from 'src/mkt-core/mkt-organization-level/types';
-import { PERMISSION_TEMPLATES } from 'src/mkt-core/mkt-organization-level/constants/permission-templates.constants';
-
 type MktOrganizationLevelDataSeed = {
   id: string;
   levelCode: string;
@@ -12,8 +6,6 @@ type MktOrganizationLevelDataSeed = {
   description?: string;
   hierarchyLevel: number;
   parentLevelId?: string | null;
-  defaultPermissions?: DefaultPermissions;
-  accessLimitations?: AccessLimitations;
   displayOrder: number;
   isActive?: boolean;
   position: number;
@@ -31,8 +23,6 @@ export const MKT_ORGANIZATION_LEVEL_DATA_SEED_COLUMNS: (keyof MktOrganizationLev
     'description',
     'hierarchyLevel',
     'parentLevelId',
-    'defaultPermissions',
-    'accessLimitations',
     'displayOrder',
     'isActive',
     'position',
@@ -61,8 +51,6 @@ export const MKT_ORGANIZATION_LEVEL_DATA_SEEDS: MktOrganizationLevelDataSeed[] =
         'Cấp quản lý cao nhất, có thẩm quyền quyết định chiến lược và điều hành toàn bộ tổ chức',
       hierarchyLevel: 1,
       parentLevelId: null, // Top level
-      defaultPermissions: PERMISSION_TEMPLATES.DIRECTOR.defaultPermissions,
-      accessLimitations: PERMISSION_TEMPLATES.DIRECTOR.accessLimitations,
       displayOrder: 1,
       isActive: true,
       position: 1,
@@ -81,8 +69,6 @@ export const MKT_ORGANIZATION_LEVEL_DATA_SEEDS: MktOrganizationLevelDataSeed[] =
         'Cấp quản lý trung gian, phụ trách một hoặc nhiều team và báo cáo lên Director',
       hierarchyLevel: 2,
       parentLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.DIRECTOR,
-      defaultPermissions: PERMISSION_TEMPLATES.MANAGER.defaultPermissions,
-      accessLimitations: PERMISSION_TEMPLATES.MANAGER.accessLimitations,
       displayOrder: 2,
       isActive: true,
       position: 2,
@@ -101,8 +87,6 @@ export const MKT_ORGANIZATION_LEVEL_DATA_SEEDS: MktOrganizationLevelDataSeed[] =
         'Người dẫn dắt một team nhỏ, có thẩm quyền quản lý công việc và hỗ trợ team members',
       hierarchyLevel: 3,
       parentLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
-      defaultPermissions: PERMISSION_TEMPLATES.TEAM_LEAD.defaultPermissions,
-      accessLimitations: PERMISSION_TEMPLATES.TEAM_LEAD.accessLimitations,
       displayOrder: 3,
       isActive: true,
       position: 3,
@@ -121,8 +105,6 @@ export const MKT_ORGANIZATION_LEVEL_DATA_SEEDS: MktOrganizationLevelDataSeed[] =
         'Nhân viên có kinh nghiệm, có thể mentor junior staff và handle các task phức tạp',
       hierarchyLevel: 4,
       parentLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.TEAM_LEAD,
-      defaultPermissions: PERMISSION_TEMPLATES.SENIOR_STAFF.defaultPermissions,
-      accessLimitations: PERMISSION_TEMPLATES.SENIOR_STAFF.accessLimitations,
       displayOrder: 4,
       isActive: true,
       position: 4,
@@ -141,8 +123,6 @@ export const MKT_ORGANIZATION_LEVEL_DATA_SEEDS: MktOrganizationLevelDataSeed[] =
         'Nhân viên mới, thực hiện các công việc cơ bản và học hỏi từ senior staff',
       hierarchyLevel: 5,
       parentLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.SENIOR_STAFF,
-      defaultPermissions: PERMISSION_TEMPLATES.JUNIOR_STAFF.defaultPermissions,
-      accessLimitations: PERMISSION_TEMPLATES.JUNIOR_STAFF.accessLimitations,
       displayOrder: 5,
       isActive: true,
       position: 5,
