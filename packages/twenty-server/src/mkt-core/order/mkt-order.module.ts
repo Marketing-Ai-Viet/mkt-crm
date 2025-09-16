@@ -8,6 +8,9 @@ import { MktRbacModule } from 'src/mkt-core/mkt-rbac/mkt-rbac.module';
 import { MktOrderResolver } from './mkt-order.resolver';
 import { MktOrderService } from './mkt-order.service';
 
+import { MktOrderResolver } from './mkt-order.resolver';
+import { MktOrderService } from './mkt-order.service';
+
 import { MktOrderItemUpdateOnePreQueryHook } from './hooks/mkt-order-item-update-one.pre-query.hook';
 import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-query.hook';
 
