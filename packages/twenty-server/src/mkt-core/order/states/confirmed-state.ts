@@ -19,8 +19,8 @@ export class ConfirmedState extends OrderState {
 
   canTransitionTo(
     newStatus: ORDER_STATUS,
-    context: OrderStateContext,
-    input: OrderStateInput,
+    _context: OrderStateContext,
+    _input: OrderStateInput,
   ): boolean {
     // Confirmed can convert to Draft, Trial, Paid, Cancelled
     return [ORDER_STATUS.DRAFT, ORDER_STATUS.TRIAL, ORDER_STATUS.PAID, ORDER_STATUS.CANCELLED].includes(
