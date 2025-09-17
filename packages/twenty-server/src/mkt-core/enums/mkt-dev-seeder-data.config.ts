@@ -128,6 +128,10 @@ import {
   MKT_SINVOICE_TAX_BREAKDOWN_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seeds.constants';
 import {
+  MKT_CATEGORY_DATA_SEED_COLUMNS,
+  MKT_CATEGORY_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/product-seeder/mkt-category-data-seeds.constants';
+import {
   MKT_COMBO_DATA_SEED_COLUMNS,
   MKT_COMBO_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-data-seeds.constants';
@@ -170,6 +174,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktCustomerTag',
     pgColumns: MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
     recordSeeds: MKT_CUSTOMER_TAG_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktCategory',
+    pgColumns: MKT_CATEGORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_CATEGORY_DATA_SEEDS,
   },
   // Product configs
   {

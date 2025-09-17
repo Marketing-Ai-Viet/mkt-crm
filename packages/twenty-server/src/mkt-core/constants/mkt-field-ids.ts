@@ -113,6 +113,22 @@ export const MKT_CUSTOMER_TAG_FIELD_IDS = {
   searchVector: 'e7145f31-c1d1-421d-be08-1b183ef7ae8a',
 };
 
+export const MKT_CATEGORY_FIELD_IDS = {
+  name: '43fc65ae-5ea0-4fcf-9512-2801bd25a8fa',
+  description: 'c16ba585-149b-4fdd-9a1d-bb705823b5fd',
+
+  // relations
+  mktProducts: 'eab00b3d-b7f1-4c46-842d-75826f58bc39',
+
+  // common relations or fields
+  position: 'ec623519-d351-4d7a-80de-04eab81d150f',
+  createdBy: '7cb412f4-86b3-47c9-b278-cf2c94765fb7',
+  accountOwner: '4c5ac565-54c2-4397-a31a-ed1775825f8a',
+
+  timelineActivities: '53a9b649-a55e-4607-90e9-db99f949c777',
+  searchVector: '4e870429-3341-422d-be6f-0e2f62aafe49',
+};
+
 export const MKT_PRODUCT_FIELD_IDS = {
   name: 'f96cff34-9749-4e6e-bdf1-87feb2d63c5b',
   code: '18f99112-4829-4c38-a455-d7be4ad976a2',
@@ -122,6 +138,10 @@ export const MKT_PRODUCT_FIELD_IDS = {
   inStock: '1acd77e3-6ee5-4570-984b-c884777d34b4',
   price: '42337fcf-349b-4c77-885e-4dd80afb9e27',
   isActive: 'a5cc9c09-5825-4311-85d8-804227ff0cf6',
+
+  // relations
+  mktCategory: '2f0c0b54-ced9-4a40-8ee9-645095991864',
+
   position: '6b515d7c-778e-4806-ba73-f8c3fec57e7d',
   createdBy: '8ad53940-cd6a-45cf-a4bd-46611f04b20b',
   // TODO: check if this can be deleted
@@ -249,6 +269,7 @@ export const MKT_ORDER_FIELD_IDS = {
   mktComboVariants: '28a25b7e-3b7e-4746-ac46-7ac7a2a1d67b',
   mktSInvoice: 'c53bbfe4-0c46-42ac-99a7-f24df8ef56a7',
   mktCustomer: '631879f5-0017-4df2-aa29-124dd38197bf',
+  mktPayments: '06240e4d-a9ab-4dcb-b3e9-0bbdf2085242',
   //common relations or fields
   position: '9d970deb-f1e5-4cc4-8b36-9ad83ca03ee5',
   createdBy: '6d52adfa-9230-4df0-84fc-d51c646e8538',
@@ -582,6 +603,11 @@ export const MKT_PAYMENT_FIELD_IDS = {
   description: '8e9a8b80-6d5f-4e36-9c1f-8b7f6e5d4c40',
   orderId: '9e9a8b81-6d5f-4e37-9c20-8b7f6e5d4c41',
   invoiceId: 'ae9a8b82-6d5f-4e38-9c21-8b7f6e5d4c42',
+  qrCodeUrl: '3b1e43e9-31e1-4e35-a55c-e6aa1e5b7c99',
+  //relations
+  mktOrder: '4b889a4f-bfea-4938-a4e2-66271ebeca12',
+
+  //common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',
   createdBy: 'ce9a8b84-6d5f-4e3a-9c23-8b7f6e5d4c44',
   mktPaymentMethod: 'de9a8b85-6d5f-4e3b-9c24-8b7f6e5d4c45',
@@ -610,6 +636,7 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktTag: '3bba154a-8267-4c6e-8ef8-f4170938d9f0',
   mktCustomerTag: 'b4521675-814d-4f9e-bd49-e77932eca67b',
   //products
+  mktCategory: 'c7f61c4b-2063-44d0-bada-d9b4a165b02e',
   mktProduct: 'fb70cd51-fca9-414c-ac2e-41c00fcb1d45',
   mktAttribute: '18a51a5f-122f-4536-a4c5-cc4672664f93',
   mktVariant: 'b6ecb5e1-14c8-4aaa-b715-e26ed4e81e62',
@@ -671,6 +698,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktTags: '0a057a17-d56b-4d9d-8c2d-a00296205f71',
   accountOwnerForMktCustomerTags: '316eaa82-e210-4663-ad62-ef058862ce52',
   //products
+  accountOwnerForMktCategories: '90cf2133-0d79-4f4e-9ced-efca439478d1',
   accountOwnerForMktProducts: 'fa7e06e6-3d12-4185-928a-db45e0257b95',
   accountOwnerForMktAttributes: '84954c00-5b31-46ab-9b6c-e95b81ae8d94',
   accountOwnerForMktVariants: '27b1e5ab-980b-4c3c-8168-c8ed77e86363',

@@ -7,6 +7,7 @@
 
 export const MKT_OBJECT_IDS = {
   // products
+  mktCategory: '4cf3c9a1-6b33-487e-b06c-f5dd6d56943d',
   mktProduct: '20202020-a305-41e7-8c72-ba44072a4c58',
   mktAttribute: '2e8b5131-0c0b-488d-8d4f-f322894d0563',
   mktValue: '20202020-a305-41e7-8c72-ba44072a4c59',
