@@ -27,6 +27,7 @@ import { SeedSInvoiceItemModuleCommand } from 'src/mkt-core/dev-seeder/invoice-s
 import { SeedSInvoiceMetadataModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-metadata-data-seed-dev-workspace.command';
 import { SeedSInvoicePaymentModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-payment-data-seed-dev-workspace.command';
 import { SeedSInvoiceTaxBreakdownModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seed-dev-workspace.command';
+import { SeedCategoryModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-category-data-seed-dev-workspace.command';
 import { SeedComboModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-data-seed-dev-workspace.command';
 import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-data-seed-dev-workspace.command';
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
@@ -39,6 +40,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedTagModuleCommand,
   SeedCustomerTagModuleCommand,
   // product commands
+  SeedCategoryModuleCommand,
   SeedProductModuleCommand,
   SeedVariantModuleCommand,
   SeedComboModuleCommand,

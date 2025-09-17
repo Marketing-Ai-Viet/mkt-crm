@@ -25,13 +25,14 @@ import {
 import { MKT_PRODUCT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import {
+  MKT_PRODUCT_TYPE,
+  MKT_PRODUCT_TYPE_OPTIONS,
+} from 'src/mkt-core/product/product.constants';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import {
-  MKT_PRODUCT_TYPE_OPTIONS,
-  MKT_PRODUCT_TYPE,
-} from 'src/mkt-core/product/product.constants';
 const TABLE_PRODUCT_NAME = 'mktProduct';
 const NAME_FIELD_NAME = 'name';
 const DESCRIPTION_FIELD_NAME = 'description';
@@ -208,6 +209,21 @@ export class MktProductWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   orderItems: Relation<MktOrderItemWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PRODUCT_FIELD_IDS.mktCategory,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Category`,
+    description: msg`Category of the product`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktCategoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktProducts',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktCategory: Relation<MktCategoryWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktCategory')
+  mktCategoryId: string | null;
 
   @WorkspaceField({
     standardId: MKT_PRODUCT_FIELD_IDS.searchVector,

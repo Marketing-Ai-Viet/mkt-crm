@@ -28,17 +28,18 @@ import { prefillMktStaffStatusHistories } from 'src/mkt-core/dev-seeder/prefill-
 import { prefillMktTags } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-templates';
 import { prefillMktTemporaryPermissions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-temporary-permissions';
+import { prefillMktCategories } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-categories';
 import { prefillMktComboVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combo-variants';
 import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combos';
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
-
 export const MKT_PREFILLS = [
   // customer prefills
   prefillMktCustomers,
   prefillMktTags,
   prefillMktCustomerTags,
   // product prefills
+  prefillMktCategories,
   prefillMktProducts,
   prefillMktVariants,
   // combo prefills
