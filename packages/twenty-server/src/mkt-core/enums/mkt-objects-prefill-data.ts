@@ -1,4 +1,3 @@
-import { prefillMktInvoices } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-invoices';
 import { prefillMktSInvoiceAuths } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-sinvoice-auths';
 import { prefillMktSInvoiceItems } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-sinvoice-items';
 import { prefillMktSInvoiceMetadata } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-sinvoice-metadata';
@@ -32,17 +31,8 @@ import { prefillMktCategories } from 'src/mkt-core/dev-seeder/product-seeder/pre
 import { prefillMktComboVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combo-variants';
 import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combos';
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
+import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
-import { prefillMktPermissionResources } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-resources';
-import { prefillMktPermissionActions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-actions';
-import { prefillMktPermissionTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-templates';
-import { prefillMktTemplateResourcePermissions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-resource-permissions';
-import { prefillMktTemplateAccessLimitations } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-access-limitations';
-import { prefillMktTemplateSystemActions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-system-actions';
-import { prefillMktPermissionContexts } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-contexts';
-import { prefillMktUserPermissionTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-user-permission-templates';
-import { prefillMktUserPermissionOverrides } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-user-permission-overrides';
-
 export const MKT_PREFILLS = [
   // customer prefills
   prefillMktCustomers,
@@ -52,6 +42,7 @@ export const MKT_PREFILLS = [
   prefillMktCategories,
   prefillMktProducts,
   prefillMktVariants,
+  prefillMktVariantValues,
   // combo prefills
   prefillMktCombos,
   prefillMktComboVariants,
@@ -65,7 +56,6 @@ export const MKT_PREFILLS = [
   // license prefills
   prefillMktLicenses,
   // invoice prefills
-  prefillMktInvoices,
   prefillMktSInvoiceAuths,
   prefillMktSInvoices,
   prefillMktSInvoicePayments,
@@ -91,14 +81,4 @@ export const MKT_PREFILLS = [
   prefillMktDepartmentHierarchies,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
-  // permission resources (should be last to ensure all dependencies exist)
-  prefillMktPermissionResources,
-  prefillMktPermissionActions,
-  prefillMktPermissionTemplates,
-  prefillMktTemplateResourcePermissions,
-  prefillMktTemplateSystemActions,
-  prefillMktTemplateAccessLimitations,
-  prefillMktPermissionContexts,
-  prefillMktUserPermissionTemplates,
-  prefillMktUserPermissionOverrides,
 ];
