@@ -18,7 +18,7 @@ export const MKT_CATEGORY_DATA_SEED_COLUMNS: string[] = [
   'createdByName',
 ];
 
-export const MKT_CATEGORY_DATA_SEEDS_IDS = {  
+export const MKT_CATEGORY_DATA_SEEDS_IDS = {
   VI_LEAD: 'b021a3e4-adad-427c-a514-e91ffc1bbbca',
   MKT_PRODUCT: 'e00601f1-9ca3-4c12-b9d7-340faa31df98',
 };

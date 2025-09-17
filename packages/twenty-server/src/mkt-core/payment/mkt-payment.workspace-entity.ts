@@ -23,9 +23,9 @@ import {
 import { MKT_PAYMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
+
 import { PAYMENT_STATUS_OPTIONS } from './constants';
 import { PaymentStatus } from './types';
 
@@ -163,7 +163,7 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   mktOrder: Relation<MktOrderWorkspaceEntity>;
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string;
-  
+
   //timelineActivities
   @WorkspaceRelation({
     standardId: MKT_PAYMENT_FIELD_IDS.timelineActivities,
