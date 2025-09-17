@@ -10,6 +10,7 @@ import {
 export type MKT_CUSTOMER_DATA_SEED = {
   id: string;
   name: string;
+  mktCustomerCode: string; // CUS-YYYY-NNNNNN
   type: MKT_CUSTOMER_TYPE;
   email: string;
   phone: string;
@@ -30,6 +31,7 @@ export type MKT_CUSTOMER_DATA_SEED = {
 export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MKT_CUSTOMER_DATA_SEED)[] = [
   'id',
   'name',
+  'mktCustomerCode', 
   'type',
   'email',
   'phone',
@@ -78,6 +80,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.TECH_CORP,
     name: 'TechCorp Solutions',
+    mktCustomerCode: 'CUS-2020-000001', // CUS-2020-000001
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'contact@techcorp.com',
     phone: '+1-555-0123',
@@ -96,6 +99,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.FINANCE_LTD,
     name: 'Global Finance Ltd',
+    mktCustomerCode: 'CUS-2020-000002', // CUS-2020-000002
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'info@globalfinance.com',
     phone: '+1-555-0456',
@@ -114,6 +118,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.HEALTH_CARE,
     name: 'HealthCare Systems',
+    mktCustomerCode: 'CUS-2020-000003', // CUS-2020-000003
     type: MKT_CUSTOMER_TYPE.ORGANIZATION,
     email: 'admin@healthcare-systems.org',
     phone: '+1-555-0789',
@@ -134,6 +139,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.MARKETING_AGENCY,
     name: 'Creative Marketing Agency',
+    mktCustomerCode: 'CUS-2020-000004', // CUS-2020-000004
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'hello@creativemarketing.com',
     phone: '+1-555-0321',
@@ -152,6 +158,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.CONSULTING_FIRM,
     name: 'Strategic Consulting Group',
+    mktCustomerCode: 'CUS-2020-000005', // CUS-2020-000005
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'info@strategicconsulting.com',
     phone: '+1-555-0654',
@@ -170,6 +177,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.RETAIL_CHAIN,
     name: 'Urban Retail Chain',
+    mktCustomerCode: 'CUS-2020-000006', // CUS-2020-000006
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'contact@urbanretail.com',
     phone: '+1-555-0987',
@@ -190,6 +198,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.STARTUP_TECH,
     name: 'InnovateStartup',
+    mktCustomerCode: 'CUS-2020-000007', // CUS-2020-000007
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'team@innovatestartup.com',
     phone: '+1-555-0124',
@@ -208,6 +217,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.LOCAL_RESTAURANT,
     name: 'Taste of Italy',
+    mktCustomerCode: 'CUS-2020-000008', // CUS-2020-000008
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     email: 'info@tasteofitaly.com',
     phone: '+1-555-0457',
@@ -226,6 +236,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.FREELANCE_DESIGNER,
     name: 'Sarah Johnson',
+    mktCustomerCode: 'CUS-2020-000009', // CUS-2020-000009
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'sarah@freelancedesigner.com',
     phone: '+1-555-0789',
@@ -246,6 +257,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.VIP_CUSTOMER,
     name: 'Robert Chen',
+    mktCustomerCode: 'CUS-2020-000010', // CUS-2020-000010
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'robert.chen@email.com',
     phone: '+1-555-0322',
@@ -264,6 +276,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.NEW_LEAD,
     name: 'Jennifer Martinez',
+    mktCustomerCode: 'CUS-2020-000011', // CUS-2020-000011
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'jennifer.martinez@email.com',
     phone: '+1-555-0655',
@@ -282,6 +295,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.LOYAL_CUSTOMER,
     name: 'David Thompson',
+    mktCustomerCode: 'CUS-2020-000012', // CUS-2020-000012
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'david.thompson@email.com',
     phone: '+1-555-0988',
@@ -300,6 +314,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.CHURN_RISK,
     name: 'Lisa Anderson',
+    mktCustomerCode: 'CUS-2020-000013', // CUS-2020-000013
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'lisa.anderson@email.com',
     phone: '+1-555-0125',
@@ -318,6 +333,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.HIGH_VALUE,
     name: 'Michael Rodriguez',
+    mktCustomerCode: 'CUS-2020-000014', // CUS-2020-000014
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'michael.rodriguez@email.com',
     phone: '+1-555-0458',
@@ -336,6 +352,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.SUPPORT_INTENSIVE,
     name: 'Amanda Wilson',
+    mktCustomerCode: 'CUS-2020-000015', // CUS-2020-000015
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     email: 'amanda.wilson@email.com',
     phone: '+1-555-0790',
