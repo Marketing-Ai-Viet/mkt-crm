@@ -32,6 +32,7 @@ export class MktPaymentCreateOnePreQueryHook
 
     if (!workspaceId || !input?.mktOrderId) {
       this.logger.warn('Missing workspaceId or mktOrderId in payment creation');
+
       return payload;
     }
 
@@ -50,6 +51,7 @@ export class MktPaymentCreateOnePreQueryHook
 
       if (!order) {
         this.logger.warn(`Order not found with id: ${input.mktOrderId}`);
+
         return payload;
       }
 
@@ -59,16 +61,19 @@ export class MktPaymentCreateOnePreQueryHook
           ...payload.data,
           amount: order.totalAmount,
         };
-        this.logger.log(`Copied amount ${order.totalAmount} from order ${order.id}`);
+        this.logger.log(
+          `Copied amount ${order.totalAmount} from order ${order.id}`,
+        );
       }
 
       // create name format orderCode-OrderName if payment doesn't have name
       if (!input.name && (order.orderCode || order.name)) {
         const orderCode = order.orderCode || '';
         const orderName = order.name || '';
-        const paymentName = orderCode && orderName 
-          ? `${orderCode}-${orderName}`
-          : orderCode || orderName || 'Payment';
+        const paymentName =
+          orderCode && orderName
+            ? `${orderCode}-${orderName}`
+            : orderCode || orderName || 'Payment';
 
         payload.data = {
           ...payload.data,
@@ -83,9 +88,10 @@ export class MktPaymentCreateOnePreQueryHook
           ...payload.data,
           currency: order.currency,
         };
-        this.logger.log(`Copied currency ${order.currency} from order ${order.id}`);
+        this.logger.log(
+          `Copied currency ${order.currency} from order ${order.id}`,
+        );
       }
-
     } catch (error) {
       this.logger.error('Error in payment creation hook:', error);
       // Don't throw error to not interrupt the payment creation process

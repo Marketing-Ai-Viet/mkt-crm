@@ -124,7 +124,7 @@ export const MKT_CATEGORY_FIELD_IDS = {
   position: 'ec623519-d351-4d7a-80de-04eab81d150f',
   createdBy: '7cb412f4-86b3-47c9-b278-cf2c94765fb7',
   accountOwner: '4c5ac565-54c2-4397-a31a-ed1775825f8a',
-  
+
   timelineActivities: '53a9b649-a55e-4607-90e9-db99f949c777',
   searchVector: '4e870429-3341-422d-be6f-0e2f62aafe49',
 };

@@ -1,4 +1,3 @@
-
 type MktPaymentDataSeed = {
   id: string;
   name: string;
@@ -60,6 +59,4 @@ export const MKT_PAYMENT_DATA_SEEDS_IDS = {
   ID_15: '0d1e2f3a-4b5c-4df6-b7c8-a9b0c1d2e3f4',
 };
 
-export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
-  
-];
+export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [];

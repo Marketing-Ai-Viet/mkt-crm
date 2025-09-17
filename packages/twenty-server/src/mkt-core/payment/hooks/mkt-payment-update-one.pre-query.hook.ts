@@ -33,6 +33,7 @@ export class MktPaymentUpdateOnePreQueryHook
 
     if (!workspaceId || !paymentId) {
       this.logger.warn('Missing workspaceId or paymentId in payment update');
+
       return payload;
     }
 
@@ -52,6 +53,7 @@ export class MktPaymentUpdateOnePreQueryHook
 
       if (!currentPayment) {
         this.logger.warn(`Payment not found with id: ${paymentId}`);
+
         return payload;
       }
 
@@ -93,7 +95,9 @@ export class MktPaymentUpdateOnePreQueryHook
               ...payload.data,
               qrCodeUrl: undefined,
             };
-            this.logger.log('Cleared QR code URL for non-SEPay QR payment method');
+            this.logger.log(
+              'Cleared QR code URL for non-SEPay QR payment method',
+            );
           }
         }
       }
@@ -115,10 +119,11 @@ export class MktPaymentUpdateOnePreQueryHook
             ...payload.data,
             qrCodeUrl: qrCodeUrl,
           };
-          this.logger.log(`Regenerated SEPay QR code URL for amount change: ${qrCodeUrl}`);
+          this.logger.log(
+            `Regenerated SEPay QR code URL for amount change: ${qrCodeUrl}`,
+          );
         }
       }
-
     } catch (error) {
       this.logger.error('Error in payment update hook:', error);
       // Don't throw error to not interrupt the payment update process
@@ -138,39 +143,51 @@ export class MktPaymentUpdateOnePreQueryHook
       const sepayBank = process.env.SEPAY_BANK || '';
 
       if (!sepayAcc || !sepayBank) {
-        this.logger.warn('SEPAY_ACC or SEPAY_BANK environment variables not set');
+        this.logger.warn(
+          'SEPAY_ACC or SEPAY_BANK environment variables not set',
+        );
+
         return null;
       }
 
       // Get order information
       const order = payment.mktOrder;
+
       if (!order) {
         this.logger.warn('No order found for payment');
+
         return null;
       }
 
       // Get order code
       const orderCode = order.orderCode;
+
       if (!orderCode) {
         this.logger.warn('No order code found for payment');
+
         return null;
       }
 
       // Get amount (use custom amount if provided, otherwise use payment amount)
       const amount = customAmount || payment.amount;
+
       if (!amount || amount <= 0) {
         this.logger.warn('Invalid amount for QR code generation');
+
         return null;
       }
 
       // Generate QR code URL
       const qrCodeUrl = `https://qr.sepay.vn/img?acc=${sepayAcc}&bank=${sepayBank}&amount=${amount}&des=${orderCode}&template=qronly&download=false`;
 
-      this.logger.log(`Generated SEPay QR code URL for order ${orderCode} with amount ${amount}`);
+      this.logger.log(
+        `Generated SEPay QR code URL for order ${orderCode} with amount ${amount}`,
+      );
 
       return qrCodeUrl;
     } catch (error) {
       this.logger.error('Error generating SEPay QR code URL:', error);
+
       return null;
     }
   }
