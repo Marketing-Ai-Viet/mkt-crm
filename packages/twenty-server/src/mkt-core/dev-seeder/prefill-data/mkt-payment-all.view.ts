@@ -83,18 +83,9 @@ export const mktPaymentsAllView = (
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_PAYMENT_FIELD_IDS.orderId,
-          )?.id ?? '',
-        position: 6,
-        isVisible: true,
-        size: 120,
-      },
-      {
-        fieldMetadataId:
-          itemObjectMetadata.fields.find(
             (field) => field.standardId === MKT_PAYMENT_FIELD_IDS.invoiceId,
           )?.id ?? '',
-        position: 7,
+        position: 6,
         isVisible: true,
         size: 120,
       },
