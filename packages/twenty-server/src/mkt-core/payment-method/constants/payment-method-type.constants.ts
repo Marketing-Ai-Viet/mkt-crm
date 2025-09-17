@@ -35,4 +35,5 @@ export const PAYMENT_METHOD_TYPE_OPTIONS = [
     color: 'yellow' as TagColor,
   },
   { value: 'OTHER', label: 'Other', position: 8, color: 'gray' as TagColor },
+  { value: 'QR_CODE', label: 'QR Code', position: 9, color: 'gray' as TagColor },
 ];

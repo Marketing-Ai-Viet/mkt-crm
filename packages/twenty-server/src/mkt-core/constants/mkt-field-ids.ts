@@ -249,6 +249,7 @@ export const MKT_ORDER_FIELD_IDS = {
   mktComboVariants: '28a25b7e-3b7e-4746-ac46-7ac7a2a1d67b',
   mktSInvoice: 'c53bbfe4-0c46-42ac-99a7-f24df8ef56a7',
   mktCustomer: '631879f5-0017-4df2-aa29-124dd38197bf',
+  mktPayments: '06240e4d-a9ab-4dcb-b3e9-0bbdf2085242',
   //common relations or fields
   position: '9d970deb-f1e5-4cc4-8b36-9ad83ca03ee5',
   createdBy: '6d52adfa-9230-4df0-84fc-d51c646e8538',
@@ -582,6 +583,11 @@ export const MKT_PAYMENT_FIELD_IDS = {
   description: '8e9a8b80-6d5f-4e36-9c1f-8b7f6e5d4c40',
   orderId: '9e9a8b81-6d5f-4e37-9c20-8b7f6e5d4c41',
   invoiceId: 'ae9a8b82-6d5f-4e38-9c21-8b7f6e5d4c42',
+  qrCodeUrl: '3b1e43e9-31e1-4e35-a55c-e6aa1e5b7c99',
+  //relations
+  mktOrder: '4b889a4f-bfea-4938-a4e2-66271ebeca12',
+
+  //common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',
   createdBy: 'ce9a8b84-6d5f-4e3a-9c23-8b7f6e5d4c44',
   mktPaymentMethod: 'de9a8b85-6d5f-4e3b-9c24-8b7f6e5d4c45',

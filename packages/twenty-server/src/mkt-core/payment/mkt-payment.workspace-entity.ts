@@ -13,8 +13,8 @@ import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-enti
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
-import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import {
   FieldTypeAndNameMetadata,
@@ -23,8 +23,9 @@ import {
 import { MKT_PAYMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { PAYMENT_STATUS_OPTIONS } from './constants';
 import { PaymentStatus } from './types';
 
@@ -43,7 +44,7 @@ const SEARCH_FIELDS_FOR_PAYMENT: FieldTypeAndNameMetadata[] = [
   shortcut: 'P',
   labelIdentifierStandardId: MKT_PAYMENT_FIELD_IDS.name,
 })
-@WorkspaceIsSearchable()
+//@WorkspaceIsSearchable()
 export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.name,
@@ -58,7 +59,10 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
     type: FieldMetadataType.NUMBER,
     label: msg`Amount`,
     description: msg`Payment amount`,
+    icon: 'IconCash',
+    defaultValue: 0,
   })
+  @WorkspaceIsNullable()
   amount: number;
 
   @WorkspaceField({
@@ -66,15 +70,27 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
     type: FieldMetadataType.TEXT,
     label: msg`Currency`,
     description: msg`Payment currency`,
-    defaultValue: "'USD'",
+    defaultValue: "'VND'",
   })
   currency: string;
+
+  //QR Code URL
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.qrCodeUrl,
+    type: FieldMetadataType.TEXT,
+    label: msg`QR Code URL`,
+    description: msg`QR Code URL`,
+    icon: 'IconQrcode',
+  })
+  @WorkspaceIsNullable()
+  qrCodeUrl?: string;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.status,
     type: FieldMetadataType.SELECT,
     label: msg`Status`,
     description: msg`Payment status`,
+    icon: 'IconCheck',
     options: PAYMENT_STATUS_OPTIONS,
   })
   @WorkspaceIsNullable()
@@ -97,15 +113,6 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   description?: string;
-
-  @WorkspaceField({
-    standardId: MKT_PAYMENT_FIELD_IDS.orderId,
-    type: FieldMetadataType.TEXT,
-    label: msg`Order ID`,
-    description: msg`Associated order ID (nullable)`,
-  })
-  @WorkspaceIsNullable()
-  orderId?: string;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.invoiceId,
@@ -141,6 +148,34 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktPaymentMethod')
   mktPaymentMethodId: string;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.mktOrder,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Order`,
+    description: msg`Order linked to this payment`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktOrderWorkspaceEntity,
+    inverseSideFieldKey: 'mktPayments',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktOrder: Relation<MktOrderWorkspaceEntity>;
+  @WorkspaceJoinColumn('mktOrder')
+  mktOrderId: string;
+  
+  //timelineActivities
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.timelineActivities,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Timeline Activities`,
+    description: msg`Timeline activities of the payment`,
+    inverseSideTarget: () => TimelineActivityWorkspaceEntity,
+    inverseSideFieldKey: 'mktPayment',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.searchVector,
