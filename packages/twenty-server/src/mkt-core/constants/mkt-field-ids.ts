@@ -260,6 +260,7 @@ export const MKT_ORDER_FIELD_IDS = {
   sInvoiceStatus: '3986dded-a1f3-4f53-9c2a-8e67d1af8cd3',
   licenseStatus: 'd3a61b4a-87d1-41de-ba40-81d0a27bcd10',
   trialLicense: '3449bef1-e719-42d9-8cf6-df3f5d47983c',
+  metadata: '82d2986b-ab3c-4563-9d24-e04d42caea0b',
   // relations
   mktContracts: '66277a67-41c6-4709-820f-dda8df091ae9', // ONE_TO_MANY relation with contracts
   mktLicense: '837f7353-df5d-449a-961c-fef566d663b9',

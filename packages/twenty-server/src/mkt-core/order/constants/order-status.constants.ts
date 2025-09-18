@@ -2,13 +2,11 @@ import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/option
 
 export enum ORDER_STATUS {
   DRAFT = 'DRAFT', // đơn hàng mới tạo, chờ xử lý
-  CONFIRMED = 'CONFIRMED', // đã xác nhận
   TRIAL = 'TRIAL', // đang ở trong giai đoạn trial
-  PAID = 'PAID', // đã thanh toán thành công
-  PROCESSING = 'PROCESSING', // đang xử lý (chuẩn bị giao/đang vận chuyển)
   COMPLETED = 'COMPLETED', // kết thúc toàn bộ lifecycle (cả thanh toán + giao hàng + hậu kỳ)
-  LOCKED = 'LOCKED', // đã bị khóa (người mua/người bán)
-  CANCELLED = 'CANCELLED', // bị huỷ (người mua/người bán)
+  WAIT = 'WAIT', // chờ xử lý (đơn hàng đã được tạo nhưng chưa xác nhận)
+  OVERDUE = 'OVERDUE', // quá hạn (đơn hàng đã được tạo nhưng chưa thanh toán trong thời gian quy định)
+  REFUSE = 'REFUSE', // từ chối (người mua/người bán)
 }
 export enum ORDER_ACTION {
   DRAFT = 'DRAFT',
@@ -23,6 +21,9 @@ export enum ORDER_ACTION {
   SINVOICE = 'SINVOICE',
   TRIAL_TO_CONFIRMED = 'TRIAL_TO_CONFIRMED',
   FREE = 'FREE',
+  WAIT = 'WAIT',
+  OVERDUE = 'OVERDUE',
+  REFUSE = 'REFUSE',
 }
 
 export const ORDER_STATUS_OPTIONS = [
@@ -33,46 +34,34 @@ export const ORDER_STATUS_OPTIONS = [
     position: 0,
   },
   {
-    value: ORDER_STATUS.CONFIRMED,
-    label: 'Confirmed',
-    color: 'blue' as TagColor,
-    position: 1,
-  },
-  {
     value: ORDER_STATUS.TRIAL,
     label: 'Trial',
     color: 'yellow' as TagColor,
-    position: 2,
-  },
-  {
-    value: ORDER_STATUS.PAID,
-    label: 'Paid',
-    color: 'green' as TagColor,
-    position: 3,
-  },
-  {
-    value: ORDER_STATUS.PROCESSING,
-    label: 'Processing',
-    color: 'blue' as TagColor,
-    position: 4,
+    position: 1,
   },
   {
     value: ORDER_STATUS.COMPLETED,
     label: 'Completed',
     color: 'green' as TagColor,
-    position: 5,
+    position: 2,
   },
   {
-    value: ORDER_STATUS.LOCKED,
-    label: 'Locked',
-    color: 'red' as TagColor,
-    position: 6,
-  },
-  {
-    value: ORDER_STATUS.CANCELLED,
-    label: 'Cancelled',
+    value: ORDER_STATUS.WAIT,
+    label: 'Wait',
     color: 'orange' as TagColor,
-    position: 7,
+    position: 3,
+  },
+  {
+    value: ORDER_STATUS.OVERDUE,
+    label: 'Overdue',
+    color: 'red' as TagColor,
+    position: 4,
+  },
+  {
+    value: ORDER_STATUS.REFUSE,
+    label: 'Refuse',
+    color: 'red' as TagColor,
+    position: 5,
   },
 ];
 
