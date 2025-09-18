@@ -29,7 +29,7 @@ export class MktOrderCreateOnePreQueryHook
       ...payload,
       data: {
         ...payload.data,
-        status: ORDER_STATUS.WAIT,
+        status: ORDER_STATUS.DRAFT,
       },
     };
 
