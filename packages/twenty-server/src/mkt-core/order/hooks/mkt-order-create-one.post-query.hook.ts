@@ -1,31 +1,31 @@
-import {Injectable,Logger} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
-import {WorkspacePostQueryHookInstance} from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/interfaces/workspace-query-hook.interface';
+import { WorkspacePostQueryHookInstance } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/interfaces/workspace-query-hook.interface';
 
-import {WorkspaceQueryHook} from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
-import {WorkspaceQueryHookType} from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/types/workspace-query-hook.type';
-import {AuthContext} from 'src/engine/core-modules/auth/types/auth-context.type';
-import {RecordPositionService} from 'src/engine/core-modules/record-position/services/record-position.service';
-import {ScopedWorkspaceContextFactory} from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import {TwentyORMGlobalManager} from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {MktLicenseService} from 'src/mkt-core/license/mkt-license.service';
-import {MktLicenseWorkspaceEntity} from 'src/mkt-core/license/mkt-license.workspace-entity';
-import {ORDER_STATUS} from 'src/mkt-core/order/constants/order-status.constants';
-import {MktOrderItemWorkspaceEntity} from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
-import {MktOrderWorkspaceEntity} from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
+import { WorkspaceQueryHookType } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/types/workspace-query-hook.type';
+import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
+import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   CalculateOrderResult,
   OrderConfirmService,
 } from 'src/mkt-core/order/services/order.confirm.service';
-import {MktPaymentMethodWorkspaceEntity} from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import {MktPaymentWorkspaceEntity} from 'src/mkt-core/payment/mkt-payment.workspace-entity';
-import {MktPaymentPrepareService} from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
-import {MktVariantWorkspaceEntity} from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 export type Metadata = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
   paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
-  customer?: { mktCustomerId: string; name?: string  };
+  customer?: { mktCustomerId: string; name?: string };
 };
 
 export type Created = MktOrderWorkspaceEntity & {
@@ -58,8 +58,10 @@ export class MktOrderCreateOnePostQueryHook
     payload: MktOrderWorkspaceEntity[],
   ): Promise<void> {
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
     if (!workspaceId) return;
     const created: Created = payload?.[0];
+
     if (!created) return;
     try {
       let metadata: Metadata = created?.metadata;
@@ -79,9 +81,12 @@ export class MktOrderCreateOnePostQueryHook
       const customerMeta = metadata?.customer;
       const paymentMethodsMeta = metadata?.paymentMethods;
 
-      if (!variantsMeta) throw new Error('no variants provided for order creation');
-      if (!customerMeta) throw new Error('No customer provided for order creation');
-      if (!paymentMethodsMeta) throw new Error('No payment methods provided for order creation');
+      if (!variantsMeta)
+        throw new Error('no variants provided for order creation');
+      if (!customerMeta)
+        throw new Error('No customer provided for order creation');
+      if (!paymentMethodsMeta)
+        throw new Error('No payment methods provided for order creation');
 
       // repositories
       const orderRepository =
@@ -284,7 +289,7 @@ export class MktOrderCreateOnePostQueryHook
               );
             }
           }
-          
+
           await orderRepository.update(created.id, {
             status: ORDER_STATUS.WAIT,
           });
