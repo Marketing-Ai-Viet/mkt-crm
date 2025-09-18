@@ -1,10 +1,10 @@
-import {UpdateOneResolverArgs} from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
+import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
 import {
   ORDER_ACTION,
-  ORDER_STATUS
+  ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import {MktOrderWorkspaceEntity} from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 import {
   OrderState,
@@ -22,9 +22,11 @@ export class TrialState extends OrderState {
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    return [ORDER_STATUS.COMPLETED, ORDER_STATUS.REFUSE, ORDER_STATUS.OVERDUE].includes(
-      newStatus,
-    );
+    return [
+      ORDER_STATUS.COMPLETED,
+      ORDER_STATUS.REFUSE,
+      ORDER_STATUS.OVERDUE,
+    ].includes(newStatus);
   }
 
   getAction(

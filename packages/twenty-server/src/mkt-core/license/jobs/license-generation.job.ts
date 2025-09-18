@@ -1,19 +1,19 @@
-import {Injectable,Logger} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
-import {Process} from 'src/engine/core-modules/message-queue/decorators/process.decorator';
-import {Processor} from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
-import {MessageQueue} from 'src/engine/core-modules/message-queue/message-queue.constants';
-import {ScopedWorkspaceContextFactory} from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import {WorkspaceRepository} from 'src/engine/twenty-orm/repository/workspace.repository';
-import {TwentyORMGlobalManager} from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {MktLicenseApiService} from 'src/mkt-core/license/integration/mkt-license-api.service';
-import {MKT_LICENSE_STATUS} from 'src/mkt-core/license/license.constants';
-import {MktLicenseWorkspaceEntity} from 'src/mkt-core/license/mkt-license.workspace-entity';
+import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
+import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktLicenseApiService } from 'src/mkt-core/license/integration/mkt-license-api.service';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import {
   MKT_ORDER_LICENSE_STATUS,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import {MktOrderWorkspaceEntity} from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 export interface LicenseGenerationJobData {
   orderId: string;
@@ -79,7 +79,6 @@ export class LicenseGenerationJob {
         return;
       }
 
-      
       // 2.2 if status TRAIL → 4.3.2 Create order trial
       if (order?.status === ORDER_STATUS.TRIAL) {
         const isValid = await this.validateForNormalOrder(
@@ -105,7 +104,6 @@ export class LicenseGenerationJob {
 
         return;
       }
-
     } catch (error) {
       this.logger.error(
         `Failed to generate license for order: ${data.orderId}`,
