@@ -38,6 +38,14 @@ import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-prod
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
 import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { MktPermissionResourceWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-permission-resource.workspace-entity';
+import {
+  MktPermissionActionWorkspaceEntity,
+  MktPermissionTemplateWorkspaceEntity,
+  MktTemplateAccessLimitationWorkspaceEntity,
+  MktTemplateResourcePermissionWorkspaceEntity,
+  MktTemplateSystemActionWorkspaceEntity,
+} from 'src/mkt-core/mkt-permission-template/entities';
 
 export const MKT_WORKSPACE_ENTITIES = [
   // Customer
@@ -94,6 +102,14 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   // Temporary Permission
   MktTemporaryPermissionWorkspaceEntity,
   MktDepartmentHierarchyWorkspaceEntity,
-  MktDataAccessPolicyWorkspaceEntity,
   MktPermissionAuditWorkspaceEntity,
+  // Permission Resource & Template
+  MktPermissionResourceWorkspaceEntity,
+  MktPermissionActionWorkspaceEntity,
+  MktPermissionTemplateWorkspaceEntity,
+  MktTemplateResourcePermissionWorkspaceEntity,
+  MktTemplateSystemActionWorkspaceEntity,
+  MktTemplateAccessLimitationWorkspaceEntity,
+  // Data Access Policy (depends on Permission Template)
+  MktDataAccessPolicyWorkspaceEntity,
 ];

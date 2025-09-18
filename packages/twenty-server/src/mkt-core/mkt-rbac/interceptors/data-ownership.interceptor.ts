@@ -196,7 +196,7 @@ export class DataOwnershipInterceptor implements NestInterceptor {
     return false; // Default deny
   }
 
-  private getUserDepartmentId(user: {
+  private getUserDepartmentId(_user: {
     workspaceMemberId: string;
   }): string | null {
     // TODO: Implement logic to get user's department ID
@@ -215,8 +215,8 @@ export class DataOwnershipInterceptor implements NestInterceptor {
   }
 
   private checkIfUserIsManager(
-    user: { workspaceMemberId: string },
-    item: Record<string, unknown>,
+    _user: { workspaceMemberId: string },
+    _item: Record<string, unknown>,
   ): boolean {
     // TODO: Implement logic to check if user is manager of the item owner
     // This would typically involve checking user roles and team hierarchy

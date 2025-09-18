@@ -46,7 +46,7 @@ export class GraphQLFieldPermissionInterceptor implements NestInterceptor {
 
           return fieldPermissionDenied.defaultValue;
         }),
-        catchError((error) => {
+        catchError(() => {
           this.logger.debug(
             `Field permission denied with error, returning default value: ${fieldPermissionDenied.fieldName}`,
           );

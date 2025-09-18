@@ -32,6 +32,12 @@ import { mktCombosAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-com
 import { mktComboVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-all.view';
 import { mktProductsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-all.view';
 import { mktVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-all.view';
+import { mktPermissionResourcesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-resource-all.view';
+import { mktPermissionActionsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-action-all.view';
+import { mktPermissionTemplatesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-template-all.view';
+import { mktTemplateResourcePermissionsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-template-resource-permission.view';
+import { mktTemplateSystemActionsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-template-system-action-all.view';
+import { mktTemplateAccessLimitationsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-template-access-limitation-all.view';
 
 export const MKT_ALL_VIEWS = [
   // customer views
@@ -81,4 +87,11 @@ export const MKT_ALL_VIEWS = [
   mktDepartmentHierarchiesAllView,
   mktDataAccessPoliciesAllView,
   mktPermissionAuditsAllView,
+  // permission resource views
+  mktPermissionResourcesAllView,
+  mktPermissionActionsAllView,
+  mktPermissionTemplatesAllView,
+  mktTemplateResourcePermissionsAllView,
+  mktTemplateSystemActionsAllView,
+  mktTemplateAccessLimitationsAllView,
 ];

@@ -139,6 +139,30 @@ import {
   MKT_COMBO_VARIANT_DATA_SEED_COLUMNS,
   MKT_COMBO_VARIANT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-data-seeds.constants';
+import {
+  MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_RESOURCE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-permission-resource-data-seeds.constants';
+import {
+  MKT_PERMISSION_ACTION_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_ACTION_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-permission-action-data-seeds.constants';
+import {
+  MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-permission-template-data-seeds.constants';
+import {
+  MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEED_COLUMNS,
+  MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-template-resource-permission-data-seeds.constants';
+import {
+  MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEED_COLUMNS,
+  MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-template-system-action-data-seeds.constants';
+import {
+  MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_COLUMNS,
+  MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-template-access-limitation-data-seeds.constants';
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
   {
@@ -324,13 +348,44 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     recordSeeds: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
   },
   {
-    tableName: 'mktDataAccessPolicy',
-    pgColumns: MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
-  },
-  {
     tableName: 'mktPermissionAudit',
     pgColumns: MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PERMISSION_AUDIT_DATA_SEEDS,
+  },
+  // Permission Resource - needs to be after workspace members
+  {
+    tableName: 'mktPermissionResource',
+    pgColumns: MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_RESOURCE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPermissionAction',
+    pgColumns: MKT_PERMISSION_ACTION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_ACTION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPermissionTemplate',
+    pgColumns: MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_TEMPLATE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktTemplateResourcePermission',
+    pgColumns: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktTemplateSystemAction',
+    pgColumns: MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktTemplateAccessLimitation',
+    pgColumns: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktDataAccessPolicy',
+    pgColumns: MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
   },
 ];

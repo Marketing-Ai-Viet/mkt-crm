@@ -33,6 +33,12 @@ import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-s
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
 import { SeedVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seed-dev-workspace.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
+import { SeedPermissionResourceModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-resource-data-seed-dev-workspace.command';
+import { SeedPermissionActionModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-action-data-seed-dev-workspace.command';
+import { SeedPermissionTemplateModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-template-data-seed-dev-workspace.command';
+import { SeedTemplateResourcePermissionModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-resource-permission-data-seed-dev-workspace.command';
+import { SeedTemplateAccessLimitationModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-access-limitation-data-seed-dev-workspace.command';
+import { SeedTemplateSystemActionModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-system-action-data-seed-dev-workspace.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
   // customer commands
@@ -81,4 +87,11 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedMktDepartmentHierarchyCommand,
   SeedMktDataAccessPolicyCommand,
   SeedMktPermissionAuditCommand,
+  // permission resource commands
+  SeedPermissionResourceModuleCommand,
+  SeedPermissionActionModuleCommand,
+  SeedPermissionTemplateModuleCommand,
+  SeedTemplateResourcePermissionModuleCommand,
+  SeedTemplateSystemActionModuleCommand,
+  SeedTemplateAccessLimitationModuleCommand,
 ];

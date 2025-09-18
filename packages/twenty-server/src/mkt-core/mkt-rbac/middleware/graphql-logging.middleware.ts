@@ -222,7 +222,7 @@ export class GraphQLLoggingMiddleware implements NestMiddleware {
   private async auditFailedRequest(
     context: PermissionContext,
     statusCode: number,
-    duration: number,
+    _duration: number,
   ): Promise<void> {
     try {
       // Only audit security-related failures

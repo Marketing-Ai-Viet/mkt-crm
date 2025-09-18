@@ -49,6 +49,13 @@ export const MKT_OBJECT_IDS = {
   mktKpiTemplateHistory: 'e1f2a3b4-5c6d-7e8f-9a0b-1c2d3e4f5a6b',
   // temporary permission system
   mktTemporaryPermission: 'dde9a4ee-2920-46f1-9f07-bf10944bc897',
+  // permission template system
+  mktPermissionTemplate: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
+  mktPermissionResource: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+  mktPermissionAction: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  mktTemplateResourcePermission: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+  mktTemplateSystemAction: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+  mktTemplateAccessLimitation: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
   // data access policy system
   mktDataAccessPolicy: 'a8b9c0d1-e2f3-4567-89ab-cdef01234567',
   // permission audit system

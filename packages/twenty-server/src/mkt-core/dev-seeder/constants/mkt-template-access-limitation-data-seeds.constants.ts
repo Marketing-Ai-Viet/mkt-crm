@@ -1,0 +1,655 @@
+import {
+  ACCESS_LIMITATION_TYPE,
+  LIMITATION_SEVERITY,
+} from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+
+import { MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS } from './mkt-permission-template-data-seeds.constants';
+
+// Template Access Limitation IDs (valid UUID v4 values) - pre-generated for consistency
+export const MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS = {
+  // CEO limitations (very few, mainly for compliance)
+  CEO_AUDIT_LOGGING: 'a1b2c3d4-e5f6-4000-8000-991000000001',
+  CEO_SECURITY_MONITORING: 'a1b2c3d4-e5f6-4000-8000-991000000002',
+
+  // Vice President limitations
+  VP_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-992000000003',
+  VP_IP_RESTRICTION: 'a1b2c3d4-e5f6-4000-8000-992000000004',
+  VP_AUDIT_LOGGING: 'a1b2c3d4-e5f6-4000-8000-992000000005',
+
+  // Director limitations
+  DIRECTOR_WORKING_HOURS: 'a1b2c3d4-e5f6-4000-8000-993000000006',
+  DIRECTOR_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-993000000007',
+  DIRECTOR_DATA_SCOPE: 'a1b2c3d4-e5f6-4000-8000-993000000008',
+  DIRECTOR_IP_RESTRICTION: 'a1b2c3d4-e5f6-4000-8000-993000000009',
+
+  // Manager limitations
+  MANAGER_WORKING_HOURS: 'a1b2c3d4-e5f6-4000-8000-994000000010',
+  MANAGER_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-994000000011',
+  MANAGER_DATA_SCOPE: 'a1b2c3d4-e5f6-4000-8000-994000000012',
+  MANAGER_CONCURRENT_SESSIONS: 'a1b2c3d4-e5f6-4000-8000-994000000013',
+
+  // Team Lead limitations
+  TEAM_LEAD_WORKING_HOURS: 'a1b2c3d4-e5f6-4000-8000-995000000014',
+  TEAM_LEAD_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-995000000015',
+  TEAM_LEAD_DATA_SCOPE: 'a1b2c3d4-e5f6-4000-8000-995000000016',
+  TEAM_LEAD_OPERATION_LIMITS: 'a1b2c3d4-e5f6-4000-8000-995000000017',
+
+  // Senior Staff limitations
+  SENIOR_STAFF_WORKING_HOURS: 'a1b2c3d4-e5f6-4000-8000-996000000018',
+  SENIOR_STAFF_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-996000000019',
+  SENIOR_STAFF_DATA_SCOPE: 'a1b2c3d4-e5f6-4000-8000-996000000020',
+  SENIOR_STAFF_OPERATION_LIMITS: 'a1b2c3d4-e5f6-4000-8000-996000000021',
+  SENIOR_STAFF_APPROVAL_REQUIRED: 'a1b2c3d4-e5f6-4000-8000-996000000022',
+
+  // Junior Staff limitations
+  JUNIOR_STAFF_WORKING_HOURS: 'a1b2c3d4-e5f6-4000-8000-997000000023',
+  JUNIOR_STAFF_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-997000000024',
+  JUNIOR_STAFF_DATA_SCOPE: 'a1b2c3d4-e5f6-4000-8000-997000000025',
+  JUNIOR_STAFF_OPERATION_LIMITS: 'a1b2c3d4-e5f6-4000-8000-997000000026',
+  JUNIOR_STAFF_APPROVAL_REQUIRED: 'a1b2c3d4-e5f6-4000-8000-997000000027',
+  JUNIOR_STAFF_SUPERVISION: 'a1b2c3d4-e5f6-4000-8000-997000000028',
+
+  // Intern limitations (most restrictive)
+  INTERN_WORKING_HOURS: 'a1b2c3d4-e5f6-4000-8000-998000000029',
+  INTERN_SESSION_TIMEOUT: 'a1b2c3d4-e5f6-4000-8000-998000000030',
+  INTERN_DATA_SCOPE: 'a1b2c3d4-e5f6-4000-8000-998000000031',
+  INTERN_OPERATION_LIMITS: 'a1b2c3d4-e5f6-4000-8000-998000000032',
+  INTERN_APPROVAL_REQUIRED: 'a1b2c3d4-e5f6-4000-8000-998000000033',
+  INTERN_SUPERVISION: 'a1b2c3d4-e5f6-4000-8000-998000000034',
+  INTERN_TRAINING_MODE: 'a1b2c3d4-e5f6-4000-8000-998000000035',
+};
+
+type MktTemplateAccessLimitationDataSeed = {
+  id: string;
+  templateId: string;
+  limitationType: string;
+  limitationKey: string;
+  limitationValue: string; // JSON string for database storage
+  isEnforced: boolean;
+  severity: string;
+  isActive: boolean;
+};
+
+export const MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_COLUMNS: (keyof MktTemplateAccessLimitationDataSeed)[] =
+  [
+    'id',
+    'templateId',
+    'limitationType',
+    'limitationKey',
+    'limitationValue',
+    'isEnforced',
+    'severity',
+    'isActive',
+  ];
+
+// Template Access Limitation Data Seeds
+export const MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEEDS: MktTemplateAccessLimitationDataSeed[] =
+  [
+    // CEO (Level 1) - Minimal limitations for compliance
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.CEO_AUDIT_LOGGING,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.CEO,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'audit_logging',
+      limitationValue: JSON.stringify({
+        logLevel: 'ALL',
+        includeSystemActions: true,
+        includeDataAccess: true,
+        retentionPeriod: '7_YEARS',
+        realTimeMonitoring: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.INFO,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.CEO_SECURITY_MONITORING,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.CEO,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'security_monitoring',
+      limitationValue: JSON.stringify({
+        anomalyDetection: true,
+        privilegedAccessMonitoring: true,
+        alertOnSensitiveActions: true,
+        notificationChannels: ['EMAIL', 'SMS', 'SLACK'],
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.INFO,
+      isActive: true,
+    },
+
+    // VICE PRESIDENT (Level 2) - Light restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.VP_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.VICE_PRESIDENT,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '4_HOURS',
+        maxSessionDuration: '12_HOURS',
+        warningBeforeTimeout: '15_MINUTES',
+        allowExtension: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.WARNING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.VP_IP_RESTRICTION,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.VICE_PRESIDENT,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'ip_restriction',
+      limitationValue: JSON.stringify({
+        allowedNetworks: ['CORPORATE_NETWORK', 'VPN'],
+        blockUnknownCountries: false,
+        allowMobileAccess: true,
+        geoLocationTracking: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.WARNING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.VP_AUDIT_LOGGING,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.VICE_PRESIDENT,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'audit_logging',
+      limitationValue: JSON.stringify({
+        logLevel: 'HIGH_PRIVILEGE',
+        includeSystemActions: true,
+        includeDataAccess: false,
+        retentionPeriod: '3_YEARS',
+        realTimeMonitoring: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.INFO,
+      isActive: true,
+    },
+
+    // DIRECTOR (Level 3) - Moderate restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.DIRECTOR_WORKING_HOURS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.DIRECTOR,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'working_hours',
+      limitationValue: JSON.stringify({
+        allowedHours: '06:00-22:00',
+        allowedDays: [
+          'MONDAY',
+          'TUESDAY',
+          'WEDNESDAY',
+          'THURSDAY',
+          'FRIDAY',
+          'SATURDAY',
+        ],
+        emergencyAccess: true,
+        holidayRestrictions: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.WARNING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.DIRECTOR_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.DIRECTOR,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '2_HOURS',
+        maxSessionDuration: '10_HOURS',
+        warningBeforeTimeout: '10_MINUTES',
+        allowExtension: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.WARNING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.DIRECTOR_DATA_SCOPE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.DIRECTOR,
+      limitationType: ACCESS_LIMITATION_TYPE.DATA_ACCESS,
+      limitationKey: 'data_scope',
+      limitationValue: JSON.stringify({
+        scope: 'DEPARTMENT',
+        crossDepartmentRequiresApproval: true,
+        sensitiveDataAccess: false,
+        financialDataLimited: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.DIRECTOR_IP_RESTRICTION,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.DIRECTOR,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'ip_restriction',
+      limitationValue: JSON.stringify({
+        allowedNetworks: ['CORPORATE_NETWORK', 'VPN'],
+        blockUnknownCountries: true,
+        allowMobileAccess: false,
+        geoLocationTracking: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+
+    // MANAGER (Level 4) - Standard restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.MANAGER_WORKING_HOURS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.MANAGER,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'working_hours',
+      limitationValue: JSON.stringify({
+        allowedHours: '07:00-19:00',
+        allowedDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        emergencyAccess: false,
+        holidayRestrictions: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.MANAGER_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.MANAGER,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '1_HOUR',
+        maxSessionDuration: '8_HOURS',
+        warningBeforeTimeout: '10_MINUTES',
+        allowExtension: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.MANAGER_DATA_SCOPE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.MANAGER,
+      limitationType: ACCESS_LIMITATION_TYPE.DATA_ACCESS,
+      limitationKey: 'data_scope',
+      limitationValue: JSON.stringify({
+        scope: 'TEAM',
+        crossTeamRequiresApproval: true,
+        sensitiveDataAccess: false,
+        financialDataLimited: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.MANAGER_CONCURRENT_SESSIONS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.MANAGER,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'concurrent_sessions',
+      limitationValue: JSON.stringify({
+        maxSessions: 3,
+        allowMultipleDevices: true,
+        sessionConflictResolution: 'NEWEST_WINS',
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.WARNING,
+      isActive: true,
+    },
+
+    // TEAM_LEAD (Level 5) - Enhanced restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.TEAM_LEAD_WORKING_HOURS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.TEAM_LEAD,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'working_hours',
+      limitationValue: JSON.stringify({
+        allowedHours: '08:00-18:00',
+        allowedDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        emergencyAccess: false,
+        holidayRestrictions: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.TEAM_LEAD_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.TEAM_LEAD,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '45_MINUTES',
+        maxSessionDuration: '8_HOURS',
+        warningBeforeTimeout: '5_MINUTES',
+        allowExtension: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.TEAM_LEAD_DATA_SCOPE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.TEAM_LEAD,
+      limitationType: ACCESS_LIMITATION_TYPE.DATA_ACCESS,
+      limitationKey: 'data_scope',
+      limitationValue: JSON.stringify({
+        scope: 'ASSIGNED_CUSTOMERS',
+        crossCustomerAccess: false,
+        sensitiveDataAccess: false,
+        historicalDataLimited: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.TEAM_LEAD_OPERATION_LIMITS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.TEAM_LEAD,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'operation_limits',
+      limitationValue: JSON.stringify({
+        maxRecordsPerDay: 100,
+        maxExportsPerWeek: 5,
+        maxBulkOperationSize: 50,
+        requiresApprovalAbove: 25,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+
+    // SENIOR_STAFF (Level 6) - Strict restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.SENIOR_STAFF_WORKING_HOURS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.SENIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'working_hours',
+      limitationValue: JSON.stringify({
+        allowedHours: '08:00-17:00',
+        allowedDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        emergencyAccess: false,
+        holidayRestrictions: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.SENIOR_STAFF_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.SENIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '30_MINUTES',
+        maxSessionDuration: '8_HOURS',
+        warningBeforeTimeout: '5_MINUTES',
+        allowExtension: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.SENIOR_STAFF_DATA_SCOPE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.SENIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.DATA_ACCESS,
+      limitationKey: 'data_scope',
+      limitationValue: JSON.stringify({
+        scope: 'ASSIGNED_CUSTOMERS',
+        crossCustomerAccess: false,
+        sensitiveDataAccess: false,
+        historicalDataLimited: true,
+        requiresJustification: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.SENIOR_STAFF_OPERATION_LIMITS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.SENIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'operation_limits',
+      limitationValue: JSON.stringify({
+        maxRecordsPerDay: 50,
+        maxExportsPerWeek: 2,
+        maxBulkOperationSize: 25,
+        requiresApprovalAbove: 10,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.SENIOR_STAFF_APPROVAL_REQUIRED,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.SENIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'approval_required',
+      limitationValue: JSON.stringify({
+        requiresApprovalFor: ['CREATE', 'UPDATE', 'DELETE', 'EXPORT'],
+        approverRole: 'TEAM_LEAD',
+        timeoutForApproval: '2_HOURS',
+        escalationRules: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+
+    // JUNIOR_STAFF (Level 7) - Very strict restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.JUNIOR_STAFF_WORKING_HOURS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.JUNIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'working_hours',
+      limitationValue: JSON.stringify({
+        allowedHours: '08:00-17:00',
+        allowedDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        emergencyAccess: false,
+        holidayRestrictions: true,
+        lunchBreakEnforced: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.JUNIOR_STAFF_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.JUNIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '20_MINUTES',
+        maxSessionDuration: '6_HOURS',
+        warningBeforeTimeout: '3_MINUTES',
+        allowExtension: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.JUNIOR_STAFF_DATA_SCOPE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.JUNIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.DATA_ACCESS,
+      limitationKey: 'data_scope',
+      limitationValue: JSON.stringify({
+        scope: 'ASSIGNED_CUSTOMERS',
+        crossCustomerAccess: false,
+        sensitiveDataAccess: false,
+        historicalDataLimited: true,
+        requiresJustification: true,
+        dataFieldsLimited: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.JUNIOR_STAFF_OPERATION_LIMITS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.JUNIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'operation_limits',
+      limitationValue: JSON.stringify({
+        maxRecordsPerDay: 25,
+        maxExportsPerWeek: 1,
+        maxBulkOperationSize: 10,
+        requiresApprovalAbove: 5,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.JUNIOR_STAFF_APPROVAL_REQUIRED,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.JUNIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'approval_required',
+      limitationValue: JSON.stringify({
+        requiresApprovalFor: [
+          'CREATE',
+          'UPDATE',
+          'DELETE',
+          'EXPORT',
+          'VIEW_SENSITIVE',
+        ],
+        approverRole: 'SENIOR_STAFF',
+        timeoutForApproval: '1_HOUR',
+        escalationRules: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.JUNIOR_STAFF_SUPERVISION,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.JUNIOR_STAFF,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'supervision',
+      limitationValue: JSON.stringify({
+        screenMonitoring: true,
+        activityLogging: 'DETAILED',
+        randomAudits: true,
+        supervisorNotifications: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.INFO,
+      isActive: true,
+    },
+
+    // INTERN (Level 8) - Maximum restrictions
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_WORKING_HOURS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'working_hours',
+      limitationValue: JSON.stringify({
+        allowedHours: '09:00-17:00',
+        allowedDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        emergencyAccess: false,
+        holidayRestrictions: true,
+        lunchBreakEnforced: true,
+        maxHoursPerWeek: 20,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_SESSION_TIMEOUT,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.TEMPORAL,
+      limitationKey: 'session_timeout',
+      limitationValue: JSON.stringify({
+        idleTimeout: '15_MINUTES',
+        maxSessionDuration: '4_HOURS',
+        warningBeforeTimeout: '2_MINUTES',
+        allowExtension: false,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_DATA_SCOPE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.DATA_ACCESS,
+      limitationKey: 'data_scope',
+      limitationValue: JSON.stringify({
+        scope: 'TRAINING_DATA_ONLY',
+        crossCustomerAccess: false,
+        sensitiveDataAccess: false,
+        historicalDataLimited: true,
+        requiresJustification: true,
+        dataFieldsLimited: true,
+        readOnlyMode: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_OPERATION_LIMITS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'operation_limits',
+      limitationValue: JSON.stringify({
+        maxRecordsPerDay: 10,
+        maxExportsPerWeek: 0,
+        maxBulkOperationSize: 0,
+        requiresApprovalAbove: 1,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_APPROVAL_REQUIRED,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'approval_required',
+      limitationValue: JSON.stringify({
+        requiresApprovalFor: ['ALL_ACTIONS'],
+        approverRole: 'SENIOR_STAFF',
+        timeoutForApproval: '30_MINUTES',
+        escalationRules: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.BLOCKING,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_SUPERVISION,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.OPERATIONAL,
+      limitationKey: 'supervision',
+      limitationValue: JSON.stringify({
+        screenMonitoring: true,
+        activityLogging: 'COMPREHENSIVE',
+        randomAudits: true,
+        supervisorNotifications: true,
+        mentorAssignment: true,
+        dailyReviewRequired: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.INFO,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_IDS.INTERN_TRAINING_MODE,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEED_IDS.INTERN,
+      limitationType: ACCESS_LIMITATION_TYPE.FUNCTIONAL,
+      limitationKey: 'training_mode',
+      limitationValue: JSON.stringify({
+        trainingModeEnabled: true,
+        simulationEnvironment: true,
+        realDataRestricted: true,
+        guidedTutorials: true,
+        progressTracking: true,
+        competencyTests: true,
+      }),
+      isEnforced: true,
+      severity: LIMITATION_SEVERITY.INFO,
+      isActive: true,
+    },
+  ];

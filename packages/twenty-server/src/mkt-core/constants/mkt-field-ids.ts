@@ -795,7 +795,7 @@ export const MKT_RESELLER_TIER_HISTORY_FIELD_IDS = {
   toTierId: 'c1d2e3f4-a5b6-7c8d-9efa-fbfcfdfea0fb',
   // fields
   changeType: 'd2e3f4a5-b6c7-8d9e-afbf-cfdfea0fb1fc',
-  changeReason: 'e3f4a5b6-c7d8-9eaf-bfc0-dfea0fb1fc2d',
+  changeReason: 'e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8b',
   actualRevenue: 'f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c',
   changedAt: 'a5b6c7d8-e9af-b0c1-d2ea-0fb1fc2d3e4f',
   changedBy: 'b6c7d8e9-afb0-c1d2-e3fb-1fc2d3e4f5a6',
@@ -826,6 +826,7 @@ export const MKT_ORGANIZATION_LEVEL_FIELD_IDS = {
   createdBy: 'e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b',
   // relations
   staffMembers: '20202020-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
+  dataAccessPolicies: '21212121-6b7c-8d9e-0f1a-2b3c4d5e6f7a',
 };
 
 export const MKT_EMPLOYMENT_STATUS_FIELD_IDS = {
@@ -1090,6 +1091,12 @@ export const MKT_DATA_ACCESS_POLICY_FIELD_IDS = {
   department: 'd4a5b6c7-8e9f-a0b1-c2d3-e4f5a6b7c8d9',
   specificMember: 'e5b6c7d8-9fa0-b1c2-d3e4-f5a6b7c8d9ea',
 
+  // organization level targeting (new for 11-level hierarchy)
+  organizationLevel: 'f7d9eafb-a0b1-c2d3-e4f5-a6b7c8d9eafb',
+  minHierarchyLevel: 'a8eafba0-b1c2-d3e4-f5a6-b7c8d9eafba0',
+  maxHierarchyLevel: 'b9fba0b1-c2d3-e4f5-a6b7-c8d9eafba0b1',
+  permissionTemplate: 'cafba0b1-c2d3-e4f5-a6b7-c8d9eafba0b1',
+
   // applies to what
   objectName: 'f6c7d8e9-a0b1-c2d3-e4f5-a6b7c8d9eafb',
   filterConditions: 'a7d8e9fa-b1c2-d3e4-f5a6-b7c8d9eafba0',
@@ -1127,4 +1134,86 @@ export const MKT_PERMISSION_AUDIT_FIELD_IDS = {
 
   // standard fields
   position: 'e3f4a5b6-7c8d-9eaf-ba0b-1c2d3e4f5a6b',
+};
+
+export const MKT_PERMISSION_TEMPLATE_FIELD_IDS = {
+  // Template identification
+  templateKey: '1a2b3c4d-5e6f-7890-abcd-123456789abc',
+  templateName: '2b3c4d5e-6f70-8901-bcde-23456789abcd',
+  description: '3c4d5e6f-7081-9012-cdef-3456789abcde',
+
+  // Hierarchy mapping
+  hierarchyLevel: '4d5e6f70-8192-0123-def0-456789abcdef',
+  applicableToLevels: '5e6f7081-92a3-1234-ef01-56789abcdef0',
+
+  // Template metadata
+  version: '6f708192-a3b4-2345-f012-6789abcdef01',
+  isSystemTemplate: '70819234-b4c5-3456-0123-789abcdef012',
+  isActive: '8192a3b4-c5d6-4567-1234-89abcdef0123',
+  priority: '92a3b4c5-d6e7-5678-2345-9abcdef01234',
+
+  // Audit fields
+  createdBySource: 'a3b4c5d6-e7f8-6789-3456-abcdef012345',
+  lastModifiedBy: 'b4c5d6e7-f890-789a-4567-bcdef0123456',
+  lastModifiedAt: 'c5d6e7f8-90ab-89bc-5678-cdef01234567',
+
+  // Relationships
+  resourcePermissions: 'd6e7f890-abcd-9cde-6789-def012345678',
+  systemActions: 'e7f890ab-bcde-adef-789a-ef0123456789',
+  accessLimitations: 'f890abcd-cdef-bef0-89ab-f01234567890',
+  dataAccessPolicies: '1234abcd-efab-cdef-9abc-01234567890a',
+};
+
+export const MKT_PERMISSION_RESOURCE_FIELD_IDS = {
+  resourceKey: '0abcdef0-def0-cf01-9abc-012345678901',
+  resourceName: '1bcdef01-ef01-d012-abcd-123456789012',
+  resourceCategory: '2cdef012-f012-e123-bcde-234567890123',
+  description: '3def0123-0123-f234-cdef-345678901234',
+  isSystemResource: '4ef01234-1234-0345-def0-456789012345',
+  isActive: '5f012345-2345-1456-ef01-567890123456',
+  displayOrder: '6012345f-3456-2567-f012-678901234567',
+  icon: '7123456f-4567-3678-0123-789012345678',
+  colorCode: '8234567f-5678-4789-1234-890123456789',
+  position: 'a456789f-789a-59ab-3456-012345678901',
+  templatePermissions: '9345678f-6789-589a-2345-901234567890',
+};
+
+export const MKT_PERMISSION_ACTION_FIELD_IDS = {
+  actionKey: 'a456789f-789a-69ab-3456-012345678901',
+  actionName: 'b56789a0-89ab-7abc-4567-123456789012',
+  actionCategory: 'c6789ab1-9abc-8bcd-5678-234567890123',
+  description: 'd789abc2-abcd-9cde-6789-345678901234',
+  riskLevel: 'e89abcd3-bcde-adef-789a-456789012345',
+  requiresApproval: 'f9abcde4-cdef-bef0-89ab-567890123456',
+  isSystemAction: '0abcdef5-def0-cf01-9abc-678901234567',
+  isActive: '1bcdef06-ef01-d012-abcd-789012345678',
+};
+
+export const MKT_TEMPLATE_RESOURCE_PERMISSION_FIELD_IDS = {
+  template: '2cdef017-f012-e123-bcde-890123456789',
+  resource: '3def0128-0123-f234-cdef-901234567890',
+  allowedActions: '4ef01239-1234-0345-def0-012345678901',
+  deniedActions: '5f01234a-2345-1456-ef01-123456789012',
+  conditions: '6012345b-3456-2567-f012-234567890123',
+  restrictions: '7123456c-4567-3678-0123-345678901234',
+  isActive: '8234567d-5678-4789-1234-456789012345',
+};
+
+export const MKT_TEMPLATE_SYSTEM_ACTION_FIELD_IDS = {
+  template: '9345678e-6789-589a-2345-567890123456',
+  actionKey: 'a456789f-789a-69ab-3456-678901234567',
+  isAllowed: 'b56789a0-89ab-7abc-4567-789012345678',
+  configuration: 'c6789ab1-9abc-8bcd-5678-890123456789',
+  restrictions: 'd789abc2-abcd-9cde-6789-901234567890',
+  isActive: 'e89abcd3-bcde-adef-789a-012345678901',
+};
+
+export const MKT_TEMPLATE_ACCESS_LIMITATION_FIELD_IDS = {
+  template: 'f9abcde4-cdef-bef0-89ab-123456789012',
+  limitationType: '0abcdef5-def0-cf01-9abc-234567890123',
+  limitationKey: '1bcdef06-ef01-d012-abcd-345678901234',
+  limitationValue: '2cdef017-f012-e123-bcde-456789012345',
+  isEnforced: '3def0128-0123-f234-cdef-567890123456',
+  severity: '4ef01239-1234-0345-def0-678901234567',
+  isActive: '5f01234a-2345-1456-ef01-789012345678',
 };
