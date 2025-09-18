@@ -3,8 +3,7 @@
 /.idea
 **/**/node_modules/
 .cache
-.kiro
-.nx
+
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
 
@@ -48,5 +47,3 @@ dump.rdb
 
 mcp.json
 GEMINI.md
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
