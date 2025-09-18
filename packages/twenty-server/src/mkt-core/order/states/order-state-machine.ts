@@ -7,17 +7,14 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { WaitState } from 'src/mkt-core/order/states';
 
-import { ConfirmedState } from './confirmed-state';
 import { DraftState } from './draft-state';
-import { CancelledState, CompletedState, LockedState } from './final-states';
 import {
   OrderState,
   OrderStateContext,
   OrderStateInput,
 } from './order-state.interface';
-import { PaidState } from './paid-state';
-import { ProcessingState } from './processing-state';
 import { TrialState } from './trial-state';
 
 export class OrderStateMachine implements OrderStateContext {
@@ -59,20 +56,11 @@ export class OrderStateMachine implements OrderStateContext {
     switch (order.status) {
       case ORDER_STATUS.DRAFT:
         return new DraftState();
-      case ORDER_STATUS.CONFIRMED:
-        return new ConfirmedState();
       case ORDER_STATUS.TRIAL:
         return new TrialState();
-      case ORDER_STATUS.PAID:
-        return new PaidState();
-      case ORDER_STATUS.PROCESSING:
-        return new ProcessingState();
-      case ORDER_STATUS.COMPLETED:
-        return new CompletedState();
-      case ORDER_STATUS.LOCKED:
-        return new LockedState();
-      case ORDER_STATUS.CANCELLED:
-        return new CancelledState();
+      case ORDER_STATUS.WAIT:
+        return new WaitState();
+
       default:
         this.logger.warn(
           `Unknown order status: ${order.status}, defaulting to DraftState`,
@@ -94,15 +82,6 @@ export class OrderStateMachine implements OrderStateContext {
       licenseStatus: payload.data?.licenseStatus,
       sInvoiceStatus: payload.data?.sInvoiceStatus,
     };
-
-    // handle special case: Trial to Confirmed
-    if (
-      this.currentOrder?.trialLicense === true &&
-      this.currentOrder?.status === ORDER_STATUS.PROCESSING &&
-      input.status === ORDER_STATUS.CONFIRMED
-    ) {
-      return ORDER_ACTION.TRIAL_TO_CONFIRMED;
-    }
 
     return this.currentState.getAction(this, input);
   }

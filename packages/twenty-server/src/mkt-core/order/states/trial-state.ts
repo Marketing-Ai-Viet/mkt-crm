@@ -1,7 +1,6 @@
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
 import {
-  MKT_ORDER_LICENSE_STATUS,
   ORDER_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
@@ -23,29 +22,30 @@ export class TrialState extends OrderState {
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    // Trial có thể chuyển sang Confirmed, Processing
-    return [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PROCESSING].includes(
-      newStatus,
-    );
+    return [
+      ORDER_STATUS.COMPLETED,
+      ORDER_STATUS.REFUSE,
+      ORDER_STATUS.OVERDUE,
+    ].includes(newStatus);
   }
 
   getAction(
     _context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // Trial -> Confirmed
-    if (input.status === ORDER_STATUS.CONFIRMED) {
+    // Trial -> Completed
+    if (input.status === ORDER_STATUS.COMPLETED) {
       return ORDER_ACTION.CONFIRMED;
     }
 
-    // Trial -> Processing
-    if (input.status === ORDER_STATUS.PROCESSING) {
-      return ORDER_ACTION.PROCESSING;
+    // Trial -> REFUSE
+    if (input.status === ORDER_STATUS.REFUSE) {
+      return ORDER_ACTION.REFUSE;
     }
 
-    // Trial -> License (when licenseStatus = GETTING)
-    if (input.licenseStatus === MKT_ORDER_LICENSE_STATUS.GETTING) {
-      return ORDER_ACTION.LICENSE;
+    // Trial -> OVERDUE
+    if (input.status === ORDER_STATUS.OVERDUE) {
+      return ORDER_ACTION.OVERDUE;
     }
 
     return null;
@@ -56,28 +56,28 @@ export class TrialState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
-      case ORDER_ACTION.CONFIRMED:
+      case ORDER_ACTION.COMPLETED:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.CONFIRMED,
+            status: ORDER_STATUS.COMPLETED,
             trialLicense: false,
           },
         };
 
-      case ORDER_ACTION.PROCESSING:
+      case ORDER_ACTION.REFUSE:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.PROCESSING,
+            status: ORDER_STATUS.REFUSE,
           },
         };
 
-      case ORDER_ACTION.LICENSE:
+      case ORDER_ACTION.OVERDUE:
         return {
           ...payload,
           data: {
-            licenseStatus: payload.data?.licenseStatus,
+            status: ORDER_STATUS.OVERDUE,
           },
         };
 

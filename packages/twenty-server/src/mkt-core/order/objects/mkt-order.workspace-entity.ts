@@ -186,6 +186,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   licenseStatus?: MKT_ORDER_LICENSE_STATUS;
 
+  //metadata
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Metadata for the product`,
+    icon: 'IconBox',
+  })
+  @WorkspaceIsNullable()
+  metadata: JSON;
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,
     type: RelationType.ONE_TO_MANY,

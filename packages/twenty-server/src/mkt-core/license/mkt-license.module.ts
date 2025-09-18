@@ -14,5 +14,6 @@ import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
     MktLicenseApiService,
     LicenseGenerationJob,
   ],
+  exports: [MktLicenseService],
 })
 export class MktLicenseModule {}

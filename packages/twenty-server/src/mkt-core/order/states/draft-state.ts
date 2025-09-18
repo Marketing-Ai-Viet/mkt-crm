@@ -23,7 +23,7 @@ export class DraftState extends OrderState {
     _input: OrderStateInput,
   ): boolean {
     // Draft can convert to Confirmed
-    if (newStatus === ORDER_STATUS.CONFIRMED) {
+    if (newStatus === ORDER_STATUS.WAIT) {
       return true;
     }
 
@@ -48,9 +48,9 @@ export class DraftState extends OrderState {
       return ORDER_ACTION.FREE;
     }
 
-    // CONFIRMED action when converting from Draft to Confirmed
-    if (input.status === ORDER_STATUS.CONFIRMED) {
-      return ORDER_ACTION.CONFIRMED;
+    // Wait action when converting from Draft to Wait
+    if (input.status === ORDER_STATUS.WAIT) {
+      return ORDER_ACTION.WAIT;
     }
 
     return null;
@@ -70,12 +70,12 @@ export class DraftState extends OrderState {
           },
         };
 
-      case ORDER_ACTION.CONFIRMED:
+      case ORDER_ACTION.WAIT:
         return {
           ...payload,
           data: {
             ...payload.data,
-            status: ORDER_STATUS.CONFIRMED,
+            status: ORDER_STATUS.WAIT,
             trialLicense: false,
           },
         };
