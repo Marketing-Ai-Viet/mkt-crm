@@ -32,6 +32,8 @@ import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organizati
 import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-permission-audit/mkt-permission-audit.workspace-entity';
 import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
 import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
+import { MktUserPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-template.workspace-entity';
+import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -511,4 +513,64 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsSystem()
   permissionAudits: Relation<MktPermissionAuditWorkspaceEntity[]>;
+
+  // === PERMISSION TEMPLATE RELATIONS ===
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionTemplateAssignments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Template Assignments`,
+    description: msg`Permission templates assigned to this workspace member`,
+    icon: 'IconUserShield',
+    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'workspaceMember',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsSystem()
+  permissionTemplateAssignments: Relation<
+    MktUserPermissionTemplateWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
+    standardId:
+      WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionTemplateAssignmentsMade,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Template Assignments Made`,
+    description: msg`Permission template assignments made by this workspace member`,
+    icon: 'IconUserCheck',
+    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'assignedBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  permissionTemplateAssignmentsMade: Relation<
+    MktUserPermissionTemplateWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionOverrides,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Overrides`,
+    description: msg`Permission overrides for this workspace member`,
+    icon: 'IconUserX',
+    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
+    inverseSideFieldKey: 'workspaceMember',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsSystem()
+  permissionOverrides: Relation<MktUserPermissionOverrideWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.approvedPermissionOverrides,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Approved Permission Overrides`,
+    description: msg`Permission overrides approved by this workspace member`,
+    icon: 'IconUserCheck',
+    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
+    inverseSideFieldKey: 'approvedBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  approvedPermissionOverrides: Relation<
+    MktUserPermissionOverrideWorkspaceEntity[]
+  >;
 }

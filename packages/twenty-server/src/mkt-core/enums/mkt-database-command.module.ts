@@ -39,6 +39,9 @@ import { SeedPermissionTemplateModuleCommand } from 'src/mkt-core/dev-seeder/com
 import { SeedTemplateResourcePermissionModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-resource-permission-data-seed-dev-workspace.command';
 import { SeedTemplateAccessLimitationModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-access-limitation-data-seed-dev-workspace.command';
 import { SeedTemplateSystemActionModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-system-action-data-seed-dev-workspace.command';
+import { SeedPermissionContextModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-context-data-seed-dev-workspace.command';
+import { SeedUserPermissionTemplateModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-user-permission-template-data-seed-dev-workspace.command';
+import { SeedUserPermissionOverrideModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-user-permission-override-data-seed-dev-workspace.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
   // customer commands
@@ -94,4 +97,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedTemplateResourcePermissionModuleCommand,
   SeedTemplateSystemActionModuleCommand,
   SeedTemplateAccessLimitationModuleCommand,
+  SeedPermissionContextModuleCommand,
+  SeedUserPermissionTemplateModuleCommand,
+  SeedUserPermissionOverrideModuleCommand,
 ];

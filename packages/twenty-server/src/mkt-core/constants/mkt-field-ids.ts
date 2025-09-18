@@ -737,6 +737,11 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   dataAccessPolicies: '70707070-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
   // permission audits
   permissionAudits: '80808080-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+  // permission template relationships
+  permissionTemplateAssignments: '90909090-9a0b-1c2d-3e4f-5a6b7c8d9e0f',
+  permissionTemplateAssignmentsMade: 'a0a0a0a0-a1b2-c3d4-e5f6-a7b8c9d0e1f2',
+  permissionOverrides: 'b1b1b1b1-b2c3-d4e5-f6a7-b8c9d0e1f2a3',
+  approvedPermissionOverrides: 'c2c2c2c2-c3d4-e5f6-a7b8-c9d0e1f2a3b4',
 };
 
 export const MKT_RESELLER_TIER_FIELD_IDS = {
@@ -1162,6 +1167,8 @@ export const MKT_PERMISSION_TEMPLATE_FIELD_IDS = {
   systemActions: 'e7f890ab-bcde-adef-789a-ef0123456789',
   accessLimitations: 'f890abcd-cdef-bef0-89ab-f01234567890',
   dataAccessPolicies: '1234abcd-efab-cdef-9abc-01234567890a',
+  userAssignments: '2345bcde-fabc-defa-abcd-12345678901b',
+  position: '033623b8-9af8-46d6-8a6f-77a7cd8c2c41',
 };
 
 export const MKT_PERMISSION_RESOURCE_FIELD_IDS = {
@@ -1176,6 +1183,7 @@ export const MKT_PERMISSION_RESOURCE_FIELD_IDS = {
   colorCode: '8234567f-5678-4789-1234-890123456789',
   position: 'a456789f-789a-59ab-3456-012345678901',
   templatePermissions: '9345678f-6789-589a-2345-901234567890',
+  userOverrides: 'b56789a0-89ab-6abc-4567-123456789012',
 };
 
 export const MKT_PERMISSION_ACTION_FIELD_IDS = {
@@ -1187,11 +1195,14 @@ export const MKT_PERMISSION_ACTION_FIELD_IDS = {
   requiresApproval: 'f9abcde4-cdef-bef0-89ab-567890123456',
   isSystemAction: '0abcdef5-def0-cf01-9abc-678901234567',
   isActive: '1bcdef06-ef01-d012-abcd-789012345678',
+  userOverrides: '2cdef017-f012-e123-bcde-890123456789',
+  position: '50f3615d-c2fa-4b34-a984-42104ebc7e4e',
 };
 
 export const MKT_TEMPLATE_RESOURCE_PERMISSION_FIELD_IDS = {
   template: '2cdef017-f012-e123-bcde-890123456789',
   resource: '3def0128-0123-f234-cdef-901234567890',
+  context: '9345678e-6789-589a-2345-567890123456',
   allowedActions: '4ef01239-1234-0345-def0-012345678901',
   deniedActions: '5f01234a-2345-1456-ef01-123456789012',
   conditions: '6012345b-3456-2567-f012-234567890123',
@@ -1216,4 +1227,44 @@ export const MKT_TEMPLATE_ACCESS_LIMITATION_FIELD_IDS = {
   isEnforced: '3def0128-0123-f234-cdef-567890123456',
   severity: '4ef01239-1234-0345-def0-678901234567',
   isActive: '5f01234a-2345-1456-ef01-789012345678',
+};
+
+export const MKT_USER_PERMISSION_TEMPLATE_FIELD_IDS = {
+  workspaceMember: '6012345b-3456-2567-f012-890123456789',
+  template: '7123456c-4567-3678-0123-901234567890',
+  isActive: '8234567d-5678-4789-1234-012345678901',
+  assignedAt: '9345678e-6789-589a-2345-123456789012',
+  assignedBy: 'a456789f-789a-69ab-3456-234567890123',
+  expiresAt: 'b56789a0-89ab-7abc-4567-345678901234',
+  assignmentReason: 'c6789ab1-9abc-8bcd-5678-456789012345',
+  position: '1c96b275-7a6b-4941-b505-4913f9ba70c0',
+};
+
+export const MKT_USER_PERMISSION_OVERRIDE_FIELD_IDS = {
+  workspaceMember: 'd789abc2-abcd-9cde-6789-567890123456',
+  resource: 'e89abcd3-bcde-adef-789a-678901234567',
+  action: 'f9abcde4-cdef-bef0-89ab-789012345678',
+  isAllowed: '0abcdef5-def0-cf01-9abc-890123456789',
+  contextFilter: '1bcdef06-ef01-d012-abcd-901234567890',
+  expiresAt: '2cdef017-f012-e123-bcde-012345678901',
+  reason: '3def0128-0123-f234-cdef-123456789012',
+  reasonDescription: '4ef01239-1234-0345-def0-234567890123',
+  approvedBy: '5f01234a-2345-1456-ef01-345678901234',
+  approvedAt: '6012345b-3456-2567-f012-456789012345',
+  isActive: '7123456c-4567-3678-0123-567890123456',
+  position: '8781b9b0-007f-454f-8572-ae8b7a8d5fb9',
+};
+
+export const MKT_PERMISSION_CONTEXT_FIELD_IDS = {
+  name: '8234567d-5678-4789-1234-678901234567',
+  description: '9345678e-6789-589a-2345-789012345678',
+  contextType: 'a456789f-789a-69ab-3456-890123456789',
+  filterExpression: 'b56789a0-89ab-7abc-4567-901234567890',
+  contextKey: 'c6789ab1-9abc-8bcd-5678-012345678901',
+  priority: 'd789abc2-abcd-9cde-6789-123456789012',
+  isActive: 'e89abcd3-bcde-adef-789a-234567890123',
+  isSystemDefault: 'f9abcde4-cdef-bef0-89ab-345678901234',
+  templateResourcePermissions: '0abcdef5-def0-cf01-9abc-456789012345',
+  validationRules: '2cdef017-f012-e123-bcde-678901234567',
+  position: 'b2f59bfe-d132-4543-941b-fad5c44263c7',
 };

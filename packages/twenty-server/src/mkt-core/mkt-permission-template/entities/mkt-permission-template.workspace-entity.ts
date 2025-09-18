@@ -10,10 +10,7 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
-import {
-  MKT_PERMISSION_RESOURCE_FIELD_IDS,
-  MKT_PERMISSION_TEMPLATE_FIELD_IDS,
-} from 'src/mkt-core/constants/mkt-field-ids';
+import { MKT_PERMISSION_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { TEMPLATE_CREATED_BY_SOURCE_OPTIONS } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
@@ -21,6 +18,7 @@ import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access
 import { MktTemplateResourcePermissionWorkspaceEntity } from './mkt-template-resource-permission.workspace-entity';
 import { MktTemplateSystemActionWorkspaceEntity } from './mkt-template-system-action.workspace-entity';
 import { MktTemplateAccessLimitationWorkspaceEntity } from './mkt-template-access-limitation.workspace-entity';
+import { MktUserPermissionTemplateWorkspaceEntity } from './mkt-user-permission-template.workspace-entity';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionTemplate,
@@ -188,7 +186,7 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   accessLimitations: Relation<MktTemplateAccessLimitationWorkspaceEntity[]>;
 
   @WorkspaceField({
-    standardId: MKT_PERMISSION_RESOURCE_FIELD_IDS.position,
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,
     description: msg`Position for ordering in lists`,
@@ -207,4 +205,15 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'permissionTemplate',
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.userAssignments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`User Assignments`,
+    description: msg`Users assigned to this permission template`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'template',
+  })
+  userAssignments: Relation<MktUserPermissionTemplateWorkspaceEntity[]>;
 }

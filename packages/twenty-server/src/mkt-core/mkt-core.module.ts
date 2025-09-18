@@ -6,9 +6,11 @@ import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
+import { MktRbacModule } from 'src/mkt-core/mkt-rbac/mkt-rbac.module';
 
 @Module({
   imports: [
+    MktRbacModule.forRoot(),
     MktOrderModule,
     MktInvoiceModule,
     MktLicenseModule,

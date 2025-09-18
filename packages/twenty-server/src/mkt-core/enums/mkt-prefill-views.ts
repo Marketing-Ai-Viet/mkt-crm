@@ -38,6 +38,9 @@ import { mktPermissionTemplatesAllView } from 'src/mkt-core/dev-seeder/prefill-v
 import { mktTemplateResourcePermissionsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-template-resource-permission.view';
 import { mktTemplateSystemActionsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-template-system-action-all.view';
 import { mktTemplateAccessLimitationsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-template-access-limitation-all.view';
+import { mktPermissionContextsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-context-all.view';
+import { mktUserPermissionTemplatesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-user-permission-template-all.view';
+import { mktUserPermissionOverridesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-user-permission-override-all.view';
 
 export const MKT_ALL_VIEWS = [
   // customer views
@@ -94,4 +97,7 @@ export const MKT_ALL_VIEWS = [
   mktTemplateResourcePermissionsAllView,
   mktTemplateSystemActionsAllView,
   mktTemplateAccessLimitationsAllView,
+  mktPermissionContextsAllView,
+  mktUserPermissionTemplatesAllView,
+  mktUserPermissionOverridesAllView,
 ];

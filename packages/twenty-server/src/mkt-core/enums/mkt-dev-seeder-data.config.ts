@@ -163,6 +163,18 @@ import {
   MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_COLUMNS,
   MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-template-access-limitation-data-seeds.constants';
+import {
+  MKT_PERMISSION_CONTEXT_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_CONTEXT_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-permission-context-data-seeds.constants';
+import {
+  MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-user-permission-template-data-seeds.constants';
+import {
+  MKT_USER_PERMISSION_OVERRIDE_DATA_SEED_COLUMNS,
+  MKT_USER_PERMISSION_OVERRIDE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-user-permission-override-data-seeds.constants';
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
   {
@@ -382,6 +394,21 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktTemplateAccessLimitation',
     pgColumns: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_COLUMNS,
     recordSeeds: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPermissionContext',
+    pgColumns: MKT_PERMISSION_CONTEXT_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_CONTEXT_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktUserPermissionTemplate',
+    pgColumns: MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktUserPermissionOverride',
+    pgColumns: MKT_USER_PERMISSION_OVERRIDE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_USER_PERMISSION_OVERRIDE_DATA_SEEDS,
   },
   {
     tableName: 'mktDataAccessPolicy',

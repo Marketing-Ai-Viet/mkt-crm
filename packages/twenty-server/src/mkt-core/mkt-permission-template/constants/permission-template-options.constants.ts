@@ -293,3 +293,115 @@ export const LIMITATION_SEVERITY_OPTIONS = [
     position: 2,
   },
 ];
+
+// Override Reason Types
+export enum OVERRIDE_REASON {
+  TEMPORARY_ESCALATION = 'TEMPORARY_ESCALATION',
+  BUSINESS_EXCEPTION = 'BUSINESS_EXCEPTION',
+  EMERGENCY_ACCESS = 'EMERGENCY_ACCESS',
+  SPECIAL_PROJECT = 'SPECIAL_PROJECT',
+  AUDIT_REQUIREMENT = 'AUDIT_REQUIREMENT',
+  SYSTEM_MAINTENANCE = 'SYSTEM_MAINTENANCE',
+  COMPLIANCE_REQUIREMENT = 'COMPLIANCE_REQUIREMENT',
+}
+
+export const OVERRIDE_REASON_OPTIONS = [
+  {
+    value: OVERRIDE_REASON.TEMPORARY_ESCALATION,
+    label: 'Temporary Escalation',
+    color: 'yellow' as TagColor,
+    position: 0,
+  },
+  {
+    value: OVERRIDE_REASON.BUSINESS_EXCEPTION,
+    label: 'Business Exception',
+    color: 'orange' as TagColor,
+    position: 1,
+  },
+  {
+    value: OVERRIDE_REASON.EMERGENCY_ACCESS,
+    label: 'Emergency Access',
+    color: 'red' as TagColor,
+    position: 2,
+  },
+  {
+    value: OVERRIDE_REASON.SPECIAL_PROJECT,
+    label: 'Special Project',
+    color: 'purple' as TagColor,
+    position: 3,
+  },
+  {
+    value: OVERRIDE_REASON.AUDIT_REQUIREMENT,
+    label: 'Audit Requirement',
+    color: 'blue' as TagColor,
+    position: 4,
+  },
+  {
+    value: OVERRIDE_REASON.SYSTEM_MAINTENANCE,
+    label: 'System Maintenance',
+    color: 'gray' as TagColor,
+    position: 5,
+  },
+  {
+    value: OVERRIDE_REASON.COMPLIANCE_REQUIREMENT,
+    label: 'Compliance Requirement',
+    color: 'green' as TagColor,
+    position: 6,
+  },
+];
+
+// Permission Context Types
+export enum CONTEXT_TYPE {
+  OWN_RECORDS = 'OWN_RECORDS',
+  DEPARTMENT_RECORDS = 'DEPARTMENT_RECORDS',
+  TEAM_RECORDS = 'TEAM_RECORDS',
+  ALL_RECORDS = 'ALL_RECORDS',
+  CUSTOM_FILTER = 'CUSTOM_FILTER',
+  TIME_LIMITED = 'TIME_LIMITED',
+  LOCATION_LIMITED = 'LOCATION_LIMITED',
+}
+
+export const CONTEXT_TYPE_OPTIONS = [
+  {
+    value: CONTEXT_TYPE.OWN_RECORDS,
+    label: 'Own Records Only',
+    color: 'blue' as TagColor,
+    position: 0,
+  },
+  {
+    value: CONTEXT_TYPE.DEPARTMENT_RECORDS,
+    label: 'Department Records',
+    color: 'green' as TagColor,
+    position: 1,
+  },
+  {
+    value: CONTEXT_TYPE.TEAM_RECORDS,
+    label: 'Team Records',
+    color: 'purple' as TagColor,
+    position: 2,
+  },
+  {
+    value: CONTEXT_TYPE.ALL_RECORDS,
+    label: 'All Records',
+    color: 'orange' as TagColor,
+    position: 3,
+  },
+  {
+    value: CONTEXT_TYPE.CUSTOM_FILTER,
+    label: 'Custom Filter',
+    color: 'teal' as TagColor,
+    position: 4,
+  },
+  {
+    value: CONTEXT_TYPE.TIME_LIMITED,
+    label: 'Time Limited',
+    color: 'yellow' as TagColor,
+    position: 5,
+  },
+  {
+    value: CONTEXT_TYPE.LOCATION_LIMITED,
+    label: 'Location Limited',
+    color: 'gray' as TagColor,
+    position: 6,
+  },
+];
