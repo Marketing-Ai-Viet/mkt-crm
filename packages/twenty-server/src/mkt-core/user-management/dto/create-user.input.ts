@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  MinLength,
 } from 'class-validator';
 
 @InputType()
@@ -25,10 +26,11 @@ export class CreateUserInput {
   @IsString()
   lastName?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String)
   @IsOptional()
   @IsString()
-  password?: string;
+  @MinLength(8, { message: 'Password must be longer than 8 characters' })
+  password: string;
 
   @Field(() => Number, { nullable: true, defaultValue: 0 })
   @IsOptional()

@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
@@ -15,20 +15,6 @@ export class PersonUserManagementResolver {
     private readonly personUserManagementService: PersonUserManagementService,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
-
-  @Query(() => [UserOutput])
-  async getPersonUsers(
-    @Args('workspaceId', { type: () => String }) workspaceId: string,
-  ) {
-    const _dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    // _debug: _dataSource.entityMetadatas.map((m) => m.name)
-
-    return this.personUserManagementService.listPersonUsers(workspaceId);
-  }
 
   @Mutation(() => UserOutput)
   async createPersonUser(

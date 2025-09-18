@@ -9,9 +9,9 @@ import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-works
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
-import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -29,80 +29,47 @@ export class PersonUserManagementService {
     createUserInput: CreateUserInput,
   ): Promise<UserOutput> {
     // B1: check xem có tài khoản trong core chưa ?
-    let coreUser = await this.userRepository.findOne({
+    const existingUser = await this.userRepository.findOne({
       where: { email: createUserInput.email },
     });
 
-    if (!coreUser) {
-      // B2: Tạo mới user trong core nếu không tồn tại
-      coreUser = this.userRepository.create({
-        email: createUserInput.email,
-        firstName: createUserInput.firstName || '',
-        passwordHash: await hashPassword(createUserInput.password || ''),
-        lastName: createUserInput.lastName || '',
-        isEmailVerified: createUserInput.isEmailVerified,
-        canImpersonate: createUserInput.canImpersonate,
-        canAccessFullAdminPanel: createUserInput.canAdmin || false,
-        locale: createUserInput.language || 'en',
-        defaultAvatarUrl: createUserInput.avatarUrl || undefined,
-      });
-      coreUser = await this.userRepository.save(coreUser);
+    if (existingUser) {
+      throw new ConflictError('Tài khoản đã tồn tại với email này.');
     }
 
-    // Step 3: Kiểm tra xem có trong userWorkpace chưa
-    let userWorkspace = await this.userWorkspaceRepository.findOne({
-      where: {
-        userId: coreUser.id,
-        workspaceId: workspaceId,
-      },
+    // Tạo mới user trong core nếu không tồn tại
+    let coreUser = this.userRepository.create({
+      email: createUserInput.email,
+      firstName: createUserInput.firstName || '',
+      passwordHash: await hashPassword(createUserInput.password || ''),
+      lastName: createUserInput.lastName || '',
+      isEmailVerified: createUserInput.isEmailVerified,
+      canImpersonate: createUserInput.canImpersonate,
+      canAccessFullAdminPanel: createUserInput.canAdmin || false,
+      locale: createUserInput.language || 'en',
+      defaultAvatarUrl: createUserInput.avatarUrl || undefined,
     });
 
-    if (!userWorkspace) {
-      // Step 4: Nếu có rồi thì không tạo mới bảng quan hệ
-      userWorkspace = this.userWorkspaceRepository.create({
-        userId: coreUser.id,
-        workspaceId: workspaceId,
-        locale: (createUserInput.language || 'en') as keyof typeof APP_LOCALES,
-        defaultAvatarUrl: createUserInput.avatarUrl || undefined,
-      });
-      userWorkspace = await this.userWorkspaceRepository.save(userWorkspace);
-    }
+    coreUser = await this.userRepository.save(coreUser);
 
-    // Step 5: Tạo mới dữ liệu trong person
-    // const personRepository =
-    //   await this.twentyORMGlobalManager.getRepositoryForWorkspace<PersonWorkspaceEntity>(
-    //     workspaceId,
-    //     PersonWorkspaceEntity,
-    //     { shouldBypassPermissionChecks: true },
-    //   );
+    // Tạo quan hệ userWorkspace
+    let userWorkspace = this.userWorkspaceRepository.create({
+      userId: coreUser.id,
+      workspaceId: workspaceId,
+      locale: (createUserInput.language || 'en') as keyof typeof APP_LOCALES,
+      defaultAvatarUrl: createUserInput.avatarUrl || undefined,
+    });
 
-    // const dataPerson = {
-    //   name: {
-    //     firstName: createUserInput.firstName || '',
-    //     lastName: createUserInput.lastName || '',
-    //   },
-    //   emails: {
-    //     primaryEmail: createUserInput.email,
-    //     additionalEmails: [],
-    //   },
-    //   phones: {
-    //     primaryPhoneNumber: createUserInput.phone || '',
-    //     primaryPhoneCountryCode: 'VN' as any,
-    //     primaryPhoneCallingCode: '+84',
-    //     additionalPhones: [],
-    //   },
-    //   jobTitle: createUserInput.jobTitle || '',
-    //   city: createUserInput.city || '',
-    //   avatarUrl: createUserInput.avatarUrl || '',
-    // };
-    // const savedPerson = await personRepository.save(dataPerson);
-    // B6: Tạo mới dữ liệu trong workpaceMember
+    await this.userWorkspaceRepository.save(userWorkspace);
+
+    // Tạo mới dữ liệu trong workpaceMember
     const workspaceMemberRepository =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
         workspaceId,
         'workspaceMember',
         { shouldBypassPermissionChecks: true },
       );
+
     const savedWorkspaceMember = await workspaceMemberRepository.save({
       name: {
         firstName: createUserInput.firstName || '',
@@ -142,31 +109,31 @@ export class PersonUserManagementService {
     };
   }
 
-  async listPersonUsers(workspaceId: string): Promise<UserOutput[]> {
-    const personRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<PersonWorkspaceEntity>(
-        workspaceId,
-        PersonWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+  // async listPersonUsers(workspaceId: string): Promise<UserOutput[]> {
+  //   const personRepository =
+  //     await this.twentyORMGlobalManager.getRepositoryForWorkspace<PersonWorkspaceEntity>(
+  //       workspaceId,
+  //       PersonWorkspaceEntity,
+  //       { shouldBypassPermissionChecks: true },
+  //     );
 
-    const persons = await personRepository.find({
-      relations: ['name', 'emails', 'phones'],
-    });
+  //   const persons = await personRepository.find({
+  //     relations: ['name', 'emails', 'phones'],
+  //   });
 
-    return persons.map((person) => ({
-      id: person.id,
-      firstName: person.name?.firstName || '',
-      lastName: person.name?.lastName || '',
-      email: person.emails?.primaryEmail || '',
-      jobTitle: person.jobTitle,
-      city: person.city,
-      phone: person.phones?.primaryPhoneNumber || '',
-      avatarUrl: person.avatarUrl,
-      isEmailVerified: false, // This would need to be fetched from core user
-      canImpersonate: false, // This would need to be fetched from core user
-      canAdmin: false, // This would need to be fetched from core user
-      language: 'en', // This would need to be fetched from core user
-    }));
-  }
+  //   return persons.map((person) => ({
+  //     id: person.id,
+  //     firstName: person.name?.firstName || '',
+  //     lastName: person.name?.lastName || '',
+  //     email: person.emails?.primaryEmail || '',
+  //     jobTitle: person.jobTitle,
+  //     city: person.city,
+  //     phone: person.phones?.primaryPhoneNumber || '',
+  //     avatarUrl: person.avatarUrl,
+  //     isEmailVerified: false, // This would need to be fetched from core user
+  //     canImpersonate: false, // This would need to be fetched from core user
+  //     canAdmin: false, // This would need to be fetched from core user
+  //     language: 'en', // This would need to be fetched from core user
+  //   }));
+  // }
 }
