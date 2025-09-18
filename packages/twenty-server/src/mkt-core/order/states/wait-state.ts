@@ -12,9 +12,9 @@ import {
   OrderStateInput,
 } from './order-state.interface';
 
-export class ProcessingState extends OrderState {
+export class WaitState extends OrderState {
   constructor() {
-    super(ORDER_STATUS.PROCESSING);
+    super(ORDER_STATUS.WAIT);
   }
 
   canTransitionTo(
@@ -22,12 +22,11 @@ export class ProcessingState extends OrderState {
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    // Processing can convert to Completed, Locked, Cancelled, Confirmed (trial to confirmed)
     return [
+      ORDER_STATUS.DRAFT,
       ORDER_STATUS.COMPLETED,
-      ORDER_STATUS.LOCKED,
-      ORDER_STATUS.CANCELLED,
-      ORDER_STATUS.CONFIRMED,
+      ORDER_STATUS.REFUSE,
+      ORDER_STATUS.OVERDUE,
     ].includes(newStatus);
   }
 
@@ -35,27 +34,22 @@ export class ProcessingState extends OrderState {
     context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // Processing -> Completed
+    // Wait -> Draft
+    if (input.status === ORDER_STATUS.DRAFT) {
+      return ORDER_ACTION.DRAFT;
+    }
+
+    // Wait -> COMPLETED
     if (input.status === ORDER_STATUS.COMPLETED) {
       return ORDER_ACTION.COMPLETED;
     }
-
-    // Processing -> Locked
-    if (input.status === ORDER_STATUS.LOCKED) {
-      return ORDER_ACTION.LOCKED;
+    // Wait -> REFUSE
+    if (input.status === ORDER_STATUS.REFUSE) {
+      return ORDER_ACTION.REFUSE;
     }
-
-    // Processing -> Cancelled
-    if (input.status === ORDER_STATUS.CANCELLED) {
-      return ORDER_ACTION.CANCELLED;
-    }
-
-    // Processing -> Confirmed (Trial to Confirmed conversion)
-    if (
-      input.status === ORDER_STATUS.CONFIRMED &&
-      context.getTrialLicense() === true
-    ) {
-      return ORDER_ACTION.TRIAL_TO_CONFIRMED;
+    // Wait -> OVERDUE
+    if (input.status === ORDER_STATUS.OVERDUE) {
+      return ORDER_ACTION.OVERDUE;
     }
 
     return null;
@@ -66,6 +60,15 @@ export class ProcessingState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
+      case ORDER_ACTION.DRAFT:
+        return {
+          ...payload,
+          data: {
+            status: ORDER_STATUS.DRAFT,
+            trialLicense: false,
+          },
+        };
+
       case ORDER_ACTION.COMPLETED:
         return {
           ...payload,
@@ -74,33 +77,24 @@ export class ProcessingState extends OrderState {
           },
         };
 
-      case ORDER_ACTION.LOCKED:
+      case ORDER_ACTION.REFUSE:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.LOCKED,
+            status: ORDER_STATUS.REFUSE,
           },
         };
 
-      case ORDER_ACTION.CANCELLED:
+      case ORDER_ACTION.OVERDUE:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.CANCELLED,
-          },
-        };
-
-      case ORDER_ACTION.TRIAL_TO_CONFIRMED:
-        return {
-          ...payload,
-          data: {
-            status: ORDER_STATUS.CONFIRMED,
-            trialLicense: true,
+            status: ORDER_STATUS.OVERDUE,
           },
         };
 
       default:
-        throw new Error(`Invalid action ${action} for ProcessingState`);
+        throw new Error(`Invalid action ${action} for ConfirmedState`);
     }
   }
 }

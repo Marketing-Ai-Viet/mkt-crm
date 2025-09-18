@@ -11,14 +11,12 @@ export function mapGraphQLOrderStatusToEntity(
     return undefined;
   }
   const statusMap: Record<OrderStatusGraphQL, OrderStatus> = {
-    [OrderStatusGraphQL.PAID]: OrderStatus.PAID,
-    [OrderStatusGraphQL.CANCELLED]: OrderStatus.CANCELLED,
-    [OrderStatusGraphQL.PROCESSING]: OrderStatus.PROCESSING,
     [OrderStatusGraphQL.COMPLETED]: OrderStatus.COMPLETED,
     [OrderStatusGraphQL.TRIAL]: OrderStatus.TRIAL,
-    [OrderStatusGraphQL.LOCKED]: OrderStatus.LOCKED,
     [OrderStatusGraphQL.DRAFT]: OrderStatus.DRAFT,
-    [OrderStatusGraphQL.CONFIRMED]: OrderStatus.CONFIRMED,
+    [OrderStatusGraphQL.WAIT]: OrderStatus.WAIT,
+    [OrderStatusGraphQL.OVERDUE]: OrderStatus.OVERDUE,
+    [OrderStatusGraphQL.REFUSE]: OrderStatus.REFUSE,
   };
 
   const mappedStatus = statusMap[graphqlStatus];
@@ -37,14 +35,12 @@ export function mapEntityOrderStatusToGraphQL(
   entityStatus: OrderStatus,
 ): OrderStatusGraphQL {
   const statusMap: Record<OrderStatus, OrderStatusGraphQL> = {
-    [OrderStatus.PAID]: OrderStatusGraphQL.PAID,
-    [OrderStatus.CANCELLED]: OrderStatusGraphQL.CANCELLED,
-    [OrderStatus.PROCESSING]: OrderStatusGraphQL.PROCESSING,
     [OrderStatus.COMPLETED]: OrderStatusGraphQL.COMPLETED,
     [OrderStatus.TRIAL]: OrderStatusGraphQL.TRIAL,
-    [OrderStatus.LOCKED]: OrderStatusGraphQL.LOCKED,
     [OrderStatus.DRAFT]: OrderStatusGraphQL.DRAFT,
-    [OrderStatus.CONFIRMED]: OrderStatusGraphQL.CONFIRMED,
+    [OrderStatus.WAIT]: OrderStatusGraphQL.WAIT,
+    [OrderStatus.OVERDUE]: OrderStatusGraphQL.OVERDUE,
+    [OrderStatus.REFUSE]: OrderStatusGraphQL.REFUSE,
   };
 
   const mappedStatus = statusMap[entityStatus];
