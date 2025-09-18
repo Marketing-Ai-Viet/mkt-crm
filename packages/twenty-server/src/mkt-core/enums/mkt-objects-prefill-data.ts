@@ -39,6 +39,9 @@ import { prefillMktPermissionTemplates } from 'src/mkt-core/dev-seeder/prefill-d
 import { prefillMktTemplateResourcePermissions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-resource-permissions';
 import { prefillMktTemplateAccessLimitations } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-access-limitations';
 import { prefillMktTemplateSystemActions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-system-actions';
+import { prefillMktPermissionContexts } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-contexts';
+import { prefillMktUserPermissionTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-user-permission-templates';
+import { prefillMktUserPermissionOverrides } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-user-permission-overrides';
 
 export const MKT_PREFILLS = [
   // customer prefills
@@ -95,4 +98,7 @@ export const MKT_PREFILLS = [
   prefillMktTemplateResourcePermissions,
   prefillMktTemplateSystemActions,
   prefillMktTemplateAccessLimitations,
+  prefillMktPermissionContexts,
+  prefillMktUserPermissionTemplates,
+  prefillMktUserPermissionOverrides,
 ];
