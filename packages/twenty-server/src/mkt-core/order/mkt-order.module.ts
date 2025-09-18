@@ -7,7 +7,6 @@ import { OrderActionService } from 'src/mkt-core/order/services/order.action.ser
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
-import { MktRbacModule } from 'src/mkt-core/mkt-rbac/mkt-rbac.module';
 
 import { MktOrderResolver } from './mkt-order.resolver';
 import { MktOrderService } from './mkt-order.service';
@@ -22,7 +21,6 @@ import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-
     RecordPositionModule,
     MktPaymentModule,
     MktLicenseModule,
-    MktRbacModule.forRoot(),
   ],
   providers: [
     MktOrderResolver,
