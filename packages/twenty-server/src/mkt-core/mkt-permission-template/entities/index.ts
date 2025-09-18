@@ -4,6 +4,3 @@ export { MktPermissionActionWorkspaceEntity } from './mkt-permission-action.work
 export { MktTemplateResourcePermissionWorkspaceEntity } from './mkt-template-resource-permission.workspace-entity';
 export { MktTemplateSystemActionWorkspaceEntity } from './mkt-template-system-action.workspace-entity';
 export { MktTemplateAccessLimitationWorkspaceEntity } from './mkt-template-access-limitation.workspace-entity';
-export { MktUserPermissionTemplateWorkspaceEntity } from './mkt-user-permission-template.workspace-entity';
-export { MktUserPermissionOverrideWorkspaceEntity } from './mkt-user-permission-override.workspace-entity';
-export { MktPermissionContextWorkspaceEntity } from './mkt-permission-context.workspace-entity';

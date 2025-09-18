@@ -16,7 +16,6 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 
 import { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
 import { MktPermissionResourceWorkspaceEntity } from './mkt-permission-resource.workspace-entity';
-import { MktPermissionContextWorkspaceEntity } from './mkt-permission-context.workspace-entity';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktTemplateResourcePermission,
@@ -58,24 +57,6 @@ export class MktTemplateResourcePermissionWorkspaceEntity extends BaseWorkspaceE
 
   @WorkspaceJoinColumn('resource')
   resourceId: string;
-
-  // Context relationship (optional)
-  @WorkspaceRelation({
-    standardId: MKT_TEMPLATE_RESOURCE_PERMISSION_FIELD_IDS.context,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Permission Context`,
-    description: msg`Context this permission applies to`,
-    icon: 'IconContext',
-    inverseSideTarget: () => MktPermissionContextWorkspaceEntity,
-    inverseSideFieldKey: 'templateResourcePermissions',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  context?: Relation<MktPermissionContextWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('context')
-  @WorkspaceIsNullable()
-  contextId?: string;
 
   // Permission configuration
   @WorkspaceField({

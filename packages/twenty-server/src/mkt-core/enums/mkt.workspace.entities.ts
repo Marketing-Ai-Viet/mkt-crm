@@ -41,13 +41,10 @@ import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-vari
 import { MktPermissionResourceWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-permission-resource.workspace-entity';
 import {
   MktPermissionActionWorkspaceEntity,
-  MktPermissionContextWorkspaceEntity,
   MktPermissionTemplateWorkspaceEntity,
   MktTemplateAccessLimitationWorkspaceEntity,
   MktTemplateResourcePermissionWorkspaceEntity,
   MktTemplateSystemActionWorkspaceEntity,
-  MktUserPermissionOverrideWorkspaceEntity,
-  MktUserPermissionTemplateWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
 
 export const MKT_WORKSPACE_ENTITIES = [
@@ -113,10 +110,6 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   MktTemplateResourcePermissionWorkspaceEntity,
   MktTemplateSystemActionWorkspaceEntity,
   MktTemplateAccessLimitationWorkspaceEntity,
-  MktPermissionContextWorkspaceEntity,
-  // User Permission Assignments and Overrides
-  MktUserPermissionTemplateWorkspaceEntity,
-  MktUserPermissionOverrideWorkspaceEntity,
   // Data Access Policy (depends on Permission Template)
   MktDataAccessPolicyWorkspaceEntity,
 ];

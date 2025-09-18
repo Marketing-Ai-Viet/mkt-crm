@@ -3,7 +3,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
-import { PERMISSION_TEMPLATES } from 'src/mkt-core/mkt-organization-level/constants/permission-templates.constants';
+import {
+  PERMISSION_TEMPLATES,
+  HIERARCHY_LEVEL_MAPPING,
+} from 'src/mkt-core/mkt-organization-level/constants/permission-templates.constants';
 
 interface OrganizationLevelPolicyFilterConditions {
   policyType: 'organization_level_default';
@@ -102,23 +105,32 @@ export class OrganizationLevelPolicyService {
    * Xác định permission template dựa trên hierarchy level
    */
   private getPermissionTemplateByHierarchy(hierarchyLevel: number) {
-    // Level 1-2: Senior leadership
-    if (hierarchyLevel <= 2) {
-      return PERMISSION_TEMPLATES.SENIOR_STAFF;
+    // Get template key from mapping
+    const templateKey =
+      HIERARCHY_LEVEL_MAPPING[
+        hierarchyLevel as keyof typeof HIERARCHY_LEVEL_MAPPING
+      ];
+
+    if (!templateKey) {
+      this.logger.warn(
+        `Unknown hierarchy level: ${hierarchyLevel}, defaulting to INTERN template`,
+      );
+
+      return PERMISSION_TEMPLATES.INTERN;
     }
 
-    // Level 3-4: Middle management
-    if (hierarchyLevel <= 4) {
-      return PERMISSION_TEMPLATES.MANAGER;
+    const template =
+      PERMISSION_TEMPLATES[templateKey as keyof typeof PERMISSION_TEMPLATES];
+
+    if (!template) {
+      this.logger.warn(
+        `Template not found for level: ${templateKey}, defaulting to INTERN template`,
+      );
+
+      return PERMISSION_TEMPLATES.INTERN;
     }
 
-    // Level 5-6: Team leads
-    if (hierarchyLevel <= 6) {
-      return PERMISSION_TEMPLATES.TEAM_LEAD;
-    }
-
-    // Level 7+: Junior staff
-    return PERMISSION_TEMPLATES.JUNIOR_STAFF;
+    return template;
   }
 
   /**

@@ -1,22 +1,20 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
-import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
-import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
-import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
-import { MKT_PERMISSION_ACTION_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import {
+  MKT_PERMISSION_ACTION_FIELD_IDS,
+  MKT_PERMISSION_RESOURCE_FIELD_IDS,
+} from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import {
   PERMISSION_ACTION_CATEGORY_OPTIONS,
   PERMISSION_RISK_LEVEL_OPTIONS,
 } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
-import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAction,
@@ -109,7 +107,7 @@ export class MktPermissionActionWorkspaceEntity extends BaseWorkspaceEntity {
   isActive: boolean;
 
   @WorkspaceField({
-    standardId: MKT_PERMISSION_ACTION_FIELD_IDS.position,
+    standardId: MKT_PERMISSION_RESOURCE_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,
     description: msg`Position for ordering in lists`,
@@ -117,16 +115,4 @@ export class MktPermissionActionWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   position?: number;
-
-  // Relationships
-  @WorkspaceRelation({
-    standardId: MKT_PERMISSION_ACTION_FIELD_IDS.userOverrides,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`User Overrides`,
-    description: msg`User permission overrides for this action`,
-    icon: 'IconUserX',
-    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
-    inverseSideFieldKey: 'action',
-  })
-  userOverrides: Relation<MktUserPermissionOverrideWorkspaceEntity[]>;
 }

@@ -33,6 +33,13 @@ import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
 import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
+import { prefillMktPermissionResources } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-resources';
+import { prefillMktPermissionActions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-actions';
+import { prefillMktPermissionTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-templates';
+import { prefillMktTemplateResourcePermissions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-resource-permissions';
+import { prefillMktTemplateAccessLimitations } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-access-limitations';
+import { prefillMktTemplateSystemActions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-template-system-actions';
+
 export const MKT_PREFILLS = [
   // customer prefills
   prefillMktCustomers,
@@ -81,4 +88,11 @@ export const MKT_PREFILLS = [
   prefillMktDepartmentHierarchies,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
+  // permission resources (should be last to ensure all dependencies exist)
+  prefillMktPermissionResources,
+  prefillMktPermissionActions,
+  prefillMktPermissionTemplates,
+  prefillMktTemplateResourcePermissions,
+  prefillMktTemplateSystemActions,
+  prefillMktTemplateAccessLimitations,
 ];

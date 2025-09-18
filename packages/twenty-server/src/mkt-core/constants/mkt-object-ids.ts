@@ -57,9 +57,6 @@ export const MKT_OBJECT_IDS = {
   mktTemplateResourcePermission: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
   mktTemplateSystemAction: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
   mktTemplateAccessLimitation: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
-  mktUserPermissionTemplate: '7a8b9c0d-1e2f-3456-789a-bcdef0123456',
-  mktUserPermissionOverride: '8b9c0d1e-2f34-5678-9abc-def012345678',
-  mktPermissionContext: '9c0d1e2f-3456-789a-bcde-f01234567890',
   // data access policy system
   mktDataAccessPolicy: 'a8b9c0d1-e2f3-4567-89ab-cdef01234567',
   // permission audit system
