@@ -1,4 +1,3 @@
-import { prefillMktInvoices } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-invoices';
 import { prefillMktSInvoiceAuths } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-sinvoice-auths';
 import { prefillMktSInvoiceItems } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-sinvoice-items';
 import { prefillMktSInvoiceMetadata } from 'src/mkt-core/dev-seeder/invoice-seeder/prefill-mkt-sinvoice-metadata';
@@ -32,7 +31,9 @@ import { prefillMktCategories } from 'src/mkt-core/dev-seeder/product-seeder/pre
 import { prefillMktComboVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combo-variants';
 import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combos';
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
+import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
+
 export const MKT_PREFILLS = [
   // customer prefills
   prefillMktCustomers,
@@ -42,6 +43,7 @@ export const MKT_PREFILLS = [
   prefillMktCategories,
   prefillMktProducts,
   prefillMktVariants,
+  prefillMktVariantValues,
   // combo prefills
   prefillMktCombos,
   prefillMktComboVariants,
@@ -55,7 +57,6 @@ export const MKT_PREFILLS = [
   // license prefills
   prefillMktLicenses,
   // invoice prefills
-  prefillMktInvoices,
   prefillMktSInvoiceAuths,
   prefillMktSInvoices,
   prefillMktSInvoicePayments,

@@ -6,6 +6,10 @@ import {
   MKT_VARIANT_DATA_SEED_COLUMNS,
   MKT_VARIANT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seeds.constants';
+import {
+  MKT_VARIANT_VALUE_DATA_SEED_COLUMNS,
+  MKT_VARIANT_VALUE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-data-seeds.constants';
 //Order configs
 import {
   MKT_CONTRACT_DATA_SEED_COLUMNS,
@@ -100,10 +104,6 @@ import {
   MKT_TEMPORARY_PERMISSION_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-temporary-permission-data-seeds.constants';
 import {
-  MKT_INVOICE_DATA_SEED_COLUMNS,
-  MKT_INVOICE_DATA_SEEDS,
-} from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-invoice-data-seeds.constants';
-import {
   MKT_SINVOICE_AUTH_DATA_SEED_COLUMNS,
   MKT_SINVOICE_AUTH_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-auth-data-seeds.constants';
@@ -128,6 +128,10 @@ import {
   MKT_SINVOICE_TAX_BREAKDOWN_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seeds.constants';
 import {
+  MKT_ATTRIBUTE_DATA_SEED_COLUMNS,
+  MKT_ATTRIBUTE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/product-seeder/mkt-attribute-data-seeds.constants';
+import {
   MKT_CATEGORY_DATA_SEED_COLUMNS,
   MKT_CATEGORY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-category-data-seeds.constants';
@@ -139,6 +143,10 @@ import {
   MKT_COMBO_VARIANT_DATA_SEED_COLUMNS,
   MKT_COMBO_VARIANT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-data-seeds.constants';
+import {
+  MKT_VALUE_DATA_SEED_COLUMNS,
+  MKT_VALUE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/product-seeder/mkt-value-data-seeds.constants';
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
   {
@@ -192,6 +200,21 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     recordSeeds: MKT_VARIANT_DATA_SEEDS,
   },
   {
+    tableName: 'mktAttribute',
+    pgColumns: MKT_ATTRIBUTE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_ATTRIBUTE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktValue',
+    pgColumns: MKT_VALUE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_VALUE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktVariantValue',
+    pgColumns: MKT_VARIANT_VALUE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_VARIANT_VALUE_DATA_SEEDS,
+  },
+  {
     tableName: 'mktCombo',
     pgColumns: MKT_COMBO_DATA_SEED_COLUMNS,
     recordSeeds: MKT_COMBO_DATA_SEEDS,
@@ -227,11 +250,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     recordSeeds: MKT_LICENSE_DATA_SEEDS,
   },
   // Invoice configs
-  {
-    tableName: 'mktInvoice',
-    pgColumns: MKT_INVOICE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_INVOICE_DATA_SEEDS,
-  },
   {
     tableName: 'mktSInvoiceAuth',
     pgColumns: MKT_SINVOICE_AUTH_DATA_SEED_COLUMNS,

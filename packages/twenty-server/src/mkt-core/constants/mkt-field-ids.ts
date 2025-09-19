@@ -169,10 +169,14 @@ export const MKT_ATTRIBUTE_FIELD_IDS = {
 
 export const MKT_VALUE_FIELD_IDS = {
   name: '3b51b01f-a14b-4b2a-94d3-14c8de478176',
+
+  //relations
+  mktAttribute: 'c2d3e4f5-3f89-4b23-8bcd-2345678901fb',
+  mktVariantValues: 'bdbfa5ff-cfb6-4363-94f2-beb7ce896f47',
+
   position: '997a0837-1c0d-41f2-bcee-28287638dd48',
   createdBy: 'f5a6b7c8-9f12-4e56-8acd-5678901234fe',
   // TODO: check if this can be deleted
-  mktAttribute: 'c2d3e4f5-3f89-4b23-8bcd-2345678901fb',
   accountOwner: '140ac958-4c2e-4ccf-96b9-e05f3fb98055',
   timelineActivities: '0c31bdd6-3c1e-4e37-9e5f-df7fcff44c3a',
   searchVector: 'fa2199eb-2793-425c-9075-2b1b3bfae5dd',
@@ -190,9 +194,9 @@ export const MKT_VARIANT_FIELD_IDS = {
   // relations
   mktLicenses: '403d1410-7c35-4044-988e-2a7fbe8845ab',
   mktProduct: '7cfa6d7b-db26-4fb5-9beb-3ec348f9fed7',
-  mktVariantAttribute: 'b57069ab-7e21-4823-a61f-8de0726bfbe1',
   mktOrderItems: 'f0e7b2d7-aa06-4173-bb81-0b0060da95ae',
   mktComboVariants: 'b594a150-07df-4c1e-aae1-86c25e195a63',
+  mktVariantValues: '4009954b-11fd-4b5e-9e38-3ba1aac1cbbc',
   // common relations or fields
   position: '03ed978a-61d9-46a6-8d28-bf0964437849',
   createdBy: 'e87d1e5d-e0f5-4ed0-ab23-3ebbb0a1beae',
@@ -211,6 +215,19 @@ export const MKT_VARIANT_ATTRIBUTE_FIELD_IDS = {
   accountOwner: '94f09209-0fc6-41c8-aed7-29e882f4551b',
   timelineActivities: '9a2679ed-def4-4b4e-818c-28e5ae723bf0',
   searchVector: '4d4928e3-c0f1-4bc7-a777-a051f54f0e3a',
+};
+
+export const MKT_VARIANT_VALUE_FIELD_IDS = {
+  name: '635919da-06bc-489c-8272-015bba8fdbf1',
+  dayDuration: '33975cac-c88a-4076-a10a-d436a81d3921', // Duration in days
+  position: 'a96583f2-6ffa-4746-9fb3-f7f0259fbdf1',
+  createdBy: 'b94b6dd2-f278-4841-ba92-54ae51a60b4c',
+  // TODO: check if this can be deleted
+  mktVariant: '206604ce-e527-4395-9258-eb5ea2ab7898',
+  mktValue: 'a9740c57-b7e3-4c3a-b84b-50a2e3602de4',
+  accountOwner: '871d46f2-4384-41ce-823e-fb7a42d66800',
+  timelineActivities: 'e2879b46-1c5d-4b41-9602-9e650dfad13c',
+  searchVector: '2872682f-e8af-48cc-94cf-8f876a5d5956',
 };
 
 export const MKT_COMBO_FIELD_IDS = {
@@ -643,6 +660,7 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktVariant: 'b6ecb5e1-14c8-4aaa-b715-e26ed4e81e62',
   mktValue: '9022a8c1-5948-473e-a361-1ddfb017a4f2',
   mktVariantAttribute: 'f656fa33-96e7-42a0-8f4f-f35dfcb0acae',
+  mktVariantValue: 'be8a4d17-0ce9-4181-99c0-c63b54d5f461',
   //combos
   mktCombo: '94442c1a-1e57-4038-9e5c-dac724d92a74',
   mktComboVariant: 'dffcadf4-8f5e-4530-8794-61230d68324a',
@@ -705,6 +723,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktVariants: '27b1e5ab-980b-4c3c-8168-c8ed77e86363',
   accountOwnerForMktValues: '7bdf395c-9f67-4fc9-9149-e58ba5c135de',
   accountOwnerForMktVariantAttributes: '6cd393a4-db2a-4cc6-b444-8e9ca99f93ec',
+  accountOwnerForMktVariantValues: 'aa82bb10-0cb7-4d1d-a8f0-c46b84fbd490',
   //combos
   accountOwnerForMktCombos: '90e6970d-8c23-4562-8c25-cece175b20e8',
   accountOwnerForMktComboVariants: '35abe762-d4e7-4c16-b4c6-e22c990dc0b5',

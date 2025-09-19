@@ -11,6 +11,7 @@ import { getQueueToken } from 'src/engine/core-modules/message-queue/utils/get-q
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-invoice.integration.service';
 import { SInvoiceIntegrationJobData } from 'src/mkt-core/invoice/jobs/s-invoice-integration.job';
 import { LicenseGenerationJobData } from 'src/mkt-core/license/jobs/license-generation.job';
 import {
@@ -38,6 +39,7 @@ export class MktOrderUpdateOnePreQueryHook
     private readonly orderActionService: OrderActionService,
     private readonly orderPayloadService: OrderPayloadService,
     private readonly orderConfirmService: OrderConfirmService,
+    private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
   ) {}
 
   async execute(
@@ -106,16 +108,22 @@ export class MktOrderUpdateOnePreQueryHook
     //   currentOrder,
     //   action,
     // );
-    await this.sInvoiceIntegration(
-      orderId,
-      workspaceId,
-      input,
-      currentOrder,
-      action,
-    );
+    // await this.sInvoiceIntegration(
+    //   orderId,
+    //   workspaceId,
+    //   input,
+    //   currentOrder,
+    //   action,
+    // );
 
     //this.logger.log(`Validating updatedAt for order ${orderId}`);
     //await this.validateUpdatedAtOrThrow(input, currentOrder);
+    if (
+      action === ORDER_ACTION.SINVOICE &&
+      currentOrder?.trialLicense === false
+    ) {
+      await this.sInvoiceIntegrationService.syncSInvoice(orderId);
+    }
 
     // Validate action - throw error if null (invalid state transition)
     if (!action) {

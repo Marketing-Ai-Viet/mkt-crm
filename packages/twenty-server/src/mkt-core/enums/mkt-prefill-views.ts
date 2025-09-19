@@ -1,4 +1,3 @@
-import { mktInvoicesAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-invoice-all.view';
 import { mktSInvoicesAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-all.view';
 import { mktSInvoiceAuthsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-auth-all.view';
 import { mktSInvoiceItemsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-item-all.view';
@@ -32,6 +31,7 @@ import { mktCombosAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-com
 import { mktComboVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-all.view';
 import { mktProductsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-all.view';
 import { mktVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-all.view';
+import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
 
 export const MKT_ALL_VIEWS = [
   // customer views
@@ -42,6 +42,7 @@ export const MKT_ALL_VIEWS = [
   mktCategoriesAllView,
   mktProductsAllView,
   mktVariantsAllView,
+  mktVariantValuesAllView,
   // combo views
   mktCombosAllView,
   mktComboVariantsAllView,
@@ -55,7 +56,6 @@ export const MKT_ALL_VIEWS = [
   // contract views
   mktContractsAllView,
   // invoice views
-  mktInvoicesAllView,
   mktSInvoiceAuthsAllView,
   mktSInvoicesAllView,
   mktSInvoicePaymentsAllView,

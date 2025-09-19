@@ -6,6 +6,7 @@ import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
+import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
     MktPaymentModule,
     MktDepartmentModule,
     MktOrganizationLevelModule,
+    MktProductModule,
   ],
 })
 export class MktCoreModule {}

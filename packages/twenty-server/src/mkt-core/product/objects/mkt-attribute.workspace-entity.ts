@@ -24,7 +24,6 @@ import {
 import { MKT_ATTRIBUTE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
-import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -111,19 +110,6 @@ export class MktAttributeWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('accountOwner')
   accountOwnerId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_ATTRIBUTE_FIELD_IDS.mktVariantAttributes,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Variant Attributes`,
-    description: msg`Variant attributes of the attribute`,
-    icon: 'IconList',
-    inverseSideTarget: () => MktVariantAttributeWorkspaceEntity,
-    inverseSideFieldKey: 'mktAttribute',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktVariantAttributes: Relation<MktVariantAttributeWorkspaceEntity>[];
 
   @WorkspaceRelation({
     standardId: MKT_ATTRIBUTE_FIELD_IDS.timelineActivities,

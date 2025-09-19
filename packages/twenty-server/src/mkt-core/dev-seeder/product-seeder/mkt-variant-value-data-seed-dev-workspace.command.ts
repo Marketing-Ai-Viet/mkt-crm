@@ -12,20 +12,20 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { mktVariantAttributesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-attribute-all.view';
-import { prefillMktVariantAttributes } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-attribute';
+import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
+import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 
-interface SeedVariantAttributeModuleOptions {
+interface SeedVariantValueModuleOptions {
   workspaceId?: string;
 }
 
 @Command({
-  name: 'workspace:seed:variant-attribute-module',
+  name: 'workspace:seed:variant-value-module',
   description:
-    'Seed variant attribute module views and data for existing workspace',
+    'Seed variant value module views and data for existing workspace',
 })
-export class SeedVariantAttributeModuleCommand extends CommandRunner {
-  private readonly logger = new Logger(SeedVariantAttributeModuleCommand.name);
+export class SeedVariantValueModuleCommand extends CommandRunner {
+  private readonly logger = new Logger(SeedVariantValueModuleCommand.name);
 
   constructor(
     @InjectRepository(Workspace, 'core')
@@ -39,7 +39,7 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed product variant attribute module for',
+    description: 'workspace id to seed variant value module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
@@ -47,7 +47,7 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
 
   async run(
     passedParam: string[],
-    options: SeedVariantAttributeModuleOptions,
+    options: SeedVariantValueModuleOptions,
   ): Promise<void> {
     let workspaces: Workspace[] = [];
 
@@ -74,8 +74,8 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
 
     for (const workspace of workspaces) {
       try {
-        await this.seedVariantAttributeModuleForWorkspace(workspace.id);
-        // Get viewId of view 'All Variant Attributes' after seed
+        await this.seedVariantValueModuleForWorkspace(workspace.id);
+        // Lấy viewId của view 'All Variant Values' sau khi seed
         const mainDataSource =
           await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
@@ -83,45 +83,45 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Variant Attributes' })
+          .where('view.name = :name', { name: 'All Variant Values' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
-        const variantAttributeViewId = viewRow?.id;
+        const variantValueViewId = viewRow?.id;
 
-        if (variantAttributeViewId) {
-          // Insert new variant attribute with viewId
+        if (variantValueViewId) {
+          // Insert mới variant value với viewId này
           await mainDataSource
             .createQueryBuilder()
             .insert()
             .into(`${schemaName}.favorite`, ['viewId'])
-            .values([{ viewId: variantAttributeViewId }])
+            .values([{ viewId: variantValueViewId }])
             .execute();
           this.logger.log(
-            `✅ Inserted new product variant attribute record with viewId: ${variantAttributeViewId}`,
+            `✅ Inserted new variant value record with viewId: ${variantValueViewId}`,
           );
         } else {
           this.logger.warn(
-            '⚠️ Could not find viewId for All Variant Attributes view to update product variant attribute records',
+            '⚠️ Could not find viewId for All Variant Values view to update variant value records',
           );
         }
         this.logger.log(
-          `✅ Product Variant Attribute module seeded for workspace: ${workspace.id}`,
+          `✅ Variant value module seeded for workspace: ${workspace.id}`,
         );
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed product variant attribute module for workspace ${workspace.id}:`,
+          `❌ Failed to seed variant value module for workspace ${workspace.id}:`,
           error,
         );
       }
     }
   }
 
-  private async seedVariantAttributeModuleForWorkspace(
+  private async seedVariantValueModuleForWorkspace(
     workspaceId: string,
   ): Promise<void> {
     this.logger.log(
-      `🚀 Starting product variant attribute module seeding for workspace ${workspaceId}`,
+      `🚀 Starting variant value module seeding for workspace ${workspaceId}`,
     );
 
     const mainDataSource =
@@ -134,24 +134,24 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find variant attribute object metadata
-    const variantAttributeObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktVariantAttribute',
+    // Find variant values object metadata
+    const variantValueObjectMetadata = objectMetadataItems.find(
+      (item) => item.nameSingular === 'mktVariantValue',
     );
 
     this.logger.log(
       `🔍 Debug - All objects in workspace: ${objectMetadataItems.map((item) => `${item.nameSingular}(${item.standardId})`).join(', ')}`,
     );
     this.logger.log(
-      `🔍 Debug - Looking for product variant attribute object with nameSingular: 'mktVariantAttribute'`,
+      `🔍 Debug - Looking for variant value object with nameSingular: 'mktVariantValue'`,
     );
     this.logger.log(
-      `🔍 Debug - Product variant attribute object found: ${variantAttributeObjectMetadata ? 'YES' : 'NO'}`,
+      `🔍 Debug - Variant value object found: ${variantValueObjectMetadata ? 'YES' : 'NO'}`,
     );
 
-    if (!variantAttributeObjectMetadata) {
+    if (!variantValueObjectMetadata) {
       this.logger.log(
-        `Product variant attribute object not found in workspace ${workspaceId}, skipping...`,
+        `Variant value object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -161,20 +161,20 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Check if product variant attribute view already exists by looking for a view with name 'All Variant Attributes'
+        // Check if variant value view already exists by looking for a view with name 'All Variant Values'
         const existingView = await entityManager
           .createQueryBuilder(undefined, undefined, undefined, {
             shouldBypassPermissionChecks: true,
           })
           .select('*')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Variant Attributes' })
+          .where('view.name = :name', { name: 'All Variant Values' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
 
         if (existingView) {
           this.logger.log(
-            `Product variant attribute view already exists for workspace ${workspaceId}. Deleting and recreating...`,
+            `Variant value view already exists for workspace ${workspaceId}. Deleting and recreating...`,
           );
 
           // Delete existing view (cascade will delete viewFields)
@@ -184,32 +184,32 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
             })
             .delete()
             .from(`${schemaName}.view`)
-            .where('name = :name', { name: 'All Variant Attributes' })
+            .where('name = :name', { name: 'All Variant Values' })
             .andWhere('key = :key', { key: 'INDEX' })
             .execute();
         }
 
-        // Create variant attribute view
-        const variantAttributeViewDefinition =
-          mktVariantAttributesAllView(objectMetadataItems);
+        // Create variant value view
+        const variantValueViewDefinition =
+          mktVariantValuesAllView(objectMetadataItems);
 
-        // Seed mkt variant attributes
-        await prefillMktVariantAttributes(entityManager, schemaName);
+        // Seed mkt variant values
+        await prefillMktVariantValues(entityManager, schemaName);
 
-        if (!variantAttributeViewDefinition) {
+        if (!variantValueViewDefinition) {
           this.logger.log(
-            `Could not create product variant attribute view definition for workspace ${workspaceId}`,
+            `Could not create variant value view definition for workspace ${workspaceId}`,
           );
 
           return;
         }
 
         this.logger.log(
-          `🔍 Debug - View definition created with ${variantAttributeViewDefinition.fields?.length || 0} fields`,
+          `🔍 Debug - View definition created with ${variantValueViewDefinition.fields?.length || 0} fields`,
         );
 
         const viewDefinitionWithId = {
-          ...variantAttributeViewDefinition,
+          ...variantValueViewDefinition,
           id: uuidv4(),
         };
 
@@ -275,9 +275,7 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
               })),
             )
             .execute();
-          this.logger.log(
-            `✅ Product Variant Attribute view fields created successfully`,
-          );
+          this.logger.log(`✅ View fields created successfully`);
         }
 
         // Insert view filters if any
@@ -317,7 +315,7 @@ export class SeedVariantAttributeModuleCommand extends CommandRunner {
         }
 
         this.logger.log(
-          `✅ Product Variant Attribute view created for workspace ${workspaceId}`,
+          `✅ Variant value view created for workspace ${workspaceId}`,
         );
       },
     );
