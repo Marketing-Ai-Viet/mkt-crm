@@ -6,8 +6,8 @@ import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 
-import { MktVariantValueWorkspaceEntity } from '../objects/mkt-variant-value.workspace-entity';
-import { VariantService } from '../services/variant.service';
+import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
+import { VariantService } from 'src/mkt-core/product/services/variant.service';
 
 @Injectable()
 @WorkspaceQueryHook('mktVariantValue.updateOne')
