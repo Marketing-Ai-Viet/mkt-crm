@@ -33,7 +33,6 @@ export const TwoFactorAuthenticationSetupForSettingsEffect = () => {
       try {
         const initiateOTPProvisioningResult =
           await initiateOTPProvisioningForAuthenticatedUser();
-
         if (
           !initiateOTPProvisioningResult.data
             ?.initiateOTPProvisioningForAuthenticatedUser.uri
