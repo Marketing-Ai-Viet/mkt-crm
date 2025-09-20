@@ -91,7 +91,7 @@ export class InvoiceFileController {
     }
   }
 
-  @UseGuards(UserAuthGuard)
+  @UseGuards(JwtAuthGuard, UserAuthGuard)
   @Post('regenerate-url')
   async regenerateDownloadUrl(
     @Body() body: { fileName: string },
@@ -132,12 +132,12 @@ export class InvoiceFileController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, UserAuthGuard)
   @Post(':fileName')
   async adminDownloadFile(
     @Param('fileName') fileName: string,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() _req: Request,
   ) {
     try {
       if (!fileName) {
