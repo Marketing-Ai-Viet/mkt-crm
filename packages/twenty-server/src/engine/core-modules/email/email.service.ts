@@ -14,11 +14,12 @@ export class EmailService {
     private readonly messageQueueService: MessageQueueService,
   ) {}
 
-  async send(sendMailOptions: SendMailOptions): Promise<void> {
+  async send(sendMailOptions: SendMailOptions): Promise<Boolean> {
     await this.messageQueueService.add<SendMailOptions>(
       EmailSenderJob.name,
       sendMailOptions,
       { retryLimit: 3 },
     );
+    return true;
   }
 }
