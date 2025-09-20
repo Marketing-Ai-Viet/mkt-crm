@@ -18,6 +18,7 @@ import * as path from 'path';
 
 import { Request, Response } from 'express';
 
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 
@@ -131,11 +132,12 @@ export class InvoiceFileController {
     };
   }
 
-  @UseGuards(UserAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post(':fileName')
   async adminDownloadFile(
     @Param('fileName') fileName: string,
     @Res() res: Response,
+    @Req() req: Request,
   ) {
     try {
       if (!fileName) {
