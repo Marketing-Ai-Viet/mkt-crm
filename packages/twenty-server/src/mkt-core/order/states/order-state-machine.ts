@@ -10,7 +10,6 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { WaitState } from 'src/mkt-core/order/states';
 import { CompletedState } from 'src/mkt-core/order/states/completed-state';
 
-import { CompletedState } from 'src/mkt-core/order/states/completed-state';
 import { DraftState } from './draft-state';
 import {
   OrderState,
