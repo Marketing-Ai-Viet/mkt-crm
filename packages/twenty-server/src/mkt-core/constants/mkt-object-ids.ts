@@ -13,6 +13,7 @@ export const MKT_OBJECT_IDS = {
   mktValue: '20202020-a305-41e7-8c72-ba44072a4c59',
   mktVariant: 'd1aa8878-0462-46fa-b3f8-2cb8e7793f85',
   mktVariantAttribute: '5f628bdb-845d-47a4-9940-30a094af7497',
+  mktVariantValue: 'd57c681b-bf88-4a89-89fa-799ea81c043c',
   mktCombo: '7393fa3e-8d9a-4b40-9251-1d9c6546af80',
   mktComboVariant: '2628a37a-113c-4c6a-8b58-63f64e5500b0',
   //orders

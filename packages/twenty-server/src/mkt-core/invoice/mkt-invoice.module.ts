@@ -28,5 +28,6 @@ import { SInvoiceIntegrationJob } from 'src/mkt-core/invoice/jobs/s-invoice-inte
     MktSInvoiceFileUpdateOnePreQueryHook,
     MktSInvoiceCreateOnePostQueryHook,
   ],
+  exports: [SInvoiceIntegrationService],
 })
 export class MktInvoiceModule {}
