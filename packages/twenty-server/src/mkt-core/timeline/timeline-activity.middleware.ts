@@ -98,7 +98,7 @@ export class TimelineActivityMiddleware implements NestMiddleware {
         body.operationName = null;
       }
 
-      this.logger.log('Modified query:', body.query);
+      //this.logger.log('Modified query:', body.query);
     }
 
     // If it's explicitly a FindManyTimelineActivities operation
