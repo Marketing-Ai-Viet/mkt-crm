@@ -8,9 +8,13 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  ORDER_ACTION,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
@@ -26,8 +30,9 @@ export type Metadata = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
   paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
   customer?: { mktCustomerId: string; name?: string };
+  orderAction?: ORDER_ACTION;
+  trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi
 };
-
 export type Created = MktOrderWorkspaceEntity & {
   id: string;
   metadata?: Metadata;
@@ -80,12 +85,23 @@ export class MktOrderCreateOnePostQueryHook
       const variantsMeta = metadata?.variants;
       const customerMeta = metadata?.customer;
       const paymentMethodsMeta = metadata?.paymentMethods;
+      const orderAction = metadata?.orderAction || null;
+      const status = () => {
+        if (
+          metadata?.orderAction &&
+          metadata?.orderAction == ORDER_ACTION.TRIAL
+        ) {
+          return ORDER_STATUS.TRIAL;
+        }
+        return ORDER_STATUS.WAIT;
+      };
+      const reqStatus = status();
 
-      if (!variantsMeta)
+      if (!variantsMeta && orderAction !== ORDER_ACTION.TRIAL_TO_PAID)
         throw new Error('no variants provided for order creation');
-      if (!customerMeta)
+      if (!customerMeta && orderAction !== ORDER_ACTION.TRIAL_TO_PAID)
         throw new Error('No customer provided for order creation');
-      if (!paymentMethodsMeta)
+      if (!paymentMethodsMeta && reqStatus !== ORDER_STATUS.TRIAL)
         throw new Error('No payment methods provided for order creation');
 
       // repositories
@@ -122,7 +138,14 @@ export class MktOrderCreateOnePostQueryHook
 
       // 1) Create Order Items from metadata.variants
 
-      if (Array.isArray(variantsMeta) && variantsMeta.length > 0) {
+      if (
+        Array.isArray(variantsMeta) &&
+        variantsMeta.length > 0 &&
+        orderAction !== ORDER_ACTION.TRIAL_TO_PAID
+      ) {
+        this.logger.log(
+          `Creating order items for order ID: ${created.id} from variants metadata`,
+        );
         const ids = variantsMeta.map((v) => v.mktVariantId).filter(Boolean);
 
         if (ids.length > 0) {
@@ -291,8 +314,234 @@ export class MktOrderCreateOnePostQueryHook
           }
 
           await orderRepository.update(created.id, {
-            status: ORDER_STATUS.WAIT,
+            status: reqStatus,
+            ...{
+              ...(reqStatus === ORDER_STATUS.TRIAL && { trialLicense: true }),
+            },
           });
+        }
+      }
+
+      if (orderAction === ORDER_ACTION.TRIAL_TO_PAID) {
+        this.logger.log(
+          `Processing TRIAL_TO_PAID order conversion for order ID: ${created.id}`,
+        );
+
+        // Get the trial order ID from metadata (should be passed in from frontend)
+        const trialOrderId = metadata?.trialOrderId;
+
+        if (!trialOrderId) {
+          throw new Error(
+            'Trial order ID is required for TRIAL_TO_PAID conversion',
+          );
+        }
+
+        // 1. Find the trial order and its items
+        const trialOrder = await orderRepository.findOne({
+          where: { id: trialOrderId },
+          relations: ['orderItems'],
+        });
+
+        if (!trialOrder) {
+          throw new Error(`Trial order with ID ${trialOrderId} not found`);
+        }
+
+        if (!trialOrder.trialLicense) {
+          throw new Error(
+            `Order ${trialOrderId} is not a trial order (status: ${trialOrder.trialLicense})`,
+          );
+        }
+
+        this.logger.log(
+          `Found trial order: ${trialOrderId} with ${trialOrder.orderItems?.length || 0} items`,
+        );
+
+        // Copy order items from trial order to new order
+        if (trialOrder.orderItems?.length > 0) {
+          const newOrderItems = await Promise.all(
+            trialOrder.orderItems.map(async (item) => {
+              const position =
+                await this.recordPositionService.buildRecordPosition({
+                  value: 'last',
+                  objectMetadata: {
+                    isCustom: false,
+                    nameSingular: 'mktOrderItem',
+                  },
+                  workspaceId,
+                });
+
+              return orderItemRepository.create({
+                mktOrderId: created.id,
+                mktVariantId: item.mktVariantId,
+                name: item.name,
+                snapshotProductName: item.snapshotProductName,
+                unitName: item.unitName,
+                unitPrice: item.unitPrice,
+                quantity: item.quantity,
+                totalPrice: item.totalPrice,
+                taxPercentage: item.taxPercentage,
+                taxAmount: item.taxAmount,
+                totalAmountWithTax: item.totalAmountWithTax,
+                position,
+              } as Partial<MktOrderItemWorkspaceEntity>);
+            }),
+          );
+
+          await orderItemRepository.save(newOrderItems);
+          this.logger.log(
+            `Copied ${newOrderItems.length} order items to new order: ${created.id}`,
+          );
+
+          // 2. Find licenses from trial order and link them to new order
+          const licenseRepository =
+            await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseWorkspaceEntity>(
+              workspaceId,
+              'mktLicense',
+              { shouldBypassPermissionChecks: true },
+            );
+
+          const trialLicenses = await licenseRepository.find({
+            where: { mktOrderId: trialOrderId },
+          });
+
+          if (trialLicenses.length > 0) {
+            this.logger.log(
+              `Found ${trialLicenses.length} licenses from trial order to update`,
+            );
+
+            // Update all licenses to reference the new order
+            for (const license of trialLicenses) {
+              await licenseRepository.update(license.id, {
+                mktOrderId: created.id,
+                status: MKT_LICENSE_STATUS.ACTIVE, // Update license status if needed
+              });
+            }
+
+            this.logger.log(
+              `Updated ${trialLicenses.length} licenses to reference the new order: ${created.id}`,
+            );
+          } else {
+            this.logger.warn(
+              `No licenses found for trial order: ${trialOrderId}`,
+            );
+          }
+
+          // Calculate values for the new order
+          const newOrder = await orderRepository.findOne({
+            where: { id: created.id },
+            relations: ['orderItems'],
+          });
+
+          if (newOrder) {
+            const generatedOrderCode =
+              await this.orderConfirmService.generateOrderCode(workspaceId);
+            const generatedOrderName =
+              await this.orderConfirmService.generateOrderName(newOrder);
+            const calculatedValues: CalculateOrderResult =
+              await this.orderConfirmService.calculateOrderValues(newOrder);
+
+            // 3. Update new order status and information
+            await orderRepository.update(created.id, {
+              mktCustomerId: trialOrder.mktCustomerId || null,
+              orderCode: generatedOrderCode ?? '',
+              subtotal: calculatedValues.subtotal,
+              tax: calculatedValues.tax,
+              discount: calculatedValues.discount,
+              totalAmount: calculatedValues.totalAmount,
+              name: generatedOrderName ?? '',
+              status: ORDER_STATUS.WAIT,
+              trialLicense: false,
+              // Use note field to store the reference information
+              note: `Converted from trial order: ${trialOrderId}`,
+            });
+
+            this.logger.log(
+              `Updated new order ${created.id} with calculated values and set status to WAIT`,
+            );
+
+            // Update trial order status to reference the paid order
+            await orderRepository.update(trialOrderId, {
+              // Use note field to store the reference information
+              note: `Converted to paid order: ${created.id}`,
+              status: ORDER_STATUS.COMPLETED, // Mark as completed since trial is converted
+            });
+
+            this.logger.log(
+              `Updated trial order ${trialOrderId} status to CONVERTED and referenced paid order`,
+            );
+
+            // Create payments if needed
+            if (
+              Array.isArray(paymentMethodsMeta) &&
+              paymentMethodsMeta.length > 0
+            ) {
+              const paymentName =
+                generatedOrderCode && generatedOrderName
+                  ? `${generatedOrderCode}-${generatedOrderName}`
+                  : generatedOrderCode || generatedOrderName || 'Payment';
+
+              const pmIds = paymentMethodsMeta
+                .map((p) => p.mktPaymentMethodId)
+                .filter(Boolean);
+
+              if (pmIds.length > 0) {
+                const methods = await paymentMethodRepository.find({
+                  where: pmIds.map((id) => ({ id })) as unknown as {
+                    id: string;
+                  },
+                });
+                const pmById = new Map(methods.map((m) => [m.id, m]));
+
+                const paymentsFromMeta = await Promise.all(
+                  paymentMethodsMeta.map(async (p) => {
+                    const pm: MktPaymentMethodWorkspaceEntity | undefined =
+                      pmById.get(p.mktPaymentMethodId);
+
+                    if (!pm) return null;
+
+                    const position =
+                      await this.recordPositionService.buildRecordPosition({
+                        value: 'last',
+                        objectMetadata: {
+                          isCustom: false,
+                          nameSingular: 'mktPayment',
+                        },
+                        workspaceId,
+                      });
+
+                    const qrCodeUrl =
+                      await this.mktPaymentPrepareService.generateSepayQrCodeUrl(
+                        pm,
+                        calculatedValues.totalAmount || 0,
+                        generatedOrderCode,
+                      );
+
+                    return paymentRepository.create({
+                      mktOrderId: created.id,
+                      mktPaymentMethodId: p.mktPaymentMethodId,
+                      name: `${pm?.name} - ${paymentName}`,
+                      amount: calculatedValues.totalAmount || 0,
+                      currency: created?.currency || 'VND',
+                      qrCodeUrl: qrCodeUrl || undefined,
+                      position,
+                    } as Partial<MktPaymentWorkspaceEntity>);
+                  }),
+                );
+
+                const validPayments = paymentsFromMeta.filter(
+                  Boolean,
+                ) as MktPaymentWorkspaceEntity[];
+                if (validPayments.length > 0) {
+                  await paymentRepository.save(validPayments);
+                  this.logger.log(
+                    `Created ${validPayments.length} payments for the new order: ${created.id}`,
+                  );
+                }
+              }
+            }
+          }
+        } else {
+          throw new Error(`Trial order ${trialOrderId} has no items to copy`);
         }
       }
     } catch (error) {

@@ -85,17 +85,17 @@ export class MktOrderUpdateOnePreQueryHook
       );
     }
     // 1 → Draft → Confirmed
-    await this.confirmOrder(
-      payload,
-      orderId,
-      workspaceId,
-      currentOrder,
-      action,
-    );
-    // 2 → Confirmed → Trial (TRIAL)
-    await this.trialOrder(payload, orderId, workspaceId, currentOrder, action);
-    // 3 → Confirmed → Paid (PAID)
-    await this.paidOrder(payload, orderId, workspaceId, currentOrder, action);
+    // await this.confirmOrder(
+    //   payload,
+    //   orderId,
+    //   workspaceId,
+    //   currentOrder,
+    //   action,
+    // );
+    // // 2 → Confirmed → Trial (TRIAL)
+    // await this.trialOrder(payload, orderId, workspaceId, currentOrder, action);
+    // // 3 → Confirmed → Paid (PAID)
+    // await this.paidOrder(payload, orderId, workspaceId, currentOrder, action);
     // 4 → Processing (PROCESSING)
     // 5 → Completed (COMPLETED)
     // 6 → Locked (LOCKED)
