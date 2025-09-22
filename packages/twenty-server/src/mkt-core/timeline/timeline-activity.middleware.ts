@@ -8,6 +8,7 @@ export class TimelineActivityMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     const pruneSelectionEnabled = process.env.PRUNE_SELECTION_ENABLED || 'true';
+
     if (pruneSelectionEnabled === 'false') return next();
     this.logger.log('TimelineActivityMiddleware invoked');
     try {
@@ -42,13 +43,16 @@ export class TimelineActivityMiddleware implements NestMiddleware {
       if (body.variables) {
         body.variables = {};
       }
+
       return;
     }
 
     // Check for dedicated TimelineActivity queries
     const queryNameMatch = body.query.match(/query\s+(\w+TimelineActivity\w*)/);
+
     if (queryNameMatch) {
       const queryName = queryNameMatch[1];
+
       this.logger.log(
         `Detected dedicated TimelineActivity query: ${queryName}`,
       );
@@ -59,6 +63,7 @@ export class TimelineActivityMiddleware implements NestMiddleware {
       if (body.variables) {
         body.variables = {};
       }
+
       return;
     }
 
@@ -71,14 +76,15 @@ export class TimelineActivityMiddleware implements NestMiddleware {
 
       // Match timelineActivities with parameters
       const withParamsPattern =
-        /\s*timelineActivities\s*\([^\)]*\)\s*{[^}]*}\s*/g;
+        /\s*timelineActivities\s*\([^)]*\)\s*{[^}]*}\s*/g;
 
       // Match multi-level nested structures by tracking braces
       const complexPattern =
-        /\s*timelineActivities\s*(\([^\)]*\))?\s*{(?:[^{}]|{(?:[^{}]|{[^{}]*})*})*}\s*/g;
+        /\s*timelineActivities\s*(\([^)]*\))?\s*{(?:[^{}]|{(?:[^{}]|{[^{}]*})*})*}\s*/g;
 
       // Apply all patterns
       let modifiedQuery = body.query;
+
       modifiedQuery = modifiedQuery.replace(complexPattern, ' ');
       modifiedQuery = modifiedQuery.replace(withParamsPattern, ' ');
       modifiedQuery = modifiedQuery.replace(simplePattern, ' ');
