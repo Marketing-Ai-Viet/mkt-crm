@@ -35,7 +35,7 @@ export class TrialState extends OrderState {
   ): ORDER_ACTION | null {
     // Trial -> Completed
     if (input.status === ORDER_STATUS.COMPLETED) {
-      return ORDER_ACTION.CONFIRMED;
+      return ORDER_ACTION.COMPLETED;
     }
 
     // Trial -> REFUSE

@@ -6,6 +6,6 @@ import { MktVariantValueUpdateOnePreQueryHook } from './hooks/mkt-variant-value-
 
 @Module({
   providers: [MktVariantValueUpdateOnePreQueryHook, VariantService],
-  exports: [],
+  exports: [VariantService],
 })
 export class MktProductModule {}
