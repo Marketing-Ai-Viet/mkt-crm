@@ -10,6 +10,7 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
@@ -24,6 +25,7 @@ import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-vari
 export type Metadata = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
   paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
+  customer?: { mktCustomerId: string; name?: string };
 };
 
 export type Created = MktOrderWorkspaceEntity & {
@@ -58,12 +60,34 @@ export class MktOrderCreateOnePostQueryHook
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
     if (!workspaceId) return;
-
     const created: Created = payload?.[0];
 
     if (!created) return;
-
     try {
+      let metadata: Metadata = created?.metadata;
+
+      // Handle case where metadata might be stored as JSON string
+      if (typeof metadata === 'string') {
+        try {
+          metadata = JSON.parse(metadata);
+        } catch (error) {
+          this.logger.error('Failed to parse metadata JSON:', error);
+
+          return;
+        }
+      }
+
+      const variantsMeta = metadata?.variants;
+      const customerMeta = metadata?.customer;
+      const paymentMethodsMeta = metadata?.paymentMethods;
+
+      if (!variantsMeta)
+        throw new Error('no variants provided for order creation');
+      if (!customerMeta)
+        throw new Error('No customer provided for order creation');
+      if (!paymentMethodsMeta)
+        throw new Error('No payment methods provided for order creation');
+
       // repositories
       const orderRepository =
         await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
@@ -97,20 +121,6 @@ export class MktOrderCreateOnePostQueryHook
         );
 
       // 1) Create Order Items from metadata.variants
-      let metadata: Metadata = created?.metadata;
-
-      // Handle case where metadata might be stored as JSON string
-      if (typeof metadata === 'string') {
-        try {
-          metadata = JSON.parse(metadata);
-        } catch (error) {
-          this.logger.error('Failed to parse metadata JSON:', error);
-
-          return;
-        }
-      }
-
-      const variantsMeta = metadata?.variants;
 
       if (Array.isArray(variantsMeta) && variantsMeta.length > 0) {
         const ids = variantsMeta.map((v) => v.mktVariantId).filter(Boolean);
@@ -208,7 +218,9 @@ export class MktOrderCreateOnePostQueryHook
           const calculatedValues: CalculateOrderResult =
             await this.orderConfirmService.calculateOrderValues(order);
 
+          //update order: customer, orderCode, name, subtotal, tax, totalAmount
           await orderRepository.update(created.id, {
+            mktCustomerId: customerMeta?.mktCustomerId || null,
             orderCode: generatedOrderCode ?? '',
             subtotal: calculatedValues.subtotal,
             tax: calculatedValues.tax,
@@ -218,7 +230,6 @@ export class MktOrderCreateOnePostQueryHook
           });
 
           // 3a) Create Payments from metadata.paymentMethods
-          const paymentMethodsMeta = metadata?.paymentMethods;
           const paymentName =
             generatedOrderCode && generatedOrderName
               ? `${generatedOrderCode}-${generatedOrderName}`
@@ -278,6 +289,10 @@ export class MktOrderCreateOnePostQueryHook
               );
             }
           }
+
+          await orderRepository.update(created.id, {
+            status: ORDER_STATUS.WAIT,
+          });
         }
       }
     } catch (error) {
@@ -285,6 +300,7 @@ export class MktOrderCreateOnePostQueryHook
         '[Order POST HOOK] Failed to create related entities',
         error,
       );
+      throw error;
     }
   }
 }

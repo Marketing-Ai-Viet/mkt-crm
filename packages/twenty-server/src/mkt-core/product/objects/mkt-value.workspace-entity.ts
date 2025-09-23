@@ -24,6 +24,7 @@ import {
 import { MKT_VALUE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
+import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -88,6 +89,19 @@ export class MktValueWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktAttribute')
   mktAttributeId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_VALUE_FIELD_IDS.mktVariantValues,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Variant Values`,
+    description: msg`Variant values using this value`,
+    icon: 'IconListDetails',
+    inverseSideTarget: () => MktVariantValueWorkspaceEntity,
+    inverseSideFieldKey: 'mktValue',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVariantValues: Relation<MktVariantValueWorkspaceEntity[]> | null;
 
   @WorkspaceRelation({
     standardId: MKT_VALUE_FIELD_IDS.accountOwner,

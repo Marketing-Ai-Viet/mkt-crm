@@ -8,6 +8,7 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { WaitState } from 'src/mkt-core/order/states';
+import { CompletedState } from 'src/mkt-core/order/states/completed-state';
 
 import { DraftState } from './draft-state';
 import {
@@ -60,6 +61,8 @@ export class OrderStateMachine implements OrderStateContext {
         return new TrialState();
       case ORDER_STATUS.WAIT:
         return new WaitState();
+      case ORDER_STATUS.COMPLETED:
+        return new CompletedState();
 
       default:
         this.logger.warn(

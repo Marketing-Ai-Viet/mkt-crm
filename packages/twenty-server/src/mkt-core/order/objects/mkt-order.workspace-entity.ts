@@ -24,7 +24,6 @@ import {
 import { MKT_ORDER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import {
@@ -317,19 +316,6 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`The creator of the record`,
   })
   createdBy: ActorMetadata;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_FIELD_IDS.mktInvoices,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Invoices`,
-    description: msg`Invoices linked to the order`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktInvoiceWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrder',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktInvoices: Relation<MktInvoiceWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktCustomer,

@@ -27,7 +27,7 @@ import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.work
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
-import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity';
+import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -166,17 +166,17 @@ export class MktVariantWorkspaceEntity extends BaseWorkspaceEntity {
   mktProductId: string | null;
 
   @WorkspaceRelation({
-    standardId: MKT_VARIANT_FIELD_IDS.mktVariantAttribute,
+    standardId: MKT_VARIANT_FIELD_IDS.mktVariantValues,
     type: RelationType.ONE_TO_MANY,
-    label: msg`Variant Attributes`,
+    label: msg`Variant Values`,
     description: msg`Properties of this variant`,
     icon: 'IconListDetails',
-    inverseSideTarget: () => MktVariantAttributeWorkspaceEntity,
+    inverseSideTarget: () => MktVariantValueWorkspaceEntity,
     inverseSideFieldKey: 'mktVariant',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
-  mktVariantAttributes: Relation<MktVariantAttributeWorkspaceEntity[]>;
+  mktVariantValues: Relation<MktVariantValueWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_VARIANT_FIELD_IDS.mktLicenses,
