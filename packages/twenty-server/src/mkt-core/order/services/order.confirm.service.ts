@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+
 export type CalculateOrderResult = {
   subtotal: number;
   tax: number;
@@ -19,10 +20,10 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktLicenseService: MktLicenseService,
     private readonly mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   /**
@@ -99,14 +100,9 @@ export class OrderConfirmService {
   /**
    * Generate unique order code
    */
-  async generateOrderCode(workspaceId: string): Promise<string | null> {
+  async generateOrderCode(): Promise<string | null> {
     try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-          workspaceId,
-          'mktOrder',
-          { shouldBypassPermissionChecks: true },
-        );
+      const orderRepository = await this.mktRepo.getOrderRepository();
 
       const now = new Date();
       const year = now.getFullYear();
@@ -235,7 +231,7 @@ export class OrderConfirmService {
     if (!Array.isArray(variantsMeta) || variantsMeta.length <= 0)
       throw new Error('Variants metadata is required');
     // repositories
-    const orderRepository = await this.orderService.getOrderRepository();
+    const orderRepository = await this.mktRepo.getOrderRepository();
 
     this.logger.log(
       `Creating order items for order ID: ${createdOrder.id} from variants metadata`,
@@ -268,7 +264,7 @@ export class OrderConfirmService {
     }
 
     // 2) Update Order information
-    const generatedOrderCode = await this.generateOrderCode(workspaceId);
+    const generatedOrderCode = await this.generateOrderCode();
     const generatedOrderName = await this.generateOrderName(order);
     const calculatedValues: CalculateOrderResult =
       await this.calculateOrderValues(order);
@@ -336,7 +332,7 @@ export class OrderConfirmService {
       );
     }
 
-    const orderRepository = await this.orderService.getOrderRepository();
+    const orderRepository = await this.mktRepo.getOrderRepository();
 
     // 1. Find the trial order and its items
     const trialOrder = await orderRepository.findOne({
@@ -369,7 +365,7 @@ export class OrderConfirmService {
       createdOrder.id,
     );
 
-    const generatedOrderCode = await this.generateOrderCode(workspaceId);
+    const generatedOrderCode = await this.generateOrderCode();
 
     const paymentName =
       generatedOrderCode && trialOrder.name

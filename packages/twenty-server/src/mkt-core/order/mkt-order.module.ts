@@ -7,9 +7,10 @@ import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
-import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
+import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 
 import { MktOrderResolver } from './mkt-order.resolver';
 import { MktOrderService } from './mkt-order.service';
@@ -26,6 +27,7 @@ import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-
     MktLicenseModule,
     MktInvoiceModule,
     MktProductModule,
+    MktCommonModule,
   ],
   providers: [
     MktOrderResolver,

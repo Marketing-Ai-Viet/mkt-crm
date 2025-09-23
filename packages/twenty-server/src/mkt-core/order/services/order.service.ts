@@ -1,22 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
-import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { VariantService } from 'src/mkt-core/product/services/variant.service';
-
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
   constructor(
     private readonly variantService: VariantService,
     private readonly recordPositionService: RecordPositionService,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   async createOrderItemsFromVariants(
@@ -31,12 +28,7 @@ export class OrderService {
       workspaceId,
     );
     const variantById = new Map(variants.map((v) => [v.id, v]));
-    const orderItemRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
-        workspaceId,
-        'mktOrderItem',
-        { shouldBypassPermissionChecks: true },
-      );
+    const orderItemRepository = await this.mktRepo.getOrderItemRepository();
     const itemsFromVariants = await Promise.all(
       variantsMeta.map(async (v, _index) => {
         const variant = variantById.get(v.mktVariantId);
@@ -90,7 +82,7 @@ export class OrderService {
   ) {
     if (trialOrder.orderItems?.length <= 0)
       throw new Error('No order items to clone');
-    const orderItemRepository = await this.getOrderItemRepository();
+    const orderItemRepository = await this.mktRepo.getOrderItemRepository();
     const newOrderItems = await Promise.all(
       trialOrder.orderItems.map(async (item) => {
         const position = await this.recordPositionService.buildRecordPosition({
@@ -129,7 +121,7 @@ export class OrderService {
     orderId: string,
     updateOrderInfo: Partial<MktOrderWorkspaceEntity>,
   ) {
-    const orderRepository = await this.getOrderRepository();
+    const orderRepository = await this.mktRepo.getOrderRepository();
 
     await orderRepository.update(orderId, {
       mktCustomerId: updateOrderInfo.mktCustomerId || null,
@@ -147,7 +139,7 @@ export class OrderService {
     status: ORDER_STATUS,
     trialLicense?: boolean,
   ) {
-    const orderRepository = await this.getOrderRepository();
+    const orderRepository = await this.mktRepo.getOrderRepository();
 
     await orderRepository.update(orderId, {
       status,
@@ -160,7 +152,7 @@ export class OrderService {
     generatedOrderCode: string | null,
     trialOrder: MktOrderWorkspaceEntity,
   ) {
-    const orderRepository = await this.getOrderRepository();
+    const orderRepository = await this.mktRepo.getOrderRepository();
 
     await orderRepository.update(createdOrderId, {
       mktCustomerId: trialOrder.mktCustomerId || null,
@@ -188,34 +180,6 @@ export class OrderService {
 
     this.logger.log(
       `Updated trial order ${trialOrder.id} status to CONVERTED and referenced paid order`,
-    );
-  }
-
-  async getOrderRepository() {
-    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!workspaceId) {
-      throw new Error('Workspace ID is not available in the current context.');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-      workspaceId,
-      'mktOrder',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
-
-  async getOrderItemRepository() {
-    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!workspaceId) {
-      throw new Error('Workspace ID is not available in the current context.');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
-      workspaceId,
-      'mktOrderItem',
-      { shouldBypassPermissionChecks: true },
     );
   }
 }
