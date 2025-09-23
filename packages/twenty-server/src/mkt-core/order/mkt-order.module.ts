@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
+import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
-import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
+import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 
 import { MktOrderResolver } from './mkt-order.resolver';
 import { MktOrderService } from './mkt-order.service';
@@ -23,6 +25,7 @@ import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-
     MktPaymentModule,
     MktLicenseModule,
     MktInvoiceModule,
+    MktProductModule,
   ],
   providers: [
     MktOrderResolver,
@@ -34,6 +37,7 @@ import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-
     OrderPayloadService,
     OrderActionService,
     OrderConfirmService,
+    OrderService,
   ],
   exports: [MktOrderService],
 })
