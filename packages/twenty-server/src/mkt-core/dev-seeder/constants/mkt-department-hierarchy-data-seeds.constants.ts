@@ -18,6 +18,14 @@ export enum MktDepartmentHierarchyRelationType {
   SUPERVISORY = 'SUPERVISORY',
   /** Quan hệ tư vấn không có quyền thực thi */
   ADVISORY = 'ADVISORY',
+  /** Báo cáo gián tiếp qua dotted line */
+  DOTTED_LINE = 'DOTTED_LINE',
+  /** Quan hệ ngang cấp đồng đẳng */
+  PEER = 'PEER',
+  /** Liên chức năng giữa các phòng ban */
+  CROSS_FUNCTIONAL = 'CROSS_FUNCTIONAL',
+  /** Team ảo cho dự án remote */
+  VIRTUAL = 'VIRTUAL',
 }
 
 /**
@@ -35,13 +43,14 @@ export enum SecurityLevel {
 }
 
 /**
- * Cấu trúc dữ liệu seed cho phân cấp phòng ban với Enterprise RBAC
+ * Cấu trúc dữ liệu seed cho phân cấp phòng ban với Enterprise RBAC (Streamlined)
+ * Chỉ chứa các field cần thiết phù hợp với workspace entity
  */
 type MktDepartmentHierarchyDataSeed = {
   /** ID duy nhất của quan hệ phân cấp */
   id: string;
   /** ID phòng ban cha */
-  parentDepartmentId: string;
+  parentDepartmentId: string | null;
   /** ID phòng ban con */
   childDepartmentId: string;
   /** Cấp độ trong hierarchy (1=cao nhất) */
@@ -96,10 +105,6 @@ type MktDepartmentHierarchyDataSeed = {
   canAudit?: boolean;
   /** Có quyền quản lý user không */
   canManageUsers?: boolean;
-  /** Có quyền cấu hình hệ thống không */
-  canConfigureSystem?: boolean;
-  /** Có quyền xem báo cáo tài chính không */
-  canViewFinancialReports?: boolean;
   /** Có quyền truy cập dữ liệu nhạy cảm không */
   canAccessSensitiveData?: boolean;
 
@@ -108,43 +113,31 @@ type MktDepartmentHierarchyDataSeed = {
   canOverrideSubordinates?: boolean;
   /** Yêu cầu dual approval không */
   requiresDualApproval?: boolean;
-  /** Giới hạn thời gian truy cập (giờ) */
-  accessTimeLimit?: number;
   /** Yêu cầu MFA không */
   requiresMFA?: boolean;
   /** Có thể truy cập ngoài giờ không */
   canAccessAfterHours?: boolean;
-  /** Có thể truy cập từ xa không */
-  canAccessRemotely?: boolean;
 
   // ================= COMPLIANCE FIELDS =================
   /** Cần tracking đầy đủ không */
   requiresFullAuditTrail?: boolean;
   /** Có thể xóa dữ liệu không */
   canDeleteData?: boolean;
-  /** Có thể khôi phục dữ liệu không */
-  canRestoreData?: boolean;
   /** Tuân thủ GDPR không */
   gdprCompliant?: boolean;
-  /** Tuân thủ SOX không */
-  soxCompliant?: boolean;
 
   // ================= METADATA FIELDS =================
   /** Mức độ ưu tiên (1-10, 10=cao nhất) */
   priorityLevel?: number;
   /** Trọng số quyền (0-100) */
   permissionWeight?: number;
-  /** Có thể cache không */
-  cacheable?: boolean;
-  /** TTL cache (giây) */
-  cacheTTL?: number;
   /** Ghi chú bảo mật */
   securityNotes?: string;
 };
 
 /**
  * Danh sách các cột cần thiết cho bảng MktDepartmentHierarchy
- * Được sử dụng để validation và migration
+ * Được sử dụng để validation và migration (Streamlined)
  */
 export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS: (keyof MktDepartmentHierarchyDataSeed)[] =
   [
@@ -180,30 +173,22 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS: (keyof MktDepartmentHie
     'canDelegate',
     'canAudit',
     'canManageUsers',
-    'canConfigureSystem',
-    'canViewFinancialReports',
     'canAccessSensitiveData',
 
     // Business rule fields
     'canOverrideSubordinates',
     'requiresDualApproval',
-    'accessTimeLimit',
     'requiresMFA',
     'canAccessAfterHours',
-    'canAccessRemotely',
 
     // Compliance fields
     'requiresFullAuditTrail',
     'canDeleteData',
-    'canRestoreData',
     'gdprCompliant',
-    'soxCompliant',
 
     // Metadata fields
     'priorityLevel',
     'permissionWeight',
-    'cacheable',
-    'cacheTTL',
     'securityNotes',
   ];
 
@@ -214,6 +199,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS: (keyof MktDepartmentHie
 export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS = {
   // ================= LEVEL 0: ROOT HIERARCHIES =================
   // Admin là root department quản lý tất cả các phòng ban khác
+  CEO: '8795ae87-12e1-4193-9b24-cf4f2894a3b0',
 
   /** Admin -> Sales: Quan hệ quản lý chiến lược */
   ADMIN_SALES: 'e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b',
@@ -335,7 +321,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
       childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
       hierarchyLevel: 1,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
+      relationshipType: MktDepartmentHierarchyRelationType.SUPERVISORY,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
       inheritsPermissions: true,
@@ -343,13 +329,13 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       allowsCrossBranchAccess: true,
       displayOrder: 1,
       notes:
-        'Sales department provides strategic direction for customer support operations',
+        'Sales supervises Support operations with direct oversight authority',
       isActive: true,
       position: 1,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
@@ -358,6 +344,26 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: false,
       canExportTeamData: false,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: false,
+      canAccessAfterHours: false,
+      // Compliance fields
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 3,
+      permissionWeight: 25,
+      securityNotes: 'Standard sales-support hierarchy relationship',
     },
 
     // Sales Department has oversight of Accounting for revenue tracking
@@ -366,7 +372,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
       childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
       hierarchyLevel: 1,
-      relationshipType: MktDepartmentHierarchyRelationType.FUNCTIONAL,
+      relationshipType: MktDepartmentHierarchyRelationType.CROSS_FUNCTIONAL,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
       inheritsPermissions: false,
@@ -374,13 +380,13 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       allowsCrossBranchAccess: false,
       displayOrder: 2,
       notes:
-        'Functional relationship for revenue tracking and financial reporting',
+        'Cross-functional collaboration for revenue tracking and financial reporting',
       isActive: true,
       position: 2,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
@@ -389,6 +395,27 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: false,
       canExportTeamData: true,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: true,
+      canManageUsers: false,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: true,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 8,
+      permissionWeight: 75,
+      securityNotes:
+        'High security functional relationship for financial oversight',
     },
 
     // Tech Department provides technical support to Support Department
@@ -410,7 +437,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
@@ -419,6 +446,27 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: false,
       canEditTeamData: false,
       canExportTeamData: false,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: false,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 4,
+      permissionWeight: 30,
+      securityNotes:
+        'Matrix technical support relationship with limited permissions',
     },
 
     // Admin Department coordinates with HR Department
@@ -440,7 +488,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
@@ -449,6 +497,27 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: true,
       canExportTeamData: true,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: true,
+      canDelegate: true,
+      canAudit: true,
+      canManageUsers: true,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: true,
+      requiresDualApproval: true,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 9,
+      permissionWeight: 85,
+      securityNotes:
+        'High-level administrative control over HR with sensitive data access',
     },
 
     // Admin Department coordinates with Accounting for administrative compliance
@@ -470,7 +539,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
@@ -479,6 +548,27 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: false,
       canExportTeamData: true,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.TOP_SECRET,
+      canApprove: true,
+      canDelegate: false,
+      canAudit: true,
+      canManageUsers: false,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: true,
+      requiresDualApproval: true,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 10,
+      permissionWeight: 95,
+      securityNotes:
+        'Critical administrative-financial oversight with maximum security requirements',
     },
 
     // Sales-Tech Matrix relationship for product development input
@@ -501,7 +591,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
@@ -510,6 +600,26 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: false,
       canEditTeamData: false,
       canExportTeamData: false,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: false,
+      canAccessAfterHours: false,
+      // Compliance fields
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 2,
+      permissionWeight: 15,
+      securityNotes: 'Low-risk matrix collaboration for product development',
     },
 
     // Admin Department manages Tech Department
@@ -531,7 +641,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
@@ -540,6 +650,27 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: true,
       canExportTeamData: false,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: true,
+      canDelegate: true,
+      canAudit: true,
+      canManageUsers: true,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: true,
+      requiresDualApproval: false,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 7,
+      permissionWeight: 70,
+      securityNotes:
+        'Administrative control over technology operations with high security',
     },
 
     // Admin Department oversees Sales Department (strategic level)
@@ -561,7 +692,7 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
@@ -570,6 +701,27 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: true,
       canExportTeamData: true,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: true,
+      canDelegate: true,
+      canAudit: true,
+      canManageUsers: true,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: true,
+      requiresDualApproval: true,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 8,
+      permissionWeight: 80,
+      securityNotes:
+        'Strategic administrative oversight with high-level sales access',
     },
 
     // HR-Tech Matrix relationship for employee technology needs
@@ -592,38 +744,61 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
       ],
       inheritsParentPermissions: false,
-      canViewTeamData: false,
+      canViewTeamData: true,
       canEditTeamData: false,
       canExportTeamData: false,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: true,
+      canAccessAfterHours: false,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 6,
+      permissionWeight: 55,
+      securityNotes:
+        'HR-IT matrix for employee technology management with sensitive data access',
     },
 
-    // HR provides functional support to Support Department (training, policies)
+    // Additional comprehensive hierarchy relationships
+
+    // HR -> Support: Advisory relationship for employee support
     {
       id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.HR_SUPPORT_FUNCTIONAL,
       parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
       childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
       hierarchyLevel: 1,
-      relationshipType: MktDepartmentHierarchyRelationType.FUNCTIONAL,
+      relationshipType: MktDepartmentHierarchyRelationType.ADVISORY,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
       inheritsPermissions: false,
       canEscalateToParent: true,
-      allowsCrossBranchAccess: true,
+      allowsCrossBranchAccess: false,
       displayOrder: 10,
       notes:
-        'Functional relationship for employee training and policy compliance',
+        'HR provides advisory guidance for employee support policies and training',
       isActive: true,
       position: 10,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
@@ -632,9 +807,29 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: false,
       canExportTeamData: false,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: false,
+      canAccessAfterHours: false,
+      // Compliance fields
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 4,
+      permissionWeight: 35,
+      securityNotes: 'Standard HR-Support functional relationship for training',
     },
 
-    // Accounting provides functional support to Support Department (cost tracking)
+    // Accounting -> Support: Financial tracking relationship
     {
       id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.ACCOUNTING_SUPPORT_FUNCTIONAL,
       parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
@@ -644,17 +839,17 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
       inheritsPermissions: false,
-      canEscalateToParent: false,
+      canEscalateToParent: true,
       allowsCrossBranchAccess: false,
       displayOrder: 11,
       notes:
-        'Functional relationship for cost center tracking and budget monitoring',
+        'Accounting tracks support department operational costs and resource usage',
       isActive: true,
       position: 11,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      // New RBAC fields
+      // Basic RBAC fields
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
@@ -663,190 +858,189 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canViewTeamData: true,
       canEditTeamData: false,
       canExportTeamData: true,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: true,
+      canManageUsers: false,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: true,
+      canAccessAfterHours: false,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 7,
+      permissionWeight: 60,
+      securityNotes:
+        'Financial oversight relationship with confidential data access',
     },
 
-    // ================= LEVEL 2 HIERARCHIES =================
-
-    // Sales -> Sales Domestic (Level 1 -> Level 2)
+    // CEO-level oversight relationships (high-security)
     {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_TO_SALES_DOMESTIC,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-      hierarchyLevel: 2,
+      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.CEO,
+      parentDepartmentId: null, // CEO has no parent
+      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
+      hierarchyLevel: 0, // CEO level
       relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
       inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 11,
-      notes: 'Sales department manages domestic sales operations',
-      isActive: true,
-      position: 11,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales -> Sales Export (Level 1 -> Level 2)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_TO_SALES_EXPORT,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
-      hierarchyLevel: 2,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
+      canEscalateToParent: false, // CEO is top level
+      allowsCrossBranchAccess: true,
       displayOrder: 12,
-      notes: 'Sales department manages export sales operations',
+      notes:
+        'CEO has ultimate oversight and control over all administrative functions',
       isActive: true,
       position: 12,
-      createdBySource: 'MANUAL',
+      createdBySource: 'SYSTEM',
       createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES],
+      createdByName: 'System Admin',
+      // Basic RBAC fields
+      hierarchyPath: [
+        MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.CEO,
+        MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
+      ],
       inheritsParentPermissions: true,
       canViewTeamData: true,
       canEditTeamData: true,
       canExportTeamData: true,
+      // Enhanced RBAC fields
+      minimumSecurityLevel: SecurityLevel.TOP_SECRET,
+      canApprove: true,
+      canDelegate: true,
+      canAudit: true,
+      canManageUsers: true,
+      canAccessSensitiveData: true,
+      // Business rule fields
+      canOverrideSubordinates: true,
+      requiresDualApproval: false, // CEO doesn't need dual approval
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      // Compliance fields
+      requiresFullAuditTrail: true,
+      canDeleteData: true, // CEO has ultimate authority
+      gdprCompliant: true,
+      // Metadata fields
+      priorityLevel: 10,
+      permissionWeight: 100,
+      securityNotes:
+        'Maximum security CEO oversight with ultimate authority and full permissions',
     },
 
-    // Tech -> Tech Frontend (Level 1 -> Level 2)
+    // Dotted Line Reporting: Admin to Support with dotted line supervision
     {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_TO_TECH_FRONTEND,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-      hierarchyLevel: 2,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
+      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.ADMIN_SUPPORT,
+      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
+      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
+      hierarchyLevel: 1,
+      relationshipType: MktDepartmentHierarchyRelationType.DOTTED_LINE,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
-      inheritsPermissions: true,
+      inheritsPermissions: false,
       canEscalateToParent: true,
       allowsCrossBranchAccess: false,
       displayOrder: 13,
-      notes: 'Tech department manages frontend development',
+      notes:
+        'Dotted line reporting from Admin to Support for oversight coordination',
       isActive: true,
       position: 13,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      hierarchyPath: [MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
+      hierarchyPath: [
+        MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
+        MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
+      ],
+      inheritsParentPermissions: false,
+      canViewTeamData: false,
+      canEditTeamData: false,
+      canExportTeamData: false,
+      minimumSecurityLevel: SecurityLevel.CONFIDENTIAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      requiresFullAuditTrail: true,
+      canDeleteData: false,
+      gdprCompliant: true,
+      priorityLevel: 8,
+      permissionWeight: 20,
+      securityNotes: 'Dotted line reporting for strategic escalation only',
     },
 
-    // Tech -> Tech Backend (Level 1 -> Level 2)
+    // Peer Relationship: Sales & Tech Department Heads
     {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_TO_TECH_BACKEND,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
-      hierarchyLevel: 2,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
+      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_TO_SALES_DOMESTIC,
+      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
+      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
+      hierarchyLevel: 1,
+      relationshipType: MktDepartmentHierarchyRelationType.PEER,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
       validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
+      inheritsPermissions: false,
+      canEscalateToParent: false,
+      allowsCrossBranchAccess: true,
       displayOrder: 14,
-      notes: 'Tech department manages backend development',
+      notes:
+        'Peer collaboration between Sales and Tech for product development',
       isActive: true,
       position: 14,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
-      hierarchyPath: [MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // ================= LEVEL 3 HIERARCHIES =================
-
-    // Sales Domestic -> Sales North (Level 2 -> Level 3)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_DOMESTIC_TO_SALES_NORTH,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 21,
-      notes: 'Domestic sales manages northern regional sales',
-      isActive: true,
-      position: 21,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
+        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
       ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
+      inheritsParentPermissions: false,
+      canViewTeamData: false,
+      canEditTeamData: false,
+      canExportTeamData: false,
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: false,
+      canAccessAfterHours: false,
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      priorityLevel: 3,
+      permissionWeight: 10,
+      securityNotes: 'Standard peer relationship for collaborative projects',
     },
 
-    // Sales Domestic -> Sales South (Level 2 -> Level 3)
+    // Virtual Team: Sales to Sales Export as virtual coordination
     {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_DOMESTIC_TO_SALES_SOUTH,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_SOUTH,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
+      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_TO_SALES_EXPORT,
+      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
+      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
+      hierarchyLevel: 1,
+      relationshipType: MktDepartmentHierarchyRelationType.VIRTUAL,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
+      validTo: DateTime.fromISO('2024-12-31').toJSDate(),
+      inheritsPermissions: false,
       canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 22,
-      notes: 'Domestic sales manages southern regional sales',
+      allowsCrossBranchAccess: true,
+      displayOrder: 15,
+      notes: 'Virtual coordination between Sales and Sales Export teams',
       isActive: true,
-      position: 22,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales Export -> Sales EU (Level 2 -> Level 3)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_EXPORT_TO_SALES_EU,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EU,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 23,
-      notes: 'Export sales manages European market sales',
-      isActive: true,
-      position: 23,
+      position: 15,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
       createdByName: 'Admin User',
@@ -854,60 +1048,47 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
       ],
-      inheritsParentPermissions: true,
+      inheritsParentPermissions: false,
       canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
+      canEditTeamData: false,
+      canExportTeamData: false,
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: true,
+      canAccessAfterHours: true,
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      priorityLevel: 5,
+      permissionWeight: 40,
+      securityNotes: 'Virtual team with limited time-bound permissions',
     },
 
-    // Sales Export -> Sales Asia (Level 2 -> Level 3)
+    // Temporary Project Team: Tech to Tech Frontend
     {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_EXPORT_TO_SALES_ASIA,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_ASIA,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
+      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_TO_TECH_FRONTEND,
+      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
+      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
+      hierarchyLevel: 2,
+      relationshipType: MktDepartmentHierarchyRelationType.TEMPORARY,
       validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
+      validTo: DateTime.fromISO('2024-06-30').toJSDate(),
       inheritsPermissions: true,
       canEscalateToParent: true,
       allowsCrossBranchAccess: false,
-      displayOrder: 24,
-      notes: 'Export sales manages Asian market sales',
+      displayOrder: 16,
+      notes: 'Temporary project coordination between Tech and Tech Frontend',
       isActive: true,
-      position: 24,
+      position: 16,
       createdBySource: 'MANUAL',
       createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Frontend -> Tech React (Level 2 -> Level 3)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_FRONTEND_TO_TECH_REACT,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 25,
-      notes: 'Frontend tech manages React development',
-      isActive: true,
-      position: 25,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
+      createdByName: 'Sales Manager',
       hierarchyPath: [
         MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
         MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
@@ -915,725 +1096,22 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       inheritsParentPermissions: true,
       canViewTeamData: true,
       canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Frontend -> Tech Mobile (Level 2 -> Level 3)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_FRONTEND_TO_TECH_MOBILE,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_MOBILE,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 26,
-      notes: 'Frontend tech manages mobile development',
-      isActive: true,
-      position: 26,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Backend -> Tech API (Level 2 -> Level 3)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_BACKEND_TO_TECH_API,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_API,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 27,
-      notes: 'Backend tech manages API development',
-      isActive: true,
-      position: 27,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Backend -> Tech Database (Level 2 -> Level 3)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_BACKEND_TO_TECH_DATABASE,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_DATABASE,
-      hierarchyLevel: 3,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 28,
-      notes: 'Backend tech manages database development',
-      isActive: true,
-      position: 28,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // ================= LEVEL 4 HIERARCHIES =================
-
-    // Sales North -> Sales Hanoi (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_NORTH_TO_SALES_HANOI,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 31,
-      notes: 'Northern sales manages Hanoi city sales',
-      isActive: true,
-      position: 31,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales South -> Sales HCMC (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_SOUTH_TO_SALES_HCMC,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_SOUTH,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 32,
-      notes: 'Southern sales manages Ho Chi Minh City sales',
-      isActive: true,
-      position: 32,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_SOUTH,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales EU -> Sales Germany (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_EU_TO_SALES_GERMANY,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EU,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_GERMANY,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 33,
-      notes: 'European sales manages Germany market',
-      isActive: true,
-      position: 33,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EU,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales Asia -> Sales Japan (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_ASIA_TO_SALES_JAPAN,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_ASIA,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_JAPAN,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 34,
-      notes: 'Asian sales manages Japan market',
-      isActive: true,
-      position: 34,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_EXPORT,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_ASIA,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech React -> Tech Web (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_REACT_TO_TECH_WEB,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_WEB,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 35,
-      notes: 'React development manages web applications',
-      isActive: true,
-      position: 35,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech React -> Tech Components (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_REACT_TO_TECH_COMPONENTS,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 36,
-      notes: 'React development manages component libraries',
-      isActive: true,
-      position: 36,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Mobile -> Tech iOS (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_MOBILE_TO_TECH_IOS,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_MOBILE,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_IOS,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 37,
-      notes: 'Mobile development manages iOS applications',
-      isActive: true,
-      position: 37,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_MOBILE,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Mobile -> Tech Android (Level 3 -> Level 4)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_MOBILE_TO_TECH_ANDROID,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_MOBILE,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_ANDROID,
-      hierarchyLevel: 4,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 38,
-      notes: 'Mobile development manages Android applications',
-      isActive: true,
-      position: 38,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_MOBILE,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // ================= LEVEL 5 HIERARCHIES =================
-
-    // Sales Hanoi -> Sales Hanoi Retail (Level 4 -> Level 5)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HANOI_TO_SALES_HANOI_RETAIL,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-      hierarchyLevel: 5,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 41,
-      notes: 'Hanoi sales manages retail operations',
-      isActive: true,
-      position: 41,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales Hanoi -> Sales Hanoi B2B (Level 4 -> Level 5)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HANOI_TO_SALES_HANOI_B2B,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_B2B,
-      hierarchyLevel: 5,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 42,
-      notes: 'Hanoi sales manages B2B operations',
-      isActive: true,
-      position: 42,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales HCMC -> Sales HCMC Retail (Level 4 -> Level 5)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HCMC_TO_SALES_HCMC_RETAIL,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC_RETAIL,
-      hierarchyLevel: 5,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 43,
-      notes: 'HCMC sales manages retail operations',
-      isActive: true,
-      position: 43,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_SOUTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales HCMC -> Sales HCMC B2B (Level 4 -> Level 5)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HCMC_TO_SALES_HCMC_B2B,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC_B2B,
-      hierarchyLevel: 5,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 44,
-      notes: 'HCMC sales manages B2B operations',
-      isActive: true,
-      position: 44,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_SOUTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HCMC,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Components -> Tech UI Library (Level 4 -> Level 5)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_COMPONENTS_TO_TECH_UI_LIBRARY,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_UI_LIBRARY,
-      hierarchyLevel: 5,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 45,
-      notes: 'Component development manages UI libraries',
-      isActive: true,
-      position: 45,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Components -> Tech Design System (Level 4 -> Level 5)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_COMPONENTS_TO_TECH_DESIGN_SYSTEM,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_DESIGN_SYSTEM,
-      hierarchyLevel: 5,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 46,
-      notes: 'Component development manages design systems',
-      isActive: true,
-      position: 46,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // ================= LEVEL 6 HIERARCHIES =================
-
-    // Sales Hanoi Retail -> Sales Hanoi Retail Online (Level 5 -> Level 6)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HANOI_RETAIL_TO_ONLINE,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-      childDepartmentId:
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL_ONLINE,
-      hierarchyLevel: 6,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 51,
-      notes: 'Hanoi retail manages online sales channels',
-      isActive: true,
-      position: 51,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales Hanoi Retail -> Sales Hanoi Retail Offline (Level 5 -> Level 6)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HANOI_RETAIL_TO_OFFLINE,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-      childDepartmentId:
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL_OFFLINE,
-      hierarchyLevel: 6,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 52,
-      notes: 'Hanoi retail manages offline stores',
-      isActive: true,
-      position: 52,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech UI Library -> Tech Component Library (Level 5 -> Level 6)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_UI_LIBRARY_TO_TECH_COMPONENT_LIB,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_UI_LIBRARY,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENT_LIB,
-      hierarchyLevel: 6,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 53,
-      notes: 'UI Library manages component libraries',
-      isActive: true,
-      position: 53,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_UI_LIBRARY,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Tech Design System -> Tech Theme System (Level 5 -> Level 6)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.TECH_DESIGN_SYSTEM_TO_TECH_THEME_SYSTEM,
-      parentDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_DESIGN_SYSTEM,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_THEME_SYSTEM,
-      hierarchyLevel: 6,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 54,
-      notes: 'Design System manages theming systems',
-      isActive: true,
-      position: 54,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_FRONTEND,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_REACT,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_COMPONENTS,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_DESIGN_SYSTEM,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // ================= LEVEL 7 HIERARCHIES =================
-
-    // Sales Hanoi Retail Online -> Sales Hanoi E-commerce (Level 6 -> Level 7)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HANOI_RETAIL_ONLINE_TO_ECOMMERCE,
-      parentDepartmentId:
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL_ONLINE,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_ECOMMERCE,
-      hierarchyLevel: 7,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 61,
-      notes: 'Online retail manages e-commerce platforms',
-      isActive: true,
-      position: 61,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL_ONLINE,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
-    },
-
-    // Sales Hanoi Retail Online -> Sales Hanoi Social Commerce (Level 6 -> Level 7)
-    {
-      id: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS.SALES_HANOI_RETAIL_ONLINE_TO_SOCIAL,
-      parentDepartmentId:
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL_ONLINE,
-      childDepartmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_SOCIAL,
-      hierarchyLevel: 7,
-      relationshipType: MktDepartmentHierarchyRelationType.PARENT_CHILD,
-      validFrom: DateTime.fromISO('2024-01-01').toJSDate(),
-      validTo: null,
-      inheritsPermissions: true,
-      canEscalateToParent: true,
-      allowsCrossBranchAccess: false,
-      displayOrder: 62,
-      notes: 'Online retail manages social commerce channels',
-      isActive: true,
-      position: 62,
-      createdBySource: 'MANUAL',
-      createdByWorkspaceMemberId: null,
-      createdByName: 'Admin User',
-      hierarchyPath: [
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_DOMESTIC,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_NORTH,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL,
-        MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES_HANOI_RETAIL_ONLINE,
-      ],
-      inheritsParentPermissions: true,
-      canViewTeamData: true,
-      canEditTeamData: true,
-      canExportTeamData: true,
+      canExportTeamData: false,
+      minimumSecurityLevel: SecurityLevel.INTERNAL,
+      canApprove: false,
+      canDelegate: false,
+      canAudit: false,
+      canManageUsers: false,
+      canAccessSensitiveData: false,
+      canOverrideSubordinates: false,
+      requiresDualApproval: false,
+      requiresMFA: false,
+      canAccessAfterHours: false,
+      requiresFullAuditTrail: false,
+      canDeleteData: false,
+      gdprCompliant: true,
+      priorityLevel: 4,
+      permissionWeight: 30,
+      securityNotes: 'Temporary team with inherited tech permissions',
     },
   ];

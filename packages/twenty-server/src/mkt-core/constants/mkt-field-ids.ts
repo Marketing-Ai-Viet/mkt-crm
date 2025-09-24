@@ -1104,6 +1104,26 @@ export const MKT_DEPARTMENT_HIERARCHY_FIELD_IDS = {
   position: 'e9b0c1d2-3f4a-5b6c-7d8e-9fa0b1c2d3e4',
   createdBy: 'f0c1d2e3-4a5b-6c7d-8e9f-a0b1c2d3e4f5',
   searchVector: 'a1d2e3f4-5b6c-7d8e-9fa0-b1c2d3e4f5a6',
+  // Enhanced RBAC fields
+  minimumSecurityLevel: 'b2d3e4f5-6c7d-8e9f-a0b1-c2d3e4f5a6b2',
+  canApprove: 'c3e4f5a6-7d8e-9fa0-b1c2-d3e4f5a6b7c3',
+  canDelegate: 'd4f5a6b7-8e9f-a0b1-c2d3-e4f5a6b7c8d4',
+  canAudit: 'e5a6b7c8-9fa0-b1c2-d3e4-f5a6b7c8d9e5',
+  canManageUsers: 'f6b7c8d9-a0b1-c2d3-e4f5-a6b7c8d9eaf6',
+  canAccessSensitiveData: 'a7c8d9ea-b1c2-d3e4-f5a6-b7c8d9eafba7',
+  // Business rule fields
+  canOverrideSubordinates: 'b8d9eafb-c2d3-e4f5-a6b7-c8d9eafba0b8',
+  requiresDualApproval: 'c9eafba0-d3e4-f5a6-b7c8-d9eafba0b1c9',
+  requiresMFA: 'dafba0b1-e4f5-a6b7-c8d9-eafba0b1c2da',
+  canAccessAfterHours: 'ebfba0b1-f5a6-b7c8-d9ea-fba0b1c2d3eb',
+  // Compliance fields
+  requiresFullAuditTrail: 'fcfba0b1-a6b7-c8d9-eafb-a0b1c2d3e4fc',
+  canDeleteData: 'adfba0b1-b7c8-d9ea-fba0-b1c2d3e4f5ad',
+  gdprCompliant: 'befba0b1-c8d9-eafb-a0b1-c2d3e4f5a6be',
+  // Metadata fields
+  priorityLevel: 'cffba0b1-d9ea-fba0-b1c2-d3e4f5a6b7cf',
+  permissionWeight: 'dafba0b1-eafb-a0b1-c2d3-e4f5a6b7c8da',
+  securityNotes: 'ebfba0b1-fba0-b1c2-d3e4-f5a6b7c8d9eb',
 };
 
 export const MKT_DATA_ACCESS_POLICY_FIELD_IDS = {

@@ -16,6 +16,7 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPE_OPTIONS } from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
+import { SECURITY_LEVEL_OPTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartmentHierarchy,
@@ -226,4 +227,169 @@ export class MktDepartmentHierarchyWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   canExportTeamData?: boolean;
+
+  // ================= ENHANCED RBAC FIELDS =================
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.minimumSecurityLevel,
+    type: FieldMetadataType.SELECT,
+    label: msg`Minimum Security Level`,
+    description: msg`Minimum security level required for access`,
+    icon: 'IconShield',
+    options: SECURITY_LEVEL_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  minimumSecurityLevel?: string;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canApprove,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Approve`,
+    description: msg`Has approval authority`,
+    icon: 'IconCheck',
+  })
+  @WorkspaceIsNullable()
+  canApprove?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canDelegate,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Delegate`,
+    description: msg`Can delegate permissions to others`,
+    icon: 'IconUserShare',
+  })
+  @WorkspaceIsNullable()
+  canDelegate?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canAudit,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Audit`,
+    description: msg`Has audit access rights`,
+    icon: 'IconEye',
+  })
+  @WorkspaceIsNullable()
+  canAudit?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canManageUsers,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Manage Users`,
+    description: msg`Can manage user accounts and permissions`,
+    icon: 'IconUsers',
+  })
+  @WorkspaceIsNullable()
+  canManageUsers?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canAccessSensitiveData,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Access Sensitive Data`,
+    description: msg`Has access to sensitive business data`,
+    icon: 'IconLock',
+  })
+  @WorkspaceIsNullable()
+  canAccessSensitiveData?: boolean;
+
+  // ================= BUSINESS RULE FIELDS =================
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canOverrideSubordinates,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Override Subordinates`,
+    description: msg`Can override decisions made by subordinates`,
+    icon: 'IconAlertTriangle',
+  })
+  @WorkspaceIsNullable()
+  canOverrideSubordinates?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.requiresDualApproval,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Requires Dual Approval`,
+    description: msg`Requires approval from two authorized users`,
+    icon: 'IconUserCheck',
+  })
+  @WorkspaceIsNullable()
+  requiresDualApproval?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.requiresMFA,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Requires MFA`,
+    description: msg`Requires multi-factor authentication`,
+    icon: 'IconKey',
+  })
+  @WorkspaceIsNullable()
+  requiresMFA?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canAccessAfterHours,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Access After Hours`,
+    description: msg`Allowed to access system outside business hours`,
+    icon: 'IconClock',
+  })
+  @WorkspaceIsNullable()
+  canAccessAfterHours?: boolean;
+
+  // ================= COMPLIANCE FIELDS =================
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.requiresFullAuditTrail,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Requires Full Audit Trail`,
+    description: msg`All actions must be fully logged and tracked`,
+    icon: 'IconFileText',
+  })
+  @WorkspaceIsNullable()
+  requiresFullAuditTrail?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.canDeleteData,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Can Delete Data`,
+    description: msg`Has permission to delete business data`,
+    icon: 'IconTrash',
+  })
+  @WorkspaceIsNullable()
+  canDeleteData?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.gdprCompliant,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`GDPR Compliant`,
+    description: msg`Must comply with GDPR regulations`,
+    icon: 'IconShield',
+  })
+  @WorkspaceIsNullable()
+  gdprCompliant?: boolean;
+
+  // ================= METADATA FIELDS =================
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.priorityLevel,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Priority Level`,
+    description: msg`Priority level (1-10, 10=highest)`,
+    icon: 'IconPriority',
+  })
+  @WorkspaceIsNullable()
+  priorityLevel?: number;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.permissionWeight,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Permission Weight`,
+    description: msg`Weight of permissions (0-100)`,
+    icon: 'IconScale',
+  })
+  @WorkspaceIsNullable()
+  permissionWeight?: number;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.securityNotes,
+    type: FieldMetadataType.TEXT,
+    label: msg`Security Notes`,
+    description: msg`Additional security-related notes`,
+    icon: 'IconNotes',
+  })
+  @WorkspaceIsNullable()
+  securityNotes?: string;
 }

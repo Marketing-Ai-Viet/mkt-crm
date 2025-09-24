@@ -22,6 +22,12 @@ import {
   CheckResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 
+import {
+  PERMISSION_SOURCE_OPTIONS,
+  PERMISSION_ACTION_OPTIONS,
+  CHECK_RESULT_OPTIONS,
+} from './constants/permission-audit-options.constants';
+
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAudit,
   namePlural: 'mktPermissionAudits',
@@ -66,50 +72,7 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
     label: msg`Action`,
     description: msg`The action that was attempted`,
     icon: 'IconPlayerPlay',
-    options: [
-      {
-        value: PermissionAction.READ,
-        label: 'Read',
-        position: 0,
-        color: 'blue',
-      },
-      {
-        value: PermissionAction.CREATE,
-        label: 'Create',
-        position: 1,
-        color: 'green',
-      },
-      {
-        value: PermissionAction.UPDATE,
-        label: 'Update',
-        position: 2,
-        color: 'yellow',
-      },
-      {
-        value: PermissionAction.DELETE,
-        label: 'Delete',
-        position: 3,
-        color: 'red',
-      },
-      {
-        value: PermissionAction.EXPORT,
-        label: 'Export',
-        position: 4,
-        color: 'purple',
-      },
-      {
-        value: PermissionAction.IMPORT,
-        label: 'Import',
-        position: 5,
-        color: 'blue',
-      },
-      {
-        value: PermissionAction.MANAGE,
-        label: 'Manage',
-        position: 6,
-        color: 'orange',
-      },
-    ],
+    options: PERMISSION_ACTION_OPTIONS,
   })
   action: PermissionAction;
 
@@ -138,50 +101,7 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
     label: msg`Permission Source`,
     description: msg`Source of the permission decision`,
     icon: 'IconShieldCheck',
-    options: [
-      {
-        value: PermissionSource.ROLE,
-        label: 'Role',
-        position: 0,
-        color: 'blue',
-      },
-      {
-        value: PermissionSource.USER,
-        label: 'User',
-        position: 1,
-        color: 'green',
-      },
-      {
-        value: PermissionSource.WORKSPACE,
-        label: 'Workspace',
-        position: 2,
-        color: 'purple',
-      },
-      {
-        value: PermissionSource.SYSTEM,
-        label: 'System',
-        position: 3,
-        color: 'gray',
-      },
-      {
-        value: PermissionSource.PERMISSION_TEMPLATE,
-        label: 'Permission Template',
-        position: 4,
-        color: 'yellow',
-      },
-      {
-        value: PermissionSource.HIERARCHY_INHERITANCE,
-        label: 'Hierarchy Inheritance',
-        position: 5,
-        color: 'orange',
-      },
-      {
-        value: PermissionSource.DEPARTMENT_POLICY,
-        label: 'Department Policy',
-        position: 6,
-        color: 'red',
-      },
-    ],
+    options: PERMISSION_SOURCE_OPTIONS,
   })
   @WorkspaceIsNullable()
   permissionSource?: PermissionSource;
@@ -192,38 +112,7 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
     label: msg`Check Result`,
     description: msg`Result of the permission check`,
     icon: 'IconCheck',
-    options: [
-      {
-        value: CheckResult.PASS,
-        label: 'Pass',
-        position: 0,
-        color: 'green',
-      },
-      {
-        value: CheckResult.FAIL,
-        label: 'Fail',
-        position: 1,
-        color: 'red',
-      },
-      {
-        value: CheckResult.SKIP,
-        label: 'Skip',
-        position: 2,
-        color: 'gray',
-      },
-      {
-        value: CheckResult.WARNING,
-        label: 'Warning',
-        position: 3,
-        color: 'yellow',
-      },
-      {
-        value: CheckResult.ERROR,
-        label: 'Error',
-        position: 4,
-        color: 'red',
-      },
-    ],
+    options: CHECK_RESULT_OPTIONS,
   })
   checkResult: CheckResult;
 

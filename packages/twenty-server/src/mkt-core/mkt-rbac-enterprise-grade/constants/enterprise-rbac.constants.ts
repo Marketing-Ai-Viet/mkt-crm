@@ -4,6 +4,8 @@
  * No dependencies on legacy RBAC modules
  */
 
+import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+
 /**
  * Check Results for validation steps
  */
@@ -275,6 +277,47 @@ export const DATA_CLASSIFICATION = {
   RESTRICTED: 'RESTRICTED',
   TOP_SECRET: 'TOP_SECRET',
 } as const;
+
+/**
+ * Security Level Options for Select Fields
+ */
+export const SECURITY_LEVEL_OPTIONS: Array<{
+  value: string;
+  label: string;
+  position: number;
+  color: TagColor;
+}> = [
+  {
+    value: 'PUBLIC',
+    label: 'Public',
+    position: 0,
+    color: 'green',
+  },
+  {
+    value: 'INTERNAL',
+    label: 'Internal',
+    position: 1,
+    color: 'blue',
+  },
+  {
+    value: 'CONFIDENTIAL',
+    label: 'Confidential',
+    position: 2,
+    color: 'orange',
+  },
+  {
+    value: 'RESTRICTED',
+    label: 'Restricted',
+    position: 3,
+    color: 'red',
+  },
+  {
+    value: 'TOP_SECRET',
+    label: 'Top Secret',
+    position: 4,
+    color: 'purple',
+  },
+];
 
 /**
  * Risk Levels for Actions and Data
