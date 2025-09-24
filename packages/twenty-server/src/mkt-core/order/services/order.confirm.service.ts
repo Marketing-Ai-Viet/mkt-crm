@@ -1,8 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
+import { ORDER_ACTION } from 'src/mkt-core/order/constants';
+import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 
 export type CalculateOrderResult = {
   subtotal: number;
@@ -16,8 +20,10 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly mktLicenseService: MktLicenseService,
+    private readonly mktPaymentService: MktPaymentService,
+    private readonly orderService: OrderService,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   /**
@@ -94,14 +100,9 @@ export class OrderConfirmService {
   /**
    * Generate unique order code
    */
-  async generateOrderCode(workspaceId: string): Promise<string | null> {
+  async generateOrderCode(): Promise<string | null> {
     try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-          workspaceId,
-          'mktOrder',
-          { shouldBypassPermissionChecks: true },
-        );
+      const orderRepository = await this.mktRepo.getOrderRepository();
 
       const now = new Date();
       const year = now.getFullYear();
@@ -113,7 +114,7 @@ export class OrderConfirmService {
       const todayOrders = await orderRepository
         .createQueryBuilder('order')
         .where('order.orderCode LIKE :pattern', {
-          pattern: `ORD${datePrefix}%`,
+          pattern: `MKT${datePrefix}%`,
         })
         .orderBy('order.orderCode', 'DESC')
         .limit(1)
@@ -122,16 +123,16 @@ export class OrderConfirmService {
       let nextNumber = 1;
 
       if (todayOrders?.orderCode) {
-        // Extract number from existing order code (e.g., ORD20241201001 -> 1)
-        const match = todayOrders.orderCode.match(/ORD\d{8}(\d{3})$/);
+        // Extract number from existing order code (e.g., MKT20241201001 -> 1)
+        const match = todayOrders.orderCode.match(/MKT\d{8}(\d{3})$/);
 
         if (match) {
           nextNumber = parseInt(match[1], 10) + 1;
         }
       }
 
-      // Generate new order code: ORD + YYYYMMDD + 3-digit number
-      const orderCode = `ORD${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+      // Generate new order code: MKT + YYYYMMDD + 3-digit number
+      const orderCode = `MKT${datePrefix}${String(nextNumber).padStart(3, '0')}`;
 
       // Double-check uniqueness
       const existingOrder = await orderRepository.findOne({
@@ -142,7 +143,7 @@ export class OrderConfirmService {
         // If somehow duplicate, try with timestamp
         const timestamp = Date.now().toString().slice(-6);
 
-        return `ORD${datePrefix}${timestamp}`;
+        return `MKT${datePrefix}${timestamp}`;
       }
 
       this.logger.log(`Generated orderCode: ${orderCode}`);
@@ -214,5 +215,181 @@ export class OrderConfirmService {
 
       return null;
     }
+  }
+
+  async confirmOrder(
+    action: ORDER_ACTION,
+    createdOrder: MktOrderWorkspaceEntity,
+    workspaceId: string,
+    variantsMeta: Metadata['variants'] | null,
+    customerMeta: Metadata['customer'] | null,
+    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+  ): Promise<void> {
+    if (action !== ORDER_ACTION.WAIT && action !== ORDER_ACTION.TRIAL)
+      throw new Error('Action must be WAIT or TRIAL to confirm order');
+
+    if (!Array.isArray(variantsMeta) || variantsMeta.length <= 0)
+      throw new Error('Variants metadata is required');
+    // repositories
+    const orderRepository = await this.mktRepo.getOrderRepository();
+
+    this.logger.log(
+      `Creating order items for order ID: ${createdOrder.id} from variants metadata`,
+    );
+    await this.orderService.createOrderItemsFromVariants(
+      variantsMeta,
+      createdOrder,
+      workspaceId,
+    );
+
+    const order = await orderRepository.findOne({
+      where: { id: createdOrder.id },
+      relations: ['orderItems'],
+    });
+
+    if (order && order.orderItems?.length > 0) {
+      try {
+        const createdLicenses =
+          await this.mktLicenseService.createLicensesForOrderItems(
+            order,
+            workspaceId,
+          );
+
+        this.logger.log(
+          `Successfully created ${createdLicenses.length} licenses for order: ${order.id}`,
+        );
+      } catch (licenseError) {
+        throw new Error('Failed to create licenses for order');
+      }
+    }
+
+    // 2) Update Order information
+    const generatedOrderCode = await this.generateOrderCode();
+    const generatedOrderName = await this.generateOrderName(order);
+    const calculatedValues: CalculateOrderResult =
+      await this.calculateOrderValues(order);
+
+    const updateOrderInfo = {
+      id: createdOrder.id,
+      mktCustomerId: customerMeta?.mktCustomerId || null,
+      orderCode: generatedOrderCode ?? '',
+      subtotal: calculatedValues.subtotal,
+      tax: calculatedValues.tax,
+      discount: calculatedValues.discount,
+      totalAmount: calculatedValues.totalAmount,
+      name: generatedOrderName ?? '',
+    };
+
+    await this.orderService.updateOrderInformation(
+      createdOrder.id,
+      updateOrderInfo,
+    );
+
+    if (action === ORDER_ACTION.TRIAL) return;
+    const paymentName =
+      generatedOrderCode && generatedOrderName
+        ? `${generatedOrderCode}-${generatedOrderName}`
+        : generatedOrderCode || generatedOrderName || 'Payment';
+
+    const paymentData = {
+      paymentName,
+      totalAmount: calculatedValues.totalAmount || 0,
+      currency: createdOrder?.currency || 'VND',
+      generatedOrderCode,
+      orderId: createdOrder.id,
+    };
+
+    await this.mktPaymentService.createPaymentFromOrder(
+      paymentData,
+      paymentMethodsMeta,
+    );
+  }
+
+  async trialToPaidOrder(
+    action: ORDER_ACTION,
+    createdOrder: MktOrderWorkspaceEntity,
+    workspaceId: string,
+    trialOrderId: string | null,
+    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+  ): Promise<void> {
+    if (action !== ORDER_ACTION.TRIAL_TO_PAID)
+      throw new Error(
+        'Action must be TRIAL_TO_PAID to convert trial to paid order',
+      );
+
+    if (!trialOrderId)
+      throw new Error('Trial order ID is required to convert to paid order');
+
+    this.logger.log(
+      `Processing TRIAL_TO_PAID order conversion for order ID: ${createdOrder.id}`,
+    );
+
+    // Get the trial order ID from metadata (should be passed in from frontend)
+
+    if (!trialOrderId) {
+      throw new Error(
+        'Trial order ID is required for TRIAL_TO_PAID conversion',
+      );
+    }
+
+    const orderRepository = await this.mktRepo.getOrderRepository();
+
+    // 1. Find the trial order and its items
+    const trialOrder = await orderRepository.findOne({
+      where: { id: trialOrderId },
+      relations: ['orderItems'],
+    });
+
+    if (!trialOrder) {
+      throw new Error(`Trial order with ID ${trialOrderId} not found`);
+    }
+
+    if (!trialOrder.trialLicense) {
+      throw new Error(
+        `Order ${trialOrderId} is not a trial order (status: ${trialOrder.trialLicense})`,
+      );
+    }
+
+    this.logger.log(
+      `Found trial order: ${trialOrderId} with ${trialOrder.orderItems?.length || 0} items`,
+    );
+
+    await this.orderService.cloneOrderItems(
+      trialOrder,
+      createdOrder,
+      workspaceId,
+    );
+
+    await this.mktLicenseService.updateReferenceLicenseOrder(
+      trialOrderId,
+      createdOrder.id,
+    );
+
+    const generatedOrderCode = await this.generateOrderCode();
+
+    const paymentName =
+      generatedOrderCode && trialOrder.name
+        ? `${generatedOrderCode}-${trialOrder.name}`
+        : generatedOrderCode || trialOrder.name || 'Payment';
+
+    const paymentData = {
+      paymentName,
+      totalAmount: trialOrder.totalAmount || 0,
+      currency: trialOrder?.currency || 'VND',
+      generatedOrderCode,
+      orderId: createdOrder.id,
+    };
+
+    await this.mktPaymentService.createPaymentFromOrder(
+      paymentData,
+      paymentMethodsMeta,
+    );
+
+    // 4. Update the new order with customer and calculated values from trial order
+    await this.orderService.cloneOrder(
+      createdOrder.id,
+      generatedOrderCode,
+      trialOrder,
+    );
   }
 }

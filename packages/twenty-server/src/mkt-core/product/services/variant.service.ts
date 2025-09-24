@@ -7,6 +7,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 @Injectable()
 export class VariantService {
@@ -120,5 +121,22 @@ export class VariantService {
       this.logger.error(`Error updating variant value: ${error}`);
       throw error;
     }
+  }
+
+  async getVariantValueById(
+    ids: string[],
+    workspaceId: string,
+  ): Promise<MktVariantWorkspaceEntity[]> {
+    const variantRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktVariantWorkspaceEntity>(
+        workspaceId,
+        'mktVariant',
+        { shouldBypassPermissionChecks: true },
+      );
+    const variants = await variantRepository.find({
+      where: ids.map((id) => ({ id })) as unknown as { id: string },
+    });
+
+    return variants;
   }
 }
