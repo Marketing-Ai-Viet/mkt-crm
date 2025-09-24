@@ -112,4 +112,9 @@ export class CreateUserInput {
   @IsOptional()
   @IsString()
   organizationLevelId?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  roleId?: string;
 }

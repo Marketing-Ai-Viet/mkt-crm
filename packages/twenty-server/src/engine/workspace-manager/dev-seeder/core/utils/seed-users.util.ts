@@ -37,6 +37,17 @@ export const seedUsers = async (dataSource: DataSource, schemaName: string) => {
         isEmailVerified: true,
       },
       {
+        id: USER_DATA_SEED_IDS.TIM,
+        firstName: 'Tim',
+        lastName: 'Apple',
+        email: 'tim@apple.dev',
+        passwordHash:
+          '$2b$10$3LwXjJRtLsfx4hLuuXhxt.3mWgismTiZFCZSG3z9kDrSfsrBl0fT6', // tim@apple.dev
+        canImpersonate: true,
+        canAccessFullAdminPanel: true,
+        isEmailVerified: true,
+      },
+      {
         id: USER_DATA_SEED_IDS.JONY,
         firstName: 'Jony',
         lastName: 'Ive',
