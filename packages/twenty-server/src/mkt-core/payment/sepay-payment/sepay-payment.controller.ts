@@ -5,10 +5,12 @@ import {
   HttpStatus,
   Logger,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
+import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 
 type SepayWebhookPayload = {
@@ -26,16 +28,22 @@ type SepayWebhookPayload = {
   id: number; // 237046
 };
 
+// Choose guards based on environment flag
+const sepayGuards =
+  process.env.SEPAY_AUTH_ENABLED === 'true'
+    ? [JwtAuthGuard, UserAuthGuard]
+    : [PublicEndpointGuard];
 @Controller('hooks')
 export class SepayPaymentController {
   private readonly logger = new Logger(SepayPaymentController.name);
 
   constructor(private readonly mktPaymentService: MktPaymentService) {}
 
-  @UseGuards(PublicEndpointGuard)
+  @UseGuards(...sepayGuards)
   @Post('sepay-payment')
   @HttpCode(HttpStatus.OK)
   async handleSepayPayment(@Body() payload: SepayWebhookPayload) {
+    this.logger.warn('SEPAY_AUTH_ENABLED=' + process.env.SEPAY_AUTH_ENABLED);
     this.logger.log('Received sepay-payment webhook', payload);
     const workspaceId = process.env.SEPAY_WORKSPACE_ID;
 
