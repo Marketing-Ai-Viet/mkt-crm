@@ -33,6 +33,7 @@ const sepayGuards =
   process.env.SEPAY_AUTH_ENABLED === 'true'
     ? [JwtAuthGuard, UserAuthGuard]
     : [PublicEndpointGuard];
+
 @Controller('hooks')
 export class SepayPaymentController {
   private readonly logger = new Logger(SepayPaymentController.name);
