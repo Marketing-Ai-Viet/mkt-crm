@@ -1,47 +1,24 @@
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
+import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 
 // Services
 import { Step1PreValidationService } from './services/step1-pre-validation.service';
 import { ValidationOrchestratorService } from './services/validation-orchestrator.service';
 import { Step2UserContextResolutionService } from './services/step2-user-context-resolution.service';
-import { ResourceIdentificationService } from './services/resource-identification.service';
+import { Step3ResourceIdentificationService } from './services/step3-resource-identification.service';
 import { PermissionTemplateService } from './services/permission-template.service';
 import { RbacCacheService } from './services/rbac-cache.service';
 import { AuditLoggingService } from './services/audit-logging.service';
 import { EnterpriseRbacGuard } from './guards/enterprise-rbac.guard';
-import { MinimalEnterpriseRbacGuard } from './guards/minimal-enterprise-rbac.guard';
-
-// Configuration interface
-export interface EnterpriseRbacModuleOptions {
-  // Feature flags
-  enable15StepValidation?: boolean;
-  enableHierarchyValidation?: boolean;
-  enablePolicyEngine?: boolean;
-  enableDynamicConditions?: boolean;
-  enableSensitiveDataControls?: boolean;
-
-  // Performance settings
-  enableCaching?: boolean;
-  enableParallelExecution?: boolean;
-  enableEarlyExit?: boolean;
-
-  // Security settings
-  enableAuditLogging?: boolean;
-  enableSecurityMonitoring?: boolean;
-  enableComplianceChecks?: boolean;
-
-  // Development settings
-  enableDebugMode?: boolean;
-  enableMetrics?: boolean;
-}
 
 /**
- * Default configuration
+ * Default configuration for Enterprise RBAC
  */
-const DEFAULT_CONFIG: EnterpriseRbacModuleOptions = {
+const DEFAULT_CONFIG = {
   // Feature flags
   enable15StepValidation: true,
   enableHierarchyValidation: true,
@@ -62,99 +39,50 @@ const DEFAULT_CONFIG: EnterpriseRbacModuleOptions = {
   // Development settings
   enableDebugMode: false,
   enableMetrics: true,
-};
+} as const;
 
 /**
  * Enterprise RBAC Module
- * Modified to avoid circular dependencies and initialization issues
+ * Standard static module with all services enabled
  */
-@Module({})
-export class MktRbacEnterpriseGradeModule {
-  /**
-   * Register the module asynchronously with proper dependency management
-   */
-  static register(
-    options?: Partial<EnterpriseRbacModuleOptions>,
-  ): DynamicModule {
-    const config = { ...DEFAULT_CONFIG, ...options };
+@Module({
+  imports: [
+    TwentyORMModule,
+    ObjectMetadataModule,
+    TypeOrmModule.forFeature([ObjectMetadataEntity], 'core'),
+  ],
+  providers: [
+    // Configuration provider
+    {
+      provide: 'ENTERPRISE_RBAC_CONFIG',
+      useValue: DEFAULT_CONFIG,
+    },
 
-    // Determine which guard to use based on configuration
-    const guardToUse = config.enable15StepValidation
-      ? EnterpriseRbacGuard
-      : MinimalEnterpriseRbacGuard;
+    // All validation services
+    Step1PreValidationService,
+    Step2UserContextResolutionService,
+    Step3ResourceIdentificationService,
+    ValidationOrchestratorService,
 
-    return {
-      module: MktRbacEnterpriseGradeModule,
-      imports: [
-        // Only import TwentyORMModule if actually needed
-        ...(config.enablePolicyEngine ? [TwentyORMModule] : []),
-        ...(config.enableHierarchyValidation ? [ObjectMetadataModule] : []),
-      ],
-      providers: [
-        // Configuration provider
-        {
-          provide: 'ENTERPRISE_RBAC_CONFIG',
-          useValue: config,
-        },
+    // Supporting services
+    PermissionTemplateService,
+    RbacCacheService,
+    AuditLoggingService,
 
-        // Only register services that are actually needed based on config
-        ...(config.enable15StepValidation
-          ? [Step1PreValidationService, ValidationOrchestratorService]
-          : []),
-
-        ...(config.enableHierarchyValidation
-          ? [Step2UserContextResolutionService, ResourceIdentificationService]
-          : []),
-
-        ...(config.enablePolicyEngine ? [PermissionTemplateService] : []),
-
-        ...(config.enableCaching ? [RbacCacheService] : []),
-
-        ...(config.enableAuditLogging ? [AuditLoggingService] : []),
-
-        // Use appropriate guard based on configuration
-        guardToUse,
-      ],
-      exports: [
-        // Only export what's actually provided
-        ...(config.enable15StepValidation
-          ? [Step1PreValidationService, ValidationOrchestratorService]
-          : []),
-
-        ...(config.enableHierarchyValidation
-          ? [Step2UserContextResolutionService, ResourceIdentificationService]
-          : []),
-
-        ...(config.enablePolicyEngine ? [PermissionTemplateService] : []),
-
-        ...(config.enableCaching ? [RbacCacheService] : []),
-
-        ...(config.enableAuditLogging ? [AuditLoggingService] : []),
-
-        // Export the appropriate guard
-        guardToUse,
-        'ENTERPRISE_RBAC_CONFIG',
-      ],
-    };
-  }
-
-  /**
-   * Register with minimal configuration for development/seeding
-   * This version loads only essential services to avoid blocking
-   */
-  static registerMinimal(): DynamicModule {
-    return this.register({
-      enable15StepValidation: false,
-      enableHierarchyValidation: false,
-      enablePolicyEngine: false,
-      enableDynamicConditions: false,
-      enableSensitiveDataControls: false,
-      enableCaching: false,
-      enableParallelExecution: false,
-      enableAuditLogging: false,
-      enableSecurityMonitoring: false,
-      enableComplianceChecks: false,
-      enableDebugMode: true,
-    });
-  }
-}
+    // Guard
+    EnterpriseRbacGuard,
+  ],
+  exports: [
+    // Export all services
+    Step1PreValidationService,
+    Step2UserContextResolutionService,
+    Step3ResourceIdentificationService,
+    ValidationOrchestratorService,
+    PermissionTemplateService,
+    RbacCacheService,
+    AuditLoggingService,
+    EnterpriseRbacGuard,
+    'ENTERPRISE_RBAC_CONFIG',
+  ],
+})
+export class MktRbacEnterpriseGradeModule {}

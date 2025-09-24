@@ -6,6 +6,9 @@ import {
   toMktOrderOutput,
   toMktOrdersOutput,
 } from 'src/mkt-core/order/dto/mkt-order.mapper';
+import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
+import { Permission } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators/permission.decorator';
+import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { MktOrderService } from './mkt-order.service';
 import {
@@ -20,8 +23,8 @@ import {
 } from './dto';
 
 @Resolver(() => MktOrderOutput)
-@UseGuards(UserAuthGuard)
-// @Permission({ action: PermissionAction.READ, objectName: 'Order' })
+@UseGuards(UserAuthGuard, EnterpriseRbacGuard)
+@Permission({ action: PermissionAction.READ, objectName: 'mktOrder' })
 export class MktOrderResolver {
   constructor(private readonly orderService: MktOrderService) {}
 

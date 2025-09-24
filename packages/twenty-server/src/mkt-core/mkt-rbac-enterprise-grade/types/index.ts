@@ -3,3 +3,4 @@ export * from './hierarchy-context.type';
 export * from './policy-context.type';
 export * from './audit.types';
 export * from './validation-step.types';
+export * from './resource-identification.types';

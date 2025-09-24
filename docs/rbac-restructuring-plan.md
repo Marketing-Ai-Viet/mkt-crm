@@ -95,7 +95,7 @@ Tái cấu trúc hoàn toàn module RBAC hiện tại để triển khai hệ th
    - Sensitivity classification
    ```typescript
    // Files to create:
-   - services/resource-identification.service.ts
+   - services/step3-resource-identification.service.ts
    - interfaces/resource-context.interface.ts
    ```
 
@@ -342,7 +342,7 @@ mkt-rbac/
 │   ├── mkt-rbac.service.ts                     # MAJOR UPDATE
 │   ├── permission-orchestrator.service.ts      # NEW
 │   ├── step2-user-context-resolution.service.ts      # NEW
-│   ├── resource-identification.service.ts      # NEW
+│   ├── step3-resource-identification.service.ts      # NEW
 │   ├── permission-template.service.ts          # NEW
 │   ├── hierarchy-validation.service.ts         # NEW
 │   ├── policy-evaluation.service.ts            # NEW

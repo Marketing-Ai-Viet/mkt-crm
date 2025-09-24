@@ -28,7 +28,7 @@ import {
 
 import { Step1PreValidationService } from './step1-pre-validation.service';
 import { Step2UserContextResolutionService } from './step2-user-context-resolution.service';
-import { ResourceIdentificationService } from './resource-identification.service';
+import { Step3ResourceIdentificationService } from './step3-resource-identification.service';
 import { PermissionTemplateService } from './permission-template.service';
 import { RbacCacheService } from './rbac-cache.service';
 import { AuditLoggingService } from './audit-logging.service';
@@ -87,7 +87,7 @@ export class ValidationOrchestratorService
   constructor(
     private readonly preValidationService: Step1PreValidationService,
     private readonly userContextService: Step2UserContextResolutionService,
-    private readonly resourceIdentificationService: ResourceIdentificationService,
+    private readonly resourceIdentificationService: Step3ResourceIdentificationService,
     private readonly permissionTemplateService: PermissionTemplateService,
     private readonly cacheService: RbacCacheService,
     private readonly auditService: AuditLoggingService,

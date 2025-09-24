@@ -95,6 +95,71 @@ The Enterprise RBAC Guard is a comprehensive 15-step permission validation syste
   - Resource type classification
   - Ownership verification
   - Resource metadata
+- Step 3 Resource Identification Service có những mục đích chính sau:
+
+  Mục đích chính của Step 3:
+
+    1. Nhận diện và phân loại tài nguyên (Resource Classification)
+    - Xác định loại tài nguyên: SYSTEM_CONFIG, FINANCIAL, USER_MGMT, AUDIT_DATA, BUSINESS_DATA
+    - Phân loại theo category: SYSTEM, FINANCIAL, USER_DATA, AUDIT, BUSINESS
+    - Xác định đặc tính: isSystemResource, isFinancialData, isPersonalData, isAuditData
+
+    2. Phân tích độ nhạy cảm (Sensitivity Analysis)
+    - Tính toán sensitivity score dựa trên patterns và field analysis
+    - Phân cấp sensitivity: PUBLIC → INTERNAL → CONFIDENTIAL → RESTRICTED → TOP_SECRET
+    - Phát hiện dữ liệu PII, financial info, medical data, credentials
+    - Đưa ra security recommendations và compliance requirements
+
+    3. Xác định ownership và inheritance chain
+    - Resolve record owner từ các field: ownerId, createdById, userId, workspaceMemberId
+    - Xây dựng department hierarchy path từ owner đến root department
+    - Tạo inheritance order: owner → department → parent departments → workspace
+    - Permission cascade theo organizational structure
+
+    4. Phân tích cross-references và dependencies
+    - Tìm các object relationships từ metadata
+    - Xác định dependency strength: WEAK, MODERATE, STRONG
+    - Đánh giá cascade risk khi thay đổi/xóa resource
+    - Map relationship types và onDelete behaviors
+
+    5. Xây dựng Enhanced Resource Context
+    - Tổng hợp tất cả thông tin thành ResourceContext đầy đủ
+    - Cung cấp cho các validation steps tiếp theo
+    - Bao gồm: resourceType, confidentialityLevel, dataClassification, ownership, dependencies
+
+  Vị trí trong 15-step validation process:
+
+  Step 1: Pre-validation (kiểm tra điều kiện cơ bản)
+  Step 2: User Context Resolution (resolve user info, department, hierarchy)
+  👉 Step 3: Resource Identification (nhận diện resource, sensitivity, ownership)
+  Step 4: Permission Template Resolution
+  Step 5: Hierarchy-based Access Control
+  ...
+  Step 15: Final Authorization Decision
+
+  Tại sao Step 3 quan trọng:
+
+    1. Foundation cho các step sau:
+    - Cung cấp complete resource context cho permission evaluation
+    - Sensitivity level quyết định security requirements
+    - Ownership chain xác định inheritance rules
+
+    2. Security và Compliance:
+    - Tự động detect sensitive data và áp dụng security measures
+    - Compliance framework identification (GDPR, SOX, PCI_DSS, HIPAA)
+    - Access restrictions dựa trên sensitivity level
+
+    3. Performance optimization:
+    - Cache resource metadata để tránh repeated database queries
+    - Skip step nếu resource context đã được resolved
+    - Efficient dependency analysis
+
+    4. Enterprise-grade features:
+    - Automatic data classification
+    - Audit trail requirements
+    - Retention policy compliance
+    - Encryption requirements detection
+
 
 #### Permission Logic Steps (Conditional Skip)
 
