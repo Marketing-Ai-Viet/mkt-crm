@@ -7,6 +7,7 @@ import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 
 @Injectable()
 export class MktRepositoryService {
@@ -42,11 +43,45 @@ export class MktRepositoryService {
     );
   }
 
+  private async getRepositoryByWorkspaceId<Entity extends ObjectLiteral>(
+    entityClass: Type<Entity>,
+    workspaceId: string,
+    options: { shouldBypassPermissionChecks?: boolean; roleId?: string } = {},
+  ): Promise<WorkspaceRepository<Entity>> {
+    if (!workspaceId) {
+      throw new Error('Workspace ID is not available in the current context.');
+    }
+
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace<Entity>(
+      workspaceId,
+      entityClass,
+      {
+        shouldBypassPermissionChecks:
+          options.shouldBypassPermissionChecks ?? true,
+        roleId: options.roleId,
+      },
+    );
+  }
+
   async getOrderRepository() {
     return this.getRepository(MktOrderWorkspaceEntity);
   }
 
   async getOrderItemRepository() {
     return this.getRepository(MktOrderItemWorkspaceEntity);
+  }
+
+  async getOrderRepositoryByWorkspaceId(workspaceId: string) {
+    return this.getRepositoryByWorkspaceId(
+      MktOrderWorkspaceEntity,
+      workspaceId,
+    );
+  }
+
+  async getPaymentRepositoryByWorkspaceId(workspaceId: string) {
+    return this.getRepositoryByWorkspaceId(
+      MktPaymentWorkspaceEntity,
+      workspaceId,
+    );
   }
 }
