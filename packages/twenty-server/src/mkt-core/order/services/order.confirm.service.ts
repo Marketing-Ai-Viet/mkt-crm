@@ -114,7 +114,7 @@ export class OrderConfirmService {
       const todayOrders = await orderRepository
         .createQueryBuilder('order')
         .where('order.orderCode LIKE :pattern', {
-          pattern: `ORD${datePrefix}%`,
+          pattern: `MKT${datePrefix}%`,
         })
         .orderBy('order.orderCode', 'DESC')
         .limit(1)
@@ -123,16 +123,16 @@ export class OrderConfirmService {
       let nextNumber = 1;
 
       if (todayOrders?.orderCode) {
-        // Extract number from existing order code (e.g., ORD20241201001 -> 1)
-        const match = todayOrders.orderCode.match(/ORD\d{8}(\d{3})$/);
+        // Extract number from existing order code (e.g., MKT20241201001 -> 1)
+        const match = todayOrders.orderCode.match(/MKT\d{8}(\d{3})$/);
 
         if (match) {
           nextNumber = parseInt(match[1], 10) + 1;
         }
       }
 
-      // Generate new order code: ORD + YYYYMMDD + 3-digit number
-      const orderCode = `ORD${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+      // Generate new order code: MKT + YYYYMMDD + 3-digit number
+      const orderCode = `MKT${datePrefix}${String(nextNumber).padStart(3, '0')}`;
 
       // Double-check uniqueness
       const existingOrder = await orderRepository.findOne({
@@ -143,7 +143,7 @@ export class OrderConfirmService {
         // If somehow duplicate, try with timestamp
         const timestamp = Date.now().toString().slice(-6);
 
-        return `ORD${datePrefix}${timestamp}`;
+        return `MKT${datePrefix}${timestamp}`;
       }
 
       this.logger.log(`Generated orderCode: ${orderCode}`);

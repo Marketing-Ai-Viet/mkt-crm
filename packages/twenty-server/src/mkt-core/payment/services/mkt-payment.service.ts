@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
@@ -17,6 +18,7 @@ export class MktPaymentService {
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly recordPositionService: RecordPositionService,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   async createPaymentFromOrder(
@@ -91,6 +93,35 @@ export class MktPaymentService {
         );
       }
     }
+  }
+
+  async findOneByOrderCode(workspaceId: string, orderCode: string) {
+    const orderRepo =
+      await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
+
+    return await orderRepo.findOne({
+      where: { orderCode: orderCode },
+    });
+  }
+
+  async findPaymentsByOrderId(workspaceId: string, orderId: string) {
+    const paymentRepo =
+      await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
+
+    return await paymentRepo.find({
+      where: { mktOrderId: orderId },
+    });
+  }
+
+  async updatePaymentById(
+    workspaceId: string,
+    paymentId: string,
+    updateData: Partial<MktPaymentWorkspaceEntity>,
+  ) {
+    const paymentRepo =
+      await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
+
+    return await paymentRepo.update(paymentId, updateData);
   }
 
   async getPaymentRepository() {
