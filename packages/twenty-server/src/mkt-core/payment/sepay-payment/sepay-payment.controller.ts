@@ -40,6 +40,7 @@ export class SepayPaymentController {
 
   constructor(private readonly mktPaymentService: MktPaymentService) {}
 
+  // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
   @UseGuards(...sepayGuards)
   @Post('sepay-payment')
   @HttpCode(HttpStatus.OK)
