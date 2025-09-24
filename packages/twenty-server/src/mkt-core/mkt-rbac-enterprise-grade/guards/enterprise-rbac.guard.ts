@@ -61,7 +61,6 @@ export class EnterpriseRbacGuard implements CanActivate {
       if (permissionMetadata.skipValidation) {
         return true;
       }
-
       // Build enhanced permission context
       const enhancedContext = await this.buildPermissionContext(
         context,
@@ -124,7 +123,6 @@ export class EnterpriseRbacGuard implements CanActivate {
     metadata: PermissionMetadata,
   ): Promise<EnhancedPermissionContext> {
     const { request, gqlContext } = this.extractRequestInfo(context);
-
     // Get basic user info from request
     const workspaceMemberId = this.extractWorkspaceMemberId(request);
     const workspaceId = this.extractWorkspaceId(request);

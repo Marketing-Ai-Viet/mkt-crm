@@ -773,9 +773,6 @@ export class Step2UserContextResolutionService
         },
       });
 
-      console.log('departmentId', departmentId);
-      console.log('hierarchyRules', hierarchyRules);
-
       return hierarchyRules.map((rule) => ({
         sourceLevel: rule.hierarchyLevel,
         targetLevel: rule.hierarchyLevel + 1,

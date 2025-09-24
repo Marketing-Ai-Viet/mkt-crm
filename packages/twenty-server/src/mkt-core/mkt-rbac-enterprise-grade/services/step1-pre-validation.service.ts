@@ -192,7 +192,7 @@ export class Step1PreValidationService implements PermissionValidationStep {
     }
 
     // Check if user is active
-    if (!context.userContext.isActive) {
+    if (context.userContext.disabled) {
       return {
         result: CheckResult.FAIL,
         reason: 'User account is inactive',

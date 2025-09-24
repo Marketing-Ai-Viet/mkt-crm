@@ -1,4 +1,4 @@
-import { Module, DynamicModule, Global } from '@nestjs/common';
+import { Module, DynamicModule } from '@nestjs/common';
 
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
@@ -12,6 +12,7 @@ import { PermissionTemplateService } from './services/permission-template.servic
 import { RbacCacheService } from './services/rbac-cache.service';
 import { AuditLoggingService } from './services/audit-logging.service';
 import { EnterpriseRbacGuard } from './guards/enterprise-rbac.guard';
+import { MinimalEnterpriseRbacGuard } from './guards/minimal-enterprise-rbac.guard';
 
 // Configuration interface
 export interface EnterpriseRbacModuleOptions {
@@ -65,21 +66,30 @@ const DEFAULT_CONFIG: EnterpriseRbacModuleOptions = {
 
 /**
  * Enterprise RBAC Module
+ * Modified to avoid circular dependencies and initialization issues
  */
-@Global()
 @Module({})
 export class MktRbacEnterpriseGradeModule {
   /**
-   * Register the module synchronously with default configuration
+   * Register the module asynchronously with proper dependency management
    */
   static register(
     options?: Partial<EnterpriseRbacModuleOptions>,
   ): DynamicModule {
     const config = { ...DEFAULT_CONFIG, ...options };
 
+    // Determine which guard to use based on configuration
+    const guardToUse = config.enable15StepValidation
+      ? EnterpriseRbacGuard
+      : MinimalEnterpriseRbacGuard;
+
     return {
       module: MktRbacEnterpriseGradeModule,
-      imports: [TwentyORMModule, ObjectMetadataModule],
+      imports: [
+        // Only import TwentyORMModule if actually needed
+        ...(config.enablePolicyEngine ? [TwentyORMModule] : []),
+        ...(config.enableHierarchyValidation ? [ObjectMetadataModule] : []),
+      ],
       providers: [
         // Configuration provider
         {
@@ -87,30 +97,64 @@ export class MktRbacEnterpriseGradeModule {
           useValue: config,
         },
 
-        // Core services
-        Step1PreValidationService,
-        ValidationOrchestratorService,
-        Step2UserContextResolutionService,
-        ResourceIdentificationService,
-        PermissionTemplateService,
-        RbacCacheService,
-        AuditLoggingService,
+        // Only register services that are actually needed based on config
+        ...(config.enable15StepValidation
+          ? [Step1PreValidationService, ValidationOrchestratorService]
+          : []),
 
-        // Guards
-        EnterpriseRbacGuard,
+        ...(config.enableHierarchyValidation
+          ? [Step2UserContextResolutionService, ResourceIdentificationService]
+          : []),
+
+        ...(config.enablePolicyEngine ? [PermissionTemplateService] : []),
+
+        ...(config.enableCaching ? [RbacCacheService] : []),
+
+        ...(config.enableAuditLogging ? [AuditLoggingService] : []),
+
+        // Use appropriate guard based on configuration
+        guardToUse,
       ],
       exports: [
-        // Export main services for use in other modules
-        Step1PreValidationService,
-        ValidationOrchestratorService,
-        Step2UserContextResolutionService,
-        ResourceIdentificationService,
-        PermissionTemplateService,
-        RbacCacheService,
-        AuditLoggingService,
-        EnterpriseRbacGuard,
+        // Only export what's actually provided
+        ...(config.enable15StepValidation
+          ? [Step1PreValidationService, ValidationOrchestratorService]
+          : []),
+
+        ...(config.enableHierarchyValidation
+          ? [Step2UserContextResolutionService, ResourceIdentificationService]
+          : []),
+
+        ...(config.enablePolicyEngine ? [PermissionTemplateService] : []),
+
+        ...(config.enableCaching ? [RbacCacheService] : []),
+
+        ...(config.enableAuditLogging ? [AuditLoggingService] : []),
+
+        // Export the appropriate guard
+        guardToUse,
         'ENTERPRISE_RBAC_CONFIG',
       ],
     };
+  }
+
+  /**
+   * Register with minimal configuration for development/seeding
+   * This version loads only essential services to avoid blocking
+   */
+  static registerMinimal(): DynamicModule {
+    return this.register({
+      enable15StepValidation: false,
+      enableHierarchyValidation: false,
+      enablePolicyEngine: false,
+      enableDynamicConditions: false,
+      enableSensitiveDataControls: false,
+      enableCaching: false,
+      enableParallelExecution: false,
+      enableAuditLogging: false,
+      enableSecurityMonitoring: false,
+      enableComplianceChecks: false,
+      enableDebugMode: true,
+    });
   }
 }

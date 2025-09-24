@@ -21,6 +21,7 @@ export type EnhancedUserContext = {
   workspaceId: string;
   userId?: string;
   email?: string;
+  disabled: boolean;
 
   // Hierarchy information (Critical for Step 7)
   hierarchyLevel: number; // 1-11 levels (1=CEO, 11=Intern)
