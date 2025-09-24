@@ -2,16 +2,16 @@ import { DateTime } from 'luxon';
 
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import {
-  PermissionAuditAction,
+  PermissionAction,
   PermissionSource,
   CheckResult,
-} from 'src/mkt-core/mkt-rbac/enums/rbac.enums';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 
 type MktPermissionAuditDataSeed = {
   id: string;
   workspaceMemberId: string;
   userId?: string | null;
-  action: PermissionAuditAction;
+  action: PermissionAction;
   objectName: string;
   recordId?: string | null;
   permissionSource?: PermissionSource | null;
@@ -74,11 +74,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.SALES_READ_CUSTOMER_GRANTED,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
     userId: 'user-sales-001',
-    action: PermissionAuditAction.READ,
+    action: PermissionAction.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_CUSTOMER,
     recordId: 'customer-001',
     permissionSource: PermissionSource.ROLE,
-    checkResult: CheckResult.GRANTED,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/customers/customer-001',
@@ -99,11 +99,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.SUPPORT_READ_TICKET_GRANTED,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Support member
     userId: 'user-support-001',
-    action: PermissionAuditAction.READ,
+    action: PermissionAction.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_CUSTOMER,
     recordId: 'customer-002',
-    permissionSource: PermissionSource.DEPARTMENT,
-    checkResult: CheckResult.GRANTED,
+    permissionSource: PermissionSource.DEPARTMENT_POLICY,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/customers/customer-002/support-tickets',
@@ -124,11 +124,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.ADMIN_DELETE_USER_DENIED,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Admin member
     userId: 'user-admin-001',
-    action: PermissionAuditAction.DELETE,
+    action: PermissionAction.DELETE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.WORKSPACE_MEMBER,
     recordId: 'member-003',
     permissionSource: PermissionSource.ROLE,
-    checkResult: CheckResult.DENIED,
+    checkResult: CheckResult.FAIL,
     denialReason: 'Delete permission requires Super Admin role',
     requestContext: {
       endpoint: '/api/workspace-members/member-003',
@@ -149,11 +149,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.TEMP_PERMISSION_READ_KPI,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, // Tech member
     userId: 'user-tech-001',
-    action: PermissionAuditAction.READ,
+    action: PermissionAction.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_KPI,
     recordId: 'kpi-quarterly-001',
-    permissionSource: PermissionSource.TEMPORARY,
-    checkResult: CheckResult.GRANTED,
+    permissionSource: PermissionSource.TEMPORARY_ELEVATION,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/kpi/kpi-quarterly-001',
@@ -175,11 +175,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.DEPT_POLICY_EXPORT_DATA,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
     userId: 'user-sales-001',
-    action: PermissionAuditAction.EXPORT,
+    action: PermissionAction.EXPORT,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_ORDER,
     recordId: null, // Bulk export
-    permissionSource: PermissionSource.DATA_ACCESS_POLICY,
-    checkResult: CheckResult.GRANTED,
+    permissionSource: PermissionSource.PERMISSION_TEMPLATE,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/orders/export',
@@ -205,11 +205,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.UNAUTHORIZED_DELETE_ATTEMPT,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Support member
     userId: 'user-support-001',
-    action: PermissionAuditAction.DELETE,
+    action: PermissionAction.DELETE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_CONTRACT,
     recordId: 'contract-important-001',
     permissionSource: PermissionSource.ROLE,
-    checkResult: CheckResult.DENIED,
+    checkResult: CheckResult.FAIL,
     denialReason:
       'Delete action not permitted for Support role on Contract objects',
     requestContext: {
@@ -231,11 +231,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.ROLE_BASED_CREATE_ORDER,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
     userId: 'user-sales-001',
-    action: PermissionAuditAction.CREATE,
+    action: PermissionAction.CREATE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_ORDER,
     recordId: null, // Not yet created
     permissionSource: PermissionSource.ROLE,
-    checkResult: CheckResult.GRANTED,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/orders',
@@ -257,11 +257,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.HIGH_VOLUME_READ_ACCESS,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, // Tech member
     userId: 'user-tech-001',
-    action: PermissionAuditAction.READ,
+    action: PermissionAction.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_PRODUCT,
     recordId: null, // List view
     permissionSource: PermissionSource.ROLE,
-    checkResult: CheckResult.GRANTED,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/products',
@@ -289,11 +289,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.AUDIT_TRAIL_COMPLIANCE,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Admin member
     userId: 'user-admin-001',
-    action: PermissionAuditAction.READ,
+    action: PermissionAction.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_INVOICE,
     recordId: 'invoice-audit-001',
-    permissionSource: PermissionSource.SUPPORT_ASSIGNMENT,
-    checkResult: CheckResult.GRANTED,
+    permissionSource: PermissionSource.SPECIAL_OVERRIDE,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/invoices/invoice-audit-001/audit-trail',
@@ -315,11 +315,11 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.PERFORMANCE_SLOW_CHECK,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Support member
     userId: 'user-support-001',
-    action: PermissionAuditAction.UPDATE,
+    action: PermissionAction.UPDATE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_LICENSE,
     recordId: 'license-complex-001',
-    permissionSource: PermissionSource.DATA_ACCESS_POLICY,
-    checkResult: CheckResult.GRANTED,
+    permissionSource: PermissionSource.PERMISSION_TEMPLATE,
+    checkResult: CheckResult.PASS,
     denialReason: null,
     requestContext: {
       endpoint: '/api/licenses/license-complex-001',
@@ -337,70 +337,3 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     createdAt: DateTime.now().minus({ minutes: 2 }).toISO(),
   },
 ];
-
-// Export for specific use cases
-export const GRANTED_PERMISSION_AUDITS = MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-  (audit) => audit.checkResult === CheckResult.GRANTED,
-);
-
-export const DENIED_PERMISSION_AUDITS = MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-  (audit) => audit.checkResult === CheckResult.DENIED,
-);
-
-export const HIGH_PERFORMANCE_AUDITS = MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-  (audit) => audit.checkDurationMs && audit.checkDurationMs > 100,
-);
-
-// Export for easy lookup by permission source
-export const AUDITS_BY_PERMISSION_SOURCE = {
-  ROLE: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.permissionSource === PermissionSource.ROLE,
-  ),
-  TEMPORARY: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.permissionSource === PermissionSource.TEMPORARY,
-  ),
-  DEPARTMENT: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.permissionSource === PermissionSource.DEPARTMENT,
-  ),
-  DATA_ACCESS_POLICY: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.permissionSource === PermissionSource.DATA_ACCESS_POLICY,
-  ),
-  SUPPORT_ASSIGNMENT: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.permissionSource === PermissionSource.SUPPORT_ASSIGNMENT,
-  ),
-};
-
-// Export for easy lookup by action
-export const AUDITS_BY_ACTION = {
-  READ: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.action === PermissionAuditAction.READ,
-  ),
-  create: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.action === PermissionAuditAction.CREATE,
-  ),
-  update: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.action === PermissionAuditAction.UPDATE,
-  ),
-  delete: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.action === PermissionAuditAction.DELETE,
-  ),
-  export: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.action === PermissionAuditAction.EXPORT,
-  ),
-};
-
-// Export for easy lookup by workspace member
-export const AUDITS_BY_MEMBER = {
-  JONY: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.workspaceMemberId === WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
-  ),
-  CHARLES: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.workspaceMemberId === WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
-  ),
-  PHIL: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.workspaceMemberId === WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
-  ),
-  TIM: MKT_PERMISSION_AUDIT_DATA_SEEDS.filter(
-    (audit) => audit.workspaceMemberId === WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
-  ),
-};

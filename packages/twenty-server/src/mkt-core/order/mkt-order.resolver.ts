@@ -6,11 +6,9 @@ import {
   toMktOrderOutput,
   toMktOrdersOutput,
 } from 'src/mkt-core/order/dto/mkt-order.mapper';
-import {
-  ModuleAccessGuard,
-  RequireModuleAccess,
-} from 'src/mkt-core/mkt-rbac/guards/module-access.guard';
-import { ModuleName } from 'src/mkt-core/mkt-rbac';
+import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
+import { Permission } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators/permission.decorator';
+import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { MktOrderService } from './mkt-order.service';
 import {
@@ -24,13 +22,13 @@ import {
   UpdateOrderInput,
 } from './dto';
 
-@RequireModuleAccess(ModuleName.ORDER)
 @Resolver(() => MktOrderOutput)
+@UseGuards(UserAuthGuard, EnterpriseRbacGuard)
+@Permission({ action: PermissionAction.READ, objectName: 'Order' })
 export class MktOrderResolver {
   constructor(private readonly orderService: MktOrderService) {}
 
   @Mutation(() => MktOrderOutput)
-  @UseGuards(UserAuthGuard)
   async createMktOrderWithItems(
     @Args('input') input: CreateOrderWithItemsInput,
   ): Promise<MktOrderOutput> {
@@ -40,7 +38,6 @@ export class MktOrderResolver {
   }
 
   @Query(() => MktOrderOutput)
-  @UseGuards(UserAuthGuard, ModuleAccessGuard)
   async getMktOrderWithItems(
     @Args('input') input: GetOrderInput,
   ): Promise<MktOrderOutput> {
@@ -50,7 +47,6 @@ export class MktOrderResolver {
   }
 
   @Query(() => MktOrdersOutput)
-  @UseGuards(UserAuthGuard)
   async getMktOrdersWithPaging(
     @Args('input') input: GetOrdersInput,
   ): Promise<MktOrdersOutput> {
@@ -63,7 +59,6 @@ export class MktOrderResolver {
   }
 
   @Mutation(() => MktOrderOutput)
-  @UseGuards(UserAuthGuard)
   async updateMktOrderWithItems(
     @Args('input') input: UpdateOrderInput,
   ): Promise<MktOrderOutput> {
@@ -73,7 +68,6 @@ export class MktOrderResolver {
   }
 
   @Mutation(() => DeleteOrderOutput)
-  @UseGuards(UserAuthGuard)
   async softDeleteMktOrder(
     @Args('input') input: DeleteOrderInput,
   ): Promise<DeleteOrderOutput> {

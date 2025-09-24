@@ -15,12 +15,12 @@ import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MKT_PERMISSION_AUDIT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import {
-  PermissionAuditAction,
+  PermissionAction,
   PermissionSource,
   CheckResult,
-} from 'src/mkt-core/mkt-rbac/enums/rbac.enums';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAudit,
@@ -68,38 +68,50 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconPlayerPlay',
     options: [
       {
-        value: PermissionAuditAction.READ,
+        value: PermissionAction.READ,
         label: 'Read',
         position: 0,
         color: 'blue',
       },
       {
-        value: PermissionAuditAction.CREATE,
+        value: PermissionAction.CREATE,
         label: 'Create',
         position: 1,
         color: 'green',
       },
       {
-        value: PermissionAuditAction.UPDATE,
+        value: PermissionAction.UPDATE,
         label: 'Update',
         position: 2,
         color: 'yellow',
       },
       {
-        value: PermissionAuditAction.DELETE,
+        value: PermissionAction.DELETE,
         label: 'Delete',
         position: 3,
         color: 'red',
       },
       {
-        value: PermissionAuditAction.EXPORT,
+        value: PermissionAction.EXPORT,
         label: 'Export',
         position: 4,
         color: 'purple',
       },
+      {
+        value: PermissionAction.IMPORT,
+        label: 'Import',
+        position: 5,
+        color: 'blue',
+      },
+      {
+        value: PermissionAction.MANAGE,
+        label: 'Manage',
+        position: 6,
+        color: 'orange',
+      },
     ],
   })
-  action: PermissionAuditAction;
+  action: PermissionAction;
 
   @WorkspaceField({
     standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.objectName,
@@ -134,27 +146,39 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
         color: 'blue',
       },
       {
-        value: PermissionSource.TEMPORARY,
-        label: 'Temporary',
+        value: PermissionSource.USER,
+        label: 'User',
         position: 1,
-        color: 'orange',
-      },
-      {
-        value: PermissionSource.SUPPORT_ASSIGNMENT,
-        label: 'Support Assignment',
-        position: 2,
         color: 'green',
       },
       {
-        value: PermissionSource.DEPARTMENT,
-        label: 'Department',
-        position: 3,
+        value: PermissionSource.WORKSPACE,
+        label: 'Workspace',
+        position: 2,
         color: 'purple',
       },
       {
-        value: PermissionSource.DATA_ACCESS_POLICY,
-        label: 'Data Access Policy',
+        value: PermissionSource.SYSTEM,
+        label: 'System',
+        position: 3,
+        color: 'gray',
+      },
+      {
+        value: PermissionSource.PERMISSION_TEMPLATE,
+        label: 'Permission Template',
         position: 4,
+        color: 'yellow',
+      },
+      {
+        value: PermissionSource.HIERARCHY_INHERITANCE,
+        label: 'Hierarchy Inheritance',
+        position: 5,
+        color: 'orange',
+      },
+      {
+        value: PermissionSource.DEPARTMENT_POLICY,
+        label: 'Department Policy',
+        position: 6,
         color: 'red',
       },
     ],
@@ -170,22 +194,34 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconCheck',
     options: [
       {
-        value: CheckResult.GRANTED,
-        label: 'Granted',
+        value: CheckResult.PASS,
+        label: 'Pass',
         position: 0,
         color: 'green',
       },
       {
-        value: CheckResult.DENIED,
-        label: 'Denied',
+        value: CheckResult.FAIL,
+        label: 'Fail',
         position: 1,
         color: 'red',
       },
       {
-        value: CheckResult.PARTIAL,
-        label: 'Partial',
+        value: CheckResult.SKIP,
+        label: 'Skip',
         position: 2,
+        color: 'gray',
+      },
+      {
+        value: CheckResult.WARNING,
+        label: 'Warning',
+        position: 3,
         color: 'yellow',
+      },
+      {
+        value: CheckResult.ERROR,
+        label: 'Error',
+        position: 4,
+        color: 'red',
       },
     ],
   })

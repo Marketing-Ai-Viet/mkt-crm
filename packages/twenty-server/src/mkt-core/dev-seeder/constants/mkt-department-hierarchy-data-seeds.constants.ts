@@ -2,41 +2,153 @@ import { DateTime } from 'luxon';
 
 import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from './mkt-department-data-seeds.constants';
 
+/**
+ * Loại quan hệ phân cấp phòng ban trong Enterprise RBAC
+ */
 export enum MktDepartmentHierarchyRelationType {
+  /** Quan hệ cha-con trực tiếp với quyền kế thừa đầy đủ */
   PARENT_CHILD = 'PARENT_CHILD',
+  /** Quan hệ ma trận cho phép truy cập từ nhiều hướng */
   MATRIX = 'MATRIX',
+  /** Quan hệ chức năng với quyền hạn chế */
   FUNCTIONAL = 'FUNCTIONAL',
+  /** Quan hệ tạm thời có thời hạn */
   TEMPORARY = 'TEMPORARY',
+  /** Quan hệ giám sát với quyền xem và kiểm soát */
+  SUPERVISORY = 'SUPERVISORY',
+  /** Quan hệ tư vấn không có quyền thực thi */
+  ADVISORY = 'ADVISORY',
 }
 
+/**
+ * Cấp độ bảo mật cho hierarchy RBAC
+ */
+export enum SecurityLevel {
+  /** Công khai - không có hạn chế */
+  PUBLIC = 'PUBLIC',
+  /** Nội bộ - chỉ nhân viên công ty */
+  INTERNAL = 'INTERNAL',
+  /** Bảo mật - chỉ cấp quản lý */
+  CONFIDENTIAL = 'CONFIDENTIAL',
+  /** Tối mật - chỉ cấp điều hành */
+  TOP_SECRET = 'TOP_SECRET',
+}
+
+/**
+ * Cấu trúc dữ liệu seed cho phân cấp phòng ban với Enterprise RBAC
+ */
 type MktDepartmentHierarchyDataSeed = {
+  /** ID duy nhất của quan hệ phân cấp */
   id: string;
+  /** ID phòng ban cha */
   parentDepartmentId: string;
+  /** ID phòng ban con */
   childDepartmentId: string;
+  /** Cấp độ trong hierarchy (1=cao nhất) */
   hierarchyLevel: number;
+  /** Loại quan hệ phân cấp */
   relationshipType: MktDepartmentHierarchyRelationType;
+  /** Ngày bắt đầu có hiệu lực */
   validFrom?: Date | null;
+  /** Ngày kết thúc hiệu lực (null = vô thời hạn) */
   validTo?: Date | null;
+  /** Có kế thừa quyền từ cấp cha không */
   inheritsPermissions?: boolean;
+  /** Có thể escalate lên cấp cha không */
   canEscalateToParent?: boolean;
+  /** Cho phép truy cập cross-branch không */
   allowsCrossBranchAccess?: boolean;
+  /** Thứ tự hiển thị */
   displayOrder?: number;
+  /** Ghi chú về quan hệ */
   notes?: string;
+  /** Trạng thái hoạt động */
   isActive?: boolean;
+  /** Vị trí trong danh sách */
   position: number;
+  /** Nguồn tạo dữ liệu */
   createdBySource: string;
+  /** ID workspace member tạo */
   createdByWorkspaceMemberId: string | null;
+  /** Tên người tạo */
   createdByName: string;
-  // New RBAC fields
+
+  // ================= RBAC FIELDS =================
+  /** Đường dẫn hierarchy từ root đến node hiện tại */
   hierarchyPath?: string[];
+  /** Có kế thừa quyền từ tất cả cấp cha không */
   inheritsParentPermissions?: boolean;
+  /** Có thể xem dữ liệu team không */
   canViewTeamData?: boolean;
+  /** Có thể chỉnh sửa dữ liệu team không */
   canEditTeamData?: boolean;
+  /** Có thể export dữ liệu team không */
   canExportTeamData?: boolean;
+
+  // ================= ENHANCED RBAC FIELDS =================
+  /** Cấp độ bảo mật tối thiểu được phép */
+  minimumSecurityLevel?: SecurityLevel;
+  /** Có quyền phê duyệt không */
+  canApprove?: boolean;
+  /** Có quyền delegate không */
+  canDelegate?: boolean;
+  /** Có quyền audit không */
+  canAudit?: boolean;
+  /** Có quyền quản lý user không */
+  canManageUsers?: boolean;
+  /** Có quyền cấu hình hệ thống không */
+  canConfigureSystem?: boolean;
+  /** Có quyền xem báo cáo tài chính không */
+  canViewFinancialReports?: boolean;
+  /** Có quyền truy cập dữ liệu nhạy cảm không */
+  canAccessSensitiveData?: boolean;
+
+  // ================= BUSINESS RULE FIELDS =================
+  /** Có thể override quyết định cấp dưới không */
+  canOverrideSubordinates?: boolean;
+  /** Yêu cầu dual approval không */
+  requiresDualApproval?: boolean;
+  /** Giới hạn thời gian truy cập (giờ) */
+  accessTimeLimit?: number;
+  /** Yêu cầu MFA không */
+  requiresMFA?: boolean;
+  /** Có thể truy cập ngoài giờ không */
+  canAccessAfterHours?: boolean;
+  /** Có thể truy cập từ xa không */
+  canAccessRemotely?: boolean;
+
+  // ================= COMPLIANCE FIELDS =================
+  /** Cần tracking đầy đủ không */
+  requiresFullAuditTrail?: boolean;
+  /** Có thể xóa dữ liệu không */
+  canDeleteData?: boolean;
+  /** Có thể khôi phục dữ liệu không */
+  canRestoreData?: boolean;
+  /** Tuân thủ GDPR không */
+  gdprCompliant?: boolean;
+  /** Tuân thủ SOX không */
+  soxCompliant?: boolean;
+
+  // ================= METADATA FIELDS =================
+  /** Mức độ ưu tiên (1-10, 10=cao nhất) */
+  priorityLevel?: number;
+  /** Trọng số quyền (0-100) */
+  permissionWeight?: number;
+  /** Có thể cache không */
+  cacheable?: boolean;
+  /** TTL cache (giây) */
+  cacheTTL?: number;
+  /** Ghi chú bảo mật */
+  securityNotes?: string;
 };
 
+/**
+ * Danh sách các cột cần thiết cho bảng MktDepartmentHierarchy
+ * Được sử dụng để validation và migration
+ */
 export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS: (keyof MktDepartmentHierarchyDataSeed)[] =
   [
+    // Core fields
     'id',
     'parentDepartmentId',
     'childDepartmentId',
@@ -54,34 +166,95 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS: (keyof MktDepartmentHie
     'createdBySource',
     'createdByWorkspaceMemberId',
     'createdByName',
+
+    // Basic RBAC fields
     'hierarchyPath',
     'inheritsParentPermissions',
     'canViewTeamData',
     'canEditTeamData',
     'canExportTeamData',
+
+    // Enhanced RBAC fields
+    'minimumSecurityLevel',
+    'canApprove',
+    'canDelegate',
+    'canAudit',
+    'canManageUsers',
+    'canConfigureSystem',
+    'canViewFinancialReports',
+    'canAccessSensitiveData',
+
+    // Business rule fields
+    'canOverrideSubordinates',
+    'requiresDualApproval',
+    'accessTimeLimit',
+    'requiresMFA',
+    'canAccessAfterHours',
+    'canAccessRemotely',
+
+    // Compliance fields
+    'requiresFullAuditTrail',
+    'canDeleteData',
+    'canRestoreData',
+    'gdprCompliant',
+    'soxCompliant',
+
+    // Metadata fields
+    'priorityLevel',
+    'permissionWeight',
+    'cacheable',
+    'cacheTTL',
+    'securityNotes',
   ];
 
+/**
+ * ID constants cho các quan hệ phân cấp phòng ban
+ * Được tổ chức theo cấp độ hierarchy và loại quan hệ
+ */
 export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS = {
-  // Original relationships
-  SALES_SUPPORT: '7d8e9f0a-1b2c-3d4e-5f6a-7b8c9d0e1f2a',
-  SALES_ACCOUNTING: '8e9f0a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b',
-  TECH_SUPPORT: '9f0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c',
-  ADMIN_HR: 'a0b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d',
-  ADMIN_ACCOUNTING: 'b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e',
-  ADMIN_TECH: 'd3e4f5a6-7b8c-9d0e-1f2a-3b4c5d6e7f8a',
+  // ================= LEVEL 0: ROOT HIERARCHIES =================
+  // Admin là root department quản lý tất cả các phòng ban khác
+
+  /** Admin -> Sales: Quan hệ quản lý chiến lược */
   ADMIN_SALES: 'e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b',
+  /** Admin -> Tech: Quan hệ quản lý kỹ thuật */
+  ADMIN_TECH: 'd3e4f5a6-7b8c-9d0e-1f2a-3b4c5d6e7f8a',
+  /** Admin -> HR: Quan hệ quản lý nhân sự */
+  ADMIN_HR: 'a0b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d',
+  /** Admin -> Accounting: Quan hệ quản lý tài chính */
+  ADMIN_ACCOUNTING: 'b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e',
+  /** Admin -> Support: Quan hệ giám sát hỗ trợ */
+  ADMIN_SUPPORT: 'f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+
+  // ================= LEVEL 1: CROSS-FUNCTIONAL RELATIONSHIPS =================
+  // Quan hệ ma trận và chức năng giữa các phòng ban
+
+  /** Sales -> Support: Hỗ trợ khách hàng sau bán */
+  SALES_SUPPORT: '7d8e9f0a-1b2c-3d4e-5f6a-7b8c9d0e1f2a',
+  /** Sales -> Accounting: Theo dõi doanh thu */
+  SALES_ACCOUNTING: '8e9f0a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b',
+  /** Tech -> Support: Hỗ trợ kỹ thuật */
+  TECH_SUPPORT: '9f0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c',
+  /** Sales <-> Tech: Phối hợp phát triển sản phẩm */
   SALES_TECH_MATRIX: 'c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f',
+  /** HR <-> Tech: Quản lý IT nhân sự */
   HR_TECH_MATRIX: 'f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c',
+  /** HR -> Support: Đào tạo và chính sách */
   HR_SUPPORT_FUNCTIONAL: 'a6b7c8d9-0e1f-2a3b-4c5d-6e7f8a9b0c1d',
+  /** Accounting -> Support: Theo dõi chi phí */
   ACCOUNTING_SUPPORT_FUNCTIONAL: 'b7c8d9e0-1f2a-3b4c-5d6e-7f8a9b0c1d2e',
 
-  // ================= LEVEL 2 HIERARCHIES =================
-  // Sales -> Sales Domestic & Sales Export
+  // ================= LEVEL 2: DEPARTMENTAL SUBDIVISIONS =================
+  // Phân chia các phòng ban chính thành các bộ phận chuyên biệt
+
+  /** Sales -> Sales Domestic: Kinh doanh nội địa */
   SALES_TO_SALES_DOMESTIC: 'c8d9e0f1-2a3b-4c5d-6e7f-8a9b0c1d2e3f',
+  /** Sales -> Sales Export: Kinh doanh xuất khẩu */
   SALES_TO_SALES_EXPORT: 'd9e0f1a2-3b4c-5d6e-7f8a-9b0c1d2e3f4a',
 
-  // Tech -> Tech Frontend & Tech Backend
+  /** Tech -> Tech Frontend: Kỹ thuật Frontend */
   TECH_TO_TECH_FRONTEND: 'e0f1a2b3-4c5d-6e7f-8a9b-0c1d2e3f4a5b',
+  /** Tech -> Tech Backend: Kỹ thuật Backend */
   TECH_TO_TECH_BACKEND: 'f1a2b3c4-5d6e-7f8a-9b0c-1d2e3f4a5b6c',
 
   // ================= LEVEL 3 HIERARCHIES =================
@@ -1464,63 +1637,3 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed
       canExportTeamData: true,
     },
   ];
-
-// Export for specific use cases
-export const ACTIVE_DEPARTMENT_HIERARCHIES =
-  MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter((hierarchy) => hierarchy.isActive);
-
-export const PARENT_CHILD_HIERARCHIES =
-  MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (hierarchy) =>
-      hierarchy.relationshipType ===
-      MktDepartmentHierarchyRelationType.PARENT_CHILD,
-  );
-
-export const MATRIX_HIERARCHIES = MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-  (hierarchy) =>
-    hierarchy.relationshipType === MktDepartmentHierarchyRelationType.MATRIX,
-);
-
-export const FUNCTIONAL_HIERARCHIES =
-  MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (hierarchy) =>
-      hierarchy.relationshipType ===
-      MktDepartmentHierarchyRelationType.FUNCTIONAL,
-  );
-
-// Export for easy lookup by department
-export const HIERARCHIES_BY_PARENT_DEPARTMENT = {
-  SALES: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.parentDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-  ),
-  TECH: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.parentDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-  ),
-  ADMIN: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.parentDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
-  ),
-  HR: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.parentDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
-  ),
-  ACCOUNTING: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.parentDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
-  ),
-};
-
-export const HIERARCHIES_BY_CHILD_DEPARTMENT = {
-  SUPPORT: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.childDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
-  ),
-  ACCOUNTING: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.childDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
-  ),
-  HR: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.childDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
-  ),
-  TECH: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.childDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
-  ),
-  SALES: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS.filter(
-    (h) => h.childDepartmentId === MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-  ),
-};

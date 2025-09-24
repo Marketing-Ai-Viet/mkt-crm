@@ -8,6 +8,7 @@ import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.s
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
+import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
 
 import { MktOrderResolver } from './mkt-order.resolver';
 import { MktOrderService } from './mkt-order.service';
@@ -16,6 +17,7 @@ import { MktOrderCreateOnePostQueryHook } from './hooks/mkt-order-create-one.pos
 import { MktOrderCreateOnePreQueryHook } from './hooks/mkt-order-create-one.pre-query.hook';
 import { MktOrderItemUpdateOnePreQueryHook } from './hooks/mkt-order-item-update-one.pre-query.hook';
 import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-query.hook';
+
 @Module({
   imports: [
     MessageQueueModule,
@@ -23,6 +25,7 @@ import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-
     MktPaymentModule,
     MktLicenseModule,
     MktInvoiceModule,
+    MktRbacEnterpriseGradeModule.register(),
   ],
   providers: [
     MktOrderResolver,
