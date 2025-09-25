@@ -86,6 +86,7 @@ export class WorkspacePermissionsCacheService {
         await this.getUserWorkspaceRoleMapFromDatabase({
           workspaceId,
         });
+
       await this.workspacePermissionsCacheStorageService.setUserWorkspaceRoleMap(
         workspaceId,
         freshUserWorkspaceRoleMap,
