@@ -5,15 +5,15 @@ import { APP_LOCALES } from 'twenty-shared/translations';
 import { Repository } from 'typeorm';
 
 import { hashPassword } from 'src/engine/core-modules/auth/auth.util';
+import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
-import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
-import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -27,6 +27,7 @@ export class UserManagementService {
     private readonly userWorkspaceService: UserWorkspaceService,
     private readonly userRoleService: UserRoleService,
   ) {}
+
   // Tạo mới user trong core + tạo userWorkspace + tạo workspaceMember
   async createPersonUser(
     workspaceId: string,
@@ -35,6 +36,7 @@ export class UserManagementService {
     // 1) Check trùng email
     const email = input.email.toLowerCase();
     const existing = await this.userRepository.findOne({ where: { email } });
+
     if (existing)
       throw new ConflictError('Tài khoản đã tồn tại với email này.');
 
@@ -92,22 +94,13 @@ export class UserManagementService {
     // 5) (Tùy chọn) Gán role nếu có
     const roleIdToAssign =
       input.roleId ?? (input.canAdmin ? 'ADMIN_ROLE_ID' : undefined);
-    console.log(
-      '🚀 ~ UserManagementService ~ createPersonUser ~ roleIdToAssign:',
-      roleIdToAssign,
-    );
+
     if (roleIdToAssign) {
-      try {
-        await this.userRoleService.assignRoleToUserWorkspace({
-          userWorkspaceId: userWorkspace.id,
-          workspaceId,
-          roleId: roleIdToAssign,
-        });
-      } catch (e) {
-        // không rollback, chỉ log để biết gán role thất bại
-        console.warn(`Assign role failed`, e);
-        throw e;
-      }
+      await this.userRoleService.assignRoleToUserWorkspace({
+        userWorkspaceId: userWorkspace.id,
+        workspaceId,
+        roleId: roleIdToAssign,
+      });
     }
 
     // 6) Trả kết quả
