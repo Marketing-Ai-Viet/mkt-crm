@@ -57,10 +57,6 @@ export class CreateUserInput {
   @IsString()
   phone?: string;
 
-  @Field(() => Boolean, { defaultValue: false })
-  @IsBoolean()
-  isEmailVerified = false;
-
   @Field(() => Boolean, { defaultValue: true })
   @IsBoolean()
   canImpersonate = true;
