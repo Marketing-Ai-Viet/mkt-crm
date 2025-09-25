@@ -58,6 +58,7 @@ export class UserRoleService {
       workspaceId,
       id: Not(newRoleTarget.id),
     });
+
     await this.workspacePermissionsCacheService.recomputeUserWorkspaceRoleMapCache(
       {
         workspaceId,
