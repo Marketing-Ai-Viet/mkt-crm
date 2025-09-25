@@ -38,7 +38,7 @@ export class UserOutput {
 
   @Field(() => String, { defaultValue: 'en' })
   @IsString()
-  language = 'en';
+  language: String;
 
   @Field(() => String, { nullable: true, defaultValue: null })
   @IsOptional()
