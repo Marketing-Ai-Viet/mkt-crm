@@ -7,4 +7,5 @@ export type PaymentMethodType =
   | 'CASH'
   | 'CHECK'
   | 'CRYPTOCURRENCY'
-  | 'OTHER';
+  | 'OTHER'
+  | 'QR_CODE';

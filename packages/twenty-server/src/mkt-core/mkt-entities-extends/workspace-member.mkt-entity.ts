@@ -14,7 +14,6 @@ import { WORKSPACE_MEMBER_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
-import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
 import { MktSInvoiceItemWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-item.workspace-entity';
@@ -37,11 +36,12 @@ import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-orde
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
+import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
-import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity';
+import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
@@ -92,6 +92,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktProducts: Relation<MktProductWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktCategories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Categories`,
+    description: msg`Account owner for categories`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktCategoryWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktCategories: Relation<MktCategoryWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktAttributes,
@@ -154,19 +166,16 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktValues: Relation<MktValueWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId:
-      WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktVariantAttributes,
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktVariantValues,
     type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Variant Attributes`,
-    description: msg`Account owner for variant attributes`,
+    label: msg`Account Owner For Variant Values`,
+    description: msg`Account owner for variant values`,
     icon: 'IconListDetails',
-    inverseSideTarget: () => MktVariantAttributeWorkspaceEntity,
+    inverseSideTarget: () => MktVariantValueWorkspaceEntity,
     inverseSideFieldKey: 'accountOwner',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  accountOwnerForMktVariantAttributes: Relation<
-    MktVariantAttributeWorkspaceEntity[]
-  >;
+  accountOwnerForMktVariantValues: Relation<MktVariantValueWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktLicenses,
@@ -215,18 +224,6 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktOrderItems: Relation<MktOrderItemWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktInvoices,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Invoices`,
-    description: msg`Account owner for invoices`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktInvoiceWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktInvoices: Relation<MktInvoiceWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktSInvoiceAuths,

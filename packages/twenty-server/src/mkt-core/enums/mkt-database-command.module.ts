@@ -20,17 +20,18 @@ import { SeedResellerTierHistoryModuleCommand } from 'src/mkt-core/dev-seeder/co
 import { SeedTagModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-tag-data-seed-dev-workspace.command';
 import { SeedTemplateModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-data-seed-dev-workspace.command';
 import { SeedMktTemporaryPermissionCommand } from 'src/mkt-core/dev-seeder/commands/mkt-temporary-permission-data-seed-dev-workspace.command';
-import { SeedInvoiceModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-invoice-data-seed-dev-workspace.command';
 import { SeedSInvoiceAuthModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-auth-data-seed-dev-workspace.command';
 import { SeedSInvoiceModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-data-seed-dev-workspace.command';
 import { SeedSInvoiceItemModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-item-data-seed-dev-workspace.command';
 import { SeedSInvoiceMetadataModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-metadata-data-seed-dev-workspace.command';
 import { SeedSInvoicePaymentModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-payment-data-seed-dev-workspace.command';
 import { SeedSInvoiceTaxBreakdownModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seed-dev-workspace.command';
+import { SeedCategoryModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-category-data-seed-dev-workspace.command';
 import { SeedComboModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-data-seed-dev-workspace.command';
 import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-data-seed-dev-workspace.command';
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
 import { SeedVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seed-dev-workspace.command';
+import { SeedVariantValueModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-data-seed-dev-workspace.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
@@ -39,10 +40,12 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedTagModuleCommand,
   SeedCustomerTagModuleCommand,
   // product commands
+  SeedCategoryModuleCommand,
   SeedProductModuleCommand,
   SeedVariantModuleCommand,
   SeedComboModuleCommand,
   SeedComboVariantModuleCommand,
+  SeedVariantValueModuleCommand,
   // order commands
   SeedOrderModuleCommand,
   SeedOrderItemModuleCommand,
@@ -54,7 +57,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // license commands
   SeedLicenseModuleCommand,
   // invoice commands
-  SeedInvoiceModuleCommand,
   SeedSInvoiceAuthModuleCommand,
   SeedSInvoiceModuleCommand,
   SeedSInvoicePaymentModuleCommand,

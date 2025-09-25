@@ -79,32 +79,6 @@ export class LicenseGenerationJob {
         return;
       }
 
-      // 2.1 if status PAID and trialLicense = false → 4.3.2 Create order normally
-      if (order?.status === ORDER_STATUS.PAID && !order?.trialLicense) {
-        // validate for normal order
-        const isValid = await this.validateForNormalOrder(
-          order,
-          licenseRepository,
-          orderRepository,
-        );
-
-        if (!isValid) {
-          return;
-        }
-        const createdLicenses = await this.createLicensesForOrderItems(
-          order,
-          licenseRepository,
-        );
-
-        await this.updateOrderLicenseStatus(
-          order,
-          orderRepository,
-          createdLicenses as MktLicenseWorkspaceEntity[],
-          MKT_ORDER_LICENSE_STATUS.SUCCESS,
-        );
-
-        return;
-      }
       // 2.2 if status TRAIL → 4.3.2 Create order trial
       if (order?.status === ORDER_STATUS.TRIAL) {
         const isValid = await this.validateForNormalOrder(
@@ -126,29 +100,6 @@ export class LicenseGenerationJob {
           orderRepository,
           createdLicenses as MktLicenseWorkspaceEntity[],
           MKT_ORDER_LICENSE_STATUS.TRIAL,
-        );
-
-        return;
-      }
-
-      // 2.3 if status PAID and trialLicense = true → 4.3.2 Trial to paid conversion
-      if (order?.status === ORDER_STATUS.PAID && order?.trialLicense) {
-        this.logger.log(`Order ${data.orderId} is PAID, converting to PAID`);
-        const currentLicenses = await licenseRepository.find({
-          where: { mktOrderId: order.id },
-        });
-
-        await this.updateLicenseForTrialToPaidConversion(
-          order,
-          licenseRepository,
-          currentLicenses as MktLicenseWorkspaceEntity[],
-        );
-        await this.updateOrderLicenseStatus(
-          order,
-          orderRepository,
-          currentLicenses as MktLicenseWorkspaceEntity[],
-          MKT_ORDER_LICENSE_STATUS.SUCCESS,
-          true, // change trialLicense to false after trial to paid conversion
         );
 
         return;
@@ -219,7 +170,7 @@ export class LicenseGenerationJob {
   ): Promise<MktLicenseWorkspaceEntity[]> {
     this.logger.log(`Creating licenses for order items ${order.id}`);
 
-    const licensePromises = order.orderItems.map(async (orderItem, index) => {
+    const licensePromises = order.orderItems.map(async (orderItem, _index) => {
       try {
         // generate license name based on order item
         const productName =

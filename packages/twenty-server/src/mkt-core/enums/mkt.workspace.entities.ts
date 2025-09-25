@@ -31,11 +31,12 @@ import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-templ
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
+import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
-import { MktVariantAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-attribute.workspace-entity';
+import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 export const MKT_WORKSPACE_ENTITIES = [
@@ -44,11 +45,12 @@ export const MKT_WORKSPACE_ENTITIES = [
   MktTagWorkspaceEntity,
   MktCustomerTagWorkspaceEntity,
   // Product
+  MktCategoryWorkspaceEntity,
   MktProductWorkspaceEntity,
   MktAttributeWorkspaceEntity,
   MktVariantWorkspaceEntity,
   MktValueWorkspaceEntity,
-  MktVariantAttributeWorkspaceEntity,
+  MktVariantValueWorkspaceEntity,
   // Combo
   MktComboWorkspaceEntity,
   MktComboVariantWorkspaceEntity,

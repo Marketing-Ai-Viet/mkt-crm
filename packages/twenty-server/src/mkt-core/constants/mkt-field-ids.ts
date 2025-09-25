@@ -113,6 +113,22 @@ export const MKT_CUSTOMER_TAG_FIELD_IDS = {
   searchVector: 'e7145f31-c1d1-421d-be08-1b183ef7ae8a',
 };
 
+export const MKT_CATEGORY_FIELD_IDS = {
+  name: '43fc65ae-5ea0-4fcf-9512-2801bd25a8fa',
+  description: 'c16ba585-149b-4fdd-9a1d-bb705823b5fd',
+
+  // relations
+  mktProducts: 'eab00b3d-b7f1-4c46-842d-75826f58bc39',
+
+  // common relations or fields
+  position: 'ec623519-d351-4d7a-80de-04eab81d150f',
+  createdBy: '7cb412f4-86b3-47c9-b278-cf2c94765fb7',
+  accountOwner: '4c5ac565-54c2-4397-a31a-ed1775825f8a',
+
+  timelineActivities: '53a9b649-a55e-4607-90e9-db99f949c777',
+  searchVector: '4e870429-3341-422d-be6f-0e2f62aafe49',
+};
+
 export const MKT_PRODUCT_FIELD_IDS = {
   name: 'f96cff34-9749-4e6e-bdf1-87feb2d63c5b',
   code: '18f99112-4829-4c38-a455-d7be4ad976a2',
@@ -122,6 +138,10 @@ export const MKT_PRODUCT_FIELD_IDS = {
   inStock: '1acd77e3-6ee5-4570-984b-c884777d34b4',
   price: '42337fcf-349b-4c77-885e-4dd80afb9e27',
   isActive: 'a5cc9c09-5825-4311-85d8-804227ff0cf6',
+
+  // relations
+  mktCategory: '2f0c0b54-ced9-4a40-8ee9-645095991864',
+
   position: '6b515d7c-778e-4806-ba73-f8c3fec57e7d',
   createdBy: '8ad53940-cd6a-45cf-a4bd-46611f04b20b',
   // TODO: check if this can be deleted
@@ -149,10 +169,14 @@ export const MKT_ATTRIBUTE_FIELD_IDS = {
 
 export const MKT_VALUE_FIELD_IDS = {
   name: '3b51b01f-a14b-4b2a-94d3-14c8de478176',
+
+  //relations
+  mktAttribute: 'c2d3e4f5-3f89-4b23-8bcd-2345678901fb',
+  mktVariantValues: 'bdbfa5ff-cfb6-4363-94f2-beb7ce896f47',
+
   position: '997a0837-1c0d-41f2-bcee-28287638dd48',
   createdBy: 'f5a6b7c8-9f12-4e56-8acd-5678901234fe',
   // TODO: check if this can be deleted
-  mktAttribute: 'c2d3e4f5-3f89-4b23-8bcd-2345678901fb',
   accountOwner: '140ac958-4c2e-4ccf-96b9-e05f3fb98055',
   timelineActivities: '0c31bdd6-3c1e-4e37-9e5f-df7fcff44c3a',
   searchVector: 'fa2199eb-2793-425c-9075-2b1b3bfae5dd',
@@ -170,9 +194,9 @@ export const MKT_VARIANT_FIELD_IDS = {
   // relations
   mktLicenses: '403d1410-7c35-4044-988e-2a7fbe8845ab',
   mktProduct: '7cfa6d7b-db26-4fb5-9beb-3ec348f9fed7',
-  mktVariantAttribute: 'b57069ab-7e21-4823-a61f-8de0726bfbe1',
   mktOrderItems: 'f0e7b2d7-aa06-4173-bb81-0b0060da95ae',
   mktComboVariants: 'b594a150-07df-4c1e-aae1-86c25e195a63',
+  mktVariantValues: '4009954b-11fd-4b5e-9e38-3ba1aac1cbbc',
   // common relations or fields
   position: '03ed978a-61d9-46a6-8d28-bf0964437849',
   createdBy: 'e87d1e5d-e0f5-4ed0-ab23-3ebbb0a1beae',
@@ -191,6 +215,19 @@ export const MKT_VARIANT_ATTRIBUTE_FIELD_IDS = {
   accountOwner: '94f09209-0fc6-41c8-aed7-29e882f4551b',
   timelineActivities: '9a2679ed-def4-4b4e-818c-28e5ae723bf0',
   searchVector: '4d4928e3-c0f1-4bc7-a777-a051f54f0e3a',
+};
+
+export const MKT_VARIANT_VALUE_FIELD_IDS = {
+  name: '635919da-06bc-489c-8272-015bba8fdbf1',
+  dayDuration: '33975cac-c88a-4076-a10a-d436a81d3921', // Duration in days
+  position: 'a96583f2-6ffa-4746-9fb3-f7f0259fbdf1',
+  createdBy: 'b94b6dd2-f278-4841-ba92-54ae51a60b4c',
+  // TODO: check if this can be deleted
+  mktVariant: '206604ce-e527-4395-9258-eb5ea2ab7898',
+  mktValue: 'a9740c57-b7e3-4c3a-b84b-50a2e3602de4',
+  accountOwner: '871d46f2-4384-41ce-823e-fb7a42d66800',
+  timelineActivities: 'e2879b46-1c5d-4b41-9602-9e650dfad13c',
+  searchVector: '2872682f-e8af-48cc-94cf-8f876a5d5956',
 };
 
 export const MKT_COMBO_FIELD_IDS = {
@@ -240,6 +277,7 @@ export const MKT_ORDER_FIELD_IDS = {
   sInvoiceStatus: '3986dded-a1f3-4f53-9c2a-8e67d1af8cd3',
   licenseStatus: 'd3a61b4a-87d1-41de-ba40-81d0a27bcd10',
   trialLicense: '3449bef1-e719-42d9-8cf6-df3f5d47983c',
+  metadata: '82d2986b-ab3c-4563-9d24-e04d42caea0b',
   // relations
   mktContracts: '66277a67-41c6-4709-820f-dda8df091ae9', // ONE_TO_MANY relation with contracts
   mktLicense: '837f7353-df5d-449a-961c-fef566d663b9',
@@ -249,6 +287,7 @@ export const MKT_ORDER_FIELD_IDS = {
   mktComboVariants: '28a25b7e-3b7e-4746-ac46-7ac7a2a1d67b',
   mktSInvoice: 'c53bbfe4-0c46-42ac-99a7-f24df8ef56a7',
   mktCustomer: '631879f5-0017-4df2-aa29-124dd38197bf',
+  mktPayments: '06240e4d-a9ab-4dcb-b3e9-0bbdf2085242',
   //common relations or fields
   position: '9d970deb-f1e5-4cc4-8b36-9ad83ca03ee5',
   createdBy: '6d52adfa-9230-4df0-84fc-d51c646e8538',
@@ -582,6 +621,11 @@ export const MKT_PAYMENT_FIELD_IDS = {
   description: '8e9a8b80-6d5f-4e36-9c1f-8b7f6e5d4c40',
   orderId: '9e9a8b81-6d5f-4e37-9c20-8b7f6e5d4c41',
   invoiceId: 'ae9a8b82-6d5f-4e38-9c21-8b7f6e5d4c42',
+  qrCodeUrl: '3b1e43e9-31e1-4e35-a55c-e6aa1e5b7c99',
+  //relations
+  mktOrder: '4b889a4f-bfea-4938-a4e2-66271ebeca12',
+
+  //common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',
   createdBy: 'ce9a8b84-6d5f-4e3a-9c23-8b7f6e5d4c44',
   mktPaymentMethod: 'de9a8b85-6d5f-4e3b-9c24-8b7f6e5d4c45',
@@ -610,11 +654,13 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktTag: '3bba154a-8267-4c6e-8ef8-f4170938d9f0',
   mktCustomerTag: 'b4521675-814d-4f9e-bd49-e77932eca67b',
   //products
+  mktCategory: 'c7f61c4b-2063-44d0-bada-d9b4a165b02e',
   mktProduct: 'fb70cd51-fca9-414c-ac2e-41c00fcb1d45',
   mktAttribute: '18a51a5f-122f-4536-a4c5-cc4672664f93',
   mktVariant: 'b6ecb5e1-14c8-4aaa-b715-e26ed4e81e62',
   mktValue: '9022a8c1-5948-473e-a361-1ddfb017a4f2',
   mktVariantAttribute: 'f656fa33-96e7-42a0-8f4f-f35dfcb0acae',
+  mktVariantValue: 'be8a4d17-0ce9-4181-99c0-c63b54d5f461',
   //combos
   mktCombo: '94442c1a-1e57-4038-9e5c-dac724d92a74',
   mktComboVariant: 'dffcadf4-8f5e-4530-8794-61230d68324a',
@@ -671,11 +717,13 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktTags: '0a057a17-d56b-4d9d-8c2d-a00296205f71',
   accountOwnerForMktCustomerTags: '316eaa82-e210-4663-ad62-ef058862ce52',
   //products
+  accountOwnerForMktCategories: '90cf2133-0d79-4f4e-9ced-efca439478d1',
   accountOwnerForMktProducts: 'fa7e06e6-3d12-4185-928a-db45e0257b95',
   accountOwnerForMktAttributes: '84954c00-5b31-46ab-9b6c-e95b81ae8d94',
   accountOwnerForMktVariants: '27b1e5ab-980b-4c3c-8168-c8ed77e86363',
   accountOwnerForMktValues: '7bdf395c-9f67-4fc9-9149-e58ba5c135de',
   accountOwnerForMktVariantAttributes: '6cd393a4-db2a-4cc6-b444-8e9ca99f93ec',
+  accountOwnerForMktVariantValues: 'aa82bb10-0cb7-4d1d-a8f0-c46b84fbd490',
   //combos
   accountOwnerForMktCombos: '90e6970d-8c23-4562-8c25-cece175b20e8',
   accountOwnerForMktComboVariants: '35abe762-d4e7-4c16-b4c6-e22c990dc0b5',

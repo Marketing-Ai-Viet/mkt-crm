@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktLicenseApiService } from 'src/mkt-core/license/integration/mkt-license-api.service';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
+import { MKT_ORDER_LICENSE_STATUS } from 'src/mkt-core/order/constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 type licenseType = {
@@ -22,6 +25,7 @@ export class MktLicenseService {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly mktLicenseApiService: MktLicenseApiService,
   ) {}
 
   async createLicenseForOrder(orderId: string): Promise<licenseType> {
@@ -69,5 +73,116 @@ export class MktLicenseService {
     const timestamp: number = Date.now();
 
     return `LIC-${orderSuffix}-${timestamp}`;
+  }
+
+  async createLicensesForOrderItems(
+    order: MktOrderWorkspaceEntity,
+    _workspaceId: string,
+  ): Promise<MktLicenseWorkspaceEntity[]> {
+    this.logger.log(`Creating licenses for order items ${order.id}`);
+
+    const licenseRepository = await this.getLicenseRepository();
+
+    const licensePromises = order.orderItems.flatMap(
+      async (orderItem, _index) => {
+        try {
+          // generate license name based on order item
+          const productName =
+            orderItem.snapshotProductName ||
+            orderItem.mktProduct?.name ||
+            'Sản phẩm';
+          const variantName = orderItem.mktVariant?.name;
+          const licenseName = variantName
+            ? `License cho ${productName} - ${variantName}`
+            : `License cho ${productName}`;
+
+          const quantity = orderItem.quantity || 1;
+          const licensePromises = [];
+
+          // Create licenses based on quantity
+          for (let i = 1; i <= quantity; i++) {
+            // call API to get license for this specific order item
+            const licenseApiResponse =
+              await this.mktLicenseApiService.fetchLicenseFromApi(
+                order.id,
+                licenseName,
+                orderItem.id,
+              );
+            const newLicense = licenseRepository.create({
+              name: licenseName,
+              licenseKey: licenseApiResponse.licenseKey,
+              status: MKT_LICENSE_STATUS.INACTIVE,
+              activatedAt: new Date().toISOString(),
+              expiresAt: licenseApiResponse.expiresAt,
+              licenseUuid: licenseApiResponse.licenseUuid as string,
+              mktOrderId: order.id,
+              mktVariantId: orderItem.mktVariantId,
+              notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
+            });
+            // save license
+            const savedLicense = await licenseRepository.save(newLicense);
+
+            licensePromises.push(savedLicense);
+          }
+
+          return licensePromises;
+        } catch (error) {
+          this.logger.error(
+            `Failed to create license for order item ${orderItem.id}:`,
+            error,
+          );
+          throw error;
+        }
+      },
+    );
+
+    const nestedLicenses = await Promise.all(licensePromises);
+    const createdLicenses =
+      nestedLicenses.flat() as MktLicenseWorkspaceEntity[];
+
+    this.logger.log(
+      `Successfully created ${createdLicenses.length} licenses for order: ${order.id}`,
+    );
+
+    return createdLicenses;
+  }
+
+  async updateReferenceLicenseOrder(
+    trialOrderId: string,
+    createdOrderId: string,
+  ) {
+    const licenseRepository = await this.getLicenseRepository();
+    const trialLicenses = await licenseRepository.find({
+      where: { mktOrderId: trialOrderId },
+    });
+
+    if (trialLicenses.length <= 0)
+      throw new Error('No licenses found for the trial order');
+
+    for (const license of trialLicenses) {
+      await licenseRepository.update(license.id, {
+        mktOrderId: createdOrderId,
+        status: MKT_LICENSE_STATUS.ACTIVE, // assuming we want to activate the license when transferring
+        notes: `Cập nhật tham chiếu đơn hàng từ đơn hàng trial ${trialOrderId} sang đơn hàng mới ${createdOrderId}`,
+      });
+    }
+
+    this.logger.log(
+      `Updated ${trialLicenses.length} licenses to reference the new order: ${createdOrderId}`,
+    );
+  }
+
+  async getLicenseRepository() {
+    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!workspaceId) {
+      throw new Error('Workspace ID is not available in the current context.');
+    }
+
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseWorkspaceEntity>(
+      workspaceId,
+      'mktLicense',
+      { shouldBypassPermissionChecks: true },
+    );
   }
 }
