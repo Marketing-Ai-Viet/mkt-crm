@@ -13,6 +13,7 @@ import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 import { TimelineActivityMiddleware } from 'src/mkt-core/timeline/timeline-activity.middleware';
+import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TimelineActivityMiddleware } from 'src/mkt-core/timeline/timeline-activ
     MktLicenseModule,
     MktPaymentModule,
     MktDepartmentModule,
+    UserManagementModule,
     MktOrganizationLevelModule,
     MktProductModule,
   ],
