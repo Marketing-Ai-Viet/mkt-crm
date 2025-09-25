@@ -52,7 +52,7 @@ export const SettingsPermissionsGuard = (
       if (hasPermission === true) {
         return true;
       }
-      console.log('HIT settings-permissions.guard PERMISSION_DENIED');
+
       throw new PermissionsException(
         PermissionsExceptionMessage.PERMISSION_DENIED,
         PermissionsExceptionCode.PERMISSION_DENIED,

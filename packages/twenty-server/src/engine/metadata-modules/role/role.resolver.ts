@@ -86,6 +86,7 @@ export class RoleResolver {
         PermissionsExceptionCode.CANNOT_UPDATE_SELF_ROLE,
       );
     }
+
     const workspaceMember =
       await this.userWorkspaceService.getWorkspaceMemberOrThrow({
         workspaceMemberId,

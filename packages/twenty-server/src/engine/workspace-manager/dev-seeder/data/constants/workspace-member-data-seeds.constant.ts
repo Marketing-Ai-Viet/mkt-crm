@@ -1,7 +1,7 @@
 import { USER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/core/utils/seed-users.util';
 import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-department-data-seeds.constants';
-import { MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-employment-status-data-seeds.constants';
 import { MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-organization-level-data-seeds.constants';
+import { MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-employment-status-data-seeds.constants';
 
 type WorkspaceMemberDataSeed = {
   id: string;
