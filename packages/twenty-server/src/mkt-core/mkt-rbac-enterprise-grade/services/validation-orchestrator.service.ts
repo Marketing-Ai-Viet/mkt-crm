@@ -29,8 +29,10 @@ import {
 import { Step1PreValidationService } from './step1-pre-validation.service';
 import { Step2UserContextResolutionService } from './step2-user-context-resolution.service';
 import { Step3ResourceIdentificationService } from './step3-resource-identification.service';
+import { Step4PermissionTemplateCheckService } from './step4-permission-template-check.service';
+import { Step5ActionPermissionValidationService } from './step5-action-permission-validation.service';
 import { PermissionTemplateService } from './permission-template.service';
-import { RbacCacheService } from './rbac-cache.service';
+// import { RbacCacheService } from './rbac-cache.service';
 import { AuditLoggingService } from './audit-logging.service';
 
 /**
@@ -88,8 +90,10 @@ export class ValidationOrchestratorService
     private readonly preValidationService: Step1PreValidationService,
     private readonly userContextService: Step2UserContextResolutionService,
     private readonly resourceIdentificationService: Step3ResourceIdentificationService,
+    private readonly permissionTemplateCheckService: Step4PermissionTemplateCheckService,
+    private readonly actionPermissionValidationService: Step5ActionPermissionValidationService,
     private readonly permissionTemplateService: PermissionTemplateService,
-    private readonly cacheService: RbacCacheService,
+    // private readonly cacheService: RbacCacheService,
     private readonly auditService: AuditLoggingService,
   ) {
     this.initializeSteps();
@@ -584,7 +588,8 @@ export class ValidationOrchestratorService
     this.registerStep(this.preValidationService);
     this.registerStep(this.userContextService);
     this.registerStep(this.resourceIdentificationService);
-    this.registerStep(this.permissionTemplateService);
+    this.registerStep(this.permissionTemplateCheckService);
+    this.registerStep(this.actionPermissionValidationService);
     this.registerStep(this.auditService);
 
     this.logger.log(`Initialized ${this.steps.size} validation steps`);
@@ -622,9 +627,10 @@ export class ValidationOrchestratorService
     context: EnhancedPermissionContext,
   ): Promise<EnhancedPermissionResult | null> {
     try {
-      const cacheKey = this.cacheService.generatePermissionKey(context);
-
-      return await this.cacheService.getPermissionResult(cacheKey);
+      // const cacheKey = this.cacheService.generatePermissionKey(context);
+      //
+      // return await this.cacheService.getPermissionResult(cacheKey);
+      return null;
     } catch (error) {
       this.logger.debug(`Cache check failed: ${error.message}`);
 
@@ -637,9 +643,9 @@ export class ValidationOrchestratorService
     result: EnhancedPermissionResult,
   ): Promise<void> {
     try {
-      const cacheKey = this.cacheService.generatePermissionKey(context);
-
-      await this.cacheService.cachePermissionResult(cacheKey, result);
+      // const cacheKey = this.cacheService.generatePermissionKey(context);
+      //
+      // await this.cacheService.cachePermissionResult(cacheKey, result);
     } catch (error) {
       this.logger.debug(`Failed to cache result: ${error.message}`);
     }

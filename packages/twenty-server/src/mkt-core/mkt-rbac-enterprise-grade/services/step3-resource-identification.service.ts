@@ -5,10 +5,8 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 
 import { DateTime } from 'luxon';
-import { Repository } from 'typeorm';
 
 import {
   PermissionValidationStep,
@@ -27,8 +25,6 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 import {
   ResourceMetadata,
-  SensitivityAnalysisResult,
-  CrossReferenceAnalysis,
   OwnershipInheritanceChain,
   ResourceClassificationConfig,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/resource-identification.types';
@@ -37,8 +33,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
-import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
-import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
 
 /**
  * Resource Identification Service - Step 3 in the 15-step validation process
@@ -128,9 +123,17 @@ export class Step3ResourceIdentificationService
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    @InjectRepository(ObjectMetadataEntity, 'core')
-    private readonly objectMetadataRepository: Repository<ObjectMetadataEntity>,
   ) {}
+
+  private async getMktTemporaryPermissionRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<MktTemporaryPermissionWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktTemporaryPermissionWorkspaceEntity>(
+      workspaceId,
+      'mktTemporaryPermission',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
 
   /**
    * Determine if this step should be executed based on context
@@ -197,34 +200,17 @@ export class Step3ResourceIdentificationService
         context.userContext.workspaceId,
       );
 
-      // 2. Perform sensitivity analysis
-      const sensitivityAnalysis = await this.performSensitivityAnalysis(
-        objectName,
-        recordId,
-        context.userContext.workspaceId,
-      );
-
-      // 3. Resolve ownership and inheritance chain
+      // 2. Resolve ownership and inheritance chain
       const ownershipChain = await this.buildOwnershipInheritanceChain(
         objectName,
         recordId,
         context.userContext.workspaceId,
       );
 
-      // 4. Analyze cross-references and dependencies
-      const crossReferences = await this.analyzeCrossReferences(
-        objectName,
-        recordId,
-        context.userContext.workspaceId,
-      );
-
-      // 5. Build enhanced resource context
+      // 3. Build enhanced resource context
       const enhancedResourceContext = await this.buildEnhancedResourceContext(
         resourceMetadata,
-        sensitivityAnalysis,
         ownershipChain,
-        crossReferences,
-        context,
       );
 
       // Update context with enhanced resource information
@@ -244,7 +230,6 @@ export class Step3ResourceIdentificationService
             enhancedResourceContext.confidentialityLevel || 'INTERNAL',
           ownerResolved: !!ownershipChain.ownerId,
           departmentResolved: !!ownershipChain.userDepartment,
-          dependenciesAnalyzed: crossReferences.referencingObjects.length > 0,
         },
         modifyContext: {
           resourceContext: enhancedResourceContext,
@@ -272,19 +257,15 @@ export class Step3ResourceIdentificationService
     workspaceId: string,
   ): Promise<ResourceMetadata> {
     try {
-      // Get object metadata using direct repository access
-      const objectMetadata = await this.objectMetadataRepository.findOne({
-        where: {
-          nameSingular: objectName,
-          workspaceId: workspaceId,
-          isActive: true,
-        },
-        relations: ['fields'],
-      });
+      // Use temporary permission repository for basic metadata only
+      const temporaryPermissionRepository =
+        await this.getMktTemporaryPermissionRepository(workspaceId);
 
-      if (!objectMetadata) {
-        throw new Error(`Object metadata not found for: ${objectName}`);
-      }
+      // Get basic object info from temporary permissions (if any exist for this object)
+      const temporaryPermissions = await temporaryPermissionRepository.find({
+        where: { objectName, isActive: true },
+        take: 1,
+      });
 
       // Classify resource type
       const resourceType = this.classifyResourceType(objectName);
@@ -349,120 +330,14 @@ export class Step3ResourceIdentificationService
         crossReferences: [], // Will be populated by cross-reference analysis
         dependencies: [], // Will be populated by dependency analysis
         customAttributes: {
-          objectMetadataId: objectMetadata.id,
-          fieldCount: objectMetadata.fields?.length || 0,
-          isStandard: objectMetadata.isSystem || false,
-          createdAt: objectMetadata.createdAt,
+          hasTemporaryPermissions: temporaryPermissions.length > 0,
+          temporaryPermissionCount: temporaryPermissions.length,
+          isStandard: !objectName.startsWith('mkt'),
+          analyzedAt: new Date(),
         },
       };
     } catch (error) {
       this.logger.error(`Error identifying resource: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Perform sensitivity analysis on the resource
-   */
-  private async performSensitivityAnalysis(
-    objectName: string,
-    recordId: string | undefined,
-    workspaceId: string,
-  ): Promise<SensitivityAnalysisResult> {
-    try {
-      let sensitivityScore = 0;
-      const triggeredPatterns: string[] = [];
-      const fieldAnalysis: SensitivityAnalysisResult['fieldAnalysis'] = [];
-
-      // Check object name against sensitive patterns
-      const objectNameLower = objectName.toLowerCase();
-
-      this.classificationConfig.sensitivePatterns.forEach((pattern) => {
-        if (objectNameLower.includes(pattern)) {
-          sensitivityScore += 10;
-          triggeredPatterns.push(`object:${pattern}`);
-        }
-      });
-
-      // Get object metadata and analyze fields
-      const objectMetadata = await this.objectMetadataRepository.findOne({
-        where: {
-          nameSingular: objectName,
-          workspaceId: workspaceId,
-          isActive: true,
-        },
-        relations: ['fields'],
-      });
-
-      if (objectMetadata?.fields) {
-        objectMetadata.fields.forEach((field: FieldMetadataEntity) => {
-          const fieldNameLower = field.name.toLowerCase();
-          let fieldSensitivity = 0;
-
-          this.classificationConfig.sensitivePatterns.forEach((pattern) => {
-            if (fieldNameLower.includes(pattern)) {
-              fieldSensitivity += 5;
-              triggeredPatterns.push(`field:${field.name}:${pattern}`);
-            }
-          });
-
-          // Additional scoring based on field type
-          if (field.type === 'TEXT' && fieldNameLower.includes('password')) {
-            fieldSensitivity += 15;
-          }
-          if (field.type === 'EMAILS' || field.type === 'PHONES') {
-            fieldSensitivity += 8;
-          }
-
-          if (fieldSensitivity > 0) {
-            fieldAnalysis.push({
-              fieldName: field.name,
-              fieldType: field.type,
-              sensitivityContribution: fieldSensitivity,
-            });
-            sensitivityScore += fieldSensitivity;
-          }
-        });
-      }
-
-      // Determine final sensitivity level
-      let sensitivityLevel: SensitivityAnalysisResult['sensitivityLevel'];
-
-      if (sensitivityScore >= 30) {
-        sensitivityLevel = 'TOP_SECRET';
-      } else if (sensitivityScore >= 20) {
-        sensitivityLevel = 'RESTRICTED';
-      } else if (sensitivityScore >= 10) {
-        sensitivityLevel = 'CONFIDENTIAL';
-      } else if (sensitivityScore >= 5) {
-        sensitivityLevel = 'INTERNAL';
-      } else {
-        sensitivityLevel = 'PUBLIC';
-      }
-
-      // Generate recommendations
-      const recommendedRestrictions = this.generateSecurityRecommendations(
-        sensitivityLevel,
-        triggeredPatterns,
-      );
-
-      // Identify applicable compliance frameworks
-      const complianceFrameworks = this.identifyApplicableCompliance(
-        objectName,
-        sensitivityLevel,
-        triggeredPatterns,
-      );
-
-      return {
-        sensitivityScore,
-        sensitivityLevel,
-        triggeredPatterns,
-        fieldAnalysis,
-        recommendedRestrictions,
-        complianceFrameworks,
-      };
-    } catch (error) {
-      this.logger.error(`Error in sensitivity analysis: ${error.message}`);
       throw error;
     }
   }
@@ -535,86 +410,11 @@ export class Step3ResourceIdentificationService
   }
 
   /**
-   * Analyze cross-references and dependencies
-   */
-  private async analyzeCrossReferences(
-    objectName: string,
-    recordId: string | undefined,
-    workspaceId: string,
-  ): Promise<CrossReferenceAnalysis> {
-    try {
-      const referencingObjects: string[] = [];
-      const relationshipTypes: Record<string, string> = {};
-      const dependencyStrength: Record<string, 'WEAK' | 'MODERATE' | 'STRONG'> =
-        {};
-
-      // Get object metadata to find relationships
-      const objectMetadata = await this.objectMetadataRepository.findOne({
-        where: {
-          nameSingular: objectName,
-          workspaceId: workspaceId,
-          isActive: true,
-        },
-        relations: ['fields'],
-      });
-
-      if (objectMetadata?.fields) {
-        // Analyze relationship fields
-        objectMetadata.fields.forEach((field: FieldMetadataEntity) => {
-          if (field.type === 'RELATION') {
-            const relatedObject =
-              field.relationTargetObjectMetadata?.nameSingular;
-
-            if (relatedObject) {
-              referencingObjects.push(relatedObject);
-              relationshipTypes[relatedObject] = 'RELATION';
-
-              // For simplicity, assume moderate dependency for all relations
-              // In a production system, this would be based on more sophisticated analysis
-              dependencyStrength[relatedObject] = 'MODERATE';
-            }
-          }
-        });
-      }
-
-      // Determine cascade risk
-      const strongDependencies = Object.values(dependencyStrength).filter(
-        (s) => s === 'STRONG',
-      ).length;
-      const cascadeRisk: 'LOW' | 'MEDIUM' | 'HIGH' =
-        strongDependencies > 5
-          ? 'HIGH'
-          : strongDependencies > 2
-            ? 'MEDIUM'
-            : 'LOW';
-
-      return {
-        referencingObjects,
-        relationshipTypes,
-        dependencyStrength,
-        cascadeRisk,
-      };
-    } catch (error) {
-      this.logger.error(`Error analyzing cross-references: ${error.message}`);
-
-      return {
-        referencingObjects: [],
-        relationshipTypes: {},
-        dependencyStrength: {},
-        cascadeRisk: 'LOW',
-      };
-    }
-  }
-
-  /**
    * Build enhanced resource context
    */
   private async buildEnhancedResourceContext(
     resourceMetadata: ResourceMetadata,
-    sensitivityAnalysis: SensitivityAnalysisResult,
     ownershipChain: OwnershipInheritanceChain,
-    crossReferences: CrossReferenceAnalysis,
-    context: EnhancedPermissionContext,
   ): Promise<ResourceContext> {
     return {
       objectName: resourceMetadata.objectName,
@@ -626,14 +426,16 @@ export class Step3ResourceIdentificationService
         | 'FINANCIAL'
         | 'REPORTING',
       resourceCategory: resourceMetadata.resourceCategory,
-      confidentialityLevel: sensitivityAnalysis.sensitivityLevel,
+      confidentialityLevel: resourceMetadata.sensitivityLevel as
+        | 'PUBLIC'
+        | 'INTERNAL'
+        | 'CONFIDENTIAL'
+        | 'RESTRICTED'
+        | 'TOP_SECRET',
       dataClassification: {
-        containsPII: sensitivityAnalysis.triggeredPatterns.some(
-          (p) => p.includes('personal') || p.includes('ssn'),
-        ),
-        containsFinancialInfo: sensitivityAnalysis.triggeredPatterns.some(
-          (p) => p.includes('payment') || p.includes('finance'),
-        ),
+        containsPII: resourceMetadata.sensitivityLevel === 'RESTRICTED',
+        containsFinancialInfo:
+          resourceMetadata.resourceType.includes('FINANCIAL'),
         retentionPeriod: resourceMetadata.retentionPeriod,
         encryptionRequired: resourceMetadata.encryptionRequired,
         auditRequired: resourceMetadata.auditLevel !== 'NONE',
@@ -641,18 +443,14 @@ export class Step3ResourceIdentificationService
       ownerId: ownershipChain.ownerId,
       departmentId: ownershipChain.userDepartment,
       isSystemResource: resourceMetadata.resourceType.includes('SYSTEM'),
-      isSensitive: sensitivityAnalysis.sensitivityLevel !== 'PUBLIC',
+      isSensitive: resourceMetadata.sensitivityLevel !== 'PUBLIC',
       isFinancialData: resourceMetadata.resourceType.includes('FINANCIAL'),
-      isPersonalData: sensitivityAnalysis.triggeredPatterns.some((p) =>
-        p.includes('personal'),
-      ),
+      isPersonalData: resourceMetadata.sensitivityLevel === 'RESTRICTED',
       isAuditData: resourceMetadata.resourceType.includes('AUDIT'),
       dependencies: {
-        requiredResources: crossReferences.referencingObjects.filter(
-          (obj) => crossReferences.dependencyStrength[obj] === 'STRONG',
-        ),
+        requiredResources: [],
         blockedByResources: [],
-        relatedResources: crossReferences.referencingObjects,
+        relatedResources: [],
       },
     };
   }
@@ -968,69 +766,6 @@ export class Step3ResourceIdentificationService
     }
 
     return restrictions;
-  }
-
-  private generateSecurityRecommendations(
-    sensitivityLevel: string,
-    triggeredPatterns: string[],
-  ): string[] {
-    const recommendations: string[] = [];
-
-    if (sensitivityLevel === 'TOP_SECRET') {
-      recommendations.push(
-        'IMPLEMENT_ZERO_TRUST',
-        'REQUIRE_MFA',
-        'ENABLE_DATA_MASKING',
-      );
-    }
-    if (sensitivityLevel === 'RESTRICTED') {
-      recommendations.push(
-        'ENABLE_ENCRYPTION',
-        'RESTRICT_EXPORT',
-        'AUDIT_ACCESS',
-      );
-    }
-    if (triggeredPatterns.some((p) => p.includes('personal'))) {
-      recommendations.push('GDPR_COMPLIANCE', 'DATA_MINIMIZATION');
-    }
-    if (triggeredPatterns.some((p) => p.includes('financial'))) {
-      recommendations.push('SOX_COMPLIANCE', 'SEGREGATION_OF_DUTIES');
-    }
-
-    return recommendations;
-  }
-
-  private identifyApplicableCompliance(
-    objectName: string,
-    sensitivityLevel: string,
-    triggeredPatterns: string[],
-  ): string[] {
-    const frameworks: string[] = [];
-
-    if (
-      triggeredPatterns.some(
-        (p) => p.includes('payment') || p.includes('finance'),
-      )
-    ) {
-      frameworks.push(
-        ...this.classificationConfig.complianceFrameworks.FINANCIAL,
-      );
-    }
-    if (
-      triggeredPatterns.some((p) => p.includes('personal') || p.includes('ssn'))
-    ) {
-      frameworks.push(
-        ...this.classificationConfig.complianceFrameworks.PERSONAL,
-      );
-    }
-    if (
-      sensitivityLevel === 'TOP_SECRET' ||
-      sensitivityLevel === 'RESTRICTED'
-    ) {
-      frameworks.push(...this.classificationConfig.complianceFrameworks.AUDIT);
-    }
-
-    return [...new Set(frameworks)]; // Remove duplicates
   }
 
   // Result helper methods

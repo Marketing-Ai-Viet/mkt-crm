@@ -4,7 +4,7 @@
  * Independent from legacy modules
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 import { PolicyEvaluationResult } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/policy-context.type';
 import {
@@ -57,8 +57,11 @@ interface CacheEntry<T = unknown> {
  * Enterprise RBAC Cache Service
  */
 @Injectable()
-export class RbacCacheService {
+export class RbacCacheService implements OnModuleDestroy {
   private readonly logger = new Logger(RbacCacheService.name);
+
+  // Timer reference for cleanup
+  private cleanupTimer: NodeJS.Timeout | null = null;
 
   // In-memory cache maps
   private readonly permissionCache = new Map<
@@ -99,6 +102,30 @@ export class RbacCacheService {
   constructor() {
     this.logger.log('Enterprise RBAC Cache Service initialized');
     this.startCleanupTimer();
+  }
+
+  /**
+   * NestJS lifecycle hook - cleanup when module is destroyed
+   */
+  async onModuleDestroy(): Promise<void> {
+    try {
+      // Clear the cleanup timer
+      if (this.cleanupTimer) {
+        clearInterval(this.cleanupTimer);
+        this.cleanupTimer = null;
+        this.logger.debug('Cleanup timer cleared');
+      }
+
+      // Clear all caches
+      await this.clearAll();
+
+      this.logger.log('RbacCacheService destroyed successfully');
+    } catch (error) {
+      this.logger.error(
+        `Error during service destruction: ${error.message}`,
+        error.stack,
+      );
+    }
   }
 
   /**
@@ -517,9 +544,36 @@ export class RbacCacheService {
    * Start periodic cleanup timer
    */
   private startCleanupTimer(): void {
-    setInterval(() => {
-      this.cleanupExpiredEntries();
-    }, 60000); // Run every minute
+    // Clear existing timer if any
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+
+    // Only start timer if caching is enabled
+    if (this.config.enabled) {
+      this.cleanupTimer = setInterval(() => {
+        // Use void to explicitly ignore the promise
+        void this.cleanupExpiredEntries().catch((error) => {
+          this.logger.error(
+            `Error in scheduled cache cleanup: ${error.message}`,
+            error.stack,
+          );
+        });
+      }, 60000); // Run every minute
+
+      this.logger.debug('Cache cleanup timer started');
+    }
+  }
+
+  /**
+   * Stop cleanup timer
+   */
+  stopCleanupTimer(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+      this.logger.debug('Cache cleanup timer stopped');
+    }
   }
 
   /**

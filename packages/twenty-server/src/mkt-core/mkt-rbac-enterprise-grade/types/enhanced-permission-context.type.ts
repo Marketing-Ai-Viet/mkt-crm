@@ -245,6 +245,23 @@ export type PermissionTemplateContext = {
   lastModifiedBy?: string;
   isActive?: boolean;
   expiresAt?: DateTime;
+
+  // Template collections and processing results
+  applicableTemplates?: PermissionTemplateInterface[];
+  hierarchyBasedTemplates?: PermissionTemplateInterface[];
+  roleBasedTemplates?: PermissionTemplateInterface[];
+  departmentBasedTemplates?: PermissionTemplateInterface[];
+  customTemplates?: PermissionTemplateInterface[];
+  templateConflicts?: TemplateConflict[];
+  resolutionStrategy?:
+    | 'PRIORITY_BASED'
+    | 'MOST_RESTRICTIVE'
+    | 'MOST_PERMISSIVE'
+    | 'CUSTOM';
+  effectivePermissions?: string[];
+  inheritanceChain?: string[];
+  applicabilityScore?: number;
+  lastUpdated?: Date;
 };
 
 export type TemplateConflict = {
@@ -252,6 +269,46 @@ export type TemplateConflict = {
   templateIds: string[];
   resolution: 'DENY' | 'ALLOW' | 'ESCALATE';
   reason: string;
+};
+
+/**
+ * Permission Template interface for Step 4
+ */
+export type PermissionTemplateInterface = {
+  id: string;
+  name: string;
+  templateType:
+    | 'ROLE_BASED'
+    | 'HIERARCHY_BASED'
+    | 'DEPARTMENT_BASED'
+    | 'CUSTOM';
+  priority: number;
+  permissions: string[];
+  actions: string[];
+  resources: string[];
+  conditions: TemplateCondition[];
+  restrictions: TemplateRestriction[];
+  isActive: boolean;
+  effectiveFrom: Date;
+  effectiveTo?: Date;
+  metadata: Record<string, string | number | boolean>;
+};
+
+/**
+ * Template condition interface
+ */
+export type TemplateCondition = {
+  field: string;
+  operator: 'eq' | 'ne' | 'in' | 'nin' | 'gt' | 'lt' | 'gte' | 'lte';
+  value: string | number | boolean | string[];
+};
+
+/**
+ * Template restriction interface
+ */
+export type TemplateRestriction = {
+  type: 'DEPARTMENT' | 'TIME' | 'LOCATION' | 'RESOURCE' | 'ACTION';
+  value: string | number | boolean | string[];
 };
 
 /**

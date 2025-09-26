@@ -1,19 +1,15 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
-import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
-import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
-
-// Services
-import { Step1PreValidationService } from './services/step1-pre-validation.service';
-import { ValidationOrchestratorService } from './services/validation-orchestrator.service';
-import { Step2UserContextResolutionService } from './services/step2-user-context-resolution.service';
-import { Step3ResourceIdentificationService } from './services/step3-resource-identification.service';
-import { PermissionTemplateService } from './services/permission-template.service';
-import { RbacCacheService } from './services/rbac-cache.service';
-import { AuditLoggingService } from './services/audit-logging.service';
-import { EnterpriseRbacGuard } from './guards/enterprise-rbac.guard';
+import { AuditLoggingService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/audit-logging.service';
+import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
+import { PermissionTemplateService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/permission-template.service';
+import { Step1PreValidationService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step1-pre-validation.service';
+import { Step2UserContextResolutionService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step2-user-context-resolution.service';
+import { Step3ResourceIdentificationService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step3-resource-identification.service';
+import { Step4PermissionTemplateCheckService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step4-permission-template-check.service';
+import { Step5ActionPermissionValidationService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step5-action-permission-validation.service';
+import { ValidationOrchestratorService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/validation-orchestrator.service';
 
 /**
  * Default configuration for Enterprise RBAC
@@ -43,14 +39,10 @@ const DEFAULT_CONFIG = {
 
 /**
  * Enterprise RBAC Module
- * Standard static module with all services enabled
+ * Updated with proper cache lifecycle management
  */
 @Module({
-  imports: [
-    TwentyORMModule,
-    ObjectMetadataModule,
-    TypeOrmModule.forFeature([ObjectMetadataEntity], 'core'),
-  ],
+  imports: [TwentyORMModule],
   providers: [
     // Configuration provider
     {
@@ -58,31 +50,33 @@ const DEFAULT_CONFIG = {
       useValue: DEFAULT_CONFIG,
     },
 
-    // All validation services
+    // Safe cache provider that won't hang seed operations,
+
+    // Other services
     Step1PreValidationService,
     Step2UserContextResolutionService,
     Step3ResourceIdentificationService,
+    Step4PermissionTemplateCheckService,
+    Step5ActionPermissionValidationService,
     ValidationOrchestratorService,
-
-    // Supporting services
     PermissionTemplateService,
-    RbacCacheService,
     AuditLoggingService,
-
-    // Guard
     EnterpriseRbacGuard,
   ],
   exports: [
-    // Export all services
+    // Export services
+    // RbacCacheService,
+    'ENTERPRISE_RBAC_CONFIG',
+
     Step1PreValidationService,
     Step2UserContextResolutionService,
     Step3ResourceIdentificationService,
+    Step4PermissionTemplateCheckService,
+    Step5ActionPermissionValidationService,
     ValidationOrchestratorService,
     PermissionTemplateService,
-    RbacCacheService,
     AuditLoggingService,
     EnterpriseRbacGuard,
-    'ENTERPRISE_RBAC_CONFIG',
   ],
 })
 export class MktRbacEnterpriseGradeModule {}
