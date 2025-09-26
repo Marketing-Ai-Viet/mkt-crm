@@ -18,7 +18,7 @@ describe('getWorkflowVisualizerComponentInstanceId', () => {
   });
 
   it('should handle UUID format recordIds', () => {
-    const recordId = '550e8400-e29b-41d4-a716-446655440000';
+    const recordId = 'd55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c';
 
     const result = getWorkflowVisualizerComponentInstanceId({ recordId });
 

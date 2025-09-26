@@ -95,7 +95,7 @@ mutation CreateDepartmentHierarchy($input: CreateDepartmentHierarchyInput!) {
       "createdAt": "2024-09-04T10:30:00Z",
       "updatedAt": "2024-09-04T10:30:00Z",
       "createdBy": {
-        "workspaceMemberId": "550e8400-e29b-41d4-a716-446655440000",
+        "workspaceMemberId": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
         "name": "Nguyễn Văn Admin"
       },
       "parentDepartment": {

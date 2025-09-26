@@ -4,7 +4,7 @@ import { validate } from 'class-validator';
 import { DeleteTwoFactorAuthenticationMethodInput } from './delete-two-factor-authentication-method.input';
 
 describe('DeleteTwoFactorAuthenticationMethodInput', () => {
-  const validUUID = '550e8400-e29b-41d4-a716-446655440000';
+  const validUUID = 'd55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c';
 
   it('should pass validation with valid UUID', async () => {
     const input = plainToClass(DeleteTwoFactorAuthenticationMethodInput, {

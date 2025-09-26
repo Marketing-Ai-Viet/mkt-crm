@@ -97,7 +97,7 @@ export const mockedTimelineActivities: Array<TimelineActivity> = [
     createdAt: '2023-04-26T10:12:42.33625+00:00',
     workspaceMember: {
       __typename: 'WorkspaceMember',
-      id: '20202020-463f-435b-828c-107e007a2711',
+      id: '81caea88-92a5-4e88-8a9a-614ec785d244',
       avatarUrl: '',
       locale: 'en',
       name: {
@@ -108,7 +108,7 @@ export const mockedTimelineActivities: Array<TimelineActivity> = [
       userEmail: 'jane@doe.com',
       colorScheme: 'Light',
     },
-    workspaceMemberId: '20202020-463f-435b-828c-107e007a2711',
+    workspaceMemberId: '81caea88-92a5-4e88-8a9a-614ec785d244',
     deletedAt: null,
     __typename: 'TimelineActivity',
   },
