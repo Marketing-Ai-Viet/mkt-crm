@@ -302,7 +302,6 @@ export class Step8DataAccessPolicyCheckService
       const dataAccessPolicyRepository =
         await this.getDataAccessPolicyRepository(workspaceId);
 
-      console.log('objectName', objectName);
       // Get all active policies for the object
       const allPolicies = await dataAccessPolicyRepository.find({
         where: {
