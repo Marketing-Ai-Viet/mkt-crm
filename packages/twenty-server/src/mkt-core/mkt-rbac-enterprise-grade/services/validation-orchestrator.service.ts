@@ -35,6 +35,7 @@ import { Step6ResourcePermissionCheckService } from './step6-resource-permission
 import { Step7HierarchyValidationService } from './step7-hierarchy-validation.service';
 import { Step8DataAccessPolicyCheckService } from './step8-data-access-policy-check.service';
 import { Step9SpecialPermissionsService } from './step9-special-permissions.service';
+import { Step10SensitiveDataChecksService } from './step10-sensitive-data-checks.service';
 import { PermissionTemplateService } from './permission-template.service';
 // import { RbacCacheService } from './rbac-cache.service';
 import { AuditLoggingService } from './audit-logging.service';
@@ -100,6 +101,7 @@ export class ValidationOrchestratorService
     private readonly hierarchyValidationService: Step7HierarchyValidationService,
     private readonly dataAccessPolicyCheckService: Step8DataAccessPolicyCheckService,
     private readonly specialPermissionsService: Step9SpecialPermissionsService,
+    private readonly sensitiveDataChecksService: Step10SensitiveDataChecksService,
     private readonly permissionTemplateService: PermissionTemplateService,
     // private readonly cacheService: RbacCacheService,
     private readonly auditService: AuditLoggingService,
@@ -602,6 +604,7 @@ export class ValidationOrchestratorService
     this.registerStep(this.hierarchyValidationService);
     this.registerStep(this.dataAccessPolicyCheckService);
     this.registerStep(this.specialPermissionsService);
+    this.registerStep(this.sensitiveDataChecksService);
     this.registerStep(this.auditService);
 
     this.logger.log(`Initialized ${this.steps.size} validation steps`);
