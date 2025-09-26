@@ -6,8 +6,8 @@ import {
 
 import { FindManyOptions, In } from 'typeorm';
 
+import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { getHierarchyLevelValidationError } from 'src/mkt-core/mkt-organization-level/validators/hierarchy-level-range.validator';
 import { WorkspaceMemberMktEntity } from 'src/mkt-core/mkt-entities-extends/workspace-member.mkt-entity';
 import {
   HIERARCHY_PERFORMANCE_LIMITS,
@@ -22,8 +22,8 @@ import {
   UpdateOrganizationLevelInput,
 } from 'src/mkt-core/mkt-organization-level/graphql-types';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { getHierarchyLevelValidationError } from 'src/mkt-core/mkt-organization-level/validators/hierarchy-level-range.validator';
 import { OrganizationLevelHierarchyValidator } from 'src/mkt-core/mkt-organization-level/validators/hierarchy-validator';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 
 interface RepositoryPair {
   organizationLevelRepository: WorkspaceRepository<MktOrganizationLevelWorkspaceEntity>;
@@ -245,6 +245,62 @@ export class OrganizationLevelService {
       hasCircularReferences,
       recommendations,
     };
+  }
+
+  /**
+   * Get simple list of organization levels (flat list, not hierarchy)
+   */
+  async getOrganizationLevelsList(
+    workspaceId: string,
+    options: OrganizationLevelQueryOptions = {},
+  ): Promise<OrganizationLevelHierarchyNode[]> {
+    const { organizationLevelRepository, workspaceMemberRepository } =
+      await this.getRepositories(workspaceId);
+
+    // Build query conditions
+    const whereConditions: Record<string, unknown> = {};
+
+    if (!options.includeInactive) {
+      whereConditions.isActive = true;
+    }
+    if (options.levelCodes?.length) {
+      whereConditions.levelCode = In(options.levelCodes);
+    }
+    if (options.hierarchyLevels?.length) {
+      whereConditions.hierarchyLevel = In(options.hierarchyLevels);
+    }
+
+    // Get organization levels as flat list
+    const findOptions: FindManyOptions<MktOrganizationLevelWorkspaceEntity> = {
+      where: whereConditions,
+      order: { hierarchyLevel: 'ASC', displayOrder: 'ASC' },
+    };
+
+    const organizationLevels =
+      await organizationLevelRepository.find(findOptions);
+
+    if (!organizationLevels.length) {
+      return [];
+    }
+
+    // Build flat list of nodes (without hierarchy relationships)
+    const nodes: OrganizationLevelHierarchyNode[] = [];
+
+    for (const level of organizationLevels) {
+      const node = await this.buildHierarchyNode(
+        level,
+        workspaceMemberRepository,
+        options.includeStatistics || false,
+      );
+
+      // Clear hierarchy relationships for flat list
+      node.children = [];
+      node.parent = undefined;
+
+      nodes.push(node);
+    }
+
+    return nodes;
   }
 
   /**

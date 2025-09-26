@@ -1,9 +1,10 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
 import { UserOutput } from 'src/mkt-core/user-management/dto/user.output';
 import { UserManagementService } from 'src/mkt-core/user-management/user-management.service';
@@ -11,14 +12,11 @@ import { UserManagementService } from 'src/mkt-core/user-management/user-managem
 @UseGuards(UserAuthGuard, WorkspaceAuthGuard)
 @Resolver(() => UserOutput)
 export class UserManagementResolver {
-  constructor(
-    private readonly userManagementService: UserManagementService,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+  constructor(private readonly userManagementService: UserManagementService) {}
 
   @Mutation(() => UserOutput)
   async createPersonUser(
-    @Args('workspaceId', { type: () => String }) workspaceId: string,
+    @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('input', { type: () => CreateUserInput })
     input: CreateUserInput,
   ) {
