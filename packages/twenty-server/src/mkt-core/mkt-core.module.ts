@@ -8,7 +8,6 @@ import {
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
-import { MktEmploymentStatusModule } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
@@ -26,7 +25,6 @@ import { UserManagementModule } from 'src/mkt-core/user-management/user-manageme
     UserManagementModule,
     MktOrganizationLevelModule,
     MktProductModule,
-    MktEmploymentStatusModule,
   ],
 })
 export class MktCoreModule implements NestModule {

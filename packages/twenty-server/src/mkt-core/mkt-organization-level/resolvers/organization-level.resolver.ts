@@ -1,15 +1,15 @@
-import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
+import { OrganizationLevelService } from 'src/mkt-core/mkt-organization-level/services/organization-level.service';
 import {
   OrganizationLevelHierarchyNode,
-  OrganizationLevelQueryOptions,
   OrganizationLevelStatistics,
+  OrganizationLevelQueryOptions,
 } from 'src/mkt-core/mkt-organization-level/graphql-types';
-import { OrganizationLevelService } from 'src/mkt-core/mkt-organization-level/services/organization-level.service';
 
 @Resolver()
 @UseGuards(UserAuthGuard)
@@ -75,29 +75,11 @@ export class OrganizationLevelResolver {
 
       results.push(updatedLevel);
     }
+
     return results;
   }
 
   // === SPECIALIZED QUERIES ===
-
-  /**
-   * Lấy danh sách tất cả organization levels (organizations)
-   * Business Value: Simple list view cho dropdown, selection, etc.
-   */
-  @Query(() => [OrganizationLevelHierarchyNode])
-  async getOrganizationLevelsList(
-    @AuthWorkspace() { id: workspaceId }: Workspace,
-    @Args('options', {
-      type: () => OrganizationLevelQueryOptions,
-      nullable: true,
-    })
-    options?: OrganizationLevelQueryOptions,
-  ): Promise<OrganizationLevelHierarchyNode[]> {
-    return await this.organizationLevelService.getOrganizationLevelsList(
-      workspaceId,
-      options,
-    );
-  }
 
   /**
    * Lấy đường dẫn hierarchy từ root đến một level cụ thể
