@@ -88,6 +88,75 @@ type SensitiveDataEvaluation = {
 };
 
 /**
+ * MKT Permission Template Entity
+ */
+interface MktPermissionTemplateWorkspaceEntity {
+  id: string;
+  templateKey: string;
+  templateName: string;
+  description?: string;
+  hierarchyLevel: number;
+  applicableToLevels: Record<string, unknown>;
+  version: string;
+  isSystemTemplate: boolean;
+  isActive: boolean;
+  priority: number;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+}
+
+/**
+ * MKT User Permission Template Entity
+ */
+interface MktUserPermissionTemplateWorkspaceEntity {
+  id: string;
+  isActive: boolean;
+  assignedAt: Date;
+  expiresAt: Date;
+  assignmentReason: string;
+  templateId?: string;
+  workspaceMemberId?: string;
+  assignedById?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+}
+
+/**
+ * MKT Department Entity
+ */
+interface MktDepartmentWorkspaceEntity {
+  id: string;
+  departmentCode: string;
+  departmentName: string;
+  departmentNameEn?: string;
+  description?: string;
+  requiresKpiTracking?: boolean;
+  allowsCrossDepartmentAccess?: boolean;
+  displayOrder: number;
+  isActive?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+}
+
+/**
+ * Template Permission Analysis Result
+ */
+type TemplatePermissionResult = {
+  canAccessFinancial: boolean;
+  canAccessPersonal: boolean;
+  canAccessPayment: boolean;
+  canAccessAuthentication: boolean;
+  canAccessContract: boolean;
+  sensitivityClearanceLevel: SensitiveDataLevel;
+  restrictions: string[];
+  confidence: number;
+  appliedTemplates: string[];
+};
+
+/**
  * Workspace entity interfaces for sensitive data
  */
 interface MktSInvoiceWorkspaceEntity {
@@ -327,6 +396,7 @@ export class Step10SensitiveDataChecksService
     // Get user's sensitive data permissions
     const userPermissions = await this.getUserSensitiveDataPermissions(
       userContext.userId || '',
+      userContext.workspaceMemberId,
       workspaceId,
     );
 
@@ -375,44 +445,105 @@ export class Step10SensitiveDataChecksService
   }
 
   /**
-   * Classify data sensitivity based on resource type
+   * Classify data sensitivity based on resource type (Updated with real database structure)
    */
   private classifyDataSensitivity(resourceType: string): SensitiveDataContext {
     const sensitivityMap: Record<string, SensitiveDataContext> = {
+      // ✅ High-Security Financial Data
       mktSInvoice: {
         dataCategory: SensitiveDataCategory.FINANCIAL,
-        sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
+        sensitivityLevel: SensitiveDataLevel.RESTRICTED,
         fieldNames: [
           'buyerTaxCode',
           'buyerIdNo',
           'buyerEmail',
           'buyerPhoneNumber',
+          'buyerLegalName',
+          'buyerAddressLine',
+          'buyerIdType',
           'totalAmountWithTax',
           'totalTaxAmount',
+          'totalAmountWithoutTax',
+          'sumOfTotalLineAmountWithoutTax',
+          'totalAmountAfterDiscount',
+          'discountAmount',
           'supplierTaxCode',
           'invoiceNo',
           'transactionID',
+          'transactionUuid',
+          'reservationCode',
+          'codeOfTax',
+          'totalAmountWithTaxInWords',
+        ],
+        requiresSpecialPermission: true,
+        auditRequired: true,
+        encryptionRequired: true,
+        retentionPolicyDays: 2555, // 7 years for tax compliance
+        complianceRequirements: [
+          'TAX_COMPLIANCE',
+          'FINANCIAL_REPORTING',
+          'GDPR',
+          'VIETNAM_TAX_LAW',
+        ],
+      },
+
+      // ✅ Payment Processing Data
+      mktPayment: {
+        dataCategory: SensitiveDataCategory.PAYMENT,
+        sensitivityLevel: SensitiveDataLevel.RESTRICTED,
+        fieldNames: [
+          'amount',
+          'currency',
+          'paymentDate',
+          'invoiceId',
+          'qrCodeUrl',
+          'status',
         ],
         requiresSpecialPermission: true,
         auditRequired: true,
         encryptionRequired: true,
         retentionPolicyDays: 2555, // 7 years
         complianceRequirements: [
-          'TAX_COMPLIANCE',
+          'PCI_DSS',
           'FINANCIAL_REPORTING',
-          'GDPR',
+          'AML',
+          'PAYMENT_SECURITY',
         ],
       },
-      mktPayment: {
-        dataCategory: SensitiveDataCategory.PAYMENT,
-        sensitivityLevel: SensitiveDataLevel.RESTRICTED,
-        fieldNames: ['amount', 'currency', 'paymentDate', 'invoiceId'],
-        requiresSpecialPermission: true,
+
+      // ✅ Customer Personal Data with Enhanced Fields
+      mktCustomer: {
+        dataCategory: SensitiveDataCategory.PERSONAL_IDENTIFIABLE,
+        sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
+        fieldNames: [
+          'personalIdNumber',
+          'taxCode',
+          'email',
+          'phone',
+          'companyName',
+          'legalRepresentative',
+          'bankInfo',
+          'billingAddress',
+          'address',
+          'website',
+          'assignedReason',
+          'paymentPreferences',
+          'socialLinks',
+          'mergeSuggestion',
+        ],
+        requiresSpecialPermission: false,
         auditRequired: true,
         encryptionRequired: true,
-        retentionPolicyDays: 2555, // 7 years
-        complianceRequirements: ['PCI_DSS', 'FINANCIAL_REPORTING', 'AML'],
+        retentionPolicyDays: 2190, // 6 years for customer data
+        complianceRequirements: [
+          'GDPR',
+          'CUSTOMER_PRIVACY',
+          'DATA_RETENTION',
+          'VIETNAM_PERSONAL_DATA_LAW',
+        ],
       },
+
+      // ✅ Contract & Legal Documents
       mktContract: {
         dataCategory: SensitiveDataCategory.CONTRACT,
         sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
@@ -420,9 +551,15 @@ export class Step10SensitiveDataChecksService
         requiresSpecialPermission: false,
         auditRequired: true,
         encryptionRequired: false,
-        retentionPolicyDays: 3650, // 10 years
-        complianceRequirements: ['CONTRACT_LAW', 'BUSINESS_RECORDS'],
+        retentionPolicyDays: 3650, // 10 years for contracts
+        complianceRequirements: [
+          'CONTRACT_LAW',
+          'BUSINESS_RECORDS',
+          'VIETNAM_COMMERCIAL_LAW',
+        ],
       },
+
+      // ✅ API Keys & Authentication
       apiKey: {
         dataCategory: SensitiveDataCategory.AUTHENTICATION,
         sensitivityLevel: SensitiveDataLevel.TOP_SECRET,
@@ -430,8 +567,15 @@ export class Step10SensitiveDataChecksService
         requiresSpecialPermission: true,
         auditRequired: true,
         encryptionRequired: true,
-        complianceRequirements: ['SECURITY_POLICY', 'ACCESS_CONTROL'],
+        retentionPolicyDays: 365, // 1 year for API keys
+        complianceRequirements: [
+          'SECURITY_POLICY',
+          'ACCESS_CONTROL',
+          'API_SECURITY',
+        ],
       },
+
+      // ✅ CRM Standard Data
       person: {
         dataCategory: SensitiveDataCategory.PERSONAL_IDENTIFIABLE,
         sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
@@ -442,15 +586,77 @@ export class Step10SensitiveDataChecksService
         retentionPolicyDays: 1095, // 3 years
         complianceRequirements: ['GDPR', 'PRIVACY_POLICY'],
       },
-      mktCustomer: {
+
+      company: {
         dataCategory: SensitiveDataCategory.CUSTOMER_DATA,
+        sensitivityLevel: SensitiveDataLevel.INTERNAL,
+        fieldNames: ['name', 'domainName', 'address'],
+        requiresSpecialPermission: false,
+        auditRequired: false,
+        encryptionRequired: false,
+        retentionPolicyDays: 2190, // 6 years
+        complianceRequirements: ['BUSINESS_RECORDS'],
+      },
+
+      // ✅ Employee & HR Data
+      mktEmploymentStatus: {
+        dataCategory: SensitiveDataCategory.PERSONAL_IDENTIFIABLE,
         sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
-        fieldNames: ['name', 'contactInfo', 'taxInfo'],
+        fieldNames: [
+          'statusCode',
+          'statusName',
+          'description',
+          'restrictions',
+          'requiresApproval',
+          'maxDuration',
+        ],
         requiresSpecialPermission: false,
         auditRequired: true,
         encryptionRequired: false,
-        retentionPolicyDays: 2190, // 6 years
-        complianceRequirements: ['GDPR', 'CUSTOMER_PRIVACY'],
+        retentionPolicyDays: 2555, // 7 years for employment records
+        complianceRequirements: ['HR_COMPLIANCE', 'LABOR_LAW', 'GDPR'],
+      },
+
+      // ✅ Department & Organization Data
+      mktDepartment: {
+        dataCategory: SensitiveDataCategory.CUSTOMER_DATA,
+        sensitivityLevel: SensitiveDataLevel.INTERNAL,
+        fieldNames: [
+          'departmentCode',
+          'departmentName',
+          'budgetCode',
+          'costCenter',
+          'allowsCrossDepartmentAccess',
+        ],
+        requiresSpecialPermission: false,
+        auditRequired: false,
+        encryptionRequired: false,
+        retentionPolicyDays: 2555, // 7 years
+        complianceRequirements: ['BUSINESS_RECORDS'],
+      },
+
+      // ✅ KPI & Performance Data
+      mktKpi: {
+        dataCategory: SensitiveDataCategory.CUSTOMER_DATA,
+        sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
+        fieldNames: ['value', 'target', 'actual'],
+        requiresSpecialPermission: false,
+        auditRequired: true,
+        encryptionRequired: false,
+        retentionPolicyDays: 1095, // 3 years
+        complianceRequirements: ['PERFORMANCE_RECORDS'],
+      },
+
+      // ✅ Order & Business Transaction Data
+      mktOrder: {
+        dataCategory: SensitiveDataCategory.FINANCIAL,
+        sensitivityLevel: SensitiveDataLevel.CONFIDENTIAL,
+        fieldNames: ['totalAmount', 'status', 'customerInfo'],
+        requiresSpecialPermission: false,
+        auditRequired: true,
+        encryptionRequired: false,
+        retentionPolicyDays: 2555, // 7 years
+        complianceRequirements: ['FINANCIAL_REPORTING', 'BUSINESS_RECORDS'],
       },
     };
 
@@ -462,7 +668,8 @@ export class Step10SensitiveDataChecksService
         requiresSpecialPermission: false,
         auditRequired: false,
         encryptionRequired: false,
-        complianceRequirements: [],
+        retentionPolicyDays: 1095, // Default 3 years
+        complianceRequirements: ['BASIC_DATA_PROTECTION'],
       }
     );
   }
@@ -472,6 +679,7 @@ export class Step10SensitiveDataChecksService
    */
   private async getUserSensitiveDataPermissions(
     userId: string,
+    workspaceMemberId: string,
     workspaceId: string,
   ): Promise<{
     canAccessFinancial: boolean;
@@ -483,17 +691,22 @@ export class Step10SensitiveDataChecksService
     restrictions: string[];
   }> {
     try {
-      const workspaceRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      // Get user's permission templates
+      const userTemplateRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktUserPermissionTemplateWorkspaceEntity>(
           workspaceId,
-          'workspaceMember',
+          'mktUserPermissionTemplate',
+          { shouldBypassPermissionChecks: true },
         );
 
-      const workspaceMember = await workspaceRepository.findOne({
-        where: { id: userId },
+      const activeUserTemplates = await userTemplateRepo.find({
+        where: {
+          workspaceMemberId: workspaceMemberId,
+          isActive: true,
+        },
       });
 
-      if (!workspaceMember) {
+      if (!activeUserTemplates || activeUserTemplates.length === 0) {
         return {
           canAccessFinancial: false,
           canAccessPersonal: false,
@@ -501,30 +714,43 @@ export class Step10SensitiveDataChecksService
           canAccessAuthentication: false,
           canAccessContract: false,
           sensitivityClearanceLevel: SensitiveDataLevel.PUBLIC,
-          restrictions: ['USER_NOT_FOUND'],
+          restrictions: ['NO_PERMISSION_TEMPLATES'],
         };
       }
 
-      // Check user's role and department for sensitive data access
-      // This would typically integrate with role-based access control
-      // For now, we'll use a simple heuristic based on user role
-      const userRole =
-        (workspaceMember as WorkspaceMemberEntity).role || 'MEMBER';
-      const isAdmin = userRole === 'ADMIN' || userRole === 'OWNER';
-      const isManager = userRole === 'MANAGER' || isAdmin;
+      // Filter valid (non-expired) templates
+      const validTemplates = activeUserTemplates.filter((userTemplate) => {
+        const now = new Date();
+
+        return !userTemplate.expiresAt || userTemplate.expiresAt > now;
+      });
+
+      if (validTemplates.length === 0) {
+        return {
+          canAccessFinancial: false,
+          canAccessPersonal: false,
+          canAccessPayment: false,
+          canAccessAuthentication: false,
+          canAccessContract: false,
+          sensitivityClearanceLevel: SensitiveDataLevel.PUBLIC,
+          restrictions: ['ALL_TEMPLATES_EXPIRED'],
+        };
+      }
+
+      // Analyze templates to determine permissions
+      const permissionAnalysis = await this.analyzeTemplatePermissions(
+        validTemplates,
+        workspaceId,
+      );
 
       return {
-        canAccessFinancial: isAdmin,
-        canAccessPersonal: isManager,
-        canAccessPayment: isAdmin,
-        canAccessAuthentication: isAdmin,
-        canAccessContract: isManager,
-        sensitivityClearanceLevel: isAdmin
-          ? SensitiveDataLevel.TOP_SECRET
-          : isManager
-            ? SensitiveDataLevel.CONFIDENTIAL
-            : SensitiveDataLevel.INTERNAL,
-        restrictions: isAdmin ? [] : ['ROLE_BASED_RESTRICTION'],
+        canAccessFinancial: permissionAnalysis.canAccessFinancial,
+        canAccessPersonal: permissionAnalysis.canAccessPersonal,
+        canAccessPayment: permissionAnalysis.canAccessPayment,
+        canAccessAuthentication: permissionAnalysis.canAccessAuthentication,
+        canAccessContract: permissionAnalysis.canAccessContract,
+        sensitivityClearanceLevel: permissionAnalysis.sensitivityClearanceLevel,
+        restrictions: permissionAnalysis.restrictions,
       };
     } catch (error) {
       this.logger.error('Failed to get user sensitive data permissions', {
@@ -866,5 +1092,182 @@ export class Step10SensitiveDataChecksService
       confidence: 0.9,
       requirements,
     };
+  }
+
+  /**
+   * Analyze permission templates to determine sensitive data access
+   */
+  private async analyzeTemplatePermissions(
+    userTemplates: MktUserPermissionTemplateWorkspaceEntity[],
+    workspaceId: string,
+  ): Promise<TemplatePermissionResult> {
+    try {
+      const templateRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPermissionTemplateWorkspaceEntity>(
+          workspaceId,
+          'mktPermissionTemplate',
+          { shouldBypassPermissionChecks: true },
+        );
+
+      const permissions: TemplatePermissionResult = {
+        canAccessFinancial: false,
+        canAccessPersonal: false,
+        canAccessPayment: false,
+        canAccessAuthentication: false,
+        canAccessContract: false,
+        sensitivityClearanceLevel: SensitiveDataLevel.PUBLIC,
+        restrictions: [],
+        confidence: 0,
+        appliedTemplates: [],
+      };
+
+      let maxHierarchyLevel = 0;
+      const appliedTemplateKeys: string[] = [];
+
+      for (const userTemplate of userTemplates) {
+        if (!userTemplate.templateId) continue;
+
+        const template = await templateRepo.findOne({
+          where: {
+            id: userTemplate.templateId,
+            isActive: true,
+          },
+        });
+
+        if (template) {
+          // Apply template permissions based on templateKey
+          this.applyTemplatePermissions(template, permissions);
+
+          // Track hierarchy level for clearance determination
+          if (template.hierarchyLevel > maxHierarchyLevel) {
+            maxHierarchyLevel = template.hierarchyLevel;
+          }
+
+          appliedTemplateKeys.push(template.templateKey);
+        }
+      }
+
+      // Determine sensitivity clearance level based on hierarchy
+      permissions.sensitivityClearanceLevel =
+        this.determineClearanceLevel(maxHierarchyLevel);
+      permissions.appliedTemplates = appliedTemplateKeys;
+      permissions.confidence = Math.min(
+        0.9,
+        0.5 + appliedTemplateKeys.length * 0.1,
+      );
+
+      this.logger.debug('Template permission analysis completed', {
+        userId: userTemplates[0]?.workspaceMemberId,
+        appliedTemplates: appliedTemplateKeys.length,
+        clearanceLevel: permissions.sensitivityClearanceLevel,
+        workspaceId,
+      });
+
+      return permissions;
+    } catch (error) {
+      this.logger.error('Failed to analyze template permissions', {
+        error: error.message,
+        workspaceId,
+      });
+
+      return {
+        canAccessFinancial: false,
+        canAccessPersonal: false,
+        canAccessPayment: false,
+        canAccessAuthentication: false,
+        canAccessContract: false,
+        sensitivityClearanceLevel: SensitiveDataLevel.PUBLIC,
+        restrictions: ['TEMPLATE_ANALYSIS_FAILED'],
+        confidence: 0.1,
+        appliedTemplates: [],
+      };
+    }
+  }
+
+  /**
+   * Apply permissions from a specific template
+   */
+  private applyTemplatePermissions(
+    template: MktPermissionTemplateWorkspaceEntity,
+    permissions: TemplatePermissionResult,
+  ): void {
+    // Analyze templateKey to determine specific permissions
+    const templateKey = template.templateKey.toLowerCase();
+
+    // Financial access templates
+    if (
+      templateKey.includes('financial') ||
+      templateKey.includes('accounting') ||
+      templateKey.includes('invoice') ||
+      templateKey.includes('admin')
+    ) {
+      permissions.canAccessFinancial = true;
+    }
+
+    // Payment access templates
+    if (
+      templateKey.includes('payment') ||
+      templateKey.includes('billing') ||
+      templateKey.includes('cashier') ||
+      templateKey.includes('admin')
+    ) {
+      permissions.canAccessPayment = true;
+    }
+
+    // Personal data access templates
+    if (
+      templateKey.includes('hr') ||
+      templateKey.includes('personal') ||
+      templateKey.includes('employee') ||
+      templateKey.includes('manager') ||
+      templateKey.includes('admin')
+    ) {
+      permissions.canAccessPersonal = true;
+    }
+
+    // Authentication access templates
+    if (
+      templateKey.includes('security') ||
+      templateKey.includes('admin') ||
+      templateKey.includes('system')
+    ) {
+      permissions.canAccessAuthentication = true;
+    }
+
+    // Contract access templates
+    if (
+      templateKey.includes('contract') ||
+      templateKey.includes('legal') ||
+      templateKey.includes('manager') ||
+      templateKey.includes('admin')
+    ) {
+      permissions.canAccessContract = true;
+    }
+
+    // System templates have higher privileges
+    if (template.isSystemTemplate) {
+      permissions.canAccessFinancial = true;
+      permissions.canAccessPayment = true;
+      permissions.canAccessPersonal = true;
+      permissions.canAccessAuthentication = true;
+      permissions.canAccessContract = true;
+    }
+  }
+
+  /**
+   * Determine clearance level based on hierarchy level
+   */
+  private determineClearanceLevel(hierarchyLevel: number): SensitiveDataLevel {
+    if (hierarchyLevel >= 9) {
+      return SensitiveDataLevel.TOP_SECRET; // Executive level
+    } else if (hierarchyLevel >= 7) {
+      return SensitiveDataLevel.RESTRICTED; // Senior management
+    } else if (hierarchyLevel >= 5) {
+      return SensitiveDataLevel.CONFIDENTIAL; // Middle management
+    } else if (hierarchyLevel >= 3) {
+      return SensitiveDataLevel.INTERNAL; // Team leads
+    } else {
+      return SensitiveDataLevel.PUBLIC; // Regular employees
+    }
   }
 }
