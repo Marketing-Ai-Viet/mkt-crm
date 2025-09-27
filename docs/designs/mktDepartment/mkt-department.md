@@ -1012,7 +1012,7 @@ fragment DepartmentTree7Levels on DepartmentTreeNode {
 }
 query GetDepartmentHierarchyTree {
     getDepartmentHierarchyTree(
-        rootDepartmentId: "1d2e3f4a-5b6c-7d8e-9f0a-1b2c3d4e5f6a"
+        rootDepartmentId: "4eb569e8-256f-4ff8-b97d-da4b371ffe30"
     ) {
         ...DepartmentTree7Levels
     }

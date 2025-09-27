@@ -52,13 +52,13 @@ export const MKT_EMPLOYMENT_STATUS_DATA_SEED_COLUMNS: (keyof MktEmploymentStatus
   ];
 
 export const MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS = {
-  PROBATION: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
-  PERMANENT: '2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7',
-  CONTRACT: '3c4d5e6f-7a8b-9c0d-1e2f-a3b4c5d6e7f8',
-  PART_TIME: '4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9',
-  INTERNSHIP: '5e6f7a8b-9c0d-1e2f-3a4b-c5d6e7f8a9b0',
-  RESIGNED: '6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1',
-  TERMINATED: '7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2',
+  PROBATION: '0835587e-9dc0-47db-857d-da6caae06c83',
+  PERMANENT: '9c0a6ee6-4f5b-4f41-b1b5-32fe7a84ab59',
+  CONTRACT: 'a401d801-f3d8-4973-91f2-89537e743daa',
+  PART_TIME: 'f915d505-807d-4025-91ca-4874bd6ea384',
+  INTERNSHIP: '80d70621-831b-468b-86b7-18110808b4a6',
+  RESIGNED: '76c4ef9b-5f33-4303-b75d-12db1ebe71bd',
+  TERMINATED: 'eedab532-f39f-4058-ad3c-9753486c88f1',
 };
 
 export const MKT_EMPLOYMENT_STATUS_DATA_SEEDS: MktEmploymentStatusDataSeed[] = [
