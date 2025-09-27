@@ -14,6 +14,7 @@ import { Step7HierarchyValidationService } from 'src/mkt-core/mkt-rbac-enterpris
 import { Step8DataAccessPolicyCheckService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step8-data-access-policy-check.service';
 import { Step9SpecialPermissionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step9-special-permissions.service';
 import { Step10SensitiveDataChecksService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step10-sensitive-data-checks.service';
+import { Step11DepartmentRestrictionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step11-department-restrictions.service';
 import { ValidationOrchestratorService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/validation-orchestrator.service';
 
 /**
@@ -68,6 +69,7 @@ const DEFAULT_CONFIG = {
     Step8DataAccessPolicyCheckService,
     Step9SpecialPermissionsService,
     Step10SensitiveDataChecksService,
+    Step11DepartmentRestrictionsService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,
@@ -88,6 +90,7 @@ const DEFAULT_CONFIG = {
     Step8DataAccessPolicyCheckService,
     Step9SpecialPermissionsService,
     Step10SensitiveDataChecksService,
+    Step11DepartmentRestrictionsService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,

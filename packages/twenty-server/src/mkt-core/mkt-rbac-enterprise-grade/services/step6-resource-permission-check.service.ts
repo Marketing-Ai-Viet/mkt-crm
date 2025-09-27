@@ -402,7 +402,6 @@ export class Step6ResourcePermissionCheckService
     workspaceId: string,
   ): Promise<ResourcePermissionEvaluation> {
     try {
-      console.log('Checking data access policies...', userContext);
       const policyRepository =
         await this.getDataAccessPolicyRepository(workspaceId);
 
