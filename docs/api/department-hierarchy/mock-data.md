@@ -26,11 +26,11 @@
   "createdAt": "2024-01-15T08:30:00Z",
   "updatedAt": "2024-09-04T10:30:00Z",
   "createdBy": {
-    "workspaceMemberId": "550e8400-e29b-41d4-a716-446655440000",
+    "workspaceMemberId": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
     "name": "Nguyễn Văn Admin"
   },
   "parentDepartment": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "id": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
     "departmentCode": "CEO",
     "departmentName": "Ban Giám Đốc"
   },
@@ -58,7 +58,7 @@
   "notes": "Sales North reports to main Sales Department",
   "isActive": true,
   "position": 1.0,
-  "hierarchyPath": ["550e8400-e29b-41d4-a716-446655440000"],
+  "hierarchyPath": ["d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c"],
   "inheritsParentPermissions": true,
   "canViewTeamData": true,
   "canEditTeamData": false,
@@ -66,7 +66,7 @@
   "createdAt": "2024-01-15T08:45:00Z",
   "updatedAt": "2024-08-10T15:20:00Z",
   "createdBy": {
-    "workspaceMemberId": "550e8400-e29b-41d4-a716-446655440000",
+    "workspaceMemberId": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
     "name": "Nguyễn Văn Admin"
   },
   "parentDepartment": {
@@ -98,7 +98,7 @@
   "notes": "Sales South reports to main Sales Department",
   "isActive": true,
   "position": 2.0,
-  "hierarchyPath": ["550e8400-e29b-41d4-a716-446655440000"],
+  "hierarchyPath": ["d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c"],
   "inheritsParentPermissions": true,
   "canViewTeamData": true,
   "canEditTeamData": false,
@@ -106,7 +106,7 @@
   "createdAt": "2024-01-15T08:50:00Z",
   "updatedAt": "2024-08-10T15:25:00Z",
   "createdBy": {
-    "workspaceMemberId": "550e8400-e29b-41d4-a716-446655440000",
+    "workspaceMemberId": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
     "name": "Nguyễn Văn Admin"
   },
   "parentDepartment": {
@@ -138,7 +138,7 @@
   "notes": "Matrix relationship for Q3-Q4 marketing campaigns collaboration",
   "isActive": true,
   "position": 3.0,
-  "hierarchyPath": ["550e8400-e29b-41d4-a716-446655440000"],
+  "hierarchyPath": ["d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c"],
   "inheritsParentPermissions": false,
   "canViewTeamData": true,
   "canEditTeamData": false,
@@ -186,7 +186,7 @@
   "createdAt": "2024-01-15T10:00:00Z",
   "updatedAt": "2024-09-01T16:45:00Z",
   "createdBy": {
-    "workspaceMemberId": "550e8400-e29b-41d4-a716-446655440000",
+    "workspaceMemberId": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
     "name": "Nguyễn Văn Admin"
   },
   "parentDepartment": {
@@ -218,7 +218,7 @@
   "notes": "Temporary project team for Q4 product launch",
   "isActive": true,
   "position": 1.0,
-  "hierarchyPath": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
+  "hierarchyPath": ["d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c", "550e8400-e29b-41d4-a716-446655440001"],
   "inheritsParentPermissions": true,
   "canViewTeamData": true,
   "canEditTeamData": true,
@@ -248,7 +248,7 @@
 
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "id": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
   "departmentCode": "CEO",
   "departmentName": "Ban Giám Đốc",
   "level": 0,
@@ -379,7 +379,7 @@
     "distance": 1
   },
   {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "id": "d55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c",
     "departmentCode": "CEO",
     "departmentName": "Ban Giám Đốc",
     "level": 0,

@@ -1,5 +1,7 @@
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
+export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV'; // Mặc định là 'DEV' nếu không có biến môi trường
+
 export enum ORDER_STATUS {
   DRAFT = 'DRAFT', // đơn hàng mới tạo, chờ xử lý
   TRIAL = 'TRIAL', // đang ở trong giai đoạn trial

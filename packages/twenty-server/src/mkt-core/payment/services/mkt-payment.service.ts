@@ -6,6 +6,8 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
+import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 
@@ -19,6 +21,7 @@ export class MktPaymentService {
     private readonly recordPositionService: RecordPositionService,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
     private readonly mktRepo: MktRepositoryService,
+    private readonly fireBaseIntegration: FireBaseIntegrationService,
   ) {}
 
   async createPaymentFromOrder(
@@ -30,15 +33,20 @@ export class MktPaymentService {
       orderId: string;
     },
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
-  ): Promise<void> {
+  ): Promise<callFireBaseType | void> {
     const paymentRepository = await this.getPaymentRepository();
     const paymentMethodRepository = await this.getPaymentMethodRepository();
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
+    const result: callFireBaseType = {
+      orderCode: paymentData.generatedOrderCode,
+      QRCodeUrl: null,
+    };
+
     if (!workspaceId) {
       this.logger.warn('Workspace ID is not available in the current context.');
 
-      return;
+      return result;
     }
 
     if (Array.isArray(paymentMethodsMeta) && paymentMethodsMeta.length > 0) {
@@ -76,6 +84,8 @@ export class MktPaymentService {
                 paymentData.generatedOrderCode,
               );
 
+            if (!result.QRCodeUrl) result.QRCodeUrl = qrCodeUrl;
+
             return paymentRepository.create({
               mktOrderId: paymentData.orderId,
               mktPaymentMethodId: p.mktPaymentMethodId,
@@ -93,6 +103,8 @@ export class MktPaymentService {
         );
       }
     }
+
+    return result;
   }
 
   async findOneByOrderCode(workspaceId: string, orderCode: string) {

@@ -20,13 +20,13 @@ describe('getStepOutputSchemaFamilyStateKey', () => {
   });
 
   it('should handle UUID format IDs', () => {
-    const workflowVersionId = '550e8400-e29b-41d4-a716-446655440000';
+    const workflowVersionId = 'd55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c';
     const stepId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
     const result = getStepOutputSchemaFamilyStateKey(workflowVersionId, stepId);
 
     expect(result).toBe(
-      '550e8400-e29b-41d4-a716-446655440000-6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+      'd55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c-6ba7b810-9dad-11d1-80b4-00c04fd430c8',
     );
   });
 
