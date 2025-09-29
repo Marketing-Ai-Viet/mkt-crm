@@ -77,6 +77,11 @@ interface ValidationSession {
     cacheMisses: number;
     slowSteps: number[];
     parallelSteps: number;
+    parallelGroups: number;
+    averageParallelExecutionTime: number;
+    totalParallelTime: number;
+    sequentialTime: number;
+    optimizationsApplied: string[];
   };
 }
 
@@ -241,41 +246,8 @@ export class ValidationOrchestratorService
       const executionGroups: number[][] = [];
       let totalEstimatedTime = 0;
 
-      // Group steps by dependencies and parallel execution capability
-      const parallelGroup1 = [VALIDATION_STEPS.PRE_VALIDATION];
-      const parallelGroup2 = [
-        VALIDATION_STEPS.USER_CONTEXT_RESOLUTION,
-        VALIDATION_STEPS.RESOURCE_IDENTIFICATION,
-      ];
-      const parallelGroup3 = [
-        VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK,
-        VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION,
-        VALIDATION_STEPS.RESOURCE_PERMISSION_CHECK,
-      ];
-      const parallelGroup4 = [
-        VALIDATION_STEPS.HIERARCHY_VALIDATION,
-        VALIDATION_STEPS.DATA_ACCESS_POLICY_CHECK,
-      ];
-      const parallelGroup5 = [
-        VALIDATION_STEPS.SPECIAL_PERMISSIONS,
-        VALIDATION_STEPS.SENSITIVE_DATA_CHECKS,
-        VALIDATION_STEPS.DEPARTMENT_RESTRICTIONS,
-        VALIDATION_STEPS.DYNAMIC_CONDITIONS,
-      ];
-      const parallelGroup6 = [VALIDATION_STEPS.CACHE_PERFORMANCE];
-      const parallelGroup7 = [VALIDATION_STEPS.AUDIT_LOGGING];
-      const parallelGroup8 = [VALIDATION_STEPS.FINAL_DECISION];
-
-      const groups = [
-        parallelGroup1,
-        parallelGroup2,
-        parallelGroup3,
-        parallelGroup4,
-        parallelGroup5,
-        parallelGroup6,
-        parallelGroup7,
-        parallelGroup8,
-      ];
+      // Dynamically group steps by dependencies and parallel execution capability
+      const groups = this.generateOptimizedExecutionGroups(context);
 
       // Build step details and groups
       for (const group of groups) {
@@ -367,21 +339,92 @@ export class ValidationOrchestratorService
     plan: ValidationExecutionPlan,
   ): Promise<EnhancedPermissionResult> {
     try {
+      // Apply context-aware optimizations to session
+      this.applySessionOptimizations(session, plan);
+
       // Execute groups sequentially, steps within groups in parallel if enabled
       for (const group of plan.executionGroups) {
         if (plan.optimizations.parallelExecution && group.length > 1) {
-          // Execute steps in parallel
+          // Execute steps in parallel with improved error handling
+          const parallelStartTime = Date.now();
           const promises = group.map((stepNumber) => {
             const step = this.steps.get(stepNumber);
 
-            return step ? this.executeStep(session, step) : Promise.resolve();
+            return step
+              ? this.executeStep(session, step)
+              : Promise.resolve(null);
           });
 
-          await Promise.all(promises);
+          const parallelResults = await Promise.allSettled(promises);
+          const parallelExecutionTime = Date.now() - parallelStartTime;
+
+          // Process parallel results and handle failures
+          let hasBlockingFailure = false;
+          let successfulSteps = 0;
+
+          for (let i = 0; i < parallelResults.length; i++) {
+            const result = parallelResults[i];
+            const stepNumber = group[i];
+
+            if (result.status === 'fulfilled' && result.value) {
+              successfulSteps++;
+
+              // Check for early exit conditions
+              if (
+                plan.optimizations.earlyExit &&
+                result.value.result === 'FAIL' &&
+                !result.value.continue
+              ) {
+                hasBlockingFailure = true;
+                this.logger.warn(
+                  `Blocking failure in parallel step ${stepNumber}`,
+                );
+              }
+            } else if (result.status === 'rejected') {
+              this.logger.error(
+                `Parallel step ${stepNumber} failed with error:`,
+                result.reason,
+              );
+              hasBlockingFailure = true;
+            }
+          }
+
+          // Update performance metrics
           session.performance.parallelSteps += group.length;
+          session.performance.parallelGroups += 1;
+          session.performance.totalParallelTime += parallelExecutionTime;
+          session.performance.averageParallelExecutionTime =
+            session.performance.totalParallelTime /
+            session.performance.parallelGroups;
+
+          this.logger.debug(`Parallel group completed`, {
+            groupSize: group.length,
+            successfulSteps,
+            executionTime: parallelExecutionTime,
+            averageStepTime: parallelExecutionTime / group.length,
+            totalParallelTime: session.performance.totalParallelTime,
+          });
+
+          // Early exit if we have blocking failures
+          if (hasBlockingFailure && plan.optimizations.earlyExit) {
+            this.logger.debug(
+              'Early exit triggered due to parallel step failures',
+            );
+            break;
+          }
         } else {
-          // Execute steps sequentially
+          // Execute steps sequentially with optimized dependency checking
+          const sequentialStartTime = Date.now();
+
           for (const stepNumber of group) {
+            // Check if step dependencies are satisfied
+            if (!this.areStepDependenciesSatisfied(stepNumber, session)) {
+              this.logger.warn(
+                `Step ${stepNumber} dependencies not satisfied, skipping`,
+              );
+              continue;
+            }
+
             const step = this.steps.get(stepNumber);
 
             if (step) {
@@ -399,6 +442,16 @@ export class ValidationOrchestratorService
               }
             }
           }
+
+          const sequentialExecutionTime = Date.now() - sequentialStartTime;
+
+          session.performance.sequentialTime += sequentialExecutionTime;
+
+          this.logger.debug(`Sequential group completed`, {
+            groupSize: group.length,
+            executionTime: sequentialExecutionTime,
+            totalSequentialTime: session.performance.sequentialTime,
+          });
         }
       }
 
@@ -417,7 +470,12 @@ export class ValidationOrchestratorService
       }
 
       // Fallback to orchestrator aggregation if Step 15 wasn't executed
-      return this.aggregateStepResults(session);
+      const result = this.aggregateStepResults(session);
+
+      // Log final performance summary
+      this.logPerformanceSummary(session);
+
+      return result;
     } catch (error) {
       this.logger.error(
         `Error executing steps with plan: ${error.message}`,
@@ -679,6 +737,11 @@ export class ValidationOrchestratorService
         cacheMisses: 0,
         slowSteps: [],
         parallelSteps: 0,
+        parallelGroups: 0,
+        averageParallelExecutionTime: 0,
+        totalParallelTime: 0,
+        sequentialTime: 0,
+        optimizationsApplied: [],
       },
     };
 
@@ -836,6 +899,290 @@ export class ValidationOrchestratorService
    */
   getActiveSessionsCount(): number {
     return this.activeSessions.size;
+  }
+
+  /**
+   * Log comprehensive performance summary
+   */
+  private logPerformanceSummary(session: ValidationSession): void {
+    const totalExecutionTime =
+      session.totalExecutionTime || Date.now() - session.startTime.getTime();
+
+    const parallelEfficiency =
+      session.performance.parallelSteps > 0
+        ? session.performance.totalParallelTime /
+          session.performance.parallelSteps
+        : 0;
+
+    const sequentialEfficiency =
+      session.performance.sequentialTime > 0
+        ? session.performance.sequentialTime
+        : 0;
+
+    const performanceSummary = {
+      sessionId: session.sessionId,
+      totalExecutionTime,
+      parallelGroups: session.performance.parallelGroups,
+      parallelSteps: session.performance.parallelSteps,
+      parallelTime: session.performance.totalParallelTime,
+      sequentialTime: session.performance.sequentialTime,
+      averageParallelExecutionTime:
+        session.performance.averageParallelExecutionTime,
+      parallelEfficiency: Math.round(parallelEfficiency * 100) / 100,
+      timeDistribution: {
+        parallelPercent: Math.round(
+          (session.performance.totalParallelTime / totalExecutionTime) * 100,
+        ),
+        sequentialPercent: Math.round(
+          (session.performance.sequentialTime / totalExecutionTime) * 100,
+        ),
+      },
+      optimizationsApplied: session.performance.optimizationsApplied,
+      cachePerformance: {
+        hits: session.performance.cacheHits,
+        misses: session.performance.cacheMisses,
+        hitRate:
+          session.performance.cacheHits + session.performance.cacheMisses > 0
+            ? Math.round(
+                (session.performance.cacheHits /
+                  (session.performance.cacheHits +
+                    session.performance.cacheMisses)) *
+                  100,
+              )
+            : 0,
+      },
+      slowSteps: session.performance.slowSteps,
+      completedSteps: Array.from(session.steps.values()).filter(
+        (e) => e.completed,
+      ).length,
+      totalSteps: session.steps.size,
+    };
+
+    this.logger.log('RBAC Validation Performance Summary', performanceSummary);
+
+    // Log warnings for performance issues
+    if (totalExecutionTime > 5000) {
+      this.logger.warn('Validation took longer than 5 seconds', {
+        sessionId: session.sessionId,
+        totalTime: totalExecutionTime,
+        slowSteps: session.performance.slowSteps,
+      });
+    }
+
+    if (
+      session.performance.parallelGroups === 0 &&
+      session.performance.parallelSteps > 0
+    ) {
+      this.logger.warn(
+        'Parallel steps were planned but no parallel groups executed',
+        {
+          sessionId: session.sessionId,
+          parallelSteps: session.performance.parallelSteps,
+        },
+      );
+    }
+  }
+
+  /**
+   * Apply session-specific optimizations
+   */
+  private applySessionOptimizations(
+    session: ValidationSession,
+    plan: ValidationExecutionPlan,
+  ): void {
+    const context = session.context;
+
+    // Track if parallel execution is enabled
+    if (plan.optimizations.parallelExecution) {
+      session.performance.optimizationsApplied.push(
+        'parallel_execution_enabled',
+      );
+    }
+
+    // Track if early exit is enabled
+    if (plan.optimizations.earlyExit) {
+      session.performance.optimizationsApplied.push('early_exit_enabled');
+    }
+
+    // Simple action optimization
+    if (this.isSimpleAction(context)) {
+      session.performance.optimizationsApplied.push(
+        'simple_action_optimization',
+      );
+    }
+
+    // Special permissions optimization
+    if (
+      context.specialPermissions?.hasEmergencyAccess ||
+      context.specialPermissions?.hasSystemMaintenance
+    ) {
+      session.performance.optimizationsApplied.push(
+        'special_permissions_prioritization',
+      );
+    }
+
+    // Sensitive data optimization
+    if (
+      !context.resourceContext?.isSensitive &&
+      !context.sensitiveDataContext
+    ) {
+      session.performance.optimizationsApplied.push('sensitive_data_skip');
+    }
+
+    // Caching optimization
+    if (plan.optimizations.cacheEnabled) {
+      session.performance.optimizationsApplied.push('caching_enabled');
+    }
+
+    this.logger.debug('Session optimizations applied', {
+      sessionId: session.sessionId,
+      optimizations: session.performance.optimizationsApplied,
+      totalSteps: plan.steps.length,
+      estimatedTime: plan.totalEstimatedTime,
+    });
+  }
+
+  /**
+   * Generate optimized execution groups based on context and dependencies
+   */
+  private generateOptimizedExecutionGroups(
+    context: EnhancedPermissionContext,
+    session?: ValidationSession,
+  ): number[][] {
+    // Base execution groups - these are the standard groups
+    const baseGroups = [
+      [VALIDATION_STEPS.PRE_VALIDATION],
+      [
+        VALIDATION_STEPS.USER_CONTEXT_RESOLUTION,
+        VALIDATION_STEPS.RESOURCE_IDENTIFICATION,
+      ],
+      [
+        VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK,
+        VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION,
+        VALIDATION_STEPS.RESOURCE_PERMISSION_CHECK,
+      ],
+      [
+        VALIDATION_STEPS.HIERARCHY_VALIDATION,
+        VALIDATION_STEPS.DATA_ACCESS_POLICY_CHECK,
+      ],
+      [
+        VALIDATION_STEPS.SPECIAL_PERMISSIONS,
+        VALIDATION_STEPS.SENSITIVE_DATA_CHECKS,
+        VALIDATION_STEPS.DEPARTMENT_RESTRICTIONS,
+        VALIDATION_STEPS.DYNAMIC_CONDITIONS,
+      ],
+      [VALIDATION_STEPS.CACHE_PERFORMANCE],
+      [VALIDATION_STEPS.AUDIT_LOGGING],
+      [VALIDATION_STEPS.FINAL_DECISION],
+    ];
+
+    // Optimize groups based on context - use any[] to allow flexible group modifications
+    const optimizedGroups: number[][] = baseGroups.map((group) => [...group]);
+
+    // If it's a simple action, we can merge some groups for faster execution
+    const isSimpleAction = this.isSimpleAction(context);
+
+    if (isSimpleAction) {
+      // Merge cache and audit into one group for simple actions
+      const cacheGroup = optimizedGroups[5];
+      const auditGroup = optimizedGroups[6];
+
+      optimizedGroups[5] = [...cacheGroup, ...auditGroup];
+      optimizedGroups.splice(6, 1); // Remove the separate audit group
+
+      if (session) {
+        session.performance.optimizationsApplied.push(
+          'simple_action_optimization',
+        );
+      }
+    }
+
+    // If user has special permissions, prioritize those checks
+    if (
+      context.specialPermissions?.hasEmergencyAccess ||
+      context.specialPermissions?.hasSystemMaintenance
+    ) {
+      // Move special permissions to an earlier group
+      const specialPermIndex = optimizedGroups.findIndex((group) =>
+        group.includes(VALIDATION_STEPS.SPECIAL_PERMISSIONS),
+      );
+
+      if (specialPermIndex > 2) {
+        const specialPermGroup = optimizedGroups[specialPermIndex];
+        const specialPermsStep = specialPermGroup.splice(
+          specialPermGroup.indexOf(VALIDATION_STEPS.SPECIAL_PERMISSIONS),
+          1,
+        );
+
+        optimizedGroups[2] = [
+          ...optimizedGroups[2],
+          ...specialPermsStep,
+        ] as number[];
+
+        if (session) {
+          session.performance.optimizationsApplied.push(
+            'special_permissions_prioritization',
+          );
+        }
+      }
+    }
+
+    // If no sensitive data, skip sensitive data checks
+    if (
+      !context.resourceContext?.isSensitive &&
+      !context.sensitiveDataContext
+    ) {
+      let removedSensitiveChecks = false;
+
+      optimizedGroups.forEach((group) => {
+        const index = group.indexOf(VALIDATION_STEPS.SENSITIVE_DATA_CHECKS);
+
+        if (index > -1) {
+          group.splice(index, 1);
+          removedSensitiveChecks = true;
+        }
+      });
+
+      if (removedSensitiveChecks && session) {
+        session.performance.optimizationsApplied.push('sensitive_data_skip');
+      }
+    }
+
+    // Remove empty groups
+    return optimizedGroups.filter((group) => group.length > 0);
+  }
+
+  /**
+   * Check if this is a simple action that can be optimized
+   */
+  private isSimpleAction(context: EnhancedPermissionContext): boolean {
+    const simpleActions = ['READ', 'list', 'view'];
+
+    return (
+      simpleActions.includes(context.action.toLowerCase()) &&
+      !context.resourceContext?.isSensitive &&
+      !context.specialPermissions?.hasEmergencyAccess
+    );
+  }
+
+  /**
+   * Check if step dependencies are satisfied
+   */
+  private areStepDependenciesSatisfied(
+    stepNumber: number,
+    session: ValidationSession,
+  ): boolean {
+    const dependencies = this.getStepDependencies(stepNumber);
+
+    for (const dependencyStep of dependencies) {
+      const execution = session.steps.get(dependencyStep);
+
+      if (!execution?.completed || execution.result?.result === 'ERROR') {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

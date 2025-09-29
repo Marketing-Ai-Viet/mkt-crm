@@ -408,7 +408,7 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
           cacheMetrics.avgResponseTime,
           cacheMetrics.errorRate,
         ),
-        lastOptimizedAt: cacheMetrics.lastResetAt,
+        lastOptimizedAt: cacheMetrics.lastResetAt.toJSDate(),
         hotKeys: cacheMetrics.hotKeys,
         slowQueries: cacheMetrics.slowOperations.map((op) => op.split(':')[1]), // Extract operation details
       };

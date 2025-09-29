@@ -4,7 +4,14 @@
  * Independent from database entities - uses Twenty's cache system directly
  */
 
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+
+import { DateTime } from 'luxon';
 
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -23,7 +30,7 @@ interface CachePerformanceMetrics {
   totalRequests: number;
   averageResponseTime: number;
   errorCount: number;
-  lastResetAt: Date;
+  lastResetAt: DateTime;
   cacheSize: number;
   hotKeys: string[];
   slowOperations: string[];
@@ -79,9 +86,23 @@ const RBAC_CACHE_TTL = {
   PERFORMANCE: 60 * 1000, // 1 minute - for performance metrics
 } as const;
 
+/**
+ * Cache cleanup and monitoring intervals (in milliseconds)
+ */
+const RBAC_CACHE_INTERVALS = {
+  PERFORMANCE_MONITORING: 5 * 60 * 1000, // 5 minutes
+  CLEANUP: 10 * 60 * 1000, // 10 minutes
+  ACCESS_TRACKING_RETENTION: 24 * 60 * 60 * 1000, // 24 hours
+  METRICS_RESET: 7 * 24 * 60 * 60 * 1000, // 7 days
+} as const;
+
 @Injectable()
-export class RbacCacheManagerService implements OnModuleDestroy {
+export class RbacCacheManagerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RbacCacheManagerService.name);
+
+  // Timers for cleanup operations
+  private performanceMonitoringTimer?: NodeJS.Timeout;
+  private cleanupTimer?: NodeJS.Timeout;
 
   // In-memory performance tracking
   private performanceMetrics: CachePerformanceMetrics = {
@@ -90,7 +111,7 @@ export class RbacCacheManagerService implements OnModuleDestroy {
     totalRequests: 0,
     averageResponseTime: 0,
     errorCount: 0,
-    lastResetAt: new Date(),
+    lastResetAt: DateTime.now(),
     cacheSize: 0,
     hotKeys: [],
     slowOperations: [],
@@ -107,19 +128,39 @@ export class RbacCacheManagerService implements OnModuleDestroy {
     performanceMonitoring: true,
   };
 
+  // Cleanup interval
+  private readonly cleanupInterval = RBAC_CACHE_INTERVALS.CLEANUP;
+
   // Hot keys tracking
   private keyAccessCount = new Map<string, number>();
-  private keyLastAccess = new Map<string, Date>();
+  private keyLastAccess = new Map<string, DateTime>();
 
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.EngineWorkspace)
     private readonly cacheStorage: CacheStorageService,
   ) {
     this.logger.log('RBAC Cache Manager Service initialized');
+  }
+
+  onModuleInit(): void {
     this.startPerformanceMonitoring();
+    this.startCleanupTimer();
+    this.logger.log('RBAC Cache Manager Service module initialized');
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (this.performanceMonitoringTimer) {
+      clearInterval(this.performanceMonitoringTimer);
+      this.performanceMonitoringTimer = undefined;
+      this.logger.log('Performance monitoring timer cleared');
+    }
+
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+      this.logger.log('Cleanup timer cleared');
+    }
+
     this.logger.log('RBAC Cache Manager Service destroyed');
   }
 
@@ -426,7 +467,7 @@ export class RbacCacheManagerService implements OnModuleDestroy {
       totalRequests: 0,
       averageResponseTime: 0,
       errorCount: 0,
-      lastResetAt: new Date(),
+      lastResetAt: DateTime.now(),
       cacheSize: 0,
       hotKeys: [],
       slowOperations: [],
@@ -561,7 +602,7 @@ export class RbacCacheManagerService implements OnModuleDestroy {
     const currentCount = this.keyAccessCount.get(key) || 0;
 
     this.keyAccessCount.set(key, currentCount + 1);
-    this.keyLastAccess.set(key, new Date());
+    this.keyLastAccess.set(key, DateTime.now());
 
     // Update average response time
     if (responseTime > 0) {
@@ -623,21 +664,69 @@ export class RbacCacheManagerService implements OnModuleDestroy {
       return;
     }
 
-    // Log performance metrics every 5 minutes
-    setInterval(
-      () => {
-        const metrics = this.getPerformanceMetrics();
+    // Log performance metrics at regular intervals
+    this.performanceMonitoringTimer = setInterval(() => {
+      const metrics = this.getPerformanceMetrics();
 
-        this.logger.debug('RBAC Cache Performance Metrics', {
-          hitRate: `${metrics.hitRate}%`,
-          totalRequests: metrics.totalRequests,
-          errorRate: `${metrics.errorRate}%`,
-          avgResponseTime: `${metrics.avgResponseTime}ms`,
-          hotKeysCount: metrics.hotKeys.length,
-          slowOperationsCount: metrics.slowOperations.length,
-        });
-      },
-      5 * 60 * 1000,
-    ); // 5 minutes
+      this.logger.debug('RBAC Cache Performance Metrics', {
+        hitRate: `${metrics.hitRate}%`,
+        totalRequests: metrics.totalRequests,
+        errorRate: `${metrics.errorRate}%`,
+        avgResponseTime: `${metrics.avgResponseTime}ms`,
+        hotKeysCount: metrics.hotKeys.length,
+        slowOperationsCount: metrics.slowOperations.length,
+      });
+    }, RBAC_CACHE_INTERVALS.PERFORMANCE_MONITORING);
+
+    this.logger.debug('Performance monitoring started');
+  }
+
+  private startCleanupTimer(): void {
+    // Start cleanup timer to remove expired keys and perform maintenance
+    this.cleanupTimer = setInterval(
+      () => this.cleanupExpiredKeys(),
+      this.cleanupInterval,
+    );
+
+    this.logger.debug('Cache cleanup timer started');
+  }
+
+  private async cleanupExpiredKeys(): Promise<void> {
+    try {
+      // Clean up old access tracking data using retention period
+      const cutoffTime = DateTime.now().minus({
+        milliseconds: RBAC_CACHE_INTERVALS.ACCESS_TRACKING_RETENTION,
+      });
+
+      for (const [key, lastAccess] of this.keyLastAccess.entries()) {
+        if (lastAccess < cutoffTime) {
+          this.keyLastAccess.delete(key);
+          this.keyAccessCount.delete(key);
+        }
+      }
+
+      // Limit slow operations tracking
+      if (this.performanceMetrics.slowOperations.length > 50) {
+        this.performanceMetrics.slowOperations =
+          this.performanceMetrics.slowOperations.slice(-25);
+      }
+
+      // Reset metrics if they get too old (weekly reset)
+      const metricsResetCutoff = DateTime.now().minus({
+        milliseconds: RBAC_CACHE_INTERVALS.METRICS_RESET,
+      });
+
+      if (this.performanceMetrics.lastResetAt < metricsResetCutoff) {
+        this.resetPerformanceMetrics();
+        this.logger.log('Weekly performance metrics reset completed');
+      }
+
+      this.logger.debug('Cache cleanup completed', {
+        trackedKeys: this.keyAccessCount.size,
+        slowOperations: this.performanceMetrics.slowOperations.length,
+      });
+    } catch (error) {
+      this.logger.error('Cache cleanup failed', { error: error.message });
+    }
   }
 }
