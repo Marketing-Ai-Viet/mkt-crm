@@ -41,9 +41,6 @@ import { Step12DynamicConditionsService } from './step12-dynamic-conditions.serv
 import { Step13CachePerformanceService } from './step13-cache-performance.service';
 import { Step14AuditLoggingService } from './step14-audit-logging.service';
 import { Step15FinalDecisionService } from './step15-final-decision.service';
-import { PermissionTemplateService } from './permission-template.service';
-// import { RbacCacheService } from './rbac-cache.service';
-import { AuditLoggingService } from './audit-logging.service';
 
 /**
  * Step execution metadata
@@ -112,9 +109,6 @@ export class ValidationOrchestratorService
     private readonly cachePerformanceService: Step13CachePerformanceService,
     private readonly step14AuditLoggingService: Step14AuditLoggingService,
     private readonly step15FinalDecisionService: Step15FinalDecisionService,
-    private readonly permissionTemplateService: PermissionTemplateService,
-    // private readonly cacheService: RbacCacheService,
-    private readonly auditService: AuditLoggingService,
   ) {
     this.initializeSteps();
     this.logger.log('Validation Orchestrator Service initialized');
