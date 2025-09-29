@@ -6,6 +6,7 @@ import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 
 export type CalculateOrderResult = {
@@ -224,7 +225,7 @@ export class OrderConfirmService {
     variantsMeta: Metadata['variants'] | null,
     customerMeta: Metadata['customer'] | null,
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
-  ): Promise<void> {
+  ): Promise<callFireBaseType | void> {
     if (action !== ORDER_ACTION.WAIT && action !== ORDER_ACTION.TRIAL)
       throw new Error('Action must be WAIT or TRIAL to confirm order');
 
@@ -299,7 +300,7 @@ export class OrderConfirmService {
       orderId: createdOrder.id,
     };
 
-    await this.mktPaymentService.createPaymentFromOrder(
+    return await this.mktPaymentService.createPaymentFromOrder(
       paymentData,
       paymentMethodsMeta,
     );

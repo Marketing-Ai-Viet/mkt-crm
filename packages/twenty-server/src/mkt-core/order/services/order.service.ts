@@ -6,7 +6,9 @@ import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constant
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { FirebaseAuthResponse } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { VariantService } from 'src/mkt-core/product/services/variant.service';
+
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
@@ -138,13 +140,30 @@ export class OrderService {
     orderId: string,
     status: ORDER_STATUS,
     trialLicense?: boolean,
+    authFirebase?: void | FirebaseAuthResponse,
   ) {
     const orderRepository = await this.mktRepo.getOrderRepository();
 
-    await orderRepository.update(orderId, {
+    this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
+
+    const updateData: any = {
       status,
-      ...{ trialLicense: trialLicense ?? false },
-    });
+      trialLicense: trialLicense ?? false,
+    };
+
+    // Nếu có authFirebase thì update vào metadata
+    if (authFirebase) {
+      updateData.metadata = JSON.stringify({ authFirebase });
+      this.logger.log(
+        `Updated metadata with Firebase auth info for order: ${orderId}`,
+      );
+    }
+
+    this.logger.log(
+      `Updating order ${orderId} with data: ${JSON.stringify(updateData)}`,
+    );
+
+    await orderRepository.update(orderId, updateData);
   }
 
   async cloneOrder(

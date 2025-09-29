@@ -11,6 +11,8 @@ import {
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
+import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 
 type SepayWebhookPayload = {
@@ -38,7 +40,10 @@ const sepayGuards =
 export class SepayPaymentController {
   private readonly logger = new Logger(SepayPaymentController.name);
 
-  constructor(private readonly mktPaymentService: MktPaymentService) {}
+  constructor(
+    private readonly mktPaymentService: MktPaymentService,
+    private readonly fireBaseIntegrationService: FireBaseIntegrationService,
+  ) {}
 
   // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
   @UseGuards(...sepayGuards)
@@ -76,12 +81,13 @@ export class SepayPaymentController {
     }
     for (const payment of payments) {
       await this.mktPaymentService.updatePaymentById(workspaceId, payment.id, {
-        status: 'COMPLETED',
+        status: MKT_PAYMENT_STATUS.COMPLETED,
         paymentDate: payload.transactionDate,
         amount: payload.transferAmount,
         description: payload.content || payload.description,
       });
       this.logger.log(`Updated payment ${payment.id} for order ${order.id}`);
+      this.fireBaseIntegrationService.completedOrderToFirebase(order);
       break; // Assuming only one payment needs to be updated
     }
 

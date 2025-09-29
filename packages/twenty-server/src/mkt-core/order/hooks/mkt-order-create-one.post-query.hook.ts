@@ -16,6 +16,11 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
+import {
+  FireBaseIntegrationService,
+  FirebaseAuthResponse,
+} from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 
 export type Metadata = {
@@ -24,6 +29,7 @@ export type Metadata = {
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
   trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi
+  authFirebase?: void;
 };
 export type Created = MktOrderWorkspaceEntity & {
   id: string;
@@ -48,6 +54,7 @@ export class MktOrderCreateOnePostQueryHook
     private readonly orderConfirmService: OrderConfirmService,
     private readonly orderService: OrderService,
     private readonly orderActionService: OrderActionService,
+    private readonly fireBaseIntegrationService: FireBaseIntegrationService,
   ) {}
 
   async execute(
@@ -77,19 +84,24 @@ export class MktOrderCreateOnePostQueryHook
 
       if (action === ORDER_ACTION.WAIT || action === ORDER_ACTION.TRIAL) {
         this.logger.log(`Processing ${action} action for order creation`);
-        await this.orderConfirmService.confirmOrder(
-          action,
-          created,
-          workspaceId,
-          variantsMeta,
-          customerMeta,
-          paymentMethodsMeta,
-        );
+        const fireBaseData: callFireBaseType | void =
+          await this.orderConfirmService.confirmOrder(
+            action,
+            created,
+            workspaceId,
+            variantsMeta,
+            customerMeta,
+            paymentMethodsMeta,
+          );
+
+        this.logger.log(`Firebase data: ${JSON.stringify(fireBaseData)}`);
+        const authFirebase = await this.callFireBase(fireBaseData);
         // Update order status based on action
         await this.orderService.updateOrderStatus(
           created.id,
           await this.orderActionService.getOrderStatusFromAction(action),
           await this.orderActionService.isTrialAction(action),
+          authFirebase,
         );
 
         return;
@@ -113,6 +125,39 @@ export class MktOrderCreateOnePostQueryHook
         error,
       );
       throw error;
+    }
+  }
+
+  private async callFireBase(
+    fireBaseData: callFireBaseType | void,
+  ): Promise<FirebaseAuthResponse | void> {
+    if (!fireBaseData) return;
+    if (!fireBaseData.orderCode) return;
+    if (!fireBaseData.QRCodeUrl) return;
+    const orderCode = fireBaseData.orderCode;
+    const qrCodeUrl = fireBaseData.QRCodeUrl;
+    try {
+      this.logger.log(`Sending order ${orderCode} to Firebase`);
+      // Send order info to Firebase with PENDING status
+      const userFirebase =
+        await this.fireBaseIntegrationService.authenticateWithFirebase();
+
+      // Add null check for authentication result
+      if (userFirebase) {
+        await this.fireBaseIntegrationService.pendingOrderToFirebase(
+          userFirebase,
+          orderCode,
+          qrCodeUrl,
+        );
+      }
+
+      this.logger.log('User Firebase: ' + JSON.stringify(userFirebase));
+      this.logger.log(`Successfully sent order ${orderCode} to Firebase`);
+      return userFirebase;
+    } catch (error) {
+      this.logger.error('Failed to call Firebase', error);
+      // Don't throw to prevent breaking the order creation flow
+      return;
     }
   }
 
