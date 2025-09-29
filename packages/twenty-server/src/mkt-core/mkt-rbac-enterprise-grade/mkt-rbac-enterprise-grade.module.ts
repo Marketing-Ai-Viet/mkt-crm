@@ -19,6 +19,7 @@ import { Step11DepartmentRestrictionsService } from 'src/mkt-core/mkt-rbac-enter
 import { Step12DynamicConditionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step12-dynamic-conditions.service';
 import { Step13CachePerformanceService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step13-cache-performance.service';
 import { Step14AuditLoggingService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step14-audit-logging.service';
+import { Step15FinalDecisionService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step15-final-decision.service';
 import { RbacCacheManagerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache-manager.service';
 import { ValidationOrchestratorService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/validation-orchestrator.service';
 import { AuditLoggingInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/audit-logging.interceptor';
@@ -80,6 +81,7 @@ const DEFAULT_CONFIG = {
     Step12DynamicConditionsService,
     Step13CachePerformanceService,
     Step14AuditLoggingService,
+    Step15FinalDecisionService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,
@@ -105,6 +107,7 @@ const DEFAULT_CONFIG = {
     Step12DynamicConditionsService,
     Step13CachePerformanceService,
     Step14AuditLoggingService,
+    Step15FinalDecisionService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,

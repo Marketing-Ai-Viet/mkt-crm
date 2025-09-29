@@ -588,6 +588,9 @@ export type EnhancedPermissionContext = {
   validationMode?: 'STRICT' | 'PERMISSIVE' | 'AUDIT_ONLY';
   failFast?: boolean; // Stop at first failure
   continueOnError?: boolean; // Continue validation even on errors
+
+  // Step results for final decision (Step 15)
+  stepResults?: ValidationStepResult[];
 };
 
 /**

@@ -40,6 +40,7 @@ import { Step11DepartmentRestrictionsService } from './step11-department-restric
 import { Step12DynamicConditionsService } from './step12-dynamic-conditions.service';
 import { Step13CachePerformanceService } from './step13-cache-performance.service';
 import { Step14AuditLoggingService } from './step14-audit-logging.service';
+import { Step15FinalDecisionService } from './step15-final-decision.service';
 import { PermissionTemplateService } from './permission-template.service';
 // import { RbacCacheService } from './rbac-cache.service';
 import { AuditLoggingService } from './audit-logging.service';
@@ -110,6 +111,7 @@ export class ValidationOrchestratorService
     private readonly dynamicConditionsService: Step12DynamicConditionsService,
     private readonly cachePerformanceService: Step13CachePerformanceService,
     private readonly step14AuditLoggingService: Step14AuditLoggingService,
+    private readonly step15FinalDecisionService: Step15FinalDecisionService,
     private readonly permissionTemplateService: PermissionTemplateService,
     // private readonly cacheService: RbacCacheService,
     private readonly auditService: AuditLoggingService,
@@ -205,7 +207,15 @@ export class ValidationOrchestratorService
       }
 
       // Generate result based on executed steps
-      const result = this.aggregateStepResults(session);
+      // Check if Step 15 (Final Decision) was executed
+      const finalDecisionExecution = session.steps.get(
+        VALIDATION_STEPS.FINAL_DECISION,
+      );
+      const result =
+        finalDecisionExecution?.completed &&
+        finalDecisionExecution.result?.stepData
+          ? (finalDecisionExecution.result.stepData as EnhancedPermissionResult)
+          : this.aggregateStepResults(session);
 
       session.finalResult = result;
 
@@ -398,7 +408,21 @@ export class ValidationOrchestratorService
         }
       }
 
-      // Aggregate all step results
+      // Check if Step 15 (Final Decision) was executed
+      const finalDecisionExecution = session.steps.get(
+        VALIDATION_STEPS.FINAL_DECISION,
+      );
+
+      if (
+        finalDecisionExecution?.completed &&
+        finalDecisionExecution.result?.stepData
+      ) {
+        // Step 15 has made the final decision - use its result
+        return finalDecisionExecution.result
+          .stepData as EnhancedPermissionResult;
+      }
+
+      // Fallback to orchestrator aggregation if Step 15 wasn't executed
       return this.aggregateStepResults(session);
     } catch (error) {
       this.logger.error(
@@ -458,6 +482,25 @@ export class ValidationOrchestratorService
       // Update context if step provides modifications
       if (result.modifyContext) {
         session.context = { ...session.context, ...result.modifyContext };
+      }
+
+      // If this is Step 15 (Final Decision), inject accumulated step results
+      if (step.stepNumber === VALIDATION_STEPS.FINAL_DECISION) {
+        const accumulatedStepResults =
+          this.buildStepResultsForFinalDecision(session);
+
+        session.context = {
+          ...session.context,
+          stepResults: accumulatedStepResults,
+        };
+
+        // Re-execute Step 15 with the updated context
+        const finalResult = await step.validate(session.context);
+
+        execution.result = finalResult;
+        execution.completed = true;
+
+        return finalResult;
       }
 
       // Check performance thresholds
@@ -617,7 +660,7 @@ export class ValidationOrchestratorService
     this.registerStep(this.dynamicConditionsService);
     this.registerStep(this.cachePerformanceService);
     this.registerStep(this.step14AuditLoggingService);
-    this.registerStep(this.auditService);
+    this.registerStep(this.step15FinalDecisionService);
 
     this.logger.log(`Initialized ${this.steps.size} validation steps`);
   }
@@ -799,6 +842,42 @@ export class ValidationOrchestratorService
    */
   getActiveSessionsCount(): number {
     return this.activeSessions.size;
+  }
+
+  /**
+   * Build step results for final decision
+   */
+  private buildStepResultsForFinalDecision(
+    session: ValidationSession,
+  ): ValidationStepResult[] {
+    const stepResults: ValidationStepResult[] = [];
+
+    // Collect results from steps 1-14 (excluding Step 15 itself)
+    for (const [stepNumber, execution] of session.steps.entries()) {
+      if (stepNumber !== VALIDATION_STEPS.FINAL_DECISION && execution.result) {
+        const stepResult: ValidationStepResult = {
+          step: stepNumber,
+          name: execution.stepName,
+          result:
+            execution.result.result === 'ERROR'
+              ? 'FAIL'
+              : (execution.result.result as
+                  | 'PASS'
+                  | 'FAIL'
+                  | 'SKIP'
+                  | 'WARNING'),
+          reason: execution.result.reason,
+          duration: execution.executionTime || 0,
+          details: execution.result.stepData as
+            | Record<string, string | number | boolean | Date>
+            | undefined,
+        };
+
+        stepResults.push(stepResult);
+      }
+    }
+
+    return stepResults.sort((a, b) => a.step - b.step);
   }
 
   /**
