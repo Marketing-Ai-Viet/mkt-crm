@@ -103,6 +103,7 @@ export class MktPaymentService {
         );
       }
     }
+
     return result;
   }
 

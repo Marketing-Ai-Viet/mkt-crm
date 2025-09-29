@@ -146,14 +146,14 @@ export class OrderService {
 
     this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
 
-    const updateData: any = {
+    const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
       trialLicense: trialLicense ?? false,
     };
 
     // Nếu có authFirebase thì update vào metadata
     if (authFirebase) {
-      updateData.metadata = JSON.stringify({ authFirebase });
+      updateData.metadata = JSON.stringify({ authFirebase }) as unknown as JSON;
       this.logger.log(
         `Updated metadata with Firebase auth info for order: ${orderId}`,
       );

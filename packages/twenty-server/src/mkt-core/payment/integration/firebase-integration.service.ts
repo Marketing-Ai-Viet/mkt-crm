@@ -1,6 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+
 import { firstValueFrom } from 'rxjs';
+
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -28,11 +30,13 @@ export class FireBaseIntegrationService {
     if (!orderCode) return;
     try {
       const firebaseUrl = `${this.firebaseAuthUrl}${this.firebaseKey}`;
+
       this.logger.log('Firebase URL: ' + firebaseUrl);
       this.logger.log('Order Code: ' + orderCode);
       const response = await firstValueFrom(
         this.httpService.post<FirebaseAuthResponse>(firebaseUrl),
       );
+
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to get user ${orderCode} from Firebase`, error);
@@ -49,9 +53,11 @@ export class FireBaseIntegrationService {
       );
 
       this.logger.log('Firebase authentication successful');
+
       return response.data;
     } catch (error) {
       this.logger.error('Failed to authenticate with Firebase', error);
+
       return;
       //throw new Error(`Firebase authentication failed: ${error.message}`);
     }
@@ -61,7 +67,7 @@ export class FireBaseIntegrationService {
     authData: FirebaseAuthResponse,
     orderCode: string,
     qrCodeUrl: string,
-    note: string = '',
+    note = '',
   ): Promise<void> {
     if (!authData || !authData.idToken) return;
     if (!orderCode) return;
@@ -84,12 +90,13 @@ export class FireBaseIntegrationService {
 
   async completedOrderToFirebase(
     order: Partial<MktOrderWorkspaceEntity>,
-    note: string = '',
+    note = '',
   ): Promise<void> {
     this.logger.log(
       `Preparing to send completed order ${order?.orderCode} to Firebase`,
     );
     let metadata = order?.metadata as Metadata;
+
     // Handle case where metadata might be stored as JSON string
     if (typeof metadata === 'string') {
       try {
@@ -102,6 +109,7 @@ export class FireBaseIntegrationService {
 
     const authData = metadata?.authFirebase as FirebaseAuthResponse | void;
     const orderCode = order?.orderCode || null;
+
     this.logger.log('Auth Data: ' + JSON.stringify(authData));
     this.logger.log('Order Code: ' + orderCode);
     if (!authData || !authData?.idToken) return;
@@ -124,7 +132,7 @@ export class FireBaseIntegrationService {
     authData: FirebaseAuthResponse,
     orderCode: string,
     status: MKT_PAYMENT_STATUS,
-    note: string = '',
+    note = '',
   ): Promise<void> {
     try {
       // Step 1: Get Firebase authentication
@@ -165,6 +173,7 @@ export class FireBaseIntegrationService {
   ): Promise<void> {
     if (!orderCode) {
       this.logger.warn('No order code provided for Firebase sync');
+
       return;
     }
 

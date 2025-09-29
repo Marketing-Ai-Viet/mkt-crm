@@ -96,6 +96,7 @@ export class MktOrderCreateOnePostQueryHook
 
         this.logger.log(`Firebase data: ${JSON.stringify(fireBaseData)}`);
         const authFirebase = await this.callFireBase(fireBaseData);
+
         // Update order status based on action
         await this.orderService.updateOrderStatus(
           created.id,
@@ -136,6 +137,7 @@ export class MktOrderCreateOnePostQueryHook
     if (!fireBaseData.QRCodeUrl) return;
     const orderCode = fireBaseData.orderCode;
     const qrCodeUrl = fireBaseData.QRCodeUrl;
+
     try {
       this.logger.log(`Sending order ${orderCode} to Firebase`);
       // Send order info to Firebase with PENDING status
@@ -153,9 +155,11 @@ export class MktOrderCreateOnePostQueryHook
 
       this.logger.log('User Firebase: ' + JSON.stringify(userFirebase));
       this.logger.log(`Successfully sent order ${orderCode} to Firebase`);
+
       return userFirebase;
     } catch (error) {
       this.logger.error('Failed to call Firebase', error);
+
       // Don't throw to prevent breaking the order creation flow
       return;
     }
