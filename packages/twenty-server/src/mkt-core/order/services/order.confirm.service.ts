@@ -127,7 +127,7 @@ export class OrderConfirmService {
       if (todayOrders?.orderCode) {
         // Extract number from existing order code (e.g., MKT20241201001 -> 1)
         const match = todayOrders.orderCode.match(
-          `/${ORDER_CODE_PREFIX}\d{8}(\d{3})$/`,
+          `/${ORDER_CODE_PREFIX}\\d{8}(\\d{3})$/`,
         );
 
         if (match) {
