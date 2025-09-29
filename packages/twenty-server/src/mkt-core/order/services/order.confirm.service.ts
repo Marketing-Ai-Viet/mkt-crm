@@ -3,9 +3,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
+import { ORDER_CODE_PREFIX } from 'src/mkt-core/order/constants/order-status.constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 
 export type CalculateOrderResult = {
@@ -114,7 +116,7 @@ export class OrderConfirmService {
       const todayOrders = await orderRepository
         .createQueryBuilder('order')
         .where('order.orderCode LIKE :pattern', {
-          pattern: `MKT${datePrefix}%`,
+          pattern: `${ORDER_CODE_PREFIX}${datePrefix}%`,
         })
         .orderBy('order.orderCode', 'DESC')
         .limit(1)
@@ -124,15 +126,17 @@ export class OrderConfirmService {
 
       if (todayOrders?.orderCode) {
         // Extract number from existing order code (e.g., MKT20241201001 -> 1)
-        const match = todayOrders.orderCode.match(/MKT\d{8}(\d{3})$/);
+        const match = todayOrders.orderCode.match(
+          `/${ORDER_CODE_PREFIX}\d{8}(\d{3})$/`,
+        );
 
         if (match) {
           nextNumber = parseInt(match[1], 10) + 1;
         }
       }
 
-      // Generate new order code: MKT + YYYYMMDD + 3-digit number
-      const orderCode = `MKT${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+      // Generate new order code: ORDER_CODE_PREFIX + YYYYMMDD + 3-digit number
+      const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(3, '0')}`;
 
       // Double-check uniqueness
       const existingOrder = await orderRepository.findOne({
@@ -143,7 +147,7 @@ export class OrderConfirmService {
         // If somehow duplicate, try with timestamp
         const timestamp = Date.now().toString().slice(-6);
 
-        return `MKT${datePrefix}${timestamp}`;
+        return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
       }
 
       this.logger.log(`Generated orderCode: ${orderCode}`);
@@ -224,7 +228,7 @@ export class OrderConfirmService {
     variantsMeta: Metadata['variants'] | null,
     customerMeta: Metadata['customer'] | null,
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
-  ): Promise<void> {
+  ): Promise<callFireBaseType | void> {
     if (action !== ORDER_ACTION.WAIT && action !== ORDER_ACTION.TRIAL)
       throw new Error('Action must be WAIT or TRIAL to confirm order');
 
@@ -299,7 +303,7 @@ export class OrderConfirmService {
       orderId: createdOrder.id,
     };
 
-    await this.mktPaymentService.createPaymentFromOrder(
+    return await this.mktPaymentService.createPaymentFromOrder(
       paymentData,
       paymentMethodsMeta,
     );
