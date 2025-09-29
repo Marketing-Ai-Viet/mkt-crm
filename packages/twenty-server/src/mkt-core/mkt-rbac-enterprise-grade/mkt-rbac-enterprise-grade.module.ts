@@ -18,8 +18,10 @@ import { Step10SensitiveDataChecksService } from 'src/mkt-core/mkt-rbac-enterpri
 import { Step11DepartmentRestrictionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step11-department-restrictions.service';
 import { Step12DynamicConditionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step12-dynamic-conditions.service';
 import { Step13CachePerformanceService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step13-cache-performance.service';
+import { Step14AuditLoggingService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step14-audit-logging.service';
 import { RbacCacheManagerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache-manager.service';
 import { ValidationOrchestratorService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/validation-orchestrator.service';
+import { AuditLoggingInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/audit-logging.interceptor';
 
 /**
  * Default configuration for Enterprise RBAC
@@ -77,9 +79,11 @@ const DEFAULT_CONFIG = {
     Step11DepartmentRestrictionsService,
     Step12DynamicConditionsService,
     Step13CachePerformanceService,
+    Step14AuditLoggingService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,
+    AuditLoggingInterceptor,
     EnterpriseRbacGuard,
   ],
   exports: [
@@ -100,9 +104,11 @@ const DEFAULT_CONFIG = {
     Step11DepartmentRestrictionsService,
     Step12DynamicConditionsService,
     Step13CachePerformanceService,
+    Step14AuditLoggingService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,
+    AuditLoggingInterceptor,
     EnterpriseRbacGuard,
   ],
 })
