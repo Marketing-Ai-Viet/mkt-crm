@@ -2,9 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
-import { AuditLoggingService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/audit-logging.service';
 import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
-import { PermissionTemplateService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/permission-template.service';
 import { Step1PreValidationService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step1-pre-validation.service';
 import { Step2UserContextResolutionService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step2-user-context-resolution.service';
 import { Step3ResourceIdentificationService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step3-resource-identification.service';
@@ -83,8 +81,6 @@ const DEFAULT_CONFIG = {
     Step14AuditLoggingService,
     Step15FinalDecisionService,
     ValidationOrchestratorService,
-    PermissionTemplateService,
-    AuditLoggingService,
     AuditLoggingInterceptor,
     EnterpriseRbacGuard,
   ],
@@ -109,8 +105,6 @@ const DEFAULT_CONFIG = {
     Step14AuditLoggingService,
     Step15FinalDecisionService,
     ValidationOrchestratorService,
-    PermissionTemplateService,
-    AuditLoggingService,
     AuditLoggingInterceptor,
     EnterpriseRbacGuard,
   ],
