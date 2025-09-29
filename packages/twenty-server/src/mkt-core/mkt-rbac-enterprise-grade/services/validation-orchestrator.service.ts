@@ -38,6 +38,7 @@ import { Step9SpecialPermissionsService } from './step9-special-permissions.serv
 import { Step10SensitiveDataChecksService } from './step10-sensitive-data-checks.service';
 import { Step11DepartmentRestrictionsService } from './step11-department-restrictions.service';
 import { Step12DynamicConditionsService } from './step12-dynamic-conditions.service';
+import { Step13CachePerformanceService } from './step13-cache-performance.service';
 import { PermissionTemplateService } from './permission-template.service';
 // import { RbacCacheService } from './rbac-cache.service';
 import { AuditLoggingService } from './audit-logging.service';
@@ -106,6 +107,7 @@ export class ValidationOrchestratorService
     private readonly sensitiveDataChecksService: Step10SensitiveDataChecksService,
     private readonly departmentRestrictionsService: Step11DepartmentRestrictionsService,
     private readonly dynamicConditionsService: Step12DynamicConditionsService,
+    private readonly cachePerformanceService: Step13CachePerformanceService,
     private readonly permissionTemplateService: PermissionTemplateService,
     // private readonly cacheService: RbacCacheService,
     private readonly auditService: AuditLoggingService,
@@ -611,6 +613,7 @@ export class ValidationOrchestratorService
     this.registerStep(this.sensitiveDataChecksService);
     this.registerStep(this.departmentRestrictionsService);
     this.registerStep(this.dynamicConditionsService);
+    this.registerStep(this.cachePerformanceService);
     this.registerStep(this.auditService);
 
     this.logger.log(`Initialized ${this.steps.size} validation steps`);

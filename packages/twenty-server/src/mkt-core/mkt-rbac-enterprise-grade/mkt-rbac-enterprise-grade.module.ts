@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
+import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { AuditLoggingService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/audit-logging.service';
 import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
 import { PermissionTemplateService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/permission-template.service';
@@ -16,6 +17,8 @@ import { Step9SpecialPermissionsService } from 'src/mkt-core/mkt-rbac-enterprise
 import { Step10SensitiveDataChecksService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step10-sensitive-data-checks.service';
 import { Step11DepartmentRestrictionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step11-department-restrictions.service';
 import { Step12DynamicConditionsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step12-dynamic-conditions.service';
+import { Step13CachePerformanceService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/step13-cache-performance.service';
+import { RbacCacheManagerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache-manager.service';
 import { ValidationOrchestratorService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/validation-orchestrator.service';
 
 /**
@@ -49,7 +52,7 @@ const DEFAULT_CONFIG = {
  * Updated with proper cache lifecycle management
  */
 @Module({
-  imports: [TwentyORMModule],
+  imports: [TwentyORMModule, CacheStorageModule],
   providers: [
     // Configuration provider
     {
@@ -57,7 +60,8 @@ const DEFAULT_CONFIG = {
       useValue: DEFAULT_CONFIG,
     },
 
-    // Safe cache provider that won't hang seed operations,
+    // Cache services
+    RbacCacheManagerService,
 
     // Other services
     Step1PreValidationService,
@@ -72,6 +76,7 @@ const DEFAULT_CONFIG = {
     Step10SensitiveDataChecksService,
     Step11DepartmentRestrictionsService,
     Step12DynamicConditionsService,
+    Step13CachePerformanceService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,
@@ -79,8 +84,8 @@ const DEFAULT_CONFIG = {
   ],
   exports: [
     // Export services
-    // RbacCacheService,
     'ENTERPRISE_RBAC_CONFIG',
+    RbacCacheManagerService,
 
     Step1PreValidationService,
     Step2UserContextResolutionService,
@@ -94,6 +99,7 @@ const DEFAULT_CONFIG = {
     Step10SensitiveDataChecksService,
     Step11DepartmentRestrictionsService,
     Step12DynamicConditionsService,
+    Step13CachePerformanceService,
     ValidationOrchestratorService,
     PermissionTemplateService,
     AuditLoggingService,

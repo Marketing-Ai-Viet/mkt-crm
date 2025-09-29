@@ -4,6 +4,7 @@
 **/**/node_modules/
 .cache
 .kiro
+mcp-server-configurations
 
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
