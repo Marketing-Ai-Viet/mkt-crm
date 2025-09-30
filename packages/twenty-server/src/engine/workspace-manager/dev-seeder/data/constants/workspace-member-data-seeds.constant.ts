@@ -59,7 +59,7 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     userEmail: 'jony.ive@apple.dev',
     userId: USER_DATA_SEED_IDS.JONY,
     departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.DIRECTOR,
+    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
     employmentStatusId: MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS.INTERNSHIP,
   },
   {
@@ -83,7 +83,7 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     userEmail: 'jane.austen@apple.dev',
     userId: USER_DATA_SEED_IDS.JANE,
     departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
-    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.SENIOR_STAFF,
+    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.STAFF,
     employmentStatusId: MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS.RESIGNED,
   },
 ];
