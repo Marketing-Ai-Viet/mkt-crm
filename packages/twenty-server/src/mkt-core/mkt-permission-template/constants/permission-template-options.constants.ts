@@ -629,8 +629,9 @@ export const OVERRIDE_REASON_OPTIONS = [
   },
 ];
 
-// Permission Context Types
+// Permission Context Types (Expanded for Enterprise)
 export enum CONTEXT_TYPE {
+  // Basic Hierarchy Contexts (Existing)
   OWN_RECORDS = 'OWN_RECORDS',
   DEPARTMENT_RECORDS = 'DEPARTMENT_RECORDS',
   TEAM_RECORDS = 'TEAM_RECORDS',
@@ -638,9 +639,52 @@ export enum CONTEXT_TYPE {
   CUSTOM_FILTER = 'CUSTOM_FILTER',
   TIME_LIMITED = 'TIME_LIMITED',
   LOCATION_LIMITED = 'LOCATION_LIMITED',
+
+  // Advanced Hierarchy Contexts (Enterprise)
+  REGION_RECORDS = 'REGION_RECORDS',
+  DIVISION_RECORDS = 'DIVISION_RECORDS',
+  BUSINESS_UNIT_RECORDS = 'BUSINESS_UNIT_RECORDS',
+  SUBSIDIARY_RECORDS = 'SUBSIDIARY_RECORDS',
+  BRANCH_RECORDS = 'BRANCH_RECORDS',
+
+  // Data Classification Contexts (Enterprise)
+  CONFIDENTIAL_ONLY = 'CONFIDENTIAL_ONLY',
+  PUBLIC_RECORDS = 'PUBLIC_RECORDS',
+  RESTRICTED_DATA = 'RESTRICTED_DATA',
+  FINANCIAL_SENSITIVE = 'FINANCIAL_SENSITIVE',
+  PII_PROTECTED = 'PII_PROTECTED',
+
+  // Compliance & Regulatory Contexts (Enterprise)
+  GDPR_COMPLIANT = 'GDPR_COMPLIANT',
+  SOX_CONTROLLED = 'SOX_CONTROLLED',
+  HIPAA_PROTECTED = 'HIPAA_PROTECTED',
+  AUDIT_TRACKED = 'AUDIT_TRACKED',
+  RETENTION_POLICY = 'RETENTION_POLICY',
+
+  // Advanced Security Contexts (Enterprise)
+  DEVICE_LIMITED = 'DEVICE_LIMITED',
+  IP_WHITELIST = 'IP_WHITELIST',
+  VPN_REQUIRED = 'VPN_REQUIRED',
+  MFA_PROTECTED = 'MFA_PROTECTED',
+  CERTIFICATE_BASED = 'CERTIFICATE_BASED',
+
+  // Dynamic & Conditional Contexts (Enterprise)
+  VALUE_BASED = 'VALUE_BASED',
+  RISK_BASED = 'RISK_BASED',
+  APPROVAL_CHAIN = 'APPROVAL_CHAIN',
+  WORKFLOW_STATE = 'WORKFLOW_STATE',
+  DELEGATION_CHAIN = 'DELEGATION_CHAIN',
+
+  // Multi-Tenant & Cross-Org Contexts (Enterprise)
+  TENANT_ISOLATED = 'TENANT_ISOLATED',
+  CROSS_TENANT = 'CROSS_TENANT',
+  PARTNER_SHARED = 'PARTNER_SHARED',
+  VENDOR_ACCESS = 'VENDOR_ACCESS',
+  CLIENT_PORTAL = 'CLIENT_PORTAL',
 }
 
 export const CONTEXT_TYPE_OPTIONS = [
+  // Basic Hierarchy Contexts (Existing)
   {
     value: CONTEXT_TYPE.OWN_RECORDS,
     label: 'Own Records Only',
@@ -682,5 +726,197 @@ export const CONTEXT_TYPE_OPTIONS = [
     label: 'Location Limited',
     color: 'gray' as TagColor,
     position: 6,
+  },
+
+  // Advanced Hierarchy Contexts (Enterprise)
+  {
+    value: CONTEXT_TYPE.REGION_RECORDS,
+    label: 'Region Records',
+    color: 'blue' as TagColor,
+    position: 7,
+  },
+  {
+    value: CONTEXT_TYPE.DIVISION_RECORDS,
+    label: 'Division Records',
+    color: 'green' as TagColor,
+    position: 8,
+  },
+  {
+    value: CONTEXT_TYPE.BUSINESS_UNIT_RECORDS,
+    label: 'Business Unit Records',
+    color: 'purple' as TagColor,
+    position: 9,
+  },
+  {
+    value: CONTEXT_TYPE.SUBSIDIARY_RECORDS,
+    label: 'Subsidiary Records',
+    color: 'orange' as TagColor,
+    position: 10,
+  },
+  {
+    value: CONTEXT_TYPE.BRANCH_RECORDS,
+    label: 'Branch Records',
+    color: 'teal' as TagColor,
+    position: 11,
+  },
+
+  // Data Classification Contexts (Enterprise)
+  {
+    value: CONTEXT_TYPE.CONFIDENTIAL_ONLY,
+    label: 'Confidential Data Only',
+    color: 'red' as TagColor,
+    position: 12,
+  },
+  {
+    value: CONTEXT_TYPE.PUBLIC_RECORDS,
+    label: 'Public Records',
+    color: 'green' as TagColor,
+    position: 13,
+  },
+  {
+    value: CONTEXT_TYPE.RESTRICTED_DATA,
+    label: 'Restricted Data',
+    color: 'orange' as TagColor,
+    position: 14,
+  },
+  {
+    value: CONTEXT_TYPE.FINANCIAL_SENSITIVE,
+    label: 'Financial Sensitive Data',
+    color: 'red' as TagColor,
+    position: 15,
+  },
+  {
+    value: CONTEXT_TYPE.PII_PROTECTED,
+    label: 'PII Protected Data',
+    color: 'red' as TagColor,
+    position: 16,
+  },
+
+  // Compliance & Regulatory Contexts (Enterprise)
+  {
+    value: CONTEXT_TYPE.GDPR_COMPLIANT,
+    label: 'GDPR Compliant Access',
+    color: 'blue' as TagColor,
+    position: 17,
+  },
+  {
+    value: CONTEXT_TYPE.SOX_CONTROLLED,
+    label: 'SOX Controlled Data',
+    color: 'red' as TagColor,
+    position: 18,
+  },
+  {
+    value: CONTEXT_TYPE.HIPAA_PROTECTED,
+    label: 'HIPAA Protected Data',
+    color: 'red' as TagColor,
+    position: 19,
+  },
+  {
+    value: CONTEXT_TYPE.AUDIT_TRACKED,
+    label: 'Audit Tracked Access',
+    color: 'yellow' as TagColor,
+    position: 20,
+  },
+  {
+    value: CONTEXT_TYPE.RETENTION_POLICY,
+    label: 'Retention Policy Governed',
+    color: 'gray' as TagColor,
+    position: 21,
+  },
+
+  // Advanced Security Contexts (Enterprise)
+  {
+    value: CONTEXT_TYPE.DEVICE_LIMITED,
+    label: 'Device Limited Access',
+    color: 'orange' as TagColor,
+    position: 22,
+  },
+  {
+    value: CONTEXT_TYPE.IP_WHITELIST,
+    label: 'IP Whitelist Only',
+    color: 'red' as TagColor,
+    position: 23,
+  },
+  {
+    value: CONTEXT_TYPE.VPN_REQUIRED,
+    label: 'VPN Required Access',
+    color: 'blue' as TagColor,
+    position: 24,
+  },
+  {
+    value: CONTEXT_TYPE.MFA_PROTECTED,
+    label: 'MFA Protected Access',
+    color: 'red' as TagColor,
+    position: 25,
+  },
+  {
+    value: CONTEXT_TYPE.CERTIFICATE_BASED,
+    label: 'Certificate Based Access',
+    color: 'purple' as TagColor,
+    position: 26,
+  },
+
+  // Dynamic & Conditional Contexts (Enterprise)
+  {
+    value: CONTEXT_TYPE.VALUE_BASED,
+    label: 'Value Based Access',
+    color: 'green' as TagColor,
+    position: 27,
+  },
+  {
+    value: CONTEXT_TYPE.RISK_BASED,
+    label: 'Risk Based Access',
+    color: 'orange' as TagColor,
+    position: 28,
+  },
+  {
+    value: CONTEXT_TYPE.APPROVAL_CHAIN,
+    label: 'Approval Chain Context',
+    color: 'yellow' as TagColor,
+    position: 29,
+  },
+  {
+    value: CONTEXT_TYPE.WORKFLOW_STATE,
+    label: 'Workflow State Context',
+    color: 'teal' as TagColor,
+    position: 30,
+  },
+  {
+    value: CONTEXT_TYPE.DELEGATION_CHAIN,
+    label: 'Delegation Chain Context',
+    color: 'purple' as TagColor,
+    position: 31,
+  },
+
+  // Multi-Tenant & Cross-Org Contexts (Enterprise)
+  {
+    value: CONTEXT_TYPE.TENANT_ISOLATED,
+    label: 'Tenant Isolated Access',
+    color: 'blue' as TagColor,
+    position: 32,
+  },
+  {
+    value: CONTEXT_TYPE.CROSS_TENANT,
+    label: 'Cross Tenant Access',
+    color: 'orange' as TagColor,
+    position: 33,
+  },
+  {
+    value: CONTEXT_TYPE.PARTNER_SHARED,
+    label: 'Partner Shared Access',
+    color: 'green' as TagColor,
+    position: 34,
+  },
+  {
+    value: CONTEXT_TYPE.VENDOR_ACCESS,
+    label: 'Vendor Access Only',
+    color: 'gray' as TagColor,
+    position: 35,
+  },
+  {
+    value: CONTEXT_TYPE.CLIENT_PORTAL,
+    label: 'Client Portal Access',
+    color: 'teal' as TagColor,
+    position: 36,
   },
 ];

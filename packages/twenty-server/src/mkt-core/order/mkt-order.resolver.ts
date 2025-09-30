@@ -9,6 +9,7 @@ import {
 import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
 import { Permission } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators/permission.decorator';
 import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
+import { PERMISSION_RESOURCE_KEYS } from 'src/mkt-core/mkt-permission-template/constants';
 
 import { MktOrderService } from './mkt-order.service';
 import {
@@ -24,7 +25,10 @@ import {
 
 @Resolver(() => MktOrderOutput)
 @UseGuards(UserAuthGuard, EnterpriseRbacGuard)
-@Permission({ action: PermissionAction.READ, objectName: 'mktOrder' })
+@Permission({
+  action: PermissionAction.READ,
+  objectName: PERMISSION_RESOURCE_KEYS.ORDERS,
+})
 export class MktOrderResolver {
   constructor(private readonly orderService: MktOrderService) {}
 
