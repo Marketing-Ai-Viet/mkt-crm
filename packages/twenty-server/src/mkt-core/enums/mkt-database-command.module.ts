@@ -5,6 +5,7 @@ import { SeedMktDataAccessPolicyCommand } from 'src/mkt-core/dev-seeder/commands
 import { SeedDepartmentModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-department-data-seed-dev-workspace.command';
 import { SeedMktDepartmentHierarchyCommand } from 'src/mkt-core/dev-seeder/commands/mkt-department-hierarchy-data-seed-dev-workspace.command';
 import { SeedEmploymentStatusModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-employment-status-data-seed-dev-workspace.command';
+import { SeedI18nModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-i18n-data-seed-dev-workspace.command';
 import { SeedMktKpiCommand } from 'src/mkt-core/dev-seeder/commands/mkt-kpi-data-seed-dev-workspace.command';
 import { SeedMktKpiTemplateCommand } from 'src/mkt-core/dev-seeder/commands/mkt-kpi-template-data-seed-dev-workspace.command';
 import { SeedLicenseModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-data-seed-dev-workspace.command';
@@ -35,6 +36,8 @@ import { SeedVariantValueModuleCommand } from 'src/mkt-core/dev-seeder/product-s
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
+  // i18n commands
+  SeedI18nModuleCommand,
   // customer commands
   SeedCustomerModuleCommand,
   SeedTagModuleCommand,

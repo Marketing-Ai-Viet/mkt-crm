@@ -7,6 +7,22 @@
 
 // TODO: check if this can be deleted
 
+export const MKT_I18N_FIELD_IDS = {
+  // fields
+  name: '28fa2754-f1c3-4b11-a269-a36ca7a8574a',
+  key: '227440cc-d0c9-4616-8f6a-f8f482511047',
+  locale: 'b8ba3d76-e908-40f0-adc4-78c7d36a86c4',
+  data: '000e0e26-8fbb-43db-ace4-8a9890934538',
+  description: '2b9549f7-ad48-47cf-b7b4-8a4a0de6a388',
+  // relations
+  // common relations or fields
+  position: '847de9f1-5aea-47de-a9d5-b3701eba6daf',
+  createdBy: '15d7afda-47c0-4422-afba-8e43ade1c6c3',
+  accountOwner: '99fc1e4e-425a-4d5f-9fa6-f837355fbbec',
+  timelineActivities: '0a785ab3-233d-4965-9d46-b8e8f627684f',
+  searchVector: '462f1388-6a72-414e-97ca-d3122df17d49',
+};
+
 export const MKT_CUSTOMER_FIELD_IDS = {
   // fields
   mktWorkspaceId: '3393c870-41c7-4efd-b57a-cb497569a30a',
@@ -649,6 +665,8 @@ export const MKT_PAYMENT_METHOD_FIELD_IDS = {
 
 //EXTENDS FROM TIMELINE_ACTIVITY_STANDARD_FIELD_IDS
 export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
+  //i18n
+  mktI18n: '70a89432-aeb9-49a3-b263-3b5c57921d78',
   //customers
   mktCustomer: 'e42c00cb-dcc8-4682-ab98-2fa5f5c03f08',
   mktTag: '3bba154a-8267-4c6e-8ef8-f4170938d9f0',
@@ -712,6 +730,8 @@ export const MKT_KPI_TEMPLATE_HISTORY_FIELD_IDS = {
 
 //EXTENDS FROM WORKSPACE_MEMBER_STANDARD_FIELD_IDS
 export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
+  //i18n
+  accountOwnerForI18ns: '62b34ddc-a703-4172-ad5c-29c7bb7aa681',
   //customers
   accountOwnerForMktCustomers: '06129dff-8941-4cd4-aed8-e5e89e986fd2',
   accountOwnerForMktTags: '0a057a17-d56b-4d9d-8c2d-a00296205f71',

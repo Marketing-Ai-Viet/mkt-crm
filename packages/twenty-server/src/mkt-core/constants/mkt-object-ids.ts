@@ -6,6 +6,8 @@
  */
 
 export const MKT_OBJECT_IDS = {
+  // core
+  mktI18n: 'f161d3a7-cb44-48ef-a0c0-67b5b4efd71c',
   // products
   mktCategory: '4cf3c9a1-6b33-487e-b06c-f5dd6d56943d',
   mktProduct: '20202020-a305-41e7-8c72-ba44072a4c58',
