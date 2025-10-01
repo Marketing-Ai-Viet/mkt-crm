@@ -45,6 +45,9 @@ export class MktLicenseUpdateOnePreQueryHook
     if (status === MKT_LICENSE_STATUS.RENEWING) {
       if (!metadata) {
         const newMetadata: Metadata = await this.makeMetadata(licenseId);
+        // throw new Error(
+        //   `Debug Method not implemented. ${JSON.stringify(newMetadata)}`,
+        // );
         return {
           ...payload,
           data: {
@@ -68,7 +71,7 @@ export class MktLicenseUpdateOnePreQueryHook
       paymentMethods: [
         {
           mktPaymentMethodId:
-            license?.mktOrder?.mktPayments[0]?.id || 'unknown',
+            license?.mktOrder?.mktPayments[0]?.mktPaymentMethodId || 'unknown',
           name: 'SEPay QR',
         },
       ],
