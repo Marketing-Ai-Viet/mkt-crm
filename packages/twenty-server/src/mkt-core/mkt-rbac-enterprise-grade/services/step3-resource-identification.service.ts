@@ -34,6 +34,7 @@ import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
+import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 
 /**
  * Resource Identification Service - Step 3 in the 15-step validation process
@@ -134,6 +135,19 @@ export class Step3ResourceIdentificationService
     return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktUserPermissionOverrideWorkspaceEntity>(
       workspaceId,
       'mktUserPermissionOverride',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
+   * Get Data Access Policy repository
+   */
+  private async getDataAccessPolicyRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<MktDataAccessPolicyWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktDataAccessPolicyWorkspaceEntity>(
+      workspaceId,
+      'mktDataAccessPolicy',
       { shouldBypassPermissionChecks: true },
     );
   }
@@ -317,16 +331,39 @@ export class Step3ResourceIdentificationService
 
       // Analyze override patterns to detect special access requirements
       const hasActiveOverrides = resourceOverrides.length > 0;
-      const hasGrantOverrides = resourceOverrides.some(
-        (o) => o.isAllowed === true,
-      );
-      const hasRevokeOverrides = resourceOverrides.some(
-        (o) => o.isAllowed === false,
-      );
+      const hasGrantOverrides = resourceOverrides.some((o) => o.isAllowed);
+      const hasRevokeOverrides = resourceOverrides.some((o) => !o.isAllowed);
 
       // Check if resource has expired overrides (indicates time-sensitive access)
       const hasExpiredOverrides = resourceOverrides.some(
         (o) => o.expiresAt && new Date(o.expiresAt) < new Date(),
+      );
+
+      // Query data access policies for this resource
+      const policyRepository =
+        await this.getDataAccessPolicyRepository(workspaceId);
+      const dataAccessPolicies = await policyRepository.find({
+        where: {
+          objectName,
+          isActive: true,
+        },
+        take: 10, // Sample policies to understand filtering rules
+      });
+
+      // Analyze policy patterns
+      const hasDataAccessPolicies = dataAccessPolicies.length > 0;
+      const hasDepartmentPolicies = dataAccessPolicies.some(
+        (p) => p.departmentId !== null,
+      );
+      const hasUserSpecificPolicies = dataAccessPolicies.some(
+        (p) => p.specificMemberId !== null,
+      );
+      const hasHierarchyPolicies = dataAccessPolicies.some(
+        (p) => p.minHierarchyLevel !== null || p.maxHierarchyLevel !== null,
+      );
+      const highestPolicyPriority = Math.max(
+        ...dataAccessPolicies.map((p) => p.priority || 0),
+        0,
       );
 
       return {
@@ -348,13 +385,30 @@ export class Step3ResourceIdentificationService
         crossReferences: [], // Will be populated by cross-reference analysis
         dependencies: [], // Will be populated by dependency analysis
         customAttributes: {
+          // Permission Override Analysis
           hasPermissionOverrides: hasActiveOverrides,
           hasGrantOverrides,
           hasRevokeOverrides,
           hasExpiredOverrides,
           activeOverrideCount: resourceOverrides.length,
+
+          // Data Access Policy Analysis
+          hasDataAccessPolicies: dataAccessPolicies.length > 0,
+          hasDepartmentPolicies,
+          hasUserSpecificPolicies,
+          hasHierarchyPolicies,
+          highestPolicyPriority,
+          dataAccessPolicyCount: dataAccessPolicies.length,
+
+          // Resource Classification
           isStandard: !objectName.startsWith('mkt'),
           isCustomObject: objectName.startsWith('mkt'),
+          requiresDataFiltering: dataAccessPolicies.length > 0,
+          hasComplexFiltering:
+            hasDepartmentPolicies ||
+            hasUserSpecificPolicies ||
+            hasHierarchyPolicies,
+
           analyzedAt: new Date(),
         },
       };
@@ -531,8 +585,7 @@ export class Step3ResourceIdentificationService
             return record[field];
           }
         } catch (error) {
-          // Field might not exist, continue to next
-          continue;
+          // Field might not exist, try next field
         }
       }
 
