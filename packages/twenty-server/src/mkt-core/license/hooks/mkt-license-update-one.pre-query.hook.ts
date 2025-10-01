@@ -4,12 +4,24 @@ import { WorkspacePreQueryHookInstance } from 'src/engine/api/graphql/workspace-
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
-import {
-  MKT_LICENSE_RENEWING_EVENT,
-  MKT_LICENSE_STATUS,
-} from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import { LicenseRenewingEvent } from 'src/mkt-core/license/types/license-event.types';
+
+export type Metadata = {
+  orderAction: string;
+  customer: {
+    mktCustomerId: string;
+  };
+  paymentMethods: Array<{
+    mktPaymentMethodId: string;
+    name: string;
+  }>;
+  variants: Array<{
+    mktVariantId: string;
+    quantity: number;
+  }>;
+};
 
 @WorkspaceQueryHook('mktLicense.updateOne')
 export class MktLicenseUpdateOnePreQueryHook
@@ -17,42 +29,55 @@ export class MktLicenseUpdateOnePreQueryHook
 {
   private readonly logger = new Logger(MktLicenseUpdateOnePreQueryHook.name);
 
-  constructor(private readonly workspaceEventEmitter: WorkspaceEventEmitter) {}
+  constructor(
+    private readonly workspaceEventEmitter: WorkspaceEventEmitter,
+    private licenseService: MktLicenseService,
+  ) {}
   async execute(
     authContext: AuthContext,
     _objectName: string,
     payload: UpdateOneResolverArgs<MktLicenseWorkspaceEntity>,
   ): Promise<UpdateOneResolverArgs<MktLicenseWorkspaceEntity>> {
-    this.logger.log(
-      `MktLicenseUpdateOnePreQueryHook called with payload: ${JSON.stringify(payload)}`,
-    );
-
     const status = payload?.data?.status;
     const licenseId = payload?.id;
+    const metadata = payload?.data?.metadata as Metadata | undefined;
 
     if (status === MKT_LICENSE_STATUS.RENEWING) {
-      this.logger.log(
-        `License ${licenseId} is being renewed. Emitting RENEWING event.`,
-      );
-
-      // Emit custom event for license renewing
-      this.workspaceEventEmitter.emitCustomBatchEvent<LicenseRenewingEvent>(
-        MKT_LICENSE_RENEWING_EVENT,
-        [
-          {
-            licenseId: licenseId,
-            status: status,
-            timestamp: new Date().toISOString(),
-            userId: authContext?.user?.id,
-            workspaceId: authContext?.workspace?.id,
+      if (!metadata) {
+        const newMetadata: Metadata = await this.makeMetadata(licenseId);
+        return {
+          ...payload,
+          data: {
+            ...payload.data,
+            metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
           },
-        ],
-        authContext?.workspace?.id,
-      );
-
-      this.logger.log(`RENEWING event emitted for license ${licenseId}`);
+        };
+      }
     }
-
     return payload;
+  }
+
+  async makeMetadata(licenseId: string): Promise<Metadata> {
+    const license = await this.licenseService.getLicenseForRenew(licenseId);
+    //throw new Error(`Debug Method not implemented. ${JSON.stringify(license)}`);
+    return {
+      orderAction: 'LICENSE_RENEWING',
+      customer: {
+        mktCustomerId: license?.mktOrder?.mktCustomerId || 'unknown',
+      },
+      paymentMethods: [
+        {
+          mktPaymentMethodId:
+            license?.mktOrder?.mktPayments[0]?.id || 'unknown',
+          name: 'SEPay QR',
+        },
+      ],
+      variants: [
+        {
+          mktVariantId: license?.mktVariantId || 'unknown',
+          quantity: 1,
+        },
+      ],
+    };
   }
 }

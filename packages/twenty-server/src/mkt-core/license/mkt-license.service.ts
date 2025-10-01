@@ -27,7 +27,7 @@ export class MktLicenseService {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly mktLicenseApiService: MktLicenseApiService,
-    private mktRepo: MktRepositoryService,
+    public mktRepo: MktRepositoryService,
   ) {}
 
   async createLicenseForOrder(orderId: string): Promise<licenseType> {
@@ -242,6 +242,21 @@ export class MktLicenseService {
       this.logger.error(`Failed to update license ${licenseId}:`, error);
       throw error;
     }
+  }
+
+  async getLicenseForRenew(licenseId: string) {
+    const licenseRepo = await this.getLicenseRepository();
+    this.logger.log(`Fetching license for renew: ${licenseId}`);
+    const license = await licenseRepo.findOne({
+      where: { id: licenseId },
+      relations: [
+        'mktOrder',
+        'mktVariant',
+        'mktOrder.mktPayments',
+        'mktOrder.mktCustomer',
+      ],
+    });
+    return license;
   }
 
   async getLicenseRepository() {
