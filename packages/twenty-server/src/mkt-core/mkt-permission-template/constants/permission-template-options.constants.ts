@@ -447,69 +447,6 @@ export const TEMPLATE_CREATED_BY_SOURCE_OPTIONS = [
   },
 ];
 
-// System Action Keys
-export enum SYSTEM_ACTION_KEY {
-  DATA_EXPORT = 'DATA_EXPORT',
-  BULK_OPERATIONS = 'BULK_OPERATIONS',
-  ADMIN_FUNCTIONS = 'ADMIN_FUNCTIONS',
-  CROSS_DEPARTMENT_VIEW = 'CROSS_DEPARTMENT_VIEW',
-  ESCALATION_APPROVE = 'ESCALATION_APPROVE',
-  BUDGET_APPROVE = 'BUDGET_APPROVE',
-  SYSTEM_CONFIGURATION = 'SYSTEM_CONFIGURATION',
-  USER_MANAGEMENT = 'USER_MANAGEMENT',
-}
-
-export const SYSTEM_ACTION_KEY_OPTIONS = [
-  {
-    value: SYSTEM_ACTION_KEY.DATA_EXPORT,
-    label: 'Data Export',
-    color: 'blue' as TagColor,
-    position: 0,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.BULK_OPERATIONS,
-    label: 'Bulk Operations',
-    color: 'orange' as TagColor,
-    position: 1,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.ADMIN_FUNCTIONS,
-    label: 'Admin Functions',
-    color: 'red' as TagColor,
-    position: 2,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.CROSS_DEPARTMENT_VIEW,
-    label: 'Cross Department View',
-    color: 'purple' as TagColor,
-    position: 3,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.ESCALATION_APPROVE,
-    label: 'Escalation Approval',
-    color: 'yellow' as TagColor,
-    position: 4,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.BUDGET_APPROVE,
-    label: 'Budget Approval',
-    color: 'green' as TagColor,
-    position: 5,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.SYSTEM_CONFIGURATION,
-    label: 'System Configuration',
-    color: 'gray' as TagColor,
-    position: 6,
-  },
-  {
-    value: SYSTEM_ACTION_KEY.USER_MANAGEMENT,
-    label: 'User Management',
-    color: 'blue' as TagColor,
-    position: 7,
-  },
-];
-
 // Access Limitation Types
 export enum ACCESS_LIMITATION_TYPE {
   TEMPORAL = 'TEMPORAL',

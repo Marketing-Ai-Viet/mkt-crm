@@ -394,6 +394,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     recordSeeds: MKT_PERMISSION_ACTION_DATA_SEEDS,
   },
   {
+    tableName: 'mktPermissionContext',
+    pgColumns: MKT_PERMISSION_CONTEXT_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_CONTEXT_DATA_SEEDS,
+  },
+  {
     tableName: 'mktPermissionTemplate',
     pgColumns: MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PERMISSION_TEMPLATE_DATA_SEEDS,
@@ -412,11 +417,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktTemplateAccessLimitation',
     pgColumns: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEED_COLUMNS,
     recordSeeds: MKT_TEMPLATE_ACCESS_LIMITATION_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktPermissionContext',
-    pgColumns: MKT_PERMISSION_CONTEXT_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_PERMISSION_CONTEXT_DATA_SEEDS,
   },
   {
     tableName: 'mktUserPermissionTemplate',
