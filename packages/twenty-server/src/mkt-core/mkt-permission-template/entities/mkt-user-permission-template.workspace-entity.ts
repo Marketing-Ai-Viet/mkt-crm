@@ -103,6 +103,7 @@ export class MktUserPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntit
     description: msg`When this assignment expires (optional)`,
     icon: 'IconCalendarX',
   })
+  @WorkspaceIsNullable()
   expiresAt?: Date;
 
   @WorkspaceField({
