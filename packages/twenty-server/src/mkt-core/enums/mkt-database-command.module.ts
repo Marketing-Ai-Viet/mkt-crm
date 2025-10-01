@@ -19,7 +19,6 @@ import { SeedResellerTierModuleCommand } from 'src/mkt-core/dev-seeder/commands/
 import { SeedResellerTierHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-reseller-tier-history-data-seed-dev-workspace.command';
 import { SeedTagModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-tag-data-seed-dev-workspace.command';
 import { SeedTemplateModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-data-seed-dev-workspace.command';
-import { SeedMktTemporaryPermissionCommand } from 'src/mkt-core/dev-seeder/commands/mkt-temporary-permission-data-seed-dev-workspace.command';
 import { SeedSInvoiceAuthModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-auth-data-seed-dev-workspace.command';
 import { SeedSInvoiceModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-data-seed-dev-workspace.command';
 import { SeedSInvoiceItemModuleCommand } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-item-data-seed-dev-workspace.command';
@@ -85,8 +84,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedDepartmentModuleCommand,
   SeedMktKpiCommand,
   SeedMktKpiTemplateCommand,
-  // temporary permission commands
-  SeedMktTemporaryPermissionCommand,
   SeedMktDepartmentHierarchyCommand,
   SeedMktDataAccessPolicyCommand,
   SeedMktPermissionAuditCommand,

@@ -26,7 +26,6 @@ import { prefillMktResellers } from 'src/mkt-core/dev-seeder/prefill-data/prefil
 import { prefillMktStaffStatusHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-staff-status-histories';
 import { prefillMktTags } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-templates';
-import { prefillMktTemporaryPermissions } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-temporary-permissions';
 import { prefillMktCategories } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-categories';
 import { prefillMktComboVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combo-variants';
 import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-combos';
@@ -87,7 +86,6 @@ export const MKT_PREFILLS = [
   prefillMktKpis,
   prefillMktKpiTemplates,
   // temporary permission prefills (should be last to ensure all dependencies exist)
-  prefillMktTemporaryPermissions,
   prefillMktDepartmentHierarchies,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,

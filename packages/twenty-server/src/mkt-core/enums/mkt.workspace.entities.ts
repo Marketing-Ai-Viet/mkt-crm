@@ -23,7 +23,6 @@ import { MktResellerTierHistoryWorkspaceEntity } from 'src/mkt-core/mkt-reseller
 import { MktResellerTierWorkspaceEntity } from 'src/mkt-core/mkt-reseller-tier/mkt-reseller-tier.workspace-entity';
 import { MktResellerWorkspaceEntity } from 'src/mkt-core/mkt-reseller/mkt-reseller.workspace-entity';
 import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
-import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -102,8 +101,6 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   MktKpiWorkspaceEntity,
   MktKpiTemplateWorkspaceEntity,
   MktKpiHistoryWorkspaceEntity,
-  // Temporary Permission
-  MktTemporaryPermissionWorkspaceEntity,
   MktDepartmentHierarchyWorkspaceEntity,
   MktPermissionAuditWorkspaceEntity,
   // Permission Resource & Template

@@ -33,7 +33,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
-import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
+import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
 
 /**
  * Resource Identification Service - Step 3 in the 15-step validation process
@@ -125,12 +125,15 @@ export class Step3ResourceIdentificationService
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
-  private async getMktTemporaryPermissionRepository(
+  /**
+   * Get User Permission Override repository
+   */
+  private async getUserPermissionOverrideRepository(
     workspaceId: string,
-  ): Promise<WorkspaceRepository<MktTemporaryPermissionWorkspaceEntity>> {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktTemporaryPermissionWorkspaceEntity>(
+  ): Promise<WorkspaceRepository<MktUserPermissionOverrideWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktUserPermissionOverrideWorkspaceEntity>(
       workspaceId,
-      'mktTemporaryPermission',
+      'mktUserPermissionOverride',
       { shouldBypassPermissionChecks: true },
     );
   }
@@ -257,14 +260,15 @@ export class Step3ResourceIdentificationService
     workspaceId: string,
   ): Promise<ResourceMetadata> {
     try {
-      // Use temporary permission repository for basic metadata only
-      const temporaryPermissionRepository =
-        await this.getMktTemporaryPermissionRepository(workspaceId);
+      // Use user permission override repository to check if resource has any overrides
+      const overrideRepository =
+        await this.getUserPermissionOverrideRepository(workspaceId);
 
-      // Get basic object info from temporary permissions (if any exist for this object)
-      const temporaryPermissions = await temporaryPermissionRepository.find({
-        where: { objectName, isActive: true },
-        take: 1,
+      // Get resource-related overrides to understand access patterns
+      // This helps identify if resource has special access requirements
+      const resourceOverrides = await overrideRepository.find({
+        where: { resourceId: objectName, isActive: true },
+        take: 5, // Sample a few overrides to understand patterns
       });
 
       // Classify resource type
@@ -311,6 +315,20 @@ export class Step3ResourceIdentificationService
         resourceType,
       );
 
+      // Analyze override patterns to detect special access requirements
+      const hasActiveOverrides = resourceOverrides.length > 0;
+      const hasGrantOverrides = resourceOverrides.some(
+        (o) => o.isAllowed === true,
+      );
+      const hasRevokeOverrides = resourceOverrides.some(
+        (o) => o.isAllowed === false,
+      );
+
+      // Check if resource has expired overrides (indicates time-sensitive access)
+      const hasExpiredOverrides = resourceOverrides.some(
+        (o) => o.expiresAt && new Date(o.expiresAt) < new Date(),
+      );
+
       return {
         objectName,
         objectId: recordId,
@@ -330,9 +348,13 @@ export class Step3ResourceIdentificationService
         crossReferences: [], // Will be populated by cross-reference analysis
         dependencies: [], // Will be populated by dependency analysis
         customAttributes: {
-          hasTemporaryPermissions: temporaryPermissions.length > 0,
-          temporaryPermissionCount: temporaryPermissions.length,
+          hasPermissionOverrides: hasActiveOverrides,
+          hasGrantOverrides,
+          hasRevokeOverrides,
+          hasExpiredOverrides,
+          activeOverrideCount: resourceOverrides.length,
           isStandard: !objectName.startsWith('mkt'),
+          isCustomObject: objectName.startsWith('mkt'),
           analyzedAt: new Date(),
         },
       };

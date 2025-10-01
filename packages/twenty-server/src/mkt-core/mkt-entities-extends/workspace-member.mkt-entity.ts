@@ -30,7 +30,6 @@ import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-en
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
 import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-permission-audit/mkt-permission-audit.workspace-entity';
 import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
-import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
 import { MktUserPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-template.workspace-entity';
 import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
@@ -428,51 +427,20 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceIsSystem()
   createdKpiTemplates: Relation<MktKpiTemplateWorkspaceEntity[]>;
 
-  // === TEMPORARY PERMISSIONS RELATIONS ===
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.grantedTemporaryPermissions,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Granted Temporary Permissions`,
-    description: msg`Temporary permissions granted by this user`,
-    icon: 'IconUserCheck',
-    inverseSideTarget: () => MktTemporaryPermissionWorkspaceEntity,
-    inverseSideFieldKey: 'granterWorkspaceMember',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsSystem()
-  grantedTemporaryPermissions: Relation<
-    MktTemporaryPermissionWorkspaceEntity[]
-  >;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.receivedTemporaryPermissions,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Received Temporary Permissions`,
-    description: msg`Temporary permissions received by this user`,
-    icon: 'IconUser',
-    inverseSideTarget: () => MktTemporaryPermissionWorkspaceEntity,
-    inverseSideFieldKey: 'granteeWorkspaceMember',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsSystem()
-  receivedTemporaryPermissions: Relation<
-    MktTemporaryPermissionWorkspaceEntity[]
-  >;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.revokedTemporaryPermissions,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Revoked Temporary Permissions`,
-    description: msg`Temporary permissions revoked by this user`,
-    icon: 'IconUserX',
-    inverseSideTarget: () => MktTemporaryPermissionWorkspaceEntity,
-    inverseSideFieldKey: 'revokedBy',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsSystem()
-  revokedTemporaryPermissions: Relation<
-    MktTemporaryPermissionWorkspaceEntity[]
-  >;
+  // === DEPRECATED: TEMPORARY PERMISSIONS (Replaced by User Permission Override) ===
+  // Note: These relations are deprecated and should be migrated to permissionOverrides
+  // Temporary Permission functionality is now handled by MktUserPermissionOverride
+  // which provides:
+  // - GRANT and REVOKE capabilities (vs only GRANT in temporary permissions)
+  // - Approval workflow with approvedBy tracking
+  // - Context filters for fine-grained control
+  // - All permission actions (not just READ/UPDATE/DELETE)
+  // - Categorized reasons (EMERGENCY_ACCESS, BUSINESS_EXCEPTION, etc.)
+  //
+  // Migration path:
+  // 1. Use permissionOverrides for new grants
+  // 2. Migrate existing temporary permissions to overrides
+  // 3. Deprecate these relations after migration complete
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.dataAccessPolicies,
