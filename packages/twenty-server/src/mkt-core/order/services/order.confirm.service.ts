@@ -23,9 +23,9 @@ export class OrderConfirmService {
 
   constructor(
     private readonly mktLicenseService: MktLicenseService,
-    private readonly mktPaymentService: MktPaymentService,
+    private mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
-    private readonly mktRepo: MktRepositoryService,
+    private mktRepo: MktRepositoryService,
   ) {}
 
   /**
@@ -102,9 +102,9 @@ export class OrderConfirmService {
   /**
    * Generate unique order code
    */
-  async generateOrderCode(): Promise<string | null> {
+  async generateOrderCode(workspaceId: string): Promise<string | null> {
     try {
-      const orderRepository = await this.mktRepo.getOrderRepository();
+      const orderRepository = await this.getOrderRepo(workspaceId);
 
       const now = new Date();
       const year = now.getFullYear();
@@ -228,14 +228,19 @@ export class OrderConfirmService {
     variantsMeta: Metadata['variants'] | null,
     customerMeta: Metadata['customer'] | null,
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
+    licenseId?: string,
   ): Promise<callFireBaseType | void> {
-    if (action !== ORDER_ACTION.WAIT && action !== ORDER_ACTION.TRIAL)
-      throw new Error('Action must be WAIT or TRIAL to confirm order');
+    if (
+      action !== ORDER_ACTION.WAIT &&
+      action !== ORDER_ACTION.TRIAL &&
+      action !== ORDER_ACTION.LICENSE_RENEWING
+    )
+      throw new Error('Action must be WAIT or TRIAL to confirm order renewal');
 
     if (!Array.isArray(variantsMeta) || variantsMeta.length <= 0)
       throw new Error('Variants metadata is required');
     // repositories
-    const orderRepository = await this.mktRepo.getOrderRepository();
+    const orderRepository = await this.getOrderRepo(workspaceId);
 
     this.logger.log(
       `Creating order items for order ID: ${createdOrder.id} from variants metadata`,
@@ -251,24 +256,34 @@ export class OrderConfirmService {
       relations: ['orderItems'],
     });
 
+    this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);
+
     if (order && order.orderItems?.length > 0) {
       try {
-        const createdLicenses =
+        if (action !== ORDER_ACTION.LICENSE_RENEWING)
           await this.mktLicenseService.createLicensesForOrderItems(
             order,
             workspaceId,
           );
 
-        this.logger.log(
-          `Successfully created ${createdLicenses.length} licenses for order: ${order.id}`,
-        );
+        if (action === ORDER_ACTION.LICENSE_RENEWING) {
+          if (!licenseId)
+            throw new Error('License ID is required for license renewal');
+          await this.mktLicenseService.linkLicensesForOrderItems(
+            licenseId,
+            order,
+            workspaceId,
+          );
+        }
+
+        this.logger.log(`Successfully licenses for order: ${order.id}`);
       } catch (licenseError) {
-        throw new Error('Failed to create licenses for order');
+        throw new Error('Failed to licenses for order');
       }
     }
 
     // 2) Update Order information
-    const generatedOrderCode = await this.generateOrderCode();
+    const generatedOrderCode = await this.generateOrderCode(workspaceId);
     const generatedOrderName = await this.generateOrderName(order);
     const calculatedValues: CalculateOrderResult =
       await this.calculateOrderValues(order);
@@ -287,6 +302,7 @@ export class OrderConfirmService {
     await this.orderService.updateOrderInformation(
       createdOrder.id,
       updateOrderInfo,
+      orderRepository,
     );
 
     if (action === ORDER_ACTION.TRIAL) return;
@@ -301,8 +317,12 @@ export class OrderConfirmService {
       currency: createdOrder?.currency || 'VND',
       generatedOrderCode,
       orderId: createdOrder.id,
+      workspaceId,
     };
 
+    this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
+
+    this.mktPaymentService.mktRepo.workspaceId = workspaceId;
     return await this.mktPaymentService.createPaymentFromOrder(
       paymentData,
       paymentMethodsMeta,
@@ -369,7 +389,7 @@ export class OrderConfirmService {
       createdOrder.id,
     );
 
-    const generatedOrderCode = await this.generateOrderCode();
+    const generatedOrderCode = await this.generateOrderCode(workspaceId);
 
     const paymentName =
       generatedOrderCode && trialOrder.name
@@ -382,6 +402,7 @@ export class OrderConfirmService {
       currency: trialOrder?.currency || 'VND',
       generatedOrderCode,
       orderId: createdOrder.id,
+      workspaceId,
     };
 
     await this.mktPaymentService.createPaymentFromOrder(
@@ -395,5 +416,10 @@ export class OrderConfirmService {
       generatedOrderCode,
       trialOrder,
     );
+  }
+
+  private async getOrderRepo(workspaceId: string) {
+    if (!workspaceId) return this.mktRepo.getOrderRepository();
+    return this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
   }
 }

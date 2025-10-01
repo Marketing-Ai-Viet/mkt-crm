@@ -56,6 +56,10 @@ import {
   MKT_LICENSE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-license-data-seeds.constants';
 import {
+  MKT_LICENSE_HISTORY_DATA_SEED_COLUMNS,
+  MKT_LICENSE_HISTORY_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-license-history-data-seeds.constants';
+import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
@@ -259,6 +263,12 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktLicense',
     pgColumns: MKT_LICENSE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_LICENSE_DATA_SEEDS,
+  },
+  // License History
+  {
+    tableName: 'mktLicenseHistory',
+    pgColumns: MKT_LICENSE_HISTORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_LICENSE_HISTORY_DATA_SEEDS,
   },
   // Invoice configs
   {

@@ -9,6 +9,7 @@ import { SeedI18nModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-i18n
 import { SeedMktKpiCommand } from 'src/mkt-core/dev-seeder/commands/mkt-kpi-data-seed-dev-workspace.command';
 import { SeedMktKpiTemplateCommand } from 'src/mkt-core/dev-seeder/commands/mkt-kpi-template-data-seed-dev-workspace.command';
 import { SeedLicenseModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-data-seed-dev-workspace.command';
+import { SeedLicenseHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-history-data-seed-dev-workspace.command';
 import { SeedOrderModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-data-seed-dev-workspace.command';
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
@@ -59,6 +60,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedContractModuleCommand,
   // license commands
   SeedLicenseModuleCommand,
+  SeedLicenseHistoryModuleCommand,
   // invoice commands
   SeedSInvoiceAuthModuleCommand,
   SeedSInvoiceModuleCommand,

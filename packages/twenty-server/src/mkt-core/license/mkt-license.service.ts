@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseApiService } from 'src/mkt-core/license/integration/mkt-license-api.service';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
@@ -26,6 +27,7 @@ export class MktLicenseService {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly mktLicenseApiService: MktLicenseApiService,
+    private mktRepo: MktRepositoryService,
   ) {}
 
   async createLicenseForOrder(orderId: string): Promise<licenseType> {
@@ -111,7 +113,7 @@ export class MktLicenseService {
             const newLicense = licenseRepository.create({
               name: licenseName,
               licenseKey: licenseApiResponse.licenseKey,
-              status: MKT_LICENSE_STATUS.INACTIVE,
+              status: MKT_LICENSE_STATUS.ACTIVE,
               activatedAt: new Date().toISOString(),
               expiresAt: licenseApiResponse.expiresAt,
               licenseUuid: licenseApiResponse.licenseUuid as string,
@@ -172,17 +174,77 @@ export class MktLicenseService {
     );
   }
 
-  async getLicenseRepository() {
-    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+  async linkLicensesForOrderItems(
+    licenseId: string,
+    order: MktOrderWorkspaceEntity,
+    workspaceId: string,
+  ): Promise<MktLicenseWorkspaceEntity | null> {
+    this.logger.log(`Linking license ${licenseId} for order ${order.id}`);
+    this.mktRepo.workspaceId = workspaceId;
+    const licenseRepository = await this.getLicenseRepository();
 
-    if (!workspaceId) {
-      throw new Error('Workspace ID is not available in the current context.');
+    // Lấy thông tin license hiện tại
+    const licenseRecord = await licenseRepository.findOne({
+      where: { id: licenseId },
+      select: ['licenseUuid'],
+    });
+
+    if (!licenseRecord) {
+      this.logger.error(`License ${licenseId} not found`);
+      return null;
     }
 
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseWorkspaceEntity>(
-      workspaceId,
-      'mktLicense',
-      { shouldBypassPermissionChecks: true },
-    );
+    // Lấy thông tin từ order item đầu tiên
+    const firstOrderItem = order.orderItems[0];
+    if (!firstOrderItem) {
+      this.logger.error(`No order items found for order ${order.id}`);
+      return null;
+    }
+
+    // Tạo tên license
+    const productName =
+      firstOrderItem.snapshotProductName ||
+      firstOrderItem.mktProduct?.name ||
+      'Sản phẩm';
+    const variantName = firstOrderItem.mktVariant?.name;
+    const licenseName = variantName
+      ? `License cho ${productName} - ${variantName}`
+      : `License cho ${productName}`;
+
+    try {
+      const licenseApiResponse =
+        await this.mktLicenseApiService.fetchLicenseFromApi(
+          order.id,
+          licenseName,
+          firstOrderItem.id,
+          licenseRecord.licenseUuid,
+        );
+
+      await licenseRepository.update(licenseId, {
+        name: licenseName,
+        licenseKey: licenseApiResponse.licenseKey,
+        status: MKT_LICENSE_STATUS.ACTIVE,
+        activatedAt: new Date().toISOString(),
+        expiresAt: licenseApiResponse.expiresAt,
+        licenseUuid: licenseApiResponse.licenseUuid as string,
+        mktOrderId: order.id,
+        mktVariantId: firstOrderItem.mktVariantId,
+        notes: `License được update cho order: ${order.id} ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
+      });
+
+      const updatedLicense = await licenseRepository.findOne({
+        where: { id: licenseId },
+      });
+
+      this.logger.log(`Successfully updated license: ${licenseId}`);
+      return updatedLicense;
+    } catch (error) {
+      this.logger.error(`Failed to update license ${licenseId}:`, error);
+      throw error;
+    }
+  }
+
+  async getLicenseRepository() {
+    return this.mktRepo.getLicenseRepository();
   }
 }

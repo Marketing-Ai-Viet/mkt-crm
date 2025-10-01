@@ -10,7 +10,7 @@ export interface LicenseApiResponse {
   licenseKey: string;
   status: string;
   expiresAt: string;
-  licenseUuid?: string | null;
+  licenseUuid?: string | null | undefined;
   // add other fields according to API response
 }
 
@@ -24,7 +24,7 @@ export class MktLicenseApiService {
     orderId: string,
     orderName: string,
     orderItemId?: string,
-    licenseUuid?: string,
+    licenseUuid?: string | null | undefined,
   ): Promise<LicenseApiResponse> {
     try {
       this.logger.log(`Fetching license from API for order: ${orderId}`);
