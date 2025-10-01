@@ -202,6 +202,7 @@ export class Step3ResourceIdentificationService
       }
       const objectName = context.resourceContext?.objectName;
       const recordId = context.resourceContext?.recordId;
+      const userWorkspaceId = context.userContext?.workspaceId;
 
       if (!objectName) {
         return this.createFailResult(
@@ -215,6 +216,7 @@ export class Step3ResourceIdentificationService
         objectName,
         recordId,
         context.userContext.workspaceId,
+        userWorkspaceId,
       );
 
       // 2. Resolve ownership and inheritance chain
@@ -272,6 +274,7 @@ export class Step3ResourceIdentificationService
     objectName: string,
     recordId: string | undefined,
     workspaceId: string,
+    userWorkspaceId: string,
   ): Promise<ResourceMetadata> {
     try {
       // Use user permission override repository to check if resource has any overrides
@@ -281,7 +284,7 @@ export class Step3ResourceIdentificationService
       // Get resource-related overrides to understand access patterns
       // This helps identify if resource has special access requirements
       const resourceOverrides = await overrideRepository.find({
-        where: { resourceId: objectName, isActive: true },
+        where: { workspaceMemberId: userWorkspaceId, isActive: true },
         take: 5, // Sample a few overrides to understand patterns
       });
 

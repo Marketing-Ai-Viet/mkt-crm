@@ -405,6 +405,12 @@ export class Step6ResourcePermissionCheckService
       const policyRepository =
         await this.getDataAccessPolicyRepository(workspaceId);
 
+      console.log('checkDataAccessPolicies');
+      console.log(
+        'Checking data access policies for user context:',
+        userContext,
+      );
+      console.log('Resource classification:', resourceClassification);
       // Find applicable data access policies
       const policies = await policyRepository.find({
         where: [
@@ -416,12 +422,12 @@ export class Step6ResourcePermissionCheckService
           {
             objectName: resourceClassification.resourceType,
             isActive: true,
-            departmentId: userContext.departmentId || '',
+            departmentId: userContext.departmentId || undefined,
           },
           {
             objectName: resourceClassification.resourceType,
             isActive: true,
-            organizationLevelId: userContext.organizationLevelId || '',
+            organizationLevelId: userContext.organizationLevelId || undefined,
           },
           {
             objectName: resourceClassification.resourceType,
