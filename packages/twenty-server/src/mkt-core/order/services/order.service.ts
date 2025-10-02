@@ -206,6 +206,7 @@ export class OrderService {
 
   private async getOrderItemRepo(workspaceId: string) {
     if (!workspaceId) return this.mktRepo.getOrderItemRepository();
+
     return this.mktRepo.getOrderItemRepositoryByWorkspaceId(workspaceId);
   }
 

@@ -31,6 +31,7 @@ export class MktRepositoryService {
     options: { shouldBypassPermissionChecks?: boolean; roleId?: string } = {},
   ): Promise<WorkspaceRepository<Entity>> {
     let workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
     if (!workspaceId) workspaceId = this.workspaceId;
     if (!workspaceId) {
       throw new Error(
@@ -86,6 +87,7 @@ export class MktRepositoryService {
   async getOrderRepository() {
     return this.getRepository(MktOrderWorkspaceEntity);
   }
+
   async getLicenseRepository() {
     return this.getRepository(MktLicenseWorkspaceEntity);
   }

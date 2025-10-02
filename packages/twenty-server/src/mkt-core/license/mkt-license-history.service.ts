@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
@@ -34,6 +35,7 @@ export class MktLicenseHistoryService {
     try {
       // Parse metadata if it's a string
       let parsedMetadata: Metadata;
+
       if (typeof newMetadata === 'string') {
         parsedMetadata = JSON.parse(newMetadata) as Metadata;
       } else {
@@ -179,12 +181,14 @@ export class MktLicenseHistoryService {
         const validItems = parsedHistory.filter((item) => {
           return this.isValidHistoryItem(item);
         });
+
         return validItems;
       } else {
         return [];
       }
     } catch (error) {
       this.logger.warn('Failed to parse license history:', error);
+
       return [];
     }
   }

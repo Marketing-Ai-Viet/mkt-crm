@@ -20,6 +20,7 @@ export class MktLicenseEventService {
 
     if (!license) {
       this.logger.warn(`License ${licenseId} not found when fetching variant`);
+
       return null;
     }
 

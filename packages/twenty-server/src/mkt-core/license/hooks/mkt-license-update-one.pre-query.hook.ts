@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
+
 import { WorkspacePreQueryHookInstance } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/interfaces/workspace-query-hook.interface';
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
+
+import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseHistoryService } from 'src/mkt-core/license/mkt-license-history.service';
@@ -69,6 +71,7 @@ export class MktLicenseUpdateOnePreQueryHook
     if (status === MKT_LICENSE_STATUS.RENEWING) {
       if (!metadata) {
         const newMetadata: Metadata = await this.makeMetadata(license);
+
         return {
           ...payload,
           data: {

@@ -41,6 +41,7 @@ export class OrderLicenseRenewService {
     for (const event of payload.events) {
       const status = event.properties.after?.status;
       const metadata = event.properties.after?.metadata as Metadata;
+
       if (status === 'RENEWING') {
         const licenseId = event.properties.after.id;
         const workspaceId = payload.workspaceId; // Lấy workspaceId từ payload
@@ -68,10 +69,12 @@ export class OrderLicenseRenewService {
     const trialOrderId = metadata?.trialOrderId || null;
     const action =
       await this.orderActionService.getActionFromMetadata(metadata);
+
     if (action !== ORDER_ACTION.LICENSE_RENEWING) {
       this.logger.warn(
         `Ignoring license renewal for non-renew action: ${action}`,
       );
+
       return;
     }
 
@@ -120,6 +123,7 @@ export class OrderLicenseRenewService {
     });
 
     const createdOrder = await orderRepository.save(newOrder);
+
     return createdOrder;
   }
 

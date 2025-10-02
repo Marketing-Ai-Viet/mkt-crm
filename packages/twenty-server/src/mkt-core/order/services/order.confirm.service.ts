@@ -323,6 +323,7 @@ export class OrderConfirmService {
     this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
 
     this.mktPaymentService.mktRepo.workspaceId = workspaceId;
+
     return await this.mktPaymentService.createPaymentFromOrder(
       paymentData,
       paymentMethodsMeta,
@@ -420,6 +421,7 @@ export class OrderConfirmService {
 
   private async getOrderRepo(workspaceId: string) {
     if (!workspaceId) return this.mktRepo.getOrderRepository();
+
     return this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
   }
 }

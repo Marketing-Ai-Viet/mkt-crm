@@ -191,13 +191,16 @@ export class MktLicenseService {
 
     if (!licenseRecord) {
       this.logger.error(`License ${licenseId} not found`);
+
       return null;
     }
 
     // Lấy thông tin từ order item đầu tiên
     const firstOrderItem = order.orderItems[0];
+
     if (!firstOrderItem) {
       this.logger.error(`No order items found for order ${order.id}`);
+
       return null;
     }
 
@@ -237,6 +240,7 @@ export class MktLicenseService {
       });
 
       this.logger.log(`Successfully updated license: ${licenseId}`);
+
       return updatedLicense;
     } catch (error) {
       this.logger.error(`Failed to update license ${licenseId}:`, error);
@@ -255,6 +259,7 @@ export class MktLicenseService {
         'mktOrder.mktCustomer',
       ],
     });
+
     return license;
   }
 
