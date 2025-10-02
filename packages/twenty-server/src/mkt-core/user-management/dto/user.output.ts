@@ -1,6 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { Transform } from 'class-transformer';
 
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
