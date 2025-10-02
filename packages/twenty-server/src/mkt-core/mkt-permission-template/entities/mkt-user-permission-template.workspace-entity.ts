@@ -19,7 +19,11 @@ import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index
 import { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
 
 @WorkspaceIndex(['workspaceMemberId'], {
-  indexWhereClause: '"deletedAt" IS NULL',
+  indexWhereClause: '"deletedAt" IS NULL AND "isActive" = true',
+})
+@WorkspaceIndex(['expiresAt'], {
+  indexWhereClause:
+    '"deletedAt" IS NULL AND "expiresAt" IS NOT NULL AND "isActive" = true',
 })
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktUserPermissionTemplate,
