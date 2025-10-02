@@ -633,8 +633,8 @@ export class Step9SpecialPermissionsService
     operator: string,
     value: unknown,
     userContext: EnhancedUserContext,
-    resourceType: string,
-    recordId: string,
+    _resourceType: string,
+    _recordId: string,
   ): Promise<boolean> {
     try {
       // Handle dynamic values
@@ -860,7 +860,7 @@ export class Step9SpecialPermissionsService
    */
   private checkActionMatch(
     requestedAction: string,
-    permissionActionId: string,
+    _permissionActionId: string,
   ): boolean {
     // Simplified logic - in a real implementation, you'd look up the action by ID
     // and match it against the requested action type

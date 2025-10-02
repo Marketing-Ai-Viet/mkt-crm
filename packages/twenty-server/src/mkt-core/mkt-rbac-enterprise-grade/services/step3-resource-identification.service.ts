@@ -354,7 +354,7 @@ export class Step3ResourceIdentificationService
       });
 
       // Analyze policy patterns
-      const hasDataAccessPolicies = dataAccessPolicies.length > 0;
+      // const hasDataAccessPolicies = dataAccessPolicies.length > 0;
       const hasDepartmentPolicies = dataAccessPolicies.some(
         (p) => p.departmentId !== null,
       );

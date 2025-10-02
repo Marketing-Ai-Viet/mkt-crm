@@ -61,6 +61,14 @@ export class EnterpriseRbacGuard implements CanActivate {
       if (permissionMetadata.skipValidation) {
         return true;
       }
+
+      // Allow anonymous access if specified
+      if (permissionMetadata.allowAnonymous) {
+        this.logger.debug('Anonymous access allowed for this endpoint');
+
+        return true;
+      }
+
       // Build enhanced permission context
       const enhancedContext = await this.buildPermissionContext(
         context,
@@ -71,8 +79,12 @@ export class EnterpriseRbacGuard implements CanActivate {
       const result =
         await this.validationOrchestrator.executeValidation(enhancedContext);
 
-      // Handle result
-      return this.handleValidationResult(result, enhancedContext);
+      // Handle result with custom error message if provided
+      return this.handleValidationResult(
+        result,
+        enhancedContext,
+        permissionMetadata.errorMessage,
+      );
     } catch (error) {
       this.logger.error(
         `Enterprise RBAC Guard error: ${error.message}`,
@@ -88,31 +100,45 @@ export class EnterpriseRbacGuard implements CanActivate {
 
   /**
    * Get permission metadata from reflection
+   * Merges class-level and method-level metadata, with method-level taking precedence
    */
   private getPermissionMetadata(
     context: ExecutionContext,
   ): PermissionMetadata | null {
-    // Check method-level permission first
-    const methodPermission = this.reflector.get(
-      PERMISSION_KEY,
-      context.getHandler(),
-    );
-
-    if (methodPermission) {
-      return methodPermission;
-    }
-
-    // Check class-level permission
-    const classPermission = this.reflector.get(
+    // Get class-level permission
+    const classPermission = this.reflector.get<PermissionMetadata>(
       PERMISSION_KEY,
       context.getClass(),
     );
 
-    if (classPermission) {
+    // Get method-level permission
+    const methodPermission = this.reflector.get<PermissionMetadata>(
+      PERMISSION_KEY,
+      context.getHandler(),
+    );
+
+    // No permissions defined at all
+    if (!classPermission && !methodPermission) {
+      return null;
+    }
+
+    // Only class-level defined
+    if (classPermission && !methodPermission) {
       return classPermission;
     }
 
-    return null;
+    // Only method-level defined
+    if (!classPermission && methodPermission) {
+      return methodPermission;
+    }
+
+    // Both defined - merge with method-level taking precedence
+    return {
+      ...classPermission,
+      ...methodPermission,
+      // Ensure resource is inherited if not overridden
+      resource: methodPermission.resource || classPermission.resource,
+    };
   }
 
   /**
@@ -147,14 +173,18 @@ export class EnterpriseRbacGuard implements CanActivate {
     };
 
     // Build resource context
+    const resourceName =
+      metadata.resource ||
+      metadata.objectName ||
+      this.extractObjectName(context);
     const resourceContext: ResourceContext = {
-      objectName: metadata.objectName || this.extractObjectName(context),
-      recordId: this.extractRecordId(request, gqlContext),
-      resourceType: this.determineResourceType(metadata.objectName),
+      objectName: resourceName,
+      recordId: this.extractRecordIdFromMetadata(request, gqlContext, metadata),
+      resourceType: this.determineResourceType(resourceName),
       resourceCategory: 'BUSINESS_DATA',
       ownerId: this.extractOwnerId(request, gqlContext),
       isSystemResource: false,
-      isSensitive: this.isSensitiveResource(metadata.objectName),
+      isSensitive: this.isSensitiveResource(resourceName),
       confidentialityLevel: 'INTERNAL',
       isActive: true,
     };
@@ -174,6 +204,13 @@ export class EnterpriseRbacGuard implements CanActivate {
 
       request,
       gqlContext,
+
+      // Cache control from decorator
+      cacheContext: {
+        enabled: metadata.enableCache ?? true, // Default: true
+        ttl: metadata.cacheTTL,
+        forceRefresh: false,
+      },
 
       // Performance settings for basic validation
       validationMode: 'PERMISSIVE',
@@ -260,7 +297,58 @@ export class EnterpriseRbacGuard implements CanActivate {
   }
 
   /**
-   * Extract record ID from request
+   * Extract record ID from request based on permission metadata
+   * Supports recordIdParam and recordIdPath from @Permission decorator
+   */
+  private extractRecordIdFromMetadata(
+    request: Request,
+    gqlContext: GqlExecutionContext | undefined,
+    metadata: PermissionMetadata,
+  ): string | undefined {
+    // 1. Check if recordIdParam is specified (e.g., 'id', 'orderId')
+    if (metadata.recordIdParam && gqlContext) {
+      const variables = gqlContext.getArgs();
+      const recordId = variables[metadata.recordIdParam];
+
+      if (recordId) {
+        this.logger.debug(
+          `RecordId extracted from param: ${metadata.recordIdParam}`,
+          {
+            recordId,
+          },
+        );
+
+        return recordId;
+      }
+    }
+
+    // 2. Check if recordIdPath is specified (e.g., 'input.id', 'input.data.orderId')
+    if (metadata.recordIdPath && gqlContext) {
+      const variables = gqlContext.getArgs();
+      const recordIdValue = this.extractValueByPath(
+        variables,
+        metadata.recordIdPath,
+      );
+
+      // Type guard: ensure the value is a string
+      if (recordIdValue && typeof recordIdValue === 'string') {
+        this.logger.debug(
+          `RecordId extracted from path: ${metadata.recordIdPath}`,
+          {
+            recordId: recordIdValue,
+          },
+        );
+
+        return recordIdValue;
+      }
+    }
+
+    // 3. Fallback to default extraction logic
+    return this.extractRecordId(request, gqlContext);
+  }
+
+  /**
+   * Extract record ID from request (legacy/default method)
    */
   private extractRecordId(
     request: Request,
@@ -280,6 +368,34 @@ export class EnterpriseRbacGuard implements CanActivate {
 
     // From query parameters
     return request.query.id as string;
+  }
+
+  /**
+   * Extract value from object by path (e.g., 'input.id', 'data.user.id')
+   */
+  private extractValueByPath(
+    obj: Record<string, unknown>,
+    path: string,
+  ): unknown {
+    if (!obj || !path) return undefined;
+
+    const keys = path.split('.');
+    let value: unknown = obj;
+
+    for (const key of keys) {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+
+      // Type guard to ensure value is object before accessing property
+      if (typeof value !== 'object') {
+        return undefined;
+      }
+
+      value = (value as Record<string, unknown>)[key];
+    }
+
+    return value;
   }
 
   /**
@@ -387,7 +503,7 @@ export class EnterpriseRbacGuard implements CanActivate {
    * Generate unique request ID
    */
   private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**
@@ -413,6 +529,7 @@ export class EnterpriseRbacGuard implements CanActivate {
   private handleValidationResult(
     result: EnhancedPermissionResult,
     context: EnhancedPermissionContext,
+    customErrorMessage?: string,
   ): boolean {
     if (result.result === CheckResult.PASS) {
       this.logger.debug(
@@ -433,8 +550,12 @@ export class EnterpriseRbacGuard implements CanActivate {
       );
     }
 
-    throw new ForbiddenException(
-      result.reason || 'Access denied by permission validation',
-    );
+    // Use custom error message if provided, otherwise use default
+    const errorMessage =
+      customErrorMessage ||
+      result.reason ||
+      'Access denied by permission validation';
+
+    throw new ForbiddenException(errorMessage);
   }
 }

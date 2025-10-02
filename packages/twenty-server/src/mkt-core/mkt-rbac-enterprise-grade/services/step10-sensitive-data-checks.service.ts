@@ -124,24 +124,6 @@ interface MktUserPermissionTemplateWorkspaceEntity {
 }
 
 /**
- * MKT Department Entity
- */
-interface MktDepartmentWorkspaceEntity {
-  id: string;
-  departmentCode: string;
-  departmentName: string;
-  departmentNameEn?: string;
-  description?: string;
-  requiresKpiTracking?: boolean;
-  allowsCrossDepartmentAccess?: boolean;
-  displayOrder: number;
-  isActive?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
-/**
  * Template Permission Analysis Result
  */
 type TemplatePermissionResult = {
@@ -159,80 +141,12 @@ type TemplatePermissionResult = {
 /**
  * Workspace entity interfaces for sensitive data
  */
-interface MktSInvoiceWorkspaceEntity {
-  id: string;
-  name: string;
-  invoiceType?: string;
-  currencyCode?: string;
-  buyerTaxCode?: string;
-  buyerIdNo?: string;
-  buyerEmail?: string;
-  buyerPhoneNumber?: string;
-  totalAmountWithTax?: number;
-  totalTaxAmount?: number;
-  supplierTaxCode?: string;
-  invoiceNo?: string;
-  transactionID?: string;
-  createdByWorkspaceMemberId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
-interface WorkspaceMemberEntity {
-  id: string;
-  role?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
 interface EnhancedUserContextWithCompliance extends EnhancedUserContext {
   hasDataDeletionRights?: boolean;
   hasPciCompliantAccess?: boolean;
   hasTaxDataModificationRights?: boolean;
   hasFinancialModificationRights?: boolean;
   hasSecurityClearance?: boolean;
-}
-
-interface MktPaymentWorkspaceEntity {
-  id: string;
-  name: string;
-  amount?: number;
-  currency: string;
-  status?: string;
-  paymentDate?: Date;
-  invoiceId?: string;
-  mktOrderId?: string;
-  mktPaymentMethodId?: string;
-  createdByWorkspaceMemberId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
-interface MktContractWorkspaceEntity {
-  id: string;
-  name: string;
-  status?: string;
-  startDate?: string;
-  endDate?: string;
-  mktOrderId?: string;
-  accountOwnerId?: string;
-  createdByWorkspaceMemberId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
-interface ApiKeyWorkspaceEntity {
-  id: string;
-  name: string;
-  expiresAt: Date;
-  revokedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
 }
 
 @Injectable()

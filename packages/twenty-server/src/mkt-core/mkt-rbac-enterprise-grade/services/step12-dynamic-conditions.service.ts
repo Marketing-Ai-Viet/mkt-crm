@@ -1289,7 +1289,7 @@ export class Step12DynamicConditionsService
   private async processDynamicConditions(
     context: EnhancedPermissionContext,
     applicableConditions: ConditionMatchResult[],
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<DynamicConditionsEvaluation> {
     let finalDecision = true;
     const restrictionsList: string[] = [];
@@ -1574,51 +1574,51 @@ export class Step12DynamicConditionsService
     return context.userContext?.deviceFingerprint ? true : false;
   }
 
-  private hasRequiredApproval(context: EnhancedPermissionContext): boolean {
+  private hasRequiredApproval(_context: EnhancedPermissionContext): boolean {
     // Check if required approval exists for this action
     return false; // Simplified - would check approval records
   }
 
-  private hasCompletedWorkflow(context: EnhancedPermissionContext): boolean {
+  private hasCompletedWorkflow(_context: EnhancedPermissionContext): boolean {
     // Check if required workflow is completed
     return false; // Simplified - would check workflow status
   }
 
-  private hasPendingReview(context: EnhancedPermissionContext): boolean {
+  private hasPendingReview(_context: EnhancedPermissionContext): boolean {
     // Check if there are pending reviews that block access
     return false; // Simplified - would check review status
   }
 
   private exceedsDailyLimit(
-    context: EnhancedPermissionContext,
-    maxDaily: number,
+    _context: EnhancedPermissionContext,
+    _maxDaily: number,
   ): boolean {
     // Check if user has exceeded daily access limit
     return false; // Simplified - would check access logs
   }
 
-  private hasClientCertificate(context: EnhancedPermissionContext): boolean {
+  private hasClientCertificate(_context: EnhancedPermissionContext): boolean {
     // Check if client has valid certificate
     return false; // Simplified - would check certificate
   }
 
   private exceedsConcurrentDeviceLimit(
-    context: EnhancedPermissionContext,
-    maxDevices: number,
+    _context: EnhancedPermissionContext,
+    _maxDevices: number,
   ): boolean {
     // Check if user has too many concurrent devices
     return false; // Simplified - would check active sessions
   }
 
   private exceedsConcurrentSessionLimit(
-    context: EnhancedPermissionContext,
-    maxSessions: number,
+    _context: EnhancedPermissionContext,
+    _maxSessions: number,
   ): boolean {
     // Check if user has too many concurrent sessions
     return false; // Simplified - would check active sessions
   }
 
-  private getCountryFromIp(ipAddress: string): string {
+  private getCountryFromIp(_ipAddress: string): string {
     // Simplified country detection from IP
     return 'VN'; // Default to Vietnam
   }

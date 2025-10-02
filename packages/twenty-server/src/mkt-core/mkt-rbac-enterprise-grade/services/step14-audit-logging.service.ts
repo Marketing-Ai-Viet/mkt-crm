@@ -20,10 +20,10 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/enhanced-permission-context.type';
 import {
   CheckResult,
-  VALIDATION_STEPS,
-  STEP_PERFORMANCE_CONFIG,
   PermissionAction,
   PermissionSource,
+  STEP_PERFORMANCE_CONFIG,
+  VALIDATION_STEPS,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 import {
   VALIDATION_STEP_DESCRIPTIONS,
@@ -94,72 +94,6 @@ enum RiskLevel {
 }
 
 /**
- * Audit log entry structure
- */
-type AuditLogEntry = {
-  id: string;
-  eventType: AuditEventType;
-  eventCategory: AuditEventCategory;
-  severity: AuditSeverity;
-  riskLevel: RiskLevel;
-
-  // Context information
-  userId: string;
-  workspaceId: string;
-  workspaceMemberId: string;
-  sessionId?: string;
-  requestId?: string;
-
-  // Action details
-  action: string;
-  resourceType: string;
-  resourceId?: string;
-  recordId?: string;
-
-  // Result information
-  result: 'GRANTED' | 'DENIED' | 'ERROR' | 'WARNING';
-  reason: string;
-  riskScore: number;
-
-  // Sensitive data flags
-  involvesSensitiveData: boolean;
-  involvesPersonalData: boolean;
-  involvesFinancialData: boolean;
-  dataClassification: string;
-
-  // Compliance tracking
-  complianceFrameworks: ComplianceFramework[];
-  requiresApproval: boolean;
-  retentionPeriodDays: number;
-
-  // Security context
-  ipAddress: string;
-  userAgent: string;
-  geolocation?: string;
-  deviceFingerprint?: string;
-
-  // Validation details
-  validationSteps: string[];
-  failedSteps: string[];
-  executionTimeMs: number;
-
-  // Additional metadata
-  metadata: Record<string, unknown>;
-  details: Record<string, unknown>;
-
-  // Timestamps
-  timestamp: Date;
-  createdAt: Date;
-  updatedAt?: Date;
-
-  // Processing status
-  processed: boolean;
-  alertGenerated: boolean;
-  notificationSent: boolean;
-  archived: boolean;
-};
-
-/**
  * Security alert structure (stored in audit log requestContext)
  */
 type SecurityAlert = {
@@ -176,36 +110,6 @@ type SecurityAlert = {
   relatedAuditIds: string[];
   metadata: Record<string, unknown>;
   createdAt: Date;
-};
-
-/**
- * Compliance report structure
- */
-type ComplianceReport = {
-  id: string;
-  reportType: 'PERIODIC' | 'ON_DEMAND' | 'INCIDENT';
-  framework: ComplianceFramework;
-  period: {
-    startDate: Date;
-    endDate: Date;
-  };
-
-  // Statistics
-  totalAuditEntries: number;
-  totalPermissionChecks: number;
-  totalDenials: number;
-  totalErrors: number;
-  totalSensitiveDataAccess: number;
-
-  // Compliance metrics
-  complianceScore: number;
-  violations: string[];
-  recommendations: string[];
-
-  // Generation metadata
-  generatedAt: Date;
-  generatedBy: string;
-  dataRetentionDays: number;
 };
 
 /**
@@ -500,8 +404,6 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
           { shouldBypassPermissionChecks: true },
         );
 
-      console.log('auditEntry', auditEntry);
-
       const auditLogEntity: Partial<MktPermissionAuditWorkspaceEntity> = {
         workspaceMemberId: auditEntry.workspaceMemberId,
         userId: userId,
@@ -608,7 +510,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
    */
   private async generateSecurityAlert(
     auditEntry: EnhancedAuditEntry,
-    context: EnhancedPermissionContext,
+    _context: EnhancedPermissionContext,
     workspaceId: string,
     auditLogId: string,
   ): Promise<void> {
@@ -867,7 +769,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
   }
 
   private async getPatternRisk(
-    context: EnhancedPermissionContext,
+    _context: EnhancedPermissionContext,
   ): Promise<number> {
     // In a real implementation, this would analyze historical patterns
     // For now, return a base pattern risk
@@ -1170,13 +1072,9 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
     const acceptEncoding = context.request?.headers?.['accept-encoding'] || '';
 
     if (userAgent !== 'unknown') {
-      const fingerprint = Buffer.from(
-        `${userAgent}:${acceptLanguage}:${acceptEncoding}`,
-      )
+      return Buffer.from(`${userAgent}:${acceptLanguage}:${acceptEncoding}`)
         .toString('base64')
         .substr(0, 16);
-
-      return fingerprint;
     }
 
     return undefined;
@@ -1291,7 +1189,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
   }
 
   private async detectPrivilegeEscalation(
-    auditEntry: EnhancedAuditEntry,
+    _auditEntry: EnhancedAuditEntry,
     context: EnhancedPermissionContext,
   ): Promise<boolean> {
     const userHierarchy = context.userContext?.hierarchyLevel || 0;
@@ -1313,7 +1211,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
   private async generatePatternAlert(
     auditEntry: EnhancedAuditEntry,
     pattern: PatternDetectionResult,
-    context: EnhancedPermissionContext,
+    _context: EnhancedPermissionContext,
     workspaceId: string,
     auditLogId: string,
   ): Promise<void> {

@@ -73,6 +73,12 @@ const RBAC_CACHE_KEYS = {
   SENSITIVE_DATA_ACCESS: 'rbac:sensitive:access',
   DYNAMIC_CONDITIONS: 'rbac:dynamic:conditions',
   PERFORMANCE_METRICS: 'rbac:performance:metrics',
+
+  // Simplified 6-step validation cache keys
+  STEP_RESULT: 'rbac:step:result', // Cache individual step results
+  SIMPLIFIED_VALIDATION: 'rbac:simplified:validation', // Cache full simplified validation
+  RESOURCE_METADATA: 'rbac:resource:metadata', // Cache resource metadata
+  ACTION_VALIDATION: 'rbac:action:validation', // Cache action validation
 } as const;
 
 /**
@@ -84,6 +90,12 @@ const RBAC_CACHE_TTL = {
   LONG: 2 * 60 * 60 * 1000, // 2 hours - for permission templates
   EXTENDED: 24 * 60 * 60 * 1000, // 24 hours - for system configurations
   PERFORMANCE: 60 * 1000, // 1 minute - for performance metrics
+
+  // Simplified 6-step validation TTLs (optimized for performance)
+  SIMPLIFIED_RESULT: 10 * 60 * 1000, // 10 minutes - full simplified validation result
+  STEP_RESULT: 15 * 60 * 1000, // 15 minutes - individual step results
+  RESOURCE_META: 30 * 60 * 1000, // 30 minutes - resource metadata (stable)
+  ACTION_CHECK: 20 * 60 * 1000, // 20 minutes - action validation
 } as const;
 
 /**
@@ -423,6 +435,285 @@ export class RbacCacheManagerService implements OnModuleInit, OnModuleDestroy {
     await this.invalidateByPattern(pattern);
   }
 
+  // ==================== SIMPLIFIED 6-STEP VALIDATION CACHE METHODS ====================
+
+  /**
+   * Cache simplified validation result (full 6-step result)
+   */
+  async cacheSimplifiedValidationResult(
+    context: EnhancedPermissionContext,
+    result: EnhancedPermissionResult,
+  ): Promise<void> {
+    try {
+      const key = this.generateSimplifiedValidationKey(context);
+      const ttl = RBAC_CACHE_TTL.SIMPLIFIED_RESULT;
+
+      await this.cacheStorage.set(key, result, ttl);
+
+      this.trackCacheOperation('set', key, 0);
+      this.logger.debug('Simplified validation result cached', {
+        key,
+        ttl,
+        action: context.action,
+        resource: context.resourceContext?.resourceType,
+      });
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to cache simplified validation result', {
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Get cached simplified validation result
+   */
+  async getCachedSimplifiedValidationResult(
+    context: EnhancedPermissionContext,
+  ): Promise<EnhancedPermissionResult | null> {
+    try {
+      const key = this.generateSimplifiedValidationKey(context);
+      const result = await this.cacheStorage.get<EnhancedPermissionResult>(key);
+
+      if (result) {
+        this.trackCacheOperation('hit', key, 0);
+        this.logger.debug('Simplified validation cache hit', { key });
+      } else {
+        this.trackCacheOperation('miss', key, 0);
+      }
+
+      return result || null;
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to get cached simplified validation result', {
+        error: error.message,
+      });
+
+      return null;
+    }
+  }
+
+  /**
+   * Cache individual step result
+   */
+  async cacheStepResult(
+    stepNumber: number,
+    context: EnhancedPermissionContext,
+    stepResult: unknown,
+  ): Promise<void> {
+    try {
+      const key = this.generateStepResultKey(stepNumber, context);
+      const ttl = RBAC_CACHE_TTL.STEP_RESULT;
+
+      await this.cacheStorage.set(key, stepResult, ttl);
+
+      this.trackCacheOperation('set', key, 0);
+      this.logger.debug('Step result cached', {
+        stepNumber,
+        key,
+        ttl,
+      });
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to cache step result', {
+        error: error.message,
+        stepNumber,
+      });
+    }
+  }
+
+  /**
+   * Get cached step result
+   */
+  async getCachedStepResult<T = unknown>(
+    stepNumber: number,
+    context: EnhancedPermissionContext,
+  ): Promise<T | null> {
+    try {
+      const key = this.generateStepResultKey(stepNumber, context);
+      const result = await this.cacheStorage.get<T>(key);
+
+      if (result) {
+        this.trackCacheOperation('hit', key, 0);
+        this.logger.debug('Step result cache hit', { stepNumber, key });
+      } else {
+        this.trackCacheOperation('miss', key, 0);
+      }
+
+      return result || null;
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to get cached step result', {
+        error: error.message,
+        stepNumber,
+      });
+
+      return null;
+    }
+  }
+
+  /**
+   * Cache resource metadata (Step 3)
+   */
+  async cacheResourceMetadata(
+    resourceType: string,
+    recordId: string | undefined,
+    metadata: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const key = `${RBAC_CACHE_KEYS.RESOURCE_METADATA}:${resourceType}:${recordId || 'all'}`;
+      const ttl = RBAC_CACHE_TTL.RESOURCE_META;
+
+      await this.cacheStorage.set(key, metadata, ttl);
+
+      this.trackCacheOperation('set', key, 0);
+      this.logger.debug('Resource metadata cached', {
+        resourceType,
+        recordId,
+        ttl,
+      });
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to cache resource metadata', {
+        error: error.message,
+        resourceType,
+      });
+    }
+  }
+
+  /**
+   * Get cached resource metadata
+   */
+  async getCachedResourceMetadata(
+    resourceType: string,
+    recordId: string | undefined,
+  ): Promise<Record<string, unknown> | null> {
+    try {
+      const key = `${RBAC_CACHE_KEYS.RESOURCE_METADATA}:${resourceType}:${recordId || 'all'}`;
+      const result = await this.cacheStorage.get<Record<string, unknown>>(key);
+
+      if (result) {
+        this.trackCacheOperation('hit', key, 0);
+      } else {
+        this.trackCacheOperation('miss', key, 0);
+      }
+
+      return result || null;
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to get cached resource metadata', {
+        error: error.message,
+        resourceType,
+      });
+
+      return null;
+    }
+  }
+
+  /**
+   * Cache action validation result (Step 5)
+   */
+  async cacheActionValidation(
+    action: string,
+    resourceType: string,
+    templateIds: string[],
+    isAllowed: boolean,
+  ): Promise<void> {
+    try {
+      const key = `${RBAC_CACHE_KEYS.ACTION_VALIDATION}:${action}:${resourceType}:${templateIds.sort().join(',')}`;
+      const ttl = RBAC_CACHE_TTL.ACTION_CHECK;
+
+      await this.cacheStorage.set(key, { isAllowed, templateIds }, ttl);
+
+      this.trackCacheOperation('set', key, 0);
+      this.logger.debug('Action validation cached', {
+        action,
+        resourceType,
+        isAllowed,
+        ttl,
+      });
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to cache action validation', {
+        error: error.message,
+        action,
+        resourceType,
+      });
+    }
+  }
+
+  /**
+   * Get cached action validation
+   */
+  async getCachedActionValidation(
+    action: string,
+    resourceType: string,
+    templateIds: string[],
+  ): Promise<{ isAllowed: boolean; templateIds: string[] } | null> {
+    try {
+      const key = `${RBAC_CACHE_KEYS.ACTION_VALIDATION}:${action}:${resourceType}:${templateIds.sort().join(',')}`;
+      const result = await this.cacheStorage.get<{
+        isAllowed: boolean;
+        templateIds: string[];
+      }>(key);
+
+      if (result) {
+        this.trackCacheOperation('hit', key, 0);
+      } else {
+        this.trackCacheOperation('miss', key, 0);
+      }
+
+      return result || null;
+    } catch (error) {
+      this.performanceMetrics.errorCount++;
+      this.logger.error('Failed to get cached action validation', {
+        error: error.message,
+        action,
+        resourceType,
+      });
+
+      return null;
+    }
+  }
+
+  /**
+   * Invalidate simplified validation cache for a specific context
+   */
+  async invalidateSimplifiedValidationCache(
+    context: EnhancedPermissionContext,
+  ): Promise<void> {
+    const patterns = [
+      this.generateSimplifiedValidationKey(context),
+      `${RBAC_CACHE_KEYS.STEP_RESULT}:*:${context.userContext?.workspaceMemberId}:*`,
+    ];
+
+    for (const pattern of patterns) {
+      await this.invalidateByPattern(pattern);
+    }
+
+    this.logger.debug('Simplified validation cache invalidated', {
+      userId: context.userContext?.id,
+    });
+  }
+
+  /**
+   * Batch invalidate cache when permission templates change
+   */
+  async invalidateOnTemplateChange(templateId: string): Promise<void> {
+    const patterns = [
+      `${RBAC_CACHE_KEYS.TEMPLATE_PERMISSIONS}:${templateId}*`,
+      `${RBAC_CACHE_KEYS.SIMPLIFIED_VALIDATION}:*`,
+      `${RBAC_CACHE_KEYS.STEP_RESULT}:4:*`, // Step 4: Template check
+      `${RBAC_CACHE_KEYS.ACTION_VALIDATION}:*`,
+    ];
+
+    for (const pattern of patterns) {
+      await this.invalidateByPattern(pattern);
+    }
+
+    this.logger.log('Cache invalidated due to template change', { templateId });
+  }
+
   /**
    * Get current performance metrics
    */
@@ -588,9 +879,54 @@ export class RbacCacheManagerService implements OnModuleInit, OnModuleDestroy {
         return RBAC_CACHE_TTL.EXTENDED;
       case 'performance':
         return RBAC_CACHE_TTL.PERFORMANCE;
+      case 'simplified_result':
+        return RBAC_CACHE_TTL.SIMPLIFIED_RESULT;
+      case 'step_result':
+        return RBAC_CACHE_TTL.STEP_RESULT;
+      case 'resource_meta':
+        return RBAC_CACHE_TTL.RESOURCE_META;
+      case 'action_check':
+        return RBAC_CACHE_TTL.ACTION_CHECK;
       default:
         return this.cacheConfig.defaultTTL;
     }
+  }
+
+  /**
+   * Generate cache key for simplified validation result
+   */
+  private generateSimplifiedValidationKey(
+    context: EnhancedPermissionContext,
+  ): string {
+    const parts = [
+      RBAC_CACHE_KEYS.SIMPLIFIED_VALIDATION,
+      context.userContext?.workspaceId || 'unknown',
+      context.userContext?.workspaceMemberId || 'unknown',
+      context.resourceContext?.resourceType || 'unknown',
+      context.action || 'unknown',
+      context.resourceContext?.recordId || 'all',
+    ];
+
+    return parts.join(':');
+  }
+
+  /**
+   * Generate cache key for individual step result
+   */
+  private generateStepResultKey(
+    stepNumber: number,
+    context: EnhancedPermissionContext,
+  ): string {
+    const parts = [
+      RBAC_CACHE_KEYS.STEP_RESULT,
+      stepNumber.toString(),
+      context.userContext?.workspaceId || 'unknown',
+      context.userContext?.workspaceMemberId || 'unknown',
+      context.resourceContext?.resourceType || 'unknown',
+      context.action || 'unknown',
+    ];
+
+    return parts.join(':');
   }
 
   private trackCacheOperation(

@@ -26,6 +26,7 @@ import {
   VALIDATION_STEPS,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 
+import { RbacCacheManagerService } from './rbac-cache-manager.service';
 import { Step1PreValidationService } from './step1-pre-validation.service';
 import { Step2UserContextResolutionService } from './step2-user-context-resolution.service';
 import { Step3ResourceIdentificationService } from './step3-resource-identification.service';
@@ -99,6 +100,7 @@ export class ValidationOrchestratorService
   private readonly activeSessions = new Map<string, ValidationSession>();
 
   constructor(
+    private readonly cacheManager: RbacCacheManagerService,
     private readonly preValidationService: Step1PreValidationService,
     private readonly userContextService: Step2UserContextResolutionService,
     private readonly resourceIdentificationService: Step3ResourceIdentificationService,
@@ -200,7 +202,12 @@ export class ValidationOrchestratorService
 
       // Execute steps in order
       for (const stepNumber of validSteps.sort((a, b) => a - b)) {
-        const step = this.steps.get(stepNumber)!;
+        const step = this.steps.get(stepNumber);
+
+        if (!step) {
+          this.logger.warn(`Step ${stepNumber} not found in registry`);
+          continue;
+        }
 
         await this.executeStep(session, step);
       }
@@ -754,9 +761,38 @@ export class ValidationOrchestratorService
     context: EnhancedPermissionContext,
   ): Promise<EnhancedPermissionResult | null> {
     try {
-      // const cacheKey = this.cacheService.generatePermissionKey(context);
-      //
-      // return await this.cacheService.getPermissionResult(cacheKey);
+      const validationMode = ENTERPRISE_RBAC_CONFIG.VALIDATION_MODE;
+
+      // Use simplified validation cache for SIMPLIFIED mode
+      if (validationMode === 'SIMPLIFIED') {
+        const cachedResult =
+          await this.cacheManager.getCachedSimplifiedValidationResult(context);
+
+        if (cachedResult) {
+          this.logger.debug('Simplified validation cache hit', {
+            userId: context.userContext?.id,
+            action: context.action,
+            resource: context.resourceContext?.resourceType,
+          });
+
+          return cachedResult;
+        }
+      } else {
+        // Use full permission result cache for FULL mode
+        const cachedResult =
+          await this.cacheManager.getCachedPermissionResult(context);
+
+        if (cachedResult) {
+          this.logger.debug('Full validation cache hit', {
+            userId: context.userContext?.id,
+            action: context.action,
+            resource: context.resourceContext?.resourceType,
+          });
+
+          return cachedResult;
+        }
+      }
+
       return null;
     } catch (error) {
       this.logger.debug(`Cache check failed: ${error.message}`);
@@ -770,9 +806,27 @@ export class ValidationOrchestratorService
     result: EnhancedPermissionResult,
   ): Promise<void> {
     try {
-      // const cacheKey = this.cacheService.generatePermissionKey(context);
-      //
-      // await this.cacheService.cachePermissionResult(cacheKey, result);
+      const validationMode = ENTERPRISE_RBAC_CONFIG.VALIDATION_MODE;
+
+      // Use appropriate cache method based on validation mode
+      if (validationMode === 'SIMPLIFIED') {
+        await this.cacheManager.cacheSimplifiedValidationResult(
+          context,
+          result,
+        );
+        this.logger.debug('Simplified validation result cached', {
+          userId: context.userContext?.id,
+          action: context.action,
+          resource: context.resourceContext?.resourceType,
+        });
+      } else {
+        await this.cacheManager.cachePermissionResult(context, result);
+        this.logger.debug('Full validation result cached', {
+          userId: context.userContext?.id,
+          action: context.action,
+          resource: context.resourceContext?.resourceType,
+        });
+      }
     } catch (error) {
       this.logger.debug(`Failed to cache result: ${error.message}`);
     }
@@ -914,10 +968,10 @@ export class ValidationOrchestratorService
           session.performance.parallelSteps
         : 0;
 
-    const sequentialEfficiency =
-      session.performance.sequentialTime > 0
-        ? session.performance.sequentialTime
-        : 0;
+    // const sequentialEfficiency =
+    //   session.performance.sequentialTime > 0
+    //     ? session.performance.sequentialTime
+    //     : 0;
 
     const performanceSummary = {
       sessionId: session.sessionId,
@@ -1049,7 +1103,34 @@ export class ValidationOrchestratorService
     context: EnhancedPermissionContext,
     session?: ValidationSession,
   ): number[][] {
-    // Base execution groups - these are the standard groups
+    // Check validation mode
+    const validationMode = ENTERPRISE_RBAC_CONFIG.VALIDATION_MODE;
+
+    // SIMPLIFIED MODE: Only 6 core steps for basic CRUD
+    if (validationMode === 'SIMPLIFIED') {
+      const simplifiedGroups = [
+        [VALIDATION_STEPS.PRE_VALIDATION],
+        [
+          VALIDATION_STEPS.USER_CONTEXT_RESOLUTION,
+          VALIDATION_STEPS.RESOURCE_IDENTIFICATION,
+        ],
+        [
+          VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK,
+          VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION,
+        ],
+        [VALIDATION_STEPS.FINAL_DECISION],
+      ];
+
+      if (session) {
+        session.performance.optimizationsApplied.push('simplified_6_step_mode');
+      }
+
+      this.logger.debug('Using SIMPLIFIED 6-step validation mode');
+
+      return simplifiedGroups;
+    }
+
+    // FULL MODE: Complete 15-step validation
     const baseGroups = [
       [VALIDATION_STEPS.PRE_VALIDATION],
       [

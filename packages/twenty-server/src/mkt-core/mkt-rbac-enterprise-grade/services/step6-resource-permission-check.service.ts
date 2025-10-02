@@ -250,14 +250,14 @@ export class Step6ResourcePermissionCheckService
 
       // Update context with resource permission information
       // Note: ResourceContext doesn't have permissions array, so we'll store in metadata instead
-      const permissionResult = {
-        permission: resourcePermissionEvaluation.hasPermission
-          ? 'ALLOW'
-          : 'DENY',
-        source: resourcePermissionEvaluation.source,
-        level: resourcePermissionEvaluation.level,
-        restrictions: resourcePermissionEvaluation.restrictions,
-      };
+      // const permissionResult = {
+      //   permission: resourcePermissionEvaluation.hasPermission
+      //     ? 'ALLOW'
+      //     : 'DENY',
+      //   source: resourcePermissionEvaluation.source,
+      //   level: resourcePermissionEvaluation.level,
+      //   restrictions: resourcePermissionEvaluation.restrictions,
+      // };
 
       // Update confidentiality level if not set
       if (!context.resourceContext.confidentialityLevel) {
@@ -312,7 +312,7 @@ export class Step6ResourcePermissionCheckService
    */
   private async classifyResource(
     resourceType: string,
-    recordId: string,
+    _recordId: string,
     workspaceId: string,
   ): Promise<ResourceClassification> {
     try {
@@ -405,12 +405,6 @@ export class Step6ResourcePermissionCheckService
       const policyRepository =
         await this.getDataAccessPolicyRepository(workspaceId);
 
-      console.log('checkDataAccessPolicies');
-      console.log(
-        'Checking data access policies for user context:',
-        userContext,
-      );
-      console.log('Resource classification:', resourceClassification);
       // Find applicable data access policies
       const policies = await policyRepository.find({
         where: [

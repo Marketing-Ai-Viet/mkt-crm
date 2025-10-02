@@ -29,6 +29,9 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 /**
  * Hierarchy validation evaluation result
@@ -53,81 +56,6 @@ type HierarchyValidationEvaluation = {
     crossDepartmentAllowed: boolean;
     hierarchyPath?: string[];
   };
-};
-
-/**
- * Department hierarchy entity from workspace
- */
-type DepartmentHierarchyEntity = {
-  id: string;
-  hierarchyLevel: number;
-  relationshipType: string;
-  validFrom?: Date;
-  validTo?: Date;
-  inheritsPermissions?: boolean;
-  canEscalateToParent?: boolean;
-  allowsCrossBranchAccess?: boolean;
-  parentDepartmentId?: string;
-  childDepartmentId?: string;
-  hierarchyPath?: string[];
-  inheritsParentPermissions?: boolean;
-  canViewTeamData?: boolean;
-  canEditTeamData?: boolean;
-  canExportTeamData?: boolean;
-  canApprove?: boolean;
-  canDelegate?: boolean;
-  canAudit?: boolean;
-  canManageUsers?: boolean;
-  canAccessSensitiveData?: boolean;
-  canOverrideSubordinates?: boolean;
-  requiresDualApproval?: boolean;
-  requiresMFA?: boolean;
-  canAccessAfterHours?: boolean;
-  requiresFullAuditTrail?: boolean;
-  canDeleteData?: boolean;
-  isActive?: boolean;
-};
-
-/**
- * Organization level entity from workspace
- */
-type OrganizationLevelEntity = {
-  id: string;
-  levelCode: string;
-  levelName: string;
-  levelNameEn?: string;
-  description?: string;
-  hierarchyLevel: number;
-  parentLevelId?: string;
-  displayOrder: number;
-  isActive?: boolean;
-};
-
-/**
- * Workspace member entity from workspace
- */
-type WorkspaceMemberEntity = {
-  id: string;
-  userId: string;
-  userEmail: string;
-  nameFirstName?: string;
-  nameLastName?: string;
-  departmentId?: string;
-  organizationLevelId?: string;
-  employmentStatusId?: string;
-};
-
-/**
- * Hierarchy access validation result
- */
-type HierarchyAccessValidation = {
-  canAccessResource: boolean;
-  hierarchyLevelSufficient: boolean;
-  departmentAccessAllowed: boolean;
-  crossDepartmentAccess: boolean;
-  requiresEscalation: boolean;
-  escalationPath?: string[];
-  restrictions: string[];
 };
 
 /**
@@ -173,8 +101,8 @@ export class Step7HierarchyValidationService
    */
   private async getDepartmentHierarchyRepository(
     workspaceId: string,
-  ): Promise<WorkspaceRepository<DepartmentHierarchyEntity>> {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<DepartmentHierarchyEntity>(
+  ): Promise<WorkspaceRepository<MktDepartmentHierarchyWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktDepartmentHierarchyWorkspaceEntity>(
       workspaceId,
       'mktDepartmentHierarchy',
       { shouldBypassPermissionChecks: true },
@@ -186,8 +114,8 @@ export class Step7HierarchyValidationService
    */
   private async getOrganizationLevelRepository(
     workspaceId: string,
-  ): Promise<WorkspaceRepository<OrganizationLevelEntity>> {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<OrganizationLevelEntity>(
+  ): Promise<WorkspaceRepository<MktOrganizationLevelWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrganizationLevelWorkspaceEntity>(
       workspaceId,
       'mktOrganizationLevel',
       { shouldBypassPermissionChecks: true },
@@ -199,8 +127,8 @@ export class Step7HierarchyValidationService
    */
   private async getWorkspaceMemberRepository(
     workspaceId: string,
-  ): Promise<WorkspaceRepository<WorkspaceMemberEntity>> {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberEntity>(
+  ): Promise<WorkspaceRepository<WorkspaceMemberWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
       workspaceId,
       'workspaceMember',
       { shouldBypassPermissionChecks: true },
@@ -312,8 +240,8 @@ export class Step7HierarchyValidationService
     hierarchyLevel: number;
     departmentId?: string;
     organizationLevelId?: string;
-    organizationLevel?: OrganizationLevelEntity;
-    departmentHierarchy?: DepartmentHierarchyEntity[];
+    organizationLevel?: MktOrganizationLevelWorkspaceEntity;
+    departmentHierarchy?: MktDepartmentHierarchyWorkspaceEntity[];
     reportingChain?: string[];
   }> {
     try {
@@ -334,7 +262,7 @@ export class Step7HierarchyValidationService
       }
 
       let hierarchyLevel = userContext.hierarchyLevel;
-      let organizationLevel: OrganizationLevelEntity | undefined;
+      let organizationLevel: MktOrganizationLevelWorkspaceEntity | undefined;
 
       // Get organization level information if available
       if (member.organizationLevelId) {
@@ -350,7 +278,7 @@ export class Step7HierarchyValidationService
       }
 
       // Get department hierarchy information
-      let departmentHierarchy: DepartmentHierarchyEntity[] = [];
+      let departmentHierarchy: MktDepartmentHierarchyWorkspaceEntity[] = [];
 
       if (member.departmentId) {
         departmentHierarchy = await deptHierarchyRepository.find({
@@ -369,8 +297,8 @@ export class Step7HierarchyValidationService
 
       return {
         hierarchyLevel,
-        departmentId: member.departmentId,
-        organizationLevelId: member.organizationLevelId,
+        departmentId: member.departmentId ?? undefined,
+        organizationLevelId: member.organizationLevelId ?? undefined,
         organizationLevel,
         departmentHierarchy,
         reportingChain,
@@ -399,7 +327,7 @@ export class Step7HierarchyValidationService
     userHierarchyInfo: {
       hierarchyLevel: number;
       departmentId?: string;
-      departmentHierarchy?: DepartmentHierarchyEntity[];
+      departmentHierarchy?: MktDepartmentHierarchyWorkspaceEntity[];
     },
     workspaceId: string,
   ): Promise<HierarchyValidationEvaluation> {
@@ -464,7 +392,7 @@ export class Step7HierarchyValidationService
     userHierarchyInfo: {
       hierarchyLevel: number;
       departmentId?: string;
-      departmentHierarchy?: DepartmentHierarchyEntity[];
+      departmentHierarchy?: MktDepartmentHierarchyWorkspaceEntity[];
     },
     _workspaceId: string,
   ): Promise<HierarchyValidationEvaluation> {
@@ -584,7 +512,7 @@ export class Step7HierarchyValidationService
     action: string,
     userHierarchyInfo: {
       hierarchyLevel: number;
-      departmentHierarchy?: DepartmentHierarchyEntity[];
+      departmentHierarchy?: MktDepartmentHierarchyWorkspaceEntity[];
     },
   ): HierarchyValidationEvaluation {
     const hierarchyLevel = userHierarchyInfo.hierarchyLevel;
@@ -703,7 +631,7 @@ export class Step7HierarchyValidationService
    * Extract permissions from hierarchy entity
    */
   private extractPermissionsFromHierarchy(
-    hierarchy: DepartmentHierarchyEntity,
+    hierarchy: MktDepartmentHierarchyWorkspaceEntity,
   ): Record<string, boolean> {
     return {
       canViewTeamData: hierarchy.canViewTeamData || false,
@@ -726,7 +654,7 @@ export class Step7HierarchyValidationService
     action: string,
     resourceType: string,
     permissions: Record<string, boolean>,
-    hierarchy: DepartmentHierarchyEntity,
+    _hierarchy: MktDepartmentHierarchyWorkspaceEntity,
   ): boolean {
     const lowerAction = action.toLowerCase();
     const lowerResourceType = resourceType.toLowerCase();
@@ -791,7 +719,7 @@ export class Step7HierarchyValidationService
    * Extract restrictions from hierarchy entity
    */
   private extractRestrictionsFromHierarchy(
-    hierarchy: DepartmentHierarchyEntity,
+    hierarchy: MktDepartmentHierarchyWorkspaceEntity,
   ): string[] {
     const restrictions: string[] = [];
 
@@ -890,7 +818,7 @@ export class Step7HierarchyValidationService
    */
   private buildReportingChain(
     hierarchyLevel: number,
-    departmentHierarchy: DepartmentHierarchyEntity[],
+    departmentHierarchy: MktDepartmentHierarchyWorkspaceEntity[],
   ): string[] {
     const chain: string[] = [];
 

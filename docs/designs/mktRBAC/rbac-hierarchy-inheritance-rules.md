@@ -408,7 +408,7 @@ it('should control parent permission inheritance', async () => {
 
 ## 🔗 Related Documentation
 
-- [Enterprise RBAC Guard Guide](./enterprise-rbac-guard-guide.md)
+- [Enterprise RBAC Guard Guide](enterprise-rbac-guard-guide.md)
 - [Step 7: Hierarchy Validation](./rbac-step7-hierarchy-validation.md)
 - [Database Schema Design](./rbac-database-design.md)
 - [Performance Optimization](./rbac-performance-guide.md)

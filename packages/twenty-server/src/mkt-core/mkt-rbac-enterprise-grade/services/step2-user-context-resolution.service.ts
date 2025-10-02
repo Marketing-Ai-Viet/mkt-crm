@@ -6,7 +6,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DateTime } from 'luxon';
-import { MoreThan, LessThan, Equal } from 'typeorm';
+import { Equal, MoreThan } from 'typeorm';
 
 import {
   PermissionValidationStep,
@@ -17,8 +17,8 @@ import {
   DepartmentTeamContext,
   EnhancedPermissionContext,
   EnhancedUserContext,
-  OrganizationalHierarchyContext,
   HierarchyInheritance,
+  OrganizationalHierarchyContext,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/enhanced-permission-context.type';
 import {
   CheckResult,
@@ -378,7 +378,7 @@ export class Step2UserContextResolutionService
    */
   private async buildDepartmentContext(
     workspaceMember: WorkspaceMemberWorkspaceEntity,
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<DepartmentTeamContext> {
     try {
       return {
@@ -470,7 +470,7 @@ export class Step2UserContextResolutionService
    */
   private async calculateHierarchyDepth(
     workspaceMember: WorkspaceMemberWorkspaceEntity,
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<number> {
     // Implementation would traverse up the management chain
     // For now, return estimated depth based on organization level
@@ -487,7 +487,7 @@ export class Step2UserContextResolutionService
 
   private async checkIfDepartmentManager(
     _workspaceMember: WorkspaceMemberWorkspaceEntity,
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<boolean> {
     // Would need separate query to check if user manages other users in the department
     return false;
@@ -508,11 +508,9 @@ export class Step2UserContextResolutionService
         WorkspaceMemberWorkspaceEntity,
       );
 
-      const count = await workspaceMemberRepository.count({
+      return await workspaceMemberRepository.count({
         where: { departmentId },
       });
-
-      return count;
     } catch (error) {
       this.logger.error(`Error getting team member count: ${error.message}`);
 
@@ -684,17 +682,17 @@ export class Step2UserContextResolutionService
       });
 
       // Check if user has superiors (higher hierarchy levels)
-      const superiorsCount = await workspaceMemberRepository.count({
-        where: {
-          departmentId: departmentId || undefined,
-          organizationLevel: {
-            hierarchyLevel: LessThan(userLevel),
-          },
-        },
-        relations: {
-          organizationLevel: true,
-        },
-      });
+      // const superiorsCount = await workspaceMemberRepository.count({
+      //   where: {
+      //     departmentId: departmentId || undefined,
+      //     organizationLevel: {
+      //       hierarchyLevel: LessThan(userLevel),
+      //     },
+      //   },
+      //   relations: {
+      //     organizationLevel: true,
+      //   },
+      // });
 
       // Check if user has peers (same hierarchy level)
       const peersCount = await workspaceMemberRepository.count({
@@ -710,7 +708,6 @@ export class Step2UserContextResolutionService
       });
 
       const hasSubordinates = subordinatesCount > 0;
-      const hasSuperiors = superiorsCount > 0;
       const hasPeers = peersCount > 1; // > 1 because includes self
 
       // Calculate access rights based on hierarchy rules

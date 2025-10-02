@@ -1039,7 +1039,7 @@ export class Step11DepartmentRestrictionsService
     restrictions: DepartmentRestrictionResult,
     resourceDepartmentId: string,
     action: string,
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<boolean> {
     if (restrictions.crossDepartmentPolicy === 'STRICT_ISOLATION') {
       return false;

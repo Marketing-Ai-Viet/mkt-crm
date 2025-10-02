@@ -26,13 +26,16 @@ import {
 @Resolver(() => MktOrderOutput)
 @UseGuards(UserAuthGuard, EnterpriseRbacGuard)
 @Permission({
-  action: PermissionAction.READ,
-  objectName: PERMISSION_RESOURCE_KEYS.ORDERS,
+  resource: PERMISSION_RESOURCE_KEYS.ORDERS,
+  action: PermissionAction.READ, // Default READ for queries
 })
 export class MktOrderResolver {
   constructor(private readonly orderService: MktOrderService) {}
 
   @Mutation(() => MktOrderOutput)
+  @Permission({
+    action: PermissionAction.CREATE,
+  })
   async createMktOrderWithItems(
     @Args('input') input: CreateOrderWithItemsInput,
   ): Promise<MktOrderOutput> {
@@ -63,6 +66,10 @@ export class MktOrderResolver {
   }
 
   @Mutation(() => MktOrderOutput)
+  @Permission({
+    action: PermissionAction.UPDATE,
+    recordIdPath: 'input.id', // Auto extract orderId from input.id
+  })
   async updateMktOrderWithItems(
     @Args('input') input: UpdateOrderInput,
   ): Promise<MktOrderOutput> {
@@ -72,6 +79,11 @@ export class MktOrderResolver {
   }
 
   @Mutation(() => DeleteOrderOutput)
+  @Permission({
+    action: PermissionAction.DELETE,
+    recordIdPath: 'input.id', // Auto extract orderId from input.id
+    errorMessage: 'You do not have permission to delete this order.',
+  })
   async softDeleteMktOrder(
     @Args('input') input: DeleteOrderInput,
   ): Promise<DeleteOrderOutput> {

@@ -237,6 +237,41 @@ export const VALIDATION_STEPS = {
 } as const;
 
 /**
+ * Simplified 6-Step Validation (CRUD-only mode)
+ * For basic module + action permission checking without advanced features
+ */
+export const SIMPLIFIED_VALIDATION_STEPS = [
+  VALIDATION_STEPS.PRE_VALIDATION, // 1. Basic validation
+  VALIDATION_STEPS.USER_CONTEXT_RESOLUTION, // 2. Load user context
+  VALIDATION_STEPS.RESOURCE_IDENTIFICATION, // 3. Identify resource/module
+  VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK, // 4. Check template permissions
+  VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION, // 5. Validate CRUD action
+  VALIDATION_STEPS.FINAL_DECISION, // 6. Make final decision
+] as const;
+
+/**
+ * Full 15-Step Validation (Enterprise mode)
+ * Complete validation with all advanced features
+ */
+export const FULL_VALIDATION_STEPS = [
+  VALIDATION_STEPS.PRE_VALIDATION,
+  VALIDATION_STEPS.USER_CONTEXT_RESOLUTION,
+  VALIDATION_STEPS.RESOURCE_IDENTIFICATION,
+  VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK,
+  VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION,
+  VALIDATION_STEPS.RESOURCE_PERMISSION_CHECK,
+  VALIDATION_STEPS.HIERARCHY_VALIDATION,
+  VALIDATION_STEPS.DATA_ACCESS_POLICY_CHECK,
+  VALIDATION_STEPS.SPECIAL_PERMISSIONS,
+  VALIDATION_STEPS.SENSITIVE_DATA_CHECKS,
+  VALIDATION_STEPS.DEPARTMENT_RESTRICTIONS,
+  VALIDATION_STEPS.DYNAMIC_CONDITIONS,
+  VALIDATION_STEPS.CACHE_PERFORMANCE,
+  VALIDATION_STEPS.AUDIT_LOGGING,
+  VALIDATION_STEPS.FINAL_DECISION,
+] as const;
+
+/**
  * Hierarchy Levels (1-11) with detailed mappings
  */
 export const HIERARCHY_LEVELS = {
@@ -640,6 +675,13 @@ export const VALIDATION_PATTERNS = {
  * Configuration defaults
  */
 export const ENTERPRISE_RBAC_CONFIG = {
+  // Validation Mode
+  // 'SIMPLIFIED' = 6-step validation (CRUD only: Pre-validation, User Context, Resource ID, Template Check, Action Validation, Final Decision)
+  // 'FULL' = Full 15-step validation (Enterprise-grade with all features)
+  VALIDATION_MODE: (process.env.RBAC_VALIDATION_MODE || 'SIMPLIFIED') as
+    | 'SIMPLIFIED'
+    | 'FULL',
+
   // Feature flags
   ENABLE_15_STEP_VALIDATION: true,
   ENABLE_HIERARCHY_VALIDATION: true,

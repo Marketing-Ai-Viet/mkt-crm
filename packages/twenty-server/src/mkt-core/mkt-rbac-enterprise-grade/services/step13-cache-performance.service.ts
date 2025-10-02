@@ -20,8 +20,8 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/enhanced-permission-context.type';
 import {
   CheckResult,
-  VALIDATION_STEPS,
   STEP_PERFORMANCE_CONFIG,
+  VALIDATION_STEPS,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 import {
   VALIDATION_STEP_DESCRIPTIONS,
@@ -135,14 +135,6 @@ interface MktUserPermissionTemplateWorkspaceEntity {
   deletedAt?: Date;
 }
 
-interface WorkspaceMemberEntity {
-  id: string;
-  role?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
 @Injectable()
 export class Step13CachePerformanceService implements PermissionValidationStep {
   private readonly logger = new Logger(Step13CachePerformanceService.name);
@@ -181,7 +173,7 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
   /**
    * Determine if step should execute based on context
    */
-  shouldExecute(context: EnhancedPermissionContext): boolean {
+  shouldExecute(_context: EnhancedPermissionContext): boolean {
     // Execute if performance optimization is needed
     // For now, we always execute to maintain performance monitoring
     return this.isPerformanceOptimizationNeeded();
@@ -190,16 +182,15 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
   /**
    * Get estimated execution time for performance planning
    */
-  getEstimatedExecutionTime(context: EnhancedPermissionContext): number {
-    const baseTime =
-      STEP_PERFORMANCE_CONFIG[VALIDATION_STEPS.CACHE_PERFORMANCE]
-        ?.estimatedExecutionTime || 150;
-
+  getEstimatedExecutionTime(_context: EnhancedPermissionContext): number {
     // Adjust based on optimization complexity
     // For now, use base time as we don't have performance analysis flag
     // Could be enhanced in the future with additional context properties
 
-    return baseTime;
+    return (
+      STEP_PERFORMANCE_CONFIG[VALIDATION_STEPS.CACHE_PERFORMANCE]
+        ?.estimatedExecutionTime || 150
+    );
   }
 
   /**
@@ -396,7 +387,8 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
       const cacheMetrics = this.rbacCacheManager.getPerformanceMetrics();
 
       // Convert to our PerformanceMetrics format
-      const metrics: PerformanceMetrics = {
+
+      return {
         cacheHitRate: cacheMetrics.hitRate,
         averageResponseTime: cacheMetrics.avgResponseTime,
         totalRequests: cacheMetrics.totalRequests,
@@ -412,8 +404,6 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
         hotKeys: cacheMetrics.hotKeys,
         slowQueries: cacheMetrics.slowOperations.map((op) => op.split(':')[1]), // Extract operation details
       };
-
-      return metrics;
     } catch (error) {
       this.logger.error('Failed to get performance metrics', {
         error: error.message,
@@ -471,7 +461,7 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
     metrics: PerformanceMetrics,
     effectiveness: CacheEffectiveness,
   ): PerformanceStrategy {
-    const { cacheHitRate, averageResponseTime, totalRequests } = metrics;
+    const { cacheHitRate, totalRequests } = metrics;
 
     // High traffic with poor performance - use aggressive optimization
     if (totalRequests > 1000 && effectiveness === CacheEffectiveness.POOR) {
@@ -497,8 +487,8 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
    */
   private async identifyBottlenecks(
     userContext: EnhancedUserContext,
-    resourceType: string,
-    action: string,
+    _resourceType: string,
+    _action: string,
     workspaceId: string,
   ): Promise<string[]> {
     const bottlenecks: string[] = [];
@@ -675,7 +665,7 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
   private generateOptimizations(
     strategy: PerformanceStrategy,
     bottlenecks: string[],
-    metrics: PerformanceMetrics,
+    _metrics: PerformanceMetrics,
   ): string[] {
     const optimizations: string[] = [];
 
@@ -928,21 +918,21 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
     );
   }
 
-  private async getCacheSize(workspaceId: string): Promise<number> {
+  private async getCacheSize(_workspaceId: string): Promise<number> {
     // Get cache size from RBAC Cache Manager
     const metrics = this.rbacCacheManager.getPerformanceMetrics();
 
     return metrics.cacheSize;
   }
 
-  private async getHotKeys(workspaceId: string): Promise<string[]> {
+  private async getHotKeys(_workspaceId: string): Promise<string[]> {
     // Get hot keys from RBAC Cache Manager
     const metrics = this.rbacCacheManager.getPerformanceMetrics();
 
     return metrics.hotKeys;
   }
 
-  private async getSlowQueries(workspaceId: string): Promise<string[]> {
+  private async getSlowQueries(_workspaceId: string): Promise<string[]> {
     // Get slow operations from RBAC Cache Manager
     const metrics = this.rbacCacheManager.getPerformanceMetrics();
 
@@ -961,7 +951,7 @@ export class Step13CachePerformanceService implements PermissionValidationStep {
 
   private estimateImprovements(
     optimizations: string[],
-    metrics: PerformanceMetrics,
+    _metrics: PerformanceMetrics,
   ): Record<string, number> {
     const improvements: Record<string, number> = {};
 

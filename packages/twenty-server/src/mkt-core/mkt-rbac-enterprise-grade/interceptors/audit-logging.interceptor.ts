@@ -259,7 +259,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
           (userContext as { workspaceMemberId?: string }).workspaceMemberId ||
           '',
         workspaceId,
-        userId: (userContext as { id?: string }).id,
+        id: (userContext as { id?: string }).id || '',
         email: (userContext as { email?: string }).email,
         disabled: false,
         hierarchyLevel:
@@ -301,7 +301,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
     config: AuditConfiguration,
   ): void {
     this.logger.debug('Starting operation audit logging', {
-      userId: context.userContext?.userId,
+      userId: context.userContext?.id,
       action: context.action,
       resourceType: context.resourceContext?.resourceType,
       logLevel: config.logLevel,
@@ -356,7 +356,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
       }
 
       this.logger.debug('Operation audit logging completed', {
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
         action: context.action,
         success: result.success,
         duration: result.duration,
@@ -366,7 +366,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
       // Log audit failure but don't fail the main operation
       this.logger.error('Failed to perform audit logging', {
         error: auditError.message,
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
         action: context.action,
         requestId: context.requestId,
       });
@@ -665,7 +665,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
   ): Promise<void> {
     try {
       this.logger.warn('Generating real-time alert for operation', {
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
         action: context.action,
         success: result.success,
         sensitivity: metadata.sensitivity,

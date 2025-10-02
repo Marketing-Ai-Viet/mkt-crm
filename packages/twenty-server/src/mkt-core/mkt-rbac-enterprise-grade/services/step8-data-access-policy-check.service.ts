@@ -268,7 +268,6 @@ export class Step8DataAccessPolicyCheckService
         workspaceId,
       );
 
-      console.log('applicablePolicies', applicablePolicies.length);
       if (applicablePolicies.length === 0) {
         return this.getSystemDefaultPolicyEvaluation(userContext);
       }
@@ -355,7 +354,7 @@ export class Step8DataAccessPolicyCheckService
   private async evaluatePolicyMatch(
     policy: DataAccessPolicyEntity,
     userContext: EnhancedUserContext,
-    resourceType: string,
+    _resourceType: string,
   ): Promise<PolicyMatchResult> {
     let matchScore = 0;
     let matchType: DataAccessPolicyEvaluation['source'] = 'GLOBAL_POLICY';
@@ -431,7 +430,7 @@ export class Step8DataAccessPolicyCheckService
     context: EnhancedPermissionContext,
     applicablePolicies: PolicyMatchResult[],
     action: string,
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<DataAccessPolicyEvaluation> {
     let finalDecision = false;
     let highestPriority = 0;
@@ -527,8 +526,8 @@ export class Step8DataAccessPolicyCheckService
   private async evaluateFilterConditions(
     filterConditions: Record<string, unknown>,
     userContext: EnhancedUserContext,
-    context: EnhancedPermissionContext,
-    action: string,
+    _context: EnhancedPermissionContext,
+    _action: string,
   ): Promise<{
     conditionsMet: boolean;
     restrictions: string[];
@@ -602,7 +601,7 @@ export class Step8DataAccessPolicyCheckService
       const timeFilter = filterConditions.timeRange as Record<string, unknown>;
 
       if (typeof timeFilter.daysBack === 'number') {
-        const cutoffDate = DateTime.now().minus({ days: timeFilter.daysBack });
+        // const cutoffDate = DateTime.now().minus({ days: timeFilter.daysBack });
 
         restrictions.push(
           `Access limited to records from last ${timeFilter.daysBack} days`,

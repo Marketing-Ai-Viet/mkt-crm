@@ -37,24 +37,6 @@ import {
   MktUserPermissionOverrideWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
 
-// Template and related entity interfaces for type safety
-interface TemplateResourcePermission {
-  permissionType?: string;
-  resourceType?: string;
-}
-
-interface TemplateSystemAction {
-  actionType?: string;
-}
-
-interface TemplateAccessLimitation {
-  conditionField?: string;
-  conditionOperator?: string;
-  conditionValue?: string;
-  limitationType?: string;
-  limitationValue?: object;
-}
-
 interface DepartmentInfo {
   parentDepartmentId?: string;
 }
@@ -181,7 +163,7 @@ export class Step4PermissionTemplateCheckService
       this.logger.debug(
         `Step 4: ${this.stepName} - Starting permission template check`,
       );
-      console.log('Step 4: Permission Template Check - Context:');
+
       // Validate prerequisites
       if (!context.userContext) {
         return {
