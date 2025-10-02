@@ -244,9 +244,8 @@ export class MktLicenseService {
     }
   }
 
-  async getLicenseForRenew(licenseId: string) {
+  async getLicenseForForUpdate(licenseId: string) {
     const licenseRepo = await this.getLicenseRepository();
-    this.logger.log(`Fetching license for renew: ${licenseId}`);
     const license = await licenseRepo.findOne({
       where: { id: licenseId },
       relations: [

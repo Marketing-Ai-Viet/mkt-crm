@@ -14,10 +14,6 @@ export class LicenseRenewingListener {
     workspaceId: string;
     events: LicenseRenewingEvent[];
   }) {
-    this.logger.log(
-      `Received license renewing events for workspace ${payload.workspaceId}`,
-    );
-
     for (const event of payload.events) {
       this.logger.log(
         `Processing license renewal for license ID: ${event.licenseId}`,

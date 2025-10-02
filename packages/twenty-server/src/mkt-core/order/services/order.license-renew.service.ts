@@ -38,10 +38,6 @@ export class OrderLicenseRenewService {
       ObjectRecordUpdateEvent<MktLicenseWorkspaceEntity>
     >,
   ) {
-    this.logger.log(
-      `Received license update events for workspace: ${payload.workspaceId}`,
-    );
-
     for (const event of payload.events) {
       const status = event.properties.after?.status;
       const metadata = event.properties.after?.metadata as Metadata;
