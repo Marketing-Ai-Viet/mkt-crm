@@ -16,7 +16,9 @@ import { mktDataAccessPoliciesAllView } from 'src/mkt-core/dev-seeder/prefill-vi
 import { mktDepartmentsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-all.view';
 import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-hierarchy-all.view';
 import { mktEmploymentStatusesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-employment-status-all.view';
+import { mktI18nAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-i18n-all.view';
 import { mktKpisAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-kpi-all.view';
+import { mktLicenseHistoryAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-organization-level-all.view';
 import { mktPermissionAuditsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-audit-all.view';
 import { mktResellersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-reseller-all.view';
@@ -34,6 +36,8 @@ import { mktVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-v
 import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
 
 export const MKT_ALL_VIEWS = [
+  // i18n views
+  mktI18nAllView,
   // customer views
   mktCustomersAllView,
   mktTagsAllView,
@@ -53,6 +57,7 @@ export const MKT_ALL_VIEWS = [
   mktTemplatesAllView,
   // license views
   mktLicensesAllView,
+  mktLicenseHistoryAllView,
   // contract views
   mktContractsAllView,
   // invoice views

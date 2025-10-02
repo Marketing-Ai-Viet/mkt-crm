@@ -20,7 +20,7 @@ export class MktPaymentService {
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly recordPositionService: RecordPositionService,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
-    private readonly mktRepo: MktRepositoryService,
+    public mktRepo: MktRepositoryService,
     private readonly fireBaseIntegration: FireBaseIntegrationService,
   ) {}
 
@@ -31,23 +31,17 @@ export class MktPaymentService {
       currency: string;
       generatedOrderCode: string | null;
       orderId: string;
+      workspaceId: string | null;
     },
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
   ): Promise<callFireBaseType | void> {
     const paymentRepository = await this.getPaymentRepository();
     const paymentMethodRepository = await this.getPaymentMethodRepository();
-    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
     const result: callFireBaseType = {
       orderCode: paymentData.generatedOrderCode,
       QRCodeUrl: null,
     };
-
-    if (!workspaceId) {
-      this.logger.warn('Workspace ID is not available in the current context.');
-
-      return result;
-    }
 
     if (Array.isArray(paymentMethodsMeta) && paymentMethodsMeta.length > 0) {
       const pmIds = paymentMethodsMeta
@@ -68,15 +62,6 @@ export class MktPaymentService {
 
             if (!pm) return null;
             // generate position
-            const position =
-              await this.recordPositionService.buildRecordPosition({
-                value: 'last',
-                objectMetadata: {
-                  isCustom: false,
-                  nameSingular: 'mktPayment',
-                },
-                workspaceId,
-              });
             const qrCodeUrl =
               await this.mktPaymentPrepareService.generateSepayQrCodeUrl(
                 pm,
@@ -93,7 +78,6 @@ export class MktPaymentService {
               amount: paymentData.totalAmount || 0,
               currency: paymentData.currency || 'VND',
               qrCodeUrl: qrCodeUrl || undefined,
-              position,
             } as Partial<MktPaymentWorkspaceEntity>);
           }),
         );
@@ -137,30 +121,10 @@ export class MktPaymentService {
   }
 
   async getPaymentRepository() {
-    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!workspaceId) {
-      throw new Error('Workspace ID is not available in the current context.');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPaymentWorkspaceEntity>(
-      workspaceId,
-      'mktPayment',
-      { shouldBypassPermissionChecks: true },
-    );
+    return this.mktRepo.getPaymentRepository();
   }
 
   async getPaymentMethodRepository() {
-    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!workspaceId) {
-      throw new Error('Workspace ID is not available in the current context.');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPaymentMethodWorkspaceEntity>(
-      workspaceId,
-      'mktPaymentMethod',
-      { shouldBypassPermissionChecks: true },
-    );
+    return this.mktRepo.getPaymentMethodRepository();
   }
 }

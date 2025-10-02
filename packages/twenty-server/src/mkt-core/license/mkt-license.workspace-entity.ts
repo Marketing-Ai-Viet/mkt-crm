@@ -14,6 +14,7 @@ import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-enti
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
+import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
@@ -28,6 +29,7 @@ import {
   MKT_LICENSE_STATUS,
   MKT_LICENSE_STATUS_OPTIONS,
 } from 'src/mkt-core/license/license.constants';
+import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
@@ -52,7 +54,7 @@ export const SEARCH_FIELDS_FOR_MKT_LICENSE: FieldTypeAndNameMetadata[] = [
   labelIdentifierStandardId: MKT_LICENSE_FIELD_IDS.name,
 })
 @WorkspaceDuplicateCriteria([['name'], ['licenseKey']])
-//@WorkspaceIsSearchable()
+@WorkspaceIsSearchable()
 export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.name,
@@ -62,6 +64,17 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconFileText',
   })
   name: string;
+
+  //metadata
+  @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`License metadata`,
+    icon: 'IconFileText',
+  })
+  @WorkspaceIsNullable()
+  metadata?: JSON;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.status,
@@ -143,6 +156,16 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   licenseUuid?: string;
+
+  @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.history,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`History`,
+    description: msg`License history log`,
+    icon: 'IconHistory',
+  })
+  @WorkspaceIsNullable()
+  history?: JSON;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktVariant,
@@ -226,6 +249,19 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('accountOwner')
   accountOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.mktLicenseHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`License Histories`,
+    description: msg`License history records linked to the license`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktLicenseHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktLicense',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktLicenseHistories: Relation<MktLicenseHistoryWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.timelineActivities,

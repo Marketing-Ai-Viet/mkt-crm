@@ -6,6 +6,8 @@
  */
 
 export const MKT_OBJECT_IDS = {
+  // core
+  mktI18n: 'f161d3a7-cb44-48ef-a0c0-67b5b4efd71c',
   // products
   mktCategory: '4cf3c9a1-6b33-487e-b06c-f5dd6d56943d',
   mktProduct: '20202020-a305-41e7-8c72-ba44072a4c58',
@@ -19,6 +21,7 @@ export const MKT_OBJECT_IDS = {
   //orders
   mktOrder: '9ff5be11-0088-456e-b7cb-9885fd167a48',
   mktLicense: 'bedb60ad-9854-4618-b912-c93f8df3e756',
+  mktLicenseHistory: '9308d0a2-f9c5-417d-8017-3e4a75c01afa',
   mktContract: 'f5a03266-1b62-4f41-94a2-a843221f307b',
   mktOrderItem: '7a3b1f2e-4c5d-6e7f-8901-234567890abc',
   //invoices

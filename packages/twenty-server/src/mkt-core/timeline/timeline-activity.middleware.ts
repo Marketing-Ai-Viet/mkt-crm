@@ -10,7 +10,7 @@ export class TimelineActivityMiddleware implements NestMiddleware {
     const pruneSelectionEnabled = process.env.PRUNE_SELECTION_ENABLED || 'true';
 
     if (pruneSelectionEnabled === 'false') return next();
-    this.logger.log('TimelineActivityMiddleware invoked');
+    //this.logger.log('TimelineActivityMiddleware invoked');
     try {
       if (req.path === '/graphql' && req.method === 'POST') {
         // Remove timelineActivities from the query instead of blocking
@@ -69,7 +69,7 @@ export class TimelineActivityMiddleware implements NestMiddleware {
 
     // Check if there's timelineActivities in a multi-purpose query
     if (body.query.includes('timelineActivities')) {
-      this.logger.log('Removing timelineActivities from multi-purpose query');
+      //this.logger.log('Removing timelineActivities from multi-purpose query');
 
       // Match simple timelineActivities field
       const simplePattern = /\s*timelineActivities\s*{[^}]*}\s*/g;
