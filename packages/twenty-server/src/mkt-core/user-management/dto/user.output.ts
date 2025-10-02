@@ -1,4 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
+import { Transform } from 'class-transformer';
 
 import {
   IsBoolean,
@@ -7,11 +8,11 @@ import {
   IsString,
   IsUrl,
 } from 'class-validator';
-
 @ObjectType()
 export class UserOutput {
   @Field(() => String)
   @IsEmail()
+  @Transform(({ value }) => value.toLowerCase())
   email: string;
 
   @Field(() => String, { nullable: true })
