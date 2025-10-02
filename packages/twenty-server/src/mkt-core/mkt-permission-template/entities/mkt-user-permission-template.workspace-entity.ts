@@ -14,9 +14,13 @@ import { MKT_USER_PERMISSION_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/m
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
+import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 
 import { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
 
+@WorkspaceIndex(['workspaceMemberId'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktUserPermissionTemplate,
   namePlural: 'mktUserPermissionTemplates',
