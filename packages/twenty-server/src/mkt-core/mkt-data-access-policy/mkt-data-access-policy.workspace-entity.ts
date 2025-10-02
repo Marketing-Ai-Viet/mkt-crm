@@ -12,6 +12,7 @@ import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
+import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 import { MKT_DATA_ACCESS_POLICY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
@@ -19,6 +20,15 @@ import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organizati
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities';
 
+@WorkspaceIndex(['objectName', 'isActive'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
+@WorkspaceIndex(['minHierarchyLevel', 'maxHierarchyLevel'], {
+  indexWhereClause: '"deletedAt" IS NULL AND "isActive" = true',
+})
+@WorkspaceIndex(['departmentId'], {
+  indexWhereClause: '"deletedAt" IS NULL AND "departmentId" IS NOT NULL',
+})
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDataAccessPolicy,
   namePlural: 'mktDataAccessPolicies',
