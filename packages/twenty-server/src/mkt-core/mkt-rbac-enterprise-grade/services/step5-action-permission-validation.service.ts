@@ -470,7 +470,7 @@ export class Step5ActionPermissionValidationService
   ): Promise<ActionPermissionEvaluation> {
     const { userContext } = context;
     const workspaceId = userContext.workspaceId;
-    const userId = userContext.userId;
+    const userId = userContext.id;
 
     try {
       // Check user-specific permission overrides first
@@ -639,7 +639,7 @@ export class Step5ActionPermissionValidationService
       // Get user's assigned templates
       const userTemplateAssignments = await userTemplateRepository.find({
         where: {
-          workspaceMember: { userId: userContext.userId },
+          workspaceMember: { userId: userContext.id },
           isActive: true,
         },
         relations: ['template'],

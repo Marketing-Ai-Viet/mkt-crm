@@ -186,7 +186,7 @@ export class RbacCacheManagerService implements OnModuleInit, OnModuleDestroy {
       this.performanceMetrics.errorCount++;
       this.logger.error('Failed to cache permission result', {
         error: error.message,
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
       });
     }
   }
@@ -221,7 +221,7 @@ export class RbacCacheManagerService implements OnModuleInit, OnModuleDestroy {
       this.performanceMetrics.errorCount++;
       this.logger.error('Failed to get cached permission result', {
         error: error.message,
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
       });
 
       return null;

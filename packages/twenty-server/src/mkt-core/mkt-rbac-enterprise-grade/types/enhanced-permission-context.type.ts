@@ -19,7 +19,7 @@ export type EnhancedUserContext = {
   // Basic identifiers
   workspaceMemberId: string;
   workspaceId: string;
-  userId?: string;
+  id: string;
   email?: string;
   disabled: boolean;
 

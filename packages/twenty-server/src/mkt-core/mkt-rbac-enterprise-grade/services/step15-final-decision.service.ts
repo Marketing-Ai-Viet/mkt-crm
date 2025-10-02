@@ -149,7 +149,7 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
 
     try {
       this.logger.debug(
-        `Step ${this.stepNumber}: Making final permission decision for user ${context.userContext?.userId}`,
+        `Step ${this.stepNumber}: Making final permission decision for user ${context.userContext?.id}`,
       );
 
       // Extract validation results from previous steps
@@ -197,7 +197,7 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
       const executionTime = DateTime.now().diff(stepStartTime).toMillis();
 
       this.logger.debug('Final decision completed', {
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
         decision: finalDecision,
         confidence,
         weightedScore: aggregatedResults.weightedScore,
@@ -231,7 +231,7 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
       this.logger.error('Step 15 final decision failed', {
         error: error.message,
         workspaceId: context.userContext?.workspaceId,
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
         executionTime,
       });
 

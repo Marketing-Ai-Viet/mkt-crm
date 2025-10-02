@@ -268,6 +268,7 @@ export class Step8DataAccessPolicyCheckService
         workspaceId,
       );
 
+      console.log('applicablePolicies', applicablePolicies.length);
       if (applicablePolicies.length === 0) {
         return this.getSystemDefaultPolicyEvaluation(userContext);
       }
@@ -361,10 +362,7 @@ export class Step8DataAccessPolicyCheckService
     let applicabilityReason = '';
 
     // Check specific member targeting (highest priority)
-    if (
-      policy.specificMemberId &&
-      policy.specificMemberId === userContext.userId
-    ) {
+    if (policy.specificMemberId && policy.specificMemberId === userContext.id) {
       matchScore = 100;
       matchType = 'SPECIFIC_MEMBER';
       applicabilityReason = 'Direct user targeting';

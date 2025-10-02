@@ -395,7 +395,7 @@ export class Step10SensitiveDataChecksService
 
     // Get user's sensitive data permissions
     const userPermissions = await this.getUserSensitiveDataPermissions(
-      userContext.userId || '',
+      userContext.id || '',
       userContext.workspaceMemberId,
       workspaceId,
     );

@@ -310,7 +310,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
 
     try {
       this.logger.debug(
-        `Step ${this.stepNumber}: Starting audit logging for user ${context.userContext?.userId}`,
+        `Step ${this.stepNumber}: Starting audit logging for user ${context.userContext?.id}`,
       );
 
       // Skip if no user context
@@ -330,7 +330,11 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
       const auditEntry = await this.createAuditLogEntry(context, stepStartTime);
 
       // Store audit log in workspace database
-      const auditLogId = await this.storeAuditLog(auditEntry, workspaceId);
+      const auditLogId = await this.storeAuditLog(
+        auditEntry,
+        workspaceId,
+        context.userContext.id,
+      );
 
       // Analyze patterns and generate alerts if necessary
       const alertGenerated = await this.analyzeAndGenerateAlerts(
@@ -349,7 +353,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
       const executionTime = DateTime.now().diff(stepStartTime).toMillis();
 
       this.logger.debug('Audit logging completed successfully', {
-        userId: context.userContext.userId,
+        userId: context.userContext.id,
         workspaceId,
         alertGenerated,
         complianceFrameworks:
@@ -382,7 +386,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
       this.logger.error('Step 14 audit logging failed', {
         error: error.message,
         workspaceId: context.userContext?.workspaceId,
-        userId: context.userContext?.userId,
+        userId: context.userContext?.id,
         executionTime,
       });
 
@@ -433,14 +437,14 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
     // Build enhanced audit entry
     const auditEntry: EnhancedAuditEntry = {
       workspaceMemberId: userContext.workspaceMemberId || '',
-      userId: userContext.userId,
+      userId: userContext.id,
       action: context.action || 'UNKNOWN',
       objectName:
         resourceContext?.objectName ||
         resourceContext?.resourceType ||
         'UNKNOWN',
       recordId: resourceContext?.recordId,
-      permissionSource: 'RBAC_VALIDATION',
+      permissionSource: PermissionSource.SYSTEM,
       checkResult: CheckResult.PASS, // Default, will be updated
       denialReason: undefined,
       ipAddress: this.extractIpAddress(context),
@@ -486,6 +490,7 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
   private async storeAuditLog(
     auditEntry: EnhancedAuditEntry,
     workspaceId: string,
+    userId: string,
   ): Promise<string> {
     try {
       const auditLogRepo =
@@ -495,9 +500,11 @@ export class Step14AuditLoggingService implements PermissionValidationStep {
           { shouldBypassPermissionChecks: true },
         );
 
+      console.log('auditEntry', auditEntry);
+
       const auditLogEntity: Partial<MktPermissionAuditWorkspaceEntity> = {
         workspaceMemberId: auditEntry.workspaceMemberId,
-        userId: auditEntry.userId,
+        userId: userId,
         action: auditEntry.action as PermissionAction,
         objectName: auditEntry.objectName,
         recordId: auditEntry.recordId,

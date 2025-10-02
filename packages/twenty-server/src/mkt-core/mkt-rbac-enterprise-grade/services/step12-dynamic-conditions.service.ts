@@ -1487,7 +1487,7 @@ export class Step12DynamicConditionsService
   ): unknown {
     switch (field) {
       case 'userId':
-        return context.userContext?.userId;
+        return context.userContext?.id;
       case 'departmentId':
         return context.userContext?.departmentId;
       case 'hierarchyLevel':

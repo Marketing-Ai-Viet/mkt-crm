@@ -437,6 +437,7 @@ export class Step2UserContextResolutionService
 
       // Organizational context
       organizationLevel: hierarchyContext.userLevel,
+      organizationLevelId: workspaceMember.organizationLevel?.id,
       levelName: hierarchyContext.userOrgLevel,
       departmentId: departmentContext.userDepartmentId,
       departmentName: departmentContext.userDepartmentName,

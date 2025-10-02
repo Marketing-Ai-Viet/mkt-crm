@@ -301,7 +301,7 @@ export class Step4PermissionTemplateCheckService
     customTemplates: PermissionTemplateInterface[];
     inheritanceChain: string[];
   }> {
-    const userId = context.userContext.userId;
+    const userId = context.userContext.id;
     const userRoles = context.userContext.roles || [];
     const departmentId = context.userContext.departmentId;
     const hierarchyLevel = context.hierarchyContext?.userLevel;
@@ -722,7 +722,7 @@ export class Step4PermissionTemplateCheckService
     const chain: string[] = [];
 
     // Add user-specific permissions
-    chain.push(`user:${userContext.userId}`);
+    chain.push(`user:${userContext.id}`);
 
     // Add role-based permissions
     if (userContext.roles) {
