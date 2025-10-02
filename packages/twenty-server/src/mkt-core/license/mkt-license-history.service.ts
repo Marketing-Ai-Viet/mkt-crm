@@ -196,13 +196,13 @@ export class MktLicenseHistoryService {
   /**
    * Validate if an object is a valid HistoryItem
    */
-  private isValidHistoryItem(item: any): item is HistoryItem {
+  private isValidHistoryItem(item: unknown): item is HistoryItem {
     return (
       typeof item === 'object' &&
       item !== null &&
-      typeof item.name === 'string' &&
-      typeof item.action === 'string' &&
-      typeof item.note === 'string'
+      typeof (item as Record<string, unknown>).name === 'string' &&
+      typeof (item as Record<string, unknown>).action === 'string' &&
+      typeof (item as Record<string, unknown>).note === 'string'
     );
   }
 

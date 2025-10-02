@@ -66,7 +66,7 @@ export class OrderLicenseRenewService {
     const variantsMeta = metadata?.variants;
     const customerMeta = metadata?.customer;
     const paymentMethodsMeta = metadata?.paymentMethods;
-    const trialOrderId = metadata?.trialOrderId || null;
+    const _trialOrderId = metadata?.trialOrderId || null;
     const action =
       await this.orderActionService.getActionFromMetadata(metadata);
 
