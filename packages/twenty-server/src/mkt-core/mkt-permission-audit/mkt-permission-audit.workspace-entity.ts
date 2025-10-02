@@ -13,6 +13,8 @@ import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspac
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MKT_PERMISSION_AUDIT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -28,6 +30,18 @@ import {
   CHECK_RESULT_OPTIONS,
 } from './constants/permission-audit-options.constants';
 
+@WorkspaceIndex(['userId', 'createdAt'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
+@WorkspaceIndex(['workspaceMemberId', 'createdAt'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
+@WorkspaceIndex(['checkResult', 'createdAt'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
+@WorkspaceIndex(['requestContext'], {
+  indexType: IndexType.GIN,
+})
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAudit,
   namePlural: 'mktPermissionAudits',
