@@ -1,6 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+
 import { firstValueFrom } from 'rxjs';
+
 import {
   CALL_FIREBASE_DATA,
   FIREBASE_AUTH_RESPONSE,

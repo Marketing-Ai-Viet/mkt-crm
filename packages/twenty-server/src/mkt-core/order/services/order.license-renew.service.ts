@@ -15,7 +15,7 @@ export class OrderLicenseRenewService {
       ObjectRecordUpdateEvent<MktLicenseWorkspaceEntity>
     >,
   ) {
-    for (const event of payload.events) {
+    for (const _event of payload.events) {
       // Only process if status is changed to RENEW or CHANGE_VARIANT
     }
   }

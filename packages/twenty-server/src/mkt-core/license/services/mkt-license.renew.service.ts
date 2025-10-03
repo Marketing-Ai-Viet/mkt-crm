@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktFirebaseService } from 'src/mkt-core/common/service/mkt-firebase.service';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
@@ -32,6 +33,7 @@ export class MktLicenseRenewService {
     // Logic to renew the license
 
     const oldOrder = license?.mktOrder;
+
     this.mktCommonOrderService.updateFirstMetadata(oldOrder, {
       oldOrderId: oldOrder?.id,
     });
@@ -49,6 +51,7 @@ export class MktLicenseRenewService {
     // Logic to renew the license
 
     const oldOrder = license?.mktOrder;
+
     this.mktCommonOrderService.updateFirstMetadata(oldOrder, {
       oldOrderId: oldOrder?.id,
       oldVariantId: license?.mktVariant?.id,
@@ -81,6 +84,7 @@ export class MktLicenseRenewService {
       );
     const authFirebase =
       await this.mktFirebaseService.callFireBase(fireBaseData);
+
     await this.mktCommonOrderService.updateOrderForRenew(
       order.id,
       ORDER_STATUS.WAIT,
@@ -133,6 +137,7 @@ export class MktLicenseRenewService {
 
     const authFirebase =
       await this.mktFirebaseService.callFireBase(fireBaseData);
+
     await this.mktCommonOrderService.updateOrderForRenew(
       order.id,
       ORDER_STATUS.WAIT,
@@ -169,6 +174,7 @@ export class MktLicenseRenewService {
     } else {
       parsedMetadata = newMetadata;
     }
+
     //throw new Error(`Debug Method not implemented. ${JSON.stringify(license)}`);
     return parsedMetadata;
   }

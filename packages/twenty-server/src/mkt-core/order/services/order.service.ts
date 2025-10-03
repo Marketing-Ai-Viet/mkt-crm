@@ -141,7 +141,7 @@ export class OrderService {
     status: ORDER_STATUS,
     trialLicense?: boolean,
     authFirebase?: void | FirebaseAuthResponse,
-    workspaceId: string | null = null,
+    _workspaceId: string | null = null,
   ) {
     const orderRepository = await this.getOrderRepo();
 

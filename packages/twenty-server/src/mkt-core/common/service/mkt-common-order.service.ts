@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { FIREBASE_AUTH_RESPONSE } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import {
@@ -51,12 +52,14 @@ export class MktCommonOrderService {
     updateMetadata: ORDER_METADATA,
   ) {
     let metadata: ORDER_METADATA = {};
+
     if (oldOrder?.metadata) {
       try {
         const parsed =
           typeof oldOrder.metadata === 'string'
             ? JSON.parse(oldOrder.metadata)
             : oldOrder.metadata;
+
         metadata = { ...parsed };
       } catch (error) {
         this.logger.warn('Failed to parse existing metadata:', error);

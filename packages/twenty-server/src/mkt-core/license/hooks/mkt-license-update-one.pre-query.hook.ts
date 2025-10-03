@@ -51,14 +51,12 @@ export class MktLicenseUpdateOnePreQueryHook
     const licenseId = payload?.id;
     const rawMetadata = input?.metadata;
 
-    let metadata: ORDER_METADATA;
-    let paymentMethods, variants, note;
-
     const metadataString = typeof rawMetadata === 'string' ? rawMetadata : null;
-    metadata = await this.getMetadata(metadataString);
-    paymentMethods = metadata.paymentMethods;
-    variants = metadata.variants;
-    note = metadata.note;
+
+    const metadata = await this.getMetadata(metadataString);
+    const paymentMethods = metadata.paymentMethods;
+    const variants = metadata.variants;
+    const note = metadata.note;
 
     const license = await this.licenseService.getLicenseForForUpdate(licenseId);
 
@@ -149,6 +147,7 @@ export class MktLicenseUpdateOnePreQueryHook
         },
       ];
     }
+
     return {
       orderAction: ORDER_ACTION.LICENSE_RENEWING,
       customer: {
@@ -178,6 +177,7 @@ export class MktLicenseUpdateOnePreQueryHook
         },
       ];
     }
+
     return {
       orderAction: ORDER_ACTION.CHANGE_VARIANT,
       customer: {

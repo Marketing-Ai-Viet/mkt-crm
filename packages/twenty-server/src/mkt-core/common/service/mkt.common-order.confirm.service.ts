@@ -1,9 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { LICENSE_API_RESPONSE } from 'src/mkt-core/common/common.type';
 
 import { firstValueFrom } from 'rxjs';
+import { v4 } from 'uuid';
+
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { LICENSE_API_RESPONSE } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
@@ -20,7 +22,6 @@ import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
-import { v4 } from 'uuid';
 
 export type CalculateOrderResult = {
   subtotal: number;
@@ -339,7 +340,7 @@ export class MktOrderCommonConfirmService {
   private async createOrderItemsFromVariants(
     variantsMeta: Metadata['variants'] | null,
     createdOrder: MktOrderWorkspaceEntity,
-    workspaceId: string,
+    _workspaceId: string,
   ) {
     if (!variantsMeta || variantsMeta.length === 0) return [];
     const ids = variantsMeta.map((v) => v.mktVariantId).filter(Boolean);
@@ -724,12 +725,14 @@ export class MktOrderCommonConfirmService {
     oldOrder: MktOrderWorkspaceEntity | null | undefined,
   ) {
     let metadata: ORDER_METADATA = {};
+
     if (oldOrder?.metadata) {
       try {
         const parsed =
           typeof oldOrder.metadata === 'string'
             ? JSON.parse(oldOrder.metadata)
             : oldOrder.metadata;
+
         metadata = { ...parsed };
       } catch (error) {
         this.logger.warn('Failed to parse existing metadata:', error);
@@ -757,6 +760,7 @@ export class MktOrderCommonConfirmService {
   ) {
     const orderRepo = await this.mktRepo.getOrderRepository();
     let metadata = oldOrder?.metadata ? { ...oldOrder.metadata } : {};
+
     metadata = { ...metadata, oldLicenseId: licenseId };
     orderRepo.update(oldOrder.id, { metadata });
   }

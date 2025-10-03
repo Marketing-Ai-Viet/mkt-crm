@@ -226,6 +226,7 @@ export class MktLicenseHistoryService {
       authContext.user?.firstName && authContext.user?.lastName
         ? `${authContext.user.firstName} ${authContext.user.lastName}`
         : authContext.user?.email || 'Unknown User';
+
     this.createdByName = userName;
     this.createdAt = timestamp;
     // Create history based on status
