@@ -1,7 +1,9 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { hashPassword } from 'src/engine/core-modules/auth/auth.util';
+import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -26,6 +28,8 @@ export class UserManagementService {
     private readonly userWorkspaceService: UserWorkspaceService,
     private readonly userRoleService: UserRoleService,
     private readonly workspaceDataSourceService: WorkspaceDataSourceService,
+    private readonly emailService: EmailService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   // Tạo mới user trong core + tạo userWorkspace + tạo workspaceMember
@@ -50,6 +54,14 @@ export class UserManagementService {
     let coreUserId: string | undefined;
     let userWorkspaceId: string | undefined;
 
+    // Tạo pass random
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+    let passwordRandom = '';
+    for (let i = 0; i < 9; i++) {
+      passwordRandom += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
         const userRepo = entityManager.getRepository(User);
@@ -59,7 +71,7 @@ export class UserManagementService {
           email,
           firstName: input.firstName || '',
           lastName: input.lastName || '',
-          passwordHash: await hashPassword(input.password || ''),
+          passwordHash: await hashPassword(passwordRandom),
           isEmailVerified: false,
           canImpersonate: input.canImpersonate,
           canAccessFullAdminPanel: input.canAdmin || false,
@@ -115,6 +127,18 @@ export class UserManagementService {
         employmentStatusId: input.employmentStatusId ?? null,
         organizationLevelId: input.organizationLevelId ?? null,
       });
+      await this.emailService.send({
+        from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
+        to: email,
+        subject: 'Your New Account Password',
+        text: `Hello,\n\nYour account has been created successfully.\nHere is your temporary password: ${passwordRandom}\n\nPlease log in and change your password immediately for security.`,
+        html: `
+          <p>Hello,</p>
+          <p>Your account has been created successfully.</p>
+          <p>Here is your temporary password: <strong>${passwordRandom}</strong></p>
+          <p>Please log in and change your password immediately for security.</p>
+        `,
+      });
     } catch (error) {
       // Compensate: rollback core creations if workspace step fails
       await mainDataSource.transaction(async (em: WorkspaceEntityManager) => {
@@ -140,15 +164,13 @@ export class UserManagementService {
     }
 
     return {
+      id: savedWorkspaceMember.id,
       email,
       firstName: savedWorkspaceMember.name?.firstName || '',
       lastName: savedWorkspaceMember.name?.lastName || '',
-      canImpersonate: input.canImpersonate,
-      isEmailVerified: false,
       jobTitle: input.jobTitle || '',
       city: input.city || '',
       phone: input.phone || '',
-      canAdmin: input.canAdmin || false,
       language: savedWorkspaceMember.locale || input.language || 'en',
       avatarUrl: savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
     };

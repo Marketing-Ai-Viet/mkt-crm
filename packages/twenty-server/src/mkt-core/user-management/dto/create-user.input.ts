@@ -1,4 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
+import { Transform } from 'class-transformer';
 
 import {
   IsBoolean,
@@ -7,13 +8,13 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  MinLength,
 } from 'class-validator';
 
 @InputType()
 export class CreateUserInput {
   @Field(() => String)
   @IsEmail()
+  @Transform(({ value }) => value.toLowerCase())
   email: string;
 
   @Field(() => String, { nullable: true })
@@ -25,12 +26,6 @@ export class CreateUserInput {
   @IsOptional()
   @IsString()
   lastName?: string;
-
-  @Field(() => String)
-  @IsOptional()
-  @IsString()
-  @MinLength(8, { message: 'Password must be longer than 8 characters' })
-  password: string;
 
   @Field(() => Number, { nullable: true, defaultValue: 0 })
   @IsOptional()
