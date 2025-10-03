@@ -25,11 +25,43 @@ export class UserManagementService {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     @InjectRepository(User, 'core')
     private readonly userRepository: Repository<User>,
-    @InjectRepository(UserWorkspace, 'core')
     private readonly workspaceDataSourceService: WorkspaceDataSourceService,
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
   ) {}
+
+  generatePassword(length = 12): string {
+    if (length < 8 || length > 16) {
+      throw new Error('Password length must be between 8 and 16 characters');
+    }
+
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+    const special = '@$!%*?&';
+    const all = upper + lower + digits + special;
+
+    // Đảm bảo mỗi nhóm có ít nhất 1 ký tự
+    let password = [
+      upper[Math.floor(Math.random() * upper.length)],
+      lower[Math.floor(Math.random() * lower.length)],
+      digits[Math.floor(Math.random() * digits.length)],
+      special[Math.floor(Math.random() * special.length)],
+    ];
+
+    // Thêm các ký tự ngẫu nhiên còn lại
+    for (let i = password.length; i < length; i++) {
+      password.push(all[Math.floor(Math.random() * all.length)]);
+    }
+
+    // Trộn ngẫu nhiên
+    for (let i = password.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [password[i], password[j]] = [password[j], password[i]];
+    }
+
+    return password.join('');
+  }
 
   // Tạo mới user trong core + tạo userWorkspace + tạo workspaceMember
   async createPersonUser(
@@ -55,13 +87,8 @@ export class UserManagementService {
     let userWorkspaceId: string | undefined;
 
     // Tạo pass random
-    const chars =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
-    let passwordRandom = '';
 
-    for (let i = 0; i < 9; i++) {
-      passwordRandom += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    let passwordRandom = this.generatePassword();
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
