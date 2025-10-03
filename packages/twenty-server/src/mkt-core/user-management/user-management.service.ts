@@ -16,6 +16,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -66,6 +67,8 @@ export class UserManagementService {
       async (entityManager: WorkspaceEntityManager) => {
         const userRepo = entityManager.getRepository(User);
         const userWorkspaceRepo = entityManager.getRepository(UserWorkspace);
+        const roleTargetsRepo = entityManager.getRepository(RoleTargetsEntity);
+
         // 2) Tạo core.user
         const coreUser = await userRepo.save({
           email,
@@ -86,6 +89,13 @@ export class UserManagementService {
           workspaceId,
           locale: (input.language || 'en') as keyof typeof APP_LOCALES,
           defaultAvatarUrl: input.avatarUrl || undefined,
+        });
+
+        // 4) Tạo roleTargets
+        const roleTargets = await roleTargetsRepo.save({
+          userWorkspaceId: userWorkspace.id,
+          workspaceId,
+          roleId: input.roleId,
         });
 
         if (!userWorkspace) {
@@ -141,17 +151,20 @@ export class UserManagementService {
       });
     } catch (error) {
       // Compensate: rollback core creations if workspace step fails
-      await mainDataSource.transaction(async (em: WorkspaceEntityManager) => {
-        const uwRepo = em.getRepository(UserWorkspace);
-        const uRepo = em.getRepository(User);
+      await mainDataSource.transaction(
+        async (entityManager: WorkspaceEntityManager) => {
+          const userWorkspaceRepository =
+            entityManager.getRepository(UserWorkspace);
+          const userRepository = entityManager.getRepository(User);
 
-        if (userWorkspaceId) {
-          await uwRepo.delete({ id: userWorkspaceId });
-        }
-        if (coreUserId) {
-          await uRepo.delete({ id: coreUserId });
-        }
-      });
+          if (userWorkspaceId) {
+            await userWorkspaceRepository.delete({ id: userWorkspaceId });
+          }
+          if (coreUserId) {
+            await userRepository.delete({ id: coreUserId });
+          }
+        },
+      );
       throw new InternalServerErrorException(
         'Failed to create workspace member',
       );
