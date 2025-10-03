@@ -179,6 +179,10 @@ import {
   MKT_VALUE_DATA_SEED_COLUMNS,
   MKT_VALUE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-value-data-seeds.constants';
+import {
+  MKT_PERMISSION_PRIORITY_CONFIG_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_PRIORITY_CONFIG_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-permission-priority-config-data-seeds.constants';
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
   {
@@ -373,6 +377,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     recordSeeds: MKT_PERMISSION_AUDIT_DATA_SEEDS,
   },
   // Permission Resource - needs to be after workspace members
+  {
+    tableName: 'mktPermissionPriorityConfig',
+    pgColumns: MKT_PERMISSION_PRIORITY_CONFIG_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_PRIORITY_CONFIG_DATA_SEEDS,
+  },
   {
     tableName: 'mktPermissionResource',
     pgColumns: MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS,

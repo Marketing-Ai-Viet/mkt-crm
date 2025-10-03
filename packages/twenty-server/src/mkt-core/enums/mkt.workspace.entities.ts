@@ -41,6 +41,7 @@ import { MktPermissionResourceWorkspaceEntity } from 'src/mkt-core/mkt-permissio
 import {
   MktPermissionActionWorkspaceEntity,
   MktPermissionContextWorkspaceEntity,
+  MktPermissionPriorityConfigWorkspaceEntity,
   MktPermissionTemplateWorkspaceEntity,
   MktTemplateAccessLimitationWorkspaceEntity,
   MktTemplateResourcePermissionWorkspaceEntity,
@@ -104,6 +105,7 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   MktDepartmentHierarchyWorkspaceEntity,
   MktPermissionAuditWorkspaceEntity,
   // Permission Resource & Template
+  MktPermissionPriorityConfigWorkspaceEntity,
   MktPermissionResourceWorkspaceEntity,
   MktPermissionActionWorkspaceEntity,
   MktPermissionTemplateWorkspaceEntity,

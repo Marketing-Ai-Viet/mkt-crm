@@ -41,6 +41,7 @@ import { prefillMktTemplateSystemActions } from 'src/mkt-core/dev-seeder/prefill
 import { prefillMktPermissionContexts } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-contexts';
 import { prefillMktUserPermissionTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-user-permission-templates';
 import { prefillMktUserPermissionOverrides } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-user-permission-overrides';
+import { prefillMktPermissionPriorityConfigs } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-priority-configs';
 
 export const MKT_PREFILLS = [
   // customer prefills
@@ -90,6 +91,7 @@ export const MKT_PREFILLS = [
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
   // permission resources (should be last to ensure all dependencies exist)
+  prefillMktPermissionPriorityConfigs,
   prefillMktPermissionResources,
   prefillMktPermissionActions,
   prefillMktPermissionTemplates,

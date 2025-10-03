@@ -60,6 +60,7 @@ export const MKT_OBJECT_IDS = {
   mktUserPermissionTemplate: '7a8b9c0d-1e2f-3456-789a-bcdef0123456',
   mktUserPermissionOverride: '8b9c0d1e-2f34-5678-9abc-def012345678',
   mktPermissionContext: '9c0d1e2f-3456-789a-bcde-f01234567890',
+  mktPermissionPriorityConfig: 'c89abcd3-4def-5678-9abc-def012345679',
   // data access policy system
   mktDataAccessPolicy: 'a8b9c0d1-e2f3-4567-89ab-cdef01234567',
   // permission audit system

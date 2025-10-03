@@ -7,3 +7,4 @@ export { MktTemplateAccessLimitationWorkspaceEntity } from './mkt-template-acces
 export { MktUserPermissionTemplateWorkspaceEntity } from './mkt-user-permission-template.workspace-entity';
 export { MktUserPermissionOverrideWorkspaceEntity } from './mkt-user-permission-override.workspace-entity';
 export { MktPermissionContextWorkspaceEntity } from './mkt-permission-context.workspace-entity';
+export { MktPermissionPriorityConfigWorkspaceEntity } from './mkt-permission-priority-config.workspace-entity';

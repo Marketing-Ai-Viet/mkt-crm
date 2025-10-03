@@ -1307,3 +1307,24 @@ export const MKT_PERMISSION_CONTEXT_FIELD_IDS = {
   validationRules: '2cdef017-f012-e123-bcde-678901234567',
   position: 'b2f59bfe-d132-4543-941b-fad5c44263c7',
 };
+
+export const MKT_PERMISSION_PRIORITY_CONFIG_FIELD_IDS = {
+  // Source identification
+  sourceType: '1def0129-0123-f234-cdef-789012345678',
+  sourceSubType: '2ef0123a-1234-0345-def0-890123456789',
+
+  // Priority configuration
+  basePriority: '3f01234b-2345-1456-ef01-901234567890',
+  priorityBoost: '4012345c-3456-2567-f012-012345678901',
+  maxPriority: '5123456d-4567-3678-0123-123456789012',
+  minPriority: '6234567e-5678-4789-1234-234567890123',
+
+  // Advanced configuration
+  priorityFormula: '7345678f-6789-589a-2345-345678901234',
+  conditions: '8456789a-789a-69ab-3456-456789012345',
+
+  // Metadata
+  isActive: '956789ab-89ab-7abc-4567-567890123456',
+  description: 'a6789abc-9abc-8bcd-5678-678901234567',
+  position: 'b789abcd-abcd-9cde-6789-789012345678',
+};

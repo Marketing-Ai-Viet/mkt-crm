@@ -40,6 +40,7 @@ import { mktPermissionContextsAllView } from 'src/mkt-core/dev-seeder/prefill-vi
 import { mktUserPermissionTemplatesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-user-permission-template-all.view';
 import { mktUserPermissionOverridesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-user-permission-override-all.view';
 import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
+import { mktPermissionPriorityConfigsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-priority-config-all.view';
 
 export const MKT_ALL_VIEWS = [
   // customer views
@@ -88,6 +89,7 @@ export const MKT_ALL_VIEWS = [
   mktDataAccessPoliciesAllView,
   mktPermissionAuditsAllView,
   // permission resource views
+  mktPermissionPriorityConfigsAllView,
   mktPermissionResourcesAllView,
   mktPermissionActionsAllView,
   mktPermissionTemplatesAllView,

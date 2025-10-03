@@ -857,3 +857,167 @@ export const CONTEXT_TYPE_OPTIONS = [
     position: 36,
   },
 ];
+
+// Permission Source Types (for Priority Config)
+export enum SOURCE_TYPE {
+  TEMPLATE = 'TEMPLATE',
+  OVERRIDE = 'OVERRIDE',
+  POLICY = 'POLICY',
+}
+
+export const SOURCE_TYPE_OPTIONS = [
+  {
+    value: SOURCE_TYPE.TEMPLATE,
+    label: 'Permission Template',
+    color: 'blue' as TagColor,
+    position: 0,
+  },
+  {
+    value: SOURCE_TYPE.OVERRIDE,
+    label: 'User Override',
+    color: 'red' as TagColor,
+    position: 1,
+  },
+  {
+    value: SOURCE_TYPE.POLICY,
+    label: 'Data Access Policy',
+    color: 'green' as TagColor,
+    position: 2,
+  },
+];
+
+// Permission Source Sub Types (for Priority Config)
+export enum SOURCE_SUBTYPE {
+  // Override subtypes
+  EMERGENCY = 'EMERGENCY',
+  COMPLIANCE = 'COMPLIANCE',
+  AUDIT = 'AUDIT',
+  TEMPORARY_GRANT = 'TEMPORARY_GRANT',
+  TEMPORARY_DENY = 'TEMPORARY_DENY',
+  BUSINESS_EXCEPTION = 'BUSINESS_EXCEPTION',
+
+  // Template subtypes
+  ROLE_BASED = 'ROLE_BASED',
+  HIERARCHY_BASED = 'HIERARCHY_BASED',
+  DEPARTMENT_BASED = 'DEPARTMENT_BASED',
+  SYSTEM_DEFAULT = 'SYSTEM_DEFAULT',
+
+  // Policy subtypes
+  HIERARCHY_FILTER = 'HIERARCHY_FILTER',
+  DEPARTMENT_FILTER = 'DEPARTMENT_FILTER',
+  CUSTOM_FILTER = 'CUSTOM_FILTER',
+}
+
+export const SOURCE_SUBTYPE_OPTIONS = [
+  // Override subtypes
+  {
+    value: SOURCE_SUBTYPE.EMERGENCY,
+    label: 'Emergency Access',
+    color: 'red' as TagColor,
+    position: 0,
+  },
+  {
+    value: SOURCE_SUBTYPE.COMPLIANCE,
+    label: 'Compliance/Legal',
+    color: 'purple' as TagColor,
+    position: 1,
+  },
+  {
+    value: SOURCE_SUBTYPE.AUDIT,
+    label: 'Audit Related',
+    color: 'yellow' as TagColor,
+    position: 2,
+  },
+  {
+    value: SOURCE_SUBTYPE.TEMPORARY_GRANT,
+    label: 'Temporary Grant',
+    color: 'green' as TagColor,
+    position: 3,
+  },
+  {
+    value: SOURCE_SUBTYPE.TEMPORARY_DENY,
+    label: 'Temporary Deny',
+    color: 'orange' as TagColor,
+    position: 4,
+  },
+  {
+    value: SOURCE_SUBTYPE.BUSINESS_EXCEPTION,
+    label: 'Business Exception',
+    color: 'blue' as TagColor,
+    position: 5,
+  },
+
+  // Template subtypes
+  {
+    value: SOURCE_SUBTYPE.ROLE_BASED,
+    label: 'Role Based',
+    color: 'teal' as TagColor,
+    position: 6,
+  },
+  {
+    value: SOURCE_SUBTYPE.HIERARCHY_BASED,
+    label: 'Hierarchy Based',
+    color: 'purple' as TagColor,
+    position: 7,
+  },
+  {
+    value: SOURCE_SUBTYPE.DEPARTMENT_BASED,
+    label: 'Department Based',
+    color: 'green' as TagColor,
+    position: 8,
+  },
+  {
+    value: SOURCE_SUBTYPE.SYSTEM_DEFAULT,
+    label: 'System Default',
+    color: 'gray' as TagColor,
+    position: 9,
+  },
+
+  // Policy subtypes
+  {
+    value: SOURCE_SUBTYPE.HIERARCHY_FILTER,
+    label: 'Hierarchy Filter',
+    color: 'blue' as TagColor,
+    position: 10,
+  },
+  {
+    value: SOURCE_SUBTYPE.DEPARTMENT_FILTER,
+    label: 'Department Filter',
+    color: 'green' as TagColor,
+    position: 11,
+  },
+  {
+    value: SOURCE_SUBTYPE.CUSTOM_FILTER,
+    label: 'Custom Filter',
+    color: 'orange' as TagColor,
+    position: 12,
+  },
+];
+
+// Priority Formula Templates
+export enum PRIORITY_FORMULA {
+  BASE_PRIORITY = 'basePriority',
+  HIERARCHY_BOOST = 'basePriority + (priorityBoost * (10 - hierarchyLevel))',
+  HIERARCHY_FILTER_BOOST = 'basePriority + (priorityBoost * (10 - minHierarchyLevel))',
+}
+
+export const PRIORITY_FORMULA_OPTIONS = [
+  {
+    value: PRIORITY_FORMULA.BASE_PRIORITY,
+    label: 'Fixed Base Priority',
+    color: 'gray' as TagColor,
+    position: 0,
+  },
+  {
+    value: PRIORITY_FORMULA.HIERARCHY_BOOST,
+    label: 'Hierarchy Level Boost',
+    color: 'blue' as TagColor,
+    position: 1,
+  },
+  {
+    value: PRIORITY_FORMULA.HIERARCHY_FILTER_BOOST,
+    label: 'Hierarchy Filter Boost',
+    color: 'green' as TagColor,
+    position: 2,
+  },
+];
