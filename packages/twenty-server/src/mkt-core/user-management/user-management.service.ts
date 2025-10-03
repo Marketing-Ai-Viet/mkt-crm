@@ -1,20 +1,21 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
+import { APP_LOCALES } from 'twenty-shared/translations';
+import { Repository } from 'typeorm';
+
 import { hashPassword } from 'src/engine/core-modules/auth/auth.util';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
-import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { APP_LOCALES } from 'twenty-shared/translations';
-import { Repository } from 'typeorm';
+
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -24,9 +25,6 @@ export class UserManagementService {
     @InjectRepository(User, 'core')
     private readonly userRepository: Repository<User>,
     @InjectRepository(UserWorkspace, 'core')
-    private readonly userWorkspaceRepository: Repository<UserWorkspace>,
-    private readonly userWorkspaceService: UserWorkspaceService,
-    private readonly userRoleService: UserRoleService,
     private readonly workspaceDataSourceService: WorkspaceDataSourceService,
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
@@ -45,6 +43,7 @@ export class UserManagementService {
       throw new ConflictError('An account already exists with this email.');
     const mainDataSource =
       await this.workspaceDataSourceService.connectToMainDataSource();
+
     if (!mainDataSource) {
       throw new InternalServerErrorException(
         'Could not connect to main data source',
@@ -58,6 +57,7 @@ export class UserManagementService {
     const chars =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
     let passwordRandom = '';
+
     for (let i = 0; i < 9; i++) {
       passwordRandom += chars.charAt(Math.floor(Math.random() * chars.length));
     }
