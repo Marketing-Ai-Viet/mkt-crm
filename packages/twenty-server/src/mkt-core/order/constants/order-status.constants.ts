@@ -12,6 +12,7 @@ export type ORDER_METADATA = {
   note?: string;
   oldOrderId?: string;
   oldLicenseId?: string;
+  oldVariantId?: string;
 };
 
 export enum ORDER_STATUS {

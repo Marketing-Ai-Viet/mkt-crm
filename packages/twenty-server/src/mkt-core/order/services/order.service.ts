@@ -143,7 +143,6 @@ export class OrderService {
     authFirebase?: void | FirebaseAuthResponse,
     workspaceId: string | null = null,
   ) {
-    this.mktRepo.workspaceId = workspaceId;
     const orderRepository = await this.getOrderRepo();
 
     this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));

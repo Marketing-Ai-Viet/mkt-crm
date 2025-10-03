@@ -74,20 +74,19 @@ export class MktLicenseUpdateOnePreQueryHook
       }
     }
 
-    // // Check for variant changes in metadata
-    // if (metadata && license) {
-    //   await this.licenseHistoryService.checkAndRecordVariantChanges(
-    //     authContext,
-    //     license,
-    //     metadata,
-    //   );
-    // }
-
     if (status === MKT_LICENSE_STATUS.CHANGE_VARIANT) {
-      const newMetadata: Metadata = await this.makeMetadataForChangeVariant(
+      const newMetadata: ORDER_METADATA =
+        await this.makeMetadataForChangeVariant(
+          license,
+          paymentMethods,
+          variants,
+        );
+
+      await this.mktLicenseRenewService.shouldChangeVariantForLicense(
+        status,
+        newMetadata,
+        licenseId,
         license,
-        paymentMethods,
-        variants,
       );
 
       return {
@@ -116,7 +115,7 @@ export class MktLicenseUpdateOnePreQueryHook
         ...payload,
         data: {
           ...payload.data,
-          status: MKT_LICENSE_STATUS.ACTIVE,
+          //status: MKT_LICENSE_STATUS.ACTIVE,
           metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
         },
       };
@@ -169,8 +168,16 @@ export class MktLicenseUpdateOnePreQueryHook
     license: MktLicenseWorkspaceEntity | null,
     paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>,
     variants?: Array<{ mktVariantId: string; quantity?: number }>,
-  ): Promise<Metadata> {
-    //throw new Error(`Debug Method not implemented. ${JSON.stringify(license)}`);
+  ): Promise<ORDER_METADATA> {
+    if (!paymentMethods || paymentMethods.length === 0) {
+      paymentMethods = [
+        {
+          mktPaymentMethodId:
+            license?.mktOrder?.mktPayments[0]?.mktPaymentMethodId || 'unknown',
+          name: 'SEPay QR',
+        },
+      ];
+    }
     return {
       orderAction: ORDER_ACTION.CHANGE_VARIANT,
       customer: {

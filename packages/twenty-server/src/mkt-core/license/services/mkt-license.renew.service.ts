@@ -35,10 +35,63 @@ export class MktLicenseRenewService {
     this.mktCommonOrderService.updateFirstMetadata(oldOrder, {
       oldOrderId: oldOrder?.id,
     });
-    await this.processLicenseRenewalFromMutation(licenseId, metadata, license);
+    await this.processLicenseRenewal(licenseId, metadata, license);
   }
 
-  private async processLicenseRenewalFromMutation(
+  async shouldChangeVariantForLicense(
+    status: string,
+    metadata: ORDER_METADATA,
+    licenseId: string,
+    license: MktLicenseWorkspaceEntity | null,
+  ) {
+    this.logger.log(`Changing variant for license with ID: ${licenseId}`);
+    this.logger.log(`status: ${status}`);
+    // Logic to renew the license
+
+    const oldOrder = license?.mktOrder;
+    this.mktCommonOrderService.updateFirstMetadata(oldOrder, {
+      oldOrderId: oldOrder?.id,
+      oldVariantId: license?.mktVariant?.id,
+    });
+    await this.processChangeVariant(licenseId, metadata, license);
+  }
+
+  private async processChangeVariant(
+    licenseId: string,
+    metadata: ORDER_METADATA,
+    license: MktLicenseWorkspaceEntity | null,
+  ) {
+    const {
+      variants: variantsMeta,
+      customer: customerMeta,
+      paymentMethods: paymentMethodsMeta,
+    } = metadata;
+    // Simulate order creation and confirmation
+    const order = await this.createOrder();
+    const fireBaseData: CALL_FIREBASE_DATA | void =
+      await this.mktOrderCommonConfirmService.confirmOrder(
+        ORDER_ACTION.LICENSE_RENEWING,
+        order,
+        '',
+        variantsMeta,
+        customerMeta,
+        paymentMethodsMeta,
+        licenseId,
+        license,
+      );
+    const authFirebase =
+      await this.mktFirebaseService.callFireBase(fireBaseData);
+    await this.mktCommonOrderService.updateOrderForRenew(
+      order.id,
+      ORDER_STATUS.WAIT,
+      '',
+      false,
+      authFirebase,
+    );
+    this.logger.log(`License ${licenseId} renewed successfully.`);
+  }
+
+  private async processLicenseRenewal(
     licenseId: string,
     metadata: ORDER_METADATA,
     license: MktLicenseWorkspaceEntity | null,
