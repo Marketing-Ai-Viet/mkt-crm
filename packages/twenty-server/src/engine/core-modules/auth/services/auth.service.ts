@@ -180,7 +180,7 @@ export class AuthService {
 
     if (isEmailVerificationRequired && !user.isEmailVerified) {
       throw new AuthException(
-        '"Email is not verified',
+        'Email is not verified',
         AuthExceptionCode.EMAIL_NOT_VERIFIED,
       );
     }
