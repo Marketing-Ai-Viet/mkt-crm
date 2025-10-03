@@ -211,6 +211,6 @@ export class OrderService {
   }
 
   private async getOrderRepo() {
-    return this.mktRepo.getOrderRepository();
+    return await this.mktRepo.getOrderRepository();
   }
 }

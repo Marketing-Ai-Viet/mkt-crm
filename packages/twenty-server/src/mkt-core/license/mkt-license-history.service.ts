@@ -13,12 +13,16 @@ export type HistoryItem = {
   name: string;
   action: string;
   note: string;
+  createdByName?: string;
+  createdAt?: Date;
 };
 
 @Injectable()
 export class MktLicenseHistoryService {
   private readonly logger = new Logger(MktLicenseHistoryService.name);
-
+  private createdByName: string | null;
+  private createdAt: string | null;
+  private note: string | undefined | null;
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
@@ -79,7 +83,9 @@ export class MktLicenseHistoryService {
     authContext: AuthContext,
     license: MktLicenseWorkspaceEntity,
     status?: string,
+    note?: string | undefined,
   ): Promise<void> {
+    this.note = note;
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
     if (!workspaceId) return;
@@ -103,11 +109,12 @@ export class MktLicenseHistoryService {
       const currentHistory = this.getLicenseHistory(license);
 
       // Create history item based on the status or changes
-      const historyItem = this.createHistoryItemFromUpdate(
-        license,
-        authContext,
-        status,
-      );
+      const historyItem = {
+        ...(await this.createHistoryItemFromUpdate(authContext, status)),
+        createdByName: this.createdByName || undefined,
+        createdAt: this.createdAt ? new Date(this.createdAt) : undefined,
+        ...(this.note ? { note: this.note } : {}),
+      };
 
       if (historyItem) {
         const updatedHistory = [historyItem, ...currentHistory];
@@ -209,60 +216,66 @@ export class MktLicenseHistoryService {
   /**
    * Create history item based on license update
    */
-  createHistoryItemFromUpdate(
-    license: MktLicenseWorkspaceEntity,
+  async createHistoryItemFromUpdate(
     authContext: AuthContext,
     status?: string,
-  ): HistoryItem | null {
+  ): Promise<HistoryItem | null> {
     const timestamp = new Date().toISOString();
     const userId = authContext.user?.id || 'system';
     const userName =
       authContext.user?.firstName && authContext.user?.lastName
         ? `${authContext.user.firstName} ${authContext.user.lastName}`
         : authContext.user?.email || 'Unknown User';
-
+    this.createdByName = userName;
+    this.createdAt = timestamp;
     // Create history based on status
     switch (status) {
       case MKT_LICENSE_STATUS.ACTIVE:
         return {
-          name: `License đã được kích hoạt vào lúc - ${timestamp}`,
+          name: 'Bản quyền được kích hoạt',
           action: MKT_LICENSE_STATUS.ACTIVE,
-          note: `License đã được kích hoạt bởi ${userName} (${userId})`,
+          note: 'Khách hàng đã kích hoạt thành công bản quyền',
         };
 
       case MKT_LICENSE_STATUS.RENEWING:
         return {
-          name: `License đã được gia hạn vào lúc - ${timestamp}`,
+          name: 'Cập nhật thông tin bản quyền',
           action: MKT_LICENSE_STATUS.RENEWING,
-          note: `License đã được gia hạn bởi ${userName} (${userId})`,
+          note: 'Đã cập nhật thông tin bản quyền',
         };
 
       case MKT_LICENSE_STATUS.EXPIRED:
         return {
-          name: `License đã hết hạn vào lúc - ${timestamp}`,
+          name: 'Bản quyền hết hạn',
           action: MKT_LICENSE_STATUS.EXPIRED,
-          note: `License đã hết hạn bởi ${userName} (${userId})`,
+          note: 'Bản quyền đã hết hạn',
         };
 
       case MKT_LICENSE_STATUS.REVOKED:
         return {
-          name: `License đã bị thu hồi vào lúc - ${timestamp}`,
+          name: 'Khóa bản quyền',
           action: MKT_LICENSE_STATUS.REVOKED,
-          note: `License đã bị thu hồi bởi ${userName} (${userId})`,
+          note: 'Bản quyền đã bị thu hồi',
         };
 
       case MKT_LICENSE_STATUS.ERROR:
         return {
-          name: `License đã gặp lỗi vào lúc - ${timestamp}`,
+          name: 'Bản quyền lỗi',
           action: MKT_LICENSE_STATUS.ERROR,
-          note: `License đã được đánh dấu là lỗi bởi ${userName} (${userId})`,
+          note: 'Bản quyền đã được đánh dấu là lỗi',
         };
 
-      case 'VARIANT_CHANGED':
+      case MKT_LICENSE_STATUS.CHANGE_VARIANT:
         return {
-          name: `License đã thay đổi sản phẩm vào lúc - ${timestamp}`,
-          action: 'VARIANT_CHANGED',
-          note: `License đã thay đổi sản phẩm bởi ${userName} (${userId})`,
+          name: 'Thay đổi sản phẩm cho bản quyền',
+          action: MKT_LICENSE_STATUS.CHANGE_VARIANT,
+          note: 'Bản quyền đã thay đổi sản phẩm',
+        };
+      case MKT_LICENSE_STATUS.REFUND:
+        return {
+          name: 'Bản quyền đã được hoàn tiền',
+          action: MKT_LICENSE_STATUS.REFUND,
+          note: 'Bản quyền đã được hoàn tiền và bị vô hiệu hóa',
         };
 
       default:
