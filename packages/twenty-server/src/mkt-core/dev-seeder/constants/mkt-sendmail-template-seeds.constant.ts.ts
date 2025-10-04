@@ -6,21 +6,26 @@ export const MKT_SENDMAIL_TEMPLATE_SEEDS_IDS = {
 // Seed record shape for sendmail templates
 export interface MktSendmailTemplateSeed {
   name: string;
-  code: string;
-  language: string; // e.g., 'en', 'vi'
-  type: string; // e.g., 'WELCOME_EMAIL', 'PASSWORD_RESET'
+  language: string;
+  type: string;
   subject: string;
-  text: string; // plain text content
-  body: string; // HTML content
+  text: string;
+  body: string;
+  [key: string]: unknown;
 }
 
-export const MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS: (keyof MktSendmailTemplateSeed)[] =
-  ['name', 'code', 'language', 'type', 'subject', 'text', 'body'];
+export const MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS: string[] = [
+  'name',
+  'language',
+  'type',
+  'subject',
+  'text',
+  'body',
+];
 
 export const MKT_SENDMAIL_TEMPLATE_DATA_SEEDS: MktSendmailTemplateSeed[] = [
   {
     name: 'Welcome Email',
-    code: 'WELCOME',
     language: 'en',
     type: 'WELCOME_EMAIL',
     subject: 'Welcome to Our Service!',
@@ -41,7 +46,6 @@ This is an automated message, please do not reply to this email.`,
   },
   {
     name: 'Chào mừng',
-    code: 'WELCOME',
     language: 'vi-VN',
     type: 'WELCOME_EMAIL',
     subject: 'Chào mừng bạn đến với dịch vụ của chúng tôi!',

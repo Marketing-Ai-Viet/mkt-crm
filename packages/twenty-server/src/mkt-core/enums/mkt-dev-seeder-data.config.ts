@@ -107,7 +107,6 @@ import {
   MKT_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-template-data-seeds.constants';
-
 import {
   MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,

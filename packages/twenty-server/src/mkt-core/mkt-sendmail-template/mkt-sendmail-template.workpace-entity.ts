@@ -1,4 +1,5 @@
 import { msg } from '@lingui/core/macro';
+import { APP_LOCALES } from 'twenty-shared/translations';
 import { FieldMetadataType } from 'twenty-shared/types';
 
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
@@ -7,7 +8,6 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { MKT_SENDMAIL_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { APP_LOCALES } from 'twenty-shared/translations';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktSendmailTemplate,
@@ -29,15 +29,6 @@ export class MktSendmailTemplateWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconFileText',
   })
   name: string;
-
-  @WorkspaceField({
-    standardId: MKT_SENDMAIL_TEMPLATE_FIELD_IDS.code,
-    type: FieldMetadataType.TEXT,
-    label: msg`Template Code`,
-    description: msg`Unique identifier for the email template`,
-    icon: 'IconHash',
-  })
-  code: string;
 
   @WorkspaceField({
     standardId: MKT_SENDMAIL_TEMPLATE_FIELD_IDS.language,

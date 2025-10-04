@@ -10,13 +10,14 @@ import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-err
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -42,7 +43,7 @@ export class UserManagementService {
     const all = upper + lower + digits + special;
 
     // Đảm bảo mỗi nhóm có ít nhất 1 ký tự
-    let password = [
+    const password = [
       upper[Math.floor(Math.random() * upper.length)],
       lower[Math.floor(Math.random() * lower.length)],
       digits[Math.floor(Math.random() * digits.length)],
@@ -57,6 +58,7 @@ export class UserManagementService {
     // Trộn ngẫu nhiên
     for (let i = password.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
+
       [password[i], password[j]] = [password[j], password[i]];
     }
 
@@ -88,7 +90,7 @@ export class UserManagementService {
 
     // Tạo pass random
 
-    let passwordRandom = this.generatePassword();
+    const passwordRandom = this.generatePassword();
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
@@ -119,7 +121,7 @@ export class UserManagementService {
         });
 
         // 4) Tạo roleTargets
-        const roleTargets = await roleTargetsRepo.save({
+        await roleTargetsRepo.save({
           userWorkspaceId: userWorkspace.id,
           workspaceId,
           roleId: input.roleId,
@@ -142,10 +144,8 @@ export class UserManagementService {
         { shouldBypassPermissionChecks: true },
       );
 
-    let savedWorkspaceMember;
-
     try {
-      savedWorkspaceMember = await workspaceMemberRepo.save({
+      const savedWorkspaceMember = await workspaceMemberRepo.save({
         name: {
           firstName: input.firstName || '',
           lastName: input.lastName || '',
@@ -164,18 +164,44 @@ export class UserManagementService {
         employmentStatusId: input.employmentStatusId ?? null,
         organizationLevelId: input.organizationLevelId ?? null,
       });
+
+      const sendmailTemplateRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSendmailTemplateWorkspaceEntity>(
+          workspaceId,
+          'mktSendmailTemplate',
+          { shouldBypassPermissionChecks: true },
+        );
+      const sendmailTemplate = await sendmailTemplateRepo.findOne({
+        where: {
+          type: 'WELCOME_EMAIL',
+          language: input.language as keyof typeof APP_LOCALES,
+        },
+      });
+
+      if (!sendmailTemplate) {
+        throw new InternalServerErrorException('Sendmail template not found');
+      }
+
       await this.emailService.send({
         from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
         to: email,
-        subject: 'Your New Account Password',
-        text: `Hello,\n\nYour account has been created successfully.\nHere is your temporary password: ${passwordRandom}\n\nPlease log in and change your password immediately for security.`,
-        html: `
-          <p>Hello,</p>
-          <p>Your account has been created successfully.</p>
-          <p>Here is your temporary password: <strong>${passwordRandom}</strong></p>
-          <p>Please log in and change your password immediately for security.</p>
-        `,
+        subject: sendmailTemplate.subject,
+        text: sendmailTemplate.text.replace('{{password}}', passwordRandom),
+        html: sendmailTemplate.body.replace('{{password}}', passwordRandom),
       });
+
+      return {
+        id: savedWorkspaceMember.id,
+        email,
+        firstName: savedWorkspaceMember.name?.firstName || '',
+        lastName: savedWorkspaceMember.name?.lastName || '',
+        jobTitle: input.jobTitle || '',
+        city: input.city || '',
+        phone: input.phone || '',
+        language: savedWorkspaceMember.locale || input.language || 'en',
+        avatarUrl:
+          savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
+      };
     } catch (error) {
       // Compensate: rollback core creations if workspace step fails
       await mainDataSource.transaction(
@@ -196,23 +222,5 @@ export class UserManagementService {
         'Failed to create workspace member',
       );
     }
-
-    if (!savedWorkspaceMember) {
-      throw new InternalServerErrorException(
-        'savedWorkspaceMember is undefined',
-      );
-    }
-
-    return {
-      id: savedWorkspaceMember.id,
-      email,
-      firstName: savedWorkspaceMember.name?.firstName || '',
-      lastName: savedWorkspaceMember.name?.lastName || '',
-      jobTitle: input.jobTitle || '',
-      city: input.city || '',
-      phone: input.phone || '',
-      language: savedWorkspaceMember.locale || input.language || 'en',
-      avatarUrl: savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
-    };
   }
 }
