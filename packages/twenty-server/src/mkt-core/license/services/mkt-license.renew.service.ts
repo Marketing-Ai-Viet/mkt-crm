@@ -91,6 +91,7 @@ export class MktLicenseRenewService {
 
     // Find the order item with quantity > 0
     const orderItem = orderItems.find((item) => (item.quantity || 0) > 0);
+
     if (!orderItem) {
       this.logger.error(
         `No order item with quantity > 0 found for license ${licenseId}`,
@@ -156,6 +157,7 @@ export class MktLicenseRenewService {
 
       if (note) {
         const additionalNote = `\nGhi chú thêm: ${note}`;
+
         await orderRepo.update(order.id, {
           note: `${updatedNote}${additionalNote}`,
         });
@@ -190,6 +192,7 @@ export class MktLicenseRenewService {
     orderItem: { name?: string } = {},
   ): string {
     const timestamp = new Date().toISOString();
+
     return `[KẾ TOÁN HOÀN TIỀN - ${timestamp}]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 THÔNG TIN HOÀN TIỀN:

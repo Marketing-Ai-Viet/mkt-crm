@@ -357,6 +357,7 @@ export class MktOrderCommonConfirmService {
     let updatedNote = existingNote
       ? `${existingNote}\n\n${refundNote}`
       : refundNote;
+
     if (note) {
       updatedNote = `${updatedNote}\n\n${note}`;
     }

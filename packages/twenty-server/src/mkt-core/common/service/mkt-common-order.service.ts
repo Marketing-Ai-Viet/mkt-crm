@@ -56,6 +56,7 @@ export class MktCommonOrderService {
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
     };
+
     await orderRepository.update(updateOrder?.id, updateData);
   }
 
