@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { APP_LOCALES } from 'twenty-shared/translations';
@@ -14,14 +18,20 @@ import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+import {
+  SendEmailToolException,
+  SendEmailToolExceptionCode,
+} from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
+import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
 export class UserManagementService {
+  private readonly logger = new Logger(UserManagementService.name);
+
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     @InjectRepository(User, 'core')
@@ -33,6 +43,7 @@ export class UserManagementService {
 
   generatePassword(length = 12): string {
     if (length < 8 || length > 16) {
+      this.logger.error('Password length must be between 8 and 16 characters');
       throw new Error('Password length must be between 8 and 16 characters');
     }
 
@@ -58,7 +69,6 @@ export class UserManagementService {
     // Trộn ngẫu nhiên
     for (let i = password.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-
       [password[i], password[j]] = [password[j], password[i]];
     }
 
@@ -70,16 +80,19 @@ export class UserManagementService {
     workspaceId: string,
     input: CreateUserInput,
   ): Promise<UserOutput> {
-    // 1) Check trùng email
     const email = input.email;
     const existing = await this.userRepository.findOne({ where: { email } });
 
-    if (existing)
+    if (existing) {
+      this.logger.warn(`Attempt to create user with existing email: ${email}`);
       throw new ConflictError('An account already exists with this email.');
+    }
+
     const mainDataSource =
       await this.workspaceDataSourceService.connectToMainDataSource();
 
     if (!mainDataSource) {
+      this.logger.error('Could not connect to main data source');
       throw new InternalServerErrorException(
         'Could not connect to main data source',
       );
@@ -87,8 +100,6 @@ export class UserManagementService {
 
     let coreUserId: string | undefined;
     let userWorkspaceId: string | undefined;
-
-    // Tạo pass random
 
     const passwordRandom = this.generatePassword();
 
@@ -107,7 +118,7 @@ export class UserManagementService {
           isEmailVerified: false,
           canImpersonate: input.canImpersonate,
           canAccessFullAdminPanel: input.canAdmin || false,
-          locale: input.language || 'en',
+          locale: input.language,
           defaultAvatarUrl: input.avatarUrl || undefined,
         });
 
@@ -116,7 +127,7 @@ export class UserManagementService {
         const userWorkspace = await userWorkspaceRepo.save({
           userId: coreUser.id,
           workspaceId,
-          locale: (input.language || 'en') as keyof typeof APP_LOCALES,
+          locale: input.language as keyof typeof APP_LOCALES,
           defaultAvatarUrl: input.avatarUrl || undefined,
         });
 
@@ -128,6 +139,7 @@ export class UserManagementService {
         });
 
         if (!userWorkspace) {
+          this.logger.error('Could not create user workspace');
           throw new InternalServerErrorException(
             'Could not create user workspace',
           );
@@ -135,7 +147,6 @@ export class UserManagementService {
         userWorkspaceId = userWorkspace.id;
       },
     );
-    // 4) Tạo workspaceMember (bypass permission)
 
     const workspaceMemberRepo =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
@@ -143,66 +154,32 @@ export class UserManagementService {
         'workspaceMember',
         { shouldBypassPermissionChecks: true },
       );
-
+    let savedWorkspaceMember: WorkspaceMemberWorkspaceEntity;
     try {
-      const savedWorkspaceMember = await workspaceMemberRepo.save({
+      savedWorkspaceMember = await workspaceMemberRepo.save({
         name: {
           firstName: input.firstName || '',
           lastName: input.lastName || '',
         },
         position: input.position != null ? Number(input.position) : 0,
-        colorScheme: input.colorScheme ?? 'System',
+        colorScheme: 'Light',
         locale: (input.language || 'en') as keyof typeof APP_LOCALES,
         avatarUrl: input.avatarUrl ?? '',
         userId: coreUserId as string,
         userEmail: email,
         calendarStartDay: input.calendarStartDay ?? 7,
-        timeZone: input.timeZone ?? 'system',
-        dateFormat: input.dateFormat ?? 'SYSTEM',
-        timeFormat: input.timeFormat ?? 'SYSTEM',
+        timeZone: 'SYSTEM',
+        dateFormat: 'SYSTEM',
+        timeFormat: 'SYSTEM',
         departmentId: input.departmentId ?? null,
         employmentStatusId: input.employmentStatusId ?? null,
         organizationLevelId: input.organizationLevelId ?? null,
       });
-
-      const sendmailTemplateRepo =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSendmailTemplateWorkspaceEntity>(
-          workspaceId,
-          'mktSendmailTemplate',
-          { shouldBypassPermissionChecks: true },
-        );
-      const sendmailTemplate = await sendmailTemplateRepo.findOne({
-        where: {
-          type: 'WELCOME_EMAIL',
-          language: input.language as keyof typeof APP_LOCALES,
-        },
-      });
-
-      if (!sendmailTemplate) {
-        throw new InternalServerErrorException('Sendmail template not found');
-      }
-
-      await this.emailService.send({
-        from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
-        to: email,
-        subject: sendmailTemplate.subject,
-        text: sendmailTemplate.text.replace('{{password}}', passwordRandom),
-        html: sendmailTemplate.body.replace('{{password}}', passwordRandom),
-      });
-
-      return {
-        id: savedWorkspaceMember.id,
-        email,
-        firstName: savedWorkspaceMember.name?.firstName || '',
-        lastName: savedWorkspaceMember.name?.lastName || '',
-        jobTitle: input.jobTitle || '',
-        city: input.city || '',
-        phone: input.phone || '',
-        language: savedWorkspaceMember.locale || input.language || 'en',
-        avatarUrl:
-          savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
-      };
     } catch (error) {
+      this.logger.error(
+        'Failed to create workspace member, rolling back core creations',
+        error,
+      );
       // Compensate: rollback core creations if workspace step fails
       await mainDataSource.transaction(
         async (entityManager: WorkspaceEntityManager) => {
@@ -222,5 +199,52 @@ export class UserManagementService {
         'Failed to create workspace member',
       );
     }
+
+    const sendmailTemplateRepo =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSendmailTemplateWorkspaceEntity>(
+        workspaceId,
+        'mktSendmailTemplate',
+        { shouldBypassPermissionChecks: true },
+      );
+    const sendmailTemplate = await sendmailTemplateRepo.findOne({
+      where: {
+        type: 'WELCOME_EMAIL',
+        language: input.language as keyof typeof APP_LOCALES,
+      },
+    });
+
+    if (!sendmailTemplate) {
+      this.logger.error('Sendmail template not found');
+      throw new InternalServerErrorException('Sendmail template not found');
+    }
+    try {
+      await this.emailService.send({
+        from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
+        to: email,
+        subject: sendmailTemplate.subject,
+        text: sendmailTemplate.text.replace('{{password}}', passwordRandom),
+        html: sendmailTemplate.body.replace('{{password}}', passwordRandom),
+      });
+    } catch (error) {
+      this.logger.error(
+        'User created successfully, but failed to send welcome email',
+        error,
+      );
+      throw new SendEmailToolException(
+        'User created successfully, but failed to send welcome email',
+        SendEmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
+      );
+    }
+    return {
+      id: savedWorkspaceMember.id,
+      email,
+      firstName: savedWorkspaceMember.name?.firstName || '',
+      lastName: savedWorkspaceMember.name?.lastName || '',
+      jobTitle: input.jobTitle || '',
+      city: input.city || '',
+      phone: input.phone || '',
+      language: savedWorkspaceMember.locale || input.language || 'en',
+      avatarUrl: savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
+    };
   }
 }

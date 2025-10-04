@@ -8,7 +8,6 @@ export class UserOutput {
   email: string;
 
   @Field(() => String)
-  @IsEmail()
   id: string;
 
   @Field(() => String, { nullable: true })
@@ -21,11 +20,11 @@ export class UserOutput {
   @IsString()
   lastName?: string;
 
-  @Field(() => String, { defaultValue: 'en' })
+  @Field(() => String)
   @IsString()
   language: string;
 
-  @Field(() => String, { nullable: true, defaultValue: null })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsUrl()
   avatarUrl?: string | null = null;

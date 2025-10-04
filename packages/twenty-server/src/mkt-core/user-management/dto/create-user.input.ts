@@ -32,11 +32,6 @@ export class CreateUserInput {
   @IsNumber()
   position?: number;
 
-  @Field(() => String, { nullable: true, defaultValue: 'Light' })
-  @IsOptional()
-  @IsString()
-  colorScheme?: string;
-
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
@@ -69,25 +64,10 @@ export class CreateUserInput {
   @IsUrl()
   avatarUrl?: string | null = null;
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => Number, { nullable: true, defaultValue: 7 })
   @IsOptional()
   @IsNumber()
   calendarStartDay?: number;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  timeZone?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  dateFormat?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  timeFormat?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -105,7 +85,6 @@ export class CreateUserInput {
   organizationLevelId?: string;
 
   @Field(() => String, { nullable: true })
-  @IsOptional()
   @IsString()
-  roleId?: string;
+  roleId: string;
 }
