@@ -545,6 +545,23 @@ export type CreateOneObjectInput = {
   object: CreateObjectInput;
 };
 
+export type CreateOrderItemInput = {
+  mktProductId: Scalars['String'];
+  quantity: Scalars['Int'];
+};
+
+export type CreateOrderWithItemsInput = {
+  accountOwnerId?: InputMaybe<Scalars['String']>;
+  currency?: Scalars['String'];
+  items: Array<CreateOrderItemInput>;
+  name: Scalars['String'];
+  note?: InputMaybe<Scalars['String']>;
+  orderCode: Scalars['String'];
+  requireContract?: InputMaybe<Scalars['Boolean']>;
+  status?: InputMaybe<OrderStatus>;
+  totalAmount?: InputMaybe<Scalars['Float']>;
+};
+
 export type CreateRemoteServerInput = {
   foreignDataWrapperOptions: Scalars['JSON'];
   foreignDataWrapperType: Scalars['String'];
@@ -570,6 +587,30 @@ export type CreateServerlessFunctionInput = {
   description?: InputMaybe<Scalars['String']>;
   name: Scalars['String'];
   timeoutSeconds?: InputMaybe<Scalars['Float']>;
+};
+
+export type CreateUserInput = {
+  avatarUrl?: InputMaybe<Scalars['String']>;
+  calendarStartDay?: InputMaybe<Scalars['Float']>;
+  canAdmin?: Scalars['Boolean'];
+  canImpersonate?: Scalars['Boolean'];
+  city?: InputMaybe<Scalars['String']>;
+  colorScheme?: InputMaybe<Scalars['String']>;
+  dateFormat?: InputMaybe<Scalars['String']>;
+  departmentId?: InputMaybe<Scalars['String']>;
+  email: Scalars['String'];
+  employmentStatusId?: InputMaybe<Scalars['String']>;
+  firstName?: InputMaybe<Scalars['String']>;
+  jobTitle?: InputMaybe<Scalars['String']>;
+  language?: Scalars['String'];
+  lastName?: InputMaybe<Scalars['String']>;
+  organizationLevelId?: InputMaybe<Scalars['String']>;
+  password: Scalars['String'];
+  phone?: InputMaybe<Scalars['String']>;
+  position?: InputMaybe<Scalars['Float']>;
+  roleId?: InputMaybe<Scalars['String']>;
+  timeFormat?: InputMaybe<Scalars['String']>;
+  timeZone?: InputMaybe<Scalars['String']>;
 };
 
 export type CreateWebhookDto = {
@@ -651,6 +692,17 @@ export type DeleteOneObjectInput = {
   id: Scalars['UUID'];
 };
 
+export type DeleteOrderInput = {
+  id: Scalars['String'];
+};
+
+export type DeleteOrderOutput = {
+  __typename?: 'DeleteOrderOutput';
+  deletedId: Scalars['String'];
+  message: Scalars['String'];
+  success: Scalars['Boolean'];
+};
+
 export type DeleteSsoInput = {
   identityProviderId: Scalars['String'];
 };
@@ -684,6 +736,48 @@ export type DeletedWorkspaceMember = {
   name: FullName;
   userEmail: Scalars['String'];
   userWorkspaceId?: Maybe<Scalars['String']>;
+};
+
+export type DepartmentAncestor = {
+  __typename?: 'DepartmentAncestor';
+  departmentCode: Scalars['String'];
+  departmentName: Scalars['String'];
+  distance: Scalars['Int'];
+  hierarchyId: Scalars['ID'];
+  id: Scalars['ID'];
+  level: Scalars['Int'];
+  relationshipType: Scalars['String'];
+};
+
+export type DepartmentDescendant = {
+  __typename?: 'DepartmentDescendant';
+  departmentCode: Scalars['String'];
+  departmentName: Scalars['String'];
+  distance: Scalars['Int'];
+  hierarchyId: Scalars['ID'];
+  id: Scalars['ID'];
+  level: Scalars['Int'];
+  path: Array<Scalars['String']>;
+  relationshipType: Scalars['String'];
+};
+
+export type DepartmentTreeNode = {
+  __typename?: 'DepartmentTreeNode';
+  children: Array<DepartmentTreeNode>;
+  departmentCode: Scalars['String'];
+  departmentName: Scalars['String'];
+  hierarchyId?: Maybe<Scalars['ID']>;
+  id: Scalars['ID'];
+  level: Scalars['Int'];
+  relationshipType?: Maybe<Scalars['String']>;
+};
+
+export type DepartmentTreeOptions = {
+  includeInactive?: InputMaybe<Scalars['Boolean']>;
+  maxDepth?: InputMaybe<Scalars['Int']>;
+  relationshipTypes?: InputMaybe<Array<Scalars['String']>>;
+  sortBy?: InputMaybe<SortByOptions>;
+  sortDirection?: InputMaybe<SortDirectionOptions>;
 };
 
 /** Schema update on a table */
@@ -927,6 +1021,17 @@ export type GetLoginTokenFromEmailVerificationTokenOutput = {
   workspaceUrls: WorkspaceUrls;
 };
 
+export type GetOrderInput = {
+  id: Scalars['String'];
+};
+
+export type GetOrdersInput = {
+  limit?: Scalars['Int'];
+  page?: Scalars['Int'];
+  sortBy?: OrderSortBy;
+  sortOrder?: SortOrder;
+};
+
 export type GetServerlessFunctionSourceCodeInput = {
   /** The id of the function. */
   id: Scalars['ID'];
@@ -945,6 +1050,16 @@ export enum HealthIndicatorId {
   redis = 'redis',
   worker = 'worker'
 }
+
+export type HierarchyStatistics = {
+  __typename?: 'HierarchyStatistics';
+  activeHierarchies: Scalars['Int'];
+  averageDepth: Scalars['Float'];
+  circularReferences: Scalars['Int'];
+  maxDepth: Scalars['Int'];
+  orphanedDepartments: Scalars['Int'];
+  totalHierarchies: Scalars['Int'];
+};
 
 export enum IdentityProviderType {
   OIDC = 'OIDC',
@@ -1076,6 +1191,16 @@ export type InvalidatePassword = {
   success: Scalars['Boolean'];
 };
 
+export type LevelEmployeeCount = {
+  __typename?: 'LevelEmployeeCount';
+  activeEmployeeCount: Scalars['Int'];
+  employeeCount: Scalars['Int'];
+  hierarchyLevel: Scalars['Int'];
+  levelId: Scalars['String'];
+  levelName: Scalars['String'];
+  status?: Maybe<Scalars['String']>;
+};
+
 export type LinkMetadata = {
   __typename?: 'LinkMetadata';
   label: Scalars['String'];
@@ -1106,6 +1231,49 @@ export enum MessageChannelVisibility {
   SUBJECT = 'SUBJECT'
 }
 
+export type MktOrderItemOutput = {
+  __typename?: 'MktOrderItemOutput';
+  accountOwnerId?: Maybe<Scalars['String']>;
+  id: Scalars['String'];
+  mktOrderId: Scalars['String'];
+  name: Scalars['String'];
+  quantity: Scalars['Float'];
+  totalPrice?: Maybe<Scalars['Float']>;
+  unitPrice?: Maybe<Scalars['Float']>;
+};
+
+export type MktOrderOutput = {
+  __typename?: 'MktOrderOutput';
+  createdAt: Scalars['DateTime'];
+  currency: Scalars['String'];
+  id: Scalars['String'];
+  name: Scalars['String'];
+  note?: Maybe<Scalars['String']>;
+  orderCode: Scalars['String'];
+  orderItems?: Maybe<Array<MktOrderItemOutput>>;
+  position?: Maybe<Scalars['Float']>;
+  requireContract?: Maybe<Scalars['Boolean']>;
+  status?: Maybe<OrderStatus>;
+  totalAmount?: Maybe<Scalars['Float']>;
+  updatedAt: Scalars['DateTime'];
+};
+
+export type MktOrdersOutput = {
+  __typename?: 'MktOrdersOutput';
+  data: Array<MktOrderOutput>;
+  pageInfo: MktOrdersPageInfo;
+};
+
+export type MktOrdersPageInfo = {
+  __typename?: 'MktOrdersPageInfo';
+  currentPage: Scalars['Int'];
+  hasNextPage: Scalars['Boolean'];
+  hasPreviousPage: Scalars['Boolean'];
+  limit: Scalars['Int'];
+  totalItems: Scalars['Int'];
+  totalPages: Scalars['Int'];
+};
+
 export enum ModelProvider {
   ANTHROPIC = 'ANTHROPIC',
   NONE = 'NONE',
@@ -1126,8 +1294,10 @@ export type Mutation = {
   createApiKey: ApiKey;
   createApprovedAccessDomain: ApprovedAccessDomain;
   createDatabaseConfigVariable: Scalars['Boolean'];
+  createDefaultPoliciesForAllOrganizationLevels: Scalars['Boolean'];
   createDraftFromWorkflowVersion: WorkflowVersion;
   createFile: File;
+  createMktOrderWithItems: MktOrderOutput;
   createOIDCIdentityProvider: SetupSsoOutput;
   createObjectEvent: Analytics;
   createOneAppToken: AppToken;
@@ -1136,6 +1306,7 @@ export type Mutation = {
   createOneRemoteServer: RemoteServer;
   createOneRole: Role;
   createOneServerlessFunction: ServerlessFunction;
+  createPersonUser: UserOutput;
   createSAMLIdentityProvider: SetupSsoOutput;
   createWebhook: Webhook;
   createWorkflowVersionStep: WorkflowAction;
@@ -1172,8 +1343,10 @@ export type Mutation = {
   initiateOTPProvisioning: InitiateTwoFactorAuthenticationProvisioningOutput;
   initiateOTPProvisioningForAuthenticatedUser: InitiateTwoFactorAuthenticationProvisioningOutput;
   publishServerlessFunction: ServerlessFunction;
+  removeAllDefaultOrganizationLevelPolicies: Scalars['Boolean'];
   removeRoleFromAgent: Scalars['Boolean'];
   renewToken: AuthTokens;
+  reorderOrganizationLevels: Array<OrganizationLevelHierarchyNode>;
   resendEmailVerificationToken: ResendEmailVerificationTokenOutput;
   resendWorkspaceInvitation: SendInvitationsOutput;
   revokeApiKey?: Maybe<ApiKey>;
@@ -1186,6 +1359,7 @@ export type Mutation = {
   signUpInWorkspace: SignUpOutput;
   skipBookOnboardingStep: OnboardingStepSuccess;
   skipSyncEmailOnboardingStep: OnboardingStepSuccess;
+  softDeleteMktOrder: DeleteOrderOutput;
   submitFormStep: Scalars['Boolean'];
   switchToEnterprisePlan: BillingUpdateOutput;
   switchToYearlyInterval: BillingUpdateOutput;
@@ -1196,6 +1370,7 @@ export type Mutation = {
   updateApiKey?: Maybe<ApiKey>;
   updateDatabaseConfigVariable: Scalars['Boolean'];
   updateLabPublicFeatureFlag: FeatureFlagDto;
+  updateMktOrderWithItems: MktOrderOutput;
   updateOneAgent: Agent;
   updateOneField: Field;
   updateOneObject: Object;
@@ -1289,6 +1464,11 @@ export type MutationCreateFileArgs = {
 };
 
 
+export type MutationCreateMktOrderWithItemsArgs = {
+  input: CreateOrderWithItemsInput;
+};
+
+
 export type MutationCreateOidcIdentityProviderArgs = {
   input: SetupOidcSsoInput;
 };
@@ -1329,6 +1509,12 @@ export type MutationCreateOneRoleArgs = {
 
 export type MutationCreateOneServerlessFunctionArgs = {
   input: CreateServerlessFunctionInput;
+};
+
+
+export type MutationCreatePersonUserArgs = {
+  input: CreateUserInput;
+  workspaceId: Scalars['String'];
 };
 
 
@@ -1501,6 +1687,11 @@ export type MutationRenewTokenArgs = {
 };
 
 
+export type MutationReorderOrganizationLevelsArgs = {
+  levelIds: Array<Scalars['String']>;
+};
+
+
 export type MutationResendEmailVerificationTokenArgs = {
   email: Scalars['String'];
   origin: Scalars['String'];
@@ -1561,6 +1752,11 @@ export type MutationSignUpInWorkspaceArgs = {
 };
 
 
+export type MutationSoftDeleteMktOrderArgs = {
+  input: DeleteOrderInput;
+};
+
+
 export type MutationSubmitFormStepArgs = {
   input: SubmitFormStepInput;
 };
@@ -1602,6 +1798,11 @@ export type MutationUpdateDatabaseConfigVariableArgs = {
 
 export type MutationUpdateLabPublicFeatureFlagArgs = {
   input: UpdateLabPublicFeatureFlagInput;
+};
+
+
+export type MutationUpdateMktOrderWithItemsArgs = {
+  input: UpdateOrderInput;
 };
 
 
@@ -1878,6 +2079,84 @@ export type OnboardingStepSuccess = {
   success: Scalars['Boolean'];
 };
 
+export enum OrderSortBy {
+  CREATED_AT = 'CREATED_AT',
+  NAME = 'NAME',
+  ORDER_CODE = 'ORDER_CODE',
+  TOTAL_AMOUNT = 'TOTAL_AMOUNT',
+  UPDATED_AT = 'UPDATED_AT'
+}
+
+/** Order status enum */
+export enum OrderStatus {
+  /** Order is completed */
+  COMPLETED = 'COMPLETED',
+  /** Order is draft */
+  DRAFT = 'DRAFT',
+  /** Order is overdue */
+  OVERDUE = 'OVERDUE',
+  /** Order is refused */
+  REFUSE = 'REFUSE',
+  /** Order is in trial period */
+  TRIAL = 'TRIAL',
+  /** Order is waiting */
+  WAIT = 'WAIT'
+}
+
+export type OrganizationLevelHierarchyNode = {
+  __typename?: 'OrganizationLevelHierarchyNode';
+  accessLimitations?: Maybe<Scalars['JSON']>;
+  activeEmployees: Scalars['Int'];
+  children: Array<OrganizationLevelHierarchyNode>;
+  createdAt: Scalars['DateTime'];
+  defaultPermissions?: Maybe<Scalars['JSON']>;
+  description?: Maybe<Scalars['String']>;
+  directChildrenCount: Scalars['Int'];
+  displayOrder: Scalars['Int'];
+  hierarchyLevel: Scalars['Int'];
+  id: Scalars['String'];
+  isActive?: Maybe<Scalars['Boolean']>;
+  levelCode: Scalars['String'];
+  levelName: Scalars['String'];
+  levelNameEn?: Maybe<Scalars['String']>;
+  parent?: Maybe<OrganizationLevelHierarchyNode>;
+  parentLevelId?: Maybe<Scalars['String']>;
+  totalDescendantsCount: Scalars['Int'];
+  totalEmployees: Scalars['Int'];
+  updatedAt: Scalars['DateTime'];
+};
+
+export type OrganizationLevelQueryOptions = {
+  /** Filter by specific hierarchy levels */
+  hierarchyLevels?: InputMaybe<Array<Scalars['Int']>>;
+  /** Include inactive organization levels */
+  includeInactive?: Scalars['Boolean'];
+  /** Include permission details in response */
+  includePermissions?: Scalars['Boolean'];
+  /** Include employee statistics in response */
+  includeStatistics?: Scalars['Boolean'];
+  /** Filter by specific level codes */
+  levelCodes?: InputMaybe<Array<Scalars['String']>>;
+  /** Maximum hierarchy depth to traverse */
+  maxDepth?: Scalars['Int'];
+};
+
+export type OrganizationLevelStatistics = {
+  __typename?: 'OrganizationLevelStatistics';
+  activeEmployees: Scalars['Int'];
+  activeLevels: Scalars['Int'];
+  employeesByLevel: Array<LevelEmployeeCount>;
+  hasCircularReferences: Scalars['Boolean'];
+  hasGapsInHierarchy: Scalars['Boolean'];
+  levelsExceedingRecommendedSize: Scalars['Int'];
+  levelsWithoutEmployees: Scalars['Int'];
+  maxHierarchyDepth: Scalars['Int'];
+  recommendations: Array<Scalars['String']>;
+  rootLevelsCount: Scalars['Int'];
+  totalEmployees: Scalars['Int'];
+  totalLevels: Scalars['Int'];
+};
+
 export type PageInfo = {
   __typename?: 'PageInfo';
   /** The cursor of the last returned record. */
@@ -1925,6 +2204,23 @@ export type PlaceDetailsResultDto = {
   location?: Maybe<LocationDto>;
   postcode?: Maybe<Scalars['String']>;
   state?: Maybe<Scalars['String']>;
+};
+
+export type PolicyCreationSummaryOutput = {
+  __typename?: 'PolicyCreationSummaryOutput';
+  missingPolicies: Array<Scalars['String']>;
+  policiesCreated: Scalars['Int'];
+  summary: Array<PolicySummaryItem>;
+  totalLevels: Scalars['Int'];
+};
+
+export type PolicySummaryItem = {
+  __typename?: 'PolicySummaryItem';
+  hasPolicyCreated: Scalars['Boolean'];
+  hierarchyLevel: Scalars['Int'];
+  levelCode: Scalars['String'];
+  levelName: Scalars['String'];
+  templateUsed: Scalars['String'];
 };
 
 export type PostgresCredentials = {
@@ -1988,11 +2284,24 @@ export type Query = {
   getApprovedAccessDomains: Array<ApprovedAccessDomain>;
   getAutoCompleteAddress: Array<AutocompleteResultDto>;
   getAvailablePackages: Scalars['JSON'];
+  getCompleteDepartmentStructure: Array<DepartmentTreeNode>;
   getConfigVariablesGrouped: ConfigVariablesOutput;
   getConnectedImapSmtpCaldavAccount: ConnectedImapSmtpCaldavAccount;
   getDatabaseConfigVariable: ConfigVariable;
+  getDepartmentAncestors: Array<DepartmentAncestor>;
+  getDepartmentDescendants: Array<DepartmentDescendant>;
+  getDepartmentForest: Array<DepartmentTreeNode>;
+  getDepartmentHierarchyTree: DepartmentTreeNode;
+  getDepartmentSubtree: DepartmentTreeNode;
+  getHierarchyStatistics: HierarchyStatistics;
   getIndicatorHealthStatus: AdminPanelHealthServiceData;
   getMeteredProductsUsage: Array<BillingMeteredProductUsageOutput>;
+  getMktOrderWithItems: MktOrderOutput;
+  getMktOrdersWithPaging: MktOrdersOutput;
+  getOrganizationLevelHierarchy: Array<OrganizationLevelHierarchyNode>;
+  getOrganizationLevelPath: Array<OrganizationLevelHierarchyNode>;
+  getOrganizationLevelPolicyCreationSummary: PolicyCreationSummaryOutput;
+  getOrganizationLevelStatistics: OrganizationLevelStatistics;
   getPostgresCredentials?: Maybe<PostgresCredentials>;
   getPublicWorkspaceDataByDomain: PublicWorkspaceDataOutput;
   getQueueMetrics: QueueMetricsData;
@@ -2113,6 +2422,11 @@ export type QueryGetAvailablePackagesArgs = {
 };
 
 
+export type QueryGetCompleteDepartmentStructureArgs = {
+  options?: InputMaybe<DepartmentTreeOptions>;
+};
+
+
 export type QueryGetConnectedImapSmtpCaldavAccountArgs = {
   id: Scalars['String'];
 };
@@ -2123,8 +2437,59 @@ export type QueryGetDatabaseConfigVariableArgs = {
 };
 
 
+export type QueryGetDepartmentAncestorsArgs = {
+  departmentId: Scalars['String'];
+  relationshipTypes?: InputMaybe<Array<Scalars['String']>>;
+};
+
+
+export type QueryGetDepartmentDescendantsArgs = {
+  departmentId: Scalars['String'];
+  maxDepth?: Scalars['Int'];
+  relationshipTypes?: InputMaybe<Array<Scalars['String']>>;
+};
+
+
+export type QueryGetDepartmentForestArgs = {
+  options?: InputMaybe<DepartmentTreeOptions>;
+  rootIds: Array<Scalars['String']>;
+};
+
+
+export type QueryGetDepartmentHierarchyTreeArgs = {
+  options?: InputMaybe<DepartmentTreeOptions>;
+  rootDepartmentId: Scalars['String'];
+};
+
+
+export type QueryGetDepartmentSubtreeArgs = {
+  departmentId: Scalars['String'];
+  options?: InputMaybe<DepartmentTreeOptions>;
+};
+
+
 export type QueryGetIndicatorHealthStatusArgs = {
   indicatorId: HealthIndicatorId;
+};
+
+
+export type QueryGetMktOrderWithItemsArgs = {
+  input: GetOrderInput;
+};
+
+
+export type QueryGetMktOrdersWithPagingArgs = {
+  input: GetOrdersInput;
+};
+
+
+export type QueryGetOrganizationLevelHierarchyArgs = {
+  options?: InputMaybe<OrganizationLevelQueryOptions>;
+};
+
+
+export type QueryGetOrganizationLevelPathArgs = {
+  levelId: Scalars['String'];
 };
 
 
@@ -2479,6 +2844,22 @@ export type SignedFileDto = {
   token: Scalars['String'];
 };
 
+export enum SortByOptions {
+  CREATED_AT = 'CREATED_AT',
+  DEPARTMENT_NAME = 'DEPARTMENT_NAME',
+  DISPLAY_ORDER = 'DISPLAY_ORDER'
+}
+
+export enum SortDirectionOptions {
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+
+export enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+
 export type StandardOverrides = {
   __typename?: 'StandardOverrides';
   description?: Maybe<Scalars['String']>;
@@ -2714,6 +3095,19 @@ export type UpdateOneObjectInput = {
   update: UpdateObjectPayload;
 };
 
+export type UpdateOrderInput = {
+  accountOwnerId?: InputMaybe<Scalars['String']>;
+  currency?: InputMaybe<Scalars['String']>;
+  id: Scalars['String'];
+  items?: InputMaybe<Array<CreateOrderItemInput>>;
+  name?: InputMaybe<Scalars['String']>;
+  note?: InputMaybe<Scalars['String']>;
+  position?: InputMaybe<Scalars['Float']>;
+  requireContract?: InputMaybe<Scalars['Boolean']>;
+  status?: InputMaybe<OrderStatus>;
+  totalAmount?: InputMaybe<Scalars['Float']>;
+};
+
 export type UpdateRemoteServerInput = {
   foreignDataWrapperOptions?: InputMaybe<Scalars['JSON']>;
   id: Scalars['String'];
@@ -2867,6 +3261,21 @@ export type UserMappingOptionsUser = {
   user?: Maybe<Scalars['String']>;
 };
 
+export type UserOutput = {
+  __typename?: 'UserOutput';
+  avatarUrl?: Maybe<Scalars['String']>;
+  canAdmin: Scalars['Boolean'];
+  canImpersonate: Scalars['Boolean'];
+  city?: Maybe<Scalars['String']>;
+  email: Scalars['String'];
+  firstName?: Maybe<Scalars['String']>;
+  isEmailVerified: Scalars['Boolean'];
+  jobTitle?: Maybe<Scalars['String']>;
+  language: Scalars['String'];
+  lastName?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+};
+
 export type UserWorkspace = {
   __typename?: 'UserWorkspace';
   createdAt: Scalars['DateTime'];
@@ -2894,6 +3303,14 @@ export type ValidatePasswordResetToken = {
   __typename?: 'ValidatePasswordResetToken';
   email: Scalars['String'];
   id: Scalars['String'];
+};
+
+export type ValidationError = {
+  __typename?: 'ValidationError';
+  code: Scalars['String'];
+  field: Scalars['String'];
+  message: Scalars['String'];
+  severity?: Maybe<Scalars['String']>;
 };
 
 export type VerifyTwoFactorAuthenticationMethodOutput = {
