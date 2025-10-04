@@ -26,7 +26,6 @@ import {
   STEP_PERFORMANCE_CONFIG,
   RESOURCE_TYPES,
   INCOMPATIBLE_COMBINATIONS,
-  HIERARCHY_LEVELS,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 import {
   VALIDATION_STEP_DESCRIPTIONS,
@@ -39,6 +38,11 @@ import {
   MktUserPermissionTemplateWorkspaceEntity,
   MktUserPermissionOverrideWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
+
+import { HierarchyLevelService } from './hierarchy-level.service';
+
+// Minimum priority threshold for granting elevated permissions
+const MIN_ELEVATED_PERMISSION_PRIORITY = 500; // TEMPLATE:SYSTEM_DEFAULT minimum priority
 
 /**
  * Action permission evaluation result
@@ -114,7 +118,10 @@ export class Step5ActionPermissionValidationService
     Step5ActionPermissionValidationService.name,
   );
 
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {
+  constructor(
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly hierarchyLevelService: HierarchyLevelService,
+  ) {
     this.logger.log('Step 5: Action Permission Validation Service initialized');
   }
 
@@ -191,7 +198,10 @@ export class Step5ActionPermissionValidationService
       }
 
       // Step 5.1: Classify the action
-      const actionClassification = this.classifyAction(context);
+      const actionClassification = await this.classifyAction(
+        context.userContext.workspaceId,
+        context,
+      );
 
       // Step 5.2: Check resource-action compatibility
       const compatibilityCheck = this.checkResourceActionCompatibility(
@@ -310,10 +320,12 @@ export class Step5ActionPermissionValidationService
 
   /**
    * Classify the action to determine its properties and requirements
+   * Now uses dynamic hierarchy levels from database instead of hardcoded values
    */
-  private classifyAction(
+  private async classifyAction(
+    workspaceId: string,
     context: EnhancedPermissionContext,
-  ): ActionClassification {
+  ): Promise<ActionClassification> {
     const action = context.action;
     const isFinancialResource =
       context.resourceContext.resourceType === RESOURCE_TYPES.FINANCIAL;
@@ -333,7 +345,11 @@ export class Step5ActionPermissionValidationService
           isSensitiveAction:
             isFinancialResource || context.resourceContext.isSensitive || false,
           minimumHierarchyLevel: isFinancialResource
-            ? HIERARCHY_LEVELS.MANAGER
+            ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
+                workspaceId,
+                'MEDIUM',
+                'BASIC_CRUD',
+              )
             : undefined,
           requiredPermissions: ['read'],
         };
@@ -349,7 +365,11 @@ export class Step5ActionPermissionValidationService
           isFinancialAction: isFinancialResource,
           isSensitiveAction: isFinancialResource,
           minimumHierarchyLevel: isFinancialResource
-            ? HIERARCHY_LEVELS.SENIOR_MANAGER
+            ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
+                workspaceId,
+                'HIGH',
+                'BASIC_CRUD',
+              )
             : undefined,
           requiredPermissions: ['write', 'update'],
         };
@@ -364,8 +384,16 @@ export class Step5ActionPermissionValidationService
           isFinancialAction: isFinancialResource,
           isSensitiveAction: true,
           minimumHierarchyLevel: isFinancialResource
-            ? HIERARCHY_LEVELS.DIRECTOR
-            : HIERARCHY_LEVELS.MANAGER,
+            ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
+                workspaceId,
+                'CRITICAL',
+                'BASIC_CRUD',
+              )
+            : await this.hierarchyLevelService.getMinimumHierarchyLevel(
+                workspaceId,
+                'MEDIUM',
+                'BASIC_CRUD',
+              ),
           requiredPermissions: ['delete'],
         };
 
@@ -384,8 +412,16 @@ export class Step5ActionPermissionValidationService
           isSensitiveAction: true,
           minimumHierarchyLevel:
             action === PermissionAction.BUDGET_MANAGEMENT
-              ? HIERARCHY_LEVELS.DIRECTOR
-              : HIERARCHY_LEVELS.SENIOR_MANAGER,
+              ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
+                  workspaceId,
+                  'CRITICAL',
+                  'FINANCIAL',
+                )
+              : await this.hierarchyLevelService.getMinimumHierarchyLevel(
+                  workspaceId,
+                  'HIGH',
+                  'FINANCIAL',
+                ),
           requiredPermissions: ['financial_access'],
         };
 
@@ -401,7 +437,12 @@ export class Step5ActionPermissionValidationService
           isBulkOperation: false,
           isFinancialAction: false,
           isSensitiveAction: true,
-          minimumHierarchyLevel: HIERARCHY_LEVELS.DIRECTOR,
+          minimumHierarchyLevel:
+            await this.hierarchyLevelService.getMinimumHierarchyLevel(
+              workspaceId,
+              'CRITICAL',
+              'SYSTEM',
+            ),
           requiredPermissions: ['system_admin'],
         };
 
@@ -418,7 +459,12 @@ export class Step5ActionPermissionValidationService
           isBulkOperation: true,
           isFinancialAction: isFinancialResource,
           isSensitiveAction: true,
-          minimumHierarchyLevel: HIERARCHY_LEVELS.MANAGER,
+          minimumHierarchyLevel:
+            await this.hierarchyLevelService.getMinimumHierarchyLevel(
+              workspaceId,
+              'MEDIUM',
+              'BULK_OPERATIONS',
+            ),
           requiredPermissions: ['bulk_operations'],
         };
 
@@ -432,7 +478,12 @@ export class Step5ActionPermissionValidationService
           isBulkOperation: false,
           isFinancialAction: isFinancialResource,
           isSensitiveAction: false,
-          minimumHierarchyLevel: HIERARCHY_LEVELS.MANAGER,
+          minimumHierarchyLevel:
+            await this.hierarchyLevelService.getMinimumHierarchyLevel(
+              workspaceId,
+              'MEDIUM',
+              'ADVANCED',
+            ),
           requiredPermissions: ['general_access'],
         };
     }
@@ -469,6 +520,7 @@ export class Step5ActionPermissionValidationService
     actionClassification: ActionClassification,
   ): Promise<ActionPermissionEvaluation> {
     const { userContext } = context;
+
     const workspaceId = userContext.workspaceId;
     const userId = userContext.id;
 
@@ -636,14 +688,24 @@ export class Step5ActionPermissionValidationService
       const userTemplateRepository =
         await this.getUserPermissionTemplateRepository(workspaceId);
 
+      this.logger.debug(
+        `Checking templates for user: ${userContext.id}, workspaceMemberId: ${userContext.workspaceMemberId || 'N/A'}`,
+      );
+
       // Get user's assigned templates
+      // Use workspaceMemberId if available, otherwise query via userId
+      const whereClause = userContext.workspaceMemberId
+        ? { workspaceMemberId: userContext.workspaceMemberId, isActive: true }
+        : { workspaceMember: { userId: userContext.id }, isActive: true };
+
       const userTemplateAssignments = await userTemplateRepository.find({
-        where: {
-          workspaceMember: { userId: userContext.id },
-          isActive: true,
-        },
+        where: whereClause,
         relations: ['template'],
       });
+
+      this.logger.debug(
+        `Found ${userTemplateAssignments.length} template assignments for user`,
+      );
 
       const appliedTemplates: string[] = [];
 
@@ -655,7 +717,11 @@ export class Step5ActionPermissionValidationService
           appliedTemplates.push(template.id);
 
           // For system templates or high priority templates, grant permission
-          if (template.isSystemTemplate || template.priority >= 80) {
+          // High priority = >= 500 (TEMPLATE:SYSTEM_DEFAULT baseline)
+          if (
+            template.isSystemTemplate ||
+            template.priority >= MIN_ELEVATED_PERMISSION_PRIORITY
+          ) {
             return {
               hasPermission: true,
               source: 'TEMPLATE_BASED',

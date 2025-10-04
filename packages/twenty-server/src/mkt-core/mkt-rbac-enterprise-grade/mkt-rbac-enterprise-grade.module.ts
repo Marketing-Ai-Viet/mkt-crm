@@ -21,6 +21,7 @@ import { Step15FinalDecisionService } from 'src/mkt-core/mkt-rbac-enterprise-gra
 import { RbacCacheManagerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache-manager.service';
 import { ValidationOrchestratorService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/validation-orchestrator.service';
 import { AuditLoggingInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/audit-logging.interceptor';
+import { HierarchyLevelService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/hierarchy-level.service';
 
 /**
  * Default configuration for Enterprise RBAC
@@ -64,7 +65,7 @@ const DEFAULT_CONFIG = {
     // Cache services
     RbacCacheManagerService,
 
-    // Other services
+    // Step services
     Step1PreValidationService,
     Step2UserContextResolutionService,
     Step3ResourceIdentificationService,
@@ -80,9 +81,13 @@ const DEFAULT_CONFIG = {
     Step13CachePerformanceService,
     Step14AuditLoggingService,
     Step15FinalDecisionService,
+    // Orchestrator
     ValidationOrchestratorService,
+    // Interceptors and Guards
     AuditLoggingInterceptor,
     EnterpriseRbacGuard,
+    // Hierarchy level service
+    HierarchyLevelService,
   ],
   exports: [
     // Export services
