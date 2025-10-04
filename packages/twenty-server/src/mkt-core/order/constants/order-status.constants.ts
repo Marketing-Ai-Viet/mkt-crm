@@ -2,6 +2,14 @@ import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/option
 
 export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV'; // Mặc định là 'DEV' nếu không có biến môi trường
 
+export type RefundItem = {
+  licenseId?: string | null;
+  refundAmount?: number | null;
+  remainingAmount?: number | null;
+  originalAmount?: number;
+  variant_name?: string;
+};
+
 export type ORDER_METADATA = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
   paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
@@ -13,6 +21,7 @@ export type ORDER_METADATA = {
   oldOrderId?: string;
   oldLicenseId?: string;
   oldVariantId?: string;
+  refund?: RefundItem[]; // Danh sách các mục hoàn tiền
 };
 
 export enum ORDER_STATUS {

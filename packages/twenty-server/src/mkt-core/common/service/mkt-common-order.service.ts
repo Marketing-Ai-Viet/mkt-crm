@@ -5,6 +5,7 @@ import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository
 import {
   ORDER_METADATA,
   ORDER_STATUS,
+  RefundItem,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
@@ -55,6 +56,7 @@ export class MktCommonOrderService {
     const orderRepository = await this.mktRepo.getOrderRepository();
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
+      metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
     };
 
     await orderRepository.update(updateOrder?.id, updateData);
@@ -84,5 +86,17 @@ export class MktCommonOrderService {
 
   async updateMetadata(updateMetadata: ORDER_METADATA) {
     this.orderMetadata = { ...this.orderMetadata, ...updateMetadata };
+  }
+
+  async updateRefundMetadata(newRefund: RefundItem) {
+    const refund = this.orderMetadata?.refund ?? [];
+    this.orderMetadata = {
+      ...this.orderMetadata,
+      refund: [...refund, newRefund],
+    };
+  }
+
+  getRefundHistory(): RefundItem[] {
+    return this.orderMetadata?.refund ?? [];
   }
 }
