@@ -2,6 +2,19 @@ import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/option
 
 export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV'; // Mặc định là 'DEV' nếu không có biến môi trường
 
+export type ORDER_METADATA = {
+  variants?: Array<{ mktVariantId: string; quantity?: number }>;
+  paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
+  customer?: { mktCustomerId: string; name?: string };
+  orderAction?: ORDER_ACTION;
+  trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi
+  authFirebase?: void;
+  note?: string;
+  oldOrderId?: string;
+  oldLicenseId?: string;
+  oldVariantId?: string;
+};
+
 export enum ORDER_STATUS {
   DRAFT = 'DRAFT', // đơn hàng mới tạo, chờ xử lý
   TRIAL = 'TRIAL', // đang ở trong giai đoạn trial
@@ -9,6 +22,7 @@ export enum ORDER_STATUS {
   WAIT = 'WAIT', // chờ xử lý (đơn hàng đã được tạo nhưng chưa xác nhận)
   OVERDUE = 'OVERDUE', // quá hạn (đơn hàng đã được tạo nhưng chưa thanh toán trong thời gian quy định)
   REFUSE = 'REFUSE', // từ chối (người mua/người bán)
+  REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
 }
 export enum ORDER_ACTION {
   DRAFT = 'DRAFT',
@@ -28,6 +42,8 @@ export enum ORDER_ACTION {
   OVERDUE = 'OVERDUE',
   REFUSE = 'REFUSE',
   LICENSE_RENEWING = 'LICENSE_RENEWING',
+  CHANGE_VARIANT = 'CHANGE_VARIANT',
+  REFUND = 'REFUND',
 }
 
 export const ORDER_STATUS_OPTIONS = [

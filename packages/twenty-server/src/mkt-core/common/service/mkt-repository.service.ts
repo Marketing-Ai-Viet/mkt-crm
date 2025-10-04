@@ -11,10 +11,11 @@ import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-orde
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 @Injectable()
 export class MktRepositoryService {
-  public workspaceId: string | null = null;
+  public workspaceId: string;
   constructor(
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
@@ -50,6 +51,10 @@ export class MktRepositoryService {
     );
   }
 
+  async getWorkspaceId() {
+    return this.scopedWorkspaceContextFactory.create().workspaceId;
+  }
+
   private async getRepositoryByWorkspaceId<Entity extends ObjectLiteral>(
     entityClass: Type<Entity>,
     workspaceId: string,
@@ -61,7 +66,7 @@ export class MktRepositoryService {
       );
     }
 
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<Entity>(
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<Entity>(
       workspaceId,
       entityClass,
       {
@@ -73,34 +78,38 @@ export class MktRepositoryService {
   }
 
   async getPaymentRepository() {
-    return this.getRepository(MktPaymentWorkspaceEntity);
+    return await this.getRepository(MktPaymentWorkspaceEntity);
+  }
+
+  async getVariantRepository() {
+    return await this.getRepository(MktVariantWorkspaceEntity);
   }
 
   async getLicenseHistoryRepository() {
-    return this.getRepository(MktLicenseHistoryWorkspaceEntity);
+    return await this.getRepository(MktLicenseHistoryWorkspaceEntity);
   }
 
   async getPaymentMethodRepository() {
-    return this.getRepository(MktPaymentMethodWorkspaceEntity);
+    return await this.getRepository(MktPaymentMethodWorkspaceEntity);
   }
 
   async getOrderRepository() {
-    return this.getRepository(MktOrderWorkspaceEntity);
+    return await this.getRepository(MktOrderWorkspaceEntity);
   }
 
   async getLicenseRepository() {
-    return this.getRepository(MktLicenseWorkspaceEntity);
+    return await this.getRepository(MktLicenseWorkspaceEntity);
   }
 
   async getLicenseRepositoryByWorkspaceId(workspaceId: string) {
-    return this.getRepositoryByWorkspaceId(
+    return await this.getRepositoryByWorkspaceId(
       MktLicenseWorkspaceEntity,
       workspaceId,
     );
   }
 
   async getOrderItemRepository() {
-    return this.getRepository(MktOrderItemWorkspaceEntity);
+    return await this.getRepository(MktOrderItemWorkspaceEntity);
   }
 
   async getOrderItemRepositoryByWorkspaceId(workspaceId: string) {
@@ -111,14 +120,14 @@ export class MktRepositoryService {
   }
 
   async getOrderRepositoryByWorkspaceId(workspaceId: string) {
-    return this.getRepositoryByWorkspaceId(
+    return await this.getRepositoryByWorkspaceId(
       MktOrderWorkspaceEntity,
       workspaceId,
     );
   }
 
   async getPaymentRepositoryByWorkspaceId(workspaceId: string) {
-    return this.getRepositoryByWorkspaceId(
+    return await this.getRepositoryByWorkspaceId(
       MktPaymentWorkspaceEntity,
       workspaceId,
     );

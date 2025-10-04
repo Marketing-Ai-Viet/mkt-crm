@@ -141,9 +141,8 @@ export class OrderService {
     status: ORDER_STATUS,
     trialLicense?: boolean,
     authFirebase?: void | FirebaseAuthResponse,
-    workspaceId: string | null = null,
+    _workspaceId: string | null = null,
   ) {
-    this.mktRepo.workspaceId = workspaceId;
     const orderRepository = await this.getOrderRepo();
 
     this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
@@ -211,6 +210,6 @@ export class OrderService {
   }
 
   private async getOrderRepo() {
-    return this.mktRepo.getOrderRepository();
+    return await this.mktRepo.getOrderRepository();
   }
 }

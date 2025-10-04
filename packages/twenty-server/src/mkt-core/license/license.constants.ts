@@ -6,6 +6,8 @@ export enum MKT_LICENSE_STATUS {
   REVOKED = 'REVOKED', // Bị thu hồi thủ công
   ERROR = 'ERROR', // Có lỗi, trạng thái không hợp lệ
   RENEWING = 'RENEWING', // Đang gia hạn
+  CHANGE_VARIANT = 'CHANGE_VARIANT', // Thay đổi sản phẩm license
+  REFUND = 'REFUND', // Hoàn tiền
 }
 
 export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
