@@ -29,7 +29,7 @@ export const seedUsers = async (dataSource: DataSource, schemaName: string) => {
         id: USER_DATA_SEED_IDS.TIM,
         firstName: 'Tim',
         lastName: 'Apple',
-        email: '1Tim@appledev',
+        email: 'tim@apple.dev',
         passwordHash:
           '$2a$10$WdsF1UMb6uYho4byxbIkMeYaiFJT.k2ofqb7UTSrR/55AEeGxUWsC', // 1Tim@appledev
         canImpersonate: true,
