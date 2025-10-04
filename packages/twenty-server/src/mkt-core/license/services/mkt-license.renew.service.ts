@@ -10,6 +10,7 @@ import {
   ORDER_METADATA,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants';
+import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { CALL_FIREBASE_DATA } from 'src/mkt-core/payment/constants/payment.type';
 
 @Injectable()
@@ -38,6 +39,172 @@ export class MktLicenseRenewService {
       oldOrderId: oldOrder?.id,
     });
     await this.processLicenseRenewal(licenseId, metadata, license);
+  }
+
+  async shouldRefundLicense(
+    status: string,
+    metadata: ORDER_METADATA,
+    licenseId: string,
+    license: MktLicenseWorkspaceEntity | null,
+  ) {
+    this.logger.log(`Refunding license with ID: ${licenseId}`);
+    this.logger.log(`status: ${status}`);
+    // Logic to refund the license
+    await this.processLicenseRefund(licenseId, metadata, license);
+  }
+
+  async processLicenseRefund(
+    licenseId: string,
+    metadata: ORDER_METADATA,
+    license: MktLicenseWorkspaceEntity | null,
+  ) {
+    const { variants: _variantsMeta, note } = metadata;
+
+    if (!license?.mktOrder) {
+      this.logger.error(`No order found for license ${licenseId}`);
+      throw new Error('Order is required for license refund');
+    }
+
+    const order = license.mktOrder;
+    const variantId = license.mktVariant?.id;
+
+    if (!variantId) {
+      this.logger.error(`No variant found for license ${licenseId}`);
+      throw new Error('Variant is required for license refund');
+    }
+
+    // Step 1: Find and update the order item
+    const orderItemRepo = await this.mktRepo.getOrderItemRepository();
+    const orderItems = await orderItemRepo.find({
+      where: {
+        mktOrderId: order.id,
+        mktVariantId: variantId,
+      },
+    });
+
+    if (!orderItems || orderItems.length === 0) {
+      this.logger.error(
+        `No order items found for license ${licenseId} with variant ${variantId}`,
+      );
+      throw new Error('Order item not found for refund');
+    }
+
+    // Find the order item with quantity > 0
+    const orderItem = orderItems.find((item) => (item.quantity || 0) > 0);
+    if (!orderItem) {
+      this.logger.error(
+        `No order item with quantity > 0 found for license ${licenseId}`,
+      );
+      throw new Error('No refundable order item found');
+    }
+
+    // Step 0: Revoke license via API call
+    await this.revokeLicenseViaApi(license, orderItem);
+
+    // Calculate refund amounts
+    const unitPrice = orderItem.unitPrice || 0;
+    const refundAmount = unitPrice;
+    const newQuantity = Math.max(0, (orderItem.quantity || 1) - 1);
+    const newTotalPrice = newQuantity * unitPrice;
+
+    // Update order item quantity and total price
+    await orderItemRepo.update(orderItem.id, {
+      quantity: newQuantity,
+      totalPrice: newTotalPrice,
+      totalAmountWithTax: newTotalPrice, // Assuming same as totalPrice for now
+    });
+
+    // Step 2: Recalculate and update order totals
+    const orderRepo = await this.mktRepo.getOrderRepository();
+    const updatedOrder = await orderRepo.findOne({
+      where: { id: order.id },
+      relations: ['orderItems'],
+    });
+
+    if (updatedOrder && updatedOrder.orderItems) {
+      const newSubtotal = updatedOrder.orderItems.reduce(
+        (total, item) => total + (item.totalPrice || 0),
+        0,
+      );
+      const newTax = updatedOrder.orderItems.reduce(
+        (total, item) => total + (item.taxAmount || 0),
+        0,
+      );
+      const newTotalAmount =
+        newSubtotal + newTax - (updatedOrder.discount || 0);
+
+      await orderRepo.update(order.id, {
+        subtotal: newSubtotal,
+        tax: newTax,
+        totalAmount: newTotalAmount,
+      });
+
+      // Step 3: Create accounting note
+      const accountingNote = this.createAccountingNote(
+        licenseId,
+        refundAmount,
+        newTotalAmount,
+        order.totalAmount || 0,
+        orderItem,
+      );
+
+      // Step 4: Update order note with accounting information
+      const existingNote = order.note || '';
+      const updatedNote = existingNote
+        ? `${existingNote}\n\n${accountingNote}`
+        : accountingNote;
+
+      if (note) {
+        const additionalNote = `\nGhi chú thêm: ${note}`;
+        await orderRepo.update(order.id, {
+          note: `${updatedNote}${additionalNote}`,
+        });
+      } else {
+        await orderRepo.update(order.id, {
+          note: updatedNote,
+        });
+      }
+
+      this.logger.log(
+        `License ${licenseId} refunded successfully. ` +
+          `Refund amount: ${refundAmount}, ` +
+          `Order total before: ${order.totalAmount}, ` +
+          `Order total after: ${newTotalAmount}`,
+      );
+    } else {
+      throw new Error('Failed to recalculate order totals after refund');
+    }
+
+    // Step 5: Update order status
+    await this.mktCommonOrderService.updateOrderForRefund(
+      ORDER_STATUS.REFUND,
+      license?.mktOrder ?? null,
+    );
+  }
+
+  private createAccountingNote(
+    licenseId: string,
+    refundAmount: number,
+    remainingAmount: number,
+    originalAmount: number,
+    orderItem: { name?: string } = {},
+  ): string {
+    const timestamp = new Date().toISOString();
+    return `[KẾ TOÁN HOÀN TIỀN - ${timestamp}]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 THÔNG TIN HOÀN TIỀN:
+• License ID: ${licenseId}
+• 1 license đã thu hồi
+• Sản phẩm: ${orderItem.name}
+• Số tiền cần hoàn: ${refundAmount.toLocaleString('vi-VN')} VNĐ
+• Số tiền order ban đầu: ${originalAmount.toLocaleString('vi-VN')} VNĐ  
+• Số tiền order còn lại: ${remainingAmount.toLocaleString('vi-VN')} VNĐ
+
+⚠️  CẦN XÁC NHẬN:
+- Kế toán vui lòng hoàn tiền cho khách hàng
+- Xác nhận hoàn tiền thành công
+- Cập nhật trạng thái thanh toán
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   }
 
   async shouldChangeVariantForLicense(
@@ -146,6 +313,71 @@ export class MktLicenseRenewService {
       authFirebase,
     );
     this.logger.log(`License ${licenseId} renewed successfully.`);
+  }
+
+  /**
+   * Revoke license via API call
+   * Based on linkLicensesForOrderItems pattern from mkt.common-order.confirm.service.ts
+   */
+  private async revokeLicenseViaApi(
+    license: MktLicenseWorkspaceEntity | null,
+    orderItem: MktOrderItemWorkspaceEntity,
+  ): Promise<void> {
+    if (!license) {
+      this.logger.error('No license provided for revocation');
+      throw new Error('License is required for revocation');
+    }
+
+    try {
+      this.logger.log(`Revoking license ${license.id} via API`);
+
+      // Call API to revoke license - similar to fetchLicenseFromApi pattern
+      const _apiUrl =
+        process.env.LICENSE_REVOKE_API_URL ||
+        process.env.LICENSE_API_URL ||
+        'https://api.license-provider.com/licenses/revoke';
+
+      const requestBody = {
+        licenseId: license.id,
+        licenseUuid: license.licenseUuid,
+        licenseKey: license.licenseKey,
+        orderId: license.mktOrder?.id,
+        orderItemId: orderItem.id,
+        reason: 'REFUND_REQUESTED',
+        revokedAt: new Date().toISOString(),
+      };
+
+      this.logger.log('License revocation request body:', requestBody);
+
+      // Make API call (commented out for now as it's a mock implementation)
+      // const response = await firstValueFrom(
+      //   this.httpService.post(apiUrl, requestBody),
+      // );
+      // this.logger.log('License revocation API response:', response.data);
+
+      // Mock implementation for now
+      this.logger.log(
+        `Mock: Successfully revoked license ${license.id} via API`,
+      );
+
+      // Update license status to REVOKED
+      // const licenseRepo = await this.mktRepo.getLicenseRepository();
+      // await licenseRepo.update(license.id, {
+      //   status: MKT_LICENSE_STATUS.REVOKED,
+      //   notes:
+      //     `License revoked for refund. Order: ${license.mktOrder?.id}. ${license.notes || ''}`.trim(),
+      // });
+
+      this.logger.log(
+        `Successfully updated license ${license.id} status to REVOKED`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to revoke license ${license?.id} via API:`,
+        error,
+      );
+      //throw new Error(`License revocation failed: ${error.message}`);
+    }
   }
 
   private async createOrder() {

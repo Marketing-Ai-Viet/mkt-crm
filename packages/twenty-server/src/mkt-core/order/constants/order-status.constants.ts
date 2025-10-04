@@ -22,6 +22,7 @@ export enum ORDER_STATUS {
   WAIT = 'WAIT', // chờ xử lý (đơn hàng đã được tạo nhưng chưa xác nhận)
   OVERDUE = 'OVERDUE', // quá hạn (đơn hàng đã được tạo nhưng chưa thanh toán trong thời gian quy định)
   REFUSE = 'REFUSE', // từ chối (người mua/người bán)
+  REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
 }
 export enum ORDER_ACTION {
   DRAFT = 'DRAFT',

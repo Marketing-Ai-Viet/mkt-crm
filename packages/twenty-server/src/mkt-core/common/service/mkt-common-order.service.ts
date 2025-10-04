@@ -47,6 +47,18 @@ export class MktCommonOrderService {
     await orderRepository.update(orderId, updateData);
   }
 
+  async updateOrderForRefund(
+    status: ORDER_STATUS,
+    updateOrder: MktOrderWorkspaceEntity | null,
+  ) {
+    if (!updateOrder?.id) return;
+    const orderRepository = await this.mktRepo.getOrderRepository();
+    const updateData: Partial<MktOrderWorkspaceEntity> = {
+      status,
+    };
+    await orderRepository.update(updateOrder?.id, updateData);
+  }
+
   async updateFirstMetadata(
     oldOrder: MktOrderWorkspaceEntity | null | undefined,
     updateMetadata: ORDER_METADATA,

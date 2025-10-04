@@ -120,7 +120,15 @@ export class MktLicenseUpdateOnePreQueryHook
     }
 
     if (status === MKT_LICENSE_STATUS.REFUND) {
-      const newMetadata: Metadata = await this.makeMetadataForRefund();
+      const newMetadata: ORDER_METADATA =
+        await this.makeMetadataForRefund(license);
+
+      await this.mktLicenseRenewService.shouldRefundLicense(
+        status,
+        newMetadata,
+        licenseId,
+        license,
+      );
 
       return {
         ...payload,
@@ -188,9 +196,17 @@ export class MktLicenseUpdateOnePreQueryHook
     };
   }
 
-  async makeMetadataForRefund(): Promise<Metadata> {
+  async makeMetadataForRefund(
+    license: MktLicenseWorkspaceEntity | null,
+  ): Promise<ORDER_METADATA> {
     return {
       orderAction: ORDER_ACTION.REFUND,
+      variants: [
+        {
+          mktVariantId: license?.mktVariantId || 'unknown',
+          quantity: 1,
+        },
+      ],
     };
   }
 

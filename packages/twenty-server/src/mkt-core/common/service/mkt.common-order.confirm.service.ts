@@ -337,6 +337,83 @@ export class MktOrderCommonConfirmService {
     return await this.createPaymentFromOrder(paymentData, paymentMethodsMeta);
   }
 
+  async refundOrder(
+    action: ORDER_ACTION,
+    licenseId: string,
+    refundOrder: MktOrderWorkspaceEntity | null,
+    note?: string,
+  ) {
+    if (!refundOrder?.id) return;
+    if (action !== ORDER_ACTION.REFUND)
+      throw new Error('Action must be REFUND to refund order');
+
+    const orderRepository = await this.mktRepo.getOrderRepository();
+
+    // Create refund note
+    const refundNote = `[REFUND - ${new Date().toISOString()}] Cần hoàn tiền cho khách hàng. Vui lòng xác nhận sau khi đã hoàn tiền. Status: PENDING_REFUND. License ID: ${licenseId}`;
+
+    // Combine with existing note if any
+    const existingNote = refundOrder.note || '';
+    let updatedNote = existingNote
+      ? `${existingNote}\n\n${refundNote}`
+      : refundNote;
+    if (note) {
+      updatedNote = `${updatedNote}\n\n${note}`;
+    }
+
+    // Update order with all costs set to 0 and refund note
+    await orderRepository.update(refundOrder.id, {
+      subtotal: 0,
+      tax: 0,
+      discount: 0,
+      totalAmount: 0,
+      note: updatedNote,
+    });
+
+    this.logger.log(
+      `Order ${refundOrder.id} updated for refund. All costs set to 0. License ID: ${licenseId}`,
+    );
+  }
+
+  /**
+   * Confirm refund completion for an order
+   */
+  async confirmRefundCompleted(
+    orderId: string,
+    refundDetails?: string,
+  ): Promise<void> {
+    const orderRepository = await this.mktRepo.getOrderRepository();
+
+    const order = await orderRepository.findOne({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new Error(`Order with ID ${orderId} not found`);
+    }
+
+    // Create confirmation note
+    const confirmationNote = `[REFUND CONFIRMED - ${new Date().toISOString()}] Đã hoàn tiền thành công cho khách hàng.`;
+    const additionalDetails = refundDetails
+      ? ` Chi tiết: ${refundDetails}`
+      : '';
+    const fullConfirmationNote = `${confirmationNote}${additionalDetails}`;
+
+    // Combine with existing note
+    const existingNote = order.note || '';
+    const updatedNote = existingNote
+      ? `${existingNote}\n\n${fullConfirmationNote}`
+      : fullConfirmationNote;
+
+    await orderRepository.update(orderId, {
+      note: updatedNote,
+    });
+
+    this.logger.log(
+      `Refund confirmed for order ${orderId}. Details: ${refundDetails || 'No additional details'}`,
+    );
+  }
+
   private async createOrderItemsFromVariants(
     variantsMeta: Metadata['variants'] | null,
     createdOrder: MktOrderWorkspaceEntity,
