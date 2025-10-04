@@ -35,6 +35,7 @@ import {
   MktPermissionTemplateWorkspaceEntity,
   MktUserPermissionTemplateWorkspaceEntity,
   MktUserPermissionOverrideWorkspaceEntity,
+  MktPermissionPriorityConfigWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
 
 interface DepartmentInfo {
@@ -149,6 +150,224 @@ export class Step4PermissionTemplateCheckService
       'mktUserPermissionOverride',
       { shouldBypassPermissionChecks: true },
     );
+  }
+
+  /**
+   * Get Permission Priority Config Repository for workspace
+   */
+  private async getPermissionPriorityConfigRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<MktPermissionPriorityConfigWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPermissionPriorityConfigWorkspaceEntity>(
+      workspaceId,
+      'mktPermissionPriorityConfig',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
+   * Get priority from config based on source type and subtype
+   */
+  private async getPriorityFromConfig(
+    workspaceId: string,
+    sourceType: 'TEMPLATE' | 'OVERRIDE' | 'POLICY',
+    sourceSubType: string,
+    metadata?: {
+      hierarchyLevel?: number;
+      minHierarchyLevel?: number;
+      departmentId?: string;
+      isSystemTemplate?: boolean;
+      isDefaultTemplate?: boolean;
+      reason?: string;
+      isAllowed?: boolean;
+      filterRules?: object;
+    },
+  ): Promise<number> {
+    try {
+      const configRepository =
+        await this.getPermissionPriorityConfigRepository(workspaceId);
+
+      // Find matching config
+      const config = await configRepository.findOne({
+        where: {
+          sourceType: sourceType,
+          sourceSubType: sourceSubType,
+          isActive: true,
+        },
+      });
+
+      if (!config) {
+        this.logger.warn(
+          `No priority config found for ${sourceType}:${sourceSubType}, using default`,
+        );
+
+        // Default fallback priorities
+        const defaultPriorities = {
+          OVERRIDE: 5000,
+          TEMPLATE: 800,
+          POLICY: 80,
+        };
+
+        return defaultPriorities[sourceType] || 100;
+      }
+
+      // Check if conditions match
+      if (config.conditions && metadata) {
+        const conditionsMatch = this.checkConditionsMatch(
+          config.conditions as Record<string, unknown>,
+          metadata,
+        );
+
+        if (!conditionsMatch) {
+          this.logger.debug(
+            `Conditions don't match for config ${config.id}, using base priority`,
+          );
+
+          return config.basePriority;
+        }
+      }
+
+      // Calculate priority using formula
+      const calculatedPriority = this.evaluatePriorityFormula(
+        config.priorityFormula || 'basePriority',
+        {
+          basePriority: config.basePriority,
+          priorityBoost: config.priorityBoost || 0,
+          hierarchyLevel: metadata?.hierarchyLevel,
+          minHierarchyLevel: metadata?.minHierarchyLevel,
+        },
+      );
+
+      // Apply min/max constraints
+      const finalPriority = Math.max(
+        config.minPriority || 0,
+        Math.min(config.maxPriority || 999999, calculatedPriority),
+      );
+
+      this.logger.debug(
+        `Priority calculated for ${sourceType}:${sourceSubType} = ${finalPriority}`,
+      );
+
+      return finalPriority;
+    } catch (error) {
+      this.logger.error(`Error getting priority from config: ${error.message}`);
+
+      // Fallback to default priorities
+      const defaultPriorities = {
+        OVERRIDE: 5000,
+        TEMPLATE: 800,
+        POLICY: 80,
+      };
+
+      return defaultPriorities[sourceType] || 100;
+    }
+  }
+
+  /**
+   * Check if conditions match metadata
+   */
+  private checkConditionsMatch(
+    conditions: Record<string, unknown>,
+    metadata: Record<string, unknown>,
+  ): boolean {
+    for (const [key, value] of Object.entries(conditions)) {
+      const metadataValue = metadata[key];
+
+      // Handle array values (e.g., reason: ['COMPLIANCE_REQUIREMENT', 'AUDIT_REQUIREMENT'])
+      if (Array.isArray(value)) {
+        if (!value.includes(metadataValue)) {
+          return false;
+        }
+      }
+      // Handle object values (e.g., hierarchyLevel: { $gte: 1, $lte: 10 })
+      else if (typeof value === 'object' && value !== null) {
+        const objValue = value as Record<string, unknown>;
+        const numericMetadataValue =
+          typeof metadataValue === 'number' ? metadataValue : 0;
+
+        if (
+          objValue.$gte !== undefined &&
+          objValue.$gte !== null &&
+          numericMetadataValue < (objValue.$gte as number)
+        ) {
+          return false;
+        }
+
+        if (
+          objValue.$lte !== undefined &&
+          objValue.$lte !== null &&
+          numericMetadataValue > (objValue.$lte as number)
+        ) {
+          return false;
+        }
+
+        if (objValue.$exists !== undefined) {
+          const exists = metadataValue !== undefined && metadataValue !== null;
+
+          if (exists !== objValue.$exists) {
+            return false;
+          }
+        }
+      }
+      // Handle simple equality
+      else if (metadataValue !== value) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Evaluate priority formula with provided variables
+   */
+  private evaluatePriorityFormula(
+    formula: string,
+    variables: {
+      basePriority: number;
+      priorityBoost: number;
+      hierarchyLevel?: number;
+      minHierarchyLevel?: number;
+    },
+  ): number {
+    try {
+      // Handle common formula patterns
+      if (formula === 'basePriority') {
+        return variables.basePriority;
+      }
+
+      if (
+        formula === 'basePriority + (priorityBoost * (10 - hierarchyLevel))' &&
+        variables.hierarchyLevel !== undefined
+      ) {
+        return (
+          variables.basePriority +
+          variables.priorityBoost * (10 - variables.hierarchyLevel)
+        );
+      }
+
+      if (
+        formula ===
+          'basePriority + (priorityBoost * (10 - minHierarchyLevel))' &&
+        variables.minHierarchyLevel !== undefined
+      ) {
+        return (
+          variables.basePriority +
+          variables.priorityBoost * (10 - variables.minHierarchyLevel)
+        );
+      }
+
+      // Fallback to base priority if formula not recognized
+      this.logger.warn(
+        `Unknown formula: ${formula}, using basePriority as fallback`,
+      );
+
+      return variables.basePriority;
+    } catch (error) {
+      this.logger.error(`Error evaluating formula: ${error.message}`);
+
+      return variables.basePriority;
+    }
   }
 
   /**
@@ -368,12 +587,25 @@ export class Step4PermissionTemplateCheckService
       });
 
       // Convert database templates to our interface format
-      const templates: PermissionTemplateInterface[] = dbTemplates.map(
-        (template: MktPermissionTemplateWorkspaceEntity) => ({
+      const templates: PermissionTemplateInterface[] = [];
+
+      for (const template of dbTemplates) {
+        // Get priority from config for TEMPLATE type with ROLE_BASED subtype
+        const priority = await this.getPriorityFromConfig(
+          workspaceId,
+          'TEMPLATE',
+          'ROLE_BASED',
+          {
+            isSystemTemplate: template.isSystemTemplate,
+            hierarchyLevel: template.hierarchyLevel,
+          },
+        );
+
+        templates.push({
           id: template.id,
           name: template.templateName,
           templateType: 'ROLE_BASED',
-          priority: template.priority,
+          priority: priority,
           permissions: this.extractPermissionsFromTemplate(template),
           actions: this.extractActionsFromTemplate(template),
           resources: this.extractResourcesFromTemplate(template),
@@ -388,8 +620,8 @@ export class Step4PermissionTemplateCheckService
             version: template.version,
             source: 'database',
           },
-        }),
-      );
+        });
+      }
 
       this.logger.debug(
         `Found ${templates.length} role-based templates for roles: ${userRoles.join(', ')}`,
@@ -437,12 +669,24 @@ export class Step4PermissionTemplateCheckService
       });
 
       // Convert database templates to our interface format
-      const templates: PermissionTemplateInterface[] = dbTemplates.map(
-        (template: MktPermissionTemplateWorkspaceEntity) => ({
+      const templates: PermissionTemplateInterface[] = [];
+
+      for (const template of dbTemplates) {
+        // Get priority from config for TEMPLATE type with HIERARCHY_BASED subtype
+        const priority = await this.getPriorityFromConfig(
+          workspaceId,
+          'TEMPLATE',
+          'HIERARCHY_BASED',
+          {
+            hierarchyLevel: template.hierarchyLevel,
+          },
+        );
+
+        templates.push({
           id: template.id,
           name: template.templateName,
           templateType: 'HIERARCHY_BASED',
-          priority: template.priority,
+          priority: priority,
           permissions: this.extractPermissionsFromTemplate(template),
           actions: this.extractActionsFromTemplate(template),
           resources: this.extractResourcesFromTemplate(template),
@@ -457,8 +701,8 @@ export class Step4PermissionTemplateCheckService
             version: template.version,
             source: 'database',
           },
-        }),
-      );
+        });
+      }
 
       this.logger.debug(
         `Found ${templates.length} hierarchy-based templates for level: ${hierarchyLevel}`,
@@ -534,12 +778,24 @@ export class Step4PermissionTemplateCheckService
         ),
       );
 
-      const templates: PermissionTemplateInterface[] = relevantTemplates.map(
-        (template: MktPermissionTemplateWorkspaceEntity) => ({
+      const templates: PermissionTemplateInterface[] = [];
+
+      for (const template of relevantTemplates) {
+        // Get priority from config for TEMPLATE type with DEPARTMENT_BASED subtype
+        const priority = await this.getPriorityFromConfig(
+          workspaceId,
+          'TEMPLATE',
+          'DEPARTMENT_BASED',
+          {
+            departmentId: departmentId,
+          },
+        );
+
+        templates.push({
           id: template.id,
           name: template.templateName,
           templateType: 'DEPARTMENT_BASED',
-          priority: template.priority,
+          priority: priority,
           permissions: this.extractPermissionsFromTemplate(template),
           actions: this.extractActionsFromTemplate(template),
           resources: this.extractResourcesFromTemplate(template),
@@ -562,8 +818,8 @@ export class Step4PermissionTemplateCheckService
             version: template.version,
             source: 'database',
           },
-        }),
-      );
+        });
+      }
 
       this.logger.debug(
         `Found ${templates.length} department-based templates for department: ${departmentId}`,
@@ -622,64 +878,90 @@ export class Step4PermissionTemplateCheckService
       const templates: PermissionTemplateInterface[] = [];
 
       // Convert user template assignments to permission templates
-      userTemplateAssignments.forEach(
-        (assignment: MktUserPermissionTemplateWorkspaceEntity) => {
-          if (assignment.template && assignment.template.isActive) {
-            templates.push({
-              id: `user-template-${assignment.id}`,
-              name: `${assignment.template.templateName} (User Assignment)`,
-              templateType: 'CUSTOM',
-              priority: assignment.template.priority + 10, // User assignments get higher priority
-              permissions: this.extractPermissionsFromTemplate(
-                assignment.template,
-              ),
-              actions: this.extractActionsFromTemplate(assignment.template),
-              resources: this.extractResourcesFromTemplate(assignment.template),
-              conditions: this.extractConditionsFromTemplate(
-                assignment.template,
-              ),
-              restrictions: this.extractRestrictionsFromTemplate(
-                assignment.template,
-              ),
-              isActive: true,
-              effectiveFrom: new Date(assignment.assignedAt),
-              effectiveTo: assignment.expiresAt,
-              metadata: {
-                userId,
-                assignmentId: assignment.id,
-                assignmentReason: assignment.assignmentReason || '',
-                templateKey: assignment.template.templateKey || '',
-                source: 'user-assignment',
-              },
-            });
-          }
-        },
-      );
+      for (const assignment of userTemplateAssignments) {
+        if (assignment.template && assignment.template.isActive) {
+          // Get priority from config for TEMPLATE type
+          const priority = await this.getPriorityFromConfig(
+            workspaceId,
+            'TEMPLATE',
+            'ROLE_BASED', // User assignments are typically role-based templates
+            {
+              isSystemTemplate: assignment.template.isSystemTemplate,
+              hierarchyLevel: assignment.template.hierarchyLevel,
+            },
+          );
 
-      // Convert user permission overrides to permission templates
-      userOverrides.forEach(
-        (override: MktUserPermissionOverrideWorkspaceEntity) => {
           templates.push({
-            id: `user-override-${override.id}`,
-            name: `Permission Override - ${override.id}`,
+            id: `user-template-${assignment.id}`,
+            name: `${assignment.template.templateName} (User Assignment)`,
             templateType: 'CUSTOM',
-            priority: 150, // Overrides get highest priority
-            permissions: this.extractPermissionsFromOverride(override),
-            actions: this.extractActionsFromOverride(override),
-            resources: this.extractResourcesFromOverride(override),
-            conditions: [],
-            restrictions: [],
+            priority: priority + 10, // User assignments get slight boost
+            permissions: this.extractPermissionsFromTemplate(
+              assignment.template,
+            ),
+            actions: this.extractActionsFromTemplate(assignment.template),
+            resources: this.extractResourcesFromTemplate(assignment.template),
+            conditions: this.extractConditionsFromTemplate(assignment.template),
+            restrictions: this.extractRestrictionsFromTemplate(
+              assignment.template,
+            ),
             isActive: true,
-            effectiveFrom: new Date(override.createdAt),
-            effectiveTo: override.expiresAt,
+            effectiveFrom: new Date(assignment.assignedAt),
+            effectiveTo: assignment.expiresAt,
             metadata: {
               userId,
-              overrideId: override.id,
-              source: 'user-override',
+              assignmentId: assignment.id,
+              assignmentReason: assignment.assignmentReason || '',
+              templateKey: assignment.template.templateKey || '',
+              source: 'user-assignment',
             },
           });
-        },
-      );
+        }
+      }
+
+      // Convert user permission overrides to permission templates
+      for (const override of userOverrides) {
+        // Get priority from config for OVERRIDE type
+        // Determine sourceSubType based on override reason
+        const sourceSubType =
+          override.reason === 'EMERGENCY_ACCESS'
+            ? 'EMERGENCY'
+            : override.reason === 'COMPLIANCE_REQUIREMENT'
+              ? 'COMPLIANCE'
+              : override.reason === 'AUDIT_REQUIREMENT'
+                ? 'AUDIT'
+                : 'TEMPORARY_GRANT'; // Default
+
+        const priority = await this.getPriorityFromConfig(
+          workspaceId,
+          'OVERRIDE',
+          sourceSubType,
+          {
+            reason: override.reason,
+            isAllowed: override.isAllowed,
+          },
+        );
+
+        templates.push({
+          id: `user-override-${override.id}`,
+          name: `Permission Override - ${override.id}`,
+          templateType: 'CUSTOM',
+          priority: priority,
+          permissions: this.extractPermissionsFromOverride(override),
+          actions: this.extractActionsFromOverride(override),
+          resources: this.extractResourcesFromOverride(override),
+          conditions: [],
+          restrictions: [],
+          isActive: true,
+          effectiveFrom: new Date(override.createdAt),
+          effectiveTo: override.expiresAt,
+          metadata: {
+            userId,
+            overrideId: override.id,
+            source: 'user-override',
+          },
+        });
+      }
 
       this.logger.debug(
         `Found ${templates.length} custom templates for user: ${userId}`,
