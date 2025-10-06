@@ -17,6 +17,7 @@ export function mapGraphQLOrderStatusToEntity(
     [OrderStatusGraphQL.WAIT]: OrderStatus.WAIT,
     [OrderStatusGraphQL.OVERDUE]: OrderStatus.OVERDUE,
     [OrderStatusGraphQL.REFUSE]: OrderStatus.REFUSE,
+    [OrderStatusGraphQL.REFUND]: OrderStatus.REFUND,
   };
 
   const mappedStatus = statusMap[graphqlStatus];
@@ -41,6 +42,7 @@ export function mapEntityOrderStatusToGraphQL(
     [OrderStatus.WAIT]: OrderStatusGraphQL.WAIT,
     [OrderStatus.OVERDUE]: OrderStatusGraphQL.OVERDUE,
     [OrderStatus.REFUSE]: OrderStatusGraphQL.REFUSE,
+    [OrderStatus.REFUND]: OrderStatusGraphQL.REFUND,
   };
 
   const mappedStatus = statusMap[entityStatus];
