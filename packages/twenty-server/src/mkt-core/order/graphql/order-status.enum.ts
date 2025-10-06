@@ -9,6 +9,7 @@ export enum OrderStatusGraphQL {
   WAIT = OrderStatus.WAIT,
   OVERDUE = OrderStatus.OVERDUE,
   REFUSE = OrderStatus.REFUSE,
+  REFUND = OrderStatus.REFUND,
 }
 
 registerEnumType(OrderStatusGraphQL, {
@@ -32,6 +33,9 @@ registerEnumType(OrderStatusGraphQL, {
     },
     REFUSE: {
       description: 'Order is refused',
+    },
+    REFUND: {
+      description: 'Order is refunded',
     },
   },
 });
