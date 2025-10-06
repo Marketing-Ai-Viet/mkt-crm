@@ -58,15 +58,6 @@ export class MktSendmailTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   subject: string;
 
   @WorkspaceField({
-    standardId: MKT_SENDMAIL_TEMPLATE_FIELD_IDS.text,
-    type: FieldMetadataType.TEXT,
-    label: msg`Text Content`,
-    description: msg`Plain text content of the email (no HTML)`,
-    icon: 'IconFileText',
-  })
-  text: string;
-
-  @WorkspaceField({
     standardId: MKT_SENDMAIL_TEMPLATE_FIELD_IDS.body,
     type: FieldMetadataType.TEXT,
     label: msg`HTML Body`,

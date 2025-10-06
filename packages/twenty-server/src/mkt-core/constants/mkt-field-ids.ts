@@ -636,7 +636,6 @@ export const MKT_SENDMAIL_TEMPLATE_FIELD_IDS = {
   type: '8d929665-d33f-4c4a-af8e-ae5528dcae8b',
   subject: '4328ed8f-1534-43c2-a7ae-08de53ae0963',
   body: 'a512224b-3afe-4802-91fa-5082f70a29b0',
-  text: '91289665-d33f-4c4a-af8e-ae5528dcae8b',
   name: '67b895c1-8407-49e9-b10a-25243420ae21',
   code: '594c7d4c-cd8c-43fc-9e8f-a281e937f6e9',
   language: '794c7d4c-cd8c-43fc-9e8f-a281e937f6e9',

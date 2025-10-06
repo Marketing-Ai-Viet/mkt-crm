@@ -222,7 +222,6 @@ export class UserManagementService {
         from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
         to: email,
         subject: sendmailTemplate.subject,
-        text: sendmailTemplate.text.replace('{{password}}', passwordRandom),
         html: sendmailTemplate.body.replace('{{password}}', passwordRandom),
       });
     } catch (error) {
