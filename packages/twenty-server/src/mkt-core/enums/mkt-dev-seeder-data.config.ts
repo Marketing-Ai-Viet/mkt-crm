@@ -108,6 +108,10 @@ import {
   MKT_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-template-data-seeds.constants';
 import {
+  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import {
   MKT_TEMPORARY_PERMISSION_DATA_SEED_COLUMNS,
   MKT_TEMPORARY_PERMISSION_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-temporary-permission-data-seeds.constants';
@@ -371,5 +375,10 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktPermissionAudit',
     pgColumns: MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PERMISSION_AUDIT_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktSendmailTemplate',
+    pgColumns: MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
   },
 ];
