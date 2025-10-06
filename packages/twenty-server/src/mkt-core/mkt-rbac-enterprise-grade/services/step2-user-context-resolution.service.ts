@@ -31,6 +31,10 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import {
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
@@ -154,7 +158,7 @@ export class Step2UserContextResolutionService
       }
 
       // 2. Try to get cached user context first
-      const cacheKey = `rbac:user:context:${baseUserContext.workspaceMemberId}`;
+      const cacheKey = `${RBAC_CACHE_KEYS.USER_CONTEXT}:${baseUserContext.workspaceMemberId}`;
 
       if (this.cacheManager) {
         const cachedContext =
@@ -206,12 +210,12 @@ export class Step2UserContextResolutionService
         departmentContext,
       );
 
-      // 7. Cache the enhanced user context (15 minutes TTL)
+      // 7. Cache the enhanced user context (using centralized TTL constant)
       if (this.cacheManager) {
         await this.cacheManager.set(
           cacheKey,
           enhancedUserContext,
-          15 * 60 * 1000, // 15 minutes
+          RBAC_CACHE_TTL.STEP_RESULT, // 15 minutes
         );
         this.logger.debug(
           `Cache SET: User context for ${baseUserContext.workspaceMemberId}`,

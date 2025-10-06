@@ -465,7 +465,7 @@ export class Step4PermissionTemplateCheckService
       const workspaceMemberId = context.userContext.workspaceMemberId;
 
       // Try cache first for user's template assignments
-      const cacheKey = `rbac:user:templates:${workspaceMemberId}`;
+      const cacheKey = `${RBAC_CACHE_KEYS.TEMPLATE_PERMISSIONS}:user:${workspaceMemberId}`;
 
       if (this.cacheManager) {
         const cachedTemplateContext =
@@ -562,10 +562,10 @@ export class Step4PermissionTemplateCheckService
         await this.cacheManager.set(
           cacheKey,
           context.templateContext,
-          10 * 60 * 1000,
+          RBAC_CACHE_TTL.SIMPLIFIED_RESULT,
         );
         this.logger.debug(
-          `Cache SET: Template context for ${workspaceMemberId} with 10min TTL`,
+          `Cache SET: Template context for ${workspaceMemberId} with SIMPLIFIED_RESULT TTL`,
         );
       }
 

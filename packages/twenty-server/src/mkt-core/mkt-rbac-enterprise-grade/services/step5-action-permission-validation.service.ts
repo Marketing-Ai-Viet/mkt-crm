@@ -475,7 +475,7 @@ export class Step5ActionPermissionValidationService
     const resourceType = context.resourceContext.resourceType;
 
     // Try cache first - action classifications are static
-    const cacheKey = `rbac:action:classification:${action}:${resourceType}`;
+    const cacheKey = `${RBAC_CACHE_KEYS.ACTION_VALIDATION}:classification:${action}:${resourceType}`;
 
     if (this.cacheManager) {
       const cachedClassification =
@@ -665,11 +665,15 @@ export class Step5ActionPermissionValidationService
         break;
     }
 
-    // Cache the classification result (1 hour TTL - static data)
+    // Cache the classification result (using centralized TTL constant - static data)
     if (this.cacheManager && classification) {
-      await this.cacheManager.set(cacheKey, classification, 60 * 60 * 1000);
+      await this.cacheManager.set(
+        cacheKey,
+        classification,
+        RBAC_CACHE_TTL.ACTION_CHECK,
+      );
       this.logger.debug(
-        `Cache SET: Action classification for ${action}:${resourceType} with 1h TTL`,
+        `Cache SET: Action classification for ${action}:${resourceType} with ACTION_CHECK TTL`,
       );
     }
 
@@ -744,6 +748,7 @@ export class Step5ActionPermissionValidationService
       if (hierarchyPermission.hasPermission) {
         return hierarchyPermission;
       }
+      console.log('hierarchyPermission', hierarchyPermission);
 
       // No permissions found - return system default
       return {

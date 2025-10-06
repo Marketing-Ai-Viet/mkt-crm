@@ -7,6 +7,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import {
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
@@ -62,7 +66,7 @@ export class HierarchyLevelService {
     workspaceId: string,
     forceRefresh = false,
   ): Promise<OrganizationLevel[]> {
-    const cacheKey = `rbac:hierarchy:org-levels:${workspaceId}`;
+    const cacheKey = `${RBAC_CACHE_KEYS.HIERARCHY_CACHE}:org-levels:${workspaceId}`;
 
     // Layer 1: Try RbacCacheManager (Redis) first
     if (!forceRefresh && this.cacheManager) {
@@ -110,8 +114,8 @@ export class HierarchyLevelService {
       this.updateMemoryCache(workspaceId, levels);
 
       if (this.cacheManager) {
-        // Use EXTENDED TTL for org levels (24 hours) - rarely changes
-        await this.cacheManager.set(cacheKey, levels, 24 * 60 * 60 * 1000);
+        // Use EXTENDED TTL for org levels (using centralized constant) - rarely changes
+        await this.cacheManager.set(cacheKey, levels, RBAC_CACHE_TTL.EXTENDED);
       }
 
       this.logger.log(
@@ -201,7 +205,7 @@ export class HierarchyLevelService {
     actionRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
     actionCategory: string,
   ): Promise<number | undefined> {
-    const cacheKey = `rbac:hierarchy:min-level:${workspaceId}:${actionRiskLevel}:${actionCategory}`;
+    const cacheKey = `${RBAC_CACHE_KEYS.HIERARCHY_CACHE}:min-level:${workspaceId}:${actionRiskLevel}:${actionCategory}`;
 
     // Try cache first
     if (this.cacheManager) {
@@ -239,9 +243,13 @@ export class HierarchyLevelService {
       minLevel = riskLevelMap[actionRiskLevel];
     }
 
-    // Cache the computed result (30 minutes TTL)
+    // Cache the computed result (using centralized TTL constant)
     if (this.cacheManager && minLevel !== undefined) {
-      await this.cacheManager.set(cacheKey, minLevel, 30 * 60 * 1000);
+      await this.cacheManager.set(
+        cacheKey,
+        minLevel,
+        RBAC_CACHE_TTL.RESOURCE_META,
+      );
     }
 
     this.logger.debug(
