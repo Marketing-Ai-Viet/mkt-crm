@@ -90,6 +90,7 @@ export class MktCommonOrderService {
 
   async updateRefundMetadata(newRefund: RefundItem) {
     const refund = this.orderMetadata?.refund ?? [];
+
     this.orderMetadata = {
       ...this.orderMetadata,
       refund: [...refund, newRefund],

@@ -215,6 +215,7 @@ export class MktLicenseRenewService {
 
     // Tạo danh sách chi tiết các lần hoàn tiền
     let refundDetails = '';
+
     if (refundHistory.length > 0) {
       refundDetails = '\n📋 CHI TIẾT HOÀN TIỀN:\n';
       refundHistory.forEach((refund, index) => {
