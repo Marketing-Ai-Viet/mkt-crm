@@ -4,7 +4,7 @@
  * Based on existing service patterns and Twenty.com database architecture
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { DateTime } from 'luxon';
 
@@ -37,6 +37,11 @@ import {
   MktUserPermissionOverrideWorkspaceEntity,
   MktPermissionPriorityConfigWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
+import { RbacCacheManagerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache-manager.service';
+import {
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 interface DepartmentInfo {
   parentDepartmentId?: string;
@@ -111,6 +116,7 @@ export class Step4PermissionTemplateCheckService
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {}
 
   /**
@@ -167,6 +173,7 @@ export class Step4PermissionTemplateCheckService
 
   /**
    * Get priority from config based on source type and subtype
+   * Now uses RbacCacheManagerService for better performance
    */
   private async getPriorityFromConfig(
     workspaceId: string,
@@ -184,17 +191,48 @@ export class Step4PermissionTemplateCheckService
     },
   ): Promise<number> {
     try {
-      const configRepository =
-        await this.getPermissionPriorityConfigRepository(workspaceId);
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_PRIORITY}:${workspaceId}:${sourceType}:${sourceSubType}`;
 
-      // Find matching config
-      const config = await configRepository.findOne({
-        where: {
-          sourceType: sourceType,
-          sourceSubType: sourceSubType,
-          isActive: true,
-        },
-      });
+      // Try cache first
+      let config: MktPermissionPriorityConfigWorkspaceEntity | null = null;
+
+      if (this.cacheManager) {
+        config =
+          await this.cacheManager.get<MktPermissionPriorityConfigWorkspaceEntity>(
+            cacheKey,
+          );
+
+        if (config) {
+          this.logger.debug(
+            `Cache HIT: Priority config ${sourceType}:${sourceSubType} (Redis)`,
+          );
+        }
+      }
+
+      // Load from DB if cache miss
+      if (!config) {
+        this.logger.debug(
+          `Cache MISS: Loading priority config from DB for ${sourceType}:${sourceSubType}`,
+        );
+
+        config = await this.loadPriorityConfigFromDB(
+          workspaceId,
+          sourceType,
+          sourceSubType,
+        );
+
+        // Cache for 6 hours (using centralized TTL constant)
+        if (this.cacheManager && config) {
+          await this.cacheManager.set(
+            cacheKey,
+            config,
+            RBAC_CACHE_TTL.CONFIG_PRIORITY,
+          );
+          this.logger.debug(
+            `Cache SET: Priority config ${sourceType}:${sourceSubType} with 6h TTL`,
+          );
+        }
+      }
 
       if (!config) {
         this.logger.warn(
@@ -261,6 +299,26 @@ export class Step4PermissionTemplateCheckService
 
       return defaultPriorities[sourceType] || 100;
     }
+  }
+
+  /**
+   * Load priority config directly from database (fallback when cache is unavailable)
+   */
+  private async loadPriorityConfigFromDB(
+    workspaceId: string,
+    sourceType: 'TEMPLATE' | 'OVERRIDE' | 'POLICY',
+    sourceSubType: string,
+  ): Promise<MktPermissionPriorityConfigWorkspaceEntity | null> {
+    const configRepository =
+      await this.getPermissionPriorityConfigRepository(workspaceId);
+
+    return await configRepository.findOne({
+      where: {
+        sourceType,
+        sourceSubType,
+        isActive: true,
+      },
+    });
   }
 
   /**
@@ -404,6 +462,50 @@ export class Step4PermissionTemplateCheckService
 
       // Get workspace repositories for permission templates
       const workspaceId = context.userContext.workspaceId;
+      const workspaceMemberId = context.userContext.workspaceMemberId;
+
+      // Try cache first for user's template assignments
+      const cacheKey = `rbac:user:templates:${workspaceMemberId}`;
+
+      if (this.cacheManager) {
+        const cachedTemplateContext =
+          await this.cacheManager.get<typeof context.templateContext>(cacheKey);
+
+        if (cachedTemplateContext) {
+          this.logger.debug(
+            `Cache HIT: Template context for ${workspaceMemberId} (Redis)`,
+          );
+
+          // Update context with cached template information
+          context.templateContext = {
+            ...cachedTemplateContext,
+            lastUpdated: DateTime.now().toJSDate(),
+          };
+
+          return {
+            result: CheckResult.PASS,
+            reason: 'Permission template check completed from cache',
+            continue: true,
+            executionTime: DateTime.now()
+              .diff(stepStartTime)
+              .as('milliseconds'),
+            metadata: {
+              templatesFound:
+                cachedTemplateContext.applicableTemplates?.length || 0,
+              conflicts: cachedTemplateContext.templateConflicts?.length || 0,
+              applicabilityScore: cachedTemplateContext.applicabilityScore || 0,
+              primaryTemplateType: this.getPrimaryTemplateType(
+                cachedTemplateContext.applicableTemplates || [],
+              ),
+              source: 'CACHE',
+            },
+          };
+        }
+      }
+
+      this.logger.debug(
+        `Cache MISS: Loading templates from database for ${workspaceMemberId}`,
+      );
 
       // Resolve applicable permission templates
       const permissionTemplateContext = await this.resolvePermissionTemplates(
@@ -455,6 +557,18 @@ export class Step4PermissionTemplateCheckService
         lastUpdated: DateTime.now().toJSDate(),
       };
 
+      // Cache the template context (10 minutes TTL)
+      if (this.cacheManager) {
+        await this.cacheManager.set(
+          cacheKey,
+          context.templateContext,
+          10 * 60 * 1000,
+        );
+        this.logger.debug(
+          `Cache SET: Template context for ${workspaceMemberId} with 10min TTL`,
+        );
+      }
+
       this.logger.debug(`Step 4: ${this.stepName} completed successfully`);
 
       return {
@@ -469,6 +583,7 @@ export class Step4PermissionTemplateCheckService
           primaryTemplateType: this.getPrimaryTemplateType(
             resolvedTemplates.finalTemplates,
           ),
+          source: 'DATABASE',
         },
       };
     } catch (error) {

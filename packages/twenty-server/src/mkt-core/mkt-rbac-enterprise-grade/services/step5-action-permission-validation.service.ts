@@ -5,7 +5,7 @@
  * Uses workspace entities only, no core module dependencies
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { DateTime } from 'luxon';
 
@@ -18,6 +18,7 @@ import {
   ActionPermissionContext,
   EnhancedPermissionContext,
   EnhancedUserContext,
+  OrganizationalHierarchyContext,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/enhanced-permission-context.type';
 import {
   CheckResult,
@@ -40,6 +41,7 @@ import {
 } from 'src/mkt-core/mkt-permission-template/entities';
 
 import { HierarchyLevelService } from './hierarchy-level.service';
+import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
 // Minimum priority threshold for granting elevated permissions
 const MIN_ELEVATED_PERMISSION_PRIORITY = 500; // TEMPLATE:SYSTEM_DEFAULT minimum priority
@@ -121,6 +123,7 @@ export class Step5ActionPermissionValidationService
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly hierarchyLevelService: HierarchyLevelService,
+    @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {
     this.logger.log('Step 5: Action Permission Validation Service initialized');
   }
@@ -327,15 +330,40 @@ export class Step5ActionPermissionValidationService
     context: EnhancedPermissionContext,
   ): Promise<ActionClassification> {
     const action = context.action;
+    const resourceType = context.resourceContext.resourceType;
+
+    // Try cache first - action classifications are static
+    const cacheKey = `rbac:action:classification:${action}:${resourceType}`;
+
+    if (this.cacheManager) {
+      const cachedClassification =
+        await this.cacheManager.get<ActionClassification>(cacheKey);
+
+      if (cachedClassification) {
+        this.logger.debug(
+          `Cache HIT: Action classification for ${action}:${resourceType} (Redis)`,
+        );
+
+        return cachedClassification;
+      }
+    }
+
+    this.logger.debug(
+      `Cache MISS: Computing action classification for ${action}:${resourceType}`,
+    );
+
     const isFinancialResource =
       context.resourceContext.resourceType === RESOURCE_TYPES.FINANCIAL;
     const isSystemResource =
       context.resourceContext.resourceType === RESOURCE_TYPES.SYSTEM_CONFIG;
 
+    // Compute classification
+    let classification: ActionClassification;
+
     // Basic CRUD actions
     switch (action) {
       case PermissionAction.READ:
-        return {
+        classification = {
           actionCategory: 'BASIC_CRUD',
           riskLevel: isFinancialResource ? 'MEDIUM' : 'LOW',
           requiresApproval: false,
@@ -353,10 +381,11 @@ export class Step5ActionPermissionValidationService
             : undefined,
           requiredPermissions: ['read'],
         };
+        break;
 
       case PermissionAction.CREATE:
       case PermissionAction.UPDATE:
-        return {
+        classification = {
           actionCategory: 'BASIC_CRUD',
           riskLevel: isFinancialResource ? 'HIGH' : 'MEDIUM',
           requiresApproval: isFinancialResource,
@@ -373,9 +402,10 @@ export class Step5ActionPermissionValidationService
             : undefined,
           requiredPermissions: ['write', 'update'],
         };
+        break;
 
       case PermissionAction.DELETE:
-        return {
+        classification = {
           actionCategory: 'BASIC_CRUD',
           riskLevel: isFinancialResource ? 'CRITICAL' : 'HIGH',
           requiresApproval: true,
@@ -396,13 +426,14 @@ export class Step5ActionPermissionValidationService
               ),
           requiredPermissions: ['delete'],
         };
+        break;
 
       // Financial actions
       case PermissionAction.ACCESS_SALARY_DATA:
       case PermissionAction.APPROVE_TRANSACTIONS:
       case PermissionAction.VIEW_FINANCIAL_REPORTS:
       case PermissionAction.BUDGET_MANAGEMENT:
-        return {
+        classification = {
           actionCategory: 'FINANCIAL',
           riskLevel: 'CRITICAL',
           requiresApproval: true,
@@ -424,12 +455,13 @@ export class Step5ActionPermissionValidationService
                 ),
           requiredPermissions: ['financial_access'],
         };
+        break;
 
       // System actions
       case PermissionAction.CONFIGURE:
       case PermissionAction.MONITOR:
       case PermissionAction.AUDIT:
-        return {
+        classification = {
           actionCategory: 'SYSTEM',
           riskLevel: 'CRITICAL',
           requiresApproval: true,
@@ -445,13 +477,14 @@ export class Step5ActionPermissionValidationService
             ),
           requiredPermissions: ['system_admin'],
         };
+        break;
 
       // Bulk operations
       case PermissionAction.BULK_CREATE:
       case PermissionAction.BULK_UPDATE:
       case PermissionAction.BULK_DELETE:
       case PermissionAction.BULK_EXPORT:
-        return {
+        classification = {
           actionCategory: 'BULK_OPERATIONS',
           riskLevel: 'HIGH',
           requiresApproval: true,
@@ -467,10 +500,11 @@ export class Step5ActionPermissionValidationService
             ),
           requiredPermissions: ['bulk_operations'],
         };
+        break;
 
       // Default classification
       default:
-        return {
+        classification = {
           actionCategory: 'ADVANCED',
           riskLevel: 'MEDIUM',
           requiresApproval: true,
@@ -486,7 +520,18 @@ export class Step5ActionPermissionValidationService
             ),
           requiredPermissions: ['general_access'],
         };
+        break;
     }
+
+    // Cache the classification result (1 hour TTL - static data)
+    if (this.cacheManager && classification) {
+      await this.cacheManager.set(cacheKey, classification, 60 * 60 * 1000);
+      this.logger.debug(
+        `Cache SET: Action classification for ${action}:${resourceType} with 1h TTL`,
+      );
+    }
+
+    return classification;
   }
 
   /**
@@ -519,7 +564,7 @@ export class Step5ActionPermissionValidationService
     context: EnhancedPermissionContext,
     actionClassification: ActionClassification,
   ): Promise<ActionPermissionEvaluation> {
-    const { userContext } = context;
+    const { userContext, hierarchyContext } = context;
 
     const workspaceId = userContext.workspaceId;
     const userId = userContext.id;
@@ -551,6 +596,7 @@ export class Step5ActionPermissionValidationService
       const hierarchyPermission = this.checkHierarchyBasedPermissions(
         userContext,
         actionClassification,
+        hierarchyContext,
       );
 
       if (hierarchyPermission.hasPermission) {
@@ -782,9 +828,10 @@ export class Step5ActionPermissionValidationService
   private checkHierarchyBasedPermissions(
     userContext: EnhancedUserContext,
     actionClassification: ActionClassification,
+    hierarchyContext?: OrganizationalHierarchyContext,
   ): ActionPermissionEvaluation {
     // If no hierarchy level is set, deny access
-    if (userContext.hierarchyLevel === undefined) {
+    if (!hierarchyContext || hierarchyContext.userLevel === undefined) {
       return {
         hasPermission: false,
         source: 'HIERARCHY',

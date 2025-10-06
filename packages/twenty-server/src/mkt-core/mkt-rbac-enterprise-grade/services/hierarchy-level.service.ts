@@ -4,9 +4,11 @@
  * Thay thế hardcoded HIERARCHY_LEVELS constants
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+
+import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
 export type OrganizationLevel = {
   id: string;
@@ -36,6 +38,7 @@ export class HierarchyLevelService {
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {}
 
   /**
@@ -50,30 +53,51 @@ export class HierarchyLevelService {
   }
 
   /**
-   * Load hierarchy levels from database with caching
+   * Load hierarchy levels from database with multi-layer caching
+   * Layer 1: RbacCacheManager (shared Redis cache)
+   * Layer 2: In-memory cache (instance-specific)
+   * Layer 3: Database (fallback)
    */
   async getHierarchyLevels(
     workspaceId: string,
     forceRefresh = false,
   ): Promise<OrganizationLevel[]> {
-    // Check cache
-    if (!forceRefresh) {
-      const cached = this.cache.get(workspaceId);
+    const cacheKey = `rbac:hierarchy:org-levels:${workspaceId}`;
+
+    // Layer 1: Try RbacCacheManager (Redis) first
+    if (!forceRefresh && this.cacheManager) {
+      const cached = await this.cacheManager.get<OrganizationLevel[]>(cacheKey);
 
       if (cached) {
-        const age = Date.now() - cached.lastUpdated.getTime();
+        this.logger.debug(
+          `Cache HIT: Hierarchy levels for workspace ${workspaceId} (Redis)`,
+        );
+
+        // Update in-memory cache for faster subsequent access
+        this.updateMemoryCache(workspaceId, cached);
+
+        return cached;
+      }
+    }
+
+    // Layer 2: Check in-memory cache
+    if (!forceRefresh) {
+      const memCached = this.cache.get(workspaceId);
+
+      if (memCached) {
+        const age = Date.now() - memCached.lastUpdated.getTime();
 
         if (age < this.CACHE_TTL_MS) {
           this.logger.debug(
-            `Using cached hierarchy levels for workspace ${workspaceId}`,
+            `Cache HIT: Hierarchy levels for workspace ${workspaceId} (Memory)`,
           );
 
-          return cached.levels;
+          return memCached.levels;
         }
       }
     }
 
-    // Load from database
+    // Layer 3: Load from database
     try {
       const repository = await this.getOrganizationLevelRepository(workspaceId);
 
@@ -82,25 +106,16 @@ export class HierarchyLevelService {
         order: { hierarchyLevel: 'ASC' },
       })) as unknown as OrganizationLevel[];
 
-      // Build maps
-      const levelMap = new Map<string, OrganizationLevel>();
-      const hierarchyMap = new Map<number, OrganizationLevel>();
+      // Update both caches
+      this.updateMemoryCache(workspaceId, levels);
 
-      levels.forEach((level) => {
-        levelMap.set(level.levelCode, level);
-        hierarchyMap.set(level.hierarchyLevel, level);
-      });
-
-      // Update cache
-      this.cache.set(workspaceId, {
-        levels,
-        levelMap,
-        hierarchyMap,
-        lastUpdated: new Date(),
-      });
+      if (this.cacheManager) {
+        // Use EXTENDED TTL for org levels (24 hours) - rarely changes
+        await this.cacheManager.set(cacheKey, levels, 24 * 60 * 60 * 1000);
+      }
 
       this.logger.log(
-        `Loaded ${levels.length} hierarchy levels for workspace ${workspaceId}`,
+        `Cache MISS: Loaded ${levels.length} hierarchy levels from DB for workspace ${workspaceId}`,
       );
 
       return levels;
@@ -113,6 +128,29 @@ export class HierarchyLevelService {
       // Return empty array if error
       return [];
     }
+  }
+
+  /**
+   * Update in-memory cache with hierarchy levels
+   */
+  private updateMemoryCache(
+    workspaceId: string,
+    levels: OrganizationLevel[],
+  ): void {
+    const levelMap = new Map<string, OrganizationLevel>();
+    const hierarchyMap = new Map<number, OrganizationLevel>();
+
+    levels.forEach((level) => {
+      levelMap.set(level.levelCode, level);
+      hierarchyMap.set(level.hierarchyLevel, level);
+    });
+
+    this.cache.set(workspaceId, {
+      levels,
+      levelMap,
+      hierarchyMap,
+      lastUpdated: new Date(),
+    });
   }
 
   /**
@@ -156,12 +194,28 @@ export class HierarchyLevelService {
   /**
    * Get minimum hierarchy level for action
    * Based on action risk level and category
+   * With caching for computed results
    */
   async getMinimumHierarchyLevel(
     workspaceId: string,
     actionRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
     actionCategory: string,
   ): Promise<number | undefined> {
+    const cacheKey = `rbac:hierarchy:min-level:${workspaceId}:${actionRiskLevel}:${actionCategory}`;
+
+    // Try cache first
+    if (this.cacheManager) {
+      const cached = await this.cacheManager.get<number>(cacheKey);
+
+      if (cached !== null && cached !== undefined) {
+        this.logger.debug(
+          `Cache HIT: Min hierarchy level ${cached} for ${actionRiskLevel}/${actionCategory}`,
+        );
+
+        return cached;
+      }
+    }
+
     const levels = await this.getHierarchyLevels(workspaceId);
 
     if (levels.length === 0) {
@@ -177,11 +231,24 @@ export class HierarchyLevelService {
     };
 
     // Special cases for financial and system actions
+    let minLevel: number;
+
     if (actionCategory === 'FINANCIAL' || actionCategory === 'SYSTEM') {
-      return Math.min(2, levels.length); // Require top tier
+      minLevel = Math.min(2, levels.length); // Require top tier
+    } else {
+      minLevel = riskLevelMap[actionRiskLevel];
     }
 
-    return riskLevelMap[actionRiskLevel];
+    // Cache the computed result (30 minutes TTL)
+    if (this.cacheManager && minLevel !== undefined) {
+      await this.cacheManager.set(cacheKey, minLevel, 30 * 60 * 1000);
+    }
+
+    this.logger.debug(
+      `Cache MISS: Computed min hierarchy level ${minLevel} for ${actionRiskLevel}/${actionCategory}`,
+    );
+
+    return minLevel;
   }
 
   /**
@@ -193,10 +260,26 @@ export class HierarchyLevelService {
   }
 
   /**
-   * Invalidate cache for workspace
+   * Invalidate cache for workspace (both Redis and in-memory)
    */
-  invalidateCache(workspaceId: string): void {
+  async invalidateCache(workspaceId: string): Promise<void> {
+    // Invalidate in-memory cache
     this.cache.delete(workspaceId);
-    this.logger.log(`Cache invalidated for workspace ${workspaceId}`);
+
+    // Invalidate Redis cache using RbacCacheManager
+    if (this.cacheManager) {
+      const patterns = [
+        `rbac:hierarchy:org-levels:${workspaceId}`,
+        `rbac:hierarchy:min-level:${workspaceId}:*`,
+      ];
+
+      for (const pattern of patterns) {
+        await this.cacheManager.invalidateByPattern(pattern);
+      }
+    }
+
+    this.logger.log(
+      `Cache invalidated for workspace ${workspaceId} (both Redis and in-memory)`,
+    );
   }
 }

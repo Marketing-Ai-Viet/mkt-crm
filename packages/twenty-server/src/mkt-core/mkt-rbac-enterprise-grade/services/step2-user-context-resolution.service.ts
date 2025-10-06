@@ -3,7 +3,7 @@
  * Resolves detailed user information, hierarchy, department, and organizational context
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { DateTime } from 'luxon';
 import { Equal, MoreThan } from 'typeorm';
@@ -31,6 +31,8 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+
+import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
 /**
  * User Context Resolution Service - Step 2 in the 15-step validation process
@@ -75,6 +77,7 @@ export class Step2UserContextResolutionService
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {}
 
   /**
@@ -125,7 +128,7 @@ export class Step2UserContextResolutionService
   }
 
   /**
-   * Execute Step 2: User Context Resolution
+   * Execute Step 2: User Context Resolution with caching
    */
   async validate(
     context: EnhancedPermissionContext,
@@ -150,7 +153,27 @@ export class Step2UserContextResolutionService
         );
       }
 
-      // 2. Resolve detailed user information from database
+      // 2. Try to get cached user context first
+      const cacheKey = `rbac:user:context:${baseUserContext.workspaceMemberId}`;
+
+      if (this.cacheManager) {
+        const cachedContext =
+          await this.cacheManager.get<EnhancedUserContext>(cacheKey);
+
+        if (cachedContext) {
+          this.logger.debug(
+            `Cache HIT: User context for ${baseUserContext.workspaceMemberId}`,
+          );
+
+          return this.createSuccessResult(
+            cachedContext,
+            stepStartTime,
+            'CACHE',
+          );
+        }
+      }
+
+      // 3. Cache MISS - Resolve detailed user information from database
       const workspaceMemberDetails = await this.getWorkspaceMemberDetails(
         baseUserContext.workspaceMemberId,
         baseUserContext.workspaceId,
@@ -163,19 +186,19 @@ export class Step2UserContextResolutionService
         );
       }
 
-      // 3. Build organizational hierarchy context
+      // 4. Build organizational hierarchy context
       const hierarchyContext = await this.buildHierarchyContext(
         workspaceMemberDetails,
         baseUserContext.workspaceId,
       );
 
-      // 4. Build department and team context
+      // 5. Build department and team context
       const departmentContext = await this.buildDepartmentContext(
         workspaceMemberDetails,
         baseUserContext.workspaceId,
       );
 
-      // 5. Build enhanced user context
+      // 6. Build enhanced user context
       const enhancedUserContext = await this.buildEnhancedUserContext(
         baseUserContext,
         workspaceMemberDetails,
@@ -183,7 +206,19 @@ export class Step2UserContextResolutionService
         departmentContext,
       );
 
-      // 6. Update context with enriched information
+      // 7. Cache the enhanced user context (15 minutes TTL)
+      if (this.cacheManager) {
+        await this.cacheManager.set(
+          cacheKey,
+          enhancedUserContext,
+          15 * 60 * 1000, // 15 minutes
+        );
+        this.logger.debug(
+          `Cache SET: User context for ${baseUserContext.workspaceMemberId}`,
+        );
+      }
+
+      // 8. Update context with enriched information
       context.userContext = enhancedUserContext;
       context.hierarchyContext = hierarchyContext;
       context.departmentTeamContext = departmentContext;
@@ -202,6 +237,7 @@ export class Step2UserContextResolutionService
           userActive: enhancedUserContext.isActive,
           userLevel: hierarchyContext?.userLevel,
           departmentId: departmentContext?.userDepartmentId,
+          source: 'DATABASE', // Indicate data came from DB
         },
         modifyContext: {
           userContext: enhancedUserContext,
@@ -787,6 +823,40 @@ export class Step2UserContextResolutionService
 
       return [];
     }
+  }
+
+  /**
+   * Create a success result from cached context
+   */
+  private createSuccessResult(
+    userContext: EnhancedUserContext,
+    startTime: DateTime,
+    source: 'CACHE' | 'DATABASE',
+  ): StepValidationResult {
+    return {
+      result: CheckResult.PASS,
+      reason: `User context resolved from ${source}`,
+      continue: true,
+      executionTime: DateTime.now().diff(startTime).as('milliseconds'),
+      metadata: {
+        userContextEnriched: true,
+        hierarchyResolved: !!userContext.hierarchyLevel,
+        departmentResolved: !!userContext.departmentId,
+        userActive: userContext.isActive,
+        ...(userContext.hierarchyLevel !== undefined && {
+          userLevel: userContext.hierarchyLevel,
+        }),
+        ...(userContext.departmentId !== undefined && {
+          departmentId: userContext.departmentId,
+        }),
+        source,
+      },
+      modifyContext: {
+        userContext,
+        // Note: hierarchyContext and departmentContext might need to be reconstructed
+        // if needed by subsequent steps
+      },
+    };
   }
 
   /**

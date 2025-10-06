@@ -4,7 +4,7 @@
  * Based on Step 2 patterns and Twenty.com database architecture
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { DateTime } from 'luxon';
 
@@ -35,6 +35,8 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
+
+import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
 /**
  * Resource Identification Service - Step 3 in the 15-step validation process
@@ -124,6 +126,7 @@ export class Step3ResourceIdentificationService
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {}
 
   /**
@@ -211,6 +214,32 @@ export class Step3ResourceIdentificationService
         );
       }
 
+      // Try cache first - cache key includes recordId for specific resources
+      const cacheKey = recordId
+        ? `rbac:resource:metadata:${objectName}:${recordId}`
+        : `rbac:resource:type:${objectName}`;
+
+      if (this.cacheManager) {
+        const cachedContext =
+          await this.cacheManager.get<ResourceContext>(cacheKey);
+
+        if (cachedContext) {
+          this.logger.debug(
+            `Cache HIT: Resource metadata for ${objectName}${recordId ? `:${recordId}` : ''} (Redis)`,
+          );
+
+          return this.createSuccessResult(
+            cachedContext,
+            stepStartTime,
+            'CACHE',
+          );
+        }
+      }
+
+      this.logger.debug(
+        `Cache MISS: Loading resource metadata from database for ${objectName}`,
+      );
+
       // 1. Identify and classify resource
       const resourceMetadata = await this.identifyAndClassifyResource(
         objectName,
@@ -232,28 +261,27 @@ export class Step3ResourceIdentificationService
         ownershipChain,
       );
 
+      // Cache the result
+      // Use shorter TTL (5 minutes) for specific records, longer (1 hour) for type classifications
+      const ttl = recordId ? 5 * 60 * 1000 : 60 * 60 * 1000;
+
+      if (this.cacheManager) {
+        await this.cacheManager.set(cacheKey, enhancedResourceContext, ttl);
+        this.logger.debug(
+          `Cache SET: Resource metadata for ${objectName}${recordId ? `:${recordId}` : ''} with ${ttl}ms TTL`,
+        );
+      }
+
       // Update context with enhanced resource information
       context.resourceContext = enhancedResourceContext;
 
       this.logger.debug(`Step 3: ${this.stepName} completed successfully`);
 
-      return {
-        result: CheckResult.PASS,
-        reason: 'Resource identification completed successfully',
-        continue: true,
-        executionTime: DateTime.now().diff(stepStartTime).as('milliseconds'),
-        metadata: {
-          resourceIdentified: true,
-          resourceType: enhancedResourceContext.resourceType,
-          sensitivityLevel:
-            enhancedResourceContext.confidentialityLevel || 'INTERNAL',
-          ownerResolved: !!ownershipChain.ownerId,
-          departmentResolved: !!ownershipChain.userDepartment,
-        },
-        modifyContext: {
-          resourceContext: enhancedResourceContext,
-        },
-      };
+      return this.createSuccessResult(
+        enhancedResourceContext,
+        stepStartTime,
+        'DATABASE',
+      );
     } catch (error) {
       this.logger.error(
         `Step 3: ${this.stepName} error: ${error.message}`,
@@ -847,6 +875,30 @@ export class Step3ResourceIdentificationService
   }
 
   // Result helper methods
+  private createSuccessResult(
+    resourceContext: ResourceContext,
+    startTime: DateTime,
+    source: 'CACHE' | 'DATABASE',
+  ): StepValidationResult {
+    return {
+      result: CheckResult.PASS,
+      reason: `Resource identification completed from ${source}`,
+      continue: true,
+      executionTime: DateTime.now().diff(startTime).as('milliseconds'),
+      metadata: {
+        resourceIdentified: true,
+        resourceType: resourceContext.resourceType,
+        sensitivityLevel: resourceContext.confidentialityLevel || 'INTERNAL',
+        ownerResolved: !!resourceContext.ownerId,
+        departmentResolved: !!resourceContext.departmentId,
+        source,
+      },
+      modifyContext: {
+        resourceContext,
+      },
+    };
+  }
+
   private createSkipResult(
     reason: string,
     startTime: DateTime,
