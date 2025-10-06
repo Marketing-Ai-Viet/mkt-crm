@@ -34,7 +34,12 @@ import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
+import { MktPermissionResourceWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-permission-resource.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
+import {
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
@@ -143,6 +148,143 @@ export class Step3ResourceIdentificationService
   }
 
   /**
+   * Get Permission Resource Repository for workspace
+   */
+  private async getPermissionResourceRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<MktPermissionResourceWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPermissionResourceWorkspaceEntity>(
+      workspaceId,
+      'mktPermissionResource',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
+   * Get Permission Resource by resourceKey with caching
+   * Cache TTL: 24 hours (very stable data)
+   */
+  private async getPermissionResourceByKey(
+    workspaceId: string,
+    resourceKey: string,
+  ): Promise<MktPermissionResourceWorkspaceEntity | null> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_RESOURCES}:${workspaceId}:${resourceKey}`;
+
+      // Try cache first
+      let resourceConfig: MktPermissionResourceWorkspaceEntity | null = null;
+
+      if (this.cacheManager) {
+        resourceConfig =
+          await this.cacheManager.get<MktPermissionResourceWorkspaceEntity>(
+            cacheKey,
+          );
+
+        if (resourceConfig) {
+          this.logger.debug(
+            `Cache HIT: Permission resource ${resourceKey} (Redis)`,
+          );
+
+          return resourceConfig;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(
+        `Cache MISS: Loading permission resource from DB for ${resourceKey}`,
+      );
+
+      const resourceRepository =
+        await this.getPermissionResourceRepository(workspaceId);
+
+      resourceConfig = await resourceRepository.findOne({
+        where: { resourceKey, isActive: true },
+      });
+
+      // Cache for 24 hours (using centralized TTL constant)
+      if (this.cacheManager && resourceConfig) {
+        await this.cacheManager.set(
+          cacheKey,
+          resourceConfig,
+          RBAC_CACHE_TTL.CONFIG_RESOURCES,
+        );
+        this.logger.debug(
+          `Cache SET: Permission resource ${resourceKey} with 24h TTL`,
+        );
+      }
+
+      return resourceConfig;
+    } catch (error) {
+      this.logger.error(
+        `Error getting permission resource ${resourceKey}: ${error.message}`,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Get all active Permission Resources with caching
+   * Cache TTL: 24 hours (very stable data)
+   */
+  private async getAllPermissionResources(
+    workspaceId: string,
+  ): Promise<MktPermissionResourceWorkspaceEntity[]> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_RESOURCES}:${workspaceId}:all`;
+
+      // Try cache first
+      let resources: MktPermissionResourceWorkspaceEntity[] | null = null;
+
+      if (this.cacheManager) {
+        resources =
+          await this.cacheManager.get<MktPermissionResourceWorkspaceEntity[]>(
+            cacheKey,
+          );
+
+        if (resources) {
+          this.logger.debug(
+            `Cache HIT: All permission resources (${resources.length} items) (Redis)`,
+          );
+
+          return resources;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(`Cache MISS: Loading all permission resources from DB`);
+
+      const resourceRepository =
+        await this.getPermissionResourceRepository(workspaceId);
+
+      resources = await resourceRepository.find({
+        where: { isActive: true },
+        order: { displayOrder: 'ASC', position: 'ASC' },
+      });
+
+      // Cache for 24 hours (using centralized TTL constant)
+      if (this.cacheManager && resources) {
+        await this.cacheManager.set(
+          cacheKey,
+          resources,
+          RBAC_CACHE_TTL.CONFIG_RESOURCES,
+        );
+        this.logger.debug(
+          `Cache SET: All permission resources (${resources.length} items) with 24h TTL`,
+        );
+      }
+
+      return resources;
+    } catch (error) {
+      this.logger.error(
+        `Error getting all permission resources: ${error.message}`,
+      );
+
+      return [];
+    }
+  }
+
+  /**
    * Get Data Access Policy repository
    */
   private async getDataAccessPolicyRepository(
@@ -216,8 +358,8 @@ export class Step3ResourceIdentificationService
 
       // Try cache first - cache key includes recordId for specific resources
       const cacheKey = recordId
-        ? `rbac:resource:metadata:${objectName}:${recordId}`
-        : `rbac:resource:type:${objectName}`;
+        ? `${RBAC_CACHE_KEYS.RESOURCE_METADATA}:${objectName}:${recordId}`
+        : `${RBAC_CACHE_KEYS.RESOURCE_METADATA}:${objectName}:type`;
 
       if (this.cacheManager) {
         const cachedContext =
@@ -262,8 +404,8 @@ export class Step3ResourceIdentificationService
       );
 
       // Cache the result
-      // Use shorter TTL (5 minutes) for specific records, longer (1 hour) for type classifications
-      const ttl = recordId ? 5 * 60 * 1000 : 60 * 60 * 1000;
+      // Use shorter TTL for specific records (resource metadata), longer for type classifications
+      const ttl = recordId ? RBAC_CACHE_TTL.RESOURCE_META : RBAC_CACHE_TTL.LONG;
 
       if (this.cacheManager) {
         await this.cacheManager.set(cacheKey, enhancedResourceContext, ttl);
