@@ -192,7 +192,7 @@ export class LicenseGenerationJob {
         const newLicense = licenseRepository.create({
           name: licenseName,
           licenseKey: licenseApiResponse.licenseKey,
-          status: MKT_LICENSE_STATUS.INACTIVE,
+          status: MKT_LICENSE_STATUS.ACTIVE,
           activatedAt: new Date().toISOString(),
           expiresAt: licenseApiResponse.expiresAt,
           licenseUuid: licenseApiResponse.licenseUuid as string,

@@ -1,5 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
@@ -7,13 +8,13 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  MinLength,
 } from 'class-validator';
 
 @InputType()
 export class CreateUserInput {
   @Field(() => String)
   @IsEmail()
+  @Transform(({ value }) => value.toLowerCase())
   email: string;
 
   @Field(() => String, { nullable: true })
@@ -26,21 +27,10 @@ export class CreateUserInput {
   @IsString()
   lastName?: string;
 
-  @Field(() => String)
-  @IsOptional()
-  @IsString()
-  @MinLength(8, { message: 'Password must be longer than 8 characters' })
-  password: string;
-
   @Field(() => Number, { nullable: true, defaultValue: 0 })
   @IsOptional()
   @IsNumber()
   position?: number;
-
-  @Field(() => String, { nullable: true, defaultValue: 'Light' })
-  @IsOptional()
-  @IsString()
-  colorScheme?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -74,25 +64,10 @@ export class CreateUserInput {
   @IsUrl()
   avatarUrl?: string | null = null;
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => Number, { nullable: true, defaultValue: 7 })
   @IsOptional()
   @IsNumber()
   calendarStartDay?: number;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  timeZone?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  dateFormat?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  timeFormat?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -110,7 +85,6 @@ export class CreateUserInput {
   organizationLevelId?: string;
 
   @Field(() => String, { nullable: true })
-  @IsOptional()
   @IsString()
-  roleId?: string;
+  roleId: string;
 }

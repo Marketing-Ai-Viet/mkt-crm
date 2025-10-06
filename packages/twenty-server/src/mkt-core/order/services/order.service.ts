@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
+import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
@@ -15,7 +16,7 @@ export class OrderService {
   constructor(
     private readonly variantService: VariantService,
     private readonly recordPositionService: RecordPositionService,
-    private readonly mktRepo: MktRepositoryService,
+    private mktRepo: MktRepositoryService,
   ) {}
 
   async createOrderItemsFromVariants(
@@ -30,7 +31,7 @@ export class OrderService {
       workspaceId,
     );
     const variantById = new Map(variants.map((v) => [v.id, v]));
-    const orderItemRepository = await this.mktRepo.getOrderItemRepository();
+    const orderItemRepository = await this.getOrderItemRepo(workspaceId);
     const itemsFromVariants = await Promise.all(
       variantsMeta.map(async (v, _index) => {
         const variant = variantById.get(v.mktVariantId);
@@ -84,7 +85,7 @@ export class OrderService {
   ) {
     if (trialOrder.orderItems?.length <= 0)
       throw new Error('No order items to clone');
-    const orderItemRepository = await this.mktRepo.getOrderItemRepository();
+    const orderItemRepository = await this.getOrderItemRepo(workspaceId);
     const newOrderItems = await Promise.all(
       trialOrder.orderItems.map(async (item) => {
         const position = await this.recordPositionService.buildRecordPosition({
@@ -122,9 +123,8 @@ export class OrderService {
   async updateOrderInformation(
     orderId: string,
     updateOrderInfo: Partial<MktOrderWorkspaceEntity>,
+    orderRepository: WorkspaceRepository<MktOrderWorkspaceEntity>,
   ) {
-    const orderRepository = await this.mktRepo.getOrderRepository();
-
     await orderRepository.update(orderId, {
       mktCustomerId: updateOrderInfo.mktCustomerId || null,
       orderCode: updateOrderInfo.orderCode ?? '',
@@ -141,8 +141,9 @@ export class OrderService {
     status: ORDER_STATUS,
     trialLicense?: boolean,
     authFirebase?: void | FirebaseAuthResponse,
+    _workspaceId: string | null = null,
   ) {
-    const orderRepository = await this.mktRepo.getOrderRepository();
+    const orderRepository = await this.getOrderRepo();
 
     this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
 
@@ -200,5 +201,15 @@ export class OrderService {
     this.logger.log(
       `Updated trial order ${trialOrder.id} status to CONVERTED and referenced paid order`,
     );
+  }
+
+  private async getOrderItemRepo(workspaceId: string) {
+    if (!workspaceId) return this.mktRepo.getOrderItemRepository();
+
+    return this.mktRepo.getOrderItemRepositoryByWorkspaceId(workspaceId);
+  }
+
+  private async getOrderRepo() {
+    return await this.mktRepo.getOrderRepository();
   }
 }

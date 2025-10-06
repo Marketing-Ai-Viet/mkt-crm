@@ -1,18 +1,14 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
-import {
-  IsBoolean,
-  IsEmail,
-  IsOptional,
-  IsString,
-  IsUrl,
-} from 'class-validator';
-
+import { IsEmail, IsOptional, IsString, IsUrl } from 'class-validator';
 @ObjectType()
 export class UserOutput {
   @Field(() => String)
   @IsEmail()
   email: string;
+
+  @Field(() => String)
+  id: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -24,23 +20,11 @@ export class UserOutput {
   @IsString()
   lastName?: string;
 
-  @Field(() => Boolean, { defaultValue: false })
-  @IsBoolean()
-  isEmailVerified = false;
-
-  @Field(() => Boolean, { defaultValue: true })
-  @IsBoolean()
-  canImpersonate = true;
-
-  @Field(() => Boolean, { defaultValue: false })
-  @IsBoolean()
-  canAdmin = false;
-
-  @Field(() => String, { defaultValue: 'en' })
+  @Field(() => String)
   @IsString()
   language: string;
 
-  @Field(() => String, { nullable: true, defaultValue: null })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsUrl()
   avatarUrl?: string | null = null;

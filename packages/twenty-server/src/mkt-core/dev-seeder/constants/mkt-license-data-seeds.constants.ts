@@ -1,6 +1,7 @@
 import { MKT_CUSTOMER_DATA_SEEDS_IDS as MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC } from 'src/mkt-core/dev-seeder/constants/mkt-customer-data-seeds.constants';
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
 import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seeds.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 
 type MktLicenseDataSeed = {
   id: string;
@@ -22,18 +23,6 @@ type MktLicenseDataSeed = {
   createdByWorkspaceMemberId: string | null;
   createdByName: string;
 };
-
-// prettier-ignore
-export enum MKT_LICENSE_STATUS {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  EXPIRED = 'EXPIRED',
-  REVOKED = 'REVOKED',
-  ERROR = 'ERROR',
-  DELETED = 'DELETED',
-  PENDING = 'PENDING',
-  OTHER = 'OTHER',
-}
 
 export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
   ID_1: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.TECH_CORP,
@@ -154,7 +143,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_4,
     name: 'License MKT UID Basic 1 năm (3 licenses) - Gói phân tích data',
     licenseKey: 'MKT-UID-1Y-2024-003-0200e865',
-    status: MKT_LICENSE_STATUS.INACTIVE,
+    status: MKT_LICENSE_STATUS.ERROR,
     activatedAt: new Date('2024-03-05T00:00:00.000Z'),
     expiresAt: new Date('2025-03-05T00:00:00.000Z'),
     lastLoginAt: new Date('2024-10-15T09:20:00.000Z'),
@@ -388,7 +377,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_17,
     name: 'License MKT UID Basic 2 năm (Combo) - Gói phân tích data',
     licenseKey: 'MKT-UID-2Y-COMBO-2024-013-b9433b83',
-    status: MKT_LICENSE_STATUS.DELETED,
+    status: MKT_LICENSE_STATUS.ERROR,
     activatedAt: new Date('2024-09-05T00:00:00.000Z'),
     expiresAt: new Date('2026-09-05T00:00:00.000Z'),
     lastLoginAt: new Date('2024-09-05T10:30:00.000Z'),

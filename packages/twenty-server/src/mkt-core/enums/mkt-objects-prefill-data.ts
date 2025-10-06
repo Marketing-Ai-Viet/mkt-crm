@@ -11,8 +11,10 @@ import { prefillMktDataAccessPolicies } from 'src/mkt-core/dev-seeder/prefill-da
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-department-hierarchies';
 import { prefillMktDepartments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-departments';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-employment-statuses';
+import { prefillMktI18n } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-kpi-templates';
 import { prefillMktKpis } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-kpis';
+import { prefillMktLicenseHistory } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-license-history';
 import { prefillMktLicenses } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-licenses';
 import { prefillMktOrderItems } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-orders';
@@ -44,6 +46,8 @@ import { prefillMktUserPermissionOverrides } from 'src/mkt-core/dev-seeder/prefi
 import { prefillMktPermissionPriorityConfigs } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-priority-configs';
 
 export const MKT_PREFILLS = [
+  // i18n prefills
+  prefillMktI18n,
   // customer prefills
   prefillMktCustomers,
   prefillMktTags,
@@ -65,6 +69,7 @@ export const MKT_PREFILLS = [
   prefillMktContracts,
   // license prefills
   prefillMktLicenses,
+  prefillMktLicenseHistory,
   // invoice prefills
   prefillMktSInvoiceAuths,
   prefillMktSInvoices,

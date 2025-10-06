@@ -40,6 +40,10 @@ import {
   MKT_EMPLOYMENT_STATUS_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-employment-status-data-seeds.constants';
 import {
+  MKT_I18N_DATA_SEED_COLUMNS,
+  MKT_I18N_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-i18n-data-seeds.constants';
+import {
   MKT_KPI_DATA_SEED_COLUMNS,
   MKT_KPI_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-kpi-data-seeds.constants';
@@ -51,6 +55,10 @@ import {
   MKT_LICENSE_DATA_SEED_COLUMNS,
   MKT_LICENSE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-license-data-seeds.constants';
+import {
+  MKT_LICENSE_HISTORY_DATA_SEED_COLUMNS,
+  MKT_LICENSE_HISTORY_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-license-history-data-seeds.constants';
 import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
@@ -99,6 +107,10 @@ import {
   MKT_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-template-data-seeds.constants';
+import {
+  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import {
   MKT_SINVOICE_AUTH_DATA_SEED_COLUMNS,
   MKT_SINVOICE_AUTH_DATA_SEEDS,
@@ -203,6 +215,12 @@ export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
 ];
 
 export const MKT_RECORD_SEEDS_CONFIGS = [
+  // I18n configs
+  {
+    tableName: 'mktI18N',
+    pgColumns: MKT_I18N_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_I18N_DATA_SEEDS,
+  },
   // Customer configs
   {
     tableName: 'mktCustomer',
@@ -284,6 +302,12 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktLicense',
     pgColumns: MKT_LICENSE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_LICENSE_DATA_SEEDS,
+  },
+  // License History
+  {
+    tableName: 'mktLicenseHistory',
+    pgColumns: MKT_LICENSE_HISTORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_LICENSE_HISTORY_DATA_SEEDS,
   },
   // Invoice configs
   {
@@ -431,5 +455,10 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktDataAccessPolicy',
     pgColumns: MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
     recordSeeds: MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktSendmailTemplate',
+    pgColumns: MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
   },
 ];
