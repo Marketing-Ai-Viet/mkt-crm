@@ -73,6 +73,8 @@ export class MktLicenseRenewService {
       throw new Error('Variant is required for license refund');
     }
 
+    this.mktCommonOrderService.updateFirstMetadata(order, {});
+
     // Step 1: Find and update the order item
     const orderItemRepo = await this.mktRepo.getOrderItemRepository();
     const orderItems = await orderItemRepo.find({
@@ -91,6 +93,7 @@ export class MktLicenseRenewService {
 
     // Find the order item with quantity > 0
     const orderItem = orderItems.find((item) => (item.quantity || 0) > 0);
+
     if (!orderItem) {
       this.logger.error(
         `No order item with quantity > 0 found for license ${licenseId}`,
@@ -150,18 +153,19 @@ export class MktLicenseRenewService {
 
       // Step 4: Update order note with accounting information
       const existingNote = order.note || '';
-      const updatedNote = existingNote
+      const _updatedNote = existingNote
         ? `${existingNote}\n\n${accountingNote}`
         : accountingNote;
 
       if (note) {
         const additionalNote = `\nGhi chú thêm: ${note}`;
+
         await orderRepo.update(order.id, {
-          note: `${updatedNote}${additionalNote}`,
+          note: `${accountingNote}${additionalNote}`,
         });
       } else {
         await orderRepo.update(order.id, {
-          note: updatedNote,
+          note: accountingNote,
         });
       }
 
@@ -190,16 +194,44 @@ export class MktLicenseRenewService {
     orderItem: { name?: string } = {},
   ): string {
     const timestamp = new Date().toISOString();
+
+    const newRefund = {
+      licenseId,
+      refundAmount,
+      remainingAmount,
+      originalAmount,
+      variant_name: orderItem.name,
+    };
+
+    this.mktCommonOrderService.updateRefundMetadata(newRefund);
+
+    // Lấy thông tin tổng hợp từ mảng refund
+    const refundHistory = this.mktCommonOrderService.getRefundHistory();
+    const _totalRefunds = refundHistory.length + 1; // Bao gồm cả refund hiện tại
+    const totalRefundAmount = refundHistory.reduce(
+      (sum, refund) => sum + (refund.refundAmount ?? 0),
+      0,
+    );
+
+    // Tạo danh sách chi tiết các lần hoàn tiền
+    let refundDetails = '';
+
+    if (refundHistory.length > 0) {
+      refundDetails = '\n📋 CHI TIẾT HOÀN TIỀN:\n';
+      refundHistory.forEach((refund, index) => {
+        refundDetails += `${index + 1}. License ID: ${refund.licenseId} - ${refund.variant_name} - ${(refund.refundAmount ?? 0).toLocaleString('vi-VN')} VNĐ\n`;
+      });
+    }
+
     return `[KẾ TOÁN HOÀN TIỀN - ${timestamp}]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 THÔNG TIN HOÀN TIỀN:
-• License ID: ${licenseId}
-• 1 license đã thu hồi
-• Sản phẩm: ${orderItem.name}
-• Số tiền cần hoàn: ${refundAmount.toLocaleString('vi-VN')} VNĐ
-• Số tiền order ban đầu: ${originalAmount.toLocaleString('vi-VN')} VNĐ  
-• Số tiền order còn lại: ${remainingAmount.toLocaleString('vi-VN')} VNĐ
+• Số tiền cần hoàn: ${totalRefundAmount.toLocaleString('vi-VN')} VNĐ${refundDetails}
+• Số tiền order còn lại sau khi hoàn tiền: ${remainingAmount.toLocaleString('vi-VN')} VNĐ
 
+📊 TỔNG HỢP HOÀN TIỀN:
+• Tổng số lần hoàn tiền: 
+• Tổng số tiền đã hoàn: 
 ⚠️  CẦN XÁC NHẬN:
 - Kế toán vui lòng hoàn tiền cho khách hàng
 - Xác nhận hoàn tiền thành công

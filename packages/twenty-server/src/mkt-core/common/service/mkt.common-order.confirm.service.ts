@@ -357,6 +357,7 @@ export class MktOrderCommonConfirmService {
     let updatedNote = existingNote
       ? `${existingNote}\n\n${refundNote}`
       : refundNote;
+
     if (note) {
       updatedNote = `${updatedNote}\n\n${note}`;
     }
@@ -506,7 +507,7 @@ export class MktOrderCommonConfirmService {
             );
             const newLicense = licenseRepository.create({
               name: licenseName,
-              licenseKey: licenseApiResponse.licenseKey,
+              //licenseKey: licenseApiResponse.licenseKey,
               status: MKT_LICENSE_STATUS.ACTIVE,
               activatedAt: new Date().toISOString(),
               expiresAt: licenseApiResponse.expiresAt,
@@ -655,7 +656,7 @@ export class MktOrderCommonConfirmService {
 
       await licenseRepository.update(licenseId, {
         name: licenseName,
-        licenseKey: licenseApiResponse.licenseKey,
+        //licenseKey: licenseApiResponse.licenseKey,
         status: MKT_LICENSE_STATUS.ACTIVE,
         activatedAt: new Date().toISOString(),
         expiresAt: licenseApiResponse.expiresAt,
