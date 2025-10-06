@@ -38,7 +38,12 @@ import {
   MktPermissionTemplateWorkspaceEntity,
   MktUserPermissionTemplateWorkspaceEntity,
   MktUserPermissionOverrideWorkspaceEntity,
+  MktPermissionActionWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
+import {
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { HierarchyLevelService } from './hierarchy-level.service';
 import { RbacCacheManagerService } from './rbac-cache-manager.service';
@@ -165,6 +170,143 @@ export class Step5ActionPermissionValidationService
       'mktUserPermissionOverride',
       { shouldBypassPermissionChecks: true },
     );
+  }
+
+  /**
+   * Get Permission Action Repository for workspace
+   */
+  private async getPermissionActionRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<MktPermissionActionWorkspaceEntity>> {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPermissionActionWorkspaceEntity>(
+      workspaceId,
+      'mktPermissionAction',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
+   * Get Permission Action by actionKey with caching
+   * Cache TTL: 24 hours (very stable data)
+   */
+  private async getPermissionActionByKey(
+    workspaceId: string,
+    actionKey: string,
+  ): Promise<MktPermissionActionWorkspaceEntity | null> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_ACTIONS}:${workspaceId}:${actionKey}`;
+
+      // Try cache first
+      let actionConfig: MktPermissionActionWorkspaceEntity | null = null;
+
+      if (this.cacheManager) {
+        actionConfig =
+          await this.cacheManager.get<MktPermissionActionWorkspaceEntity>(
+            cacheKey,
+          );
+
+        if (actionConfig) {
+          this.logger.debug(
+            `Cache HIT: Permission action ${actionKey} (Redis)`,
+          );
+
+          return actionConfig;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(
+        `Cache MISS: Loading permission action from DB for ${actionKey}`,
+      );
+
+      const actionRepository =
+        await this.getPermissionActionRepository(workspaceId);
+
+      actionConfig = await actionRepository.findOne({
+        where: { actionKey, isActive: true },
+      });
+
+      // Cache for 24 hours (using centralized TTL constant)
+      if (this.cacheManager && actionConfig) {
+        await this.cacheManager.set(
+          cacheKey,
+          actionConfig,
+          RBAC_CACHE_TTL.CONFIG_ACTIONS,
+        );
+        this.logger.debug(
+          `Cache SET: Permission action ${actionKey} with 24h TTL`,
+        );
+      }
+
+      return actionConfig;
+    } catch (error) {
+      this.logger.error(
+        `Error getting permission action ${actionKey}: ${error.message}`,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Get all active Permission Actions with caching
+   * Cache TTL: 24 hours (very stable data)
+   */
+  private async getAllPermissionActions(
+    workspaceId: string,
+  ): Promise<MktPermissionActionWorkspaceEntity[]> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_ACTIONS}:${workspaceId}:all`;
+
+      // Try cache first
+      let actions: MktPermissionActionWorkspaceEntity[] | null = null;
+
+      if (this.cacheManager) {
+        actions =
+          await this.cacheManager.get<MktPermissionActionWorkspaceEntity[]>(
+            cacheKey,
+          );
+
+        if (actions) {
+          this.logger.debug(
+            `Cache HIT: All permission actions (${actions.length} items) (Redis)`,
+          );
+
+          return actions;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(`Cache MISS: Loading all permission actions from DB`);
+
+      const actionRepository =
+        await this.getPermissionActionRepository(workspaceId);
+
+      actions = await actionRepository.find({
+        where: { isActive: true },
+        order: { position: 'ASC' },
+      });
+
+      // Cache for 24 hours (using centralized TTL constant)
+      if (this.cacheManager && actions) {
+        await this.cacheManager.set(
+          cacheKey,
+          actions,
+          RBAC_CACHE_TTL.CONFIG_ACTIONS,
+        );
+        this.logger.debug(
+          `Cache SET: All permission actions (${actions.length} items) with 24h TTL`,
+        );
+      }
+
+      return actions;
+    } catch (error) {
+      this.logger.error(
+        `Error getting all permission actions: ${error.message}`,
+      );
+
+      return [];
+    }
   }
 
   /**
