@@ -5,7 +5,7 @@
  * Uses workspace entities only, no core module dependencies
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { IsNull } from 'typeorm';
 import { DateTime } from 'luxon';
@@ -27,6 +27,12 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import {
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
+
+import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
 /**
  * Data access policy entity from workspace
@@ -145,6 +151,7 @@ export class Step12DynamicConditionsService
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {}
 
   /**
@@ -171,6 +178,194 @@ export class Step12DynamicConditionsService
       'mktPermissionContext',
       { shouldBypassPermissionChecks: true },
     );
+  }
+
+  /**
+   * Get Permission Context by contextKey with caching
+   * Cache TTL: 12 hours (moderately stable data)
+   */
+  private async getPermissionContextByKey(
+    workspaceId: string,
+    contextKey: string,
+  ): Promise<MktPermissionContextWorkspaceEntity | null> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_CONTEXTS}:${workspaceId}:${contextKey}`;
+
+      // Try cache first
+      let contextConfig: MktPermissionContextWorkspaceEntity | null = null;
+
+      if (this.cacheManager) {
+        contextConfig =
+          await this.cacheManager.get<MktPermissionContextWorkspaceEntity>(
+            cacheKey,
+          );
+
+        if (contextConfig) {
+          this.logger.debug(
+            `Cache HIT: Permission context ${contextKey} (Redis)`,
+          );
+
+          return contextConfig;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(
+        `Cache MISS: Loading permission context from DB for ${contextKey}`,
+      );
+
+      const contextRepository =
+        await this.getPermissionContextRepository(workspaceId);
+
+      contextConfig = await contextRepository.findOne({
+        where: { contextKey, isActive: true },
+      });
+
+      // Cache for 12 hours (using centralized TTL constant)
+      if (this.cacheManager && contextConfig) {
+        await this.cacheManager.set(
+          cacheKey,
+          contextConfig,
+          RBAC_CACHE_TTL.CONFIG_CONTEXTS,
+        );
+        this.logger.debug(
+          `Cache SET: Permission context ${contextKey} with 12h TTL`,
+        );
+      }
+
+      return contextConfig;
+    } catch (error) {
+      this.logger.error(
+        `Error getting permission context ${contextKey}: ${error.message}`,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Get all active Permission Contexts with caching
+   * Cache TTL: 12 hours (moderately stable data)
+   */
+  private async getAllPermissionContexts(
+    workspaceId: string,
+  ): Promise<MktPermissionContextWorkspaceEntity[]> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_CONTEXTS}:${workspaceId}:all`;
+
+      // Try cache first
+      let contexts: MktPermissionContextWorkspaceEntity[] | null = null;
+
+      if (this.cacheManager) {
+        contexts =
+          await this.cacheManager.get<MktPermissionContextWorkspaceEntity[]>(
+            cacheKey,
+          );
+
+        if (contexts) {
+          this.logger.debug(
+            `Cache HIT: All permission contexts (${contexts.length} items) (Redis)`,
+          );
+
+          return contexts;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(`Cache MISS: Loading all permission contexts from DB`);
+
+      const contextRepository =
+        await this.getPermissionContextRepository(workspaceId);
+
+      contexts = await contextRepository.find({
+        where: { isActive: true },
+        order: { priority: 'DESC' },
+      });
+
+      // Cache for 12 hours (using centralized TTL constant)
+      if (this.cacheManager && contexts) {
+        await this.cacheManager.set(
+          cacheKey,
+          contexts,
+          RBAC_CACHE_TTL.CONFIG_CONTEXTS,
+        );
+        this.logger.debug(
+          `Cache SET: All permission contexts (${contexts.length} items) with 12h TTL`,
+        );
+      }
+
+      return contexts;
+    } catch (error) {
+      this.logger.error(
+        `Error getting all permission contexts: ${error.message}`,
+      );
+
+      return [];
+    }
+  }
+
+  /**
+   * Get Permission Contexts by type with caching
+   * Cache TTL: 12 hours (moderately stable data)
+   */
+  private async getPermissionContextsByType(
+    workspaceId: string,
+    contextType: string,
+  ): Promise<MktPermissionContextWorkspaceEntity[]> {
+    try {
+      const cacheKey = `${RBAC_CACHE_KEYS.CONFIG_CONTEXTS}:${workspaceId}:type:${contextType}`;
+
+      // Try cache first
+      let contexts: MktPermissionContextWorkspaceEntity[] | null = null;
+
+      if (this.cacheManager) {
+        contexts =
+          await this.cacheManager.get<MktPermissionContextWorkspaceEntity[]>(
+            cacheKey,
+          );
+
+        if (contexts) {
+          this.logger.debug(
+            `Cache HIT: Permission contexts for type ${contextType} (${contexts.length} items) (Redis)`,
+          );
+
+          return contexts;
+        }
+      }
+
+      // Load from DB if cache miss
+      this.logger.debug(
+        `Cache MISS: Loading permission contexts from DB for type ${contextType}`,
+      );
+
+      const contextRepository =
+        await this.getPermissionContextRepository(workspaceId);
+
+      contexts = await contextRepository.find({
+        where: { contextType, isActive: true },
+        order: { priority: 'DESC' },
+      });
+
+      // Cache for 12 hours (using centralized TTL constant)
+      if (this.cacheManager && contexts) {
+        await this.cacheManager.set(
+          cacheKey,
+          contexts,
+          RBAC_CACHE_TTL.CONFIG_CONTEXTS,
+        );
+        this.logger.debug(
+          `Cache SET: Permission contexts for type ${contextType} (${contexts.length} items) with 12h TTL`,
+        );
+      }
+
+      return contexts;
+    } catch (error) {
+      this.logger.error(
+        `Error getting permission contexts for type ${contextType}: ${error.message}`,
+      );
+
+      return [];
+    }
   }
 
   /**
