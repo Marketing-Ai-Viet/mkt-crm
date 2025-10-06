@@ -1,3 +1,5 @@
+import { VALIDATION_STEPS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
+
 /**
  * Cache key patterns for RBAC system
  */
@@ -67,4 +69,57 @@ export enum CacheOptimizationStrategy {
   BALANCED = 'BALANCED',
   AGGRESSIVE = 'AGGRESSIVE',
   ADAPTIVE = 'ADAPTIVE',
+}
+
+/**
+ * Decision weights for different validation steps
+ * Higher weight = more important in final decision
+ *
+ * CRM Business Context:
+ * - Customer/Contact/Company data: High sensitivity
+ * - Sales/Opportunity data: Medium-High sensitivity
+ * - Tasks/Activities: Medium sensitivity
+ * - Template & Action validation are CORE (always required in both modes)
+ */
+export const STEP_WEIGHTS = {
+  // SIMPLIFIED MODE - Core 6 steps (always active)
+  [VALIDATION_STEPS.PRE_VALIDATION]: 100, // Critical - blocks everything if fails
+  [VALIDATION_STEPS.USER_CONTEXT_RESOLUTION]: 95, // Essential - must know who is acting
+  [VALIDATION_STEPS.RESOURCE_IDENTIFICATION]: 90, // Essential - must know what resource
+  [VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK]: 85, // Core - template-based permissions
+  [VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION]: 85, // Core - CRUD action validation
+
+  // FULL MODE - Additional 8 steps (enterprise features)
+  [VALIDATION_STEPS.RESOURCE_PERMISSION_CHECK]: 75, // Resource-specific permissions
+  [VALIDATION_STEPS.HIERARCHY_VALIDATION]: 70, // Organizational hierarchy (Manager → Team Lead → Staff)
+  [VALIDATION_STEPS.DATA_ACCESS_POLICY_CHECK]: 65, // Data access policies
+  [VALIDATION_STEPS.SPECIAL_PERMISSIONS]: 60, // Override mechanisms (Admin, Support)
+  [VALIDATION_STEPS.SENSITIVE_DATA_CHECKS]: 80, // Critical for CRM (customer PII, financial)
+  [VALIDATION_STEPS.DEPARTMENT_RESTRICTIONS]: 55, // Departmental boundaries (Sales, Marketing, CS)
+  [VALIDATION_STEPS.DYNAMIC_CONDITIONS]: 50, // Time/Location restrictions
+  [VALIDATION_STEPS.CACHE_PERFORMANCE]: 20, // Performance optimization
+  [VALIDATION_STEPS.AUDIT_LOGGING]: 30, // Logging and monitoring
+} as const;
+
+/**
+ * Final decision outcomes
+ */
+export enum FinalDecision {
+  GRANT = 'GRANT',
+  DENY = 'DENY',
+  CONDITIONAL_GRANT = 'CONDITIONAL_GRANT',
+  REQUIRE_APPROVAL = 'REQUIRE_APPROVAL',
+  ESCALATE = 'ESCALATE',
+  ERROR = 'ERROR',
+}
+
+/**
+ * Decision confidence levels
+ */
+export enum ConfidenceLevel {
+  VERY_LOW = 'VERY_LOW', // 0-20%
+  LOW = 'LOW', // 21-40%
+  MEDIUM = 'MEDIUM', // 41-60%
+  HIGH = 'HIGH', // 61-80%
+  VERY_HIGH = 'VERY_HIGH', // 81-100%
 }

@@ -29,50 +29,11 @@ import {
   VALIDATION_STEP_DESCRIPTIONS,
   VALIDATION_STEP_NAMES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-
-/**
- * Decision weights for different validation steps
- * Higher weight = more important in final decision
- */
-const STEP_WEIGHTS = {
-  [VALIDATION_STEPS.PRE_VALIDATION]: 100, // Critical - blocks everything if fails
-  [VALIDATION_STEPS.USER_CONTEXT_RESOLUTION]: 90, // Essential for authorization
-  [VALIDATION_STEPS.RESOURCE_IDENTIFICATION]: 85, // Must know what we're accessing
-  [VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK]: 80, // Core permission logic
-  [VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION]: 80, // Core permission logic
-  [VALIDATION_STEPS.RESOURCE_PERMISSION_CHECK]: 75, // Resource-specific permissions
-  [VALIDATION_STEPS.HIERARCHY_VALIDATION]: 70, // Organizational structure
-  [VALIDATION_STEPS.DATA_ACCESS_POLICY_CHECK]: 65, // Data access rules
-  [VALIDATION_STEPS.SPECIAL_PERMISSIONS]: 60, // Override mechanisms
-  [VALIDATION_STEPS.SENSITIVE_DATA_CHECKS]: 85, // Critical for compliance
-  [VALIDATION_STEPS.DEPARTMENT_RESTRICTIONS]: 55, // Departmental boundaries
-  [VALIDATION_STEPS.DYNAMIC_CONDITIONS]: 50, // Contextual restrictions
-  [VALIDATION_STEPS.CACHE_PERFORMANCE]: 20, // Performance optimization
-  [VALIDATION_STEPS.AUDIT_LOGGING]: 30, // Logging and monitoring
-} as const;
-
-/**
- * Final decision outcomes
- */
-enum FinalDecision {
-  GRANT = 'GRANT',
-  DENY = 'DENY',
-  CONDITIONAL_GRANT = 'CONDITIONAL_GRANT',
-  REQUIRE_APPROVAL = 'REQUIRE_APPROVAL',
-  ESCALATE = 'ESCALATE',
-  ERROR = 'ERROR',
-}
-
-/**
- * Decision confidence levels
- */
-enum ConfidenceLevel {
-  VERY_LOW = 'VERY_LOW', // 0-20%
-  LOW = 'LOW', // 21-40%
-  MEDIUM = 'MEDIUM', // 41-60%
-  HIGH = 'HIGH', // 61-80%
-  VERY_HIGH = 'VERY_HIGH', // 81-100%
-}
+import {
+  ConfidenceLevel,
+  FinalDecision,
+  STEP_WEIGHTS,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 /**
  * Decision rationale structure
@@ -114,11 +75,16 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
   readonly isAsync = true;
   readonly priority = 100; // Highest priority as final step
 
-  // Decision thresholds
-  private readonly GRANT_THRESHOLD = 80; // Minimum score to grant
-  private readonly CONDITIONAL_THRESHOLD = 60; // Minimum for conditional grant
+  // Decision thresholds - Tuned for CRM business logic
+  private readonly GRANT_THRESHOLD = 75; // Minimum score to grant (lowered for SIMPLIFIED mode)
+  private readonly CONDITIONAL_THRESHOLD = 55; // Minimum for conditional grant
   private readonly HIGH_CONFIDENCE_THRESHOLD = 85; // High confidence level
-  private readonly CRITICAL_FAILURE_THRESHOLD = 3; // Max critical failures allowed
+  private readonly CRITICAL_FAILURE_THRESHOLD = 2; // Max critical failures allowed (stricter for CRM)
+
+  // CRM-specific thresholds
+  private readonly CUSTOMER_DATA_THRESHOLD = 80; // Higher bar for customer/contact data
+  private readonly FINANCIAL_DATA_THRESHOLD = 85; // Highest bar for financial data
+  private readonly BULK_OPERATION_THRESHOLD = 70; // Special threshold for bulk operations
 
   constructor() {}
 
@@ -371,12 +337,13 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
 
   /**
    * Make final decision based on aggregated results
+   * Enhanced for CRM business logic with data sensitivity and resource type awareness
    */
   private makeFinalDecision(
     aggregated: AggregatedResults,
     context: EnhancedPermissionContext,
   ): FinalDecision {
-    // Critical failures block access entirely
+    // Critical failures block access entirely (stricter threshold for CRM: 2 vs 3)
     if (aggregated.criticalFailures.length >= this.CRITICAL_FAILURE_THRESHOLD) {
       return FinalDecision.DENY;
     }
@@ -391,13 +358,21 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
       return FinalDecision.ERROR;
     }
 
+    // CRM-SPECIFIC: Apply stricter thresholds for sensitive data types
+    const requiredThreshold = this.getRequiredThreshold(context);
+
     // High score = grant access
-    if (aggregated.weightedScore >= this.GRANT_THRESHOLD) {
+    if (aggregated.weightedScore >= requiredThreshold) {
       // Check if any warnings require special attention
       if (aggregated.highImpactWarnings.length > 0) {
         return this.requiresApproval(context, aggregated)
           ? FinalDecision.REQUIRE_APPROVAL
           : FinalDecision.CONDITIONAL_GRANT;
+      }
+
+      // CRM-SPECIFIC: Bulk operations on customer data need approval even with high score
+      if (this.isBulkCustomerOperation(context)) {
+        return FinalDecision.REQUIRE_APPROVAL;
       }
 
       return FinalDecision.GRANT;
@@ -416,6 +391,97 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
     }
 
     return FinalDecision.DENY;
+  }
+
+  /**
+   * CRM-SPECIFIC: Get required threshold based on resource type and data sensitivity
+   */
+  private getRequiredThreshold(context: EnhancedPermissionContext): number {
+    const resourceType = context.resourceContext?.resourceType || '';
+
+    // Financial data (invoices, payments, pricing)
+    if (
+      this.isFinancialResource(resourceType) ||
+      context.resourceContext?.isFinancialData
+    ) {
+      return this.FINANCIAL_DATA_THRESHOLD;
+    }
+
+    // Customer/Contact/Company data (PII, personal info)
+    if (this.isCustomerResource(resourceType)) {
+      return this.CUSTOMER_DATA_THRESHOLD;
+    }
+
+    // Bulk operations
+    if (this.isBulkOperation(context)) {
+      return this.BULK_OPERATION_THRESHOLD;
+    }
+
+    // Default threshold
+    return this.GRANT_THRESHOLD;
+  }
+
+  /**
+   * CRM-SPECIFIC: Check if resource is financial data
+   */
+  private isFinancialResource(resourceType: string): boolean {
+    const financialResources = [
+      'INVOICE',
+      'PAYMENT',
+      'PRICING',
+      'SUBSCRIPTION',
+      'ORDER',
+      'QUOTE',
+      'FINANCIAL',
+    ];
+
+    return financialResources.some((type) =>
+      resourceType.toUpperCase().includes(type),
+    );
+  }
+
+  /**
+   * CRM-SPECIFIC: Check if resource is customer-related (PII)
+   */
+  private isCustomerResource(resourceType: string): boolean {
+    const customerResources = [
+      'CUSTOMER',
+      'CONTACT',
+      'PERSON',
+      'COMPANY',
+      'LEAD',
+      'ACCOUNT',
+    ];
+
+    return customerResources.some((type) =>
+      resourceType.toUpperCase().includes(type),
+    );
+  }
+
+  /**
+   * CRM-SPECIFIC: Check if operation is bulk
+   */
+  private isBulkOperation(context: EnhancedPermissionContext): boolean {
+    const bulkActions = [
+      'BULK_CREATE',
+      'BULK_UPDATE',
+      'BULK_DELETE',
+      'EXPORT',
+      'IMPORT',
+      'MASS_UPDATE',
+    ];
+
+    return bulkActions.includes(context.action);
+  }
+
+  /**
+   * CRM-SPECIFIC: Check if bulk operation on customer data
+   */
+  private isBulkCustomerOperation(context: EnhancedPermissionContext): boolean {
+    return (
+      this.isBulkOperation(context) &&
+      this.isCustomerResource(context.resourceContext?.resourceType || '')
+    );
   }
 
   /**
@@ -439,32 +505,59 @@ export class Step15FinalDecisionService implements PermissionValidationStep {
 
   /**
    * Determine if approval is required
+   * CRM-SPECIFIC: Enhanced for customer data protection and compliance
    */
   private requiresApproval(
     context: EnhancedPermissionContext,
     aggregated: AggregatedResults,
   ): boolean {
-    // High-risk actions on sensitive data require approval
+    // CRM-SPECIFIC: High-risk actions (includes CRM-specific operations)
     const highRiskActions = [
       'DELETE',
       'BULK_DELETE',
       'EXPORT',
       'ADMIN_OVERRIDE',
+      'BULK_UPDATE', // CRM: Mass updates to customer records
+      'MASS_EMAIL', // CRM: Mass email campaigns
+      'DATA_MERGE', // CRM: Merging customer records
+      'GDPR_DELETE', // CRM: GDPR right to be forgotten
     ];
     const isSensitiveData = context.resourceContext?.isSensitive || false;
     const isHighRiskAction = highRiskActions.includes(context.action);
 
-    // Financial data access requires approval
-    const isFinancialData = context.resourceContext?.isFinancialData || false;
+    // CRM-SPECIFIC: Financial data (invoices, payments) requires approval
+    const isFinancialData =
+      context.resourceContext?.isFinancialData ||
+      this.isFinancialResource(context.resourceContext?.resourceType || '');
+
+    // CRM-SPECIFIC: Customer PII requires approval for destructive operations
+    const isCustomerPII =
+      this.isCustomerResource(context.resourceContext?.resourceType || '') &&
+      ['DELETE', 'EXPORT', 'BULK_DELETE', 'BULK_UPDATE'].includes(
+        context.action,
+      );
+
+    // CRM-SPECIFIC: Cross-department access requires approval
+    const isCrossDepartmentAccess =
+      context.userContext?.departmentId &&
+      context.resourceContext?.departmentId &&
+      context.userContext.departmentId !== context.resourceContext.departmentId;
 
     // Multiple warnings suggest need for human review
     const hasMultipleWarnings = aggregated.warningSteps >= 2;
 
+    // CRM-SPECIFIC: Any critical failures require approval (not just block)
+    const hasCriticalConcerns =
+      aggregated.criticalFailures.length > 0 &&
+      aggregated.criticalFailures.length < this.CRITICAL_FAILURE_THRESHOLD;
+
     return (
       (isHighRiskAction && isSensitiveData) ||
       isFinancialData ||
+      isCustomerPII ||
+      isCrossDepartmentAccess ||
       hasMultipleWarnings ||
-      aggregated.criticalFailures.length > 0
+      hasCriticalConcerns
     );
   }
 

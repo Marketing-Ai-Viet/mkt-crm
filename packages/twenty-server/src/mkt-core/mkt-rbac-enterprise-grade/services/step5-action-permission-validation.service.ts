@@ -748,7 +748,6 @@ export class Step5ActionPermissionValidationService
       if (hierarchyPermission.hasPermission) {
         return hierarchyPermission;
       }
-      console.log('hierarchyPermission', hierarchyPermission);
 
       // No permissions found - return system default
       return {

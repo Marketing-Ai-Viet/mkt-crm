@@ -531,6 +531,21 @@ export class ValidationOrchestratorService
 
       this.logger.debug(`Executing step ${step.stepNumber}: ${step.stepName}`);
 
+      // If this is Step 15 (Final Decision), inject accumulated step results BEFORE execution
+      if (step.stepNumber === VALIDATION_STEPS.FINAL_DECISION) {
+        const accumulatedStepResults =
+          this.buildStepResultsForFinalDecision(session);
+
+        session.context = {
+          ...session.context,
+          stepResults: accumulatedStepResults,
+        };
+
+        this.logger.debug(
+          `Step 15: Injected ${accumulatedStepResults.length} step results into context`,
+        );
+      }
+
       // Execute the step
       const result = await step.validate(session.context);
 
@@ -541,25 +556,6 @@ export class ValidationOrchestratorService
       // Update context if step provides modifications
       if (result.modifyContext) {
         session.context = { ...session.context, ...result.modifyContext };
-      }
-
-      // If this is Step 15 (Final Decision), inject accumulated step results
-      if (step.stepNumber === VALIDATION_STEPS.FINAL_DECISION) {
-        const accumulatedStepResults =
-          this.buildStepResultsForFinalDecision(session);
-
-        session.context = {
-          ...session.context,
-          stepResults: accumulatedStepResults,
-        };
-
-        // Re-execute Step 15 with the updated context
-        const finalResult = await step.validate(session.context);
-
-        execution.result = finalResult;
-        execution.completed = true;
-
-        return finalResult;
       }
 
       // Check performance thresholds
@@ -1106,7 +1102,8 @@ export class ValidationOrchestratorService
     // Check validation mode
     const validationMode = ENTERPRISE_RBAC_CONFIG.VALIDATION_MODE;
 
-    // SIMPLIFIED MODE: Only 6 core steps for basic CRUD
+    // SIMPLIFIED MODE: Only 5 core steps for basic CRUD
+    // Removed Step 15 (Final Decision) - aggregateStepResults is sufficient for simple module+CRUD checks
     if (validationMode === 'SIMPLIFIED') {
       const simplifiedGroups = [
         [VALIDATION_STEPS.PRE_VALIDATION],
@@ -1118,14 +1115,15 @@ export class ValidationOrchestratorService
           VALIDATION_STEPS.PERMISSION_TEMPLATE_CHECK,
           VALIDATION_STEPS.ACTION_PERMISSION_VALIDATION,
         ],
-        [VALIDATION_STEPS.FINAL_DECISION],
       ];
 
       if (session) {
-        session.performance.optimizationsApplied.push('simplified_6_step_mode');
+        session.performance.optimizationsApplied.push('simplified_5_step_mode');
       }
 
-      this.logger.debug('Using SIMPLIFIED 6-step validation mode');
+      this.logger.debug(
+        'Using SIMPLIFIED 5-step validation mode (module+CRUD only, no weighted decision)',
+      );
 
       return simplifiedGroups;
     }
