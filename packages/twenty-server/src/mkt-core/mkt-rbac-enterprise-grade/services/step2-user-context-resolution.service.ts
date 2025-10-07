@@ -161,16 +161,26 @@ export class Step2UserContextResolutionService
       const cacheKey = `${RBAC_CACHE_KEYS.USER_CONTEXT}:${baseUserContext.workspaceMemberId}`;
 
       if (this.cacheManager) {
-        const cachedContext =
-          await this.cacheManager.get<EnhancedUserContext>(cacheKey);
+        const cachedData = await this.cacheManager.get<{
+          userContext: EnhancedUserContext;
+          hierarchyContext: OrganizationalHierarchyContext;
+          departmentContext: DepartmentTeamContext;
+        }>(cacheKey);
 
-        if (cachedContext) {
+        if (cachedData) {
           this.logger.debug(
-            `Cache HIT: User context for ${baseUserContext.workspaceMemberId}`,
+            `Cache HIT: User context + hierarchy + department for ${baseUserContext.workspaceMemberId}`,
           );
 
-          return this.createSuccessResult(
-            cachedContext,
+          // Update context with all cached data
+          context.userContext = cachedData.userContext;
+          context.hierarchyContext = cachedData.hierarchyContext;
+          context.departmentTeamContext = cachedData.departmentContext;
+
+          return this.createSuccessResultWithFullContext(
+            cachedData.userContext,
+            cachedData.hierarchyContext,
+            cachedData.departmentContext,
             stepStartTime,
             'CACHE',
           );
@@ -210,15 +220,22 @@ export class Step2UserContextResolutionService
         departmentContext,
       );
 
-      // 7. Cache the enhanced user context (using centralized TTL constant)
+      // 7. Cache the enhanced user context AND hierarchy context (using centralized TTL constant)
       if (this.cacheManager) {
+        // Cache user context, hierarchy context, and department context together
+        const cacheData = {
+          userContext: enhancedUserContext,
+          hierarchyContext,
+          departmentContext,
+        };
+
         await this.cacheManager.set(
           cacheKey,
-          enhancedUserContext,
+          cacheData,
           RBAC_CACHE_TTL.STEP_RESULT, // 15 minutes
         );
         this.logger.debug(
-          `Cache SET: User context for ${baseUserContext.workspaceMemberId}`,
+          `Cache SET: User context + hierarchy + department for ${baseUserContext.workspaceMemberId}`,
         );
       }
 
@@ -229,26 +246,13 @@ export class Step2UserContextResolutionService
 
       this.logger.debug(`Step 2: ${this.stepName} completed successfully`);
 
-      return {
-        result: CheckResult.PASS,
-        reason: 'User context resolution completed successfully',
-        continue: true,
-        executionTime: DateTime.now().diff(stepStartTime).as('milliseconds'),
-        metadata: {
-          userContextEnriched: true,
-          hierarchyResolved: !!hierarchyContext,
-          departmentResolved: !!departmentContext,
-          userActive: enhancedUserContext.isActive,
-          userLevel: hierarchyContext?.userLevel,
-          departmentId: departmentContext?.userDepartmentId,
-          source: 'DATABASE', // Indicate data came from DB
-        },
-        modifyContext: {
-          userContext: enhancedUserContext,
-          hierarchyContext,
-          departmentTeamContext: departmentContext,
-        },
-      };
+      return this.createSuccessResultWithFullContext(
+        enhancedUserContext,
+        hierarchyContext,
+        departmentContext,
+        stepStartTime,
+        'DATABASE',
+      );
     } catch (error) {
       this.logger.error(
         `Step 2: ${this.stepName} error: ${error.message}`,
@@ -830,7 +834,40 @@ export class Step2UserContextResolutionService
   }
 
   /**
-   * Create a success result from cached context
+   * Create a success result with full context (userContext + hierarchyContext + departmentContext)
+   */
+  private createSuccessResultWithFullContext(
+    userContext: EnhancedUserContext,
+    hierarchyContext: OrganizationalHierarchyContext,
+    departmentContext: DepartmentTeamContext,
+    startTime: DateTime,
+    source: 'CACHE' | 'DATABASE',
+  ): StepValidationResult {
+    return {
+      result: CheckResult.PASS,
+      reason: `User context resolved from ${source}`,
+      continue: true,
+      executionTime: DateTime.now().diff(startTime).as('milliseconds'),
+      metadata: {
+        userContextEnriched: true,
+        hierarchyResolved: !!hierarchyContext,
+        departmentResolved: !!departmentContext,
+        userActive: userContext.isActive,
+        userLevel: hierarchyContext?.userLevel,
+        departmentId: departmentContext?.userDepartmentId,
+        source,
+      },
+      modifyContext: {
+        userContext,
+        hierarchyContext,
+        departmentTeamContext: departmentContext,
+      },
+    };
+  }
+
+  /**
+   * Create a success result from cached context (legacy - deprecated)
+   * @deprecated Use createSuccessResultWithFullContext instead
    */
   private createSuccessResult(
     userContext: EnhancedUserContext,

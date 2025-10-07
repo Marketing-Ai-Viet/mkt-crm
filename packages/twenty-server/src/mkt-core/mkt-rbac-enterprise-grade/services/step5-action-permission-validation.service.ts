@@ -899,6 +899,12 @@ export class Step5ActionPermissionValidationService
         `Found ${userTemplateAssignments.length} template assignments for user`,
       );
 
+      if (userTemplateAssignments.length === 0) {
+        this.logger.warn(
+          `No templates found for user - whereClause: ${JSON.stringify(whereClause)}`,
+        );
+      }
+
       const appliedTemplates: string[] = [];
 
       // Check each assigned template for matching permissions
@@ -908,12 +914,20 @@ export class Step5ActionPermissionValidationService
 
           appliedTemplates.push(template.id);
 
+          this.logger.debug(
+            `Checking template: ${template.templateName || template.id} - priority: ${template.priority}, isSystem: ${template.isSystemTemplate}`,
+          );
+
           // For system templates or high priority templates, grant permission
           // High priority = >= 500 (TEMPLATE:SYSTEM_DEFAULT baseline)
           if (
             template.isSystemTemplate ||
             template.priority >= MIN_ELEVATED_PERMISSION_PRIORITY
           ) {
+            this.logger.debug(
+              `Template ${template.templateName || template.id} grants permission - returning PASS`,
+            );
+
             return {
               hasPermission: true,
               source: 'TEMPLATE_BASED',
@@ -931,15 +945,19 @@ export class Step5ActionPermissionValidationService
         }
       }
 
+      // No matching high-priority templates found
+      // Do NOT grant basic permission - defer to hierarchy check
       return {
-        hasPermission: appliedTemplates.length > 0, // Grant basic permission if user has any templates
+        hasPermission: false,
         source: 'TEMPLATE_BASED',
         level: 'READ',
         restrictions:
           appliedTemplates.length === 0
             ? ['No permission templates assigned']
-            : [],
-        confidence: appliedTemplates.length > 0 ? 60 : 0,
+            : [
+                'User templates do not meet minimum priority requirements for this action',
+              ],
+        confidence: 0,
         metadata: {
           appliedTemplates,
           userOverrides: [],
