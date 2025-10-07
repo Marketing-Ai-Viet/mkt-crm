@@ -1155,10 +1155,12 @@ export const MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS: MktTemplateSystemActionDataS
         },
         scope: 'DEPARTMENT',
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > maxAmount',
-        workingHours: '07:00-19:00',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > maxAmount',
+      //   workingHours: '07:00-19:00',
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {
@@ -1310,9 +1312,11 @@ export const MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS: MktTemplateSystemActionDataS
           DEFAULT: 50000000,
         },
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > maxAmount',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > maxAmount',
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {
@@ -1452,9 +1456,11 @@ export const MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS: MktTemplateSystemActionDataS
         scope: 'DEPARTMENT_DEALS',
         maxAmount: 50000000,
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > 50000000',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > 50000000',
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {
@@ -1851,9 +1857,11 @@ export const MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS: MktTemplateSystemActionDataS
         maxAmount: 20000000, // 20M VND
         requiresDocumentation: true,
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > 20000000',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > 20000000',
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {

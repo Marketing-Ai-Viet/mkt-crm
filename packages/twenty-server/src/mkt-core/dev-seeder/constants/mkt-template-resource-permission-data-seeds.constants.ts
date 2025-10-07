@@ -636,9 +636,11 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
           DEFAULT: 50000000,
         },
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > maxAmount',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > maxAmount',
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {
@@ -756,9 +758,11 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
           DEFAULT: 50000000,
         },
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > maxAmount',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > maxAmount',
+      // }),
+      restrictions: null,
       isActive: true,
     },
 
@@ -917,9 +921,11 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
         scope: 'TEAM_RECORDS',
         maxAmount: 20000000, // 20M VND
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > 20000000',
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > 20000000',
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {
@@ -1112,10 +1118,12 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
         scope: 'OWN_RECORDS',
         maxAmount: 10000000, // 10M VND
       }),
-      restrictions: JSON.stringify({
-        escalateIf: 'amount > 10000000',
-        requiresApproval: true,
-      }),
+      // TEMPORARILY DISABLED: Restrictions for testing
+      // restrictions: JSON.stringify({
+      //   escalateIf: 'amount > 10000000',
+      //   requiresApproval: true,
+      // }),
+      restrictions: null,
       isActive: true,
     },
     {

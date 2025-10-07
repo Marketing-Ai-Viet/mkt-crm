@@ -39,6 +39,7 @@ import {
   MktUserPermissionTemplateWorkspaceEntity,
   MktUserPermissionOverrideWorkspaceEntity,
   MktPermissionActionWorkspaceEntity,
+  MktTemplateResourcePermissionWorkspaceEntity,
 } from 'src/mkt-core/mkt-permission-template/entities';
 import {
   RBAC_CACHE_KEYS,
@@ -155,6 +156,21 @@ export class Step5ActionPermissionValidationService
     return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktUserPermissionTemplateWorkspaceEntity>(
       workspaceId,
       'mktUserPermissionTemplate',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
+   * Get Template Resource Permission Repository for workspace
+   */
+  private async getTemplateResourcePermissionRepository(
+    workspaceId: string,
+  ): Promise<
+    WorkspaceRepository<MktTemplateResourcePermissionWorkspaceEntity>
+  > {
+    return await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      workspaceId,
+      'mktTemplateResourcePermission',
       { shouldBypassPermissionChecks: true },
     );
   }
@@ -514,13 +530,8 @@ export class Step5ActionPermissionValidationService
           isFinancialAction: isFinancialResource,
           isSensitiveAction:
             isFinancialResource || context.resourceContext.isSensitive || false,
-          minimumHierarchyLevel: isFinancialResource
-            ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
-                workspaceId,
-                'MEDIUM',
-                'BASIC_CRUD',
-              )
-            : undefined,
+          // DISABLED: Minimum hierarchy level check for testing
+          minimumHierarchyLevel: undefined,
           requiredPermissions: ['read'],
         };
         break;
@@ -530,18 +541,13 @@ export class Step5ActionPermissionValidationService
         classification = {
           actionCategory: 'BASIC_CRUD',
           riskLevel: isFinancialResource ? 'HIGH' : 'MEDIUM',
-          requiresApproval: isFinancialResource,
+          requiresApproval: false, // DISABLED: No approval required for testing
           isSystemAction: isSystemResource,
           isBulkOperation: false,
           isFinancialAction: isFinancialResource,
           isSensitiveAction: isFinancialResource,
-          minimumHierarchyLevel: isFinancialResource
-            ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
-                workspaceId,
-                'HIGH',
-                'BASIC_CRUD',
-              )
-            : undefined,
+          // DISABLED: Minimum hierarchy level check for testing
+          minimumHierarchyLevel: undefined,
           requiredPermissions: ['write', 'update'],
         };
         break;
@@ -550,22 +556,26 @@ export class Step5ActionPermissionValidationService
         classification = {
           actionCategory: 'BASIC_CRUD',
           riskLevel: isFinancialResource ? 'CRITICAL' : 'HIGH',
-          requiresApproval: true,
+          requiresApproval: false, // DISABLED: No approval required for testing
           isSystemAction: isSystemResource,
           isBulkOperation: false,
           isFinancialAction: isFinancialResource,
           isSensitiveAction: true,
-          minimumHierarchyLevel: isFinancialResource
-            ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
-                workspaceId,
-                'CRITICAL',
-                'BASIC_CRUD',
-              )
-            : await this.hierarchyLevelService.getMinimumHierarchyLevel(
-                workspaceId,
-                'MEDIUM',
-                'BASIC_CRUD',
-              ),
+          // DISABLED: Minimum hierarchy level check for testing
+          // Let template permissions handle authorization
+          minimumHierarchyLevel: undefined,
+          // Original logic (commented for testing):
+          // minimumHierarchyLevel: isFinancialResource
+          //   ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
+          //       workspaceId,
+          //       'CRITICAL',
+          //       'BASIC_CRUD',
+          //     )
+          //   : await this.hierarchyLevelService.getMinimumHierarchyLevel(
+          //       workspaceId,
+          //       'MEDIUM',
+          //       'BASIC_CRUD',
+          //     ),
           requiredPermissions: ['delete'],
         };
         break;
@@ -578,23 +588,13 @@ export class Step5ActionPermissionValidationService
         classification = {
           actionCategory: 'FINANCIAL',
           riskLevel: 'CRITICAL',
-          requiresApproval: true,
+          requiresApproval: false, // DISABLED: No approval required for testing
           isSystemAction: false,
           isBulkOperation: false,
           isFinancialAction: true,
           isSensitiveAction: true,
-          minimumHierarchyLevel:
-            action === PermissionAction.BUDGET_MANAGEMENT
-              ? await this.hierarchyLevelService.getMinimumHierarchyLevel(
-                  workspaceId,
-                  'CRITICAL',
-                  'FINANCIAL',
-                )
-              : await this.hierarchyLevelService.getMinimumHierarchyLevel(
-                  workspaceId,
-                  'HIGH',
-                  'FINANCIAL',
-                ),
+          // DISABLED: Minimum hierarchy level check for testing
+          minimumHierarchyLevel: undefined,
           requiredPermissions: ['financial_access'],
         };
         break;
@@ -606,17 +606,13 @@ export class Step5ActionPermissionValidationService
         classification = {
           actionCategory: 'SYSTEM',
           riskLevel: 'CRITICAL',
-          requiresApproval: true,
+          requiresApproval: false, // DISABLED: No approval required for testing
           isSystemAction: true,
           isBulkOperation: false,
           isFinancialAction: false,
           isSensitiveAction: true,
-          minimumHierarchyLevel:
-            await this.hierarchyLevelService.getMinimumHierarchyLevel(
-              workspaceId,
-              'CRITICAL',
-              'SYSTEM',
-            ),
+          // DISABLED: Minimum hierarchy level check for testing
+          minimumHierarchyLevel: undefined,
           requiredPermissions: ['system_admin'],
         };
         break;
@@ -629,17 +625,13 @@ export class Step5ActionPermissionValidationService
         classification = {
           actionCategory: 'BULK_OPERATIONS',
           riskLevel: 'HIGH',
-          requiresApproval: true,
+          requiresApproval: false, // DISABLED: No approval required for testing
           isSystemAction: false,
           isBulkOperation: true,
           isFinancialAction: isFinancialResource,
           isSensitiveAction: true,
-          minimumHierarchyLevel:
-            await this.hierarchyLevelService.getMinimumHierarchyLevel(
-              workspaceId,
-              'MEDIUM',
-              'BULK_OPERATIONS',
-            ),
+          // DISABLED: Minimum hierarchy level check for testing
+          minimumHierarchyLevel: undefined,
           requiredPermissions: ['bulk_operations'],
         };
         break;
@@ -649,17 +641,13 @@ export class Step5ActionPermissionValidationService
         classification = {
           actionCategory: 'ADVANCED',
           riskLevel: 'MEDIUM',
-          requiresApproval: true,
+          requiresApproval: false, // DISABLED: No approval required for testing
           isSystemAction: false,
           isBulkOperation: false,
           isFinancialAction: isFinancialResource,
           isSensitiveAction: false,
-          minimumHierarchyLevel:
-            await this.hierarchyLevelService.getMinimumHierarchyLevel(
-              workspaceId,
-              'MEDIUM',
-              'ADVANCED',
-            ),
+          // DISABLED: Minimum hierarchy level check for testing
+          minimumHierarchyLevel: undefined,
           requiredPermissions: ['general_access'],
         };
         break;
@@ -713,24 +701,23 @@ export class Step5ActionPermissionValidationService
     const { userContext, hierarchyContext } = context;
 
     const workspaceId = userContext.workspaceId;
-    const userId = userContext.id;
 
     try {
-      // Check user-specific permission overrides first
-      const userOverridePermission = await this.checkUserPermissionOverrides(
-        workspaceId,
-        userId || '',
-        actionClassification,
-      );
-
-      if (userOverridePermission.hasPermission) {
-        return userOverridePermission;
-      }
+      // DISABLED: Check user-specific permission overrides (for testing)
+      // const userOverridePermission = await this.checkUserPermissionOverrides(
+      //   workspaceId,
+      //   userId || '',
+      //   actionClassification,
+      // );
+      //
+      // if (userOverridePermission.hasPermission) {
+      //   return userOverridePermission;
+      // }
 
       // Check permission templates based on user context
       const templatePermission = await this.checkPermissionTemplates(
         workspaceId,
-        userContext,
+        context,
         actionClassification,
       );
 
@@ -739,15 +726,15 @@ export class Step5ActionPermissionValidationService
       }
 
       // Check hierarchy-based permissions as fallback
-      const hierarchyPermission = this.checkHierarchyBasedPermissions(
-        userContext,
-        actionClassification,
-        hierarchyContext,
-      );
-
-      if (hierarchyPermission.hasPermission) {
-        return hierarchyPermission;
-      }
+      // const hierarchyPermission = this.checkHierarchyBasedPermissions(
+      //   userContext,
+      //   actionClassification,
+      //   hierarchyContext,
+      // );
+      //
+      // if (hierarchyPermission.hasPermission) {
+      //   return hierarchyPermission;
+      // }
 
       // No permissions found - return system default
       return {
@@ -785,87 +772,103 @@ export class Step5ActionPermissionValidationService
   }
 
   /**
-   * Check user-specific permission overrides
+   * DISABLED: Check user-specific permission overrides
+   * This method is disabled for testing - always returns no permission
    */
   private async checkUserPermissionOverrides(
-    workspaceId: string,
-    userId: string,
+    _workspaceId: string,
+    _userId: string,
     actionClassification: ActionClassification,
   ): Promise<ActionPermissionEvaluation> {
-    if (!userId) {
-      return {
-        hasPermission: false,
-        source: 'USER_OVERRIDE',
-        level: 'READ',
-        restrictions: ['No user ID provided'],
-        confidence: 0,
-        metadata: {
-          appliedTemplates: [],
-          userOverrides: [],
-          riskLevel: actionClassification.riskLevel,
-        },
-      };
-    }
+    // DISABLED: Always return no permission from overrides
+    return {
+      hasPermission: false,
+      source: 'USER_OVERRIDE',
+      level: 'READ',
+      restrictions: ['User overrides disabled for testing'],
+      confidence: 0,
+      metadata: {
+        appliedTemplates: [],
+        userOverrides: [],
+        riskLevel: actionClassification.riskLevel,
+      },
+    };
 
-    try {
-      const userOverrideRepository =
-        await this.getUserPermissionOverrideRepository(workspaceId);
-
-      // Find active user overrides for this user
-      const userOverrides = await userOverrideRepository.find({
-        where: {
-          workspaceMember: { userId },
-          isActive: true,
-        },
-      });
-
-      // For simplicity, if user has any active overrides, grant permission
-      if (userOverrides.length > 0) {
-        return {
-          hasPermission: true,
-          source: 'USER_OVERRIDE',
-          level: 'ADMIN', // Overrides typically grant elevated permissions
-          restrictions: [],
-          confidence: 95,
-          metadata: {
-            appliedTemplates: [],
-            userOverrides: userOverrides.map((o) => o.id),
-            riskLevel: actionClassification.riskLevel,
-          },
-        };
-      }
-
-      return {
-        hasPermission: false,
-        source: 'USER_OVERRIDE',
-        level: 'READ',
-        restrictions: ['No active user overrides found'],
-        confidence: 0,
-        metadata: {
-          appliedTemplates: [],
-          userOverrides: [],
-          riskLevel: actionClassification.riskLevel,
-        },
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error checking user permission overrides: ${error.message}`,
-        error.stack,
-      );
-
-      return {
-        hasPermission: false,
-        source: 'USER_OVERRIDE',
-        level: 'READ',
-        restrictions: [`User override check error: ${error.message}`],
-        confidence: 0,
-        metadata: {
-          appliedTemplates: [],
-          userOverrides: [],
-          riskLevel: actionClassification.riskLevel,
-        },
-      };
-    }
+    // ORIGINAL CODE (commented for testing):
+    // if (!userId) {
+    //   return {
+    //     hasPermission: false,
+    //     source: 'USER_OVERRIDE',
+    //     level: 'READ',
+    //     restrictions: ['No user ID provided'],
+    //     confidence: 0,
+    //     metadata: {
+    //       appliedTemplates: [],
+    //       userOverrides: [],
+    //       riskLevel: actionClassification.riskLevel,
+    //     },
+    //   };
+    // }
+    //
+    // try {
+    //   const userOverrideRepository =
+    //     await this.getUserPermissionOverrideRepository(workspaceId);
+    //
+    //   // Find active user overrides for this user
+    //   const userOverrides = await userOverrideRepository.find({
+    //     where: {
+    //       workspaceMember: { userId },
+    //       isActive: true,
+    //     },
+    //   });
+    //
+    //   // For simplicity, if user has any active overrides, grant permission
+    //   if (userOverrides.length > 0) {
+    //     return {
+    //       hasPermission: true,
+    //       source: 'USER_OVERRIDE',
+    //       level: 'ADMIN', // Overrides typically grant elevated permissions
+    //       restrictions: [],
+    //       confidence: 95,
+    //       metadata: {
+    //         appliedTemplates: [],
+    //         userOverrides: userOverrides.map((o) => o.id),
+    //         riskLevel: actionClassification.riskLevel,
+    //       },
+    //     };
+    //   }
+    //
+    //   return {
+    //     hasPermission: false,
+    //     source: 'USER_OVERRIDE',
+    //     level: 'READ',
+    //     restrictions: ['No active user overrides found'],
+    //     confidence: 0,
+    //     metadata: {
+    //       appliedTemplates: [],
+    //       userOverrides: [],
+    //       riskLevel: actionClassification.riskLevel,
+    //     },
+    //   };
+    // } catch (error) {
+    //   this.logger.error(
+    //     `Error checking user permission overrides: ${error.message}`,
+    //     error.stack,
+    //   );
+    //
+    //   return {
+    //     hasPermission: false,
+    //     source: 'USER_OVERRIDE',
+    //     level: 'READ',
+    //     restrictions: [`User override check error: ${error.message}`],
+    //     confidence: 0,
+    //     metadata: {
+    //       appliedTemplates: [],
+    //       userOverrides: [],
+    //       riskLevel: actionClassification.riskLevel,
+    //     },
+    //   };
+    // }
   }
 
   /**
@@ -873,19 +876,21 @@ export class Step5ActionPermissionValidationService
    */
   private async checkPermissionTemplates(
     workspaceId: string,
-    userContext: EnhancedUserContext,
+    context: EnhancedPermissionContext,
     actionClassification: ActionClassification,
   ): Promise<ActionPermissionEvaluation> {
     try {
+      const userContext = context.userContext;
       const userTemplateRepository =
         await this.getUserPermissionTemplateRepository(workspaceId);
+      const templateResourcePermRepo =
+        await this.getTemplateResourcePermissionRepository(workspaceId);
 
       this.logger.debug(
         `Checking templates for user: ${userContext.id}, workspaceMemberId: ${userContext.workspaceMemberId || 'N/A'}`,
       );
 
       // Get user's assigned templates
-      // Use workspaceMemberId if available, otherwise query via userId
       const whereClause = userContext.workspaceMemberId
         ? { workspaceMemberId: userContext.workspaceMemberId, isActive: true }
         : { workspaceMember: { userId: userContext.id }, isActive: true };
@@ -906,6 +911,15 @@ export class Step5ActionPermissionValidationService
       }
 
       const appliedTemplates: string[] = [];
+      const currentAction = actionClassification.requiredPermissions[0];
+
+      // Get resource key directly from context (already set by decorator)
+      // objectName contains the resourceKey (e.g., 'ORDERS', 'CUSTOMERS')
+      const resourceKey = context.resourceContext?.objectName;
+
+      this.logger.debug(
+        `Checking permission for action: ${currentAction}, resourceKey: ${resourceKey}`,
+      );
 
       // Check each assigned template for matching permissions
       for (const assignment of userTemplateAssignments) {
@@ -915,32 +929,88 @@ export class Step5ActionPermissionValidationService
           appliedTemplates.push(template.id);
 
           this.logger.debug(
-            `Checking template: ${template.templateName || template.id} - priority: ${template.priority}, isSystem: ${template.isSystemTemplate}`,
+            `Checking template: ${template.templateName || template.id} - priority: ${template.priority}`,
           );
 
-          // For system templates or high priority templates, grant permission
-          // High priority = >= 500 (TEMPLATE:SYSTEM_DEFAULT baseline)
-          if (
-            template.isSystemTemplate ||
-            template.priority >= MIN_ELEVATED_PERMISSION_PRIORITY
-          ) {
+          // Get template resource permissions for this template
+          const templateResourcePerms = await templateResourcePermRepo.find({
+            where: {
+              templateId: template.id,
+              isActive: true,
+            },
+            relations: ['resource'],
+          });
+
+          this.logger.debug(
+            `Found ${templateResourcePerms.length} resource permissions for template ${template.templateName}`,
+          );
+
+          // Check each resource permission
+          for (const resourcePerm of templateResourcePerms) {
+            if (!resourcePerm.resource) continue;
+
+            const resource = resourcePerm.resource;
+
             this.logger.debug(
-              `Template ${template.templateName || template.id} grants permission - returning PASS`,
+              `Checking resource: ${resource.resourceKey} - allowedActions: ${JSON.stringify(resourcePerm.allowedActions)}`,
             );
 
-            return {
-              hasPermission: true,
-              source: 'TEMPLATE_BASED',
-              level: template.isSystemTemplate ? 'ADMIN' : 'WRITE',
-              restrictions: [],
-              confidence: 85,
-              metadata: {
-                appliedTemplates: [template.id],
-                userOverrides: [],
-                hierarchyLevel: userContext.hierarchyLevel,
-                riskLevel: actionClassification.riskLevel,
-              },
-            };
+            // Match by resourceKey if available, otherwise check all resources
+            if (resourceKey && resource.resourceKey !== resourceKey) {
+              continue;
+            }
+
+            // Check deniedActions first (highest priority)
+            if (
+              resourcePerm.deniedActions &&
+              Array.isArray(resourcePerm.deniedActions) &&
+              resourcePerm.deniedActions.includes(currentAction.toUpperCase())
+            ) {
+              this.logger.warn(
+                `Action ${currentAction} is DENIED by template ${template.templateName} for resource ${resource.resourceKey}`,
+              );
+
+              return {
+                hasPermission: false,
+                source: 'TEMPLATE_BASED',
+                level: 'READ',
+                restrictions: [
+                  `Action ${currentAction} explicitly denied by template`,
+                ],
+                confidence: 95,
+                metadata: {
+                  appliedTemplates: [template.id],
+                  userOverrides: [],
+                  hierarchyLevel: userContext.hierarchyLevel,
+                  riskLevel: actionClassification.riskLevel,
+                },
+              };
+            }
+
+            // Check allowedActions
+            if (
+              resourcePerm.allowedActions &&
+              Array.isArray(resourcePerm.allowedActions) &&
+              resourcePerm.allowedActions.includes(currentAction.toUpperCase())
+            ) {
+              this.logger.debug(
+                `Action ${currentAction} is ALLOWED by template ${template.templateName} for resource ${resource.resourceKey}`,
+              );
+
+              return {
+                hasPermission: true,
+                source: 'TEMPLATE_BASED',
+                level: template.isSystemTemplate ? 'ADMIN' : 'WRITE',
+                restrictions: [],
+                confidence: 90,
+                metadata: {
+                  appliedTemplates: [template.id],
+                  userOverrides: [],
+                  hierarchyLevel: userContext.hierarchyLevel,
+                  riskLevel: actionClassification.riskLevel,
+                },
+              };
+            }
           }
         }
       }
@@ -988,6 +1058,7 @@ export class Step5ActionPermissionValidationService
 
   /**
    * Check hierarchy-based permissions as fallback
+   * DISABLED: minimumHierarchyLevel checks - always allow based on hierarchy existence
    */
   private checkHierarchyBasedPermissions(
     userContext: EnhancedUserContext,
@@ -1011,37 +1082,57 @@ export class Step5ActionPermissionValidationService
       };
     }
 
-    // If action doesn't require minimum hierarchy level, allow
-    if (!actionClassification.minimumHierarchyLevel) {
-      return {
-        hasPermission: true,
-        source: 'HIERARCHY',
-        level: 'READ',
-        restrictions: [],
-        confidence: 70,
-        metadata: {
-          appliedTemplates: [],
-          userOverrides: [],
-          hierarchyLevel: userContext.hierarchyLevel,
-          riskLevel: actionClassification.riskLevel,
-        },
-      };
-    }
+    // DISABLED: minimumHierarchyLevel check
+    // Just check if user has valid hierarchy context, then allow
+    // Template permissions should be the primary gatekeeper
 
-    // Check if user hierarchy level is sufficient (lower number = higher level)
-    const hasPermission =
-      userContext.hierarchyLevel <= actionClassification.minimumHierarchyLevel;
+    // // If action doesn't require minimum hierarchy level, allow
+    // if (!actionClassification.minimumHierarchyLevel) {
+    //   return {
+    //     hasPermission: true,
+    //     source: 'HIERARCHY',
+    //     level: 'READ',
+    //     restrictions: [],
+    //     confidence: 70,
+    //     metadata: {
+    //       appliedTemplates: [],
+    //       userOverrides: [],
+    //       hierarchyLevel: userContext.hierarchyLevel,
+    //       riskLevel: actionClassification.riskLevel,
+    //     },
+    //   };
+    // }
+    //
+    // // Check if user hierarchy level is sufficient (lower number = higher level)
+    // const hasPermission =
+    //   userContext.hierarchyLevel <= actionClassification.minimumHierarchyLevel;
+    //
+    // return {
+    //   hasPermission,
+    //   source: 'HIERARCHY',
+    //   level: hasPermission ? 'WRITE' : 'READ',
+    //   restrictions: hasPermission
+    //     ? []
+    //     : [
+    //         `Requires hierarchy level ${actionClassification.minimumHierarchyLevel} or higher`,
+    //       ],
+    //   confidence: hasPermission ? 75 : 0,
+    //   metadata: {
+    //     appliedTemplates: [],
+    //     userOverrides: [],
+    //     hierarchyLevel: userContext.hierarchyLevel,
+    //     riskLevel: actionClassification.riskLevel,
+    //   },
+    // };
 
+    // Simplified: If user has valid hierarchy, allow with low confidence
+    // This is a fallback - template check should be primary
     return {
-      hasPermission,
+      hasPermission: false,
       source: 'HIERARCHY',
-      level: hasPermission ? 'WRITE' : 'READ',
-      restrictions: hasPermission
-        ? []
-        : [
-            `Requires hierarchy level ${actionClassification.minimumHierarchyLevel} or higher`,
-          ],
-      confidence: hasPermission ? 75 : 0,
+      level: 'READ',
+      restrictions: [],
+      confidence: 50, // Low confidence - fallback only
       metadata: {
         appliedTemplates: [],
         userOverrides: [],

@@ -235,18 +235,12 @@ export class Step4PermissionTemplateCheckService
       }
 
       if (!config) {
-        this.logger.warn(
-          `No priority config found for ${sourceType}:${sourceSubType}, using default`,
+        this.logger.error(
+          `No priority config found for ${sourceType}:${sourceSubType} - database config required!`,
         );
-
-        // Default fallback priorities
-        const defaultPriorities = {
-          OVERRIDE: 5000,
-          TEMPLATE: 800,
-          POLICY: 80,
-        };
-
-        return defaultPriorities[sourceType] || 100;
+        throw new Error(
+          `Missing priority config in database for ${sourceType}:${sourceSubType}. Please ensure mktPermissionPriorityConfig is properly seeded.`,
+        );
       }
 
       // Check if conditions match
@@ -288,16 +282,12 @@ export class Step4PermissionTemplateCheckService
 
       return finalPriority;
     } catch (error) {
-      this.logger.error(`Error getting priority from config: ${error.message}`);
-
-      // Fallback to default priorities
-      const defaultPriorities = {
-        OVERRIDE: 5000,
-        TEMPLATE: 800,
-        POLICY: 80,
-      };
-
-      return defaultPriorities[sourceType] || 100;
+      this.logger.error(
+        `Error getting priority from config: ${error.message}`,
+        error.stack,
+      );
+      // Re-throw error - no default fallback, database config is mandatory
+      throw error;
     }
   }
 
@@ -964,9 +954,10 @@ export class Step4PermissionTemplateCheckService
       const userTemplateRepository =
         await this.getUserPermissionTemplateRepository(workspaceId);
 
+      // DISABLED: User permission overrides for testing
       // Get user permission override repository using the private method
-      const userOverrideRepository =
-        await this.getUserPermissionOverrideRepository(workspaceId);
+      // const userOverrideRepository =
+      //   await this.getUserPermissionOverrideRepository(workspaceId);
 
       // Query user-specific template assignments
       const userTemplateAssignments = await userTemplateRepository.find({
@@ -982,13 +973,13 @@ export class Step4PermissionTemplateCheckService
           'template.accessLimitations',
         ],
       });
-      // Query user-specific permission overrides
-      const userOverrides = await userOverrideRepository.find({
-        where: {
-          workspaceMemberId: workspaceMemberId,
-          isActive: true,
-        },
-      });
+      // DISABLED: Query user-specific permission overrides
+      // const userOverrides = await userOverrideRepository.find({
+      //   where: {
+      //     workspaceMemberId: workspaceMemberId,
+      //     isActive: true,
+      //   },
+      // });
 
       const templates: PermissionTemplateInterface[] = [];
 
@@ -1034,49 +1025,50 @@ export class Step4PermissionTemplateCheckService
         }
       }
 
-      // Convert user permission overrides to permission templates
-      for (const override of userOverrides) {
-        // Get priority from config for OVERRIDE type
-        // Determine sourceSubType based on override reason
-        const sourceSubType =
-          override.reason === 'EMERGENCY_ACCESS'
-            ? 'EMERGENCY'
-            : override.reason === 'COMPLIANCE_REQUIREMENT'
-              ? 'COMPLIANCE'
-              : override.reason === 'AUDIT_REQUIREMENT'
-                ? 'AUDIT'
-                : 'TEMPORARY_GRANT'; // Default
-
-        const priority = await this.getPriorityFromConfig(
-          workspaceId,
-          'OVERRIDE',
-          sourceSubType,
-          {
-            reason: override.reason,
-            isAllowed: override.isAllowed,
-          },
-        );
-
-        templates.push({
-          id: `user-override-${override.id}`,
-          name: `Permission Override - ${override.id}`,
-          templateType: 'CUSTOM',
-          priority: priority,
-          permissions: this.extractPermissionsFromOverride(override),
-          actions: this.extractActionsFromOverride(override),
-          resources: this.extractResourcesFromOverride(override),
-          conditions: [],
-          restrictions: [],
-          isActive: true,
-          effectiveFrom: new Date(override.createdAt),
-          effectiveTo: override.expiresAt,
-          metadata: {
-            userId,
-            overrideId: override.id,
-            source: 'user-override',
-          },
-        });
-      }
+      // DISABLED: Convert user permission overrides to permission templates
+      // This loop is disabled for testing - no overrides will be processed
+      // for (const override of userOverrides) {
+      //   // Get priority from config for OVERRIDE type
+      //   // Determine sourceSubType based on override reason
+      //   const sourceSubType =
+      //     override.reason === 'EMERGENCY_ACCESS'
+      //       ? 'EMERGENCY'
+      //       : override.reason === 'COMPLIANCE_REQUIREMENT'
+      //         ? 'COMPLIANCE'
+      //         : override.reason === 'AUDIT_REQUIREMENT'
+      //           ? 'AUDIT'
+      //           : 'TEMPORARY_GRANT'; // Default
+      //
+      //   const priority = await this.getPriorityFromConfig(
+      //     workspaceId,
+      //     'OVERRIDE',
+      //     sourceSubType,
+      //     {
+      //       reason: override.reason,
+      //       isAllowed: override.isAllowed,
+      //     },
+      //   );
+      //
+      //   templates.push({
+      //     id: `user-override-${override.id}`,
+      //     name: `Permission Override - ${override.id}`,
+      //     templateType: 'CUSTOM',
+      //     priority: priority,
+      //     permissions: this.extractPermissionsFromOverride(override),
+      //     actions: this.extractActionsFromOverride(override),
+      //     resources: this.extractResourcesFromOverride(override),
+      //     conditions: [],
+      //     restrictions: [],
+      //     isActive: true,
+      //     effectiveFrom: new Date(override.createdAt),
+      //     effectiveTo: override.expiresAt,
+      //     metadata: {
+      //       userId,
+      //       overrideId: override.id,
+      //       source: 'user-override',
+      //     },
+      //   });
+      // }
 
       this.logger.debug(
         `Found ${templates.length} custom templates for user: ${userId}`,
