@@ -429,6 +429,86 @@ export const SENSITIVE_DATA_TYPES = {
 } as const;
 
 /**
+ * Cấu hình Phân loại Tài nguyên
+ * Được sử dụng bởi Bước 3 (Nhận diện Tài nguyên) để tự động phân loại tài nguyên
+ * Sử dụng PERMISSION_RESOURCE_KEYS từ permission-template constants
+ */
+export const RESOURCE_CLASSIFICATION_CONFIG = {
+  // Các mẫu nhạy cảm - Phát hiện phân loại dữ liệu CONFIDENTIAL/RESTRICTED
+  // Các từ khóa chỉ ra dữ liệu cá nhân hoặc bảo mật nhạy cảm
+  sensitivePatterns: [
+    'salary',
+    'wage',
+    'compensation',
+    'payment',
+    'ssn',
+    'taxid',
+    'personal',
+    'medical',
+    'health',
+    'password',
+    'token',
+    'credential',
+    'secret',
+    'apikey',
+  ],
+
+  // Thời gian lưu trữ dữ liệu (tính bằng ngày)
+  // Dựa trên yêu cầu tuân thủ: SOX, GDPR, CCPA, HIPAA, ISO 27001
+  retentionMapping: {
+    AUDIT: 2555, // 7 năm - Tuân thủ SOX, ISO 27001
+    FINANCIAL: 2555, // 7 năm - Tuân thủ SOX, PCI-DSS
+    PERSONAL: 1095, // 3 năm - Tuân thủ GDPR, CCPA
+    BUSINESS: 365, // 1 năm - dữ liệu kinh doanh tiêu chuẩn
+    SYSTEM: 1825, // 5 năm - lịch sử cấu hình hệ thống
+  },
+
+  // Các khung tuân thủ theo loại dữ liệu
+  // Xác định các quy định áp dụng cho từng danh mục tài nguyên
+  complianceFrameworks: {
+    FINANCIAL: ['SOX', 'PCI_DSS'], // Sarbanes-Oxley, Tiêu chuẩn Ngành Thẻ Thanh toán
+    PERSONAL: ['GDPR', 'CCPA'], // GDPR của EU, CCPA của California
+    MEDICAL: ['HIPAA'], // Khả năng Di chuyển và Trách nhiệm Bảo hiểm Y tế
+    AUDIT: ['ISO_27001', 'SOC_2'], // Tiêu chuẩn bảo mật
+  },
+
+  // Phân loại PERMISSION_RESOURCE_KEYS theo RESOURCE_TYPES
+  // Ánh xạ từ resourceKey (như 'ORDERS', 'USERS') tới resource type
+  resourceKeyClassification: {
+    // ========== BUSINESS_DATA (Core business entities) ==========
+    CUSTOMERS: RESOURCE_TYPES.BUSINESS_DATA, // Customer records, profiles
+    PRODUCTS: RESOURCE_TYPES.BUSINESS_DATA, // Product catalog, inventory
+    CONFIDENTIAL_INFO: RESOURCE_TYPES.BUSINESS_DATA, // Confidential business info
+
+    // ========== FINANCIAL (Financial and sensitive transactions) ==========
+    ORDERS: RESOURCE_TYPES.FINANCIAL, // Order records (contains pricing, amounts)
+    FINANCIAL_DATA: RESOURCE_TYPES.FINANCIAL, // General financial records
+    SALARY_DATA: RESOURCE_TYPES.FINANCIAL, // Employee compensation (highly sensitive)
+    BUDGET_DATA: RESOURCE_TYPES.FINANCIAL, // Department/project budgets
+    TRANSACTIONS: RESOURCE_TYPES.FINANCIAL, // Financial transactions
+
+    // ========== USER_MGMT (User, department, organization management) ==========
+    USERS: RESOURCE_TYPES.USER_MGMT, // User accounts, profiles
+    DEPARTMENTS: RESOURCE_TYPES.USER_MGMT, // Department structure
+    ORGANIZATION_LEVELS: RESOURCE_TYPES.USER_MGMT, // Organizational hierarchy
+    TEAM_MANAGEMENT: RESOURCE_TYPES.USER_MGMT, // Team assignment, coordination
+
+    // ========== REPORTING (Reports, analytics, KPIs) ==========
+    REPORTS: RESOURCE_TYPES.REPORTING, // Business reports, data visualization
+    ANALYTICS: RESOURCE_TYPES.REPORTING, // Advanced analytics, data mining
+    KPIS: RESOURCE_TYPES.REPORTING, // Key Performance Indicators
+    PERFORMANCE_REVIEWS: RESOURCE_TYPES.REPORTING, // Employee performance evaluations
+
+    // ========== SYSTEM_CONFIG (System settings, configuration) ==========
+    SETTINGS: RESOURCE_TYPES.SYSTEM_CONFIG, // System settings, preferences
+    WORKFLOWS: RESOURCE_TYPES.SYSTEM_CONFIG, // Business process workflows
+    INTEGRATIONS: RESOURCE_TYPES.SYSTEM_CONFIG, // Third-party integrations, APIs
+    PERMISSIONS: RESOURCE_TYPES.SYSTEM_CONFIG, // Permission management, access control
+    AUDIT_LOGS: RESOURCE_TYPES.SYSTEM_CONFIG, // System audit logs, security monitoring
+  },
+} as const;
+
+/**
  * Approval Types
  */
 export const APPROVAL_TYPES = {

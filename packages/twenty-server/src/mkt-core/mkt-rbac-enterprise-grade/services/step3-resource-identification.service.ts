@@ -21,24 +21,24 @@ import {
   CheckResult,
   STEP_PERFORMANCE_CONFIG,
   VALIDATION_STEPS,
-  DATA_CLASSIFICATION,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 import {
   ResourceMetadata,
   OwnershipInheritanceChain,
-  ResourceClassificationConfig,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/resource-identification.types';
 import { VALIDATION_STEP_NAMES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
-import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
+// DISABLED: import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
 import { MktPermissionResourceWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-permission-resource.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 import {
   RBAC_CACHE_KEYS,
   RBAC_CACHE_TTL,
+  RESOURCE_CLASSIFICATION_CONFIG,
+  DATA_CLASSIFICATION,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 import { RbacCacheManagerService } from './rbac-cache-manager.service';
@@ -88,64 +88,23 @@ export class Step3ResourceIdentificationService
     STEP_PERFORMANCE_CONFIG[VALIDATION_STEPS.RESOURCE_IDENTIFICATION]
       .retryAttempts;
 
-  // Resource classification configuration
-  private readonly classificationConfig: ResourceClassificationConfig = {
-    systemObjects: [
-      'user',
-      'workspace',
-      'permission',
-      'role',
-      'setting',
-      'objectMetadata',
-    ],
-    configObjects: ['view', 'webhook', 'apiKey', 'appToken'],
-    auditObjects: ['mktPermissionAudit', 'timelineActivity', 'workflowRun'],
-    userObjects: ['person', 'workspaceMember', 'company', 'opportunity'],
-    financialObjects: ['mktInvoice', 'mktPayment', 'mktOrder', 'mktContract'],
-    complianceObjects: ['mktDataAccessPolicy', 'mktPermissionTemplate'],
-    sensitivePatterns: [
-      'salary',
-      'wage',
-      'payment',
-      'ssn',
-      'personal',
-      'medical',
-      'password',
-      'token',
-      'credential',
-    ],
-    retentionMapping: {
-      AUDIT: 2555, // 7 years
-      FINANCIAL: 2555, // 7 years
-      PERSONAL: 1095, // 3 years
-      BUSINESS: 365, // 1 year
-      SYSTEM: 1825, // 5 years
-    },
-    complianceFrameworks: {
-      FINANCIAL: ['SOX', 'PCI_DSS'],
-      PERSONAL: ['GDPR', 'CCPA'],
-      MEDICAL: ['HIPAA'],
-      AUDIT: ['ISO_27001', 'SOC_2'],
-    },
-  };
-
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     @Optional() private readonly cacheManager?: RbacCacheManagerService,
   ) {}
 
   /**
-   * Get User Permission Override repository
+   * DISABLED: Get User Permission Override repository (for testing)
    */
-  private async getUserPermissionOverrideRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktUserPermissionOverrideWorkspaceEntity>> {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktUserPermissionOverrideWorkspaceEntity>(
-      workspaceId,
-      'mktUserPermissionOverride',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
+  // private async getUserPermissionOverrideRepository(
+  //   workspaceId: string,
+  // ): Promise<WorkspaceRepository<MktUserPermissionOverrideWorkspaceEntity>> {
+  //   return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktUserPermissionOverrideWorkspaceEntity>(
+  //     workspaceId,
+  //     'mktUserPermissionOverride',
+  //     { shouldBypassPermissionChecks: true },
+  //   );
+  // }
 
   /**
    * Get Permission Resource Repository for workspace
@@ -444,19 +403,19 @@ export class Step3ResourceIdentificationService
     objectName: string,
     recordId: string | undefined,
     workspaceId: string,
-    userWorkspaceId: string,
+    _userWorkspaceId: string,
   ): Promise<ResourceMetadata> {
     try {
-      // Use user permission override repository to check if resource has any overrides
-      const overrideRepository =
-        await this.getUserPermissionOverrideRepository(workspaceId);
+      // DISABLED: Permission Override Analysis (for testing)
+      // const overrideRepository =
+      //   await this.getUserPermissionOverrideRepository(workspaceId);
+      //
+      // const resourceOverrides = await overrideRepository.find({
+      //   where: { workspaceMemberId: userWorkspaceId, isActive: true },
+      //   take: 5,
+      // });
 
-      // Get resource-related overrides to understand access patterns
-      // This helps identify if resource has special access requirements
-      const resourceOverrides = await overrideRepository.find({
-        where: { workspaceMemberId: userWorkspaceId, isActive: true },
-        take: 5, // Sample a few overrides to understand patterns
-      });
+      // const resourceOverrides: any[] = []; // Empty - overrides disabled
 
       // Classify resource type
       const resourceType = this.classifyResourceType(objectName);
@@ -502,15 +461,18 @@ export class Step3ResourceIdentificationService
         resourceType,
       );
 
-      // Analyze override patterns to detect special access requirements
-      const hasActiveOverrides = resourceOverrides.length > 0;
-      const hasGrantOverrides = resourceOverrides.some((o) => o.isAllowed);
-      const hasRevokeOverrides = resourceOverrides.some((o) => !o.isAllowed);
+      // DISABLED: Analyze override patterns (for testing)
+      // const hasActiveOverrides = resourceOverrides.length > 0;
+      // const hasGrantOverrides = resourceOverrides.some((o) => o.isAllowed);
+      // const hasRevokeOverrides = resourceOverrides.some((o) => !o.isAllowed);
+      // const hasExpiredOverrides = resourceOverrides.some(
+      //   (o) => o.expiresAt && new Date(o.expiresAt) < new Date(),
+      // );
 
-      // Check if resource has expired overrides (indicates time-sensitive access)
-      const hasExpiredOverrides = resourceOverrides.some(
-        (o) => o.expiresAt && new Date(o.expiresAt) < new Date(),
-      );
+      const hasActiveOverrides = false;
+      const hasGrantOverrides = false;
+      const hasRevokeOverrides = false;
+      const hasExpiredOverrides = false;
 
       // Query data access policies for this resource
       const policyRepository =
@@ -558,12 +520,12 @@ export class Step3ResourceIdentificationService
         crossReferences: [], // Will be populated by cross-reference analysis
         dependencies: [], // Will be populated by dependency analysis
         customAttributes: {
-          // Permission Override Analysis
-          hasPermissionOverrides: hasActiveOverrides,
-          hasGrantOverrides,
-          hasRevokeOverrides,
-          hasExpiredOverrides,
-          activeOverrideCount: resourceOverrides.length,
+          // DISABLED: Permission Override Analysis (for testing)
+          hasPermissionOverrides: hasActiveOverrides, // false
+          hasGrantOverrides, // false
+          hasRevokeOverrides, // false
+          hasExpiredOverrides, // false
+          activeOverrideCount: 0, // resourceOverrides.length disabled
 
           // Data Access Policy Analysis
           hasDataAccessPolicies: dataAccessPolicies.length > 0,
@@ -853,36 +815,25 @@ export class Step3ResourceIdentificationService
 
   // Classification helper methods
   private classifyResourceType(objectName: string): string {
-    const nameLower = objectName.toLowerCase();
+    // objectName is a PERMISSION_RESOURCE_KEY (from @Permission decorator)
+    // ResourceKeys are uppercase like 'ORDERS', 'CUSTOMERS', 'USERS'
+    const upperName = objectName.toUpperCase();
 
-    if (
-      this.classificationConfig.systemObjects.some((obj) =>
-        nameLower.includes(obj),
-      )
-    ) {
-      return 'SYSTEM_CONFIG';
+    // Lookup in resourceKeyClassification map
+    const resourceType =
+      RESOURCE_CLASSIFICATION_CONFIG.resourceKeyClassification[
+        upperName as keyof typeof RESOURCE_CLASSIFICATION_CONFIG.resourceKeyClassification
+      ];
+
+    if (resourceType) {
+      return resourceType;
     }
-    if (
-      this.classificationConfig.financialObjects.some((obj) =>
-        nameLower.includes(obj),
-      )
-    ) {
-      return 'FINANCIAL';
-    }
-    if (
-      this.classificationConfig.auditObjects.some((obj) =>
-        nameLower.includes(obj),
-      )
-    ) {
-      return 'AUDIT_DATA';
-    }
-    if (
-      this.classificationConfig.userObjects.some((obj) =>
-        nameLower.includes(obj),
-      )
-    ) {
-      return 'USER_MGMT';
-    }
+
+    // Fallback: Default to BUSINESS_DATA if resourceKey not found
+    this.logger.warn(
+      `Unknown resourceKey '${objectName}', defaulting to BUSINESS_DATA. ` +
+        `Expected one of: ${Object.keys(RESOURCE_CLASSIFICATION_CONFIG.resourceKeyClassification).join(', ')}`,
+    );
 
     return 'BUSINESS_DATA';
   }
@@ -904,20 +855,20 @@ export class Step3ResourceIdentificationService
     resourceType: string,
   ): string {
     if (resourceType === 'FINANCIAL' || resourceType === 'AUDIT_DATA') {
-      return 'RESTRICTED';
+      return DATA_CLASSIFICATION.RESTRICTED;
     }
     if (resourceType === 'SYSTEM_CONFIG') {
-      return 'CONFIDENTIAL';
+      return DATA_CLASSIFICATION.CONFIDENTIAL;
     }
     if (
-      this.classificationConfig.sensitivePatterns.some((pattern) =>
+      RESOURCE_CLASSIFICATION_CONFIG.sensitivePatterns.some((pattern) =>
         objectName.toLowerCase().includes(pattern),
       )
     ) {
-      return 'CONFIDENTIAL';
+      return DATA_CLASSIFICATION.CONFIDENTIAL;
     }
 
-    return 'INTERNAL';
+    return DATA_CLASSIFICATION.INTERNAL;
   }
 
   private determineSensitivityLevel(
@@ -927,19 +878,19 @@ export class Step3ResourceIdentificationService
     const nameLower = objectName.toLowerCase();
 
     if (resourceType === 'FINANCIAL' && nameLower.includes('payment')) {
-      return 'RESTRICTED';
+      return DATA_CLASSIFICATION.RESTRICTED;
     }
     if (nameLower.includes('password') || nameLower.includes('token')) {
-      return 'TOP_SECRET';
+      return DATA_CLASSIFICATION.TOP_SECRET;
     }
     if (resourceType === 'AUDIT_DATA') {
-      return 'RESTRICTED';
+      return DATA_CLASSIFICATION.RESTRICTED;
     }
     if (resourceType === 'SYSTEM_CONFIG') {
-      return 'CONFIDENTIAL';
+      return DATA_CLASSIFICATION.CONFIDENTIAL;
     }
 
-    return 'INTERNAL';
+    return DATA_CLASSIFICATION.INTERNAL;
   }
 
   private requiresEncryption(
@@ -947,8 +898,8 @@ export class Step3ResourceIdentificationService
     resourceType: string,
   ): boolean {
     return (
-      sensitivityLevel === 'TOP_SECRET' ||
-      sensitivityLevel === 'RESTRICTED' ||
+      sensitivityLevel === DATA_CLASSIFICATION.TOP_SECRET ||
+      sensitivityLevel === DATA_CLASSIFICATION.RESTRICTED ||
       resourceType === 'FINANCIAL'
     );
   }
@@ -959,8 +910,8 @@ export class Step3ResourceIdentificationService
   ): boolean {
     return (
       resourceType === 'FINANCIAL' ||
-      dataClassification === 'RESTRICTED' ||
-      dataClassification === 'CONFIDENTIAL'
+      dataClassification === DATA_CLASSIFICATION.RESTRICTED ||
+      dataClassification === DATA_CLASSIFICATION.CONFIDENTIAL
     );
   }
 
@@ -968,13 +919,19 @@ export class Step3ResourceIdentificationService
     resourceType: string,
     sensitivityLevel: string,
   ): string {
-    if (resourceType === 'FINANCIAL' || sensitivityLevel === 'TOP_SECRET') {
+    if (
+      resourceType === 'FINANCIAL' ||
+      sensitivityLevel === DATA_CLASSIFICATION.TOP_SECRET
+    ) {
       return 'COMPREHENSIVE';
     }
-    if (resourceType === 'AUDIT_DATA' || sensitivityLevel === 'RESTRICTED') {
+    if (
+      resourceType === 'AUDIT_DATA' ||
+      sensitivityLevel === DATA_CLASSIFICATION.RESTRICTED
+    ) {
       return 'DETAILED';
     }
-    if (sensitivityLevel === 'CONFIDENTIAL') {
+    if (sensitivityLevel === DATA_CLASSIFICATION.CONFIDENTIAL) {
       return 'STANDARD';
     }
 
@@ -986,13 +943,13 @@ export class Step3ResourceIdentificationService
     dataClassification: string,
   ): number | undefined {
     if (resourceType === 'AUDIT_DATA' || resourceType === 'FINANCIAL') {
-      return this.classificationConfig.retentionMapping.AUDIT;
+      return RESOURCE_CLASSIFICATION_CONFIG.retentionMapping.AUDIT;
     }
-    if (dataClassification === 'RESTRICTED') {
-      return this.classificationConfig.retentionMapping.PERSONAL;
+    if (dataClassification === DATA_CLASSIFICATION.RESTRICTED) {
+      return RESOURCE_CLASSIFICATION_CONFIG.retentionMapping.PERSONAL;
     }
 
-    return this.classificationConfig.retentionMapping.BUSINESS;
+    return RESOURCE_CLASSIFICATION_CONFIG.retentionMapping.BUSINESS;
   }
 
   private identifyAccessRestrictions(
@@ -1001,11 +958,11 @@ export class Step3ResourceIdentificationService
   ): string[] {
     const restrictions: string[] = [];
 
-    if (sensitivityLevel === 'TOP_SECRET') {
+    if (sensitivityLevel === DATA_CLASSIFICATION.TOP_SECRET) {
       restrictions.push('C_LEVEL_ONLY', 'MFA_REQUIRED', 'IP_RESTRICTED');
-    } else if (sensitivityLevel === 'RESTRICTED') {
+    } else if (sensitivityLevel === DATA_CLASSIFICATION.RESTRICTED) {
       restrictions.push('SENIOR_MANAGEMENT_ONLY', 'MFA_REQUIRED');
-    } else if (sensitivityLevel === 'CONFIDENTIAL') {
+    } else if (sensitivityLevel === DATA_CLASSIFICATION.CONFIDENTIAL) {
       restrictions.push('DEPARTMENT_ONLY');
     }
 

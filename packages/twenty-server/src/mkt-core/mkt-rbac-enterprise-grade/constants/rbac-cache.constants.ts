@@ -29,6 +29,21 @@ export const RBAC_CACHE_KEYS = {
 } as const;
 
 /**
+ * Hierarchy Cache Keys for performance
+ * Standardized cache key generation for hierarchy-related data
+ */
+export const HIERARCHY_CACHE_KEYS = {
+  USER_POSITION: (userId: string) => `hierarchy:user:${userId}`,
+  USER_SUBORDINATES: (userId: string) => `hierarchy:subordinates:${userId}`,
+  REPORTING_CHAIN: (userId: string) => `hierarchy:chain:${userId}`,
+  DEPARTMENT_USERS: (deptId: string) => `hierarchy:dept:${deptId}`,
+  TEAM_MEMBERS: (teamId: string) => `hierarchy:team:${teamId}`,
+  ACCESS_RULES: (level: number) => `hierarchy:rules:${level}`,
+  CROSS_DEPT_MATRIX: (sourceDept: string) =>
+    `hierarchy:crossdept:${sourceDept}`,
+} as const;
+
+/**
  * TTL configurations for different cache types (in milliseconds)
  */
 export const RBAC_CACHE_TTL = {

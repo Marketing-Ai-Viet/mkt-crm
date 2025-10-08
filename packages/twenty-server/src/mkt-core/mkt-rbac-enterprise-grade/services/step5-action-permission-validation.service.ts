@@ -49,9 +49,6 @@ import {
 import { HierarchyLevelService } from './hierarchy-level.service';
 import { RbacCacheManagerService } from './rbac-cache-manager.service';
 
-// Minimum priority threshold for granting elevated permissions
-const MIN_ELEVATED_PERMISSION_PRIORITY = 500; // TEMPLATE:SYSTEM_DEFAULT minimum priority
-
 /**
  * Action permission evaluation result
  */
@@ -698,7 +695,7 @@ export class Step5ActionPermissionValidationService
     context: EnhancedPermissionContext,
     actionClassification: ActionClassification,
   ): Promise<ActionPermissionEvaluation> {
-    const { userContext, hierarchyContext } = context;
+    const { userContext } = context;
 
     const workspaceId = userContext.workspaceId;
 
