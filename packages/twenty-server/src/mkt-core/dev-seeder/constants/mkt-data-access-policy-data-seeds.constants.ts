@@ -71,16 +71,19 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS = {
   MANAGER_CROSS_DEPT_ORDERS: '49039fff-7380-4c58-a3ff-9f1a24f78928',
   MANAGER_TEAM_REPORTS: 'b10d4fe4-4542-4532-8f86-46d85d08ccad',
   MANAGER_BUDGET_DATA: '8923d63f-24b2-40ef-abad-39573c6316ef',
+  MANAGER_ALL_OBJECTS_FALLBACK: 'e1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c',
 
   // Team Lead level (priority 60-69)
   TEAM_LEAD_DEPT_CUSTOMERS: '43fa18e3-0ee5-4aa0-a674-809cb385c6ae',
   TEAM_LEAD_DEPT_ORDERS: 'fd373352-48e8-4850-bb91-59f4f025d02e',
   TEAM_LEAD_TEAM_KPIS: 'da9503ff-93d7-4571-b0a1-da7327185322',
+  TEAM_LEAD_ALL_OBJECTS_FALLBACK: 'f2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d',
 
   // Staff level (priority 50-59)
   STAFF_OWNED_CUSTOMERS: '1f24eaf2-88c4-439f-80e1-e3634729b64b',
   STAFF_OWNED_ORDERS: '36590e01-4edd-4dd0-b861-a7b4b137f3d8',
   STAFF_OWN_REPORTS: '8054ea79-a404-476f-a90f-925408b99df3',
+  STAFF_ALL_OBJECTS_FALLBACK: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
 
   // Intern level (priority 30-39)
   INTERN_READ_ONLY_CUSTOMERS: 'dc1f4702-ad71-45f6-83b8-f0b606f33582',
@@ -152,11 +155,12 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
     },
 
     // ==================== MANAGER LEVEL (Priority 70-79) ====================
+    // Rule-Based Filters: Manager thấy TẤT CẢ records (không filter theo team)
     {
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.MANAGER_CROSS_DEPT_CUSTOMERS,
       name: 'Manager Cross-Department Customer Access',
       description:
-        'Quản lý có thể xem khách hàng xuyên phòng ban để phối hợp công việc, giới hạn chỉ khách hàng đang hoạt động',
+        'Quản lý có thể xem tất cả khách hàng xuyên phòng ban (chỉ exclude deleted)',
       departmentId: null, // Cross-department
       specificMemberId: null,
       organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
@@ -165,25 +169,17 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       permissionTemplateId: null,
       objectName: PERMISSION_RESOURCE_KEYS.CUSTOMERS,
       filterConditions: {
-        scope: 'CROSS_DEPARTMENT',
-        status: {
-          allowedValues: ['active', 'prospect', 'lead'],
-          deniedValues: ['archived', 'blocked', 'deleted'],
-        },
-        timeRange: {
-          field: 'updatedAt',
-          daysBack: 180, // Last 6 months
-        },
-        sensitiveData: {
-          excludeFields: ['creditCard', 'bankAccount', 'ssn'],
-          requireApprovalForExport: true,
-        },
-        audit: {
-          required: true,
-          level: 'MEDIUM',
-        },
+        rules: [
+          {
+            field: 'deletedAt',
+            operator: 'null',
+            value: null,
+            description: 'Not deleted',
+          },
+        ],
+        combinator: 'and',
       },
-      priority: 75,
+      priority: 220, // Highest priority
       isActive: true,
       position: 2,
     },
@@ -192,7 +188,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.MANAGER_CROSS_DEPT_ORDERS,
       name: 'Manager Cross-Department Order Access',
       description:
-        'Quản lý có thể xem đơn hàng xuyên phòng ban để giám sát kinh doanh, loại trừ thông tin tài chính chi tiết',
+        'Quản lý có thể xem tất cả đơn hàng xuyên phòng ban (chỉ exclude deleted)',
       departmentId: null,
       specificMemberId: null,
       organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
@@ -201,25 +197,17 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       permissionTemplateId: null,
       objectName: PERMISSION_RESOURCE_KEYS.ORDERS,
       filterConditions: {
-        scope: 'CROSS_DEPARTMENT',
-        status: {
-          deniedValues: ['deleted', 'void', 'test'],
-        },
-        timeRange: {
-          field: 'createdAt',
-          daysBack: 365, // Last year
-        },
-        amount: {
-          minValue: 0,
-          maxValue: 100000000, // 100M limit for visibility
-        },
-        excludeFields: ['paymentDetails', 'creditCardNumber', 'internalNotes'],
-        audit: {
-          required: true,
-          level: 'MEDIUM',
-        },
+        rules: [
+          {
+            field: 'deletedAt',
+            operator: 'null',
+            value: null,
+            description: 'Not deleted',
+          },
+        ],
+        combinator: 'and',
       },
-      priority: 74,
+      priority: 220,
       isActive: true,
       position: 3,
     },
@@ -292,11 +280,12 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
     },
 
     // ==================== TEAM LEAD LEVEL (Priority 60-69) ====================
+    // Rule-Based Filters: Team Lead thấy records của team nhưng không thấy team khác
     {
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.TEAM_LEAD_DEPT_CUSTOMERS,
       name: 'Team Lead Department Customer Access',
       description:
-        'Trưởng nhóm có thể truy cập khách hàng trong phòng ban, bao gồm cả phân công thành viên nhóm',
+        'Trưởng nhóm có thể truy cập khách hàng của team (tự tạo hoặc team members tạo)',
       departmentId: null, // Filtered by user's department
       specificMemberId: null,
       organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.TEAM_LEAD,
@@ -305,27 +294,23 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       permissionTemplateId: null,
       objectName: PERMISSION_RESOURCE_KEYS.CUSTOMERS,
       filterConditions: {
-        scope: 'DEPARTMENT',
-        ownership: {
-          includeTeamMembers: true,
-          includeUnassigned: true,
-        },
-        status: {
-          allowedValues: ['active', 'prospect', 'lead'],
-        },
-        timeRange: {
-          field: 'updatedAt',
-          daysBack: 90,
-        },
-        sensitiveData: {
-          excludeFields: ['creditCard', 'bankAccount', 'ssn', 'taxId'],
-        },
-        audit: {
-          required: true,
-          level: 'MEDIUM',
-        },
+        rules: [
+          {
+            field: 'createdByWorkspaceMemberId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Created by Team Lead',
+          },
+          {
+            field: 'accountOwnerId',
+            operator: 'in',
+            value: '{{teamMemberIds}}',
+            description: 'Customers owned by team members',
+          },
+        ],
+        combinator: 'or',
       },
-      priority: 65,
+      priority: 210, // Higher than Staff
       isActive: true,
       position: 6,
     },
@@ -334,7 +319,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.TEAM_LEAD_DEPT_ORDERS,
       name: 'Team Lead Department Order Access',
       description:
-        'Trưởng nhóm có thể xem đơn hàng từ thành viên nhóm trong phòng ban',
+        'Trưởng nhóm có thể xem đơn hàng của team (tự tạo hoặc team members tạo)',
       departmentId: null,
       specificMemberId: null,
       organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.TEAM_LEAD,
@@ -343,26 +328,23 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       permissionTemplateId: null,
       objectName: PERMISSION_RESOURCE_KEYS.ORDERS,
       filterConditions: {
-        scope: 'DEPARTMENT',
-        ownership: {
-          includeTeamMembers: true,
-        },
-        status: {
-          deniedValues: ['deleted', 'void'],
-        },
-        amount: {
-          maxValue: 10000000, // 10M visibility limit
-        },
-        timeRange: {
-          field: 'createdAt',
-          daysBack: 180,
-        },
-        audit: {
-          required: true,
-          level: 'MEDIUM',
-        },
+        rules: [
+          {
+            field: 'createdByWorkspaceMemberId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Created by Team Lead',
+          },
+          {
+            field: 'accountOwnerId',
+            operator: 'in',
+            value: '{{teamMemberIds}}',
+            description: 'Orders from team members',
+          },
+        ],
+        combinator: 'or',
       },
-      priority: 64,
+      priority: 210,
       isActive: true,
       position: 7,
     },
@@ -401,11 +383,12 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
     },
 
     // ==================== STAFF LEVEL (Priority 50-59) ====================
+    // Rule-Based Filters: Staff chỉ thấy records của chính mình
     {
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.STAFF_OWNED_CUSTOMERS,
       name: 'Staff Owned Customer Access',
       description:
-        'Nhân viên chỉ có thể truy cập khách hàng mà họ sở hữu hoặc được phân công rõ ràng',
+        'Nhân viên chỉ có thể truy cập khách hàng mà họ tạo hoặc được assign làm owner',
       departmentId: null,
       specificMemberId: null,
       organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.STAFF,
@@ -414,36 +397,23 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       permissionTemplateId: null,
       objectName: PERMISSION_RESOURCE_KEYS.CUSTOMERS,
       filterConditions: {
-        scope: 'OWNED',
-        ownership: {
-          enabled: true,
-          field: 'accountOwnerId',
-          allowShared: true, // Can see shared customers
-          sharedTypes: ['TEAM_SHARED', 'EXPLICIT_SHARE'],
-        },
-        status: {
-          allowedValues: ['active', 'prospect', 'lead'],
-        },
-        timeRange: {
-          field: 'updatedAt',
-          daysBack: 30, // Only recent activity
-        },
-        sensitiveData: {
-          excludeFields: [
-            'creditCard',
-            'bankAccount',
-            'ssn',
-            'taxId',
-            'salary',
-            'commission',
-          ],
-        },
-        audit: {
-          required: true,
-          level: 'MEDIUM',
-        },
+        rules: [
+          {
+            field: 'createdByWorkspaceMemberId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Created by current user',
+          },
+          {
+            field: 'accountOwnerId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Owned by current user',
+          },
+        ],
+        combinator: 'or',
       },
-      priority: 55,
+      priority: 200, // Higher priority to override old policies
       isActive: true,
       position: 9,
     },
@@ -451,8 +421,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
     {
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.STAFF_OWNED_ORDERS,
       name: 'Staff Owned Order Access',
-      description:
-        'Nhân viên có thể truy cập đơn hàng từ khách hàng mà họ sở hữu hoặc được phân công',
+      description: 'Nhân viên chỉ có thể truy cập đơn hàng mà họ tạo',
       departmentId: null,
       specificMemberId: null,
       organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.STAFF,
@@ -461,28 +430,17 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       permissionTemplateId: null,
       objectName: PERMISSION_RESOURCE_KEYS.ORDERS,
       filterConditions: {
-        scope: 'OWNED',
-        ownership: {
-          enabled: true,
-          field: 'accountOwnerId',
-          allowShared: true,
-        },
-        status: {
-          deniedValues: ['deleted', 'void', 'archived'],
-        },
-        amount: {
-          maxValue: 5000000, // 5M visibility limit
-        },
-        timeRange: {
-          field: 'createdAt',
-          daysBack: 90,
-        },
-        audit: {
-          required: true,
-          level: 'MEDIUM',
-        },
+        rules: [
+          {
+            field: 'createdByWorkspaceMemberId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Created by current user',
+          },
+        ],
+        combinator: 'and',
       },
-      priority: 54,
+      priority: 200,
       isActive: true,
       position: 10,
     },
@@ -1004,5 +962,103 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       priority: 18,
       isActive: true,
       position: 23,
+    },
+
+    // ============================================================================
+    // FALLBACK POLICIES - Apply to all objects (*) for each hierarchy level
+    // Lower priority - only apply when no specific object policy exists
+    // ============================================================================
+
+    // Manager Fallback - All Objects
+    {
+      id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.MANAGER_ALL_OBJECTS_FALLBACK,
+      name: 'Manager All Objects Fallback',
+      description:
+        'Manager có thể xem tất cả records cho các objects không có policy riêng',
+      departmentId: null,
+      specificMemberId: null,
+      organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
+      minHierarchyLevel: 2,
+      maxHierarchyLevel: 2,
+      permissionTemplateId: null,
+      objectName: '*', // All objects
+      filterConditions: {
+        rules: [
+          {
+            field: 'deletedAt',
+            operator: 'null',
+            value: null,
+            description: 'Not deleted',
+          },
+        ],
+        combinator: 'and',
+      },
+      priority: 70, // Lower than specific object policies (220)
+      isActive: true,
+      position: 24,
+    },
+
+    // Team Lead Fallback - All Objects
+    {
+      id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.TEAM_LEAD_ALL_OBJECTS_FALLBACK,
+      name: 'Team Lead All Objects Fallback',
+      description:
+        'Team Lead có thể xem records của team cho các objects không có policy riêng',
+      departmentId: null,
+      specificMemberId: null,
+      organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.TEAM_LEAD,
+      minHierarchyLevel: 3,
+      maxHierarchyLevel: 3,
+      permissionTemplateId: null,
+      objectName: '*',
+      filterConditions: {
+        rules: [
+          {
+            field: 'createdByWorkspaceMemberId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Created by Team Lead',
+          },
+          {
+            field: 'accountOwnerId',
+            operator: 'in',
+            value: '{{teamMemberIds}}',
+            description: 'Owned by team members',
+          },
+        ],
+        combinator: 'or',
+      },
+      priority: 60, // Lower than specific object policies (210)
+      isActive: true,
+      position: 25,
+    },
+
+    // Staff Fallback - All Objects
+    {
+      id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.STAFF_ALL_OBJECTS_FALLBACK,
+      name: 'Staff All Objects Fallback',
+      description:
+        'Staff chỉ có thể xem own records cho các objects không có policy riêng',
+      departmentId: null,
+      specificMemberId: null,
+      organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.STAFF,
+      minHierarchyLevel: 4,
+      maxHierarchyLevel: 4,
+      permissionTemplateId: null,
+      objectName: '*',
+      filterConditions: {
+        rules: [
+          {
+            field: 'createdByWorkspaceMemberId',
+            operator: 'eq',
+            value: '{{currentUserId}}',
+            description: 'Created by current user',
+          },
+        ],
+        combinator: 'and',
+      },
+      priority: 50, // Lower than specific object policies (200)
+      isActive: true,
+      position: 26,
     },
   ];
