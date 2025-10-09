@@ -150,6 +150,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     LoginTokenService,
     RefreshTokenService,
     CreateMessageFolderService,
+    AuthService,
   ],
 })
 export class AuthModule {}

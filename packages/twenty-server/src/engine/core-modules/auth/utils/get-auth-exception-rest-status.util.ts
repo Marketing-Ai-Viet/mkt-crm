@@ -30,6 +30,8 @@ export const getAuthExceptionRestStatus = (exception: AuthException) => {
       return 401;
     case AuthExceptionCode.INTERNAL_SERVER_ERROR:
     case AuthExceptionCode.USER_WORKSPACE_NOT_FOUND:
+    case AuthExceptionCode.FAILED_TO_SEND_EMAIL:
+    case AuthExceptionCode.INVALID_OTP:
       return 500;
     default: {
       const _exhaustiveCheck: never = exception.code;

@@ -21,11 +21,16 @@ export const MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS: string[] = [
   'body',
 ];
 
+export const MKT_SENDMAIL_TEMPLATE_TYPE = {
+  WELCOME_EMAIL: 'WELCOME_EMAIL', // {{password}}
+  TWO_FACTOR_AUTH: 'TWO_FACTOR_AUTH', // {{otp}}
+};
+
 export const MKT_SENDMAIL_TEMPLATE_DATA_SEEDS: MktSendmailTemplateSeed[] = [
   {
     name: 'Welcome Email',
     language: 'en',
-    type: 'WELCOME_EMAIL',
+    type: MKT_SENDMAIL_TEMPLATE_TYPE.WELCOME_EMAIL,
     subject: 'Welcome to Our Service!',
 
     body: `<div style="font-family:Arial,sans-serif;background-color:#f6f8fa;padding:20px;"><div style="max-width:600px;margin:auto;background-color:#fff;border:1px solid #e1e4e8;border-radius:6px;padding:30px;"><h2 style="color:#2c3e50;">Hello,</h2><p>Your account has been created successfully on our system.</p><p><strong>Here is your temporary password:</strong></p><div style="font-weight:bold;background-color:#f0f0f0;padding:8px 12px;border-radius:4px;display:inline-block;font-family:'Courier New',monospace;margin-top:10px;color:#e74c3c;">{{password}}</div><p>Please log in and change your password as soon as possible for security reasons.<br>If you have any issues accessing your account, feel free to contact support.</p><p>Thank you,<br>The Support Team</p><div style="margin-top:30px;font-size:13px;color:#888;">This is an automated message, please do not reply to this email.</div></div></div>`,
@@ -33,8 +38,22 @@ export const MKT_SENDMAIL_TEMPLATE_DATA_SEEDS: MktSendmailTemplateSeed[] = [
   {
     name: 'Chào mừng',
     language: 'vi-VN',
-    type: 'WELCOME_EMAIL',
+    type: MKT_SENDMAIL_TEMPLATE_TYPE.WELCOME_EMAIL,
     subject: 'Chào mừng bạn đến với dịch vụ của chúng tôi!',
     body: `<div style="font-family:Arial,sans-serif;background-color:#f6f8fa;padding:20px;"><div style="max-width:600px;margin:auto;background-color:#fff;border:1px solid #e1e4e8;border-radius:6px;padding:30px;"><h2 style="color:#2c3e50;">Xin chào,</h2><p>Tài khoản của bạn đã được tạo thành công trên hệ thống của chúng tôi.</p><p><strong>Đây là mật khẩu tạm thời của bạn:</strong></p><div style="font-weight:bold;background-color:#f0f0f0;padding:8px 12px;border-radius:4px;display:inline-block;font-family:'Courier New',monospace;margin-top:10px;color:#e74c3c;">{{password}}</div><p>Vui lòng đăng nhập và đổi mật khẩu ngay để đảm bảo an toàn.<br>Nếu bạn gặp bất kỳ vấn đề nào khi truy cập tài khoản, hãy liên hệ bộ phận hỗ trợ.</p><p>Cảm ơn bạn,<br>Đội ngũ Hỗ trợ</p><div style="margin-top:30px;font-size:13px;color:#888;">Đây là email tự động, vui lòng không trả lời email này.</div></div></div>`,
+  },
+  {
+    name: 'Two Factor Authentication',
+    language: 'en',
+    type: MKT_SENDMAIL_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
+    subject: 'Two Factor Authentication',
+    body: `<div style="font-family:Arial,sans-serif;background-color:#f6f8fa;padding:20px;"><div style="max-width:600px;margin:auto;background-color:#fff;border:1px solid #e1e4e8;border-radius:6px;padding:30px;"><h2 style="color:#2c3e50;">Hello,</h2><p>Your two factor authentication code is:</p><div style="font-weight:bold;background-color:#f0f0f0;padding:8px 12px;border-radius:4px;display:inline-block;font-family:'Courier New',monospace;margin-top:10px;color:#e74c3c;">{{otp}}</div><p>Please use this code to authenticate your account.<br>If you did not request this authentication, please contact support.</p><p>Thank you,<br>The Support Team</p><div style="margin-top:30px;font-size:13px;color:#888;">This is an automated message, please do not reply to this email.</div></div></div>`,
+  },
+  {
+    name: 'Xác thực hai yếu tố',
+    language: 'vi-VN',
+    type: MKT_SENDMAIL_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
+    subject: 'Xác thực hai yếu tố',
+    body: `<div style="font-family:Arial,sans-serif;background-color:#f6f8fa;padding:20px;"><div style="max-width:600px;margin:auto;background-color:#fff;border:1px solid #e1e4e8;border-radius:6px;padding:30px;"><h2 style="color:#2c3e50;">Xin chào,</h2><p>Mã xác thực hai yếu tố của bạn là:</p><div style="font-weight:bold;background-color:#f0f0f0;padding:8px 12px;border-radius:4px;display:inline-block;font-family:'Courier New',monospace;margin-top:10px;color:#e74c3c;">{{otp}}</div><p>Vui lòng sử dụng mã này để xác thực tài khoản của bạn.<br>Nếu bạn không yêu cầu xác thực này, vui lòng liên hệ bộ phận hỗ trợ.</p><p>Cảm ơn bạn,<br>Đội ngũ Hỗ trợ</p><div style="margin-top:30px;font-size:13px;color:#888;">Đây là email tự động, vui lòng không trả lời email này.</div></div></div>`,
   },
 ];
