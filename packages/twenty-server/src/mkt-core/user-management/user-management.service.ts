@@ -4,13 +4,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
-import { APP_LOCALES } from 'twenty-shared/translations';
-import { Repository } from 'typeorm';
-
 import { hashPassword } from 'src/engine/core-modules/auth/auth.util';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { ConflictError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
+import {
+  SendEmailToolException,
+  SendEmailToolExceptionCode,
+} from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -18,15 +18,12 @@ import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
-import {
-  SendEmailToolException,
-  SendEmailToolExceptionCode,
-} from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
 import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
+import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { APP_LOCALES } from 'twenty-shared/translations';
+import { Repository } from 'typeorm';
 import { UserOutput } from './dto/user.output';
 
 @Injectable()

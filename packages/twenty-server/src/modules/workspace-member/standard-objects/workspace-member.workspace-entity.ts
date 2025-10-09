@@ -89,7 +89,7 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     description: msg`Workspace member hire date`,
     icon: 'IconCalendarEvent',
   })
-  startDate: Date | '';
+  startDate: Date;
 
   @WorkspaceField({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.endDate,
