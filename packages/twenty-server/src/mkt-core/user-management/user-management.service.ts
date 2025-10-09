@@ -25,6 +25,7 @@ import {
   SendEmailToolException,
   SendEmailToolExceptionCode,
 } from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
+import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { UserOutput } from './dto/user.output';
 
@@ -208,7 +209,7 @@ export class UserManagementService {
       );
     const sendmailTemplate = await sendmailTemplateRepo.findOne({
       where: {
-        type: 'WELCOME_EMAIL',
+        type: MKT_SENDMAIL_TEMPLATE_TYPE.WELCOME_EMAIL,
         language: input.language as keyof typeof APP_LOCALES,
       },
     });
