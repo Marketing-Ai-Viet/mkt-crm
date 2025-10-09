@@ -90,7 +90,7 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     icon: 'IconCalendarEvent',
   })
   @WorkspaceIsSystem()
-  hireDate: Date | '';
+  hireDate: Date;
 
   @WorkspaceField({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.position,
