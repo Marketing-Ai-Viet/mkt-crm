@@ -1,4 +1,5 @@
 import { registerEnumType } from '@nestjs/graphql';
+
 import { ORDER_STATUS as OrderStatus } from 'src/mkt-core/order/constants';
 
 export enum OrderStatusGraphQL {
