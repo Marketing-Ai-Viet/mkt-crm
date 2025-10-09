@@ -162,7 +162,8 @@ export class UserManagementService {
           firstName: input.firstName || '',
           lastName: input.lastName || '',
         },
-        hireDate: input.hireDate,
+        startDate: input.startDate,
+        endDate: input.endDate ?? null,
         position: input.position != null ? Number(input.position) : 0,
         colorScheme: 'Light',
         locale: (input.language || 'en') as keyof typeof APP_LOCALES,
@@ -246,7 +247,7 @@ export class UserManagementService {
       phone: input.phone || '',
       language: savedWorkspaceMember.locale || input.language || 'en',
       avatarUrl: savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
-      hireDate: new Date(savedWorkspaceMember.hireDate),
+      startDate: new Date(savedWorkspaceMember.startDate),
     };
   }
 }
