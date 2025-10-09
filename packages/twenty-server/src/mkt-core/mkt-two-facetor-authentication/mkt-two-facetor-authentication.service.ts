@@ -35,11 +35,6 @@ export class MktTwoFacetorAuthenticationService {
   ): Promise<boolean> {
     // Xác thực loginToken và lấy email người dùng cùng workspaceId từ token
 
-    const a = await this.loginTokenService.verifyLoginToken(
-      mtkTwoFacetorAuthSetOtpSendMailInput.loginToken,
-    );
-    console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', a);
-
     const { sub: userEmail, workspaceId: tokenWorkspaceId } =
       await this.loginTokenService.verifyLoginToken(
         mtkTwoFacetorAuthSetOtpSendMailInput.loginToken,
