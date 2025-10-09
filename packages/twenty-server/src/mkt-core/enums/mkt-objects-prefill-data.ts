@@ -35,8 +35,11 @@ import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
 import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
+import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
 
 export const MKT_PREFILLS = [
+  // report prefills
+  prefillMktReports,
   // i18n prefills
   prefillMktI18n,
   // customer prefills
