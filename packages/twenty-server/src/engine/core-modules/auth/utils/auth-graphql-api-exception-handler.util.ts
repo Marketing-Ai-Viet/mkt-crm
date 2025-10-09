@@ -51,6 +51,8 @@ export const authGraphqlApiExceptionHandler = (exception: AuthException) => {
     case AuthExceptionCode.USER_NOT_FOUND:
     case AuthExceptionCode.WORKSPACE_NOT_FOUND:
     case AuthExceptionCode.USER_WORKSPACE_NOT_FOUND:
+    case AuthExceptionCode.FAILED_TO_SEND_EMAIL:
+    case AuthExceptionCode.INVALID_OTP:
       throw new AuthenticationError(exception);
     case AuthExceptionCode.INTERNAL_SERVER_ERROR:
       throw exception;

@@ -3,6 +3,8 @@ import {
   AuthException,
   AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
+import { AuthTokens } from 'src/engine/core-modules/auth/dto/token.entity';
+import { AuthService } from 'src/engine/core-modules/auth/services/auth.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -17,6 +19,7 @@ import { MtkTwoFacetorAuthSetOtpSendMailInput } from 'src/mkt-core/mkt-two-facet
 @Injectable()
 export class MktTwoFacetorAuthenticationService {
   constructor(
+    private authService: AuthService,
     private readonly userService: UserService,
     private readonly emailService: EmailService,
     private readonly loginTokenService: LoginTokenService,
@@ -31,6 +34,12 @@ export class MktTwoFacetorAuthenticationService {
     mtkTwoFacetorAuthSetOtpSendMailInput: MtkTwoFacetorAuthSetOtpSendMailInput,
   ): Promise<boolean> {
     // Xác thực loginToken và lấy email người dùng cùng workspaceId từ token
+
+    const a = await this.loginTokenService.verifyLoginToken(
+      mtkTwoFacetorAuthSetOtpSendMailInput.loginToken,
+    );
+    console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', a);
+
     const { sub: userEmail, workspaceId: tokenWorkspaceId } =
       await this.loginTokenService.verifyLoginToken(
         mtkTwoFacetorAuthSetOtpSendMailInput.loginToken,
@@ -99,11 +108,14 @@ export class MktTwoFacetorAuthenticationService {
 
   async mktTwoFacetorAuthGetOtpMail(
     mtkTwoFacetorAuthGetOtpSendMailInput: MtkTwoFacetorAuthGetOtpSendMailInput,
-  ): Promise<Boolean> {
-    const { sub: userEmail, workspaceId: tokenWorkspaceId } =
-      await this.loginTokenService.verifyLoginToken(
-        mtkTwoFacetorAuthGetOtpSendMailInput.loginToken,
-      );
+  ): Promise<AuthTokens> {
+    const {
+      sub: userEmail,
+      workspaceId: tokenWorkspaceId,
+      authProvider,
+    } = await this.loginTokenService.verifyLoginToken(
+      mtkTwoFacetorAuthGetOtpSendMailInput.loginToken,
+    );
 
     // Lấy workspace dựa trên origin hoặc workspace mặc định
     const workspace =
@@ -144,7 +156,11 @@ export class MktTwoFacetorAuthenticationService {
 
     if (otp && +otp === mtkTwoFacetorAuthGetOtpSendMailInput.otp) {
       await this.cache.del(otpKey);
-      return true;
+      return await this.authService.verify(
+        userEmail,
+        workspace.id,
+        // authProvider,
+      );
     } else {
       throw new AuthException('Invalid OTP', AuthExceptionCode.INVALID_OTP);
     }

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { DomainManagerModule } from 'src/engine/core-modules/domain-manager/domain-manager.module';
@@ -7,7 +8,13 @@ import { MktTwoFacetorAuthenticationResolver } from 'src/mkt-core/mkt-two-faceto
 import { MktTwoFacetorAuthenticationService } from 'src/mkt-core/mkt-two-facetor-authentication/mkt-two-facetor-authentication.service';
 
 @Module({
-  imports: [CacheStorageModule, UserModule, TokenModule, DomainManagerModule],
+  imports: [
+    CacheStorageModule,
+    AuthModule,
+    UserModule,
+    TokenModule,
+    DomainManagerModule,
+  ],
   providers: [
     MktTwoFacetorAuthenticationService,
     MktTwoFacetorAuthenticationResolver,
