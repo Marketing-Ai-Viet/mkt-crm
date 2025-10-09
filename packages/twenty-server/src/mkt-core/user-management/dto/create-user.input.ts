@@ -25,7 +25,12 @@ export class CreateUserInput {
 
   @Field(() => Date)
   @IsDate()
-  hireDate: Date;
+  startDate: Date;
+
+  @Field(() => Date, { nullable: true })
+  @IsOptional()
+  @IsDate()
+  endDate?: Date;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

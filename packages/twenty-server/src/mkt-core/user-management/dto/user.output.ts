@@ -12,7 +12,10 @@ export class UserOutput {
   firstName?: string;
 
   @Field(() => Date)
-  hireDate?: Date;
+  startDate?: Date;
+
+  @Field(() => Date, { nullable: true })
+  endDate?: Date | null;
 
   @Field(() => String, { nullable: true })
   lastName?: string;
