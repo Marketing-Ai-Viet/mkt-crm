@@ -1,5 +1,6 @@
 import { ArgsType, Field, Int } from '@nestjs/graphql';
 import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { APP_LOCALES } from 'twenty-shared/translations';
 
 @ArgsType()
 export class MtkTwoFacetorAuthSetOtpSendMailInput {
@@ -18,4 +19,9 @@ export class MtkTwoFacetorAuthSetOtpSendMailInput {
   @IsNotEmpty()
   @IsString()
   origin: string;
+
+  @Field(() => String)
+  @IsNotEmpty()
+  @IsString()
+  language: keyof typeof APP_LOCALES;
 }
