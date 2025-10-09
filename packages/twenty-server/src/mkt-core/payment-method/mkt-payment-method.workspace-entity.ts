@@ -57,6 +57,7 @@ export class MktPaymentMethodWorkspaceEntity extends BaseWorkspaceEntity {
     type: FieldMetadataType.SELECT,
     label: msg`Type`,
     description: msg`Payment method type`,
+    icon: 'IconCreditCard',
     options: PAYMENT_METHOD_TYPE_OPTIONS,
   })
   @WorkspaceIsNullable()

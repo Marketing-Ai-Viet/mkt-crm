@@ -41,13 +41,13 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEED_COLUMNS: (keyof MktTemporaryPerm
 
 export const MKT_TEMPORARY_PERMISSION_DATA_SEED_IDS = {
   COVERAGE_KPI: 'f2a3b4c5-6d7e-8f9a-0b1c-2d3e4f5a6b7c',
-  CUSTOMER_SUPPORT: 'f3a4b5c6-7d8e-9f0a-1b2c-3d4e5f6a7b8c',
+  CUSTOMER_SUPPORT: 'ccabfe1e-2b55-44dd-b522-258391c31cd4',
   QUARTERLY_ANALYSIS: 'f4a5b6c7-8d9e-0f1a-2b3c-4d5e6f7a8b9c',
-  AUDIT_ACCESS: 'f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c',
+  AUDIT_ACCESS: 'ad2b85b0-8404-4cf1-91ef-2ccfbcd00cf2',
   TRAINING_ACCESS: 'f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
-  EXPIRED_TEST: 'f7a8b9c0-1d2e-3f4a-5b6c-7d8e9f0a1b2c',
+  EXPIRED_TEST: 'b6fbc2d9-3a6d-4ba6-882d-e81e630f355e',
   REVOKED_TEST: 'f8a9b0c1-2d3e-4f5a-6b7c-8d9e0f1a2b3c',
-  DELEGATION: 'f9a0b1c2-3d4e-5f6a-7b8c-9d0e1f2a3b4c',
+  DELEGATION: '63d65a63-ddf3-4931-a07d-a937966cf3fe',
 };
 
 // Object names used in temporary permissions

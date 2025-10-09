@@ -24,7 +24,6 @@ import {
 import { MKT_ORDER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import {
@@ -37,6 +36,7 @@ import {
 } from 'src/mkt-core/order/constants';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -103,7 +103,7 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconProgressCheck',
   })
   @WorkspaceIsNullable()
-  status?: ORDER_STATUS;
+  status: ORDER_STATUS;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.totalAmount,
@@ -185,6 +185,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   licenseStatus?: MKT_ORDER_LICENSE_STATUS;
 
+  //metadata
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Metadata for the product`,
+    icon: 'IconBox',
+  })
+  @WorkspaceIsNullable()
+  metadata: JSON;
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,
     type: RelationType.ONE_TO_MANY,
@@ -236,6 +247,19 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktSInvoice: Relation<MktSInvoiceWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_ORDER_FIELD_IDS.mktPayments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payments`,
+    description: msg`Payments linked to the order`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktPaymentWorkspaceEntity,
+    inverseSideFieldKey: 'mktOrder',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktPayments: Relation<MktPaymentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.accountOwner,
@@ -292,19 +316,6 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`The creator of the record`,
   })
   createdBy: ActorMetadata;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_FIELD_IDS.mktInvoices,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Invoices`,
-    description: msg`Invoices linked to the order`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktInvoiceWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrder',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktInvoices: Relation<MktInvoiceWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktCustomer,

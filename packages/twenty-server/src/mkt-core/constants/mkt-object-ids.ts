@@ -6,17 +6,23 @@
  */
 
 export const MKT_OBJECT_IDS = {
+  // core
+  mktI18n: 'f161d3a7-cb44-48ef-a0c0-67b5b4efd71c',
+  mktSendmailTemplate: '7f2a6d3c-5b8e-4f1a-9c2d-0e1f2a3b4c5d',
   // products
+  mktCategory: '4cf3c9a1-6b33-487e-b06c-f5dd6d56943d',
   mktProduct: '20202020-a305-41e7-8c72-ba44072a4c58',
   mktAttribute: '2e8b5131-0c0b-488d-8d4f-f322894d0563',
   mktValue: '20202020-a305-41e7-8c72-ba44072a4c59',
   mktVariant: 'd1aa8878-0462-46fa-b3f8-2cb8e7793f85',
   mktVariantAttribute: '5f628bdb-845d-47a4-9940-30a094af7497',
+  mktVariantValue: 'd57c681b-bf88-4a89-89fa-799ea81c043c',
   mktCombo: '7393fa3e-8d9a-4b40-9251-1d9c6546af80',
   mktComboVariant: '2628a37a-113c-4c6a-8b58-63f64e5500b0',
   //orders
   mktOrder: '9ff5be11-0088-456e-b7cb-9885fd167a48',
   mktLicense: 'bedb60ad-9854-4618-b912-c93f8df3e756',
+  mktLicenseHistory: '9308d0a2-f9c5-417d-8017-3e4a75c01afa',
   mktContract: 'f5a03266-1b62-4f41-94a2-a843221f307b',
   mktOrderItem: '7a3b1f2e-4c5d-6e7f-8901-234567890abc',
   //invoices
@@ -56,4 +62,6 @@ export const MKT_OBJECT_IDS = {
   mktCustomer: '2c720af2-4412-4317-8a48-0acdaf66bc90',
   mktTag: '6d18dfa8-60f7-4057-8b3c-c0a5d7e7c35f',
   mktCustomerTag: '854cfe1c-9c77-4b71-8248-b5818037a474',
+  //user
+  mktUser: '3f9d2c8e-6a41-4c3d-9b71-12a8f53e7b29',
 };

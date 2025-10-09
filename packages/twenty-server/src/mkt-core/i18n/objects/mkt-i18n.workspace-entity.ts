@@ -21,41 +21,79 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
-import { MKT_VARIANT_ATTRIBUTE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { MKT_I18N_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-const TABLE_VARIANT_ATTRIBUTE_NAME = 'mktVariantAttribute';
+const TABLE_NAME = 'mktI18N';
 const NAME_FIELD_NAME = 'name';
-const SEARCH_FIELDS_FOR_MKT_VARIANT_ATTRIBUTE: FieldTypeAndNameMetadata[] = [
+const LOCALE_FIELD_NAME = 'locale';
+const KEY_FIELD_NAME = 'key';
+
+export const SEARCH_FIELDS_FOR_MKT_I18N: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
+  { name: LOCALE_FIELD_NAME, type: FieldMetadataType.TEXT },
+  { name: KEY_FIELD_NAME, type: FieldMetadataType.TEXT },
 ];
 
 @WorkspaceEntity({
-  standardId: MKT_OBJECT_IDS.mktVariantAttribute,
-  namePlural: `${TABLE_VARIANT_ATTRIBUTE_NAME}s`,
-  labelSingular: msg`Variant Attribute`,
-  labelPlural: msg`Variant Attributes (Product)`,
-  description: msg`Assign attributes to variants`,
-  icon: 'IconListDetails',
-  labelIdentifierStandardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.name,
+  standardId: MKT_OBJECT_IDS.mktI18n,
+  namePlural: `${TABLE_NAME}s`,
+  labelSingular: msg`I18n`,
+  labelPlural: msg`I18n`,
+  description: msg`Assign i18n`,
+  icon: 'IconTag',
+  labelIdentifierStandardId: MKT_I18N_FIELD_IDS.name,
 })
 @WorkspaceIsSearchable()
-export class MktVariantAttributeWorkspaceEntity extends BaseWorkspaceEntity {
+export class MktI18nWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.name,
+    standardId: MKT_I18N_FIELD_IDS.name,
     type: FieldMetadataType.TEXT,
-    label: msg`Name`,
-    description: msg`Name of the variant attribute`,
-    icon: 'IconAbc',
+    label: msg`Key`,
+    description: msg`I18n key`,
+    icon: 'IconTag',
   })
   name: string;
+  @WorkspaceField({
+    standardId: MKT_I18N_FIELD_IDS.key,
+    type: FieldMetadataType.TEXT,
+    label: msg`Key`,
+    description: msg`I18n key`,
+    icon: 'IconTag',
+  })
+  key: string;
 
   @WorkspaceField({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.position,
+    standardId: MKT_I18N_FIELD_IDS.locale,
+    type: FieldMetadataType.TEXT,
+    label: msg`Locale`,
+    description: msg`I18n locale`,
+    icon: 'IconGlobe',
+  })
+  locale?: string;
+
+  @WorkspaceField({
+    standardId: MKT_I18N_FIELD_IDS.data,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Data`,
+    description: msg`I18n data in JSON format`,
+    icon: 'IconFileCode',
+  })
+  data?: JSON;
+
+  @WorkspaceField({
+    standardId: MKT_I18N_FIELD_IDS.description,
+    type: FieldMetadataType.TEXT,
+    label: msg`Description`,
+    description: msg`Attribute description`,
+    icon: 'IconFileDescription',
+  })
+  description: string;
+
+  @WorkspaceField({
+    standardId: MKT_I18N_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,
     description: msg`Position in the list`,
@@ -65,54 +103,22 @@ export class MktVariantAttributeWorkspaceEntity extends BaseWorkspaceEntity {
   position?: number;
 
   @WorkspaceField({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.createdBy,
+    standardId: MKT_I18N_FIELD_IDS.createdBy,
     type: FieldMetadataType.ACTOR,
-    label: msg`Created By`,
-    description: msg`The creator of the variant attribute`,
-    icon: 'IconUserCircle',
+    label: msg`Created by`,
+    icon: 'IconCreativeCommonsSa',
+    description: msg`The creator of the record`,
   })
   createdBy: ActorMetadata;
 
   @WorkspaceRelation({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.mktVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Variant`,
-    description: msg`Variant of the attribute`,
-    icon: 'IconList',
-    inverseSideTarget: () => MktVariantWorkspaceEntity,
-    inverseSideFieldKey: 'mktVariantAttributes',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktVariant: Relation<MktVariantWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktVariant')
-  mktVariantId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.mktAttribute,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Attribute`,
-    description: msg`Attribute of the variant`,
-    icon: 'IconTag',
-    inverseSideTarget: () => MktAttributeWorkspaceEntity,
-    inverseSideFieldKey: 'mktVariantAttributes',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktAttribute: Relation<MktAttributeWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktAttribute')
-  mktAttributeId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.accountOwner,
+    standardId: MKT_I18N_FIELD_IDS.accountOwner,
     type: RelationType.MANY_TO_ONE,
     label: msg`Account Owner`,
-    description: msg`Your team member responsible for managing the variant attribute`,
+    description: msg`Your team member responsible for managing the i18n`,
     icon: 'IconUserCircle',
     inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwnerForMktVariantAttributes',
+    inverseSideFieldKey: 'accountOwnerForMktI18ns',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
@@ -122,13 +128,13 @@ export class MktVariantAttributeWorkspaceEntity extends BaseWorkspaceEntity {
   accountOwnerId: string | null;
 
   @WorkspaceRelation({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.timelineActivities,
+    standardId: MKT_I18N_FIELD_IDS.timelineActivities,
     type: RelationType.ONE_TO_MANY,
     label: msg`Timeline Activities`,
-    description: msg`Timeline Activities linked to the variant attribute`,
+    description: msg`Timeline Activities linked to the i18n`,
     icon: 'IconIconTimelineEvent',
     inverseSideTarget: () => TimelineActivityWorkspaceEntity,
-    inverseSideFieldKey: 'mktVariantAttribute',
+    inverseSideFieldKey: 'mktI18n',
     onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
@@ -136,14 +142,14 @@ export class MktVariantAttributeWorkspaceEntity extends BaseWorkspaceEntity {
   timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
 
   @WorkspaceField({
-    standardId: MKT_VARIANT_ATTRIBUTE_FIELD_IDS.searchVector,
+    standardId: MKT_I18N_FIELD_IDS.searchVector,
     type: FieldMetadataType.TS_VECTOR,
     label: SEARCH_VECTOR_FIELD.label,
     description: SEARCH_VECTOR_FIELD.description,
     icon: 'IconUser',
     generatedType: 'STORED',
     asExpression: getTsVectorColumnExpressionFromFields(
-      SEARCH_FIELDS_FOR_MKT_VARIANT_ATTRIBUTE,
+      SEARCH_FIELDS_FOR_MKT_I18N,
     ),
   })
   @WorkspaceIsNullable()

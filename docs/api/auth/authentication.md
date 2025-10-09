@@ -118,7 +118,7 @@ mutation SignIn($email: String!, $password: String!) {
 ```json
 - {
   "email": "jane.austen@apple.dev", ("tim@apple.dev", "jony.ive@apple.dev", "phil.schiler@apple.dev")
-  "password": "tim@apple.dev"
+  "password": "1Tim@appledev"
   }
 ```
 #### Response

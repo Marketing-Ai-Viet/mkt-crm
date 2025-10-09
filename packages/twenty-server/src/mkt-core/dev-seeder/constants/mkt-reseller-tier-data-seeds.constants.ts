@@ -38,10 +38,10 @@ export const MKT_RESELLER_TIER_DATA_SEED_COLUMNS: (keyof MktResellerTierDataSeed
   ];
 
 export const MKT_RESELLER_TIER_DATA_SEEDS_IDS = {
-  BRONZE: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
-  SILVER: '2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7',
-  GOLD: '3c4d5e6f-7a8b-9c0d-1e2f-a3b4c5d6e7f8',
-  DIAMOND: '4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9',
+  BRONZE: '0835587e-9dc0-47db-857d-da6caae06c83',
+  SILVER: '9c0a6ee6-4f5b-4f41-b1b5-32fe7a84ab59',
+  GOLD: 'a401d801-f3d8-4973-91f2-89537e743daa',
+  DIAMOND: 'f915d505-807d-4025-91ca-4874bd6ea384',
 };
 
 export const MKT_RESELLER_TIER_DATA_SEEDS: MktResellerTierDataSeed[] = [

@@ -63,95 +63,95 @@ export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS: (keyof MktDepartmentHie
 
 export const MKT_DEPARTMENT_HIERARCHY_DATA_SEED_IDS = {
   // Original relationships
-  SALES_SUPPORT: '7d8e9f0a-1b2c-3d4e-5f6a-7b8c9d0e1f2a',
-  SALES_ACCOUNTING: '8e9f0a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b',
-  TECH_SUPPORT: '9f0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c',
-  ADMIN_HR: 'a0b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d',
-  ADMIN_ACCOUNTING: 'b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e',
-  ADMIN_TECH: 'd3e4f5a6-7b8c-9d0e-1f2a-3b4c5d6e7f8a',
-  ADMIN_SALES: 'e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b',
-  SALES_TECH_MATRIX: 'c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f',
-  HR_TECH_MATRIX: 'f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c',
-  HR_SUPPORT_FUNCTIONAL: 'a6b7c8d9-0e1f-2a3b-4c5d-6e7f8a9b0c1d',
-  ACCOUNTING_SUPPORT_FUNCTIONAL: 'b7c8d9e0-1f2a-3b4c-5d6e-7f8a9b0c1d2e',
+  SALES_SUPPORT: '47f46eda-96e3-4877-b6e3-7f8ef0029fdd',
+  SALES_ACCOUNTING: 'd55a0f7d-9d5b-4c8e-ae7a-ba4b5e49701c',
+  TECH_SUPPORT: '8ed127e2-d79c-41a3-a830-d4041410aff4',
+  ADMIN_HR: 'daf2bb20-b559-4d94-a50b-f63a2dcdcac4',
+  ADMIN_ACCOUNTING: 'a1b1e9ac-56a6-4ba3-a8b0-279a2f212194',
+  ADMIN_TECH: '81caea88-92a5-4e88-8a9a-614ec785d244',
+  ADMIN_SALES: 'd17d8021-602d-4ead-a220-406b86144abc',
+  SALES_TECH_MATRIX: 'aefb86cc-de87-4438-a3b7-0f7f6ac025b5',
+  HR_TECH_MATRIX: 'ad2b85b0-8404-4cf1-91ef-2ccfbcd00cf2',
+  HR_SUPPORT_FUNCTIONAL: '4487180c-c871-4182-884a-22d1637b8cff',
+  ACCOUNTING_SUPPORT_FUNCTIONAL: 'a97bf2b1-d05f-4e76-b34c-36ea98757031',
 
   // ================= LEVEL 2 HIERARCHIES =================
   // Sales -> Sales Domestic & Sales Export
-  SALES_TO_SALES_DOMESTIC: 'c8d9e0f1-2a3b-4c5d-6e7f-8a9b0c1d2e3f',
-  SALES_TO_SALES_EXPORT: 'd9e0f1a2-3b4c-5d6e-7f8a-9b0c1d2e3f4a',
+  SALES_TO_SALES_DOMESTIC: '5f1c143c-90c5-45c4-8cee-7464017324d1',
+  SALES_TO_SALES_EXPORT: 'a6af7234-ef9e-48ef-a4ab-505d12139ef3',
 
   // Tech -> Tech Frontend & Tech Backend
-  TECH_TO_TECH_FRONTEND: 'e0f1a2b3-4c5d-6e7f-8a9b-0c1d2e3f4a5b',
-  TECH_TO_TECH_BACKEND: 'f1a2b3c4-5d6e-7f8a-9b0c-1d2e3f4a5b6c',
+  TECH_TO_TECH_FRONTEND: 'c027150c-b936-453b-911d-fc23ab7bb413',
+  TECH_TO_TECH_BACKEND: 'baf0f447-3644-4a5e-83a5-57ced22cc7be',
 
   // ================= LEVEL 3 HIERARCHIES =================
   // Sales Domestic -> Sales North & Sales South
-  SALES_DOMESTIC_TO_SALES_NORTH: 'a2b3c4d5-6e7f-8a9b-0c1d-2e3f4a5b6c7d',
-  SALES_DOMESTIC_TO_SALES_SOUTH: 'b3c4d5e6-7f8a-9b0c-1d2e-3f4a5b6c7d8e',
+  SALES_DOMESTIC_TO_SALES_NORTH: 'a1fe2c51-05b1-4483-a37e-ade38fe43b4f',
+  SALES_DOMESTIC_TO_SALES_SOUTH: '766580a5-cc1a-45fd-9092-6cdbe0f1a526',
 
   // Sales Export -> Sales EU & Sales Asia
-  SALES_EXPORT_TO_SALES_EU: 'c4d5e6f7-8a9b-0c1d-2e3f-4a5b6c7d8e9f',
-  SALES_EXPORT_TO_SALES_ASIA: 'd5e6f7a8-9b0c-1d2e-3f4a-5b6c7d8e9f0a',
+  SALES_EXPORT_TO_SALES_EU: '076da3d9-2582-4b91-b09f-1adefe7e0159',
+  SALES_EXPORT_TO_SALES_ASIA: '6f1fc583-56ff-4af7-8b7d-7084973a7ada',
 
   // Tech Frontend -> Tech React & Tech Mobile
-  TECH_FRONTEND_TO_TECH_REACT: 'e6f7a8b9-0c1d-2e3f-4a5b-6c7d8e9f0a1b',
-  TECH_FRONTEND_TO_TECH_MOBILE: 'f7a8b9c0-1d2e-3f4a-5b6c-7d8e9f0a1b2c',
+  TECH_FRONTEND_TO_TECH_REACT: 'a93125f0-13ec-40e7-a2a3-53c4341177f8',
+  TECH_FRONTEND_TO_TECH_MOBILE: 'b6fbc2d9-3a6d-4ba6-882d-e81e630f355e',
 
   // Tech Backend -> Tech API & Tech Database
-  TECH_BACKEND_TO_TECH_API: 'a8b9c0d1-2e3f-4a5b-6c7d-8e9f0a1b2c3d',
-  TECH_BACKEND_TO_TECH_DATABASE: 'b9c0d1e2-3f4a-5b6c-7d8e-9f0a1b2c3d4e',
+  TECH_BACKEND_TO_TECH_API: '8060e3a1-08b5-40de-a53c-ee59f2c9d16e',
+  TECH_BACKEND_TO_TECH_DATABASE: '2c0bad88-0fa6-42a6-9caf-3601a5b95364',
 
   // ================= LEVEL 4 HIERARCHIES =================
   // Sales North -> Sales Hanoi
-  SALES_NORTH_TO_SALES_HANOI: 'c0d1e2f3-4a5b-6c7d-8e9f-0a1b2c3d4e5f',
+  SALES_NORTH_TO_SALES_HANOI: '692f715b-9ed1-4519-ada0-9869db2714ac',
 
   // Sales South -> Sales HCMC
-  SALES_SOUTH_TO_SALES_HCMC: 'd1e2f3a4-5b6c-7d8e-9f0a-1b2c3d4e5f6a',
+  SALES_SOUTH_TO_SALES_HCMC: 'ce5f4b2c-94ba-4bd8-8bc5-cc25357f1a84',
 
   // Sales EU -> Sales Germany
-  SALES_EU_TO_SALES_GERMANY: 'e2f3a4b5-6c7d-8e9f-0a1b-2c3d4e5f6a7b',
+  SALES_EU_TO_SALES_GERMANY: 'e32ba8f5-095c-44d5-a9f6-52c8263dfdda',
 
   // Sales Asia -> Sales Japan
-  SALES_ASIA_TO_SALES_JAPAN: 'f3a4b5c6-7d8e-9f0a-1b2c-3d4e5f6a7b8c',
+  SALES_ASIA_TO_SALES_JAPAN: 'ccabfe1e-2b55-44dd-b522-258391c31cd4',
 
   // Tech React -> Tech Web & Tech Components
-  TECH_REACT_TO_TECH_WEB: 'a4b5c6d7-8e9f-0a1b-2c3d-4e5f6a7b8c9d',
-  TECH_REACT_TO_TECH_COMPONENTS: 'b5c6d7e8-9f0a-1b2c-3d4e-5f6a7b8c9d0e',
+  TECH_REACT_TO_TECH_WEB: 'dde19390-2bb8-4f76-ae3e-1550c3089cd8',
+  TECH_REACT_TO_TECH_COMPONENTS: '848ca922-53aa-4050-99ce-4ad54267d11b',
 
   // Tech Mobile -> Tech iOS & Tech Android
-  TECH_MOBILE_TO_TECH_IOS: 'c6d7e8f9-0a1b-2c3d-4e5f-6a7b8c9d0e1f',
-  TECH_MOBILE_TO_TECH_ANDROID: 'd7e8f9a0-1b2c-3d4e-5f6a-7b8c9d0e1f2a',
+  TECH_MOBILE_TO_TECH_IOS: '24409329-b5a9-458c-bdaf-644f0bf66c94',
+  TECH_MOBILE_TO_TECH_ANDROID: '0df2e137-e16c-4665-a82e-fcf9867894b5',
 
   // ================= LEVEL 5 HIERARCHIES =================
   // Sales Hanoi -> Sales Hanoi Retail & Sales Hanoi B2B
-  SALES_HANOI_TO_SALES_HANOI_RETAIL: 'e8f9a0b1-2c3d-4e5f-6a7b-8c9d0e1f2a3b',
-  SALES_HANOI_TO_SALES_HANOI_B2B: 'f9a0b1c2-3d4e-5f6a-7b8c-9d0e1f2a3b4c',
+  SALES_HANOI_TO_SALES_HANOI_RETAIL: 'd7f5d9cb-5859-4949-a924-1fcca4e239f5',
+  SALES_HANOI_TO_SALES_HANOI_B2B: '63d65a63-ddf3-4931-a07d-a937966cf3fe',
 
   // Sales HCMC -> Sales HCMC Retail & Sales HCMC B2B
-  SALES_HCMC_TO_SALES_HCMC_RETAIL: 'a0b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d',
-  SALES_HCMC_TO_SALES_HCMC_B2B: 'b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e',
+  SALES_HCMC_TO_SALES_HCMC_RETAIL: 'daf2bb20-b559-4d94-a50b-f63a2dcdcac4',
+  SALES_HCMC_TO_SALES_HCMC_B2B: 'a1b1e9ac-56a6-4ba3-a8b0-279a2f212194',
 
   // Tech Components -> Tech UI Library & Tech Design System
-  TECH_COMPONENTS_TO_TECH_UI_LIBRARY: 'c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f',
-  TECH_COMPONENTS_TO_TECH_DESIGN_SYSTEM: 'd3e4f5a6-7b8c-9d0e-1f2a-3b4c5d6e7f8a',
+  TECH_COMPONENTS_TO_TECH_UI_LIBRARY: 'aefb86cc-de87-4438-a3b7-0f7f6ac025b5',
+  TECH_COMPONENTS_TO_TECH_DESIGN_SYSTEM: '81caea88-92a5-4e88-8a9a-614ec785d244',
 
   // ================= LEVEL 6 HIERARCHIES =================
   // Sales Hanoi Retail -> Sales Hanoi Retail Online & Sales Hanoi Retail Offline
-  SALES_HANOI_RETAIL_TO_ONLINE: 'e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b',
-  SALES_HANOI_RETAIL_TO_OFFLINE: 'f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c',
+  SALES_HANOI_RETAIL_TO_ONLINE: 'd17d8021-602d-4ead-a220-406b86144abc',
+  SALES_HANOI_RETAIL_TO_OFFLINE: 'ad2b85b0-8404-4cf1-91ef-2ccfbcd00cf2',
 
   // Tech UI Library -> Tech Component Library
-  TECH_UI_LIBRARY_TO_TECH_COMPONENT_LIB: 'a6b7c8d9-0e1f-2a3b-4c5d-6e7f8a9b0c1d',
+  TECH_UI_LIBRARY_TO_TECH_COMPONENT_LIB: '4487180c-c871-4182-884a-22d1637b8cff',
 
   // Tech Design System -> Tech Theme System
   TECH_DESIGN_SYSTEM_TO_TECH_THEME_SYSTEM:
-    'b7c8d9e0-1f2a-3b4c-5d6e-7f8a9b0c1d2e',
+    'a97bf2b1-d05f-4e76-b34c-36ea98757031',
 
   // ================= LEVEL 7 HIERARCHIES =================
   // Sales Hanoi Retail Online -> Sales Hanoi E-commerce & Sales Hanoi Social Commerce
   SALES_HANOI_RETAIL_ONLINE_TO_ECOMMERCE:
-    'c8d9e0f1-2a3b-4c5d-6e7f-8a9b0c1d2e3f',
-  SALES_HANOI_RETAIL_ONLINE_TO_SOCIAL: 'd9e0f1a2-3b4c-5d6e-7f8a-9b0c1d2e3f4a',
+    '5f1c143c-90c5-45c4-8cee-7464017324d1',
+  SALES_HANOI_RETAIL_ONLINE_TO_SOCIAL: 'a6af7234-ef9e-48ef-a4ab-505d12139ef3',
 };
 
 export const MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS: MktDepartmentHierarchyDataSeed[] =

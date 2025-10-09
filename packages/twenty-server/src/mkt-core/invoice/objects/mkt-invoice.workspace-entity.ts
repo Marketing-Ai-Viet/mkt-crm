@@ -24,10 +24,7 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_INVOICE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
-import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 const TABLE_INVOICE_NAME = 'mktInvoice';
 const NAME_FIELD_NAME = 'name';
@@ -264,22 +261,6 @@ export class MktInvoiceWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   totalAmount?: number;
 
-  @WorkspaceRelation({
-    standardId: MKT_INVOICE_FIELD_IDS.mktOrder,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Order`,
-    description: msg`Invoice order`,
-    icon: 'IconShoppingCart',
-    inverseSideTarget: () => MktOrderWorkspaceEntity,
-    inverseSideFieldKey: 'mktInvoices',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktOrder: Relation<MktOrderWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktOrder')
-  mktOrderId: string | null;
-
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
@@ -298,36 +279,6 @@ export class MktInvoiceWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`The creator of the record`,
   })
   createdBy: ActorMetadata;
-
-  @WorkspaceRelation({
-    standardId: MKT_INVOICE_FIELD_IDS.accountOwner,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Account Owner`,
-    description: msg`Your team member responsible for managing the invoice`,
-    icon: 'IconUserCircle',
-    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwnerForMktInvoices',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('accountOwner')
-  accountOwnerId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_INVOICE_FIELD_IDS.timelineActivities,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Timeline Activities`,
-    description: msg`Timeline Activities linked to the invoice`,
-    icon: 'IconIconTimelineEvent',
-    inverseSideTarget: () => TimelineActivityWorkspaceEntity,
-    inverseSideFieldKey: 'mktInvoice',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  @WorkspaceIsSystem()
-  timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_INVOICE_FIELD_IDS.searchVector,

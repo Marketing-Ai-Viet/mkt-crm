@@ -19,6 +19,7 @@ export enum MKT_PAYMENT_METHOD_TYPE {
   CASH = 'CASH',
   CHECK = 'CHECK',
   CRYPTOCURRENCY = 'CRYPTOCURRENCY',
+  QR_CODE = 'QR_CODE',
   OTHER = 'OTHER',
 }
 
@@ -45,6 +46,7 @@ export const MKT_PAYMENT_METHOD_DATA_SEEDS_IDS = {
   ID_7: 'c1b0a9d8-e7f6-4c5b-a4b3-f2e1d0c9b8a7',
   ID_8: '9d8c7b6a-5f4e-4d3c-b2a1-e0f9d8c7b6a5',
   ID_9: '4a3b2c1d-0e9f-4a8b-b7c6-d5e4f3a2b1c0',
+  SEPAY_QR: 'cccc7c0f-1e3b-4b2e-8c06-b694c016d1dd',
 };
 
 export const MKT_PAYMENT_METHOD_DATA_SEEDS: MktPaymentMethodDataSeed[] = [
@@ -143,6 +145,17 @@ export const MKT_PAYMENT_METHOD_DATA_SEEDS: MktPaymentMethodDataSeed[] = [
     description: 'Alternative payment methods',
     isActive: false,
     position: 9,
+    createdBySource: 'MANUAL',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'System Admin',
+  },
+  {
+    id: MKT_PAYMENT_METHOD_DATA_SEEDS_IDS.SEPAY_QR,
+    name: 'SEPay QR',
+    type: MKT_PAYMENT_METHOD_TYPE.QR_CODE,
+    description: 'SEPay QR payment method',
+    isActive: true,
+    position: 10,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,
     createdByName: 'System Admin',

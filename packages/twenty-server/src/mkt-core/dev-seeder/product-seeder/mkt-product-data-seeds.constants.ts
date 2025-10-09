@@ -1,3 +1,5 @@
+import { MKT_CATEGORY_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/product-seeder/mkt-category-data-seeds.constants';
+
 type MktProductDataSeed = {
   id: string;
   type: MKT_PRODUCT_TYPE;
@@ -8,6 +10,7 @@ type MktProductDataSeed = {
   isActive: boolean;
   sku: string;
   inStock: boolean;
+  mktCategoryId: string | null;
   position: number;
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
@@ -34,6 +37,7 @@ export const MKT_PRODUCT_DATA_SEED_COLUMNS: (keyof MktProductDataSeed)[] = [
   'isActive',
   'sku',
   'inStock',
+  'mktCategoryId',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -67,6 +71,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_CARE',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 6,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -82,6 +87,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_VIRAL',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 7,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -97,6 +103,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_UID',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 8,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -112,6 +119,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: false,
     sku: 'MKT_TIKPRO',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 9,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -127,6 +135,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_INSTA',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 10,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -142,6 +151,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_TUBE',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 11,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -157,6 +167,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_POST',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 12,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -172,6 +183,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_ZALO',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 13,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -187,6 +199,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_GROUP',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 14,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -202,6 +215,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_TWITTER',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 15,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -217,6 +231,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_PAGE',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 16,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -232,6 +247,7 @@ export const MKT_PRODUCT_DATA_SEEDS: MktProductDataSeed[] = [
     isActive: true,
     sku: 'MKT_MAPS',
     inStock: true,
+    mktCategoryId: MKT_CATEGORY_DATA_SEEDS_IDS.MKT_PRODUCT,
     position: 17,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
