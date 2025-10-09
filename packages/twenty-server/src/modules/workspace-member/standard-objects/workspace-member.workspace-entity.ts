@@ -4,10 +4,10 @@ import { msg } from '@lingui/core/macro';
 import { APP_LOCALES, SOURCE_LOCALE } from 'twenty-shared/translations';
 import { FieldMetadataType } from 'twenty-shared/types';
 
+import { NumberDataType } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-settings.interface';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-import { NumberDataType } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-settings.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { FullNameMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/full-name.composite-type';
@@ -82,6 +82,16 @@ export const SEARCH_FIELDS_FOR_WORKSPACE_MEMBER: FieldTypeAndNameMetadata[] = [
 @WorkspaceIsSystem()
 @WorkspaceIsSearchable()
 export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.hireDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Hire Date`,
+    description: msg`Workspace member hire date`,
+    icon: 'IconCalendarEvent',
+  })
+  @WorkspaceIsSystem()
+  hireDate: Date | '';
+
   @WorkspaceField({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,

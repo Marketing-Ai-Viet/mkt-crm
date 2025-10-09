@@ -3,6 +3,7 @@ import { Field, InputType } from '@nestjs/graphql';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsDate,
   IsEmail,
   IsNumber,
   IsOptional,
@@ -21,6 +22,10 @@ export class CreateUserInput {
   @IsOptional()
   @IsString()
   firstName?: string;
+
+  @Field(() => Date)
+  @IsDate()
+  hireDate: Date;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
