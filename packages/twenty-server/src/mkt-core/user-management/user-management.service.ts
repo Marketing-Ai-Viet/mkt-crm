@@ -25,6 +25,7 @@ import {
   SendEmailToolException,
   SendEmailToolExceptionCode,
 } from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
+import { WorkspaceMember } from 'src/engine/core-modules/user/dtos/workspace-member.dto';
 import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { UserOutput } from './dto/user.output';
@@ -246,5 +247,27 @@ export class UserManagementService {
       language: savedWorkspaceMember.locale || input.language || 'en',
       avatarUrl: savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
     };
+  }
+
+  async getMemberByDepartmentCode(
+    workspaceId: string,
+    departmentCode: string,
+  ): Promise<WorkspaceMember[]> {
+    const workspaceMemberRepo =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
+        workspaceId,
+        'workspaceMember',
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const members = await workspaceMemberRepo.find({
+      where: {
+        department: {
+          departmentCode,
+        },
+      },
+    });
+
+    return members as WorkspaceMember[];
   }
 }
