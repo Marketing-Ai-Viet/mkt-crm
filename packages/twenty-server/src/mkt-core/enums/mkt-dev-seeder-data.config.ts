@@ -84,6 +84,10 @@ import {
   MKT_PERMISSION_AUDIT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-permission-audit-data-seeds.constants';
 import {
+  MKT_REPORT_DATA_SEED_COLUMNS,
+  MKT_REPORT_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-report-data-seeds.constants';
+import {
   MKT_RESELLER_DATA_SEED_COLUMNS,
   MKT_RESELLER_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-reseller-data-seeds.constants';
@@ -96,6 +100,10 @@ import {
   MKT_RESELLER_TIER_HISTORY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-reseller-tier-history-data-seeds.constants';
 import {
+  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import {
   MKT_STAFF_STATUS_HISTORY_DATA_SEED_COLUMNS,
   MKT_STAFF_STATUS_HISTORY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-staff-status-history-data-seeds.constants';
@@ -107,10 +115,6 @@ import {
   MKT_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-template-data-seeds.constants';
-import {
-  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
-} from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import {
   MKT_TEMPORARY_PERMISSION_DATA_SEED_COLUMNS,
   MKT_TEMPORARY_PERMISSION_DATA_SEEDS,
@@ -342,6 +346,12 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktKpiTemplate',
     pgColumns: MKT_KPI_TEMPLATE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_KPI_TEMPLATE_DATA_SEEDS,
+  },
+  //reports
+  {
+    tableName: 'mktReport',
+    pgColumns: MKT_REPORT_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_REPORT_DATA_SEEDS,
   },
   // Customer configs
   {

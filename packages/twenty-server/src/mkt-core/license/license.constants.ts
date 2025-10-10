@@ -8,6 +8,7 @@ export enum MKT_LICENSE_STATUS {
   RENEWING = 'RENEWING', // Đang gia hạn
   CHANGE_VARIANT = 'CHANGE_VARIANT', // Thay đổi sản phẩm license
   REFUND = 'REFUND', // Hoàn tiền
+  TRIAL = 'TRIAL', // Dùng thử
 }
 
 export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
@@ -40,6 +41,24 @@ export const MKT_LICENSE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
     label: 'Renewing',
     position: 4,
     color: 'yellow',
+  },
+  {
+    value: MKT_LICENSE_STATUS.CHANGE_VARIANT,
+    label: 'Change Variant',
+    position: 5,
+    color: 'purple',
+  },
+  {
+    value: MKT_LICENSE_STATUS.REFUND,
+    label: 'Refund',
+    position: 6,
+    color: 'orange',
+  },
+  {
+    value: MKT_LICENSE_STATUS.TRIAL,
+    label: 'Trial',
+    position: 7,
+    color: 'blue',
   },
 ];
 

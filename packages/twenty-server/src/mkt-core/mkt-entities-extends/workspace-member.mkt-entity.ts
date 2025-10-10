@@ -45,6 +45,7 @@ import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-prod
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceRelation({
@@ -346,6 +347,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktSInvoiceFiles: Relation<MktSInvoiceFileWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktReports,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Reports`,
+    description: msg`Account owner for reports`,
+    icon: 'IconFile',
+    inverseSideTarget: () => MktReportWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktReports: Relation<MktReportWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktTemplates,
