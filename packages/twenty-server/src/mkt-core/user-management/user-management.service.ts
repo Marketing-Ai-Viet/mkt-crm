@@ -259,15 +259,21 @@ export class UserManagementService {
         'workspaceMember',
         { shouldBypassPermissionChecks: true },
       );
-
-    const members = await workspaceMemberRepo.find({
-      where: {
-        department: {
-          departmentCode,
+    try {
+      const members = await workspaceMemberRepo.find({
+        where: {
+          department: {
+            departmentCode,
+          },
         },
-      },
-    });
-
-    return members as WorkspaceMember[];
+      });
+      return members as WorkspaceMember[];
+    } catch (error) {
+      this.logger.error(
+        `Error fetching members for departmentCode "${departmentCode}" in workspace "${workspaceId}":`,
+        error,
+      );
+      throw new Error('Failed to get members by department code');
+    }
   }
 }
