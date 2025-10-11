@@ -43,6 +43,7 @@ export class MktOrderCustomEventListener {
     for (const event of payload.events) {
       try {
         const updateOrder = await this.processOrderCustomEvent(event);
+
         await this.pushLicenseHistory(updateOrder);
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
@@ -61,12 +62,14 @@ export class MktOrderCustomEventListener {
   ): Promise<void> {
     if (!updateOrder?.mktLicense) {
       this.logger.warn(`Order has no license information`);
+
       return;
     }
     const license = updateOrder?.mktLicense?.[0] as MktLicenseWorkspaceEntity;
 
     if (!license) {
       this.logger.warn(`No license associated with the order`);
+
       return;
     }
 

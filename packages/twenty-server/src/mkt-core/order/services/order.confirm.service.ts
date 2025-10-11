@@ -231,6 +231,7 @@ export class OrderConfirmService {
     licenseId?: string,
   ): Promise<callFireBaseType | void> {
     const mktCustomerId = customerMeta?.mktCustomerId || null;
+
     if (
       action !== ORDER_ACTION.WAIT &&
       action !== ORDER_ACTION.TRIAL &&
