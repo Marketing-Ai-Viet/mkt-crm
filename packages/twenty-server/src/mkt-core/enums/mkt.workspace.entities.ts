@@ -28,6 +28,7 @@ import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-te
 import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
 import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
@@ -63,6 +64,7 @@ export const MKT_WORKSPACE_ENTITIES = [
   // Order
   MktOrderWorkspaceEntity,
   MktOrderItemWorkspaceEntity,
+  MktOrderHistoryWorkspaceEntity,
   // Template
   MktTemplateWorkspaceEntity,
   // Contracts

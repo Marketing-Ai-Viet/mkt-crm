@@ -16,6 +16,7 @@ import { prefillMktKpiTemplates } from 'src/mkt-core/dev-seeder/prefill-data/pre
 import { prefillMktKpis } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-kpis';
 import { prefillMktLicenseHistory } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-license-history';
 import { prefillMktLicenses } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-licenses';
+import { prefillMktOrderHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-order-histories';
 import { prefillMktOrderItems } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-organization-levels';
@@ -57,6 +58,7 @@ export const MKT_PREFILLS = [
   // order prefills
   prefillMktOrders,
   prefillMktOrderItems,
+  prefillMktOrderHistories,
   // template prefills
   prefillMktTemplates,
   // contract prefills

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
+import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import { FIREBASE_AUTH_RESPONSE } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import {
@@ -13,7 +15,11 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 export class MktCommonOrderService {
   private readonly logger = new Logger(MktCommonOrderService.name);
   private orderMetadata: ORDER_METADATA | null = null;
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+
+  constructor(
+    private readonly mktRepo: MktRepositoryService,
+    private readonly workspaceEventEmitter: WorkspaceEventEmitter,
+  ) {}
 
   async updateOrderForRenew(
     orderId: string,
@@ -99,5 +105,44 @@ export class MktCommonOrderService {
 
   getRefundHistory(): RefundItem[] {
     return this.orderMetadata?.refund ?? [];
+  }
+
+  async eventUpdated(
+    orderId: string | null,
+    workspaceId: string | null,
+    note?: string,
+  ): Promise<void> {
+    if (!orderId || !workspaceId) return;
+    try {
+      this.logger.log(`Emitting order updated event for order: ${orderId}`);
+
+      // Phát sự kiện custom cho order updated
+      const orderUpdatedEvent = {
+        eventType: 'mktOrder.custom' as CustomEventName,
+        orderId,
+        workspaceId,
+        orderData: {
+          id: orderId,
+          note,
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      this.workspaceEventEmitter.emitCustomBatchEvent(
+        'mktOrder.custom' as CustomEventName,
+        [orderUpdatedEvent],
+        workspaceId,
+      );
+
+      this.logger.log(
+        `Successfully emitted order updated event for order: ${orderId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit order updated event for order: ${orderId}`,
+        error,
+      );
+      // Không throw error để không làm gián đoạn flow tạo order
+    }
   }
 }

@@ -304,6 +304,7 @@ export const MKT_ORDER_FIELD_IDS = {
   mktSInvoice: 'c53bbfe4-0c46-42ac-99a7-f24df8ef56a7',
   mktCustomer: '631879f5-0017-4df2-aa29-124dd38197bf',
   mktPayments: '06240e4d-a9ab-4dcb-b3e9-0bbdf2085242',
+  mktOrderHistories: '55e1c6c5-d27b-45c6-8978-956a37be205e',
   //common relations or fields
   position: '9d970deb-f1e5-4cc4-8b36-9ad83ca03ee5',
   createdBy: '6d52adfa-9230-4df0-84fc-d51c646e8538',
@@ -336,6 +337,25 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   accountOwner: '9a3b4c5d-6e7f-8091-0123-456789012345',
   timelineActivities: 'a3b4c5d6-e7f8-9012-1234-567890123456',
   searchVector: 'b4c5d6e7-f890-1234-2345-678901234567',
+};
+
+export const MKT_ORDER_HISTORY_FIELD_IDS = {
+  // fields
+  name: '645579a8-fb14-4f2b-9711-dd637e6a9ba9',
+  action: '0cf29f34-a34d-4855-add4-b96dcd54a04a',
+  metadata: 'c2e0ac56-2641-4933-b277-568f0bff8e77',
+  note: '40fd05f6-48b2-477e-b641-adb67d287ff7',
+  oldValue: 'a959aca9-41d0-4c1f-ad5c-45d190ec020f',
+  newValue: '52e959b5-7bc4-47aa-9387-732538ad7ef9',
+  fieldName: '416d039b-1ce2-4196-bbe7-985a2a3001b1',
+  position: '7e3539b2-4fc4-4035-b201-10cb0d16376b',
+  createdBy: '7d4d8d61-3a9c-4530-868f-9cb980647ae7',
+
+  // relations
+  mktOrder: 'd2c85044-ae3f-4bac-8c9b-18d934782ef6',
+  accountOwner: '0c9e64c4-da3d-46a1-ab8d-ec535a2e0f10',
+  timelineActivities: '53e624f1-26da-41e8-83b5-090bb8fe455a',
+  searchVector: 'f8801e93-ed5e-4dd0-9f13-e9987d891359',
 };
 
 export const MKT_REPORT_FIELD_IDS = {
@@ -387,6 +407,7 @@ export const MKT_LICENSE_HISTORY_FIELD_IDS = {
   name: 'ba8e44af-6593-47d5-a052-94da696137a2',
   action: '15294b93-c735-4ca8-b04b-05d022e08705',
   note: 'c398dc0c-72ba-4163-9fdf-281af7681b9d',
+  metadata: 'a6830819-fd85-4266-acfe-5f47de775dde',
 
   // relations
   mktLicense: '7672629a-e029-47f8-bfab-326f8e071527',
@@ -731,6 +752,7 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktComboVariant: 'dffcadf4-8f5e-4530-8794-61230d68324a',
   //orders
   mktOrder: 'e0919045-74af-4800-bb40-ccef297253a9',
+  mktOrderHistory: '7d9f8e5c-3a2b-4c1d-9e8f-1a2b3c4d5e6f',
   mktLicense: '4b8283ce-daa4-4f11-87d0-2ade1cd6dc81',
   mktLicenseHistory: '47624ac0-a675-4144-bbb9-97efcccae7f8',
   mktContract: 'b8c23b61-29ab-47e5-b412-4789f0653a69',

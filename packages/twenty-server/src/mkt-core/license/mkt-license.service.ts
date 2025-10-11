@@ -79,7 +79,8 @@ export class MktLicenseService {
 
   async createLicensesForOrderItems(
     order: MktOrderWorkspaceEntity,
-    _workspaceId: string,
+    mktCustomerId: string | null,
+    _workspaceId: string | null,
   ): Promise<MktLicenseWorkspaceEntity[]> {
     this.logger.log(`Creating licenses for order items ${order.id}`);
 
@@ -119,6 +120,7 @@ export class MktLicenseService {
               licenseUuid: licenseApiResponse.licenseUuid as string,
               mktOrderId: order.id,
               mktVariantId: orderItem.mktVariantId,
+              mktCustomerId,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
             // save license

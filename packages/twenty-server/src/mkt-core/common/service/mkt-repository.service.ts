@@ -27,7 +27,7 @@ export class MktRepositoryService {
    * @param metadataName The metadata name of the object in the workspace
    * @param options Optional flags (bypass permissions, role)
    */
-  private async getRepository<Entity extends ObjectLiteral>(
+  async getRepository<Entity extends ObjectLiteral>(
     entityClass: Type<Entity>,
     options: { shouldBypassPermissionChecks?: boolean; roleId?: string } = {},
   ): Promise<WorkspaceRepository<Entity>> {

@@ -80,6 +80,16 @@ export class MktLicenseHistoryWorkspaceEntity extends BaseWorkspaceEntity {
   note?: string;
 
   @WorkspaceField({
+    standardId: MKT_LICENSE_HISTORY_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional metadata for the license history`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  metadata?: JSON | null;
+
+  @WorkspaceField({
     standardId: MKT_LICENSE_HISTORY_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,

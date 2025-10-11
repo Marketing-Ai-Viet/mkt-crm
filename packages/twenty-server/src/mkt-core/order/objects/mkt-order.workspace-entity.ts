@@ -35,6 +35,7 @@ import {
   SINVOICE_STATUS_OPTIONS,
 } from 'src/mkt-core/order/constants';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
@@ -260,6 +261,19 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktPayments: Relation<MktPaymentWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_ORDER_FIELD_IDS.mktOrderHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Order Histories`,
+    description: msg`Order histories linked to the order`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktOrderHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktOrder',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktOrderHistories: Relation<MktOrderHistoryWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.accountOwner,

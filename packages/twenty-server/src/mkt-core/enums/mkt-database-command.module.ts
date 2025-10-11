@@ -11,6 +11,7 @@ import { SeedMktKpiTemplateCommand } from 'src/mkt-core/dev-seeder/commands/mkt-
 import { SeedLicenseModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-data-seed-dev-workspace.command';
 import { SeedLicenseHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-history-data-seed-dev-workspace.command';
 import { SeedOrderModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-data-seed-dev-workspace.command';
+import { SeedMktOrderHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-history-data-seed-dev-workspace.command';
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
 import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-data-seed-dev-workspace.command';
@@ -57,6 +58,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // order commands
   SeedOrderModuleCommand,
   SeedOrderItemModuleCommand,
+  SeedMktOrderHistoryModuleCommand,
   EnsureOrderUpdatedAtTriggerCommand,
   // template commands
   SeedTemplateModuleCommand,

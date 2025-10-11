@@ -8,6 +8,7 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
@@ -55,6 +56,7 @@ export class MktOrderCreateOnePostQueryHook
     private readonly orderService: OrderService,
     private readonly orderActionService: OrderActionService,
     private readonly fireBaseIntegrationService: FireBaseIntegrationService,
+    private readonly mktCommonOrderService: MktCommonOrderService,
   ) {}
 
   async execute(
@@ -105,8 +107,6 @@ export class MktOrderCreateOnePostQueryHook
           authFirebase,
           workspaceId,
         );
-
-        return;
       }
 
       if (action === ORDER_ACTION.TRIAL_TO_PAID) {
@@ -118,9 +118,14 @@ export class MktOrderCreateOnePostQueryHook
           trialOrderId,
           paymentMethodsMeta,
         );
-
-        return;
       }
+      this.mktCommonOrderService.eventUpdated(
+        created.id,
+        workspaceId,
+        'create',
+      );
+
+      return;
     } catch (error) {
       this.logger.error(
         '[Order POST HOOK] Failed to create related entities',

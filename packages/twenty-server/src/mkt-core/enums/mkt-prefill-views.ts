@@ -4,6 +4,7 @@ import { mktSInvoiceItemsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/
 import { mktSInvoiceMetadataAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-metadata-all.view';
 import { mktSInvoicePaymentsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-payment-all.view';
 import { mktSInvoiceTaxBreakdownsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-all.view';
+import { mktOrderHistoryAllView } from 'src/mkt-core/dev-seeder/order-seeder/mkt-order-history-all.view';
 import { mktContractsAllView } from 'src/mkt-core/dev-seeder/prefill-data/mkt-contract-all.view';
 import { mktLicensesAllView } from 'src/mkt-core/dev-seeder/prefill-data/mkt-license-all.view';
 import { mktOrdersAllView } from 'src/mkt-core/dev-seeder/prefill-data/mkt-order-all.view';
@@ -56,6 +57,7 @@ export const MKT_ALL_VIEWS = [
   // order views
   mktOrdersAllView,
   mktOrderItemsAllView,
+  mktOrderHistoryAllView,
   // template views
   mktTemplatesAllView,
   // license views

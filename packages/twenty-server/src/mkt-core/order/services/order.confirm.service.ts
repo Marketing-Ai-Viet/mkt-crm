@@ -230,6 +230,7 @@ export class OrderConfirmService {
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
     licenseId?: string,
   ): Promise<callFireBaseType | void> {
+    const mktCustomerId = customerMeta?.mktCustomerId || null;
     if (
       action !== ORDER_ACTION.WAIT &&
       action !== ORDER_ACTION.TRIAL &&
@@ -263,6 +264,7 @@ export class OrderConfirmService {
         if (action !== ORDER_ACTION.LICENSE_RENEWING)
           await this.mktLicenseService.createLicensesForOrderItems(
             order,
+            mktCustomerId,
             workspaceId,
           );
 

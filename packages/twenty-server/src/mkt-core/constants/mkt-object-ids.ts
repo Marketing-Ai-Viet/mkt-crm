@@ -21,6 +21,7 @@ export const MKT_OBJECT_IDS = {
   mktComboVariant: '2628a37a-113c-4c6a-8b58-63f64e5500b0',
   //orders
   mktOrder: '9ff5be11-0088-456e-b7cb-9885fd167a48',
+  mktOrderHistory: 'c88afe19-ea58-4b9d-9592-7c770fe55416',
   mktLicense: 'bedb60ad-9854-4618-b912-c93f8df3e756',
   mktLicenseHistory: '9308d0a2-f9c5-417d-8017-3e4a75c01afa',
   mktContract: 'f5a03266-1b62-4f41-94a2-a843221f307b',
