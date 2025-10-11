@@ -41,6 +41,7 @@ import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-prod
 import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 
 export const MKT_WORKSPACE_ENTITIES = [
   // I18n
@@ -81,6 +82,8 @@ export const MKT_WORKSPACE_ENTITIES = [
   // Payment
   MktPaymentMethodWorkspaceEntity,
   MktPaymentWorkspaceEntity,
+  // Report
+  MktReportWorkspaceEntity,
   // Seller Tier
   MktResellerTierWorkspaceEntity,
   MktResellerWorkspaceEntity,

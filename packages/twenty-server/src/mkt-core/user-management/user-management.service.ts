@@ -24,6 +24,15 @@ import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.in
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { APP_LOCALES } from 'twenty-shared/translations';
 import { Repository } from 'typeorm';
+import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import {
+  SendEmailToolException,
+  SendEmailToolExceptionCode,
+} from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
+import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
+
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -67,6 +76,7 @@ export class UserManagementService {
     // Trộn ngẫu nhiên
     for (let i = password.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
+
       [password[i], password[j]] = [password[j], password[i]];
     }
 
@@ -153,6 +163,7 @@ export class UserManagementService {
         { shouldBypassPermissionChecks: true },
       );
     let savedWorkspaceMember: WorkspaceMemberWorkspaceEntity;
+
     try {
       savedWorkspaceMember = await workspaceMemberRepo.save({
         name: {
@@ -234,6 +245,7 @@ export class UserManagementService {
         SendEmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
       );
     }
+
     return {
       id: savedWorkspaceMember.id,
       email,
