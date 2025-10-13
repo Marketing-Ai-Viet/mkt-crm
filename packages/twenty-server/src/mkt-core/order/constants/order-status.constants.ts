@@ -1,4 +1,5 @@
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 
 export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV'; // Mặc định là 'DEV' nếu không có biến môi trường
 
@@ -22,6 +23,7 @@ export type ORDER_METADATA = {
   oldLicenseId?: string;
   oldVariantId?: string;
   refund?: RefundItem[]; // Danh sách các mục hoàn tiền
+  licenseHistory?: MktLicenseHistoryWorkspaceEntity | null; // Thông tin lịch sử license liên quan đến đơn hàng
 };
 
 export enum ORDER_STATUS {

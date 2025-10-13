@@ -111,6 +111,11 @@ export class MktLicenseService {
                 licenseName,
                 orderItem.id,
               );
+            const newLicenseHistory = {
+              name: 'Bản quyền được kích hoạt',
+              action: 'ACTIVE',
+              note: 'Khách hàng đã kích hoạt thành công bản quyền',
+            };
             const newLicense = licenseRepository.create({
               name: licenseName,
               licenseKey: licenseApiResponse.licenseKey,
@@ -123,7 +128,12 @@ export class MktLicenseService {
               mktCustomerId,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
+
             // save license
+            newLicense.createdBy = order.createdBy;
+            newLicense.history = JSON.stringify([
+              newLicenseHistory,
+            ]) as unknown as JSON;
             const savedLicense = await licenseRepository.save(newLicense);
 
             licensePromises.push(savedLicense);

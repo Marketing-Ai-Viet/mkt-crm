@@ -3,7 +3,6 @@ import { OnEvent } from '@nestjs/event-emitter';
 
 import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -16,6 +15,10 @@ export interface MktOrderCustomEventData {
     id: string;
     status: string;
     note?: string;
+    licenseHistory?: {
+      action: string;
+      note?: string;
+    };
     trialLicense?: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -44,7 +47,8 @@ export class MktOrderCustomEventListener {
       try {
         const updateOrder = await this.processOrderCustomEvent(event);
 
-        await this.pushLicenseHistory(updateOrder);
+        if (event?.orderData?.note !== 'from license')
+          await this.pushLicenseHistory(updateOrder);
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
         );
@@ -65,48 +69,36 @@ export class MktOrderCustomEventListener {
 
       return;
     }
-    const license = updateOrder?.mktLicense?.[0] as MktLicenseWorkspaceEntity;
-
-    if (!license) {
-      this.logger.warn(`No license associated with the order`);
-
-      return;
-    }
 
     const licenseRepo = await this.mktRepo.getRepository(
       MktLicenseHistoryWorkspaceEntity,
     );
 
-    // const userName =
-    //       authContext.user?.firstName && authContext.user?.lastName
-    //         ? `${authContext.user.firstName} ${authContext.user.lastName}`
-    //         : authContext.user?.email || 'Unknown User';
+    if (!updateOrder?.mktLicense) return;
 
-    const newLicenseHistory = licenseRepo.create({
-      name: 'Bản quyền được kích hoạt',
-      action: license.status,
-      note: 'Khách hàng đã kích hoạt thành công bản quyền',
-      mktLicenseId: license.id,
-      createdBy: updateOrder.createdBy,
-      // createdBy: {
-      //   source: FieldActorSource.MANUAL,
-      //   workspaceMemberId: authContext.workspaceMemberId || null,
-      //   name: userName,
-      //   context: {},
-      // },
-    });
+    for (const license of updateOrder.mktLicense) {
+      //const licenses = updateOrder?.mktLicense?.[0] as MktLicenseWorkspaceEntity;
 
-    // Explicitly set createdBy after create
-    // newLicenseHistory.createdBy = {
-    //   source: FieldActorSource.MANUAL,
-    //   workspaceMemberId: authContext.workspaceMemberId || null,
-    //   name: userName,
-    //   context: {},
-    // };
+      if (!license) {
+        this.logger.warn(`No license associated with the order`);
+      }
 
-    await licenseRepo.save(newLicenseHistory);
+      // const userName =
+      //       authContext.user?.firstName && authContext.user?.lastName
+      //         ? `${authContext.user.firstName} ${authContext.user.lastName}`
+      //         : authContext.user?.email || 'Unknown User';
 
-    // Push license history logic here
+      const newLicenseHistory = licenseRepo.create({
+        name: 'Bản quyền được kích hoạt',
+        action: license.status,
+        note: 'Khách hàng đã kích hoạt thành công bản quyền',
+        mktLicenseId: license.id,
+      });
+
+      newLicenseHistory.createdBy = updateOrder.createdBy;
+      await licenseRepo.save(newLicenseHistory);
+      // Push license history logic here
+    }
   }
 
   private async processOrderCustomEvent(

@@ -74,7 +74,7 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  metadata?: JSON;
+  metadata?: JSON | null;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.status,
@@ -165,7 +165,7 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconHistory',
   })
   @WorkspaceIsNullable()
-  history?: JSON;
+  history?: JSON | null;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktVariant,

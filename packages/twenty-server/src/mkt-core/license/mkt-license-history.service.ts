@@ -35,7 +35,7 @@ export class MktLicenseHistoryService {
     authContext: AuthContext,
     license: MktLicenseWorkspaceEntity,
     newMetadata: Metadata | string,
-  ): Promise<void> {
+  ): Promise<MktLicenseHistoryWorkspaceEntity | null | undefined> {
     try {
       // Parse metadata if it's a string
       let parsedMetadata: Metadata;
@@ -62,7 +62,7 @@ export class MktLicenseHistoryService {
       // Check if variant changed
       if (currentVariantId !== newVariant.mktVariantId) {
         // Create custom history entry for variant change
-        await this.addHistoryEntryFromLicense(
+        return await this.addHistoryEntryFromLicense(
           authContext,
           license,
           'VARIANT_CHANGED',
@@ -84,11 +84,11 @@ export class MktLicenseHistoryService {
     license: MktLicenseWorkspaceEntity,
     status?: string,
     note?: string | undefined,
-  ): Promise<void> {
+  ): Promise<MktLicenseHistoryWorkspaceEntity | null | undefined> {
     this.note = note;
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
-    if (!workspaceId) return;
+    if (!workspaceId) return null;
 
     try {
       const licenseRepository =
@@ -156,12 +156,16 @@ export class MktLicenseHistoryService {
         };
 
         await licenseHistoryRepository.save(newLicenseHistory);
+
+        return newLicenseHistory;
       }
     } catch (error) {
       this.logger.error('Failed to update license history:', {
         error: error.message,
         licenseId: license.id,
       });
+
+      return null;
     }
   }
 

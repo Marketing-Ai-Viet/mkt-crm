@@ -38,7 +38,7 @@ export class MktLicenseUpdateOnePreQueryHook
   constructor(
     private licenseService: MktLicenseService,
     private readonly licenseHistoryService: MktLicenseHistoryService,
-    private readonly mktLicenseRenewService: MktLicenseRenewService,
+    private mktLicenseRenewService: MktLicenseRenewService,
   ) {}
 
   async execute(
@@ -60,15 +60,20 @@ export class MktLicenseUpdateOnePreQueryHook
 
     const license = await this.licenseService.getLicenseForForUpdate(licenseId);
 
+    let licenseHistory = null;
+
     // Handle license history update
     if (licenseId && status) {
       if (license) {
-        await this.licenseHistoryService.addHistoryEntryFromLicense(
-          authContext,
-          license,
-          status,
-          note,
-        );
+        licenseHistory =
+          await this.licenseHistoryService.addHistoryEntryFromLicense(
+            authContext,
+            license,
+            status,
+            note,
+          );
+        this.mktLicenseRenewService.mktCommonOrderService.licenseHistory =
+          licenseHistory;
       }
     }
 
@@ -87,7 +92,7 @@ export class MktLicenseUpdateOnePreQueryHook
         license,
       );
 
-      return {
+      payload = {
         ...payload,
         data: {
           ...payload.data,
@@ -109,11 +114,10 @@ export class MktLicenseUpdateOnePreQueryHook
         license,
       );
 
-      return {
+      payload = {
         ...payload,
         data: {
           ...payload.data,
-          //status: MKT_LICENSE_STATUS.ACTIVE,
           metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
         },
       };
@@ -130,7 +134,7 @@ export class MktLicenseUpdateOnePreQueryHook
         license,
       );
 
-      return {
+      payload = {
         ...payload,
         data: {
           ...payload.data,
@@ -139,7 +143,21 @@ export class MktLicenseUpdateOnePreQueryHook
       };
     }
 
-    return payload;
+    const updatedMetadata = await this.getMetadata(
+      payload.data?.metadata as string | null,
+    );
+
+    if (licenseHistory) {
+      updatedMetadata.licenseHistory = licenseHistory;
+    }
+
+    return {
+      ...payload,
+      data: {
+        ...payload.data,
+        metadata: updatedMetadata as unknown as JSON,
+      },
+    };
   }
 
   async makeMetadataForRenew(
@@ -213,10 +231,13 @@ export class MktLicenseUpdateOnePreQueryHook
   private async getMetadata(
     newMetadata: string | null,
   ): Promise<ORDER_METADATA> {
+    if (typeof newMetadata === 'object' && newMetadata !== null) {
+      return newMetadata as ORDER_METADATA;
+    }
     if (typeof newMetadata === 'string') {
       return JSON.parse(newMetadata) as ORDER_METADATA;
     } else {
-      return {};
+      return {} as ORDER_METADATA;
     }
   }
 }

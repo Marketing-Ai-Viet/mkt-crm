@@ -42,7 +42,7 @@ export class MktLicenseUpdateOnePostQueryHook
       this.mktCommonOrderService.eventUpdated(
         updatedLicense.mktOrderId,
         workspaceId,
-        'license update',
+        'from license',
       );
 
       return;

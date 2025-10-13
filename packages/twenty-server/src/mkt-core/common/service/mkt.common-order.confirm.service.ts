@@ -516,6 +516,8 @@ export class MktOrderCommonConfirmService {
               mktVariantId: orderItem.mktVariantId,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
+
+            newLicense.createdBy = order.createdBy;
             // save license
             const savedLicense = await licenseRepository.save(newLicense);
 

@@ -4,6 +4,7 @@ import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import { FIREBASE_AUTH_RESPONSE } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import {
   ORDER_METADATA,
   ORDER_STATUS,
@@ -15,6 +16,8 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 export class MktCommonOrderService {
   private readonly logger = new Logger(MktCommonOrderService.name);
   private orderMetadata: ORDER_METADATA | null = null;
+  public licenseHistory: MktLicenseHistoryWorkspaceEntity | null | undefined =
+    null;
 
   constructor(
     private readonly mktRepo: MktRepositoryService,
@@ -51,6 +54,10 @@ export class MktCommonOrderService {
       `Updating order ${orderId} with data: ${JSON.stringify(updateData)}`,
     );
 
+    if (this.licenseHistory?.createdBy) {
+      updateData.createdBy = this.licenseHistory.createdBy;
+    }
+
     await orderRepository.update(orderId, updateData);
   }
 
@@ -64,6 +71,10 @@ export class MktCommonOrderService {
       status,
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
     };
+
+    if (this.licenseHistory?.createdBy) {
+      updateData.createdBy = this.licenseHistory.createdBy;
+    }
 
     await orderRepository.update(updateOrder?.id, updateData);
   }

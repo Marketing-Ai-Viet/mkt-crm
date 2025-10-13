@@ -19,7 +19,7 @@ export class MktLicenseRenewService {
   constructor(
     private readonly mktRepo: MktRepositoryService,
     private readonly mktFirebaseService: MktFirebaseService,
-    private readonly mktCommonOrderService: MktCommonOrderService,
+    public mktCommonOrderService: MktCommonOrderService,
     private readonly mktOrderCommonConfirmService: MktOrderCommonConfirmService,
   ) {}
 
