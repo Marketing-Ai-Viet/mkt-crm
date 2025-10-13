@@ -21,18 +21,10 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
+import { WorkspaceMemberListOutput } from 'src/mkt-core/user-management/dto/workspace-member.output';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { APP_LOCALES } from 'twenty-shared/translations';
 import { Repository } from 'typeorm';
-import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import {
-  SendEmailToolException,
-  SendEmailToolExceptionCode,
-} from 'src/engine/core-modules/tool/tools/send-email-tool/exceptions/send-email-tool.exception';
-import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
-import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
-
 import { UserOutput } from './dto/user.output';
 
 @Injectable()
@@ -258,5 +250,55 @@ export class UserManagementService {
       avatarUrl: savedWorkspaceMember.avatarUrl || input.avatarUrl || undefined,
       startDate: new Date(savedWorkspaceMember.startDate),
     };
+  }
+  async getMemberByDepartmentCode(
+    workspaceId: string,
+    departmentCode: string,
+    page: number,
+    limit: number,
+  ): Promise<WorkspaceMemberListOutput[]> {
+    if (page == null || limit == null) {
+      this.logger.error(
+        `Missing required pagination parameters: page=${page}, limit=${limit}`,
+      );
+      throw new Error('Missing required pagination parameters: page or limit');
+    }
+    try {
+      const workspaceMemberRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
+          workspaceId,
+          'workspaceMember',
+          { shouldBypassPermissionChecks: true },
+        );
+
+      const members = await workspaceMemberRepo.find({
+        where: {
+          department: { departmentCode },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      return members.map((member) => {
+        return {
+          id: String(member.id),
+          name: member.name?.firstName + ' ' + member.name?.lastName,
+          avatarUrl: member.avatarUrl,
+          locale: member.locale,
+          colorScheme: member.colorScheme,
+          createdAt: new Date(member.createdAt),
+          updatedAt: new Date(member.updatedAt),
+          userEmail: member.userEmail,
+          startDate: member.startDate?.toISOString() || '',
+          endDate: member.endDate?.toISOString() ?? null,
+        };
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error in getMemberByDepartmentCode: ${error.message}`,
+        error,
+      );
+      throw error;
+    }
   }
 }
