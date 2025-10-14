@@ -5,6 +5,7 @@ import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseHistoryService } from 'src/mkt-core/license/mkt-license-history.service';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
@@ -34,11 +35,13 @@ export class MktLicenseUpdateOnePreQueryHook
   implements WorkspacePreQueryHookInstance
 {
   private readonly logger = new Logger(MktLicenseUpdateOnePreQueryHook.name);
+  private note = '';
 
   constructor(
     private licenseService: MktLicenseService,
     private readonly licenseHistoryService: MktLicenseHistoryService,
     private mktLicenseRenewService: MktLicenseRenewService,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   async execute(
@@ -56,7 +59,8 @@ export class MktLicenseUpdateOnePreQueryHook
     const metadata = await this.getMetadata(metadataString);
     const paymentMethods = metadata.paymentMethods;
     const variants = metadata.variants;
-    const note = metadata.note;
+
+    if (typeof metadata.note === 'string') this.note = metadata.note;
 
     const license = await this.licenseService.getLicenseForForUpdate(licenseId);
 
@@ -70,7 +74,7 @@ export class MktLicenseUpdateOnePreQueryHook
             authContext,
             license,
             status,
-            note,
+            this.note,
           );
         this.mktLicenseRenewService.mktCommonOrderService.licenseHistory =
           licenseHistory;
@@ -107,20 +111,34 @@ export class MktLicenseUpdateOnePreQueryHook
         paymentMethods,
       );
 
-      await this.mktLicenseRenewService.shouldRenewLicense(
-        status,
-        newMetadata,
-        licenseId,
-        license,
-      );
+      const validate = await this.validateExpiredAtForRenew(license);
 
-      payload = {
-        ...payload,
-        data: {
-          ...payload.data,
-          metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
-        },
-      };
+      if (!validate) {
+        this.logger.error(this.note);
+        payload = {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: license?.status || MKT_LICENSE_STATUS.ERROR,
+            notes: this.note,
+          },
+        };
+      } else {
+        await this.mktLicenseRenewService.shouldRenewLicense(
+          status,
+          newMetadata,
+          licenseId,
+          license,
+        );
+
+        payload = {
+          ...payload,
+          data: {
+            ...payload.data,
+            metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
+          },
+        };
+      }
     }
 
     if (status === MKT_LICENSE_STATUS.REFUND) {
@@ -150,6 +168,12 @@ export class MktLicenseUpdateOnePreQueryHook
     if (licenseHistory) {
       updatedMetadata.licenseHistory = licenseHistory;
     }
+
+    if (this.note && licenseHistory) licenseHistory.note = this.note;
+    await this.licenseHistoryService.saveLicenseHistory(
+      license,
+      licenseHistory,
+    );
 
     return {
       ...payload,
@@ -239,5 +263,37 @@ export class MktLicenseUpdateOnePreQueryHook
     } else {
       return {} as ORDER_METADATA;
     }
+  }
+
+  private async validateExpiredAtForRenew(
+    license: MktLicenseWorkspaceEntity | null,
+  ): Promise<boolean> {
+    let note = '';
+    const expiredAt = license?.expiresAt;
+    // get license_renew_before_days from mktOption
+    const mktOptionRepo = await this.mktRepo.getOptionRepository();
+    const option = await mktOptionRepo.findOne({
+      where: { key: 'license_renew_before_days' },
+    });
+    const licenseRenewBeforeDays = option ? parseInt(option.value) || 15 : 15; // default 15 days
+
+    //expiredAt - today <= licenseRenewBeforeDays
+    if (expiredAt) {
+      const today = new Date();
+      const timeDiff = expiredAt.getTime() - today.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+      note = `Thời hạn bản quyền ${expiredAt.toISOString()}, tính bằng ${daysDiff} ngày. Ngưỡng gia hạn là ${licenseRenewBeforeDays} ngày.`;
+
+      if (daysDiff > licenseRenewBeforeDays) {
+        note = `Bản quyền không đủ điều kiện gia hạn. Bản quyền sẽ hết hạn sau ${daysDiff} ngày, dài hơn ngưỡng ${licenseRenewBeforeDays} ngày.`;
+        this.note = `${this.note}. ${note}`;
+      }
+      this.logger.log(note);
+
+      return daysDiff <= licenseRenewBeforeDays;
+    }
+
+    return false;
   }
 }

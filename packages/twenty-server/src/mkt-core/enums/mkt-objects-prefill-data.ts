@@ -37,8 +37,11 @@ import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefi
 import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
 import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
+import { prefillMktOptions } from 'src/mkt-core/setting/seeder/prefill-mkt-options';
 
 export const MKT_PREFILLS = [
+  // core prefills
+  prefillMktOptions,
   // report prefills
   prefillMktReports,
   // i18n prefills

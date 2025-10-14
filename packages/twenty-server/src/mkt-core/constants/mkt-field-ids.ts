@@ -23,6 +23,21 @@ export const MKT_I18N_FIELD_IDS = {
   searchVector: '462f1388-6a72-414e-97ca-d3122df17d49',
 };
 
+export const MKT_OPTION_FIELD_IDS = {
+  // fields
+  name: '37236f76-8172-4f20-9216-201e6ca2e25e',
+  key: 'f275f4c8-431f-4801-87b7-07dbdbd8c292',
+  value: 'ddcfbddd-52fb-4b3c-abf4-e2b7c7a9e08f',
+  description: 'bc7799a4-b05f-43c9-8016-c252868d3737',
+  // relations
+  // common relations or fields
+  position: 'a581e2e2-6c2e-46f9-9881-3ea9c2eda802',
+  createdBy: 'ebd45eb0-2004-458a-a3e9-ca6e3119a728',
+  accountOwner: 'e0791957-1f27-4f12-9a46-4de07a46c392',
+  timelineActivities: 'cec7d59e-7930-4497-bf0f-24de9697cf32',
+  searchVector: '87ba0d45-b282-44fd-a929-8c98384f0502',
+};
+
 export const MKT_CUSTOMER_FIELD_IDS = {
   // fields
   mktWorkspaceId: '3393c870-41c7-4efd-b57a-cb497569a30a',
@@ -732,6 +747,8 @@ export const MKT_PAYMENT_METHOD_FIELD_IDS = {
 
 //EXTENDS FROM TIMELINE_ACTIVITY_STANDARD_FIELD_IDS
 export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
+  //core
+  mktOption: '1a0fde35-b0e9-4d56-bc9f-400d15aa38cd',
   mktReport: '56bb55c0-59c2-4f68-99c9-4ee1638650dd',
   //i18n
   mktI18n: '70a89432-aeb9-49a3-b263-3b5c57921d78',
@@ -800,6 +817,7 @@ export const MKT_KPI_TEMPLATE_HISTORY_FIELD_IDS = {
 
 //EXTENDS FROM WORKSPACE_MEMBER_STANDARD_FIELD_IDS
 export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
+  accountOwnerForMktOptions: '688c5537-77aa-4b1f-a557-d4d0d124c904',
   accountOwnerForMktReports: 'a55048e3-30c5-4a74-a5e0-70c41b159c00',
   //i18n
   accountOwnerForI18ns: '62b34ddc-a703-4172-ad5c-29c7bb7aa681',

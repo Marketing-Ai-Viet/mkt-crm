@@ -43,8 +43,11 @@ import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 export const MKT_WORKSPACE_ENTITIES = [
+  //core
+  MktOptionWorkspaceEntity,
   // I18n
   MktI18nWorkspaceEntity,
   // Customer

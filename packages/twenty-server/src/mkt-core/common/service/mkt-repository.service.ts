@@ -12,6 +12,7 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 @Injectable()
 export class MktRepositoryService {
@@ -53,6 +54,10 @@ export class MktRepositoryService {
 
   async getWorkspaceId() {
     return this.scopedWorkspaceContextFactory.create().workspaceId;
+  }
+
+  async getOptionRepository() {
+    return await this.getRepository(MktOptionWorkspaceEntity);
   }
 
   private async getRepositoryByWorkspaceId<Entity extends ObjectLiteral>(

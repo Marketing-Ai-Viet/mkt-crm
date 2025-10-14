@@ -38,8 +38,10 @@ import { SeedVariantValueModuleCommand } from 'src/mkt-core/dev-seeder/product-s
 import { MktLicenseDashboardStatsCommand } from 'src/mkt-core/license/commands/mkt-license-dashboard-stats.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 import { SeedMktReportModuleCommand } from 'src/mkt-core/report/seeder/mkt-report-data-seed-dev-workspace.command';
-
+import { SeedMktOptionModuleCommand } from 'src/mkt-core/setting/seeder/mkt-option-data-seed-dev-workspace.command';
 export const MKT_DATABASE_COMMAND_MODULES = [
+  // core commands
+  SeedMktOptionModuleCommand,
   // report commands
   SeedMktReportModuleCommand,
   // i18n commands

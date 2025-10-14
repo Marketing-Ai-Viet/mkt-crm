@@ -36,8 +36,23 @@ import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktOption,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Option`,
+    description: msg`Event option`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktOptionWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  mktOption: Relation<MktOptionWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktOption')
+  mktOptionId: string | null;
+
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktI18n,
     type: RelationType.MANY_TO_ONE,

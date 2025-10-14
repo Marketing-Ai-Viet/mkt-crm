@@ -46,8 +46,21 @@ import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOptions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Options`,
+    description: msg`Account owner for options`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktOptionWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktOptions: Relation<MktOptionWorkspaceEntity[]>;
+
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForI18ns,
     type: RelationType.ONE_TO_MANY,

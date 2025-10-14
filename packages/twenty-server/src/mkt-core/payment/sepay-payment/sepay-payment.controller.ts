@@ -9,10 +9,9 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
 import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
@@ -35,10 +34,8 @@ type SepayWebhookPayload = {
 };
 
 // Choose guards based on environment flag
-const sepayGuards =
-  process.env.SEPAY_AUTH_ENABLED === 'true'
-    ? [JwtAuthGuard, UserAuthGuard]
-    : [PublicEndpointGuard];
+// Removed unused sepayGuards variable
+
 @Injectable()
 @Controller('hooks')
 export class SepayPaymentController {

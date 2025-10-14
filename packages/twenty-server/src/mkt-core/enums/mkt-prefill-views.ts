@@ -36,8 +36,11 @@ import { mktProductsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-p
 import { mktVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-all.view';
 import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
 import { mktReportsAllView } from 'src/mkt-core/report/seeder/mkt-report-all.view';
+import { mktOptionsAllView } from 'src/mkt-core/setting/seeder/mkt-option-all.view';
 
 export const MKT_ALL_VIEWS = [
+  // core views
+  mktOptionsAllView,
   // report views
   mktReportsAllView,
   // i18n views

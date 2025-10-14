@@ -60,6 +60,10 @@ import {
   MKT_LICENSE_HISTORY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-license-history-data-seeds.constants';
 import {
+  MKT_OPTION_DATA_SEED_COLUMNS,
+  MKT_OPTION_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-option-data-seeds.constants';
+import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
@@ -188,6 +192,12 @@ export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
 ];
 
 export const MKT_RECORD_SEEDS_CONFIGS = [
+  // core
+  {
+    tableName: 'mktOption',
+    pgColumns: MKT_OPTION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_OPTION_DATA_SEEDS,
+  },
   // I18n configs
   {
     tableName: 'mktI18N',
