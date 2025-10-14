@@ -3,15 +3,19 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Injectable,
   Logger,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
+import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 
@@ -35,23 +39,34 @@ const sepayGuards =
   process.env.SEPAY_AUTH_ENABLED === 'true'
     ? [JwtAuthGuard, UserAuthGuard]
     : [PublicEndpointGuard];
-
+@Injectable()
 @Controller('hooks')
 export class SepayPaymentController {
   private readonly logger = new Logger(SepayPaymentController.name);
 
   constructor(
+    private readonly accessTokenService: AccessTokenService,
     private readonly mktPaymentService: MktPaymentService,
     private readonly fireBaseIntegrationService: FireBaseIntegrationService,
   ) {}
 
   // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
-  @UseGuards(...sepayGuards)
+  @UseGuards(JwtAuthGuard, UserAuthGuard)
   @Post('sepay-payment')
   @HttpCode(HttpStatus.OK)
-  async handleSepayPayment(@Body() payload: SepayWebhookPayload) {
+  async handleSepayPayment(
+    @Body() payload: SepayWebhookPayload,
+    @Req() request: RequestSepayJWT,
+  ) {
     this.logger.warn('SEPAY_AUTH_ENABLED=' + process.env.SEPAY_AUTH_ENABLED);
     this.logger.log('Received sepay-payment webhook', payload);
+
+    this.logger.log('Request user info', {
+      user: request.user,
+      workspaceId: request.workspaceId,
+      workspaceMemberId: request.workspaceMemberId,
+      userWorkspaceId: request.userWorkspaceId,
+    });
     const workspaceId = process.env.SEPAY_WORKSPACE_ID;
 
     if (!workspaceId) {
@@ -79,13 +94,25 @@ export class SepayPaymentController {
     if (payments.length === 0) {
       this.logger.warn(`No payments found for order ${order.id}`);
     }
+    const authContext: RequestSepayJWT = {
+      user: request.user,
+      workspaceId: request.workspaceId,
+      workspaceMemberId: request.workspaceMemberId,
+      userWorkspaceId: request.userWorkspaceId,
+    };
+
     for (const payment of payments) {
-      await this.mktPaymentService.updatePaymentById(workspaceId, payment.id, {
-        status: MKT_PAYMENT_STATUS.COMPLETED,
-        paymentDate: payload.transactionDate,
-        amount: payload.transferAmount,
-        description: payload.content || payload.description,
-      });
+      await this.mktPaymentService.updatePaymentById(
+        workspaceId,
+        payment.id,
+        {
+          status: MKT_PAYMENT_STATUS.COMPLETED,
+          paymentDate: payload.transactionDate,
+          amount: payload.transferAmount,
+          description: payload.content || payload.description,
+        },
+        authContext,
+      );
       this.logger.log(`Updated payment ${payment.id} for order ${order.id}`);
       this.fireBaseIntegrationService.completedOrderToFirebase(order);
       break; // Assuming only one payment needs to be updated

@@ -321,6 +321,7 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
+      createdBy: order?.createdBy,
     };
 
     this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
@@ -407,6 +408,7 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
+      createdBy: createdOrder?.createdBy,
     };
 
     await this.mktPaymentService.createPaymentFromOrder(

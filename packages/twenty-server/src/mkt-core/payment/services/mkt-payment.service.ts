@@ -1,15 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
+import {
+  ActorMetadata,
+  FieldActorSource,
+} from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
+import {
+  RequestSepayJWT,
+  callFireBaseType,
+} from 'src/mkt-core/payment/constants/payment.type';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 @Injectable()
 export class MktPaymentService {
@@ -32,6 +40,11 @@ export class MktPaymentService {
       generatedOrderCode: string | null;
       orderId: string;
       workspaceId: string | null;
+      createdBy?: {
+        source: string | null;
+        workspaceMemberId: string | null;
+        name: string | null;
+      };
     },
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
   ): Promise<callFireBaseType | void> {
@@ -82,8 +95,14 @@ export class MktPaymentService {
           }),
         );
 
+        const newPayments = paymentsFromMeta.map((item) => {
+          if (!paymentData.createdBy) return item;
+
+          return { ...item, createdBy: paymentData.createdBy };
+        });
+
         await paymentRepository.save(
-          paymentsFromMeta as MktPaymentWorkspaceEntity[],
+          newPayments as MktPaymentWorkspaceEntity[],
         );
       }
     }
@@ -113,11 +132,31 @@ export class MktPaymentService {
     workspaceId: string,
     paymentId: string,
     updateData: Partial<MktPaymentWorkspaceEntity>,
+    authContext: RequestSepayJWT,
   ) {
     const paymentRepo =
       await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
 
-    return await paymentRepo.update(paymentId, updateData);
+    const workspaceMemberRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
+        workspaceId,
+        'workspaceMember',
+      );
+
+    const workspaceMember = await workspaceMemberRepository.findOneOrFail({
+      where: { id: authContext.workspaceMemberId },
+    });
+
+    const createdBy: ActorMetadata = {
+      source: FieldActorSource.MANUAL,
+      workspaceMemberId: authContext.workspaceMemberId || null,
+      name: authContext.workspaceMemberId
+        ? `${workspaceMember.name.firstName} ${workspaceMember.name.lastName}`
+        : 'system',
+      context: {},
+    };
+
+    return await paymentRepo.update(paymentId, { ...updateData, createdBy });
   }
 
   async getPaymentRepository() {
