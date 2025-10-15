@@ -25,6 +25,7 @@ import { MKT_VARIANT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
@@ -216,6 +217,20 @@ export class MktVariantWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktComboVariants: Relation<MktComboVariantWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_VARIANT_FIELD_IDS.mktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payment Histories`,
+    description: msg`Payment Histories linked to the variant`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktVariant',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_VARIANT_FIELD_IDS.timelineActivities,

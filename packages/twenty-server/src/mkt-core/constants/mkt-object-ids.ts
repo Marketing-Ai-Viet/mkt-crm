@@ -39,6 +39,7 @@ export const MKT_OBJECT_IDS = {
   mktTemplate: '0b9f9dbd-6c1a-4418-9302-97c38c2dc0a0',
   mktPayment: '8b4c2d1e-5f6a-7b8c-9d0e-1f2a3b4c5d6e',
   mktPaymentMethod: '9c5d3e2f-6a7b-8c9d-0e1f-2a3b4c5d6e7f',
+  mktPaymentHistory: 'f10cf936-b5c9-4d3c-aa5b-2ceb236519ac',
   // resellers
   mktResellerTier: 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
   mktReseller: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',

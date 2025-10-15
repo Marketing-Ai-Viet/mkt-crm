@@ -8,6 +8,7 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import {
   ORDER_ACTION,
@@ -17,7 +18,10 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
-import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
+import {
+  PAYMENT_HISTORY_TYPE,
+  callFireBaseType,
+} from 'src/mkt-core/payment/constants/payment.type';
 import {
   FireBaseIntegrationService,
   FirebaseAuthResponse,
@@ -122,8 +126,16 @@ export class MktOrderCreateOnePostQueryHook
       this.mktCommonOrderService.eventUpdated(
         created.id,
         workspaceId,
-        'create',
+        MKT_ORDER_EVENT_TYPES.ORDER_CREATED,
       );
+
+      if (action !== ORDER_ACTION.TRIAL) {
+        await this.mktCommonOrderService.paymentUpdated(
+          created.id,
+          workspaceId,
+          PAYMENT_HISTORY_TYPE.PAYMENT,
+        );
+      }
 
       return;
     } catch (error) {

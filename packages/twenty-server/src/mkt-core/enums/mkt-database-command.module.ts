@@ -15,6 +15,7 @@ import { SeedMktOrderHistoryModuleCommand } from 'src/mkt-core/dev-seeder/comman
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
 import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-data-seed-dev-workspace.command';
+import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-history-data-seed-dev-workspace.command';
 import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-method-data-seed-dev-workspace.command';
 import { SeedMktPermissionAuditCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-audit-data-seed-dev-workspace.command';
 import { SeedResellerModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-reseller-data-seed-dev-workspace.command';
@@ -80,6 +81,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // payment commands
   MktPaymentMethodDataSeedDevWorkspaceCommand,
   MktPaymentDataSeedDevWorkspaceCommand,
+  SeedMktPaymentHistoryModuleCommand,
   // reseller commands
   SeedResellerTierModuleCommand,
   SeedResellerModuleCommand,

@@ -32,6 +32,10 @@ export type CalculateOrderResult = {
 
 @Injectable()
 export class MktOrderCommonConfirmService {
+  public changeVariantData = {
+    oldVariantName: '',
+    newVariantName: '',
+  };
   private readonly logger = new Logger(MktOrderCommonConfirmService.name);
   public orderMetadata: ORDER_METADATA | null = null;
 
@@ -428,6 +432,7 @@ export class MktOrderCommonConfirmService {
     const itemsFromVariants = await Promise.all(
       variantsMeta.map(async (v, _index) => {
         const variant = variantById.get(v.mktVariantId);
+        this.changeVariantData.newVariantName = variant?.name || '';
 
         if (!variant) return [];
 
@@ -821,7 +826,18 @@ export class MktOrderCommonConfirmService {
     }
 
     this.orderMetadata = { ...metadata, oldOrderId: orderId };
-    //
+    let note = '';
+    if (
+      this.changeVariantData.oldVariantName &&
+      this.changeVariantData.newVariantName
+    ) {
+      note = `\n
+Đã thay đổi sản phẩm cho ${this.changeVariantData.oldVariantName}\n
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sản phẩm mới: -> ${this.changeVariantData.newVariantName}.\n
+Thời gian: ${new Date().toISOString()}
+`;
+    }
     await orderRepository.update(orderId, {
       mktCustomerId: updateOrderInfo.mktCustomerId || null,
       orderCode: updateOrderInfo.orderCode ?? '',
@@ -830,6 +846,7 @@ export class MktOrderCommonConfirmService {
       discount: updateOrderInfo.discount,
       totalAmount: updateOrderInfo.totalAmount,
       name: updateOrderInfo.name ?? '',
+      note,
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
     });
   }

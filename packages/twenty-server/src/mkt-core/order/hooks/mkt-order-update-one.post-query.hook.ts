@@ -8,6 +8,7 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
@@ -56,7 +57,7 @@ export class MktOrderUpdateOnePostQueryHook
       this.mktCommonOrderService.eventUpdated(
         updated.id,
         workspaceId,
-        'update',
+        MKT_ORDER_EVENT_TYPES.ORDER_UPDATED,
       );
 
       return;

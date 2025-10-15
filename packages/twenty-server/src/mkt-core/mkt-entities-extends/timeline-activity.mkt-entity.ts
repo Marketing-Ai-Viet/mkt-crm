@@ -27,6 +27,7 @@ import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-orde
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
 import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
@@ -257,6 +258,21 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   mktPayment: Relation<MktPaymentWorkspaceEntity> | null;
   @WorkspaceJoinColumn('mktPayment')
   mktPaymentId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktPaymentHistory,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Payment History`,
+    description: msg`Event payment history`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktPaymentHistory: Relation<MktPaymentHistoryWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktPaymentHistory')
+  mktPaymentHistoryId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktOrderHistory,

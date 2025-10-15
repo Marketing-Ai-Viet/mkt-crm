@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
 import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
+import {
+  MKT_EVENT_TYPE,
+  MKT_ORDER_EVENT_TYPES,
+} from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
@@ -37,7 +41,7 @@ export class MktOrderCustomEventListener {
   private readonly logger = new Logger(MktOrderCustomEventListener.name);
   constructor(private mktRepo: MktRepositoryService) {}
 
-  @OnEvent('mktOrder.custom')
+  @OnEvent(MKT_EVENT_TYPE.MKT_ORDER)
   async handleMktOrderCustom(payload: MktOrderCustomEventPayload) {
     this.logger.log(
       `Received mktOrderCustom event for workspace: ${payload.workspaceId}`,
@@ -47,8 +51,11 @@ export class MktOrderCustomEventListener {
       try {
         const updateOrder = await this.processOrderCustomEvent(event);
 
-        if (event?.orderData?.note !== 'from license')
+        const orderType = event.eventType as MKT_ORDER_EVENT_TYPES;
+
+        if (orderType === MKT_ORDER_EVENT_TYPES.ORDER_CREATED) {
           await this.pushLicenseHistory(updateOrder);
+        }
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
         );

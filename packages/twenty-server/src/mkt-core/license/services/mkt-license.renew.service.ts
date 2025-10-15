@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  MKT_PAYMENT_METHOD_TYPE,
+  PAYMENT_HISTORY_TYPE,
+} from 'src/mkt-core/common/common.type';
 
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/common/common.type';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktFirebaseService } from 'src/mkt-core/common/service/mkt-firebase.service';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
@@ -12,6 +17,7 @@ import {
 } from 'src/mkt-core/order/constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { CALL_FIREBASE_DATA } from 'src/mkt-core/payment/constants/payment.type';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 
 @Injectable()
 export class MktLicenseRenewService {
@@ -20,7 +26,7 @@ export class MktLicenseRenewService {
     private readonly mktRepo: MktRepositoryService,
     private readonly mktFirebaseService: MktFirebaseService,
     public mktCommonOrderService: MktCommonOrderService,
-    private readonly mktOrderCommonConfirmService: MktOrderCommonConfirmService,
+    private mktOrderCommonConfirmService: MktOrderCommonConfirmService,
   ) {}
 
   async shouldRenewLicense(
@@ -124,6 +130,9 @@ export class MktLicenseRenewService {
       relations: ['orderItems'],
     });
 
+    const paymentHistories =
+      license.mktPaymentHistories as MktPaymentHistoryWorkspaceEntity[];
+
     if (updatedOrder && updatedOrder.orderItems) {
       const newSubtotal = updatedOrder.orderItems.reduce(
         (total, item) => total + (item.totalPrice || 0),
@@ -157,17 +166,43 @@ export class MktLicenseRenewService {
         ? `${existingNote}\n\n${accountingNote}`
         : accountingNote;
 
+      let allNote = `${accountingNote}`;
       if (note) {
         const additionalNote = `\nGhi chú thêm: ${note}`;
-
-        await orderRepo.update(order.id, {
-          note: `${accountingNote}${additionalNote}`,
-        });
-      } else {
-        await orderRepo.update(order.id, {
-          note: accountingNote,
-        });
+        allNote = `${allNote}${additionalNote}`;
       }
+      let notePayment = '';
+      paymentHistories.sort((a, b) =>
+        a.createdAt && b.createdAt
+          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          : 0,
+      );
+      this.logger.log('paymentHistories 180', paymentHistories);
+      for (const paymentHistory of paymentHistories || []) {
+        const paymentStatus: MKT_PAYMENT_STATUS = paymentHistory?.mktPayment
+          ?.status as MKT_PAYMENT_STATUS;
+        const paymentMethod = paymentHistory?.mktPayment?.mktPaymentMethod
+          ?.type as MKT_PAYMENT_METHOD_TYPE;
+        const paymentStatusLabel = await this.getPaymentStatusLabel(
+          paymentStatus,
+          paymentMethod,
+        );
+        const paymentType = await this.getPaymentTypeLabel(
+          paymentHistory.paymentType,
+        );
+        const createdAt = paymentHistory.createdAt
+          ? new Date(paymentHistory.createdAt).toLocaleString('vi-VN')
+          : 'Unknown date';
+        notePayment += `• ${paymentHistory.amount.toLocaleString('vi-VN')} VNĐ - ${paymentType} - ${createdAt} - ${paymentStatusLabel} \n`;
+      }
+      if (notePayment) {
+        const accountingNoteWithPayment = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 LỊCH SỬ THANH TOÁN:\n${notePayment}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        allNote = `${allNote}${accountingNoteWithPayment}`;
+      }
+
+      await orderRepo.update(order.id, {
+        note: allNote,
+      });
 
       this.logger.log(
         `License ${licenseId} refunded successfully. ` +
@@ -183,6 +218,13 @@ export class MktLicenseRenewService {
     await this.mktCommonOrderService.updateOrderForRefund(
       ORDER_STATUS.REFUND,
       license?.mktOrder ?? null,
+    );
+
+    const workspaceId = await this.mktRepo.getWorkspaceId();
+    await this.mktCommonOrderService.paymentUpdated(
+      order.id,
+      workspaceId,
+      PAYMENT_HISTORY_TYPE.REFUND,
     );
   }
 
@@ -219,7 +261,7 @@ export class MktLicenseRenewService {
     if (refundHistory.length > 0) {
       refundDetails = '\n📋 CHI TIẾT HOÀN TIỀN:\n';
       refundHistory.forEach((refund, index) => {
-        refundDetails += `${index + 1}. License ID: ${refund.licenseId} - ${refund.variant_name} - ${(refund.refundAmount ?? 0).toLocaleString('vi-VN')} VNĐ\n`;
+        refundDetails += `${index + 1}. ${refund.variant_name} - ${(refund.refundAmount ?? 0).toLocaleString('vi-VN')} VNĐ\n`;
       });
     }
 
@@ -227,16 +269,9 @@ export class MktLicenseRenewService {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 THÔNG TIN HOÀN TIỀN:
 • Số tiền cần hoàn: ${totalRefundAmount.toLocaleString('vi-VN')} VNĐ${refundDetails}
-• Số tiền order còn lại sau khi hoàn tiền: ${remainingAmount.toLocaleString('vi-VN')} VNĐ
+• Số tiền còn lại sau khi hoàn tiền: ${remainingAmount.toLocaleString('vi-VN')} VNĐ
 
-📊 TỔNG HỢP HOÀN TIỀN:
-• Tổng số lần hoàn tiền: 
-• Tổng số tiền đã hoàn: 
-⚠️  CẦN XÁC NHẬN:
-- Kế toán vui lòng hoàn tiền cho khách hàng
-- Xác nhận hoàn tiền thành công
-- Cập nhật trạng thái thanh toán
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+`;
   }
 
   async shouldChangeVariantForLicense(
@@ -255,6 +290,8 @@ export class MktLicenseRenewService {
       oldOrderId: oldOrder?.id,
       oldVariantId: license?.mktVariant?.id,
     });
+    this.mktOrderCommonConfirmService.changeVariantData.oldVariantName =
+      license?.mktVariant?.name || '';
     await this.processChangeVariant(licenseId, metadata, license);
   }
 
@@ -290,6 +327,13 @@ export class MktLicenseRenewService {
       '',
       false,
       authFirebase,
+    );
+
+    const workspaceId = await this.mktRepo.getWorkspaceId();
+    await this.mktCommonOrderService.paymentUpdated(
+      order.id,
+      workspaceId,
+      PAYMENT_HISTORY_TYPE.CHANGE_VARIANT,
     );
     this.logger.log(`License ${licenseId} renewed successfully.`);
   }
@@ -343,6 +387,12 @@ export class MktLicenseRenewService {
       workspaceId,
       false,
       authFirebase,
+    );
+
+    await this.mktCommonOrderService.paymentUpdated(
+      order.id,
+      workspaceId,
+      PAYMENT_HISTORY_TYPE.RENEW,
     );
     this.logger.log(`License ${licenseId} renewed successfully.`);
   }
@@ -441,5 +491,58 @@ export class MktLicenseRenewService {
 
     //throw new Error(`Debug Method not implemented. ${JSON.stringify(license)}`);
     return parsedMetadata;
+  }
+
+  private async getPaymentTypeLabel(
+    paymentType: PAYMENT_HISTORY_TYPE,
+  ): Promise<string> {
+    switch (paymentType) {
+      case PAYMENT_HISTORY_TYPE.PAYMENT:
+        return 'Đơn hàng mới';
+      case PAYMENT_HISTORY_TYPE.RENEW:
+        return 'Gia hạn';
+      case PAYMENT_HISTORY_TYPE.REFUND:
+        return 'Hoàn tiền';
+      case PAYMENT_HISTORY_TYPE.CHANGE_VARIANT:
+        return 'Đổi gói';
+      default:
+        return 'Khác';
+    }
+  }
+
+  private async getPaymentStatusLabel(
+    paymentStatus: MKT_PAYMENT_STATUS,
+    paymentMethod: MKT_PAYMENT_METHOD_TYPE,
+  ) {
+    let note = '';
+    switch (paymentMethod) {
+      case MKT_PAYMENT_METHOD_TYPE.QR_CODE:
+        note = 'QR_CODE';
+        break;
+      case MKT_PAYMENT_METHOD_TYPE.BANK_TRANSFER:
+        return 'Chuyển khoản ngân hàng';
+      case MKT_PAYMENT_METHOD_TYPE.CASH:
+        return 'Thanh toán bằng tiền mặt';
+      case MKT_PAYMENT_METHOD_TYPE.CREDIT_CARD:
+        return 'Thanh toán bằng thẻ tín dụng';
+      default:
+      //return 'Phương thức thanh toán khác';
+    }
+    switch (paymentStatus) {
+      case MKT_PAYMENT_STATUS.PENDING:
+        return 'Chờ thanh toán';
+      case MKT_PAYMENT_STATUS.PROCESSING:
+        return 'Đang xử lý';
+      case MKT_PAYMENT_STATUS.COMPLETED:
+        return 'Đã thanh toán - : ' + note;
+      case MKT_PAYMENT_STATUS.FAILED:
+        return 'Thanh toán thất bại';
+      case MKT_PAYMENT_STATUS.REFUNDED:
+        return 'Đã hoàn tiền';
+      case MKT_PAYMENT_STATUS.CANCELLED:
+        return 'Đã hủy';
+      default:
+        return 'Chờ thanh toán - ' + note;
+    }
   }
 }

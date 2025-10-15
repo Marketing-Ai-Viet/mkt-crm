@@ -269,6 +269,8 @@ export class MktLicenseService {
         'mktVariant',
         'mktOrder.mktPayments',
         'mktOrder.mktCustomer',
+        'mktPaymentHistories',
+        'mktPaymentHistories.mktPayment.mktPaymentMethod',
       ],
     });
 

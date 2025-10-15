@@ -21,6 +21,7 @@ import { mktI18nAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-i18n-al
 import { mktKpisAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-kpi-all.view';
 import { mktLicenseHistoryAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-organization-level-all.view';
+import { mktPaymentHistoriesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-payment-history-all.view';
 import { mktPermissionAuditsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-audit-all.view';
 import { mktResellersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-reseller-all.view';
 import { mktResellerTiersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-reseller-tier-all.view';
@@ -78,6 +79,7 @@ export const MKT_ALL_VIEWS = [
   // payment views
   mktPaymentMethodsAllView,
   mktPaymentsAllView,
+  mktPaymentHistoriesAllView,
   // reseller views
   mktResellerTiersAllView,
   mktResellersAllView,

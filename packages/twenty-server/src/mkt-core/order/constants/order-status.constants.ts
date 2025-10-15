@@ -94,6 +94,12 @@ export const ORDER_STATUS_OPTIONS = [
     color: 'red' as TagColor,
     position: 5,
   },
+  {
+    value: ORDER_STATUS.REFUND,
+    label: 'Refund',
+    color: 'purple' as TagColor,
+    position: 6,
+  },
 ];
 
 export enum SINVOICE_STATUS {

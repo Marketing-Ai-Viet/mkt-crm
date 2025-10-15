@@ -37,6 +37,7 @@ import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contr
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
 import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
@@ -267,6 +268,21 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktOrderItems: Relation<MktOrderItemWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId:
+      WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner for Payment Histories`,
+    description: msg`The account owner for the payment histories created by this member`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+  })
+  @WorkspaceIsSystem()
+  accountOwnerForMktPaymentHistories: Relation<
+    MktPaymentHistoryWorkspaceEntity[]
+  >;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktSInvoiceAuths,

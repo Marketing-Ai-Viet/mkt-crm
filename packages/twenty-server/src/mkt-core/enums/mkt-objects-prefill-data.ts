@@ -20,6 +20,7 @@ import { prefillMktOrderHistories } from 'src/mkt-core/dev-seeder/prefill-data/p
 import { prefillMktOrderItems } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-organization-levels';
+import { prefillMktPaymentHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payment-methods';
 import { prefillMktPayments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payments';
 import { prefillMktPermissionAudits } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-audits';
@@ -79,6 +80,7 @@ export const MKT_PREFILLS = [
   // payment prefills (after orders to reference existing orders)
   prefillMktPaymentMethods,
   prefillMktPayments,
+  prefillMktPaymentHistories,
   // reseller prefills
   prefillMktResellerTiers,
   prefillMktResellers,

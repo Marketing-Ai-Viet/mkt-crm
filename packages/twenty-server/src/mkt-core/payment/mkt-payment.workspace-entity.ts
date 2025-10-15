@@ -22,10 +22,11 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_PAYMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { PAYMENT_STATUS_OPTIONS } from './constants';
 import { PaymentStatus } from './types';
 
@@ -176,6 +177,19 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.mktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payment Histories`,
+    description: msg`Payment histories linked to this payment`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktPayment',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.searchVector,

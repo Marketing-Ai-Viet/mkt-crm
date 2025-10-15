@@ -31,6 +31,7 @@ import {
 } from 'src/mkt-core/license/license.constants';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -214,6 +215,19 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.mktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payment Histories`,
+    description: msg`Payment history records linked to the license`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktLicense',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.position,

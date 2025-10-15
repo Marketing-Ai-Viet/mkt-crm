@@ -38,6 +38,7 @@ import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contr
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -274,6 +275,19 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktOrderHistories: Relation<MktOrderHistoryWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_ORDER_FIELD_IDS.mktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payment Histories`,
+    description: msg`Payment histories linked to the order`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktOrder',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.accountOwner,

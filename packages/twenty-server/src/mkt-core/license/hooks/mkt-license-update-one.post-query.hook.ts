@@ -6,6 +6,7 @@ import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runne
 import { WorkspaceQueryHookType } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/types/workspace-query-hook.type';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 
@@ -42,7 +43,7 @@ export class MktLicenseUpdateOnePostQueryHook
       this.mktCommonOrderService.eventUpdated(
         updatedLicense.mktOrderId,
         workspaceId,
-        'from license',
+        MKT_ORDER_EVENT_TYPES.FROM_LICENSE,
       );
 
       return;

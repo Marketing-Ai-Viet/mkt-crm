@@ -171,6 +171,10 @@ import {
   MKT_VALUE_DATA_SEED_COLUMNS,
   MKT_VALUE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-value-data-seeds.constants';
+import {
+  MKT_PAYMENT_HISTORY_DATA_SEED_COLUMNS,
+  MKT_PAYMENT_HISTORY_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-payment-history-data-seeds.constants';
 
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
@@ -339,6 +343,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktPayment',
     pgColumns: MKT_PAYMENT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PAYMENT_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPaymentHistory',
+    pgColumns: MKT_PAYMENT_HISTORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PAYMENT_HISTORY_DATA_SEEDS,
   },
   // Reseller configs
   {
