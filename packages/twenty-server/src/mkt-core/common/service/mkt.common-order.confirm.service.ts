@@ -432,6 +432,7 @@ export class MktOrderCommonConfirmService {
     const itemsFromVariants = await Promise.all(
       variantsMeta.map(async (v, _index) => {
         const variant = variantById.get(v.mktVariantId);
+
         this.changeVariantData.newVariantName = variant?.name || '';
 
         if (!variant) return [];
@@ -827,6 +828,7 @@ export class MktOrderCommonConfirmService {
 
     this.orderMetadata = { ...metadata, oldOrderId: orderId };
     let note = '';
+
     if (
       this.changeVariantData.oldVariantName &&
       this.changeVariantData.newVariantName

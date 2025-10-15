@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+
 import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 import {
   MKT_EVENT_TYPE,
@@ -69,19 +70,23 @@ export class MktPaymentListenerService {
       this.logger.error(
         'Order, license not found, skipping license history update.',
       );
+
       return;
     }
     const paymentHistoryRepo = await this.mktRepo.getPaymentHistoryRepository();
     const licenses = order.mktLicense;
     const payment = order?.mktPayments?.[0] as MktPaymentWorkspaceEntity;
+
     if (!payment) {
       this.logger.error(
         `Order ${order.id} has no associated payment, skipping payment history entry.`,
       );
+
       return;
     }
     for (const license of licenses) {
       const variant = license.mktVariant as MktVariantWorkspaceEntity;
+
       if (!variant) {
         this.logger.error(
           `License ${license.id} has no associated variant, skipping payment history entry.`,
@@ -89,6 +94,7 @@ export class MktPaymentListenerService {
         continue;
       }
       let note = '';
+
       if (payment.description) {
         note += `Ghi chú thanh toán: ${payment.description}; `;
       }
@@ -106,6 +112,7 @@ export class MktPaymentListenerService {
         mktVariantId: variant.id,
         mktPaymentId: payment.id,
       });
+
       paymentHistory.createdBy = order.createdBy;
       await paymentHistoryRepo.save(paymentHistory);
       this.logger.log(

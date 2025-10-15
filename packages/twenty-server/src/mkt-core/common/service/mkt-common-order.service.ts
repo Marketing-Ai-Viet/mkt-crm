@@ -180,6 +180,7 @@ export class MktCommonOrderService {
         },
         timestamp: new Date().toISOString(),
       };
+
       this.workspaceEventEmitter.emitCustomBatchEvent(
         MKT_EVENT_TYPE.MKT_PAYMENT,
         [paymentUpdatedEvent],

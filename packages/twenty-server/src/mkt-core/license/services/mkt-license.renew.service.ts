@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import {
   MKT_PAYMENT_METHOD_TYPE,
   PAYMENT_HISTORY_TYPE,
+  MKT_PAYMENT_STATUS,
 } from 'src/mkt-core/common/common.type';
-
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/common/common.type';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktFirebaseService } from 'src/mkt-core/common/service/mkt-firebase.service';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
@@ -167,11 +167,14 @@ export class MktLicenseRenewService {
         : accountingNote;
 
       let allNote = `${accountingNote}`;
+
       if (note) {
         const additionalNote = `\nGhi chú thêm: ${note}`;
+
         allNote = `${allNote}${additionalNote}`;
       }
       let notePayment = '';
+
       paymentHistories.sort((a, b) =>
         a.createdAt && b.createdAt
           ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -193,10 +196,12 @@ export class MktLicenseRenewService {
         const createdAt = paymentHistory.createdAt
           ? new Date(paymentHistory.createdAt).toLocaleString('vi-VN')
           : 'Unknown date';
+
         notePayment += `• ${paymentHistory.amount.toLocaleString('vi-VN')} VNĐ - ${paymentType} - ${createdAt} - ${paymentStatusLabel} \n`;
       }
       if (notePayment) {
         const accountingNoteWithPayment = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 LỊCH SỬ THANH TOÁN:\n${notePayment}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
         allNote = `${allNote}${accountingNoteWithPayment}`;
       }
 
@@ -221,6 +226,7 @@ export class MktLicenseRenewService {
     );
 
     const workspaceId = await this.mktRepo.getWorkspaceId();
+
     await this.mktCommonOrderService.paymentUpdated(
       order.id,
       workspaceId,
@@ -330,6 +336,7 @@ export class MktLicenseRenewService {
     );
 
     const workspaceId = await this.mktRepo.getWorkspaceId();
+
     await this.mktCommonOrderService.paymentUpdated(
       order.id,
       workspaceId,
@@ -515,6 +522,7 @@ export class MktLicenseRenewService {
     paymentMethod: MKT_PAYMENT_METHOD_TYPE,
   ) {
     let note = '';
+
     switch (paymentMethod) {
       case MKT_PAYMENT_METHOD_TYPE.QR_CODE:
         note = 'QR_CODE';
