@@ -61,7 +61,7 @@ import { MKT_DATABASE_COMMAND_MODULES } from 'src/mkt-core/enums/mkt-database-co
     DataSeedWorkspaceCommand,
     ConfirmationQuestion,
     CronRegisterAllCommand,
-    ...MKT_DATABASE_COMMAND_MODULES,
+    //...MKT_DATABASE_COMMAND_MODULES,
   ],
 })
 export class DatabaseCommandModule {}
