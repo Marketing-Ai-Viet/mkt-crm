@@ -18,6 +18,7 @@ import { DatabaseEventTriggerModule } from 'src/engine/metadata-modules/database
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { DevSeederModule } from 'src/engine/workspace-manager/dev-seeder/dev-seeder.module';
 import { WorkspaceCleanerModule } from 'src/engine/workspace-manager/workspace-cleaner/workspace-cleaner.module';
 import { TrashCleanupModule } from 'src/engine/trash-cleanup/trash-cleanup.module';
@@ -26,6 +27,7 @@ import { CalendarEventImportManagerModule } from 'src/modules/calendar/calendar-
 import { MessagingImportManagerModule } from 'src/modules/messaging/message-import-manager/messaging-import-manager.module';
 import { WorkflowRunQueueModule } from 'src/modules/workflow/workflow-runner/workflow-run-queue/workflow-run-queue.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
+import { MKT_DATABASE_COMMAND_MODULES } from 'src/mkt-core/enums/mkt-database-command.module';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/au
     DevSeederModule,
     WorkspaceManagerModule,
     DataSourceModule,
+    WorkspaceDataSourceModule,
     WorkspaceCacheStorageModule,
     ApiKeyModule,
     FeatureFlagModule,
@@ -58,6 +61,7 @@ import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/au
     DataSeedWorkspaceCommand,
     ConfirmationQuestion,
     CronRegisterAllCommand,
+    ...MKT_DATABASE_COMMAND_MODULES,
   ],
 })
 export class DatabaseCommandModule {}

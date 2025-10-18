@@ -1,0 +1,371 @@
+import {
+  MKT_CUSTOMER_LIFECYCLE_STAGE,
+  MKT_CUSTOMER_STATUS,
+  MKT_CUSTOMER_TAGS,
+  MKT_CUSTOMER_TIER,
+  MKT_CUSTOMER_TYPE,
+} from 'src/mkt-core/customer/constants/mkt-customer.constant';
+
+// prettier-ignore
+export type MKT_CUSTOMER_DATA_SEED = {
+  id: string;
+  name: string;
+  mktCustomerCode: string; // CUS-YYYY-NNNNNN
+  type: MKT_CUSTOMER_TYPE;
+  email: string;
+  phone: string;
+  taxCode: string;
+  companyName: string;
+  address: string;
+  status: MKT_CUSTOMER_STATUS;
+  tier: MKT_CUSTOMER_TIER;
+  lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE;
+  registrationDate: string;
+  totalOrderValue: number;
+  churnRiskScore: number;
+  engagementScore: number;
+  tags: MKT_CUSTOMER_TAGS[];
+};
+
+// prettier-ignore
+export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MKT_CUSTOMER_DATA_SEED)[] = [
+  'id',
+  'name',
+  'mktCustomerCode', 
+  'type',
+  'email',
+  'phone',
+  'taxCode',
+  'companyName',
+  'address',
+  'status',
+  'tier',
+  'lifecycleStage',
+  'registrationDate',
+  'totalOrderValue',
+  'churnRiskScore',
+  'engagementScore',
+  'tags',
+];
+
+// prettier-ignore
+export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
+  // Enterprise Customers
+  TECH_CORP: 'ac4bd356-733b-4c95-ade5-73f0deb64447',
+  FINANCE_LTD: 'ff34a9a6-586e-4d28-96f6-19fdf4cc732a',
+  HEALTH_CARE: 'a5699a8d-76fb-48fe-927e-04ce3a8b990c',
+  
+  // Medium Business
+  MARKETING_AGENCY: '243e6b3e-14ea-437c-9be3-65a592bbbb7a',
+  CONSULTING_FIRM: '8dfe2a53-cafc-4c13-9c41-fce995cc4e8e',
+  RETAIL_CHAIN: '22f1c007-ce0c-4bcf-b7aa-b3ce418db5c8',
+  
+  // Small Business
+  STARTUP_TECH: 'e2930ee6-4cde-4bd3-b899-a2eb4ebf4a9c',
+  LOCAL_RESTAURANT: 'c08e6466-a39d-4a10-8e8e-cbf44592a72d',
+  FREELANCE_DESIGNER: 'd97d0f6e-9609-48cf-8036-813b3e3a9a62',
+  
+  // Individual Customers
+  VIP_CUSTOMER: 'e010f008-93aa-43cc-bd2a-8bb44d08b2ca',
+  NEW_LEAD: '5b26d71b-6f3a-4a0f-a4b8-7936248fd403',
+  LOYAL_CUSTOMER: 'd958f385-0714-443c-84a9-50072f571874',
+  CHURN_RISK: 'd52e30df-7e81-49bd-a7ee-199c35ba0ef8',
+  HIGH_VALUE: '081f1744-cd6d-49e2-923b-d7182031e860',
+  SUPPORT_INTENSIVE: 'b6b2aafa-33f3-4d47-be4b-0cc2936db557',
+};
+
+// prettier-ignore
+export const MKT_CUSTOMER_DATA_SEEDS: MKT_CUSTOMER_DATA_SEED[] = [
+  // ===== ENTERPRISE CUSTOMERS =====
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.TECH_CORP,
+    name: 'TechCorp Solutions',
+    mktCustomerCode: 'CUS-2020-000001', // CUS-2020-000001
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'contact@techcorp.com',
+    phone: '+1-555-0123',
+    taxCode: 'TC123456789',
+    companyName: 'TechCorp Solutions Inc.',
+    address: '123 Innovation Drive, Silicon Valley, CA 94025, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.ENTERPRISE,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
+    registrationDate: '2020-03-15',
+    totalOrderValue: 2500000,
+    churnRiskScore: 0.1,
+    engagementScore: 0.9,
+    tags: [MKT_CUSTOMER_TAGS.VIP, MKT_CUSTOMER_TAGS.ENTERPRISE_PROSPECT],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.FINANCE_LTD,
+    name: 'Global Finance Ltd',
+    mktCustomerCode: 'CUS-2020-000002', // CUS-2020-000002
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'info@globalfinance.com',
+    phone: '+1-555-0456',
+    taxCode: 'GF987654321',
+    companyName: 'Global Finance Limited',
+    address: '456 Wall Street, New York, NY 10005, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.ENTERPRISE,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
+    registrationDate: '2021-06-20',
+    totalOrderValue: 1800000,
+    churnRiskScore: 0.3,
+    engagementScore: 0.7,
+    tags: [MKT_CUSTOMER_TAGS.HIGH_VALUE, MKT_CUSTOMER_TAGS.QUICK_PAYER],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.HEALTH_CARE,
+    name: 'HealthCare Systems',
+    mktCustomerCode: 'CUS-2020-000003', // CUS-2020-000003
+    type: MKT_CUSTOMER_TYPE.ORGANIZATION,
+    email: 'admin@healthcare-systems.org',
+    phone: '+1-555-0789',
+    taxCode: 'HC456789123',
+    companyName: 'HealthCare Systems Organization',
+    address: '789 Medical Center Blvd, Boston, MA 02115, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.ENTERPRISE,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.TRIAL,
+    registrationDate: '2023-01-10',
+    totalOrderValue: 500000,
+    churnRiskScore: 0.6,
+    engagementScore: 0.4,
+    tags: [MKT_CUSTOMER_TAGS.SUPPORT_INTENSIVE, MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
+  },
+
+  // ===== MEDIUM BUSINESS =====
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.MARKETING_AGENCY,
+    name: 'Creative Marketing Agency',
+    mktCustomerCode: 'CUS-2020-000004', // CUS-2020-000004
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'hello@creativemarketing.com',
+    phone: '+1-555-0321',
+    taxCode: 'CM789123456',
+    companyName: 'Creative Marketing Agency LLC',
+    address: '321 Creative Lane, Los Angeles, CA 90210, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.MEDIUM,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
+    registrationDate: '2022-02-28',
+    totalOrderValue: 75000,
+    churnRiskScore: 0.2,
+    engagementScore: 0.8,
+    tags: [MKT_CUSTOMER_TAGS.REFERRAL_SOURCE],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.CONSULTING_FIRM,
+    name: 'Strategic Consulting Group',
+    mktCustomerCode: 'CUS-2020-000005', // CUS-2020-000005
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'info@strategicconsulting.com',
+    phone: '+1-555-0654',
+    taxCode: 'SC654321987',
+    companyName: 'Strategic Consulting Group Inc.',
+    address: '654 Business Park, Chicago, IL 60601, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.MEDIUM,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.UPSELL,
+    registrationDate: '2021-09-15',
+    totalOrderValue: 120000,
+    churnRiskScore: 0.4,
+    engagementScore: 0.6,
+    tags: [MKT_CUSTOMER_TAGS.NEGOTIATOR],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.RETAIL_CHAIN,
+    name: 'Urban Retail Chain',
+    mktCustomerCode: 'CUS-2020-000006', // CUS-2020-000006
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'contact@urbanretail.com',
+    phone: '+1-555-0987',
+    taxCode: 'UR321654987',
+    companyName: 'Urban Retail Chain Corporation',
+    address: '987 Shopping District, Miami, FL 33101, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.MEDIUM,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CROSS_SELL,
+    registrationDate: '2022-05-12',
+    totalOrderValue: 95000,
+    churnRiskScore: 0.3,
+    engagementScore: 0.7,
+    tags: [MKT_CUSTOMER_TAGS.QUICK_PAYER],
+  },
+
+  // ===== SMALL BUSINESS =====
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.STARTUP_TECH,
+    name: 'InnovateStartup',
+    mktCustomerCode: 'CUS-2020-000007', // CUS-2020-000007
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'team@innovatestartup.com',
+    phone: '+1-555-0124',
+    taxCode: 'IS147258369',
+    companyName: 'InnovateStartup Technologies',
+    address: '147 Startup Alley, Austin, TX 78701, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.SMALL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.TRIAL,
+    registrationDate: '2023-03-01',
+    totalOrderValue: 15000,
+    churnRiskScore: 0.7,
+    engagementScore: 0.3,
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.LOCAL_RESTAURANT,
+    name: 'Taste of Italy',
+    mktCustomerCode: 'CUS-2020-000008', // CUS-2020-000008
+    type: MKT_CUSTOMER_TYPE.BUSINESS,
+    email: 'info@tasteofitaly.com',
+    phone: '+1-555-0457',
+    taxCode: 'TI258369147',
+    companyName: 'Taste of Italy Restaurant',
+    address: '258 Food Street, San Francisco, CA 94102, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.SMALL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
+    registrationDate: '2022-08-20',
+    totalOrderValue: 25000,
+    churnRiskScore: 0.2,
+    engagementScore: 0.8,
+    tags: [MKT_CUSTOMER_TAGS.REFERRAL_SOURCE],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.FREELANCE_DESIGNER,
+    name: 'Sarah Johnson',
+    mktCustomerCode: 'CUS-2020-000009', // CUS-2020-000009
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'sarah@freelancedesigner.com',
+    phone: '+1-555-0789',
+    taxCode: 'SJ369147258',
+    companyName: 'Sarah Johnson Design Studio',
+    address: '369 Creative Corner, Portland, OR 97201, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
+    registrationDate: '2022-11-05',
+    totalOrderValue: 8000,
+    churnRiskScore: 0.1,
+    engagementScore: 0.9,
+    tags: [MKT_CUSTOMER_TAGS.QUICK_PAYER],
+  },
+
+  // ===== INDIVIDUAL CUSTOMERS =====
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.VIP_CUSTOMER,
+    name: 'Robert Chen',
+    mktCustomerCode: 'CUS-2020-000010', // CUS-2020-000010
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'robert.chen@email.com',
+    phone: '+1-555-0322',
+    taxCode: 'RC147258369',
+    companyName: 'Robert Chen Consulting',
+    address: '147 Executive Drive, Seattle, WA 98101, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
+    registrationDate: '2020-12-01',
+    totalOrderValue: 500000,
+    churnRiskScore: 0.05,
+    engagementScore: 0.95,
+    tags: [MKT_CUSTOMER_TAGS.VIP, MKT_CUSTOMER_TAGS.HIGH_VALUE, MKT_CUSTOMER_TAGS.REFERRAL_SOURCE],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.NEW_LEAD,
+    name: 'Jennifer Martinez',
+    mktCustomerCode: 'CUS-2020-000011', // CUS-2020-000011
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'jennifer.martinez@email.com',
+    phone: '+1-555-0655',
+    taxCode: 'JM258369147',
+    companyName: 'Jennifer Martinez',
+    address: '258 New Street, Denver, CO 80201, USA',
+    status: MKT_CUSTOMER_STATUS.PROSPECTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.PROSPECTIVE,
+    registrationDate: '2023-04-15',
+    totalOrderValue: 0,
+    churnRiskScore: 0.8,
+    engagementScore: 0.2,
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.LOYAL_CUSTOMER,
+    name: 'David Thompson',
+    mktCustomerCode: 'CUS-2020-000012', // CUS-2020-000012
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'david.thompson@email.com',
+    phone: '+1-555-0988',
+    taxCode: 'DT369147258',
+    companyName: 'David Thompson',
+    address: '369 Loyal Lane, Phoenix, AZ 85001, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
+    registrationDate: '2021-07-10',
+    totalOrderValue: 75000,
+    churnRiskScore: 0.1,
+    engagementScore: 0.9,
+    tags: [MKT_CUSTOMER_TAGS.QUICK_PAYER, MKT_CUSTOMER_TAGS.REFERRAL_SOURCE],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.CHURN_RISK,
+    name: 'Lisa Anderson',
+    mktCustomerCode: 'CUS-2020-000013', // CUS-2020-000013
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'lisa.anderson@email.com',
+    phone: '+1-555-0125',
+    taxCode: 'LA147258369',
+    companyName: 'Lisa Anderson',
+    address: '147 Risk Street, Las Vegas, NV 89101, USA',
+    status: MKT_CUSTOMER_STATUS.INACTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CHURNED,
+    registrationDate: '2021-03-20',
+    totalOrderValue: 15000,
+    churnRiskScore: 0.95,
+    engagementScore: 0.05,
+    tags: [MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.HIGH_VALUE,
+    name: 'Michael Rodriguez',
+    mktCustomerCode: 'CUS-2020-000014', // CUS-2020-000014
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'michael.rodriguez@email.com',
+    phone: '+1-555-0458',
+    taxCode: 'MR258369147',
+    companyName: 'Michael Rodriguez',
+    address: '258 Value Avenue, Houston, TX 77001, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
+    registrationDate: '2022-01-15',
+    totalOrderValue: 300000,
+    churnRiskScore: 0.2,
+    engagementScore: 0.8,
+    tags: [MKT_CUSTOMER_TAGS.HIGH_VALUE, MKT_CUSTOMER_TAGS.QUICK_PAYER, MKT_CUSTOMER_TAGS.ENTERPRISE_PROSPECT],
+  },
+  {
+    id: MKT_CUSTOMER_DATA_SEEDS_IDS.SUPPORT_INTENSIVE,
+    name: 'Amanda Wilson',
+    mktCustomerCode: 'CUS-2020-000015', // CUS-2020-000015
+    type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    email: 'amanda.wilson@email.com',
+    phone: '+1-555-0790',
+    taxCode: 'AW369147258',
+    companyName: 'Amanda Wilson',
+    address: '369 Support Road, Orlando, FL 32801, USA',
+    status: MKT_CUSTOMER_STATUS.ACTIVE,
+    tier: MKT_CUSTOMER_TIER.INDIVIDUAL,
+    lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
+    registrationDate: '2022-06-30',
+    totalOrderValue: 45000,
+    churnRiskScore: 0.6,
+    engagementScore: 0.4,
+    tags: [MKT_CUSTOMER_TAGS.SUPPORT_INTENSIVE, MKT_CUSTOMER_TAGS.POTENTIAL_CHURN],
+  },
+];

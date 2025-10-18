@@ -1,0 +1,120 @@
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Injectable,
+  Logger,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
+import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
+import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
+import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+
+type SepayWebhookPayload = {
+  gateway: string; // "sepay",
+  transactionDate: string; // "2025-09-24 10:45:51",
+  accountNumber: string; // "0971304083",
+  subAccount: string | null; // null,
+  code: string; // "MKT20250924001",
+  content: string; // "MKT20250924001",
+  transferType: string; // "in",
+  description: string; // "Payment for order MKT20250924001",
+  transferAmount: number; // 55000,
+  referenceCode: string; // "",
+  accumulated: number; // 33648579,
+  id: number; // 237046
+};
+
+// Choose guards based on environment flag
+// Removed unused sepayGuards variable
+
+@Injectable()
+@Controller('hooks')
+export class SepayPaymentController {
+  private readonly logger = new Logger(SepayPaymentController.name);
+
+  constructor(
+    private readonly accessTokenService: AccessTokenService,
+    private readonly mktPaymentService: MktPaymentService,
+    private readonly fireBaseIntegrationService: FireBaseIntegrationService,
+  ) {}
+
+  // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
+  @UseGuards(JwtAuthGuard, UserAuthGuard)
+  @Post('sepay-payment')
+  @HttpCode(HttpStatus.OK)
+  async handleSepayPayment(
+    @Body() payload: SepayWebhookPayload,
+    @Req() request: RequestSepayJWT,
+  ) {
+    this.logger.warn('SEPAY_AUTH_ENABLED=' + process.env.SEPAY_AUTH_ENABLED);
+    this.logger.log('Received sepay-payment webhook', payload);
+
+    this.logger.log('Request user info', {
+      user: request.user,
+      workspaceId: request.workspaceId,
+      workspaceMemberId: request.workspaceMemberId,
+      userWorkspaceId: request.userWorkspaceId,
+    });
+    const workspaceId = process.env.SEPAY_WORKSPACE_ID;
+
+    if (!workspaceId) {
+      this.logger.error('Workspace ID is not available');
+
+      return { success: true };
+    }
+
+    const order = await this.mktPaymentService.findOneByOrderCode(
+      workspaceId,
+      payload.code,
+    );
+
+    if (!order) {
+      this.logger.error(`Order not found for code: ${payload.code}`);
+
+      return { success: true };
+    }
+
+    const payments = await this.mktPaymentService.findPaymentsByOrderId(
+      workspaceId,
+      order.id,
+    );
+
+    if (payments.length === 0) {
+      this.logger.warn(`No payments found for order ${order.id}`);
+    }
+    const authContext: RequestSepayJWT = {
+      user: request.user,
+      workspaceId: request.workspaceId,
+      workspaceMemberId: request.workspaceMemberId,
+      userWorkspaceId: request.userWorkspaceId,
+    };
+
+    for (const payment of payments) {
+      await this.mktPaymentService.updatePaymentById(
+        workspaceId,
+        payment.id,
+        {
+          status: MKT_PAYMENT_STATUS.COMPLETED,
+          paymentDate: payload.transactionDate,
+          amount: payload.transferAmount,
+          description: payload.content || payload.description,
+        },
+        authContext,
+      );
+      this.logger.log(`Updated payment ${payment.id} for order ${order.id}`);
+      this.fireBaseIntegrationService.completedOrderToFirebase(order);
+      break; // Assuming only one payment needs to be updated
+    }
+
+    return { success: true };
+  }
+}

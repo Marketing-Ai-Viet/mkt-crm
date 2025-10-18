@@ -12,7 +12,6 @@ import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/i
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { FullNameMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/full-name.composite-type';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
-import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
@@ -37,6 +36,7 @@ import { FavoriteWorkspaceEntity } from 'src/modules/favorite/standard-objects/f
 import { MessageParticipantWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-participant.workspace-entity';
 import { TaskWorkspaceEntity } from 'src/modules/task/standard-objects/task.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
+import { WorkspaceMemberMktEntity } from 'src/mkt-core/mkt-entities-extends/workspace-member.mkt-entity';
 
 export enum WorkspaceMemberDateFormatEnum {
   SYSTEM = 'SYSTEM',
@@ -95,7 +95,7 @@ export const SEARCH_FIELDS_FOR_WORKSPACE_MEMBER: FieldTypeAndNameMetadata[] = [
 })
 @WorkspaceIsSystem()
 @WorkspaceIsSearchable()
-export class WorkspaceMemberWorkspaceEntity extends BaseWorkspaceEntity {
+export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
   @WorkspaceField({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,

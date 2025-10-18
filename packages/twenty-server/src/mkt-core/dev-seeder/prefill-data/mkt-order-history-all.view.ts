@@ -1,0 +1,66 @@
+export const mktOrderHistoryAllView = {
+  name: 'All Order Histories',
+  objectMetadataId: 'mktOrderHistory',
+  type: 'table',
+  key: 'INDEX',
+  position: 0,
+  icon: 'IconHistory',
+  kanbanFieldMetadataId: '',
+  filters: [],
+  fields: [
+    {
+      fieldMetadataId: 'name',
+      position: 0,
+      isVisible: true,
+      size: 210,
+    },
+    {
+      fieldMetadataId: 'action',
+      position: 1,
+      isVisible: true,
+      size: 150,
+    },
+    {
+      fieldMetadataId: 'fieldName',
+      position: 2,
+      isVisible: true,
+      size: 120,
+    },
+    {
+      fieldMetadataId: 'oldValue',
+      position: 3,
+      isVisible: true,
+      size: 150,
+    },
+    {
+      fieldMetadataId: 'newValue',
+      position: 4,
+      isVisible: true,
+      size: 150,
+    },
+    {
+      fieldMetadataId: 'note',
+      position: 5,
+      isVisible: true,
+      size: 200,
+    },
+    {
+      fieldMetadataId: 'mktOrder',
+      position: 6,
+      isVisible: true,
+      size: 150,
+    },
+    {
+      fieldMetadataId: 'createdBy',
+      position: 7,
+      isVisible: true,
+      size: 120,
+    },
+    {
+      fieldMetadataId: 'createdAt',
+      position: 8,
+      isVisible: true,
+      size: 150,
+    },
+  ],
+};
