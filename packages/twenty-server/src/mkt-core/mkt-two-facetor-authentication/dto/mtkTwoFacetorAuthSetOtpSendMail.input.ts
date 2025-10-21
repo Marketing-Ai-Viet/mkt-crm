@@ -1,4 +1,5 @@
 import { ArgsType, Field, Int } from '@nestjs/graphql';
+
 import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
 import { APP_LOCALES } from 'twenty-shared/translations';
 

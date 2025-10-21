@@ -4,6 +4,7 @@ import { ORDER_STATUS as OrderStatus } from 'src/mkt-core/order/constants';
 
 export enum OrderStatusGraphQL {
   COMPLETED = OrderStatus.COMPLETED,
+  CONFIRMED = OrderStatus.CONFIRMED,
   TRIAL = OrderStatus.TRIAL,
   DRAFT = OrderStatus.DRAFT,
   WAIT = OrderStatus.WAIT,
@@ -24,6 +25,9 @@ registerEnumType(OrderStatusGraphQL, {
     },
     COMPLETED: {
       description: 'Order is completed',
+    },
+    CONFIRMED: {
+      description: 'Order is confirmed',
     },
     WAIT: {
       description: 'Order is waiting',

@@ -40,6 +40,7 @@ export function toMktOrderOutput(
     currency: orderEntity.currency,
     note: orderEntity.note,
     requireContract: orderEntity.requireContract,
+    accountingConfirmed: orderEntity.accountingConfirmed ?? false,
     createdAt: DateTime.fromISO(orderEntity.createdAt).toJSDate(),
     updatedAt: DateTime.fromISO(orderEntity.updatedAt).toJSDate(),
     orderItems: orderEntity.orderItems?.map(toMktOrderItemOutput) ?? [],

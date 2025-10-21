@@ -198,6 +198,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   metadata: JSON;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.accountingConfirmed,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Accounting Confirmed`,
+    description: msg`Whether accounting has confirmed payment`,
+    icon: 'IconCheck',
+    defaultValue: false,
+  })
+  @WorkspaceIsNullable()
+  accountingConfirmed?: boolean;
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,
     type: RelationType.ONE_TO_MANY,

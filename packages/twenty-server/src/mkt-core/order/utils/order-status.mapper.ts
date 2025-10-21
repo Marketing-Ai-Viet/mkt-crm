@@ -12,6 +12,7 @@ export function mapGraphQLOrderStatusToEntity(
   }
   const statusMap: Record<OrderStatusGraphQL, OrderStatus> = {
     [OrderStatusGraphQL.COMPLETED]: OrderStatus.COMPLETED,
+    [OrderStatusGraphQL.CONFIRMED]: OrderStatus.CONFIRMED,
     [OrderStatusGraphQL.TRIAL]: OrderStatus.TRIAL,
     [OrderStatusGraphQL.DRAFT]: OrderStatus.DRAFT,
     [OrderStatusGraphQL.WAIT]: OrderStatus.WAIT,
@@ -37,6 +38,7 @@ export function mapEntityOrderStatusToGraphQL(
 ): OrderStatusGraphQL {
   const statusMap: Record<OrderStatus, OrderStatusGraphQL> = {
     [OrderStatus.COMPLETED]: OrderStatusGraphQL.COMPLETED,
+    [OrderStatus.CONFIRMED]: OrderStatusGraphQL.CONFIRMED,
     [OrderStatus.TRIAL]: OrderStatusGraphQL.TRIAL,
     [OrderStatus.DRAFT]: OrderStatusGraphQL.DRAFT,
     [OrderStatus.WAIT]: OrderStatusGraphQL.WAIT,

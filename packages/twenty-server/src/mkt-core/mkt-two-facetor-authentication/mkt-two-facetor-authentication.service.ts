@@ -4,6 +4,9 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+
+import { APP_LOCALES } from 'twenty-shared/translations';
+
 import {
   AuthException,
   AuthExceptionCode,
@@ -23,7 +26,6 @@ import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mk
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { MtkTwoFacetorAuthGetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthGetOtpSendMail.input';
 import { MtkTwoFacetorAuthSetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthSetOtpSendMail.input';
-import { APP_LOCALES } from 'twenty-shared/translations';
 
 @Injectable()
 export class MktTwoFacetorAuthenticationService {
@@ -91,6 +93,7 @@ export class MktTwoFacetorAuthenticationService {
 
     // 🔹 Lấy thông tin người dùng theo email
     const user = await this.userService.getUserByEmail(userEmail);
+
     if (!user) {
       this.logger.warn(`[2FA] User not found: ${userEmail}`);
       throw new AuthException(
@@ -101,6 +104,7 @@ export class MktTwoFacetorAuthenticationService {
 
     // 🔹 Lưu OTP vào Redis
     const otpKey = `twofa:otp:${user.id}:${workspace.id}`;
+
     await this.cache.set(
       otpKey,
       otp.toString(),
@@ -209,6 +213,7 @@ export class MktTwoFacetorAuthenticationService {
 
     if (otp && +otp === mtkTwoFacetorAuthGetOtpSendMailInput.otp) {
       await this.cache.del(otpKey);
+
       return await this.authService.verify(
         userEmail,
         workspace.id,

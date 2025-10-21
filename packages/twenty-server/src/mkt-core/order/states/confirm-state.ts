@@ -12,9 +12,9 @@ import {
   OrderStateInput,
 } from './order-state.interface';
 
-export class WaitState extends OrderState {
+export class ConfirmedState extends OrderState {
   constructor() {
-    super(ORDER_STATUS.WAIT);
+    super(ORDER_STATUS.CONFIRMED);
   }
 
   canTransitionTo(
@@ -23,11 +23,9 @@ export class WaitState extends OrderState {
     _input: OrderStateInput,
   ): boolean {
     return [
-      ORDER_STATUS.DRAFT,
       ORDER_STATUS.COMPLETED,
       ORDER_STATUS.REFUSE,
       ORDER_STATUS.OVERDUE,
-      ORDER_STATUS.CONFIRMED,
     ].includes(newStatus);
   }
 
@@ -35,16 +33,6 @@ export class WaitState extends OrderState {
     context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // Wait -> Draft
-    if (input.status === ORDER_STATUS.DRAFT) {
-      return ORDER_ACTION.DRAFT;
-    }
-
-    // Wait -> Draft
-    if (input.status === ORDER_STATUS.CONFIRMED) {
-      return ORDER_ACTION.CONFIRMED;
-    }
-
     // Wait -> COMPLETED
     if (input.status === ORDER_STATUS.COMPLETED) {
       return ORDER_ACTION.COMPLETED;
@@ -96,14 +84,6 @@ export class WaitState extends OrderState {
           ...payload,
           data: {
             status: ORDER_STATUS.OVERDUE,
-          },
-        };
-
-      case ORDER_ACTION.CONFIRMED:
-        return {
-          ...payload,
-          data: {
-            status: ORDER_STATUS.CONFIRMED,
           },
         };
 

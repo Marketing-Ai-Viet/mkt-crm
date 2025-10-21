@@ -34,6 +34,7 @@ export enum ORDER_STATUS {
   OVERDUE = 'OVERDUE', // quá hạn (đơn hàng đã được tạo nhưng chưa thanh toán trong thời gian quy định)
   REFUSE = 'REFUSE', // từ chối (người mua/người bán)
   REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
+  CONFIRMED = 'CONFIRMED', // đơn hàng đã được xác nhận
 }
 export enum ORDER_ACTION {
   DRAFT = 'DRAFT',
@@ -99,6 +100,12 @@ export const ORDER_STATUS_OPTIONS = [
     label: 'Refund',
     color: 'purple' as TagColor,
     position: 6,
+  },
+  {
+    value: ORDER_STATUS.CONFIRMED,
+    label: 'Confirmed',
+    color: 'blue' as TagColor,
+    position: 7,
   },
 ];
 

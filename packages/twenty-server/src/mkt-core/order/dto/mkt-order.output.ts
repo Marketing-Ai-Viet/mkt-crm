@@ -1,4 +1,4 @@
-import { Field, ObjectType, Int } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 import { OrderStatusGraphQL } from 'src/mkt-core/order/graphql/order-status.enum';
 
@@ -45,6 +45,9 @@ export class MktOrderItemOutput {
 export class MktOrderOutput {
   @Field()
   id: string;
+
+  @Field()
+  accountingConfirmed: boolean;
 
   @Field()
   name: string;

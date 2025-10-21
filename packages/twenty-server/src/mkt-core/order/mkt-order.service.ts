@@ -5,8 +5,9 @@ import { In } from 'typeorm';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { OrderStatusValidationService } from 'src/mkt-core/order/utils/order-status-validation.service';
+import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
 
 import {
   CreateOrderWithItemsInput,
@@ -15,9 +16,12 @@ import {
   GetOrdersInput,
   OrderSortBy,
   SortOrder,
+  UpdateManyOrderInput,
+  UpdateManyOrdersResult,
   UpdateOrderInput,
 } from './dto';
 
+import { toMktOrderOutput } from './dto/mkt-order.mapper';
 import { mapGraphQLOrderStatusToEntity } from './utils/order-status.mapper';
 
 @Injectable()
@@ -25,6 +29,7 @@ export class MktOrderService {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly orderStatusValidationService: OrderStatusValidationService,
   ) {}
 
   async createOrderWithItems(
@@ -320,6 +325,196 @@ export class MktOrderService {
       }
 
       return updatedOrder;
+    });
+  }
+
+  async updateManyOrders(
+    input: UpdateManyOrderInput,
+  ): Promise<UpdateManyOrdersResult> {
+    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!workspaceId) {
+      throw new Error('Workspace ID is required');
+    }
+
+    // Get repositories
+    const orderRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
+        workspaceId,
+        'mktOrder',
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const productRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktProductWorkspaceEntity>(
+        workspaceId,
+        'mktProduct',
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const orderItemRepository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
+        workspaceId,
+        'mktOrderItem',
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const { updates } = input;
+    const updatedOrders: MktOrderWorkspaceEntity[] = [];
+    const failedIds: string[] = [];
+    const errors: string[] = [];
+
+    // Get data source for transaction
+    const dataSource =
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId,
+      });
+
+    // Process updates in batches using transaction
+    return await dataSource.transaction(async () => {
+      // First, validate all orders exist
+      const orderIds = updates.map((update) => update.id);
+      const existingOrders = await orderRepository.find({
+        where: { id: In(orderIds) },
+        relations: ['orderItems'],
+      });
+
+      const existingOrderMap = new Map(
+        existingOrders.map((order) => [order.id, order]),
+      );
+
+      // Status transition validation - tạo danh sách valid updates
+      const validUpdates: typeof updates = [];
+
+      for (const updateItem of updates) {
+        const { id, data } = updateItem;
+        const existingOrder = existingOrderMap.get(id);
+
+        if (!existingOrder) {
+          failedIds.push(id);
+          errors.push(`Order ${id} not found`);
+          continue;
+        }
+
+        // Only validate status transitions if status is being updated
+        if (data.status) {
+          // Use bulk update validation - only allow WAIT -> CONFIRMED
+          const validation =
+            this.orderStatusValidationService.validateBulkUpdateStatusTransition(
+              existingOrder,
+              data.status,
+            );
+
+          if (!validation.isValid) {
+            failedIds.push(id);
+            errors.push(`Order ${id}: ${validation.errorMessage}`);
+            continue;
+          }
+        }
+
+        // Nếu pass validation, thêm vào validUpdates
+        validUpdates.push(updateItem);
+      }
+
+      // Process each valid update
+      for (const updateItem of validUpdates) {
+        try {
+          const { id, data } = updateItem;
+          const existingOrder = existingOrderMap.get(id);
+
+          if (!existingOrder) {
+            failedIds.push(id);
+            errors.push(`Order with ID ${id} not found`);
+            continue;
+          }
+
+          // Prepare update data
+          const dataToUpdate: Partial<MktOrderWorkspaceEntity> = {
+            name: data.name,
+            position: data.position,
+            totalAmount: data.totalAmount,
+            currency: data.currency,
+            note: data.note,
+            requireContract: data.requireContract,
+            accountingConfirmed: data.accountingConfirmed,
+          };
+
+          if (data.status) {
+            dataToUpdate.status = mapGraphQLOrderStatusToEntity(data.status);
+          }
+
+          // Handle items update if provided
+          if (data.items && data.items.length > 0) {
+            // Delete existing items
+            await orderItemRepository.delete({ mktOrderId: id });
+
+            // Validate products exist
+            const productIds = data.items.map((item) => item.mktProductId);
+            const products = await productRepository.find({
+              where: { id: In(productIds) },
+            });
+
+            const productMap = new Map(products.map((p) => [p.id, p]));
+            const missingProductIds = productIds.filter(
+              (pid) => !productMap.has(pid),
+            );
+
+            if (missingProductIds.length > 0) {
+              failedIds.push(id);
+              errors.push(
+                `Order ${id}: Products not found: ${missingProductIds.join(', ')}`,
+              );
+              continue;
+            }
+
+            // Create new items and calculate total
+            let totalAmount = 0;
+            const orderItemsData = data.items.map((item) => {
+              const product = productMap.get(item.mktProductId);
+              const unitPrice = product?.price ?? 0;
+              const itemTotalPrice = unitPrice * item.quantity;
+
+              totalAmount += itemTotalPrice;
+
+              return {
+                ...item,
+                mktOrderId: id,
+                unitPrice,
+                totalPrice: itemTotalPrice,
+                name: product?.name ?? '',
+              };
+            });
+
+            await orderItemRepository.save(orderItemsData);
+            dataToUpdate.totalAmount = totalAmount;
+          }
+
+          // Update the order
+          await orderRepository.update(id, dataToUpdate);
+
+          // Get updated order with relations
+          const updatedOrder = await orderRepository.findOne({
+            where: { id },
+            relations: ['orderItems', 'orderItems.mktProduct'],
+          });
+
+          if (updatedOrder) {
+            updatedOrders.push(updatedOrder);
+          }
+        } catch (error) {
+          failedIds.push(updateItem.id);
+          errors.push(
+            `Error updating order ${updateItem.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      }
+
+      return {
+        updatedCount: updatedOrders.length,
+        updatedOrders: updatedOrders.map((order) => toMktOrderOutput(order)),
+        failedIds: failedIds.length > 0 ? failedIds : undefined,
+        errors: errors.length > 0 ? errors : undefined,
+      };
     });
   }
 
