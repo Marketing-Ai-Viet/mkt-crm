@@ -11,12 +11,13 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartment,
@@ -26,6 +27,7 @@ import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access
   description: msg`Departments in the marketing system.`,
   icon: 'IconBuilding',
   shortcut: 'D',
+  labelIdentifierStandardId: MKT_DEPARTMENT_FIELD_IDS.departmentCode,
 })
 @WorkspaceIsSearchable()
 export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
@@ -187,6 +189,19 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'department',
   })
   people: Relation<WorkspaceMemberWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.leader,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Leader`,
+    description: msg`The leader of this department`,
+    icon: 'IconCrown',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'leaderForMktDepartments',
+  })
+  leader: Relation<WorkspaceMemberWorkspaceEntity>;
+  @WorkspaceJoinColumn('leader')
+  leaderId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_DEPARTMENT_FIELD_IDS.childHierarchies,

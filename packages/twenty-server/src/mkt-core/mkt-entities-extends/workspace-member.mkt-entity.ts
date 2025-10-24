@@ -429,6 +429,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   departmentId: string | null;
 
   @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.leaderForMktDepartments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Leader For Departments`,
+    description: msg`Leader for departments`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'leader',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  leaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.staffStatusHistories,
     type: RelationType.ONE_TO_MANY,
     label: msg`Staff Status Histories`,

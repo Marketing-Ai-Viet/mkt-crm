@@ -10,6 +10,7 @@
 export const MKT_I18N_FIELD_IDS = {
   // fields
   name: '28fa2754-f1c3-4b11-a269-a36ca7a8574a',
+  mktFieldId: 'd04ad2af-936b-40ca-a3b9-2d35807eb033',
   key: '227440cc-d0c9-4616-8f6a-f8f482511047',
   locale: 'b8ba3d76-e908-40f0-adc4-78c7d36a86c4',
   data: '000e0e26-8fbb-43db-ace4-8a9890934538',
@@ -884,6 +885,8 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
     '84fb2cfe-172c-470f-8417-164869884253',
   accountOwnerForMktSInvoiceMetadata: '1a930b9c-fc8e-49b6-a430-d765bfc07921',
   accountOwnerForMktSInvoiceFiles: 'f2a3e8c4-a763-42b6-9a8b-b0fab2c583f4',
+  // departments
+  leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
   //kpi system
   accountOwnerForMktKpiTemplates: '40404040-7c8d-9e0f-1a2b-3c4d5e6f7a8b',
   changedKpiHistories: '40404040-0b1c-2d3e-4f5a-6b7c8d9e0f1a',
@@ -1050,6 +1053,7 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   isActive: 'd6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1a',
   // relations
   staffMembers: 'e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b',
+  leader: 'c64c55df-a9c8-4607-84d2-a914f1bff0db',
   childHierarchies: 'a1d2c3b4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
   parentHierarchies: 'b2c3d4e5-f6a7-8b9c-0d1e-f2a3b4c5d6e7',
   dataAccessPolicies: '6742dde7-8567-4e8f-a30d-e6b6c70ede0a',
@@ -1206,6 +1210,7 @@ export const MKT_TEMPORARY_PERMISSION_FIELD_IDS = {
 };
 
 export const MKT_DEPARTMENT_HIERARCHY_FIELD_IDS = {
+  name: '220d1e69-8cdf-4ad5-9368-0dd2f8c39458',
   // parent department relation
   parentDepartment: 'e1b2c3d4-5f6a-4b7c-8d9e-0f1a2b3c4d5e',
   // child department relation (acts as departmentId in design)
