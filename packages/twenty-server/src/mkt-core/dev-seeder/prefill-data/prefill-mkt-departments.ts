@@ -8,32 +8,12 @@ export const prefillMktDepartments = async (
   entityManager: WorkspaceEntityManager,
   schemaName: string,
 ) => {
-  const tableName = `${schemaName}."mktDepartment"`;
-
-  // Check if departments already exist
-  const existingDepartments = await entityManager
+  await entityManager
     .createQueryBuilder(undefined, undefined, undefined, {
       shouldBypassPermissionChecks: true,
     })
-    .select('*')
-    .from(tableName, 'dept')
-    .getRawMany();
-
-  if (existingDepartments.length === 0) {
-    // Prepare data with JSON stringification for complex fields
-    const seedData = MKT_DEPARTMENT_DATA_SEEDS.map((department) => ({
-      ...department,
-      // No JSON fields in department entity, all are primitive types
-    }));
-
-    // Insert departments
-    await entityManager
-      .createQueryBuilder(undefined, undefined, undefined, {
-        shouldBypassPermissionChecks: true,
-      })
-      .insert()
-      .into(tableName, MKT_DEPARTMENT_DATA_SEED_COLUMNS)
-      .values(seedData)
-      .execute();
-  }
+    .insert()
+    .into(`${schemaName}.mktDepartment`, MKT_DEPARTMENT_DATA_SEED_COLUMNS)
+    .values(MKT_DEPARTMENT_DATA_SEEDS)
+    .execute();
 };

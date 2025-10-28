@@ -17,6 +17,10 @@ import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import {
+  DEPARTMENT_TYPE,
+  DEPARTMENT_TYPE_OPTIONS,
+} from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 @WorkspaceEntity({
@@ -40,6 +44,17 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsUnique()
   departmentCode: string;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.departmentType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Department Type`,
+    description: msg`Type of the department`,
+    icon: 'IconBuildingCommunity',
+    options: DEPARTMENT_TYPE_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  departmentType: DEPARTMENT_TYPE | null;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.departmentName,

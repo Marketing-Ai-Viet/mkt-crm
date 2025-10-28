@@ -1,6 +1,8 @@
+import { UseGuards } from '@nestjs/common';
 import { Args, Field, Mutation, ObjectType, Resolver } from '@nestjs/graphql';
 
 import { AuthTokens } from 'src/engine/core-modules/auth/dto/token.entity';
+import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { MtkTwoFacetorAuthGetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthGetOtpSendMail.input';
 import { MtkTwoFacetorAuthSetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthSetOtpSendMail.input';
 
@@ -21,6 +23,7 @@ export class MktTwoFacetorAuthenticationResolver {
     private readonly mktTwoFacetorAuthenticationService: MktTwoFacetorAuthenticationService,
   ) {}
 
+  @UseGuards(PublicEndpointGuard)
   @Mutation(() => Boolean)
   async mtkTwoFacetorAuthSetOtpSendMail(
     @Args()
@@ -34,6 +37,7 @@ export class MktTwoFacetorAuthenticationResolver {
     );
   }
 
+  @UseGuards(PublicEndpointGuard)
   @Mutation(() => AuthTokens)
   async mktTwoFacetorAuthGetOtpMail(
     @Args()

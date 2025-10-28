@@ -845,6 +845,9 @@ export const MKT_KPI_TEMPLATE_HISTORY_FIELD_IDS = {
 
 //EXTENDS FROM WORKSPACE_MEMBER_STANDARD_FIELD_IDS
 export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
+  //core
+  memberType: 'b4e7aabd-3b48-45ae-8c08-b513d329dc68',
+  //options
   accountOwnerForMktOptions: '688c5537-77aa-4b1f-a557-d4d0d124c904',
   accountOwnerForMktReports: 'a55048e3-30c5-4a74-a5e0-70c41b159c00',
   //i18n
@@ -1032,6 +1035,7 @@ export const MKT_STAFF_STATUS_HISTORY_FIELD_IDS = {
 };
 
 export const MKT_DEPARTMENT_FIELD_IDS = {
+  departmentType: '1a8cd0b1-19e3-4e72-a550-417b7b31f576',
   // department definition
   departmentCode: 'c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f',
   departmentName: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a',

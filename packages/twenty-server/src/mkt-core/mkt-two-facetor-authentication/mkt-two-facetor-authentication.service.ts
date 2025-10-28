@@ -169,7 +169,7 @@ export class MktTwoFacetorAuthenticationService {
     const {
       sub: userEmail,
       workspaceId: tokenWorkspaceId,
-      authProvider,
+      authProvider: _authProvider,
     } = await this.loginTokenService.verifyLoginToken(
       mtkTwoFacetorAuthGetOtpSendMailInput.loginToken,
     );

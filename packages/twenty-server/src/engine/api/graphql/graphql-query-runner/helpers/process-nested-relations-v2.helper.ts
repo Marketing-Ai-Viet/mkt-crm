@@ -185,7 +185,7 @@ export class ProcessNestedRelationsV2Helper {
             ? `"${fieldMetadataTargetRelationColumnName}"`
             : 'id',
         ids: relationIds,
-        limit: limit * parentObjectRecords.length,
+        limit: limit, // Use the same limit for nested relations instead of multiplying by parent count
         aggregate,
         sourceFieldName,
       });

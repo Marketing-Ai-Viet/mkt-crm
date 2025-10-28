@@ -2,8 +2,8 @@ import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
-import { Repository } from 'typeorm';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -12,22 +12,21 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import {
-  mktDepartmentHierarchiesAllView,
-  mktActiveHierarchiesView,
-  mktParentChildHierarchiesView,
-  mktMatrixHierarchiesView,
-} from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-hierarchy-all.view';
-import { prefillMktDepartmentHierarchies } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-department-hierarchies';
+import { prefillMktDepartmentHierarchies as prefillMktData } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-department-hierarchies';
+import { mktDepartmentHierarchiesAllView as mktAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-hierarchy-all.view';
 
-interface SeedDepartmentHierarchyModuleOptions {
+interface SeedModuleOptions {
   workspaceId?: string;
 }
 
+const TABLE_NAME = 'All Department Hierarchies';
+const nameSingular = 'mktDepartmentHierarchy';
+
+type viewDefinition = ReturnType<typeof mktAllView>;
+
 @Command({
   name: 'workspace:seed:department-hierarchy-module',
-  description:
-    'Seed department hierarchy module views and data for existing workspace',
+  description: 'Seed module views and data for existing workspace',
 })
 export class SeedMktDepartmentHierarchyCommand extends CommandRunner {
   private readonly logger = new Logger(SeedMktDepartmentHierarchyCommand.name);
@@ -44,16 +43,13 @@ export class SeedMktDepartmentHierarchyCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed department hierarchy module for',
+    description: 'workspace id to seed module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
   }
 
-  async run(
-    passedParam: string[],
-    options: SeedDepartmentHierarchyModuleOptions,
-  ): Promise<void> {
+  async run(passedParam: string[], options: SeedModuleOptions): Promise<void> {
     let workspaces: Workspace[] = [];
 
     if (options.workspaceId) {
@@ -79,26 +75,48 @@ export class SeedMktDepartmentHierarchyCommand extends CommandRunner {
 
     for (const workspace of workspaces) {
       try {
-        await this.seedDepartmentHierarchyModuleForWorkspace(workspace.id);
-        this.logger.log(
-          `✅ Department hierarchy module seeded for workspace: ${workspace.id}`,
-        );
+        await this.seedModuleForWorkspace(workspace.id);
+        const mainDataSource =
+          await this.workspaceDataSourceService.connectToMainDataSource();
+        const schemaName = getWorkspaceSchemaName(workspace.id);
+        const viewRow = await mainDataSource
+          .createQueryBuilder()
+          .select('id')
+          .from(`${schemaName}.view`, 'view')
+          .where('view.name = :name', { name: TABLE_NAME })
+          .andWhere('view.key = :key', { key: 'INDEX' })
+          .getRawOne();
+        const viewId = viewRow?.id;
+
+        if (viewId) {
+          // Insert mới Favorite với viewId này
+          await mainDataSource
+            .createQueryBuilder()
+            .insert()
+            .into(`${schemaName}.favorite`, ['viewId'])
+            .values([{ viewId: viewId }])
+            .execute();
+          this.logger.log(
+            `✅ Inserted new Favorite record with viewId: ${viewId}`,
+          );
+        } else {
+          this.logger.warn(
+            '⚠️ Could not find viewId for All view to update Favorite records',
+          );
+        }
+        this.logger.log(`✅ module seeded for workspace: ${workspace.id}`);
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed department hierarchy module for workspace ${workspace.id}:`,
+          `❌ Failed to seed module for workspace ${workspace.id}:`,
           error,
         );
       }
     }
   }
 
-  private async seedDepartmentHierarchyModuleForWorkspace(
-    workspaceId: string,
-  ): Promise<void> {
-    this.logger.log(
-      `🚀 Starting department hierarchy module seeding for workspace ${workspaceId}`,
-    );
+  private async seedModuleForWorkspace(workspaceId: string): Promise<void> {
+    this.logger.log(`🚀 Starting module seeding for workspace ${workspaceId}`);
 
     const mainDataSource =
       await this.workspaceDataSourceService.connectToMainDataSource();
@@ -110,14 +128,21 @@ export class SeedMktDepartmentHierarchyCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find department hierarchy object metadata
-    const deptHierarchyObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktDepartmentHierarchy',
+    const objectMetadata = objectMetadataItems.find(
+      (item) => item.nameSingular === nameSingular,
     );
 
-    if (!deptHierarchyObjectMetadata) {
+    this.logger.log(
+      `🔍 Debug - All objects in workspace: ${objectMetadataItems.map((item) => `${item.nameSingular}(${item.standardId})`).join(', ')}`,
+    );
+    this.logger.log(`🔍 Debug - Looking for object with nameSingular`);
+    this.logger.log(
+      `🔍 Debug - Object found: ${objectMetadata ? 'YES' : 'NO'}`,
+    );
+
+    if (!objectMetadata) {
       this.logger.log(
-        `Department hierarchy object not found in workspace ${workspaceId}, skipping...`,
+        `object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -125,147 +150,161 @@ export class SeedMktDepartmentHierarchyCommand extends CommandRunner {
 
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
+    this.logger.warn(`🔍 Debug - Workspace schema name: ${schemaName}`);
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Seed department hierarchy data first
-        await prefillMktDepartmentHierarchies(entityManager, schemaName);
+        const existingView = await entityManager
+          .createQueryBuilder(undefined, undefined, undefined, {
+            shouldBypassPermissionChecks: true,
+          })
+          .select('*')
+          .from(`${schemaName}.view`, 'view')
+          .where('view.name = :name', { name: TABLE_NAME })
+          .andWhere('view.key = :key', { key: 'INDEX' })
+          .getRawOne();
 
-        // Create all views
-        const viewDefinitions = [
-          mktDepartmentHierarchiesAllView(objectMetadataItems),
-          mktActiveHierarchiesView(objectMetadataItems),
-          mktParentChildHierarchiesView(objectMetadataItems),
-          mktMatrixHierarchiesView(objectMetadataItems),
-        ];
+        if (existingView) {
+          this.logger.log(
+            `View already exists for workspace ${workspaceId}. Deleting and recreating...`,
+          );
 
-        for (const viewDefinition of viewDefinitions) {
-          if (!viewDefinition) continue;
-
-          // Check if view already exists
-          const existingView = await entityManager
+          // Delete existing view (cascade will delete viewFields)
+          await entityManager
             .createQueryBuilder(undefined, undefined, undefined, {
               shouldBypassPermissionChecks: true,
             })
-            .select('*')
-            .from(`${schemaName}.view`, 'view')
-            .where('view.name = :name', { name: viewDefinition.name })
-            .getRawOne();
+            .delete()
+            .from(`${schemaName}.view`)
+            .where('name = :name', { name: TABLE_NAME })
+            .andWhere('key = :key', { key: 'INDEX' })
+            .execute();
+        }
 
-          if (existingView) {
-            this.logger.log(
-              `View "${viewDefinition.name}" already exists for workspace ${workspaceId}. Skipping...`,
-            );
-            continue;
-          }
+        this.logger.warn(`🔍 Debug - Creating view definition`);
+        const viewDefinition: viewDefinition = mktAllView(objectMetadataItems);
 
-          const viewDefinitionWithId = {
-            ...viewDefinition,
-            id: uuidv4(),
-          };
+        await prefillMktData(entityManager, schemaName);
 
-          // Insert view
+        if (!viewDefinition) {
+          this.logger.log(
+            `Could not create view definition for workspace ${workspaceId}`,
+          );
+
+          return;
+        }
+
+        this.logger.log(
+          `🔍 Debug - View definition created with ${viewDefinition.fields?.length || 0} fields`,
+        );
+
+        const viewDefinitionWithId = {
+          ...viewDefinition,
+          id: uuidv4(),
+        };
+
+        // Insert view
+        await entityManager
+          .createQueryBuilder(undefined, undefined, undefined, {
+            shouldBypassPermissionChecks: true,
+          })
+          .insert()
+          .into(`${schemaName}.view`, [
+            'id',
+            'name',
+            'objectMetadataId',
+            'type',
+            'key',
+            'position',
+            'icon',
+            'openRecordIn',
+            'kanbanFieldMetadataId',
+          ])
+          .values({
+            id: viewDefinitionWithId.id,
+            name: viewDefinitionWithId.name,
+            objectMetadataId: viewDefinitionWithId.objectMetadataId,
+            type: viewDefinitionWithId.type,
+            key: viewDefinitionWithId.key,
+            position: viewDefinitionWithId.position,
+            icon: viewDefinitionWithId.icon,
+            openRecordIn: viewDefinitionWithId.openRecordIn,
+            kanbanFieldMetadataId: viewDefinitionWithId.kanbanFieldMetadataId,
+          })
+          .execute();
+
+        // Insert view fields
+        if (
+          viewDefinitionWithId.fields &&
+          viewDefinitionWithId.fields.length > 0
+        ) {
+          this.logger.log(
+            `🔍 Debug - Creating ${viewDefinitionWithId.fields.length} view fields`,
+          );
           await entityManager
             .createQueryBuilder(undefined, undefined, undefined, {
               shouldBypassPermissionChecks: true,
             })
             .insert()
-            .into(`${schemaName}.view`, [
+            .into(`${schemaName}.viewField`, [
               'id',
-              'name',
-              'objectMetadataId',
-              'type',
-              'key',
+              'fieldMetadataId',
               'position',
-              'icon',
-              'openRecordIn',
-              'kanbanFieldMetadataId',
+              'isVisible',
+              'size',
+              'viewId',
             ])
-            .values({
-              id: viewDefinitionWithId.id,
-              name: viewDefinitionWithId.name,
-              objectMetadataId: viewDefinitionWithId.objectMetadataId,
-              type: viewDefinitionWithId.type,
-              key: viewDefinitionWithId.key,
-              position: viewDefinitionWithId.position,
-              icon: viewDefinitionWithId.icon,
-              openRecordIn: viewDefinitionWithId.openRecordIn,
-              kanbanFieldMetadataId: viewDefinitionWithId.kanbanFieldMetadataId,
-            })
+            .values(
+              viewDefinitionWithId.fields.map((field) => ({
+                id: uuidv4(),
+                fieldMetadataId: field.fieldMetadataId,
+                position: field.position,
+                isVisible: field.isVisible,
+                size: field.size,
+                viewId: viewDefinitionWithId.id,
+              })),
+            )
             .execute();
-
-          // Insert view fields
-          if (
-            viewDefinitionWithId.fields &&
-            viewDefinitionWithId.fields.length > 0
-          ) {
-            await entityManager
-              .createQueryBuilder(undefined, undefined, undefined, {
-                shouldBypassPermissionChecks: true,
-              })
-              .insert()
-              .into(`${schemaName}.viewField`, [
-                'id',
-                'fieldMetadataId',
-                'position',
-                'isVisible',
-                'size',
-                'viewId',
-              ])
-              .values(
-                viewDefinitionWithId.fields.map((field) => ({
-                  id: uuidv4(),
-                  fieldMetadataId: field.fieldMetadataId,
-                  position: field.position,
-                  isVisible: field.isVisible,
-                  size: field.size,
-                  viewId: viewDefinitionWithId.id,
-                })),
-              )
-              .execute();
-          }
-
-          // Insert view filters if any
-          if (
-            viewDefinitionWithId.filters &&
-            viewDefinitionWithId.filters.length > 0
-          ) {
-            await entityManager
-              .createQueryBuilder(undefined, undefined, undefined, {
-                shouldBypassPermissionChecks: true,
-              })
-              .insert()
-              .into(`${schemaName}.viewFilter`, [
-                'id',
-                'fieldMetadataId',
-                'operand',
-                'value',
-                'displayValue',
-                'viewId',
-              ])
-              .values(
-                (
-                  viewDefinitionWithId.filters as Array<{
-                    fieldMetadataId: string;
-                    operand: string;
-                    value: unknown;
-                    displayValue: string;
-                  }>
-                ).map((filter) => ({
-                  id: uuidv4(),
-                  fieldMetadataId: filter.fieldMetadataId,
-                  operand: filter.operand,
-                  value: filter.value,
-                  displayValue: filter.displayValue,
-                  viewId: viewDefinitionWithId.id,
-                })),
-              )
-              .execute();
-          }
-
-          this.logger.log(
-            `✅ View "${viewDefinition.name}" created for workspace ${workspaceId}`,
-          );
+          this.logger.log(`✅ View fields created successfully`);
         }
+
+        // Insert view filters if any
+        // Insert view filters if any
+        if (
+          viewDefinitionWithId.filters &&
+          viewDefinitionWithId.filters.length > 0
+        ) {
+          await entityManager
+            .createQueryBuilder(undefined, undefined, undefined, {
+              shouldBypassPermissionChecks: true,
+            })
+            .insert()
+            .into(`${schemaName}.viewFilter`, [
+              'fieldMetadataId',
+              'operand',
+              'value',
+              'displayValue',
+              'viewId',
+            ])
+            .values(
+              (
+                viewDefinitionWithId.filters as Array<{
+                  fieldMetadataId: string;
+                  operand: string;
+                  value: unknown;
+                  displayValue: string;
+                }>
+              ).map((filter) => ({
+                fieldMetadataId: filter.fieldMetadataId,
+                operand: filter.operand,
+                value: filter.value,
+                displayValue: filter.displayValue,
+                viewId: viewDefinitionWithId.id,
+              })),
+            )
+            .execute();
+        }
+
+        this.logger.log(`✅ View created for workspace ${workspaceId}`);
       },
     );
   }

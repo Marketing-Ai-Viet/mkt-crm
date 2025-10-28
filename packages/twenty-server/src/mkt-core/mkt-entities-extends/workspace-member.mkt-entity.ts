@@ -1,10 +1,12 @@
 import { msg } from '@lingui/core/macro';
+import { FieldMetadataType } from 'twenty-shared/types';
 
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
@@ -27,6 +29,10 @@ import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/m
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
+import {
+  MEMBER_TYPE,
+  MEMBER_TYPE_OPTIONS,
+} from 'src/mkt-core/mkt-entities-extends/mkt-member.constant';
 import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
 import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
@@ -50,6 +56,17 @@ import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Member Type`,
+    description: msg`The type of the workspace member in the marketing module`,
+    icon: 'IconUserCheck',
+    options: MEMBER_TYPE_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  memberType: MEMBER_TYPE | null;
+
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOptions,
     type: RelationType.ONE_TO_MANY,

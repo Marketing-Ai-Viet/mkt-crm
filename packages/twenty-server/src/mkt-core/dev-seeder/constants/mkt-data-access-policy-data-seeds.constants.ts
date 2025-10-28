@@ -1,6 +1,5 @@
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
-
-import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from './mkt-department-data-seeds.constants';
+import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
 type MktDataAccessPolicyDataSeed = {
   id: string;

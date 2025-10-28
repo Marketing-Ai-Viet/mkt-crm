@@ -2,8 +2,8 @@ import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
-import { Repository } from 'typeorm';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -12,18 +12,21 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { mktDepartmentsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-all.view';
-import { prefillMktDepartments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-departments';
+import { prefillMktDepartments as prefillMktData } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-departments';
+import { mktDepartmentsAllView as mktAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-all.view';
 
-interface SeedDepartmentModuleOptions {
+interface SeedModuleOptions {
   workspaceId?: string;
 }
 
-type DepartmentViewDefinition = ReturnType<typeof mktDepartmentsAllView>;
+const TABLE_NAME = 'All Departments';
+const nameSingular = 'mktDepartment';
+
+type viewDefinition = ReturnType<typeof mktAllView>;
 
 @Command({
   name: 'workspace:seed:department-module',
-  description: 'Seed department module views and data for existing workspace',
+  description: 'Seed module views and data for existing workspace',
 })
 export class SeedDepartmentModuleCommand extends CommandRunner {
   private readonly logger = new Logger(SeedDepartmentModuleCommand.name);
@@ -40,16 +43,13 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed department module for',
+    description: 'workspace id to seed module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
   }
 
-  async run(
-    passedParam: string[],
-    options: SeedDepartmentModuleOptions,
-  ): Promise<void> {
+  async run(passedParam: string[], options: SeedModuleOptions): Promise<void> {
     let workspaces: Workspace[] = [];
 
     if (options.workspaceId) {
@@ -75,8 +75,7 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
 
     for (const workspace of workspaces) {
       try {
-        await this.seedDepartmentModuleForWorkspace(workspace.id);
-        // Get viewId of 'All Departments' view after seed
+        await this.seedModuleForWorkspace(workspace.id);
         const mainDataSource =
           await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
@@ -84,46 +83,40 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Departments' })
+          .where('view.name = :name', { name: TABLE_NAME })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
-        const deptViewId = viewRow?.id;
+        const viewId = viewRow?.id;
 
-        if (deptViewId) {
-          // Insert new Favorite with this viewId
+        if (viewId) {
+          // Insert mới Favorite với viewId này
           await mainDataSource
             .createQueryBuilder()
             .insert()
             .into(`${schemaName}.favorite`, ['viewId'])
-            .values([{ viewId: deptViewId }])
+            .values([{ viewId: viewId }])
             .execute();
           this.logger.log(
-            `✅ Inserted new Favorite record with viewId: ${deptViewId}`,
+            `✅ Inserted new Favorite record with viewId: ${viewId}`,
           );
         } else {
           this.logger.warn(
-            '⚠️ Could not find viewId for All Departments view to update Favorite records',
+            '⚠️ Could not find viewId for All view to update Favorite records',
           );
         }
-        this.logger.log(
-          `✅ Department module seeded for workspace: ${workspace.id}`,
-        );
+        this.logger.log(`✅ module seeded for workspace: ${workspace.id}`);
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed department module for workspace ${workspace.id}:`,
+          `❌ Failed to seed module for workspace ${workspace.id}:`,
           error,
         );
       }
     }
   }
 
-  private async seedDepartmentModuleForWorkspace(
-    workspaceId: string,
-  ): Promise<void> {
-    this.logger.log(
-      `🚀 Starting department module seeding for workspace ${workspaceId}`,
-    );
+  private async seedModuleForWorkspace(workspaceId: string): Promise<void> {
+    this.logger.log(`🚀 Starting module seeding for workspace ${workspaceId}`);
 
     const mainDataSource =
       await this.workspaceDataSourceService.connectToMainDataSource();
@@ -135,24 +128,21 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find department object metadata
-    const deptObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktDepartment',
+    const objectMetadata = objectMetadataItems.find(
+      (item) => item.nameSingular === nameSingular,
     );
 
     this.logger.log(
       `🔍 Debug - All objects in workspace: ${objectMetadataItems.map((item) => `${item.nameSingular}(${item.standardId})`).join(', ')}`,
     );
+    this.logger.log(`🔍 Debug - Looking for object with nameSingular`);
     this.logger.log(
-      `🔍 Debug - Looking for department object with nameSingular: 'mktDepartment'`,
-    );
-    this.logger.log(
-      `🔍 Debug - Department object found: ${deptObjectMetadata ? 'YES' : 'NO'}`,
+      `🔍 Debug - Object found: ${objectMetadata ? 'YES' : 'NO'}`,
     );
 
-    if (!deptObjectMetadata) {
+    if (!objectMetadata) {
       this.logger.log(
-        `Department object not found in workspace ${workspaceId}, skipping...`,
+        `object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -160,22 +150,22 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
 
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
+    this.logger.warn(`🔍 Debug - Workspace schema name: ${schemaName}`);
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Check if department view already exists by looking for a view with name 'All Departments'
         const existingView = await entityManager
           .createQueryBuilder(undefined, undefined, undefined, {
             shouldBypassPermissionChecks: true,
           })
           .select('*')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Departments' })
+          .where('view.name = :name', { name: TABLE_NAME })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
 
         if (existingView) {
           this.logger.log(
-            `Department view already exists for workspace ${workspaceId}. Deleting and recreating...`,
+            `View already exists for workspace ${workspaceId}. Deleting and recreating...`,
           );
 
           // Delete existing view (cascade will delete viewFields)
@@ -185,32 +175,30 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
             })
             .delete()
             .from(`${schemaName}.view`)
-            .where('name = :name', { name: 'All Departments' })
+            .where('name = :name', { name: TABLE_NAME })
             .andWhere('key = :key', { key: 'INDEX' })
             .execute();
         }
 
-        // Create department view
-        const deptViewDefinition: DepartmentViewDefinition =
-          mktDepartmentsAllView(objectMetadataItems);
+        this.logger.warn(`🔍 Debug - Creating view definition`);
+        const viewDefinition: viewDefinition = mktAllView(objectMetadataItems);
 
-        // Seed mkt departments
-        await prefillMktDepartments(entityManager, schemaName);
+        await prefillMktData(entityManager, schemaName);
 
-        if (!deptViewDefinition) {
+        if (!viewDefinition) {
           this.logger.log(
-            `Could not create department view definition for workspace ${workspaceId}`,
+            `Could not create view definition for workspace ${workspaceId}`,
           );
 
           return;
         }
 
         this.logger.log(
-          `🔍 Debug - View definition created with ${deptViewDefinition.fields?.length || 0} fields`,
+          `🔍 Debug - View definition created with ${viewDefinition.fields?.length || 0} fields`,
         );
 
         const viewDefinitionWithId = {
-          ...deptViewDefinition,
+          ...viewDefinition,
           id: uuidv4(),
         };
 
@@ -280,6 +268,7 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
         }
 
         // Insert view filters if any
+        // Insert view filters if any
         if (
           viewDefinitionWithId.filters &&
           viewDefinitionWithId.filters.length > 0
@@ -315,9 +304,7 @@ export class SeedDepartmentModuleCommand extends CommandRunner {
             .execute();
         }
 
-        this.logger.log(
-          `✅ Department view created for workspace ${workspaceId}`,
-        );
+        this.logger.log(`✅ View created for workspace ${workspaceId}`);
       },
     );
   }
