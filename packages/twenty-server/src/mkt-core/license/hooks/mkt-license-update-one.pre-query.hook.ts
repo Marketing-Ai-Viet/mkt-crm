@@ -88,27 +88,41 @@ export class MktLicenseUpdateOnePreQueryHook
           paymentMethods,
           variants,
         );
+      const validate = await this.validateCreatedAtForChangeVariant(license);
 
-      await this.mktLicenseRenewService.shouldChangeVariantForLicense(
-        status,
-        newMetadata,
-        licenseId,
-        license,
-      );
+      if (!validate) {
+        this.logger.error(this.note);
+        payload = {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: license?.status || MKT_LICENSE_STATUS.ERROR,
+            notes: this.note,
+          },
+        };
+      } else {
+        await this.mktLicenseRenewService.shouldChangeVariantForLicense(
+          status,
+          newMetadata,
+          licenseId,
+          license,
+        );
 
-      payload = {
-        ...payload,
-        data: {
-          ...payload.data,
-          metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
-        },
-      };
+        payload = {
+          ...payload,
+          data: {
+            ...payload.data,
+            metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
+          },
+        };
+      }
     }
 
     if (status === MKT_LICENSE_STATUS.RENEWING) {
       const newMetadata: ORDER_METADATA = await this.makeMetadataForRenew(
         license,
         paymentMethods,
+        variants,
       );
 
       const validate = await this.validateExpiredAtForRenew(license);
@@ -187,6 +201,7 @@ export class MktLicenseUpdateOnePreQueryHook
   async makeMetadataForRenew(
     license: MktLicenseWorkspaceEntity | null,
     paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>,
+    variants?: Array<{ mktVariantId: string; quantity?: number }>,
   ): Promise<ORDER_METADATA> {
     if (!paymentMethods || paymentMethods.length === 0) {
       paymentMethods = [
@@ -204,12 +219,7 @@ export class MktLicenseUpdateOnePreQueryHook
         mktCustomerId: license?.mktOrder?.mktCustomerId || 'unknown',
       },
       paymentMethods,
-      variants: [
-        {
-          mktVariantId: license?.mktVariantId || 'unknown',
-          quantity: 1,
-        },
-      ],
+      variants,
     };
   }
 
@@ -292,6 +302,42 @@ export class MktLicenseUpdateOnePreQueryHook
       this.logger.log(note);
 
       return daysDiff <= licenseRenewBeforeDays;
+    }
+
+    return false;
+  }
+
+  private async validateCreatedAtForChangeVariant(
+    license: MktLicenseWorkspaceEntity | null,
+  ): Promise<boolean> {
+    let note = '';
+    const createdAt = license?.createdAt;
+    // get license_change_variant_after_days from mktOption or default 15 days
+    const mktOptionRepo = await this.mktRepo.getOptionRepository();
+    const option = await mktOptionRepo.findOne({
+      where: { key: 'license_change_variant_after_days' },
+    });
+    const licenseChangeVariantAfterDays = option
+      ? parseInt(option.value) || 15
+      : 15; // default 15 days
+
+    // today - createdAt <= licenseChangeVariantAfterDays
+    if (createdAt) {
+      const today = new Date();
+      const createdAtDate =
+        typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+      const timeDiff = today.getTime() - createdAtDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+      note = `Bản quyền được tạo ngày ${createdAtDate.toISOString()}, đã ${daysDiff} ngày. Ngưỡng thay đổi variant là ${licenseChangeVariantAfterDays} ngày.`;
+
+      if (daysDiff > licenseChangeVariantAfterDays) {
+        note = `Bản quyền không đủ điều kiện thay đổi variant. Bản quyền đã được tạo ${daysDiff} ngày, vượt quá ngưỡng ${licenseChangeVariantAfterDays} ngày.`;
+        this.note = `${this.note}. ${note}`;
+      }
+      this.logger.log(note);
+
+      return daysDiff <= licenseChangeVariantAfterDays;
     }
 
     return false;

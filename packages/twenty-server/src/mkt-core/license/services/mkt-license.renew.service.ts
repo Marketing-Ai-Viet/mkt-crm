@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import {
   MKT_PAYMENT_METHOD_TYPE,
-  PAYMENT_HISTORY_TYPE,
   MKT_PAYMENT_STATUS,
+  PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/common/common.type';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktFirebaseService } from 'src/mkt-core/common/service/mkt-firebase.service';
@@ -43,6 +43,7 @@ export class MktLicenseRenewService {
 
     this.mktCommonOrderService.updateFirstMetadata(oldOrder, {
       oldOrderId: oldOrder?.id,
+      oldVariantId: license?.mktVariant?.id,
     });
     await this.processLicenseRenewal(licenseId, metadata, license);
   }
