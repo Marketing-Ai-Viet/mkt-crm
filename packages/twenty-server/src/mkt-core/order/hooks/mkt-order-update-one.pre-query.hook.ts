@@ -98,11 +98,15 @@ export class MktOrderUpdateOnePreQueryHook
       currentOrder,
     );
 
+    const accountingConfirmed =
+      action === ORDER_ACTION.COMPLETED && input?.accountingConfirmed;
+
     return {
       ...newPayload,
       data: {
         ...(newPayload.data as MktOrderWorkspaceEntity),
         updatedAt: new Date().toISOString(),
+        ...(accountingConfirmed ? { accountingConfirmed: true } : {}),
       },
     };
   }

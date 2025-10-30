@@ -53,11 +53,14 @@ export class MktOrderUpdateOnePostQueryHook
     const updated: Updated = payload?.[0];
 
     if (!updated) return;
+    let eventType = MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
+    if (updated?.accountingConfirmed === true)
+      eventType = MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED;
     try {
       this.mktCommonOrderService.eventUpdated(
         updated.id,
         workspaceId,
-        MKT_ORDER_EVENT_TYPES.ORDER_UPDATED,
+        eventType,
       );
 
       return;

@@ -19,11 +19,11 @@ export class CompletedState extends OrderState {
   }
 
   canTransitionTo(
-    _newStatus: ORDER_STATUS,
+    newStatus: ORDER_STATUS,
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    return false;
+    return [ORDER_STATUS.COMPLETED].includes(newStatus);
   }
 
   getAction(
@@ -35,7 +35,7 @@ export class CompletedState extends OrderState {
       return ORDER_ACTION.SINVOICE;
     }
 
-    return null;
+    return ORDER_ACTION.COMPLETED;
   }
 
   getPayload(
@@ -50,6 +50,13 @@ export class CompletedState extends OrderState {
             status: ORDER_STATUS.COMPLETED,
             trialLicense: false,
             sInvoiceStatus: SINVOICE_STATUS.SUCCESS,
+          },
+        };
+      case ORDER_ACTION.COMPLETED:
+        return {
+          ...payload,
+          data: {
+            status: ORDER_STATUS.COMPLETED,
           },
         };
       default:

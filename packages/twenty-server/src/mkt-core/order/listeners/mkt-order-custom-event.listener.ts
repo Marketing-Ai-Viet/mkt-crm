@@ -8,7 +8,10 @@ import {
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
-import { ORDER_HISTORY_ACTION } from 'src/mkt-core/order/constants';
+import {
+  ORDER_HISTORY_ACTION,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
@@ -320,19 +323,29 @@ export class MktOrderCustomEventListener {
         name = 'Tạo hóa đơn';
         action = ORDER_HISTORY_ACTION.CREATED;
         fieldName = 'status';
-        newValue = 'WAIT';
+        newValue = ORDER_STATUS.WAIT;
         oldValue = 'N/A';
         break;
       case MKT_ORDER_EVENT_TYPES.ORDER_UPDATED:
-        name = 'Cập nhật đơn hàng';
+        name = 'Cập nhật trạng thái';
         action = ORDER_HISTORY_ACTION.UPDATED;
+        fieldName = 'status';
+        newValue = ORDER_STATUS.COMPLETED;
+        oldValue = 'N/A';
+        break;
+      case MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED:
+        name = 'Cập nhật trạng thái';
+        action = ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMED;
+        fieldName = 'accountingConfirmed';
+        newValue = 'true';
+        oldValue = 'N/A';
         break;
       case MKT_ORDER_EVENT_TYPES.FROM_LICENSE:
         name = 'Tạo từ bản quyền';
         action = ORDER_HISTORY_ACTION.LICENSE_UPDATED;
         break;
       default:
-        name = 'Cập nhật đơn hàng';
+        name = 'Cập nhật trạng thái';
         action = ORDER_HISTORY_ACTION.UPDATED;
     }
 
