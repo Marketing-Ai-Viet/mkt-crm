@@ -96,7 +96,7 @@ export class MktOrderHistoryWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconRotateClockwise',
   })
   @WorkspaceIsNullable()
-  oldValue?: string;
+  oldValue?: string | null;
 
   @WorkspaceField({
     standardId: MKT_ORDER_HISTORY_FIELD_IDS.newValue,
@@ -106,7 +106,7 @@ export class MktOrderHistoryWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconRotateCounterClockwise',
   })
   @WorkspaceIsNullable()
-  newValue?: string;
+  newValue?: string | null;
 
   @WorkspaceField({
     standardId: MKT_ORDER_HISTORY_FIELD_IDS.fieldName,

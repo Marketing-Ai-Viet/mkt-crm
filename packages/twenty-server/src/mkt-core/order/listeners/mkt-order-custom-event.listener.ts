@@ -8,6 +8,7 @@ import {
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { ORDER_HISTORY_ACTION } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
@@ -136,12 +137,16 @@ export class MktOrderCustomEventListener {
       return;
     }
     // const updatedOrder =
+    const orderHistoryData = await this.makeOrderHistoryData(event.eventType);
     const orderHistory = orderHistoryRepo.create({
-      name: `${event?.orderData?.note ?? ''} - ${event.eventType}`,
+      name: orderHistoryData.name,
       mktOrderId: event.orderId,
-      action: null,
+      action: orderHistoryData.action as ORDER_HISTORY_ACTION,
+      fieldName: orderHistoryData.fieldName ?? null,
+      newValue: orderHistoryData.newValue ?? null,
+      oldValue: orderHistoryData.oldValue ?? null,
       metadata: updatedOrder as MktOrderWorkspaceEntity as unknown as JSON,
-      note: `Order ${event.orderId} updated with total ${updatedOrder.totalAmount}`,
+      note: `Tạo hóa đơnHóa đơn được tạo bởi ${updatedOrder.createdBy?.name}`,
     });
 
     await orderHistoryRepo.save(orderHistory);
@@ -301,5 +306,36 @@ export class MktOrderCustomEventListener {
         error,
       );
     }
+  }
+
+  private async makeOrderHistoryData(eventType?: CustomEventName) {
+    let name = '';
+    let action = '';
+    let fieldName = '';
+    let newValue = '';
+    let oldValue = '';
+
+    switch (eventType) {
+      case MKT_ORDER_EVENT_TYPES.ORDER_CREATED:
+        name = 'Tạo hóa đơn';
+        action = ORDER_HISTORY_ACTION.CREATED;
+        fieldName = 'status';
+        newValue = 'WAIT';
+        oldValue = 'N/A';
+        break;
+      case MKT_ORDER_EVENT_TYPES.ORDER_UPDATED:
+        name = 'Cập nhật đơn hàng';
+        action = ORDER_HISTORY_ACTION.UPDATED;
+        break;
+      case MKT_ORDER_EVENT_TYPES.FROM_LICENSE:
+        name = 'Tạo từ bản quyền';
+        action = ORDER_HISTORY_ACTION.LICENSE_UPDATED;
+        break;
+      default:
+        name = 'Cập nhật đơn hàng';
+        action = ORDER_HISTORY_ACTION.UPDATED;
+    }
+
+    return { name, action, fieldName, newValue, oldValue };
   }
 }
