@@ -238,18 +238,23 @@ export class MktLicenseHistoryService {
    * Create history item based on license update
    */
   async createHistoryItemFromUpdate(
-    authContext: AuthContext,
+    authContext: AuthContext | null,
     status?: string,
   ): Promise<HistoryItem | null> {
     const timestamp = new Date().toISOString();
-    const userId = authContext.user?.id || 'system';
-    const userName =
-      authContext.user?.firstName && authContext.user?.lastName
-        ? `${authContext.user.firstName} ${authContext.user.lastName}`
-        : authContext.user?.email || 'Unknown User';
+    let userName = 'unknown';
+    let userId = 'unknown';
 
-    this.createdByName = userName;
-    this.createdAt = timestamp;
+    if (authContext) {
+      userId = authContext.user?.id || 'system';
+      userName =
+        authContext.user?.firstName && authContext.user?.lastName
+          ? `${authContext.user.firstName} ${authContext.user.lastName}`
+          : authContext.user?.email || 'Unknown User';
+
+      this.createdByName = userName;
+      this.createdAt = timestamp;
+    }
     // Create history based on status
     switch (status) {
       case MKT_LICENSE_STATUS.ACTIVE:

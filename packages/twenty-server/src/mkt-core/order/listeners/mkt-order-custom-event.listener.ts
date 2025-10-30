@@ -8,6 +8,7 @@ import {
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { MktLicenseEventService } from 'src/mkt-core/license/services/mkt-license.event.service';
 import {
   ORDER_HISTORY_ACTION,
   ORDER_STATUS,
@@ -43,7 +44,10 @@ export interface MktOrderCustomEventPayload {
 @Injectable()
 export class MktOrderCustomEventListener {
   private readonly logger = new Logger(MktOrderCustomEventListener.name);
-  constructor(private mktRepo: MktRepositoryService) {}
+  constructor(
+    private mktRepo: MktRepositoryService,
+    public mktLicenseEventService: MktLicenseEventService,
+  ) {}
 
   @OnEvent(MKT_EVENT_TYPE.MKT_ORDER)
   async handleMktOrderCustom(payload: MktOrderCustomEventPayload) {
@@ -59,6 +63,15 @@ export class MktOrderCustomEventListener {
 
         if (orderType === MKT_ORDER_EVENT_TYPES.ORDER_CREATED) {
           await this.pushLicenseHistory(updateOrder);
+        }
+
+        if (updateOrder?.status === ORDER_STATUS.OVERDUE) {
+          // Xử lý khi đơn hàng chuyển sang trạng thái OVERDUE
+          this.logger.log(
+            `Order ${updateOrder.id} has moved to OVERDUE status.`,
+          );
+          this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
+          await this.mktLicenseEventService.lockLicensesFromOrder(updateOrder);
         }
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
@@ -318,43 +331,31 @@ export class MktOrderCustomEventListener {
     eventType?: CustomEventName,
     updatedOrder?: MktOrderWorkspaceEntity,
   ) {
-    let name = '';
-    let action = '';
-    let fieldName = '';
-    let newValue = '';
-    let oldValue = '';
+    let name = 'Cập nhật trạng thái';
+    let action = ORDER_HISTORY_ACTION.UPDATED;
+    let fieldName = 'status';
+    let newValue = updatedOrder?.status || '';
+    const oldValue = 'N/A';
     let note = '';
 
     switch (eventType) {
       case MKT_ORDER_EVENT_TYPES.ORDER_CREATED:
         name = 'Tạo hóa đơn';
         action = ORDER_HISTORY_ACTION.CREATED;
-        fieldName = 'status';
-        newValue = ORDER_STATUS.WAIT;
-        oldValue = 'N/A';
         note = `Hóa đơn được tạo bởi ${updatedOrder?.createdBy?.name}`;
         break;
       case MKT_ORDER_EVENT_TYPES.ORDER_UPDATED:
-        name = 'Cập nhật trạng thái';
-        action = ORDER_HISTORY_ACTION.UPDATED;
-        fieldName = 'status';
-        newValue = ORDER_STATUS.COMPLETED;
-        oldValue = 'N/A';
         break;
       case MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED:
-        name = 'Cập nhật trạng thái';
         action = ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMED;
         fieldName = 'accountingConfirmed';
         newValue = 'true';
-        oldValue = 'N/A';
         note = 'Trạng thái hiện tại: Kế toán đã xác nhận';
         break;
       case MKT_ORDER_EVENT_TYPES.FROM_LICENSE:
-        name = 'Tạo từ bản quyền';
         action = ORDER_HISTORY_ACTION.LICENSE_UPDATED;
         break;
       default:
-        name = 'Cập nhật trạng thái';
         action = ORDER_HISTORY_ACTION.UPDATED;
     }
 

@@ -54,6 +54,7 @@ export class MktOrderUpdateOnePostQueryHook
 
     if (!updated) return;
     let eventType = MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
+
     if (updated?.accountingConfirmed === true)
       eventType = MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED;
     try {
