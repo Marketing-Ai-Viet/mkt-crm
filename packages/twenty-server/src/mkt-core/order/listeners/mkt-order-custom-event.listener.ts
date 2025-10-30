@@ -140,7 +140,10 @@ export class MktOrderCustomEventListener {
       return;
     }
     // const updatedOrder =
-    const orderHistoryData = await this.makeOrderHistoryData(event.eventType);
+    const orderHistoryData = await this.makeOrderHistoryData(
+      event.eventType,
+      updatedOrder,
+    );
     const orderHistory = orderHistoryRepo.create({
       name: orderHistoryData.name,
       mktOrderId: event.orderId,
@@ -149,7 +152,7 @@ export class MktOrderCustomEventListener {
       newValue: orderHistoryData.newValue ?? null,
       oldValue: orderHistoryData.oldValue ?? null,
       metadata: updatedOrder as MktOrderWorkspaceEntity as unknown as JSON,
-      note: `Tạo hóa đơnHóa đơn được tạo bởi ${updatedOrder.createdBy?.name}`,
+      note: orderHistoryData.note ?? '',
     });
 
     await orderHistoryRepo.save(orderHistory);
@@ -311,12 +314,16 @@ export class MktOrderCustomEventListener {
     }
   }
 
-  private async makeOrderHistoryData(eventType?: CustomEventName) {
+  private async makeOrderHistoryData(
+    eventType?: CustomEventName,
+    updatedOrder?: MktOrderWorkspaceEntity,
+  ) {
     let name = '';
     let action = '';
     let fieldName = '';
     let newValue = '';
     let oldValue = '';
+    let note = '';
 
     switch (eventType) {
       case MKT_ORDER_EVENT_TYPES.ORDER_CREATED:
@@ -325,6 +332,7 @@ export class MktOrderCustomEventListener {
         fieldName = 'status';
         newValue = ORDER_STATUS.WAIT;
         oldValue = 'N/A';
+        note = `Hóa đơn được tạo bởi ${updatedOrder?.createdBy?.name}`;
         break;
       case MKT_ORDER_EVENT_TYPES.ORDER_UPDATED:
         name = 'Cập nhật trạng thái';
@@ -339,6 +347,7 @@ export class MktOrderCustomEventListener {
         fieldName = 'accountingConfirmed';
         newValue = 'true';
         oldValue = 'N/A';
+        note = 'Trạng thái hiện tại: Kế toán đã xác nhận';
         break;
       case MKT_ORDER_EVENT_TYPES.FROM_LICENSE:
         name = 'Tạo từ bản quyền';
@@ -349,6 +358,6 @@ export class MktOrderCustomEventListener {
         action = ORDER_HISTORY_ACTION.UPDATED;
     }
 
-    return { name, action, fieldName, newValue, oldValue };
+    return { name, action, fieldName, newValue, oldValue, note };
   }
 }
