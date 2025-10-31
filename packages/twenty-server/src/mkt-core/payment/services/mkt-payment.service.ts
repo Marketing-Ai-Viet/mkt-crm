@@ -22,6 +22,7 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 @Injectable()
 export class MktPaymentService {
   private readonly logger = new Logger(MktPaymentService.name);
+  public discount = 0;
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
@@ -45,6 +46,7 @@ export class MktPaymentService {
         workspaceMemberId: string | null;
         name: string | null;
       };
+      discount?: number | null;
     },
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
   ): Promise<callFireBaseType | void> {
@@ -73,12 +75,21 @@ export class MktPaymentService {
               p.mktPaymentMethodId,
             );
 
+            let totalAmount = paymentData.totalAmount;
+            let name = `Thanh toán - ${pm?.name} - ${paymentData.paymentName}`;
+            if (p.name === 'discount' && paymentData.discount) {
+              totalAmount = paymentData.discount;
+              name = `Thanh toán trước - ${pm?.name} - ${paymentData.paymentName}`;
+            }
+            if (p.name === 'discount' && paymentData.discount) {
+            }
+
             if (!pm) return null;
             // generate position
             const qrCodeUrl =
               await this.mktPaymentPrepareService.generateSepayQrCodeUrl(
                 pm,
-                paymentData.totalAmount || 0,
+                totalAmount || 0,
                 paymentData.generatedOrderCode,
               );
 
@@ -87,8 +98,8 @@ export class MktPaymentService {
             return paymentRepository.create({
               mktOrderId: paymentData.orderId,
               mktPaymentMethodId: p.mktPaymentMethodId,
-              name: `${pm?.name} - ${paymentData.paymentName}`,
-              amount: paymentData.totalAmount || 0,
+              name,
+              amount: totalAmount || 0,
               currency: paymentData.currency || 'VND',
               qrCodeUrl: qrCodeUrl || undefined,
             } as Partial<MktPaymentWorkspaceEntity>);

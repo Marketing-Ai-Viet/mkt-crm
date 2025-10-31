@@ -322,6 +322,7 @@ export class OrderConfirmService {
       orderId: createdOrder.id,
       workspaceId,
       createdBy: order?.createdBy,
+      discount: calculatedValues.discount || 0,
     };
 
     this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
