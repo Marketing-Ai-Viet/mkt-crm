@@ -77,13 +77,11 @@ export class MktPaymentService {
 
             let totalAmount = paymentData.totalAmount;
             let name = `Thanh toán - ${pm?.name} - ${paymentData.paymentName}`;
+
             if (p.name === 'discount' && paymentData.discount) {
               totalAmount = paymentData.discount;
               name = `Thanh toán trước - ${pm?.name} - ${paymentData.paymentName}`;
             }
-            if (p.name === 'discount' && paymentData.discount) {
-            }
-
             if (!pm) return null;
             // generate position
             const qrCodeUrl =

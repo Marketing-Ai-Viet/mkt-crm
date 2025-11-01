@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -40,6 +41,7 @@ export class MktLicenseDashboardStatsService {
 
       if (!workspace) {
         this.logger.error(`Workspace ${workspaceId} not found`);
+
         return;
       }
 
@@ -49,6 +51,7 @@ export class MktLicenseDashboardStatsService {
         this.logger.warn(
           `⚠️ Could not generate statistics for workspace ${workspaceId} - license table may not exist`,
         );
+
         return;
       }
 
@@ -109,6 +112,7 @@ export class MktLicenseDashboardStatsService {
           this.logger.log(
             `License object not found in workspace ${workspaceId}, skipping...`,
           );
+
           return null;
         }
 
@@ -261,6 +265,7 @@ export class MktLicenseDashboardStatsService {
 
         // Get licenses expiring in the next 30 days
         const thirtyDaysFromNow = new Date();
+
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
         const expiringLicenses = await mainDataSource.query(
@@ -419,6 +424,7 @@ export class MktLicenseDashboardStatsService {
           this.logger.error(
             `❌ All ${maxRetries + 1} attempts failed for workspace ${workspaceId}`,
           );
+
           return null;
         }
 
@@ -463,6 +469,7 @@ export class MktLicenseDashboardStatsService {
 
       this.logger.debug(`💾 Saving report data for workspace: ${workspaceId}`);
       const savedReport = await mktReportRepository.save(reportData);
+
       await this.workspaceCacheStorageService.flush(workspaceId, undefined);
 
       this.logger.debug(

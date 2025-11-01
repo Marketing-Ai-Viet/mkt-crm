@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
+
 import { Command, CommandRunner } from 'nest-commander';
+
 import { MktLicenseDashboardStatsRegistrationService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats-registration.service';
 
 @Command({

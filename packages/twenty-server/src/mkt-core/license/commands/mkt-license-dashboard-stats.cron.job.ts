@@ -23,6 +23,7 @@ export class MktLicenseDashboardStatsCronJob {
   async handle(data: { workspaceId: string }): Promise<void> {
     this.logger.log('🔥 Processing mkt-license-dashboard-stats');
     const { workspaceId } = data;
+
     try {
       await this.mktLicenseDashboardStatsService.generateStatsForWorkspace(
         workspaceId,
