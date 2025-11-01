@@ -17,11 +17,13 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { DevSeederModule } from 'src/engine/workspace-manager/dev-seeder/dev-seeder.module';
 import { WorkspaceManagerModule } from 'src/engine/workspace-manager/workspace-manager.module';
+import { MKT_DATABASE_COMMAND_MODULES } from 'src/mkt-core/enums/mkt-database-command.module';
 import { CalendarEventImportManagerModule } from 'src/modules/calendar/calendar-event-import-manager/calendar-event-import-manager.module';
 import { MessagingImportManagerModule } from 'src/modules/messaging/message-import-manager/messaging-import-manager.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
-import { MKT_DATABASE_COMMAND_MODULES } from 'src/mkt-core/enums/mkt-database-command.module';
 
+import { MktCommandModule } from 'src/mkt-core/commands/mkt-command.module';
+import { MktCronRegisterCommand } from 'src/mkt-core/commands/mkt-cron-register.command';
 import { DataSeedWorkspaceCommand } from './data-seed-dev-workspace.command';
 
 @Module({
@@ -35,6 +37,7 @@ import { DataSeedWorkspaceCommand } from './data-seed-dev-workspace.command';
     CalendarEventImportManagerModule,
     AutomatedTriggerModule,
     FileModule,
+    MktCommandModule,
 
     // Data seeding dependencies
     TypeORMModule,
@@ -53,6 +56,7 @@ import { DataSeedWorkspaceCommand } from './data-seed-dev-workspace.command';
     MigrateViewsToCoreCommand,
     ConfirmationQuestion,
     CronRegisterAllCommand,
+    MktCronRegisterCommand,
     ...MKT_DATABASE_COMMAND_MODULES,
   ],
 })

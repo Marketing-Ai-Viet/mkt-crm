@@ -36,7 +36,6 @@ import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-s
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
 import { SeedVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seed-dev-workspace.command';
 import { SeedVariantValueModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-data-seed-dev-workspace.command';
-import { MktLicenseDashboardStatsCommand } from 'src/mkt-core/license/commands/mkt-license-dashboard-stats.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 import { SeedMktReportModuleCommand } from 'src/mkt-core/report/seeder/mkt-report-data-seed-dev-workspace.command';
 import { SeedMktOptionModuleCommand } from 'src/mkt-core/setting/seeder/mkt-option-data-seed-dev-workspace.command';
@@ -70,7 +69,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // license commands
   SeedLicenseModuleCommand,
   SeedLicenseHistoryModuleCommand,
-  MktLicenseDashboardStatsCommand,
   // invoice commands
   SeedSInvoiceAuthModuleCommand,
   SeedSInvoiceModuleCommand,
