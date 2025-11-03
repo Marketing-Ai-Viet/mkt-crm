@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { In, LessThan } from 'typeorm';
 
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
@@ -25,6 +26,7 @@ export class MktOrderOverdueService {
 
       // Tìm tất cả orders có status WAIT và được tạo từ 24h trước
       const twentyFourHoursAgo = new Date();
+
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
       const twentyFourHoursAgoISO = twentyFourHoursAgo.toISOString();
 
@@ -39,6 +41,7 @@ export class MktOrderOverdueService {
         this.logger.log(
           `No orders found that need to be updated to OVERDUE for workspace: ${workspaceId}`,
         );
+
         return;
       }
 
@@ -92,6 +95,7 @@ export class MktOrderOverdueService {
 
       if (distinctWorkspaces.length === 0) {
         this.logger.log('No workspaces found with WAIT orders');
+
         return;
       }
 

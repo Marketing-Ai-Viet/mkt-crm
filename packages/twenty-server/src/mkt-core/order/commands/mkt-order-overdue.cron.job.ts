@@ -23,6 +23,7 @@ export class MktOrderOverdueCronJob {
   async handle(data: { workspaceId: string }): Promise<void> {
     this.logger.log('🔥 Processing order overdue updates');
     const { workspaceId } = data;
+
     try {
       await this.mktOrderOverdueService.updateOverdueOrders(workspaceId);
       //   if (data?.workspaceId) {

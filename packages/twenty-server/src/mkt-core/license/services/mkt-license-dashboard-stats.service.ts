@@ -495,6 +495,7 @@ export class MktLicenseDashboardStatsService {
         .getOne();
 
       let savedReport;
+
       if (existingReport) {
         // Update existing report
         this.logger.debug(
