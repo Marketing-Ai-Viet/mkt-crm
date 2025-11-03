@@ -467,8 +467,51 @@ export class MktLicenseDashboardStatsService {
         '1.0',
       );
 
-      this.logger.debug(`💾 Saving report data for workspace: ${workspaceId}`);
-      const savedReport = await mktReportRepository.save(reportData);
+      // Get today's date range for finding existing report
+      const today = new Date();
+      const startOfDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      );
+      const endOfDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+      );
+
+      // Check if a report already exists for today
+      const existingReport = await mktReportRepository
+        .createQueryBuilder('report')
+        .where('report.createdAt >= :startOfDay', {
+          startOfDay: startOfDay.toISOString(),
+        })
+        .andWhere('report.createdAt < :endOfDay', {
+          endOfDay: endOfDay.toISOString(),
+        })
+        .andWhere('report.reportType = :reportType', {
+          reportType: reportData.reportType,
+        })
+        .getOne();
+
+      let savedReport;
+      if (existingReport) {
+        // Update existing report
+        this.logger.debug(
+          `� Updating existing report for workspace: ${workspaceId}`,
+        );
+        await mktReportRepository.update(existingReport.id, {
+          metadata: reportData.metadata,
+          notes: reportData.notes,
+        });
+        savedReport = { ...existingReport, ...reportData };
+      } else {
+        // Create new report
+        this.logger.debug(
+          `💾 Creating new report for workspace: ${workspaceId}`,
+        );
+        savedReport = await mktReportRepository.save(reportData);
+      }
 
       await this.workspaceCacheStorageService.flush(workspaceId, undefined);
 

@@ -63,4 +63,10 @@ export class MktLicenseEventService {
       });
     }
   }
+
+  async lockLicensesFromOrders(orders: MktOrderWorkspaceEntity[]) {
+    for (const order of orders) {
+      await this.lockLicensesFromOrder(order);
+    }
+  }
 }

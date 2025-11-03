@@ -70,6 +70,16 @@ export class OrderConfirmService {
         );
       }
 
+      if (currentOrder?.discountPercent) {
+        const discountAmount = (subtotal * currentOrder.discountPercent) / 100;
+
+        this.logger.log(
+          `Applying discountPercent ${currentOrder.discountPercent}%: discountAmount=${discountAmount}`,
+        );
+
+        currentOrder.discount = discountAmount;
+      }
+
       const discount = currentOrder?.discount || 0;
 
       const totalAmount = subtotal + totalTax - discount;

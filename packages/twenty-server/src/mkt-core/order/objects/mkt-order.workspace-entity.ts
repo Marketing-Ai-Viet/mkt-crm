@@ -156,6 +156,16 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   discount?: number;
 
+  //discount_percent
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.discountPercent,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Discount Percent`,
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  discountPercent?: number;
+
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.requireContract,
     type: FieldMetadataType.BOOLEAN,

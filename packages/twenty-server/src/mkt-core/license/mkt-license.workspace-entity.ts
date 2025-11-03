@@ -54,7 +54,7 @@ export const SEARCH_FIELDS_FOR_MKT_LICENSE: FieldTypeAndNameMetadata[] = [
   icon: 'IconBox',
   labelIdentifierStandardId: MKT_LICENSE_FIELD_IDS.name,
 })
-@WorkspaceDuplicateCriteria([['name'], ['licenseKey']])
+@WorkspaceDuplicateCriteria([['licenseKey']])
 @WorkspaceIsSearchable()
 export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({

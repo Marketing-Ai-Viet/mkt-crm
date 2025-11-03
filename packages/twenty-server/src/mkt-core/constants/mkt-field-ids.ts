@@ -306,6 +306,7 @@ export const MKT_ORDER_FIELD_IDS = {
   requireContract: '3bc491e5-3e65-44d4-97d5-f71300ab3d41',
   subtotal: 'a54ffe1f-a15e-471a-b644-f2a8f6396863',
   discount: '97e1ed20-01ba-48f0-b3b9-15eca354a115',
+  discountPercent: 'd832fc15-950e-4c94-83b2-864e6dc3b904',
   tax: '86a4bf34-9808-4908-b2d6-65cb4d146bc0',
   sInvoiceStatus: '3986dded-a1f3-4f53-9c2a-8e67d1af8cd3',
   licenseStatus: 'd3a61b4a-87d1-41de-ba40-81d0a27bcd10',
@@ -1036,6 +1037,7 @@ export const MKT_STAFF_STATUS_HISTORY_FIELD_IDS = {
 
 export const MKT_DEPARTMENT_FIELD_IDS = {
   departmentType: '1a8cd0b1-19e3-4e72-a550-417b7b31f576',
+  metadata: '764b1220-3891-4543-9ef5-f71cc2041891',
   // department definition
   departmentCode: 'c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f',
   departmentName: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a',
@@ -1064,6 +1066,7 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   // standard fields
   position: 'f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c',
   createdBy: 'a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d',
+  searchVector: '2e4afe2b-ad65-4582-a81b-2cf5ba66687a',
 };
 
 export const MKT_KPI_FIELD_IDS = {

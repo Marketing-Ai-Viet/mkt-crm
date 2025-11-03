@@ -4,15 +4,23 @@ import { FieldMetadataType } from 'twenty-shared/types';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
+import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
+import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
+import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import {
+  FieldTypeAndNameMetadata,
+  getTsVectorColumnExpressionFromFields,
+} from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
@@ -22,6 +30,13 @@ import {
   DEPARTMENT_TYPE_OPTIONS,
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+
+//SEARCH_FIELDS_FOR_ENTITY
+// Define fields to be used for search
+const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
+  { name: 'departmentCode', type: FieldMetadataType.TEXT },
+  { name: 'departmentName', type: FieldMetadataType.TEXT },
+];
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartment,
@@ -44,6 +59,16 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsUnique()
   departmentCode: string;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional metadata for the department`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  metadata?: JSON | null;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.departmentType,
@@ -142,7 +167,8 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Order of display in department list`,
     icon: 'IconList',
   })
-  displayOrder: number;
+  @WorkspaceIsNullable()
+  displayOrder?: number;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.colorCode,
@@ -250,4 +276,21 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'department',
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
+
+  // ✅ Search vector field
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.searchVector,
+    type: FieldMetadataType.TS_VECTOR,
+    label: SEARCH_VECTOR_FIELD.label,
+    description: SEARCH_VECTOR_FIELD.description,
+    icon: 'IconSearch',
+    generatedType: 'STORED',
+    asExpression: getTsVectorColumnExpressionFromFields(
+      SEARCH_FIELDS_FOR_ENTITY,
+    ),
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  @WorkspaceFieldIndex({ indexType: IndexType.GIN })
+  searchVector: string;
 }
