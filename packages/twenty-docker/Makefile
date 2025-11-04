@@ -11,6 +11,7 @@
 
 PLATFORM ?= linux/amd64
 TAG ?= latest
+BASE_IMAGE ?= twentycrm/twenty:v1.2.0
 
 prod-build:
 	@cd ../.. && docker build -f ./packages/twenty-docker/twenty/Dockerfile --platform $(PLATFORM) --tag twenty:$(TAG) . && cd -
