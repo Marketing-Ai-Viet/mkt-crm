@@ -1,5 +1,5 @@
 # Global ARG for base image
-ARG BASE_IMAGE==twentycrm/twenty:v1.2.0
+ARG BASE_IMAGE=twentycrm/twenty:v1.2.0
 FROM ${BASE_IMAGE} as base_front
 
 # Base image for common dependencies
