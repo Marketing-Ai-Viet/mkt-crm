@@ -4,6 +4,7 @@ import { Command, CommandRunner } from 'nest-commander';
 
 import { MktLicenseDashboardStatsRegistrationService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats-registration.service';
 import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/mkt-order-overdue-registration.service';
+import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 
 @Command({
   name: 'cron:register:mkt',
@@ -15,6 +16,7 @@ export class MktCronRegisterCommand extends CommandRunner {
   constructor(
     private readonly mktLicenseDashboardStatsRegistrationService: MktLicenseDashboardStatsRegistrationService,
     private readonly mktOrderOverdueRegistrationService: MktOrderOverdueRegistrationService,
+    private readonly mktPeopleSyncRegistrationService: MktPeopleSyncRegistrationService,
   ) {
     super();
   }
@@ -30,6 +32,10 @@ export class MktCronRegisterCommand extends CommandRunner {
       {
         name: 'CronOrderOverdue',
         command: this.mktOrderOverdueRegistrationService,
+      },
+      {
+        name: 'CronPeopleSync',
+        command: this.mktPeopleSyncRegistrationService,
       },
     ];
 

@@ -13,6 +13,7 @@ import { MktLicenseDashboardStatsCronJob } from 'src/mkt-core/license/commands/m
 import { MktLicenseDashboardStatsRegistrationService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats-registration.service';
 import { MktLicenseDashboardStatsService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats.service';
 import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/mkt-order-overdue-registration.service';
+import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/
     MktLicenseDashboardStatsService,
     MktLicenseDashboardStatsRegistrationService,
     MktOrderOverdueRegistrationService,
+    MktPeopleSyncRegistrationService,
   ],
   exports: [
     MktCronRegisterCommand,
@@ -37,6 +39,7 @@ import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/
     MktLicenseDashboardStatsService,
     MktLicenseDashboardStatsRegistrationService,
     MktOrderOverdueRegistrationService,
+    MktPeopleSyncRegistrationService,
   ],
 })
 export class MktCommandModule {}
