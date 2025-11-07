@@ -787,7 +787,7 @@ export class MktOrderCommonConfirmService {
       // Get environment variables
       const sepayAcc = process.env.SEPAY_ACC || '';
       const sepayBank = process.env.SEPAY_BANK || '';
-      const sepayVa = process.env.SEPAY_VA || 'TKPD23';
+      const sepayVa = process.env.SEPAY_VA || '';
 
       if (!sepayAcc || !sepayBank) {
         this.logger.warn(

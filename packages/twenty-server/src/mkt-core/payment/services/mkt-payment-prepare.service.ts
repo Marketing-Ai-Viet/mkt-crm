@@ -125,7 +125,7 @@ export class MktPaymentPrepareService {
       // Get environment variables
       const sepayAcc = process.env.SEPAY_ACC || '';
       const sepayBank = process.env.SEPAY_BANK || '';
-      const sepayVa = process.env.SEPAY_VA || 'TKPD23';
+      const sepayVa = process.env.SEPAY_VA || '';
 
       if (!sepayAcc || !sepayBank) {
         this.logger.warn(
@@ -150,7 +150,7 @@ export class MktPaymentPrepareService {
       }
 
       // Generate QR code URL
-      const qrCodeUrl = `https://qr.sepay.vn/img?acc=${sepayAcc}&bank=${sepayBank}&amount=${customAmount}&des=${sepayVa} ${orderCode}&template=qronly&download=false`;
+      const qrCodeUrl = `https://qr.sepay.vn/img?acc=${sepayAcc}&bank=${sepayBank}&amount=${customAmount}&des=${sepayVa}${orderCode}&template=qronly&download=false`;
 
       this.logger.log(
         `Generated SEPay QR code URL for order ${orderCode} with amount ${customAmount}`,
