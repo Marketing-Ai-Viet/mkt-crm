@@ -68,6 +68,7 @@ export class MktPeopleSyncService {
     // Trộn ngẫu nhiên
     for (let i = password.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
+
       [password[i], password[j]] = [password[j], password[i]];
     }
 
@@ -90,6 +91,7 @@ export class MktPeopleSyncService {
         .createQueryBuilder('role')
         .where('role.label IN (:...labels)', { labels: ['Sales', 'Support'] })
         .getMany();
+
       for (const roleEntity of roleEntities) {
         if (roleEntity.label === 'Sales') {
           this.saleRoleId = roleEntity.id;
@@ -120,17 +122,21 @@ export class MktPeopleSyncService {
         this.logger.log(
           `No people with emails found for workspace: ${workspaceId}`,
         );
+
         return;
       }
 
       // Check which people don't have corresponding users
       const peopleWithoutUsers = [];
+
       for (const person of peopleWithEmails) {
         const email = person.emails?.primaryEmail;
+
         if (email) {
           const existingUser = await this.userRepository.findOne({
             where: { email },
           });
+
           if (!existingUser) {
             peopleWithoutUsers.push(person);
           }
@@ -141,6 +147,7 @@ export class MktPeopleSyncService {
         this.logger.log(
           `No people found that need user creation for workspace: ${workspaceId}`,
         );
+
         return;
       }
 
@@ -247,13 +254,15 @@ export class MktPeopleSyncService {
           case 'SUPPORT':
             roleId = this.supportRoleId;
             break;
-          default:
+          default: {
             const workspace = await workspaceRepo.findOne({
               where: { id: workspaceId },
             });
+
             if (workspace?.defaultRoleId) {
               roleId = workspace.defaultRoleId;
             }
+          }
         }
 
         if (roleId) {
@@ -353,6 +362,7 @@ export class MktPeopleSyncService {
 
       if (!sendmailTemplate) {
         this.logger.warn('Welcome email template not found');
+
         return;
       }
 
@@ -375,14 +385,6 @@ export class MktPeopleSyncService {
 
     try {
       // Lấy danh sách tất cả workspaces có people với email
-      const peopleRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<PersonWorkspaceEntity>(
-          // Sử dụng workspace đầu tiên để query cross-workspace
-          '', // Temporary empty string, need proper implementation
-          'person',
-          { shouldBypassPermissionChecks: true },
-        );
-
       // Note: Cần implement logic để lấy tất cả workspaces
       // Tạm thời chỉ log warning
       this.logger.warn(

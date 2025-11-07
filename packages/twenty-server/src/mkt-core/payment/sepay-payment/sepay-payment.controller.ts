@@ -13,10 +13,12 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+
 import { Response } from 'express';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
@@ -129,6 +131,7 @@ export class SepayPaymentController {
     return { success: true };
   }
 
+  @UseGuards(PublicEndpointGuard)
   @Get('payment/:orderCode')
   @HttpCode(HttpStatus.OK)
   async getPaymentQR(
@@ -191,9 +194,11 @@ export class SepayPaymentController {
 
       // Format expired_at if available
       let formattedExpiredAt = payment.expiredAt;
+
       if (formattedExpiredAt) {
         try {
           const expiredDate = new Date(formattedExpiredAt);
+
           formattedExpiredAt = expiredDate.toLocaleString('vi-VN', {
             timeZone: 'Asia/Ho_Chi_Minh',
             year: 'numeric',
@@ -221,6 +226,7 @@ export class SepayPaymentController {
       // Replace all template variables
       Object.entries(templateVariables).forEach(([key, value]) => {
         const regex = new RegExp(`{{${key}}}`, 'g');
+
         htmlContent = htmlContent.replace(regex, value || '');
       });
 

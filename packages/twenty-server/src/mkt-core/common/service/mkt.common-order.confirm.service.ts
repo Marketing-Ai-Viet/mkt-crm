@@ -772,6 +772,7 @@ export class MktOrderCommonConfirmService {
       qrCodeUrl: '',
       expiredAt: null,
     };
+
     this.logger.log('Generating SEPay QR code URL...');
     if (mktPaymentMethod?.name !== 'SEPay QR') return result;
 
@@ -893,6 +894,7 @@ Thời gian: ${new Date().toISOString()}
       qrCodeUrl: '',
       expiredAt: null,
     };
+
     this.logger.log('Generating BIDV SEPay QR code...');
 
     try {
@@ -903,16 +905,19 @@ Thời gian: ${new Date().toISOString()}
 
       if (!bidvApiUrl || !bidvAuthToken) {
         this.logger.warn('BIDV SEPay API URL or Auth Token not configured');
+
         return result;
       }
 
       if (!orderCode) {
         this.logger.warn('No order code found for BIDV payment');
+
         return result;
       }
 
       if (!customAmount || customAmount <= 0) {
         this.logger.warn('Invalid amount for BIDV QR code generation');
+
         return result;
       }
 
@@ -952,9 +957,11 @@ Thời gian: ${new Date().toISOString()}
         // Return QR code URL if available, otherwise return base64 QR code
         result.qrCodeUrl = qr_code_url || qr_code || '';
         result.expiredAt = expired_at || null;
+
         return result;
       } else {
         this.logger.error(`BIDV SEPay API error: ${response.data.message}`);
+
         return result;
       }
     } catch (error) {
