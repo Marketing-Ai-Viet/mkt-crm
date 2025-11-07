@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Injectable,
@@ -11,15 +12,14 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 
 import { Response } from 'express';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
-import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
-import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
 import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
@@ -60,16 +60,80 @@ export class SepayPaymentController {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
+  /**
+   * Validate API key from authorization header
+   * @param apiKey - The API key to validate
+   * @returns boolean indicating if the API key is valid
+   */
+  private isValidApiKey(apiKey: string): boolean {
+    // Get the valid API key from environment variable
+    const validApiKey = process.env.SEPAY_WEBHOOK_API_KEY;
+
+    if (!validApiKey) {
+      this.logger.warn('SEPAY_WEBHOOK_API_KEY environment variable not set');
+      return false;
+    }
+
+    // Simple string comparison for API key validation
+    const isValid = apiKey === validApiKey;
+
+    if (!isValid) {
+      this.logger.warn('Invalid API key provided');
+    }
+
+    return isValid;
+  }
+
+  /**
+   * Extract and validate authorization header
+   * @param authorization - Authorization header value
+   * @returns Extracted API key if valid
+   * @throws UnauthorizedException if invalid
+   */
+  private validateAuthorizationHeader(authorization?: string): string {
+    if (!authorization) {
+      throw new UnauthorizedException('Authorization header is required');
+    }
+
+    if (!authorization.startsWith('Apikey ')) {
+      throw new UnauthorizedException(
+        'Authorization header must start with "Apikey "',
+      );
+    }
+
+    const apiKey = authorization.substring('Apikey '.length).trim();
+
+    if (!apiKey) {
+      throw new UnauthorizedException('API key is required');
+    }
+
+    // Always validate the API key against environment variable
+    if (!this.isValidApiKey(apiKey)) {
+      throw new UnauthorizedException('Invalid API key');
+    }
+
+    return apiKey;
+  }
+
   // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
-  @UseGuards(JwtAuthGuard, UserAuthGuard)
+  @UseGuards(PublicEndpointGuard)
   @Post('hooks/sepay-payment')
   @HttpCode(HttpStatus.OK)
   async handleSepayPayment(
     @Body() payload: SepayWebhookPayload,
     @Req() request: RequestSepayJWT,
+    @Headers('authorization') authorization?: string,
   ) {
-    this.logger.warn('SEPAY_AUTH_ENABLED=' + process.env.SEPAY_AUTH_ENABLED);
     this.logger.log('Received sepay-payment webhook', payload);
+
+    // Validate authorization header with API key from .env
+    try {
+      this.validateAuthorizationHeader(authorization);
+      this.logger.log('API key validation successful');
+    } catch (error) {
+      this.logger.error('Authorization validation failed:', error.message);
+      throw error; // Always throw error for invalid API key
+    }
 
     this.logger.log('Request user info', {
       user: request.user,
