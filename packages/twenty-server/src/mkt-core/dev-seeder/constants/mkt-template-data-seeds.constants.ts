@@ -1,3 +1,8 @@
+import {
+  MKT_TEMPLATE_DATA_SEEDS_IDS,
+  MKT_TEMPLATE_TYPE,
+} from 'src/mkt-core/order/constants/mkt-template.constant';
+
 type MktTemplateDataSeed = {
   id: string;
   name: string;
@@ -12,27 +17,6 @@ type MktTemplateDataSeed = {
 };
 
 // prettier-ignore
-export enum MKT_TEMPLATE_TYPE {
-  EXECUTIVE_SUMMARY = 'executive_summary',
-  KEY_METRICS = 'key_metrics',
-  HIGHLIGHTS = 'highlights',
-  CHALLENGES = 'challenges',
-  NEXT_MONTH_PRIORITIES = 'next_month_priorities',
-  MARKETING = 'marketing',
-  SALES = 'sales',
-  SUPPORT = 'support',
-  EMAIL = 'email',
-  INVOICE = 'invoice',
-  CONTRACT = 'contract',
-  TICKET = 'ticket',
-  ORDER = 'order',
-  SURVEY = 'survey',
-  CHECKLIST = 'checklist',
-  REPORT = 'report',
-  CATALOG = 'catalog',
-  NOTIFICATION = 'notification',
-  QUOTE = 'quote',
-}
 
 // prettier-ignore
 export const MKT_TEMPLATE_DATA_SEED_COLUMNS: (keyof MktTemplateDataSeed)[] = [
@@ -46,25 +30,6 @@ export const MKT_TEMPLATE_DATA_SEED_COLUMNS: (keyof MktTemplateDataSeed)[] = [
   'createdByWorkspaceMemberId',
   'createdByName',
 ];
-
-// prettier-ignore
-export const MKT_TEMPLATE_DATA_SEEDS_IDS = {
-  ID_1: 'b6158d8f-700c-4015-a56b-bf5b256a9c93',
-  ID_2: 'c159a62f-451e-4d8d-a1ca-a4c3698f2b1e',
-  ID_3: '87059b34-0d66-4274-a5c3-2e64058aab12',
-  ID_4: '472b23f7-ed73-49c6-b3df-6484a397c695',
-  ID_5: '9d6183bd-c1e9-4364-a99e-dbe069a59457',
-  ID_6: '5d818b4f-05a7-4f46-9700-aa3d00b99262',
-  ID_7: 'f5ac4b3d-229e-4c15-a499-742995ada9a8',
-  ID_8: 'e4071f7c-4fd9-4d93-ab85-f8fee0dd922f',
-  ID_9: '96455101-9e32-4fbc-9534-ed28d08cb229',
-  ID_10: '34bb660e-75a2-4013-9ada-a7476f9483ae',
-  ID_11: 'caf95c15-c617-4f6e-a48e-6b7739c4b629',
-  ID_12: 'c535252e-62e5-4365-b24d-9fe07d9e705f',
-  ID_13: 'c0d0fd12-d5d1-4f39-9de9-7c85b20612d9',
-  ID_14: '4cb251e3-05b5-4622-a2dc-e721ba2d27df',
-  ID_15: 'fdd4f417-934d-407e-8547-e66f5792cfbf',
-};
 
 // prettier-ignore
 export const MKT_TEMPLATE_DATA_SEEDS: MktTemplateDataSeed[] = [
@@ -520,4 +485,241 @@ Reviewed by: {{reviewed_by}}`,
     createdByWorkspaceMemberId: null,
     createdByName: 'Thomas Lee',
   },
+  {
+    id: MKT_TEMPLATE_DATA_SEEDS_IDS.ID_16,
+    name: 'Payment Receipt Template',
+    type: MKT_TEMPLATE_TYPE.PAYMENT,
+    content: `PAYMENT RECEIPT
+
+Receipt Number: {{receipt_number}}
+Date: {{payment_date}}
+
+Received From:
+Name: {{customer_name}}
+Email: {{customer_email}}
+
+Payment Details:
+Amount Paid: {{amount_paid}}
+Payment Method: {{payment_method}}
+Duration: {{payment_duration}} seconds
+Transaction ID: {{transaction_id}}
+
+Description:
+{{payment_description}}
+
+Thank you for your payment!
+
+{{company_name}} Billing Department`,
+    version: '1.0.0',
+    position: 16,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Olivia Harris',
+  },
+  {
+    id: MKT_TEMPLATE_DATA_SEEDS_IDS.SEPAY_QR_ID,
+    name: 'SEPay QR Code Payment Page',
+    type: MKT_TEMPLATE_TYPE.PAYMENT,
+    content: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán SEPay QR</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .payment-container { 
+            background: white; 
+            max-width: 500px; 
+            width: 100%;
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+            color: white; 
+            padding: 40px 30px; 
+            text-align: center; 
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 16px; }
+        .content { padding: 40px 30px; }
+        .status-badge {
+            background: #e8f5e8;
+            color: #28a745;
+            padding: 12px 20px;
+            border-radius: 25px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border: 2px solid #d4edda;
+        }
+        .payment-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #28a745;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #6c757d; font-weight: 500; }
+        .info-value { font-weight: 600; color: #333; }
+        .amount { font-size: 24px; color: #28a745; font-weight: 700; }
+        .qr-section { 
+            text-align: center; 
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px dashed #28a745;
+        }
+        .qr-code { 
+            max-width: 250px; 
+            width: 100%;
+            height: auto; 
+            margin: 20px 0; 
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .qr-title { 
+            color: #28a745; 
+            font-size: 20px; 
+            font-weight: 600; 
+            margin-bottom: 10px;
+        }
+        .instructions {
+            background: #e8f5e8;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .instructions h4 {
+            color: #28a745;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .instructions ol {
+            color: #333;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .timer {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+            font-weight: 600;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 25px 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .support-link {
+            color: #28a745;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .support-link:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .payment-container { margin: 10px; }
+            .header { padding: 30px 20px; }
+            .content { padding: 30px 20px; }
+            .header h1 { font-size: 24px; }
+            .qr-code { max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <div class="header">
+            <h1>🏦 Thanh toán SEPay QR</h1>
+            <p>Quét mã QR để hoàn tất thanh toán</p>
+        </div>
+        
+        <div class="content">
+            <div class="status-badge">
+                ✅ Đã tạo mã QR thanh toán
+            </div>
+            
+            <div class="payment-info">
+                <div class="info-row">
+                    <span class="info-label">Khách hàng:</span>
+                    <span class="info-value">{{customer_name}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Mã đơn hàng:</span>
+                    <span class="info-value">{{order_code}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Số tiền:</span>
+                    <span class="info-value amount">{{amount}} {{currency}}</span>
+                </div>
+            </div>
+            
+            <div class="qr-section">
+                <div class="qr-title">📱 Quét mã QR để thanh toán</div>
+                <img src="{{qr_code_url}}" alt="SEPay QR Code" class="qr-code" />
+                <div class="timer">
+                    ⏰ Mã QR có hiệu lực trước {{expired_at}}
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h4>🚀 Hướng dẫn thanh toán:</h4>
+                <ol>
+                    <li>Mở ứng dụng ngân hàng hoặc ví điện tử</li>
+                    <li>Chọn tính năng "Quét mã QR" hoặc "Thanh toán QR"</li>
+                    <li>Quét mã QR phía trên bằng camera điện thoại</li>
+                    <li>Kiểm tra thông tin và xác nhận thanh toán</li>
+                    <li>Hoàn tất giao dịch</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>� Giao dịch được bảo mật bởi SEPay</p>
+            <p>Cần hỗ trợ? <a href="#" class="support-link">Liên hệ với chúng tôi</a></p>
+        </div>
+    </div>
+</body>
+</html>`,
+    version: '2.0.0',
+    position: 17,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Ethan Clark',
+  }
 ];

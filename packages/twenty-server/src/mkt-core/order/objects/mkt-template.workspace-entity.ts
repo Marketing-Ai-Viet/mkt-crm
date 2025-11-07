@@ -7,7 +7,6 @@ import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/i
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
@@ -26,6 +25,11 @@ import {
 import { MKT_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
+import {
+  MKT_TEMPLATE_TYPE,
+  MKT_TEMPLATE_TYPE_OPTIONS,
+} from 'src/mkt-core/order/constants/mkt-template.constant';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -36,145 +40,6 @@ const CONTENT_FIELD_NAME = 'content';
 export const SEARCH_FIELDS_FOR_MKT_TEMPLATE: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
   { name: CONTENT_FIELD_NAME, type: FieldMetadataType.TEXT },
-];
-
-export enum MKT_TEMPLATE_TYPE {
-  EXECUTIVE_SUMMARY = 'executive_summary',
-  KEY_METRICS = 'key_metrics',
-  HIGHLIGHTS = 'highlights',
-  CHALLENGES = 'challenges',
-  NEXT_MONTH_PRIORITIES = 'next_month_priorities',
-  MARKETING = 'marketing',
-  SALES = 'sales',
-  SUPPORT = 'support',
-  EMAIL = 'email',
-  INVOICE = 'invoice',
-  CONTRACT = 'contract',
-  TICKET = 'ticket',
-  ORDER = 'order',
-  SURVEY = 'survey',
-  CHECKLIST = 'checklist',
-  REPORT = 'report',
-  CATALOG = 'catalog',
-  NOTIFICATION = 'notification',
-  QUOTE = 'quote',
-}
-
-export const MKT_TEMPLATE_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
-  {
-    value: MKT_TEMPLATE_TYPE.EXECUTIVE_SUMMARY,
-    label: 'Executive Summary',
-    position: 0,
-    color: 'blue',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.KEY_METRICS,
-    label: 'Key Metrics',
-    position: 1,
-    color: 'purple',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.HIGHLIGHTS,
-    label: 'Highlights',
-    position: 2,
-    color: 'green',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.CHALLENGES,
-    label: 'Challenges',
-    position: 3,
-    color: 'orange',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.NEXT_MONTH_PRIORITIES,
-    label: 'Next Month Priorities',
-    position: 4,
-    color: 'yellow',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.MARKETING,
-    label: 'Marketing',
-    position: 5,
-    color: 'blue',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.SALES,
-    label: 'Sales',
-    position: 6,
-    color: 'green',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.SUPPORT,
-    label: 'Support',
-    position: 7,
-    color: 'purple',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.EMAIL,
-    label: 'Welcome Email',
-    position: 8,
-    color: 'orange',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.INVOICE,
-    label: 'Invoice',
-    position: 9,
-    color: 'pink',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.CONTRACT,
-    label: 'Contract',
-    position: 10,
-    color: 'blue',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.TICKET,
-    label: 'Ticket',
-    position: 11,
-    color: 'gray',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.ORDER,
-    label: 'Order',
-    position: 12,
-    color: 'blue',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.SURVEY,
-    label: 'Feedback Survey',
-    position: 13,
-    color: 'green',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.CHECKLIST,
-    label: 'Onboarding Checklist',
-    position: 14,
-    color: 'purple',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.REPORT,
-    label: 'Incident Report',
-    position: 15,
-    color: 'orange',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.CATALOG,
-    label: 'Product Catalog',
-    position: 16,
-    color: 'pink',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.NOTIFICATION,
-    label: 'Maintenance Notice',
-    position: 17,
-    color: 'gray',
-  },
-  {
-    value: MKT_TEMPLATE_TYPE.QUOTE,
-    label: 'Quote Request',
-    position: 18,
-    color: 'blue',
-  },
 ];
 
 @WorkspaceEntity({
@@ -260,6 +125,19 @@ export class MktTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktInvoices: Relation<MktInvoiceWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_TEMPLATE_FIELD_IDS.mktPayments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payments`,
+    description: msg`Payments linked to the template`,
+    icon: 'IconCash',
+    inverseSideTarget: () => MktPaymentWorkspaceEntity,
+    inverseSideFieldKey: 'mktTemplate',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktPayments: Relation<MktPaymentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_TEMPLATE_FIELD_IDS.accountOwner,

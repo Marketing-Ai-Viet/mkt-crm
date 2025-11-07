@@ -30,7 +30,11 @@ import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-paym
 
 export type Metadata = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
-  paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
+  paymentMethods?: Array<{
+    mktPaymentMethodId: string;
+    name?: string;
+    duration?: number;
+  }>;
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
   trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi

@@ -681,6 +681,7 @@ export const MKT_TEMPLATE_FIELD_IDS = {
   //relations
   mktContracts: '5ff3cd2e-32f0-48f8-8196-2c879e15e7b8',
   mktInvoices: '6b51b55c-e22c-4472-91a8-c9e920cf942b',
+  mktPayments: '628a90c0-85fb-44ae-b501-2f07cbd6b25f',
   //common relations or fields
   position: '81ba7aae-3b8f-41b0-891a-dc0d003d52bf',
   createdBy: '8bf41ea9-eaaf-4718-a8c9-4a071e51b840',
@@ -719,6 +720,8 @@ export const MKT_CONTRACT_FIELD_IDS = {
 export const MKT_PAYMENT_FIELD_IDS = {
   name: '3f8a9b7c-6d5e-4f32-9c1a-8b7f6e5d4c3b',
   amount: '4e9a8b7c-6d5f-4e32-9c1b-8b7f6e5d4c3c',
+  duration: 'a577d653-ad35-468d-b16f-5ad4a7ed4a84',
+  expiredAt: '0f89a97a-1c01-4232-89dc-a1b6fff97442',
   currency: '5e9a8b7d-6d5f-4e33-9c1c-8b7f6e5d4c3d',
   status: '6e9a8b7e-6d5f-4e34-9c1d-8b7f6e5d4c3e',
   paymentDate: '7e9a8b7f-6d5f-4e35-9c1e-8b7f6e5d4c3f',
@@ -726,9 +729,11 @@ export const MKT_PAYMENT_FIELD_IDS = {
   orderId: '9e9a8b81-6d5f-4e37-9c20-8b7f6e5d4c41',
   invoiceId: 'ae9a8b82-6d5f-4e38-9c21-8b7f6e5d4c42',
   qrCodeUrl: '3b1e43e9-31e1-4e35-a55c-e6aa1e5b7c99',
+  paymentPageUrl: 'a125b6bc-db84-4b01-98e1-8bd16e83e175',
   //relations
   mktOrder: '4b889a4f-bfea-4938-a4e2-66271ebeca12',
   mktPaymentHistories: 'd911020f-6776-4dd7-9e3a-21f478aa65cf',
+  mktTemplate: 'be4400ab-ce40-42aa-a72d-271c2caf806c',
 
   //common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',

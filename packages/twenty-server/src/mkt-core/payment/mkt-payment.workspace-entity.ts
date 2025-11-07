@@ -24,9 +24,10 @@ import { MKT_PAYMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 import { PAYMENT_STATUS_OPTIONS } from './constants';
 import { PaymentStatus } from './types';
 
@@ -67,6 +68,26 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   amount: number;
 
   @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.duration,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Duration`,
+    description: msg`Payment duration in seconds`,
+    icon: 'IconClock',
+  })
+  @WorkspaceIsNullable()
+  duration?: number | null;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.expiredAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Expired At`,
+    description: msg`Payment expiration date and time`,
+    icon: 'IconAlarm',
+  })
+  @WorkspaceIsNullable()
+  expiredAt?: string;
+
+  @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.currency,
     type: FieldMetadataType.TEXT,
     label: msg`Currency`,
@@ -85,6 +106,17 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   qrCodeUrl?: string;
+
+  //paymentPageUrl
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.paymentPageUrl,
+    type: FieldMetadataType.TEXT,
+    label: msg`Payment Page URL`,
+    description: msg`Payment Page URL`,
+    icon: 'IconLink',
+  })
+  @WorkspaceIsNullable()
+  paymentPageUrl?: string | null;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.status,
@@ -190,6 +222,20 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.mktTemplate,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Templates`,
+    description: msg`Templates associated with this payment`,
+    inverseSideTarget: () => MktTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'mktPayments',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktTemplate: Relation<MktTemplateWorkspaceEntity[]>;
+  @WorkspaceJoinColumn('mktTemplate')
+  mktTemplateId: string;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.searchVector,

@@ -1,20 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import {
   ActorMetadata,
   FieldActorSource,
 } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
+import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import {
   RequestSepayJWT,
   callFireBaseType,
 } from 'src/mkt-core/payment/constants/payment.type';
-import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -26,11 +25,9 @@ export class MktPaymentService {
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-    private readonly recordPositionService: RecordPositionService,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
+    private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
     public mktRepo: MktRepositoryService,
-    private readonly fireBaseIntegration: FireBaseIntegrationService,
   ) {}
 
   async createPaymentFromOrder(
@@ -84,8 +81,8 @@ export class MktPaymentService {
             }
             if (!pm) return null;
             // generate position
-            const qrCodeUrl =
-              await this.mktPaymentPrepareService.generateSepayQrCodeUrl(
+            const { qrCodeUrl, expiredAt } =
+              await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
                 pm,
                 totalAmount || 0,
                 paymentData.generatedOrderCode,
@@ -100,6 +97,10 @@ export class MktPaymentService {
               amount: totalAmount || 0,
               currency: paymentData.currency || 'VND',
               qrCodeUrl: qrCodeUrl || undefined,
+              duration: p.duration || null,
+              expiredAt: expiredAt || null,
+              paymentPageUrl: `${process.env.SERVER_URL}/payment/${paymentData.generatedOrderCode}`,
+              mktTemplateId: MKT_TEMPLATE.SEPAY,
             } as Partial<MktPaymentWorkspaceEntity>);
           }),
         );

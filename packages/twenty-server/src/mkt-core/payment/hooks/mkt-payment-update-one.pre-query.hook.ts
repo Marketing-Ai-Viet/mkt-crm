@@ -77,7 +77,7 @@ export class MktPaymentUpdateOnePreQueryHook
         if (newPaymentMethod) {
           // Check if the new payment method is SEPay QR
           if (newPaymentMethod.name === 'SEPay QR') {
-            const qrCodeUrl = await this.generateSepayQrCodeUrl(
+            const qrCodeUrl = await this.draftSepayQrCodeUrl(
               currentPayment,
               newPaymentMethod,
             );
@@ -108,7 +108,7 @@ export class MktPaymentUpdateOnePreQueryHook
         input?.amount &&
         input.amount !== currentPayment.amount
       ) {
-        const qrCodeUrl = await this.generateSepayQrCodeUrl(
+        const qrCodeUrl = await this.draftSepayQrCodeUrl(
           currentPayment,
           currentPayment.mktPaymentMethod,
           input.amount,
@@ -132,7 +132,7 @@ export class MktPaymentUpdateOnePreQueryHook
     return payload;
   }
 
-  private async generateSepayQrCodeUrl(
+  private async draftSepayQrCodeUrl(
     payment: MktPaymentWorkspaceEntity,
     paymentMethod: MktPaymentMethodWorkspaceEntity,
     customAmount?: number,
