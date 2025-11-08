@@ -71,6 +71,7 @@ export class SepayPaymentController {
 
     if (!validApiKey) {
       this.logger.warn('SEPAY_WEBHOOK_API_KEY environment variable not set');
+
       return false;
     }
 
