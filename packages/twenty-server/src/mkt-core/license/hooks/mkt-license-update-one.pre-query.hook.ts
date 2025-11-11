@@ -64,6 +64,9 @@ export class MktLicenseUpdateOnePreQueryHook
 
     const license = await this.licenseService.getLicenseForForUpdate(licenseId);
 
+    this.mktLicenseRenewService.mktContractId =
+      license?.mktOrder?.mktContractId || null;
+
     let licenseHistory = null;
 
     // Handle license history update

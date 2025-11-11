@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
+import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
 import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-overdue.cron.job';
@@ -36,6 +37,7 @@ import { OrderLicenseRenewService } from './services/order.license-renew.service
     MktInvoiceModule,
     MktProductModule,
     MktCommonModule,
+    MktContractModule,
   ],
   providers: [
     MktOrderResolver,

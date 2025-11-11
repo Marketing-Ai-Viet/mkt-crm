@@ -22,6 +22,7 @@ import { MktSInvoiceTaxBreakdownWorkspaceEntity } from 'src/mkt-core/invoice/obj
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -482,4 +483,20 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktReport')
   mktReportId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktContract,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Contract`,
+    description: msg`Event contract`,
+    icon: 'IconFileContract',
+    inverseSideTarget: () => MktContractWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktContract: Relation<MktContractWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktContract')
+  mktContractId: string | null;
 }

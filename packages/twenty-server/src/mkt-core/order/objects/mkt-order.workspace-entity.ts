@@ -173,7 +173,7 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     defaultValue: false,
   })
   @WorkspaceIsNullable()
-  requireContract?: boolean;
+  requireContract?: boolean | null;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.sInvoiceStatus,
@@ -247,16 +247,18 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktContracts,
-    type: RelationType.ONE_TO_MANY,
+    type: RelationType.MANY_TO_ONE,
     label: msg`Contracts`,
-    description: msg`Contracts associated with this order`,
-    icon: 'IconBox',
+    description: msg`Contracts linked to the order`,
+    icon: 'IconFileContract',
     inverseSideTarget: () => MktContractWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrder',
+    inverseSideFieldKey: 'mktOrders',
     onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
-  mktContracts: Relation<MktContractWorkspaceEntity[]>;
+  mktContract: Relation<MktContractWorkspaceEntity>;
+  @WorkspaceJoinColumn('mktContract')
+  mktContractId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktSInvoice,

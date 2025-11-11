@@ -22,6 +22,7 @@ import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/m
 @Injectable()
 export class MktLicenseRenewService {
   private readonly logger = new Logger(MktLicenseRenewService.name);
+  public mktContractId: string | null = null;
   constructor(
     private readonly mktRepo: MktRepositoryService,
     private readonly mktFirebaseService: MktFirebaseService,
@@ -478,6 +479,8 @@ export class MktLicenseRenewService {
       tax: 0,
       discount: 0,
       totalAmount: 0,
+      requireContract: null,
+      mktContractId: this.mktContractId,
       name: 'License Renewal Order',
     });
 

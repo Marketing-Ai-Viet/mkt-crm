@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { ORDER_CODE_PREFIX } from 'src/mkt-core/order/constants/order-status.constants';
@@ -26,6 +27,7 @@ export class OrderConfirmService {
     private mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
     private mktRepo: MktRepositoryService,
+    private readonly mktContractService: MktContractService,
   ) {}
 
   /**
@@ -265,7 +267,7 @@ export class OrderConfirmService {
 
     const order = await orderRepository.findOne({
       where: { id: createdOrder.id },
-      relations: ['orderItems'],
+      relations: ['orderItems', 'mktCustomer'],
     });
 
     this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);
@@ -301,6 +303,13 @@ export class OrderConfirmService {
     const calculatedValues: CalculateOrderResult =
       await this.calculateOrderValues(order);
 
+    const mktContractId = await this.createContractIfRequired(
+      order,
+      workspaceId,
+      customerMeta?.mktCustomerId || null,
+      generatedOrderCode ?? '',
+    );
+
     const updateOrderInfo = {
       id: createdOrder.id,
       mktCustomerId: customerMeta?.mktCustomerId || null,
@@ -310,6 +319,7 @@ export class OrderConfirmService {
       discount: calculatedValues.discount,
       totalAmount: calculatedValues.totalAmount,
       name: generatedOrderName ?? '',
+      mktContractId,
     };
 
     await this.orderService.updateOrderInformation(
@@ -439,5 +449,37 @@ export class OrderConfirmService {
     if (!workspaceId) return this.mktRepo.getOrderRepository();
 
     return this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
+  }
+
+  private async createContractIfRequired(
+    order: MktOrderWorkspaceEntity | null,
+    workspaceId: string,
+    mktCustomerId: string | null,
+    generatedOrderCode: string,
+  ) {
+    if (order && order.requireContract) {
+      try {
+        this.logger.log(`Creating contract for order: ${order.id}`);
+
+        const contract = await this.mktContractService.createContractForOrder(
+          order,
+          workspaceId,
+          mktCustomerId,
+          generatedOrderCode,
+        );
+
+        this.logger.log(
+          `Successfully created and linked contract ${contract.contractNumber} to order ${order.id}`,
+        );
+
+        return contract.id;
+      } catch (contractError) {
+        this.logger.error(
+          `Failed to create contract for order ${order.id}:`,
+          contractError,
+        );
+        // Continue with order processing even if contract creation fails
+      }
+    }
   }
 }

@@ -86,6 +86,16 @@ export class MktOptionWorkspaceEntity extends BaseWorkspaceEntity {
   description: string;
 
   @WorkspaceField({
+    standardId: MKT_OPTION_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional metadata for the option`,
+    icon: 'IconDatabase',
+  })
+  @WorkspaceIsNullable()
+  metadata: JSON;
+
+  @WorkspaceField({
     standardId: MKT_OPTION_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,

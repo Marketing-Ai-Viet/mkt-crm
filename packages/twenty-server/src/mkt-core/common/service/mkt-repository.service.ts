@@ -7,6 +7,7 @@ import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
@@ -139,6 +140,17 @@ export class MktRepositoryService {
   async getPaymentRepositoryByWorkspaceId(workspaceId: string) {
     return await this.getRepositoryByWorkspaceId(
       MktPaymentWorkspaceEntity,
+      workspaceId,
+    );
+  }
+
+  async getContractRepository() {
+    return await this.getRepository(MktContractWorkspaceEntity);
+  }
+
+  async getContractRepositoryByWorkspaceId(workspaceId: string) {
+    return await this.getRepositoryByWorkspaceId(
+      MktContractWorkspaceEntity,
       workspaceId,
     );
   }

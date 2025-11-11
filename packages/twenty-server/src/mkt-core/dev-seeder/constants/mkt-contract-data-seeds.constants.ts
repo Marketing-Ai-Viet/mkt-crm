@@ -1,33 +1,22 @@
-import { MKT_ORDER_DATA_SEEDS_IDS } from './mkt-order-data-seeds.constants';
-
 type MktContractDataSeed = {
   id: string;
   name: string;
-  status: MKT_CONTRACT_STATUS;
+  contractNumber?: string | null;
   startDate: string;
   endDate: string;
-  mktOrderId: string; // Reference to order that contains this contract (required)
   position: number;
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
   createdByName: string;
 };
 
-export enum MKT_CONTRACT_STATUS {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  EXPIRED = 'expired',
-  REVOKED = 'revoked',
-}
-
 // prettier-ignore
 export const MKT_CONTRACT_DATA_SEED_COLUMNS: (keyof MktContractDataSeed)[] = [
   'id',
   'name',
-  'status',
+  'contractNumber',
   'startDate',
   'endDate',
-  'mktOrderId',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -58,10 +47,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_1,
     name: 'Software License Agreement - Microsoft Office 365',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'MS-365-2024-001',
     startDate: '2024-01-15',
     endDate: '2025-01-14',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     position: 1,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,
@@ -70,10 +58,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_2,
     name: 'Cloud Infrastructure Service - AWS Enterprise',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'AWS-ENT-2024-001',
     startDate: '2024-03-01',
     endDate: '2027-02-28',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     position: 2,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -82,10 +69,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_3,
     name: 'Marketing Automation Platform - HubSpot Professional',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'HUB-PRF-2024-001',
     startDate: '2024-02-10',
     endDate: '2025-02-09',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
     position: 3,
     createdBySource: 'IMPORT',
     createdByWorkspaceMemberId: null,
@@ -94,10 +80,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_4,
     name: 'CRM Software License - Salesforce Enterprise',
-    status: MKT_CONTRACT_STATUS.EXPIRED,
+    contractNumber: 'SF-ENT-2024-001',
     startDate: '2023-06-01',
     endDate: '2024-05-31',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     position: 4,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,
@@ -106,10 +91,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_5,
     name: 'IT Support & Maintenance Contract',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'IT-SUP-2024-001',
     startDate: '2024-01-01',
     endDate: '2024-12-31',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     position: 5,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -118,10 +102,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_6,
     name: 'Office Equipment Lease - Dell Workstations',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'DELL-LEASE-2024-001',
     startDate: '2023-09-15',
     endDate: '2026-09-14',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
     position: 6,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,
@@ -130,10 +113,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_7,
     name: 'Security Software License - Norton Enterprise',
-    status: MKT_CONTRACT_STATUS.REVOKED,
+    contractNumber: 'NORTON-ENT-2024-001',
     startDate: '2023-12-01',
     endDate: '2024-11-30',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
     position: 7,
     createdBySource: 'IMPORT',
     createdByWorkspaceMemberId: null,
@@ -142,10 +124,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_8,
     name: 'Data Analytics Platform - Tableau Creator',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'TABLEAU-CR-2024-001',
     startDate: '2024-04-01',
     endDate: '2025-03-31',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     position: 8,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -154,10 +135,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_9,
     name: 'Communication Software - Slack Business+',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'SLACK-BUS-2024-001',
     startDate: '2024-02-15',
     endDate: '2025-02-14',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
     position: 9,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,
@@ -166,10 +146,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_10,
     name: 'Project Management Tool - Asana Premium',
-    status: MKT_CONTRACT_STATUS.INACTIVE,
+    contractNumber: 'ASANA-PRE-2024-001',
     startDate: '2023-11-01',
     endDate: '2024-10-31',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
     position: 10,
     createdBySource: 'IMPORT',
     createdByWorkspaceMemberId: null,
@@ -178,10 +157,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_11,
     name: 'Website Hosting Service - AWS CloudFront',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'AWS-CF-2024-001',
     startDate: '2024-01-08',
     endDate: '2025-01-07',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
     position: 11,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -190,10 +168,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_12,
     name: 'Design Software License - Adobe Creative Cloud',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'ADOBE-CC-2024-001',
     startDate: '2024-03-20',
     endDate: '2025-03-19',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
     position: 12,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,
@@ -202,10 +179,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_13,
     name: 'Email Marketing Service - Mailchimp Standard',
-    status: MKT_CONTRACT_STATUS.EXPIRED,
+    contractNumber: 'MAIL-ST-2024-001',
     startDate: '2023-08-01',
     endDate: '2024-07-31',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
     position: 13,
     createdBySource: 'IMPORT',
     createdByWorkspaceMemberId: null,
@@ -214,10 +190,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_14,
     name: 'Video Conferencing Platform - Zoom Pro',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'ZOOM-PRO-2024-001',
     startDate: '2024-05-01',
     endDate: '2025-04-30',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     position: 14,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -226,10 +201,9 @@ export const MKT_CONTRACT_DATA_SEEDS: MktContractDataSeed[] = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_15,
     name: 'Code Repository Service - GitHub Enterprise',
-    status: MKT_CONTRACT_STATUS.ACTIVE,
+    contractNumber: 'GH-ENT-2024-001',
     startDate: '2024-06-15',
     endDate: '2025-06-14',
-    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     position: 15,
     createdBySource: 'MANUAL',
     createdByWorkspaceMemberId: null,

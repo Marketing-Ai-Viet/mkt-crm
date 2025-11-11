@@ -29,10 +29,6 @@ import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/m
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
-import {
-  MEMBER_TYPE,
-  MEMBER_TYPE_OPTIONS,
-} from 'src/mkt-core/mkt-entities-extends/mkt-member.constant';
 import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
 import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
@@ -58,14 +54,13 @@ import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-optio
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberType,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Member Type`,
     description: msg`The type of the workspace member in the marketing module`,
     icon: 'IconUserCheck',
-    options: MEMBER_TYPE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  memberType: MEMBER_TYPE | null;
+  memberType: string;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOptions,

@@ -6,6 +6,7 @@ import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
@@ -19,7 +20,7 @@ import { UserManagementService } from 'src/mkt-core/user-management/user-managem
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserWorkspace], 'core'),
+    TypeOrmModule.forFeature([User, UserWorkspace, Workspace], 'core'),
     TypeOrmModule.forFeature([RoleEntity, RoleTargetsEntity], 'core'),
     UserWorkspaceModule,
     UserRoleModule,

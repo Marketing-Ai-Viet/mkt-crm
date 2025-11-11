@@ -30,6 +30,7 @@ export const MKT_OPTION_FIELD_IDS = {
   key: 'f275f4c8-431f-4801-87b7-07dbdbd8c292',
   value: 'ddcfbddd-52fb-4b3c-abf4-e2b7c7a9e08f',
   description: 'bc7799a4-b05f-43c9-8016-c252868d3737',
+  metadata: 'd3346a07-5da8-4775-9619-fadf1bf6dd75',
   // relations
   // common relations or fields
   position: 'a581e2e2-6c2e-46f9-9881-3ea9c2eda802',
@@ -702,6 +703,7 @@ export const MKT_SENDMAIL_TEMPLATE_FIELD_IDS = {
 
 export const MKT_CONTRACT_FIELD_IDS = {
   name: '5c81d04d-b56c-40a9-9d3e-8c0bdba1af0b',
+  contractNumber: '361dfd0d-e1fe-4bb6-a204-05600ac57041',
   status: '90a61a70-1871-4534-8215-8031ca107a99',
   startDate: '5cfe9cf4-3f1a-4a9a-bc84-7296da244819',
   endDate: '14548624-e9a4-4203-a1a2-c9b6341a5536',
@@ -907,6 +909,12 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   dataAccessPolicies: '70707070-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
   // permission audits
   permissionAudits: '80808080-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+};
+
+export const MKT_PERSON_FIELD_IDS = {
+  memberType: '0804050d-c4d3-4029-b401-b48369c00e70',
+  // relations
+  departmentId: '24674af6-c1c8-446e-92cb-8d9fd2bf3ed6',
 };
 
 export const MKT_RESELLER_TIER_FIELD_IDS = {

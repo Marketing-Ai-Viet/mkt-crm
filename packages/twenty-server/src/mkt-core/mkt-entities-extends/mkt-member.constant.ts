@@ -1,35 +1,40 @@
-import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+export const MEMBER_TYPE = {
+  SALES: 'SALES',
+  SUPPORT: 'SUPPORT',
+  LEADER: 'LEADER',
+  ADMIN: 'ADMIN',
+};
 
-export enum MEMBER_TYPE {
-  SALES = 'SALES',
-  SUPPORT = 'SUPPORT',
-  LEADER = 'LEADER',
-  ADMIN = 'ADMIN',
-}
-
-export const MEMBER_TYPE_OPTIONS = [
-  {
-    value: MEMBER_TYPE.SALES,
-    label: 'Sales',
-    color: 'green' as TagColor,
-    position: 0,
+export const MEMBER_TYPE_OPTIONS = {
+  types: MEMBER_TYPE,
+  options: [
+    { value: MEMBER_TYPE.SALES, color: 'blue', label: 'Sales', position: 1 },
+    {
+      value: MEMBER_TYPE.SUPPORT,
+      color: 'green',
+      label: 'Support',
+      position: 2,
+    },
+    {
+      value: MEMBER_TYPE.LEADER,
+      color: 'purple',
+      label: 'Leader',
+      position: 3,
+    },
+    { value: MEMBER_TYPE.ADMIN, color: 'red', label: 'Admin', position: 4 },
+  ],
+  labels: {
+    EN: {
+      SALES: 'Sales',
+      SUPPORT: 'Support',
+      LEADER: 'Leader',
+      ADMIN: 'Admin',
+    },
+    VI: {
+      SALES: 'Bán hàng',
+      SUPPORT: 'Hỗ trợ',
+      LEADER: 'Trưởng nhóm',
+      ADMIN: 'Quản trị viên',
+    },
   },
-  {
-    value: MEMBER_TYPE.SUPPORT,
-    label: 'Support',
-    color: 'blue' as TagColor,
-    position: 1,
-  },
-  {
-    value: MEMBER_TYPE.LEADER,
-    label: 'Leader',
-    color: 'orange' as TagColor,
-    position: 2,
-  },
-  {
-    value: MEMBER_TYPE.ADMIN,
-    label: 'Admin',
-    color: 'red' as TagColor,
-    position: 3,
-  },
-];
+};
