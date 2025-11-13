@@ -1,5 +1,4 @@
 import { Injectable, Type } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { ObjectLiteral } from 'typeorm';
 
@@ -24,7 +23,6 @@ export class MktRepositoryService {
   constructor(
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -40,8 +38,7 @@ export class MktRepositoryService {
     let workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
     if (!workspaceId) workspaceId = this.workspaceId;
-    if (!workspaceId)
-      workspaceId = this.configService.get<string>('MKT_WORKSPACE_ID') || null;
+    if (!workspaceId) workspaceId = '3b8e6458-5fc1-4e63-8563-008ccddaa6db';
     if (!workspaceId) {
       throw new Error(
         'Workspace ID 2 is not available in the current context.',
