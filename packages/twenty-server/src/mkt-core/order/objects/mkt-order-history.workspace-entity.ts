@@ -154,22 +154,6 @@ export class MktOrderHistoryWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string;
 
-  // @WorkspaceRelation({
-  //   standardId: MKT_ORDER_HISTORY_FIELD_IDS.accountOwner,
-  //   type: RelationType.MANY_TO_ONE,
-  //   label: msg`Account Owner`,
-  //   description: msg`Account Owner`,
-  //   icon: 'IconUserCircle',
-  //   inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-  //   inverseSideFieldKey: 'accountOwnerForMktOrders',
-  //   onDelete: RelationOnDeleteAction.SET_NULL,
-  // })
-  // @WorkspaceIsNullable()
-  // accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
-
-  // @WorkspaceJoinColumn('accountOwner')
-  // accountOwnerId: string | null;
-
   @WorkspaceRelation({
     standardId: MKT_ORDER_HISTORY_FIELD_IDS.timelineActivities,
     type: RelationType.ONE_TO_MANY,

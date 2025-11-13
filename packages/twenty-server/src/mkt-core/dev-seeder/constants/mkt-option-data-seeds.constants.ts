@@ -1,4 +1,7 @@
-import { MKT_CUSTOMER_TIER_OPTIONS } from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import {
+  MKT_CUSTOMER_STATUS_OPTIONS,
+  MKT_CUSTOMER_TIER_OPTIONS,
+} from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MEMBER_TYPE_OPTIONS } from 'src/mkt-core/mkt-entities-extends/mkt-member.constant';
 import { ORDER_STATUS_OPTIONS } from 'src/mkt-core/order/constants/order-status.constants';
 export const MKT_OPTION_DATA_SEED_COLUMNS = [
@@ -20,9 +23,22 @@ export const MKT_OPTION_DATA_SEEDS = [
     id: '34ff9bff-b7aa-4de8-869c-54910b366fc3',
     name: 'License Renew Before Days',
     key: 'license_renew_before_days',
-    value: '15',
+    value: '1050',
     description: 'Số ngày trước khi hết hạn để gửi thông báo gia hạn license',
     metadata: JSON.stringify({ unit: 'days' }),
+    position: 1,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Dev Seeder',
+  },
+  // Customer Option
+  {
+    id: 'f885431f-eadd-400a-8ba7-edb382cc93bf',
+    name: 'Customer Status',
+    key: 'customer_status',
+    value: null,
+    description: 'Trạng thái hoạt động của khách hàng',
+    metadata: JSON.stringify(MKT_CUSTOMER_STATUS_OPTIONS),
     position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -40,6 +56,7 @@ export const MKT_OPTION_DATA_SEEDS = [
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',
   },
+  // Member Option
   {
     id: '2e900b2d-058e-4595-848e-4cda56d3351e',
     name: 'Member Type',

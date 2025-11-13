@@ -872,6 +872,7 @@ Thời gian: ${new Date().toISOString()}
       name: updateOrderInfo.name ?? '',
       note,
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
+      accountOwnerId: oldOrder?.accountOwnerId || null,
     });
   }
 

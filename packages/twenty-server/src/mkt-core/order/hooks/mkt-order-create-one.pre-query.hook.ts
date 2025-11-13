@@ -21,7 +21,7 @@ export class MktOrderCreateOnePreQueryHook
   ) {}
 
   async execute(
-    _authContext: AuthContext,
+    authContext: AuthContext,
     _objectName: string,
     payload: CreateOneResolverArgs<MktOrderWorkspaceEntity>,
   ): Promise<CreateOneResolverArgs<MktOrderWorkspaceEntity>> {
@@ -30,6 +30,7 @@ export class MktOrderCreateOnePreQueryHook
       data: {
         ...payload.data,
         status: ORDER_STATUS.DRAFT,
+        accountOwnerId: authContext.workspaceMemberId || null,
       },
     };
 

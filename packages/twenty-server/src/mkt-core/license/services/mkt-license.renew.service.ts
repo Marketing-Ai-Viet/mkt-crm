@@ -472,7 +472,7 @@ export class MktLicenseRenewService {
   }
 
   private async createOrder() {
-    const orderRepo = await this.mktRepo.getOrderRepository(); // Giả sử bạn có một repository Order
+    const orderRepo = await this.mktRepo.getOrderRepository();
     const newOrder = orderRepo.create({
       status: ORDER_STATUS.DRAFT,
       subtotal: 0,

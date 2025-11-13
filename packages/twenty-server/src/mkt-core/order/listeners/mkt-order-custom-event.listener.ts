@@ -152,6 +152,7 @@ export class MktOrderCustomEventListener {
     this.logger.log(`start tier update for customer`);
 
     await this.tierForCustomer(updatedOrder);
+
     const orderHistoryData = await this.makeOrderHistoryData(
       event.eventType,
       updatedOrder,
@@ -166,6 +167,8 @@ export class MktOrderCustomEventListener {
       metadata: updatedOrder as MktOrderWorkspaceEntity as unknown as JSON,
       note: orderHistoryData.note ?? '',
     });
+
+    orderHistory.createdBy = updatedOrder.createdBy;
 
     await orderHistoryRepo.save(orderHistory);
 
