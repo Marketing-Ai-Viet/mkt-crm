@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { IsNull } from 'typeorm';
+
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MKT_CUSTOMER_TIER } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 import {
-  CustomerTier,
   CustomerTierResult,
   MktCustomerTierCalculationService,
 } from './mkt-customer-tier-calculation.service';
@@ -15,33 +17,21 @@ export class MktCustomerTierService {
   private readonly logger = new Logger(MktCustomerTierService.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktCustomerTierCalculationService: MktCustomerTierCalculationService,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
-  /**
-   * Cập nhật hạng khách hàng cho một khách hàng cụ thể
-   */
-  async updateCustomerTier(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<CustomerTierResult> {
-    // Sử dụng method mới để tính toán hạng
+  async updateCustomerTier(customerId: string): Promise<CustomerTierResult> {
     const tierResult =
       await this.mktCustomerTierCalculationService.calculateCustomerTier(
-        workspaceId,
         customerId,
       );
 
-    // Get customer repository để cập nhật
-    const customerRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktCustomerWorkspaceEntity>(
-        workspaceId,
-        'mktCustomer',
-      );
+    const cusRepo = await this.mktRepo.getRepository(
+      MktCustomerWorkspaceEntity,
+    );
 
-    // Cập nhật thông tin khách hàng
-    await customerRepository.update(customerId, {
+    await cusRepo.update(customerId, {
       tier: tierResult.customerTier,
       totalOrderValue: tierResult.totalOrderValue,
     });
@@ -49,96 +39,106 @@ export class MktCustomerTierService {
     return tierResult;
   }
 
-  /**
-   * Cập nhật hạng cho tất cả khách hàng trong workspace
-   */
-  async updateAllCustomerTiers(
-    workspaceId: string,
-  ): Promise<CustomerTierResult[]> {
-    const customerRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktCustomerWorkspaceEntity>(
-        workspaceId,
-        'mktCustomer',
+  async updateAllCustomerTiers(batchSize = 100): Promise<CustomerTierResult[]> {
+    const cusRepo = await this.mktRepo.getRepository(
+      MktCustomerWorkspaceEntity,
+    );
+
+    const results: CustomerTierResult[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const customers = await cusRepo.find({
+        where: { deletedAt: IsNull() },
+        take: batchSize,
+        skip: offset,
+        order: { createdAt: 'ASC' },
+      });
+
+      if (customers.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      this.logger.log(
+        `Processing batch ${offset / batchSize + 1}: ${customers.length} customers`,
       );
 
-    // Lấy tất cả khách hàng
-    const customers = await customerRepository.find();
-    const results: CustomerTierResult[] = [];
+      for (const customer of customers) {
+        try {
+          const tierResult =
+            await this.mktCustomerTierCalculationService.calculateCustomerTier(
+              customer.id,
+            );
 
-    for (const customer of customers) {
-      try {
-        // Sử dụng method mới để tính toán hạng
-        const tierResult =
-          await this.mktCustomerTierCalculationService.calculateCustomerTier(
-            workspaceId,
-            customer.id,
+          await cusRepo.update(customer.id, {
+            tier: tierResult.customerTier,
+            totalOrderValue: tierResult.totalOrderValue,
+          });
+
+          results.push(tierResult);
+        } catch (error) {
+          this.logger.error(
+            `Error updating tier for customer ${customer.id}: ${error.message}`,
           );
+          // Continue with next customer
+        }
+      }
 
-        // Cập nhật database
-        await customerRepository.update(customer.id, {
-          tier: tierResult.customerTier,
-          totalOrderValue: tierResult.totalOrderValue,
-        });
+      offset += batchSize;
 
-        results.push(tierResult);
-      } catch (error) {
-        this.logger.error(
-          `Error updating tier for customer ${customer.id}: ${error.message}`,
-        );
-        // Continue with next customer
+      if (customers.length < batchSize) {
+        hasMore = false;
       }
     }
+
+    this.logger.log(`Completed updating ${results.length} customer tiers`);
 
     return results;
   }
 
-  /**
-   * Lấy thống kê hạng khách hàng theo workspace
-   */
-  async getCustomerTierStatistics(workspaceId: string): Promise<{
-    tierDistribution: Record<CustomerTier, number>;
+  async getCustomerTierStatistics(_workspaceId: string): Promise<{
+    tierDistribution: Record<MKT_CUSTOMER_TIER, number>;
     totalCustomers: number;
     averageOrderValue: number;
     averageOrderCount: number;
   }> {
-    const customerRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktCustomerWorkspaceEntity>(
-        workspaceId,
-        'mktCustomer',
-      );
+    const cusRepo = await this.mktRepo.getRepository(
+      MktCustomerWorkspaceEntity,
+    );
 
-    const customers = await customerRepository.find();
+    const customers = await cusRepo.find();
 
-    const tierDistribution: Record<CustomerTier, number> = {
-      [CustomerTier.BRONZE]: 0,
-      [CustomerTier.SILVER]: 0,
-      [CustomerTier.GOLD]: 0,
-      [CustomerTier.DIAMOND]: 0,
+    const tierDistribution: Record<MKT_CUSTOMER_TIER, number> = {
+      [MKT_CUSTOMER_TIER.BRONZE]: 0,
+      [MKT_CUSTOMER_TIER.SILVER]: 0,
+      [MKT_CUSTOMER_TIER.GOLD]: 0,
+      [MKT_CUSTOMER_TIER.DIAMOND]: 0,
+      [MKT_CUSTOMER_TIER.DORMANT]: 0,
+      [MKT_CUSTOMER_TIER.CHURNED]: 0,
     };
 
     let totalOrderValue = 0;
     let totalOrderCount = 0;
 
     for (const customer of customers) {
-      // Cập nhật tier distribution
       if (
         customer.tier &&
-        Object.values(CustomerTier).includes(customer.tier as CustomerTier)
+        Object.values(MKT_CUSTOMER_TIER).includes(
+          customer.tier as MKT_CUSTOMER_TIER,
+        )
       ) {
-        tierDistribution[customer.tier as CustomerTier]++;
+        tierDistribution[customer.tier as MKT_CUSTOMER_TIER]++;
       }
 
-      // Tính tổng order value và count
       totalOrderValue += customer.totalOrderValue || 0;
 
-      // Lấy số lượng orders cho customer này
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-          workspaceId,
-          'mktOrder',
-        );
+      const orderRepo = await this.mktRepo.getRepository(
+        MktOrderWorkspaceEntity,
+      );
 
-      const orderCount = await orderRepository.count({
+      const orderCount = await orderRepo.count({
         where: { mktCustomerId: customer.id },
       });
 
@@ -155,22 +155,16 @@ export class MktCustomerTierService {
     };
   }
 
-  /**
-   * Lấy danh sách khách hàng theo hạng
-   */
   async getCustomersByTier(
-    workspaceId: string,
-    tier: CustomerTier,
+    tier: MKT_CUSTOMER_TIER,
     limit?: number,
     offset?: number,
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const customerRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktCustomerWorkspaceEntity>(
-        workspaceId,
-        'mktCustomer',
-      );
+    const cusRepo = await this.mktRepo.getRepository(
+      MktCustomerWorkspaceEntity,
+    );
 
-    const queryBuilder = customerRepository
+    const queryBuilder = cusRepo
       .createQueryBuilder('customer')
       .where('customer.tier = :tier', { tier })
       .orderBy('customer.totalOrderValue', 'DESC');
@@ -186,22 +180,14 @@ export class MktCustomerTierService {
     return queryBuilder.getMany();
   }
 
-  /**
-   * Kiểm tra khách hàng có thể nâng hạng hay không
-   */
-  async checkCustomerUpgradeEligibility(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<{
-    currentTier: CustomerTier;
+  async checkCustomerUpgradeEligibility(customerId: string): Promise<{
+    currentTier: MKT_CUSTOMER_TIER;
     canUpgrade: boolean;
-    nextTier?: CustomerTier;
+    nextTier?: MKT_CUSTOMER_TIER;
     requirements?: string;
   }> {
-    // Sử dụng method mới để lấy thông tin hiện tại
     const tierResult =
       await this.mktCustomerTierCalculationService.calculateCustomerTier(
-        workspaceId,
         customerId,
       );
 

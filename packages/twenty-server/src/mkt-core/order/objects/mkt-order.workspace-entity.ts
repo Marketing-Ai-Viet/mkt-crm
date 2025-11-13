@@ -26,14 +26,6 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import {
-  MKT_ORDER_LICENSE_STATUS,
-  MKT_ORDER_LICENSE_STATUS_OPTIONS,
-  ORDER_STATUS,
-  ORDER_STATUS_OPTIONS,
-  SINVOICE_STATUS,
-  SINVOICE_STATUS_OPTIONS,
-} from 'src/mkt-core/order/constants';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
@@ -98,14 +90,13 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.status,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Status`,
     description: msg`Current order status`,
-    options: ORDER_STATUS_OPTIONS,
     icon: 'IconProgressCheck',
   })
   @WorkspaceIsNullable()
-  status: ORDER_STATUS;
+  status: string | null;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.totalAmount,
@@ -177,25 +168,22 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.sInvoiceStatus,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`SInvoice Status`,
     description: msg`Status of the SInvoice`,
-    options: SINVOICE_STATUS_OPTIONS,
-    //defaultValue: SINVOICE_STATUS.PENDING,
   })
   @WorkspaceIsNullable()
-  sInvoiceStatus?: SINVOICE_STATUS;
+  sInvoiceStatus?: string;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.licenseStatus,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`License Status`,
     description: msg`Status of the License`,
-    options: MKT_ORDER_LICENSE_STATUS_OPTIONS,
     icon: 'IconBox',
   })
   @WorkspaceIsNullable()
-  licenseStatus?: MKT_ORDER_LICENSE_STATUS;
+  licenseStatus?: string;
 
   //metadata
   @WorkspaceField({

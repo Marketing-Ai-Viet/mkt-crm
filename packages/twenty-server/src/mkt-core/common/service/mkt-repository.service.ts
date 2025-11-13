@@ -1,10 +1,12 @@
 import { Injectable, Type } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { ObjectLiteral } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
@@ -22,6 +24,7 @@ export class MktRepositoryService {
   constructor(
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -37,6 +40,8 @@ export class MktRepositoryService {
     let workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
     if (!workspaceId) workspaceId = this.workspaceId;
+    if (!workspaceId)
+      workspaceId = this.configService.get<string>('MKT_WORKSPACE_ID') || null;
     if (!workspaceId) {
       throw new Error(
         'Workspace ID 2 is not available in the current context.',
@@ -153,5 +158,9 @@ export class MktRepositoryService {
       MktContractWorkspaceEntity,
       workspaceId,
     );
+  }
+
+  async getCustomerRepository() {
+    return await this.getRepository(MktCustomerWorkspaceEntity);
   }
 }

@@ -64,6 +64,38 @@ export class MktLicenseEventService {
     }
   }
 
+  async activateLicensesFromOrder(updateOrder: MktOrderWorkspaceEntity) {
+    const licenseRepo = await this.mktRepo.getLicenseRepository();
+    const licenseHistoryRepo = await this.mktRepo.getLicenseHistoryRepository();
+
+    const licenses = await licenseRepo.find({
+      where: { mktOrder: { id: updateOrder.id } },
+    });
+
+    for (const license of licenses) {
+      if (license.status !== MKT_LICENSE_STATUS.REVOKED) continue;
+      license.status = MKT_LICENSE_STATUS.ACTIVE;
+      license.notes = `License activated due to order ${updateOrder.orderCode} being paid.`;
+      await licenseRepo.save(license);
+      this.logger.log(
+        `Activated license ${license.id} for order ${updateOrder.id}`,
+      );
+      const history =
+        await this.mktLicenseHistoryService.createHistoryItemFromUpdate(
+          null,
+          MKT_LICENSE_STATUS.ACTIVE,
+        );
+
+      await licenseHistoryRepo.save({
+        mktLicense: license,
+        name: history?.name || 'License Activated',
+        action: history?.action || 'LICENSE_ACTIVATED',
+        note: history?.note || 'License activated due to order being paid.',
+        createdBy: license.createdBy,
+      });
+    }
+  }
+
   async lockLicensesFromOrders(orders: MktOrderWorkspaceEntity[]) {
     for (const order of orders) {
       await this.lockLicensesFromOrder(order);

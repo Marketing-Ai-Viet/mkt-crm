@@ -14,12 +14,9 @@ import { OrderActionService } from 'src/mkt-core/order/services/order.action.ser
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
-import { OrderStatusValidationService } from 'src/mkt-core/order/utils/order-status-validation.service';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
-
-import { MktOrderResolver } from './mkt-order.resolver';
-import { MktOrderService } from './mkt-order.service';
+import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 
 import { MktOrderCreateOnePostQueryHook } from './hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderCreateOnePreQueryHook } from './hooks/mkt-order-create-one.pre-query.hook';
@@ -38,11 +35,9 @@ import { OrderLicenseRenewService } from './services/order.license-renew.service
     MktProductModule,
     MktCommonModule,
     MktContractModule,
+    CustomerModule,
   ],
   providers: [
-    MktOrderResolver,
-    MktOrderService,
-    OrderStatusValidationService,
     MktOrderCreateOnePreQueryHook,
     MktOrderUpdateOnePreQueryHook,
     MktOrderItemUpdateOnePreQueryHook,
@@ -58,6 +53,6 @@ import { OrderLicenseRenewService } from './services/order.license-renew.service
     MktOrderOverdueRegistrationService,
     MktOrderOverdueCronJob,
   ],
-  exports: [MktOrderService],
+  exports: [],
 })
 export class MktOrderModule {}

@@ -1,18 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MKT_CUSTOMER_TIER } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
-export enum CustomerTier {
-  BRONZE = 'Đồng',
-  SILVER = 'Bạc',
-  GOLD = 'Vàng',
-  DIAMOND = 'Kim Cương',
-}
-
 export interface CustomerTierResult {
-  customerTier: CustomerTier;
+  customerTier: MKT_CUSTOMER_TIER;
   totalOrderValue: number;
   totalOrderCount: number;
   customerId: string;
@@ -21,45 +15,23 @@ export interface CustomerTierResult {
 
 @Injectable()
 export class MktCustomerTierCalculationService {
-  constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+  private readonly logger = new Logger(MktCustomerTierCalculationService.name);
 
-  /**
-   * Tính toán hạng khách hàng dựa trên customerId
-   * Service sẽ tự động query database để lấy thông tin đơn hàng và tính toán
-   *
-   * Mặc định: chỉ tính đơn hàng có status 'COMPLETED'
-   *
-   * Tiêu chí:
-   * - Đồng (Bronze): 500,000 - 1,999,999 VND, 1-4 đơn
-   * - Bạc (Silver): 2,000,000 - 4,999,999 VND, 5-9 đơn
-   * - Vàng (Gold): 5,000,000 - 9,999,999 VND, 10-19 đơn
-   * - Kim Cương (Diamond): ≥ 10,000,000 VND, ≥ 20 đơn
-   */
+  constructor(private readonly mktRepo: MktRepositoryService) {}
+
   async calculateCustomerTier(
-    workspaceId: string,
     customerId: string,
     options: {
-      includeOnlyCompletedOrders?: boolean;
-      completedStatuses?: string[];
+      includeOnlyCompletedOrders?: boolean | null;
+      completedStatuses?: string[] | null;
     } = {},
   ): Promise<CustomerTierResult> {
-    // Get repositories
-    const customerRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktCustomerWorkspaceEntity>(
-        workspaceId,
-        'mktCustomer',
-      );
+    const cusRepo = await this.mktRepo.getRepository(
+      MktCustomerWorkspaceEntity,
+    );
+    const orderRepo = await this.mktRepo.getRepository(MktOrderWorkspaceEntity);
 
-    const orderRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-        workspaceId,
-        'mktOrder',
-      );
-
-    // Lấy thông tin khách hàng
-    const customer = await customerRepository.findOne({
+    const customer = await cusRepo.findOne({
       where: { id: customerId },
     });
 
@@ -67,34 +39,32 @@ export class MktCustomerTierCalculationService {
       throw new Error(`Customer with ID ${customerId} not found`);
     }
 
-    // Thiết lập giá trị mặc định cho options
     const {
       includeOnlyCompletedOrders = true,
       completedStatuses = ['COMPLETED'],
     } = options;
 
-    // Tạo query builder với điều kiện cơ bản
-    let queryBuilder = orderRepository
+    let queryBuilder = orderRepo
       .createQueryBuilder('order')
       .select('COUNT(order.id)', 'totalOrderCount')
       .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalOrderValue')
       .where('order.mktCustomerId = :customerId', { customerId });
 
-    // Thêm điều kiện lọc đơn hàng đã hoàn thành nếu được yêu cầu
     if (includeOnlyCompletedOrders && completedStatuses?.length) {
       queryBuilder = queryBuilder.andWhere('order.status IN (:...statuses)', {
         statuses: completedStatuses,
       });
     }
 
-    // Lấy tất cả đơn hàng của khách hàng và tính toán bằng query aggregation
     const orderStats = await queryBuilder.getRawOne();
 
-    // Parse kết quả từ query
     const totalOrderCount = parseInt(orderStats.totalOrderCount) || 0;
     const totalOrderValue = parseFloat(orderStats.totalOrderValue) || 0;
 
-    // Xác định hạng khách hàng dựa trên tiêu chí
+    this.logger.log(
+      `Customer ID: ${customerId}, Total Order Value: ${totalOrderValue}, Total Order Count: ${totalOrderCount}`,
+    );
+
     const customerTier = this.determineTier(totalOrderValue, totalOrderCount);
 
     return {
@@ -106,54 +76,35 @@ export class MktCustomerTierCalculationService {
     };
   }
 
-  /**
-   * Lấy danh sách các status đơn hàng được coi là đã hoàn thành
-   */
   getCompletedOrderStatuses(): string[] {
-    // Có thể import từ constants hoặc định nghĩa tại đây
     return ['COMPLETED', 'DELIVERED', 'PAID', 'FINISHED', 'SUCCESS'];
   }
 
-  /**
-   * Tính toán hạng khách hàng chỉ dựa trên đơn hàng đã hoàn thành
-   */
   async calculateCustomerTierFromCompletedOrders(
-    workspaceId: string,
     customerId: string,
   ): Promise<CustomerTierResult> {
-    return this.calculateCustomerTier(workspaceId, customerId, {
+    return this.calculateCustomerTier(customerId, {
       includeOnlyCompletedOrders: true,
       completedStatuses: this.getCompletedOrderStatuses(),
     });
   }
 
-  /**
-   * Tính toán hạng khách hàng từ tất cả đơn hàng (bao gồm cả chưa hoàn thành)
-   */
   async calculateCustomerTierFromAllOrders(
-    workspaceId: string,
     customerId: string,
   ): Promise<CustomerTierResult> {
-    return this.calculateCustomerTier(workspaceId, customerId, {
+    return this.calculateCustomerTier(customerId, {
       includeOnlyCompletedOrders: false,
     });
   }
 
-  /**
-   * Method helper để tính toán hạng khách hàng từ dữ liệu có sẵn
-   * Dùng khi đã có thông tin khách hàng và đơn hàng
-   */
   calculateCustomerTierFromData(
     mktCustomer: MktCustomerWorkspaceEntity,
     mktOrders: MktOrderWorkspaceEntity[],
   ): CustomerTierResult {
-    // Tính tổng chi tiêu từ các đơn hàng
     const totalOrderValue = this.calculateTotalOrderValue(mktOrders);
 
-    // Đếm số đơn hàng
     const totalOrderCount = mktOrders.length;
 
-    // Xác định hạng khách hàng dựa trên tiêu chí
     const customerTier = this.determineTier(totalOrderValue, totalOrderCount);
 
     return {
@@ -165,9 +116,6 @@ export class MktCustomerTierCalculationService {
     };
   }
 
-  /**
-   * Tính tổng giá trị đơn hàng
-   */
   private calculateTotalOrderValue(
     mktOrders: MktOrderWorkspaceEntity[],
   ): number {
@@ -179,99 +127,84 @@ export class MktCustomerTierCalculationService {
     }, 0);
   }
 
-  /**
-   * Xác định hạng khách hàng dựa trên tổng chi tiêu và số đơn hàng
-   */
   private determineTier(
     totalOrderValue: number,
     totalOrderCount: number,
-  ): CustomerTier {
-    // Kim Cương (Diamond) - Khách hàng VIP cao cấp nhất
+  ): MKT_CUSTOMER_TIER {
     if (totalOrderValue >= 10_000_000 && totalOrderCount >= 20) {
-      return CustomerTier.DIAMOND;
+      return MKT_CUSTOMER_TIER.DIAMOND;
     }
 
-    // Vàng (Gold) - Khách hàng trung thành cao
-    if (
-      totalOrderValue >= 5_000_000 &&
-      totalOrderValue < 10_000_000 &&
-      totalOrderCount >= 10 &&
-      totalOrderCount <= 19
-    ) {
-      return CustomerTier.GOLD;
+    if (totalOrderValue >= 5_000_000 && totalOrderCount >= 10) {
+      return MKT_CUSTOMER_TIER.GOLD;
     }
 
-    // Bạc (Silver) - Khách hàng ổn định
-    if (
-      totalOrderValue >= 2_000_000 &&
-      totalOrderValue < 5_000_000 &&
-      totalOrderCount >= 5 &&
-      totalOrderCount <= 9
-    ) {
-      return CustomerTier.SILVER;
+    if (totalOrderValue >= 2_000_000 && totalOrderCount >= 5) {
+      return MKT_CUSTOMER_TIER.SILVER;
     }
 
-    // Đồng (Bronze) - Khách hàng mới/cơ bản
-    if (
-      totalOrderValue >= 500_000 &&
-      totalOrderValue < 2_000_000 &&
-      totalOrderCount >= 1 &&
-      totalOrderCount <= 4
-    ) {
-      return CustomerTier.BRONZE;
+    if (totalOrderValue >= 500_000 && totalOrderCount >= 1) {
+      return MKT_CUSTOMER_TIER.BRONZE;
     }
 
-    // Mặc định cho các trường hợp không đạt tiêu chí tối thiểu
-    return CustomerTier.BRONZE;
+    return MKT_CUSTOMER_TIER.BRONZE;
   }
 
-  /**
-   * Lấy mô tả chi tiết về các tiêu chí hạng khách hàng
-   */
   getTierCriteria(): Record<
-    CustomerTier,
+    MKT_CUSTOMER_TIER,
     { spending: string; orders: string; description: string }
   > {
     return {
-      [CustomerTier.BRONZE]: {
+      [MKT_CUSTOMER_TIER.BRONZE]: {
         spending: '500,000 - 1,999,999 VND',
         orders: '1-4 đơn',
         description: 'Khách hàng mới/cơ bản',
       },
-      [CustomerTier.SILVER]: {
+      [MKT_CUSTOMER_TIER.SILVER]: {
         spending: '2,000,000 - 4,999,999 VND',
         orders: '5-9 đơn',
         description: 'Khách hàng ổn định',
       },
-      [CustomerTier.GOLD]: {
+      [MKT_CUSTOMER_TIER.GOLD]: {
         spending: '5,000,000 - 9,999,999 VND',
         orders: '10-19 đơn',
         description: 'Khách hàng trung thành cao',
       },
-      [CustomerTier.DIAMOND]: {
+      [MKT_CUSTOMER_TIER.DIAMOND]: {
         spending: '≥ 10,000,000 VND',
         orders: '≥ 20 đơn',
         description: 'Khách hàng VIP cao cấp nhất',
       },
+      [MKT_CUSTOMER_TIER.DORMANT]: {
+        spending: 'N/A',
+        orders: 'N/A',
+        description: 'Khách hàng không hoạt động',
+      },
+      [MKT_CUSTOMER_TIER.CHURNED]: {
+        spending: 'N/A',
+        orders: 'N/A',
+        description: 'Khách hàng đã rời bỏ',
+      },
     };
   }
 
-  /**
-   * Kiểm tra xem khách hàng có đủ điều kiện để nâng hạng hay không
-   */
   checkUpgradeEligibility(
-    currentTier: CustomerTier,
+    currentTier: MKT_CUSTOMER_TIER,
     totalOrderValue: number,
     totalOrderCount: number,
-  ): { canUpgrade: boolean; nextTier?: CustomerTier; requirements?: string } {
+  ): {
+    canUpgrade: boolean;
+    nextTier?: MKT_CUSTOMER_TIER;
+    requirements?: string;
+  } {
     const _criteria = this.getTierCriteria();
 
     switch (currentTier) {
-      case CustomerTier.BRONZE:
+      case MKT_CUSTOMER_TIER.BRONZE:
         if (totalOrderValue >= 2_000_000 && totalOrderCount >= 5) {
           return {
             canUpgrade: true,
-            nextTier: CustomerTier.SILVER,
+            nextTier: MKT_CUSTOMER_TIER.SILVER,
           };
         }
 
@@ -280,11 +213,11 @@ export class MktCustomerTierCalculationService {
           requirements: `Cần thêm ${Math.max(0, 2_000_000 - totalOrderValue).toLocaleString()} VND và ${Math.max(0, 5 - totalOrderCount)} đơn hàng để lên hạng Bạc`,
         };
 
-      case CustomerTier.SILVER:
+      case MKT_CUSTOMER_TIER.SILVER:
         if (totalOrderValue >= 5_000_000 && totalOrderCount >= 10) {
           return {
             canUpgrade: true,
-            nextTier: CustomerTier.GOLD,
+            nextTier: MKT_CUSTOMER_TIER.GOLD,
           };
         }
 
@@ -293,11 +226,11 @@ export class MktCustomerTierCalculationService {
           requirements: `Cần thêm ${Math.max(0, 5_000_000 - totalOrderValue).toLocaleString()} VND và ${Math.max(0, 10 - totalOrderCount)} đơn hàng để lên hạng Vàng`,
         };
 
-      case CustomerTier.GOLD:
+      case MKT_CUSTOMER_TIER.GOLD:
         if (totalOrderValue >= 10_000_000 && totalOrderCount >= 20) {
           return {
             canUpgrade: true,
-            nextTier: CustomerTier.DIAMOND,
+            nextTier: MKT_CUSTOMER_TIER.DIAMOND,
           };
         }
 
@@ -306,7 +239,7 @@ export class MktCustomerTierCalculationService {
           requirements: `Cần thêm ${Math.max(0, 10_000_000 - totalOrderValue).toLocaleString()} VND và ${Math.max(0, 20 - totalOrderCount)} đơn hàng để lên hạng Kim Cương`,
         };
 
-      case CustomerTier.DIAMOND:
+      case MKT_CUSTOMER_TIER.DIAMOND:
         return {
           canUpgrade: false,
           requirements: 'Đã đạt hạng cao nhất',

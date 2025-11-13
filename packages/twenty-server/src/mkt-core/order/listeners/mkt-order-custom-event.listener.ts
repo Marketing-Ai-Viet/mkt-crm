@@ -7,6 +7,7 @@ import {
   MKT_ORDER_EVENT_TYPES,
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktLicenseEventService } from 'src/mkt-core/license/services/mkt-license.event.service';
 import {
@@ -47,6 +48,7 @@ export class MktOrderCustomEventListener {
   constructor(
     private mktRepo: MktRepositoryService,
     public mktLicenseEventService: MktLicenseEventService,
+    private customerQueueService: MktCustomerQueueService,
   ) {}
 
   @OnEvent(MKT_EVENT_TYPE.MKT_ORDER)
@@ -66,12 +68,19 @@ export class MktOrderCustomEventListener {
         }
 
         if (updateOrder?.status === ORDER_STATUS.OVERDUE) {
-          // Xử lý khi đơn hàng chuyển sang trạng thái OVERDUE
           this.logger.log(
             `Order ${updateOrder.id} has moved to OVERDUE status.`,
           );
           this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
           await this.mktLicenseEventService.lockLicensesFromOrder(updateOrder);
+        }
+
+        if (updateOrder?.status === ORDER_STATUS.WAIT) {
+          this.logger.log(`Order ${updateOrder.id} has moved to WAIT status.`);
+          this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
+          await this.mktLicenseEventService.activateLicensesFromOrder(
+            updateOrder,
+          );
         }
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
@@ -106,12 +115,6 @@ export class MktOrderCustomEventListener {
       if (!license) {
         this.logger.warn(`No license associated with the order`);
       }
-
-      // const userName =
-      //       authContext.user?.firstName && authContext.user?.lastName
-      //         ? `${authContext.user.firstName} ${authContext.user.lastName}`
-      //         : authContext.user?.email || 'Unknown User';
-
       const newLicenseHistory = licenseRepo.create({
         name: 'Bản quyền được kích hoạt',
         action: license.status,
@@ -128,13 +131,6 @@ export class MktOrderCustomEventListener {
   private async processOrderCustomEvent(
     event: MktOrderCustomEventData,
   ): Promise<MktOrderWorkspaceEntity | void> {
-    // Implement your custom business logic here
-    // For example:
-    // - Send notifications
-    // - Update related records
-    // - Trigger external integrations
-    // - Log analytics events
-
     this.mktRepo.workspaceId = event.workspaceId;
     const orderHistoryRepo = await this.mktRepo.getRepository(
       MktOrderHistoryWorkspaceEntity,
@@ -152,7 +148,10 @@ export class MktOrderCustomEventListener {
 
       return;
     }
-    // const updatedOrder =
+
+    this.logger.log(`start tier update for customer`);
+
+    await this.tierForCustomer(updatedOrder);
     const orderHistoryData = await this.makeOrderHistoryData(
       event.eventType,
       updatedOrder,
@@ -174,42 +173,12 @@ export class MktOrderCustomEventListener {
       `Processing order ${event.orderId} in workspace ${event.workspaceId}`,
     );
 
-    // Example: Log order metadata if available
     if (updatedOrder.metadata) {
       this.logger.log(
         `Order metadata: ${JSON.stringify(updatedOrder.metadata)}`,
       );
     }
 
-    // Add your specific logic here based on your requirements
-
-    // // Parse metadata để xử lý theo loại order
-    // const metadata = event.orderData.metadata;
-    // const orderAction = metadata?.orderAction;
-
-    // if (orderAction) {
-    //   this.logger.log(`Order ${event.orderId} has action: ${orderAction}`);
-
-    //   switch (orderAction) {
-    //     case 'TRIAL':
-    //       await this.handleTrialOrderCreated(event);
-    //       break;
-    //     case 'WAIT':
-    //       await this.handleWaitOrderCreated(event);
-    //       break;
-    //     case 'TRIAL_TO_PAID':
-    //       await this.handleTrialToPaidOrderCreated(event);
-    //       break;
-    //     default:
-    //       await this.handleRegularOrderCreated(event);
-    //   }
-    // } else {
-    //   await this.handleRegularOrderCreated(event);
-    // }
-
-    // Thực hiện các hành động bổ sung
-    // await this.sendNotifications(event);
-    // await this.updateAnalytics(event);
     return updatedOrder;
   }
 
@@ -217,40 +186,24 @@ export class MktOrderCustomEventListener {
     event: MktOrderCustomEventData,
   ): Promise<void> {
     this.logger.log(`Processing trial order: ${event.orderId}`);
-    // Thêm logic xử lý trial order
-    // - Thiết lập thời hạn trial
-    // - Gửi email welcome trial
-    // - Tạo lịch nhắc nhở
   }
 
   private async handleWaitOrderCreated(
     event: MktOrderCustomEventData,
   ): Promise<void> {
     this.logger.log(`Processing wait order: ${event.orderId}`);
-    // Thêm logic xử lý wait order
-    // - Gửi thông báo chờ thanh toán
-    // - Tạo QR code thanh toán
-    // - Thiết lập timeout
   }
 
   private async handleTrialToPaidOrderCreated(
     event: MktOrderCustomEventData,
   ): Promise<void> {
     this.logger.log(`Processing trial to paid conversion: ${event.orderId}`);
-    // Thêm logic chuyển đổi trial sang paid
-    // - Cập nhật license
-    // - Gửi email xác nhận upgrade
-    // - Cập nhật billing
   }
 
   private async handleRegularOrderCreated(
     event: MktOrderCustomEventData,
   ): Promise<void> {
     this.logger.log(`Processing regular order: ${event.orderId}`);
-    // Thêm logic xử lý order thông thường
-    // - Xử lý payment
-    // - Cập nhật inventory
-    // - Gửi receipt
   }
 
   private async sendNotifications(
@@ -258,18 +211,14 @@ export class MktOrderCustomEventListener {
   ): Promise<void> {
     try {
       this.logger.log(`Sending notifications for order: ${event.orderId}`);
-
-      // Gửi email notification
       const emailData = {
         orderId: event.orderId,
-        //customerInfo: event.orderData.metadata?.customer,
         orderStatus: event.orderData.status,
         timestamp: event.timestamp,
       };
 
       this.logger.log(`Email notification data: ${JSON.stringify(emailData)}`);
 
-      // Gửi webhook notification
       const webhookData = {
         event: 'order.created',
         orderId: event.orderId,
@@ -281,9 +230,6 @@ export class MktOrderCustomEventListener {
       this.logger.log(
         `Webhook notification data: ${JSON.stringify(webhookData)}`,
       );
-
-      // Gửi SMS notification (nếu cần)
-      // await this.smsService.sendOrderConfirmation(event);
     } catch (error) {
       this.logger.error(
         `Failed to send notifications for order: ${event.orderId}`,
@@ -304,21 +250,10 @@ export class MktOrderCustomEventListener {
           order_id: event.orderId,
           order_status: event.orderData.status,
           is_trial: event.orderData.trialLicense,
-          // order_action: event.orderData.metadata?.orderAction,
-          // has_variants: event.orderData.metadata?.variants?.length > 0,
-          // has_payment_methods:
-          //   event.orderData.metadata?.paymentMethods?.length > 0,
-          // has_customer: !!event.orderData.metadata?.customer,
         },
       };
 
       this.logger.log(`Analytics event: ${JSON.stringify(analyticsEvent)}`);
-
-      // Gửi đến analytics service
-      // await this.analyticsService.track(analyticsEvent);
-
-      // Cập nhật metrics
-      // await this.metricsService.incrementOrderCount(event.workspaceId);
     } catch (error) {
       this.logger.error(
         `Failed to update analytics for order: ${event.orderId}`,
@@ -360,5 +295,32 @@ export class MktOrderCustomEventListener {
     }
 
     return { name, action, fieldName, newValue, oldValue, note };
+  }
+
+  private async tierForCustomer(order: MktOrderWorkspaceEntity) {
+    // Trigger customer tier update via queue when order is updated
+    if (order.mktCustomerId) {
+      try {
+        this.logger.log(
+          `Enqueuing customer tier update for customer ${order.mktCustomerId}`,
+        );
+
+        await this.customerQueueService.updateCustomerTier(order.mktCustomerId);
+
+        this.logger.log(
+          `Successfully enqueued customer tier update for customer ${order.mktCustomerId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to enqueue customer tier update for customer ${order.mktCustomerId}`,
+          error,
+        );
+        // Don't throw error to prevent order processing failure
+      }
+    } else {
+      this.logger.warn(
+        `Order ${order.id} has no mktCustomerId, skipping tier update`,
+      );
+    }
   }
 }

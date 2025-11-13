@@ -93,14 +93,14 @@ export const MKT_CUSTOMER_STATUS_OPTIONS = {
   },
 };
 
-export const MKT_CUSTOMER_TIER = {
-  DIAMOND: 'DIAMOND', // 💎 Kim Cương
-  GOLD: 'GOLD', // 🥇 Vàng
-  SILVER: 'SILVER', // 🥈 Bạc
-  BRONZE: 'BRONZE', // 🥉 Đồng
-  DORMANT: 'DORMANT', // 😴 Không hoạt động
-  CHURNED: 'CHURNED', // ❌ Rời bỏ
-};
+export enum MKT_CUSTOMER_TIER {
+  DIAMOND = 'DIAMOND', // 💎 Kim Cương
+  GOLD = 'GOLD', // 🥇 Vàng
+  SILVER = 'SILVER', // 🥈 Bạc
+  BRONZE = 'BRONZE', // 🥉 Đồng
+  DORMANT = 'DORMANT', // 😴 Không hoạt động
+  CHURNED = 'CHURNED', // ❌ Rời bỏ
+}
 
 export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
   DIAMOND_CUSTOMER: '49868053-4758-457f-9332-6ebd48af7ca6',

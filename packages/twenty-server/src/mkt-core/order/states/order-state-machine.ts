@@ -30,7 +30,7 @@ export class OrderStateMachine implements OrderStateContext {
   }
 
   getCurrentStatus(): ORDER_STATUS | null {
-    return this.currentOrder?.status || null;
+    return (this.currentOrder?.status as ORDER_STATUS) || null;
   }
 
   getTrialLicense(): boolean | null {
@@ -83,7 +83,7 @@ export class OrderStateMachine implements OrderStateContext {
     payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
   ): ORDER_ACTION | null {
     const input: OrderStateInput = {
-      status: payload.data?.status,
+      status: payload.data?.status as ORDER_STATUS,
       trialLicense: payload.data?.trialLicense,
       licenseStatus: payload.data?.licenseStatus,
       sInvoiceStatus: payload.data?.sInvoiceStatus,

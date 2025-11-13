@@ -86,9 +86,39 @@ export class MktLicenseService {
 
     const licenseRepository = await this.getLicenseRepository();
 
+    // Validate customer exists if provided
+    if (mktCustomerId) {
+      const customerRepository = await this.mktRepo.getCustomerRepository();
+      const customer = await customerRepository.findOne({
+        where: { id: mktCustomerId },
+      });
+
+      if (!customer) {
+        this.logger.error(
+          `Customer ${mktCustomerId} not found for order ${order.id}`,
+        );
+        throw new Error(`Customer ${mktCustomerId} not found`);
+      }
+    }
+
     const licensePromises = order.orderItems.flatMap(
       async (orderItem, _index) => {
         try {
+          // Validate variant exists if provided
+          if (orderItem.mktVariantId) {
+            const variantRepository = await this.mktRepo.getVariantRepository();
+            const variant = await variantRepository.findOne({
+              where: { id: orderItem.mktVariantId },
+            });
+
+            if (!variant) {
+              this.logger.error(
+                `Variant ${orderItem.mktVariantId} not found for order item ${orderItem.id}`,
+              );
+              throw new Error(`Variant ${orderItem.mktVariantId} not found`);
+            }
+          }
+
           // generate license name based on order item
           const productName =
             orderItem.snapshotProductName ||
@@ -126,6 +156,7 @@ export class MktLicenseService {
               mktOrderId: order.id,
               mktVariantId: orderItem.mktVariantId,
               mktCustomerId,
+              accountOwnerId: order.accountOwnerId || null, // Ensure accountOwnerId is properly set
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
 

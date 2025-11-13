@@ -1,5 +1,6 @@
 import { MKT_CUSTOMER_TIER_OPTIONS } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MEMBER_TYPE_OPTIONS } from 'src/mkt-core/mkt-entities-extends/mkt-member.constant';
+import { ORDER_STATUS_OPTIONS } from 'src/mkt-core/order/constants/order-status.constants';
 export const MKT_OPTION_DATA_SEED_COLUMNS = [
   'id',
   'name',
@@ -31,7 +32,7 @@ export const MKT_OPTION_DATA_SEEDS = [
     id: '10cdf6aa-9627-42a4-97ea-906bad533a2d',
     name: 'Customer Tier',
     key: 'customer_tier',
-    value: 'GOLD',
+    value: null,
     description: 'Phân hạng khách hàng theo mức độ ưu tiên',
     metadata: JSON.stringify(MKT_CUSTOMER_TIER_OPTIONS),
     position: 2,
@@ -47,6 +48,18 @@ export const MKT_OPTION_DATA_SEEDS = [
     description: 'Loại thành viên trong workspace',
     metadata: JSON.stringify(MEMBER_TYPE_OPTIONS),
     position: 2,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Dev Seeder',
+  },
+  {
+    id: '65b85b8e-cde7-43bd-b3f7-3fa8cbe4491a',
+    name: 'Order Status',
+    key: 'order_status',
+    value: null,
+    description: 'Trạng thái đơn hàng',
+    metadata: JSON.stringify(ORDER_STATUS_OPTIONS),
+    position: 3,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',

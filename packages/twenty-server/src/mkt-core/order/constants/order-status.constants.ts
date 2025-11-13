@@ -36,6 +36,83 @@ export enum ORDER_STATUS {
   REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
   CONFIRMED = 'CONFIRMED', // đơn hàng đã được xác nhận
 }
+
+export const ORDER_STATUS_OPTIONS = {
+  status: ORDER_STATUS,
+  options: [
+    {
+      value: ORDER_STATUS.DRAFT,
+      label: 'Draft',
+      color: 'gray',
+      position: 0,
+    },
+    {
+      value: ORDER_STATUS.TRIAL,
+      label: 'Trial',
+      color: 'yellow',
+      position: 1,
+    },
+    {
+      value: ORDER_STATUS.COMPLETED,
+      label: 'Completed',
+      color: 'green',
+      position: 2,
+    },
+    {
+      value: ORDER_STATUS.WAIT,
+      label: 'Wait',
+      color: 'orange',
+      position: 3,
+    },
+    {
+      value: ORDER_STATUS.OVERDUE,
+      label: 'Overdue',
+      color: 'red',
+      position: 4,
+    },
+    {
+      value: ORDER_STATUS.REFUSE,
+      label: 'Refuse',
+      color: 'purple',
+      position: 5,
+    },
+    {
+      value: ORDER_STATUS.REFUND,
+      label: 'Refund',
+      color: 'blue',
+      position: 6,
+    },
+    {
+      value: ORDER_STATUS.CONFIRMED,
+      label: 'Confirmed',
+      color: 'blue',
+      position: 7,
+    },
+  ],
+  labels: {
+    EN: {
+      DRAFT: 'Draft',
+      TRIAL: 'Trial',
+      COMPLETED: 'Completed',
+      WAIT: 'Wait',
+      OVERDUE: 'Overdue',
+      REFUSE: 'Refuse',
+      REFUND: 'Refund',
+      CONFIRMED: 'Confirmed',
+    },
+    VI: {
+      DRAFT: 'Nháp',
+      TRIAL: 'Dùng thử',
+      COMPLETED: 'Hoàn thành',
+      WAIT: 'Chờ xử lý',
+      OVERDUE: 'Quá hạn',
+      REFUSE: 'Từ chối',
+      REFUND: 'Hoàn tiền',
+      CONFIRMED: 'Đã xác nhận',
+    },
+  },
+};
+
 export enum ORDER_ACTION {
   DRAFT = 'DRAFT',
   CONFIRMED = 'CONFIRMED',
@@ -57,57 +134,6 @@ export enum ORDER_ACTION {
   CHANGE_VARIANT = 'CHANGE_VARIANT',
   REFUND = 'REFUND',
 }
-
-export const ORDER_STATUS_OPTIONS = [
-  {
-    value: ORDER_STATUS.DRAFT,
-    label: 'Draft',
-    color: 'gray' as TagColor,
-    position: 0,
-  },
-  {
-    value: ORDER_STATUS.TRIAL,
-    label: 'Trial',
-    color: 'yellow' as TagColor,
-    position: 1,
-  },
-  {
-    value: ORDER_STATUS.COMPLETED,
-    label: 'Completed',
-    color: 'green' as TagColor,
-    position: 2,
-  },
-  {
-    value: ORDER_STATUS.WAIT,
-    label: 'Wait',
-    color: 'orange' as TagColor,
-    position: 3,
-  },
-  {
-    value: ORDER_STATUS.OVERDUE,
-    label: 'Overdue',
-    color: 'red' as TagColor,
-    position: 4,
-  },
-  {
-    value: ORDER_STATUS.REFUSE,
-    label: 'Refuse',
-    color: 'red' as TagColor,
-    position: 5,
-  },
-  {
-    value: ORDER_STATUS.REFUND,
-    label: 'Refund',
-    color: 'purple' as TagColor,
-    position: 6,
-  },
-  {
-    value: ORDER_STATUS.CONFIRMED,
-    label: 'Confirmed',
-    color: 'blue' as TagColor,
-    position: 7,
-  },
-];
 
 export enum SINVOICE_STATUS {
   PENDING = 'PENDING',
