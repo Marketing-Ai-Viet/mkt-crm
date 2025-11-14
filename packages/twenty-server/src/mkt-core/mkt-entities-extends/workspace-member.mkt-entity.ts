@@ -441,6 +441,20 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   departmentId: string | null;
 
   @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.team,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Team`,
+    description: msg`Person's team`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'teamMembers',
+  })
+  @WorkspaceIsNullable()
+  team: Relation<MktDepartmentWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('team')
+  teamId: string | null;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.leaderForMktDepartments,
     type: RelationType.ONE_TO_MANY,
     label: msg`Leader For Departments`,

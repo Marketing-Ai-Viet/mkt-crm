@@ -26,6 +26,7 @@ import { MKT_LICENSE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
@@ -258,6 +259,38 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('accountOwner')
   accountOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.departmentOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Department Owner`,
+    description: msg`The department responsible for managing the license`,
+    icon: 'IconUsersGroup',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'departmentOwnerForMktLicenses',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  departmentOwner: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('departmentOwner')
+  departmentOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.teamOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Team Owner`,
+    description: msg`The team responsible for managing the license`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'teamOwnerForMktLicenses',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  teamOwner: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('teamOwner')
+  teamOwnerId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktLicenseHistories,

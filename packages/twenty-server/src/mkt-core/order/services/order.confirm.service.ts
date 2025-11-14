@@ -267,7 +267,7 @@ export class OrderConfirmService {
 
     const order = await orderRepository.findOne({
       where: { id: createdOrder.id },
-      relations: ['orderItems', 'mktCustomer'],
+      relations: ['orderItems', 'mktCustomer', 'accountOwner'],
     });
 
     this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);

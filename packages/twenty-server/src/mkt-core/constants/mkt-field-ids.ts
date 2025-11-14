@@ -416,6 +416,8 @@ export const MKT_LICENSE_FIELD_IDS = {
   mktOrder: '72da2e23-0de4-44b6-9038-eaa574985103',
   mktLicenseHistories: '4466c965-f243-4c07-8392-003a2364774c',
   mktPaymentHistories: 'd5b44094-7386-493f-a196-cf946b792440',
+  departmentOwner: '0581cb4d-31af-4baf-902e-0e1569cd18c9', // nullable
+  teamOwner: '83b4b222-d468-4b1a-a208-81e10adc1656', // nullable
   // common relations or fields
   position: '2549eb4e-b75b-4b19-ba58-243614fff9b6',
   createdBy: 'ae3d630f-39f8-49b7-953e-20fc898bdcef',
@@ -898,6 +900,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktSInvoiceFiles: 'f2a3e8c4-a763-42b6-9a8b-b0fab2c583f4',
   // departments
   leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
+  team: '8d93b8fd-1e5a-4ced-b248-0587fbd022d0',
   //kpi system
   accountOwnerForMktKpiTemplates: '40404040-7c8d-9e0f-1a2b-3c4d5e6f7a8b',
   changedKpiHistories: '40404040-0b1c-2d3e-4f5a-6b7c8d9e0f1a',
@@ -915,6 +918,7 @@ export const MKT_PERSON_FIELD_IDS = {
   memberType: '0804050d-c4d3-4029-b401-b48369c00e70',
   // relations
   departmentId: '24674af6-c1c8-446e-92cb-8d9fd2bf3ed6',
+  teamId: '3579b8fd-1e5a-4ced-b248-0587fbd022d0',
 };
 
 export const MKT_RESELLER_TIER_FIELD_IDS = {
@@ -1076,6 +1080,9 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   childHierarchies: 'a1d2c3b4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
   parentHierarchies: 'b2c3d4e5-f6a7-8b9c-0d1e-f2a3b4c5d6e7',
   dataAccessPolicies: '6742dde7-8567-4e8f-a30d-e6b6c70ede0a',
+  departmentOwnerForMktLicenses: 'a5f91075-a4d8-4ff2-9b4a-ff646b39850c',
+  teamOwnerForMktLicenses: 'a3510a9e-04c7-4a8d-874b-332f87911b37',
+  teamMembers: '9186741b-ad29-4acb-a955-48af8c1f7b1f',
   // standard fields
   position: 'f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c',
   createdBy: 'a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d',

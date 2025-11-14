@@ -19,6 +19,8 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.workpace-entity';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -318,6 +320,9 @@ export class MktPeopleSyncService {
         { shouldBypassPermissionChecks: true },
       );
 
+    const { teamId, departmentId } =
+      await this.getTeamDepartmentFromPerson(person);
+
     try {
       await workspaceMemberRepo.save({
         name: {
@@ -335,7 +340,8 @@ export class MktPeopleSyncService {
         timeZone: 'SYSTEM',
         dateFormat: 'SYSTEM',
         timeFormat: 'SYSTEM',
-        departmentId: person.departmentId || null,
+        departmentId,
+        teamId,
         employmentStatusId: null,
         organizationLevelId: null,
       });
@@ -415,12 +421,16 @@ export class MktPeopleSyncService {
       return;
     }
 
+    const { teamId, departmentId } =
+      await this.getTeamDepartmentFromPerson(person);
+
     // Update workspace member with new department and member type
     await workspaceMemberRepo.update(
       { id: existingMember.id },
       {
         memberType: person.memberType,
-        departmentId: person.departmentId || null,
+        departmentId,
+        teamId,
         name: {
           firstName: person.name?.firstName || '',
           lastName: person.name?.lastName || '',
@@ -433,7 +443,7 @@ export class MktPeopleSyncService {
     await this.updateUserRole(workspaceId, user.id, person.memberType);
 
     this.logger.log(
-      `Updated workspace member for user ${email}: memberType=${person.memberType}, departmentId=${person.departmentId}`,
+      `Updated workspace member for user ${email}: memberType=${person.memberType}`,
     );
   }
 
@@ -820,5 +830,37 @@ export class MktPeopleSyncService {
       );
       throw error;
     }
+  }
+
+  private async findDepartmentByTeamId(teamId: string) {
+    const teamRepo = await this.mktRepo.getRepository(
+      MktDepartmentWorkspaceEntity,
+    );
+    const hiranchyRepo = await this.mktRepo.getRepository(
+      MktDepartmentHierarchyWorkspaceEntity,
+    );
+    const team = await teamRepo.findOne({
+      select: ['parentHierarchies'],
+      where: { id: teamId },
+      relations: ['parentHierarchies'],
+    });
+    const parentHierarchieId = team?.parentHierarchies?.[0]?.id;
+    const hiranchy = await hiranchyRepo.findOne({
+      select: ['parentDepartmentId'],
+      where: { id: parentHierarchieId },
+    });
+    const departmentId = hiranchy?.parentDepartmentId;
+    return departmentId ?? null;
+  }
+
+  private async getTeamDepartmentFromPerson(person: PersonWorkspaceEntity) {
+    let departmentId = person.departmentId || null;
+    let teamId = person.teamId || null;
+
+    if (teamId && !departmentId) {
+      departmentId = await this.findDepartmentByTeamId(teamId);
+    }
+
+    return { teamId, departmentId };
   }
 }

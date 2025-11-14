@@ -146,6 +146,7 @@ export class MktLicenseService {
               action: 'ACTIVE',
               note: 'Khách hàng đã kích hoạt thành công bản quyền',
             };
+
             const newLicense = licenseRepository.create({
               name: licenseName,
               licenseKey: licenseApiResponse.licenseKey,
@@ -157,6 +158,8 @@ export class MktLicenseService {
               mktVariantId: orderItem.mktVariantId,
               mktCustomerId,
               accountOwnerId: order.accountOwnerId || null, // Ensure accountOwnerId is properly set
+              departmentOwnerId: order.accountOwner?.departmentId || null,
+              teamOwnerId: order.accountOwner?.teamId || null,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
 
