@@ -68,23 +68,33 @@ export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CONTRACT_FIELD_IDS.startDate,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.DATE,
     label: msg`Start Date`,
     description: msg`Contract start date`,
     icon: 'IconBarcode',
   })
   @WorkspaceIsNullable()
-  startDate?: string;
+  startDate?: Date;
 
   @WorkspaceField({
     standardId: MKT_CONTRACT_FIELD_IDS.endDate,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.DATE,
     label: msg`End Date`,
     description: msg`Contract end date`,
     icon: 'IconClock',
   })
   @WorkspaceIsNullable()
-  endDate?: string;
+  endDate?: Date;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.status,
+    type: FieldMetadataType.TEXT,
+    label: msg`Status`,
+    description: msg`Contract status`,
+    icon: 'IconCheckupList',
+  })
+  @WorkspaceIsNullable()
+  status?: string | null;
 
   @WorkspaceField({
     standardId: MKT_CONTRACT_FIELD_IDS.position,

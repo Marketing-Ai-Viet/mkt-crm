@@ -12,10 +12,7 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-invoice.integration.service';
-import {
-  ORDER_ACTION,
-  ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
+import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
@@ -106,12 +103,7 @@ export class MktOrderUpdateOnePreQueryHook
 
     const updatePayload = {} as Partial<MktOrderWorkspaceEntity>;
 
-    if (input?.status == ORDER_STATUS.OVERDUE) {
-      updatePayload.note =
-        'Đơn hàng đã quá hạn. Vui lòng thực hiện các biện pháp cần thiết.';
-    } else {
-      updatePayload.note = '';
-    }
+    if (input?.note) updatePayload.note = input?.note;
 
     return {
       ...newPayload,

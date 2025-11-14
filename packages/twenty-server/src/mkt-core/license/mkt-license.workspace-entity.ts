@@ -25,10 +25,6 @@ import {
 import { MKT_LICENSE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import {
-  MKT_LICENSE_STATUS,
-  MKT_LICENSE_STATUS_OPTIONS,
-} from 'src/mkt-core/license/license.constants';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
@@ -79,14 +75,13 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.status,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`License Status`,
     description: msg`License status (active, inactive, expired, revoked)`,
     icon: 'IconTags',
-    options: MKT_LICENSE_STATUS_OPTIONS,
   })
   @WorkspaceIsNullable()
-  status: MKT_LICENSE_STATUS;
+  status?: string | null;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.licenseKey,

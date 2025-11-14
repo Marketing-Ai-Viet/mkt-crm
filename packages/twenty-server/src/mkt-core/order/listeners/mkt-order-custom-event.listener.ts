@@ -117,7 +117,7 @@ export class MktOrderCustomEventListener {
       }
       const newLicenseHistory = licenseRepo.create({
         name: 'Bản quyền được kích hoạt',
-        action: license.status,
+        action: license.status as ORDER_HISTORY_ACTION,
         note: 'Khách hàng đã kích hoạt thành công bản quyền',
         mktLicenseId: license.id,
       });

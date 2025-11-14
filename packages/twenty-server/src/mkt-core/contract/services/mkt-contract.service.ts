@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { MKT_CONTRACT_STATUS } from 'src/mkt-core/order/constants/mkt-contract.constant';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
@@ -104,19 +105,22 @@ export class MktContractService {
         generatedOrderCode,
       );
 
-      const startDate = new Date().toISOString();
+      const now = new Date();
+      const startDate = now.toISOString().split('T')[0];
 
       // Default contract duration: 1 year from now
       const endDate = new Date();
 
       endDate.setFullYear(endDate.getFullYear() + 1);
+      const formattedEndDate = endDate.toISOString().split('T')[0];
 
       // Create the contract entity
       const contract = contractRepository.create({
         name: contractName,
         contractNumber,
         startDate: startDate,
-        endDate: endDate.toISOString(),
+        endDate: formattedEndDate,
+        status: MKT_CONTRACT_STATUS.ACTIVE,
       });
 
       // Set the createdBy field
