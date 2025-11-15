@@ -52,6 +52,7 @@ import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
+  // core fields
   @WorkspaceField({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberType,
     type: FieldMetadataType.TEXT,
@@ -61,6 +62,37 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   memberType: string;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Department`,
+    description: msg`Person's department`,
+    icon: 'IconBuilding',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'people',
+  })
+  @WorkspaceIsNullable()
+  department: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('department')
+  departmentId: string | null;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.team,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Team`,
+    description: msg`Person's team`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'teamMembers',
+  })
+  @WorkspaceIsNullable()
+  team: Relation<MktDepartmentWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('team')
+  teamId: string | null;
+
+  // other relations
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOptions,
@@ -424,35 +456,6 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   //   onDelete: RelationOnDeleteAction.SET_NULL,
   // })
   // accountOwnerForMktKpiTemplates: Relation<MktKpiTemplateWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Department`,
-    description: msg`Person's department`,
-    icon: 'IconBuilding',
-    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
-    inverseSideFieldKey: 'people',
-  })
-  @WorkspaceIsNullable()
-  department: Relation<MktDepartmentWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('department')
-  departmentId: string | null;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.team,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Team`,
-    description: msg`Person's team`,
-    icon: 'IconUsers',
-    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
-    inverseSideFieldKey: 'teamMembers',
-  })
-  @WorkspaceIsNullable()
-  team: Relation<MktDepartmentWorkspaceEntity> | null;
-  @WorkspaceJoinColumn('team')
-  teamId: string | null;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.leaderForMktDepartments,

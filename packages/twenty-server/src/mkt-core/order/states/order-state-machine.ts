@@ -10,6 +10,8 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { WaitState } from 'src/mkt-core/order/states';
 import { CompletedState } from 'src/mkt-core/order/states/completed-state';
 import { ConfirmedState } from 'src/mkt-core/order/states/confirm-state';
+import { BlockedState } from 'src/mkt-core/order/states/blocked-state';
+import { OverdueState } from 'src/mkt-core/order/states/overdue-state';
 
 import { DraftState } from './draft-state';
 import {
@@ -66,7 +68,10 @@ export class OrderStateMachine implements OrderStateContext {
         return new CompletedState();
       case ORDER_STATUS.CONFIRMED:
         return new ConfirmedState();
-
+      case ORDER_STATUS.BLOCKED:
+        return new BlockedState();
+      case ORDER_STATUS.OVERDUE:
+        return new OverdueState();
       default:
         this.logger.warn(
           `Unknown order status: ${order.status}, defaulting to DraftState`,

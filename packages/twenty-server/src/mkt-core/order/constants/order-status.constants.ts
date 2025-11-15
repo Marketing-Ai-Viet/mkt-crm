@@ -35,6 +35,7 @@ export enum ORDER_STATUS {
   REFUSE = 'REFUSE', // từ chối (người mua/người bán)
   REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
   CONFIRMED = 'CONFIRMED', // đơn hàng đã được xác nhận
+  BLOCKED = 'BLOCKED', // đơn hàng bị khóa (do nghi ngờ gian lận hoặc vi phạm chính sách)
 }
 
 export const ORDER_STATUS_OPTIONS = {
@@ -42,51 +43,57 @@ export const ORDER_STATUS_OPTIONS = {
   options: [
     {
       value: ORDER_STATUS.DRAFT,
-      label: 'Draft',
+      label: 'Nháp',
       color: 'gray',
       position: 0,
     },
     {
       value: ORDER_STATUS.TRIAL,
-      label: 'Trial',
+      label: 'Dùng thử',
       color: 'yellow',
       position: 1,
     },
     {
       value: ORDER_STATUS.COMPLETED,
-      label: 'Completed',
+      label: 'Hoàn thành',
       color: 'green',
       position: 2,
     },
     {
       value: ORDER_STATUS.WAIT,
-      label: 'Wait',
+      label: 'Chờ xử lý',
       color: 'orange',
       position: 3,
     },
     {
       value: ORDER_STATUS.OVERDUE,
-      label: 'Overdue',
+      label: 'Quá hạn',
       color: 'red',
       position: 4,
     },
     {
       value: ORDER_STATUS.REFUSE,
-      label: 'Refuse',
+      label: 'Từ chối',
       color: 'purple',
       position: 5,
     },
     {
       value: ORDER_STATUS.REFUND,
-      label: 'Refund',
+      label: 'Hoàn tiền',
       color: 'blue',
       position: 6,
     },
     {
       value: ORDER_STATUS.CONFIRMED,
-      label: 'Confirmed',
+      label: 'Đã xác nhận',
       color: 'blue',
       position: 7,
+    },
+    {
+      value: ORDER_STATUS.BLOCKED,
+      label: 'Khóa đơn hàng',
+      color: 'black',
+      position: 8,
     },
   ],
   labels: {
@@ -99,6 +106,7 @@ export const ORDER_STATUS_OPTIONS = {
       REFUSE: 'Refuse',
       REFUND: 'Refund',
       CONFIRMED: 'Confirmed',
+      BLOCKED: 'Blocked',
     },
     VI: {
       DRAFT: 'Nháp',
@@ -109,6 +117,7 @@ export const ORDER_STATUS_OPTIONS = {
       REFUSE: 'Từ chối',
       REFUND: 'Hoàn tiền',
       CONFIRMED: 'Đã xác nhận',
+      BLOCKED: 'Khóa đơn hàng',
     },
   },
 };

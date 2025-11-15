@@ -3,29 +3,7 @@ import { MKT_CUSTOMER_DATA_SEEDS_IDS as MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC } from 
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
 import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seeds.constants';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
-//accountOwnerId
-
-type MktLicenseDataSeed = {
-  id: string;
-  name: string;
-  licenseKey: string;
-  status: MKT_LICENSE_STATUS;
-  activatedAt: Date;
-  expiresAt: Date;
-  lastLoginAt: Date;
-  deviceInfo: string;
-  notes: string;
-
-  mktOrderId: string;
-  mktVariantId: string;
-  mktCustomerId: string;
-
-  position: number;
-  createdBySource: string;
-  createdByWorkspaceMemberId: string | null;
-  createdByName: string;
-  accountOwnerId?: string;
-};
+import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
 export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
   ID_1: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.DIAMOND_CUSTOMER,
@@ -45,8 +23,7 @@ export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
   ID_15: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CHURNED_CUSTOMER,
 };
 
-// prettier-ignore
-export const MKT_LICENSE_DATA_SEED_COLUMNS: (keyof MktLicenseDataSeed)[] = [
+export const MKT_LICENSE_DATA_SEED_COLUMNS = [
   'id',
   'name',
   'licenseKey',
@@ -64,9 +41,10 @@ export const MKT_LICENSE_DATA_SEED_COLUMNS: (keyof MktLicenseDataSeed)[] = [
   'createdByWorkspaceMemberId',
   'createdByName',
   'accountOwnerId',
+  'departmentOwnerId',
+  'teamOwnerId',
 ];
 
-// prettier-ignore
 export const MKT_LICENSE_DATA_SEEDS_IDS = {
   ID_1: 'e8f55f59-dcda-4e17-8660-930617781a14',
   ID_2: 'f852a725-c8a3-4683-902f-1a048b6aa279',
@@ -104,119 +82,58 @@ export const MKT_LICENSE_DATA_SEEDS_IDS = {
   ID_33: 'b3e57071-021d-4326-8632-204b78b90aa3',
   ID_34: 'bd2a7c1d-893a-4e48-86ec-aa930df27025',
   ID_35: '2bf1c429-7df4-4d4e-b90d-4e26c733e481',
-  
+
   // ============= THÊM ID CHO DATA TEST MỚI =============
   // Tháng trước (tháng 9/2025)
-  ID_36: '74cb3b24-007f-4d37-b44f-d115e2c0545b',	
-  ID_37: '2d7b098e-60a7-4193-8d48-59e356297920',	
-  ID_38: '27167c20-5116-4a70-a4f7-6148c81ed07d',	
-  ID_39: '362bd25d-6bcb-4988-b335-165fd91b43d6',	
-  ID_40: 'f7d7d4cd-bf0d-43a4-bde0-17774709f042',	
-  
+  ID_36: '74cb3b24-007f-4d37-b44f-d115e2c0545b',
+  ID_37: '2d7b098e-60a7-4193-8d48-59e356297920',
+  ID_38: '27167c20-5116-4a70-a4f7-6148c81ed07d',
+  ID_39: '362bd25d-6bcb-4988-b335-165fd91b43d6',
+  ID_40: 'f7d7d4cd-bf0d-43a4-bde0-17774709f042',
+
   // Hoạt động hôm qua (7/10/2025)
-  ID_41: 'b2a7d8ea-98cd-441b-834b-2db7486d87ec',      
-  ID_42: 'b1054e40-0c3a-4a92-a6e5-d6a763332085',      
-  ID_43: 'b4b8270d-8937-461c-a22f-3d35f16f6504',      
-  
+  ID_41: 'b2a7d8ea-98cd-441b-834b-2db7486d87ec',
+  ID_42: 'b1054e40-0c3a-4a92-a6e5-d6a763332085',
+  ID_43: 'b4b8270d-8937-461c-a22f-3d35f16f6504',
+
   // Dùng thử tháng trước
-  ID_44: '3644e529-1857-4e33-a2fb-e697b46ef8dc',      
-  ID_45: '7cd21033-c93a-4135-9dd6-e6c0a3b56791',     
-  
+  ID_44: '3644e529-1857-4e33-a2fb-e697b46ef8dc',
+  ID_45: '7cd21033-c93a-4135-9dd6-e6c0a3b56791',
+
   // Hết hạn tháng trước
-  ID_46: 'f168de00-0c5c-4085-a5fd-c1dd0e5bb606',      
-  ID_47: '1045172c-7db4-4001-91e3-fcb16c05d0b1',      
-  ID_48: '3ed4d320-2a39-4eef-8d27-79a6010c376c',  
-  
+  ID_46: 'f168de00-0c5c-4085-a5fd-c1dd0e5bb606',
+  ID_47: '1045172c-7db4-4001-91e3-fcb16c05d0b1',
+  ID_48: '3ed4d320-2a39-4eef-8d27-79a6010c376c',
+
   // Hoàn tiền tháng trước
-  ID_49: '5bbdb0ba-8a5a-4b22-99aa-9e3b97f6ce41',      
+  ID_49: '5bbdb0ba-8a5a-4b22-99aa-9e3b97f6ce41',
   ID_50: '31827c05-2eac-4983-b5de-9696245f0a5f',
 
   // ============= THÊM 20 LICENSE MỚI =============
   // Tháng này (10/2025) - Licenses mới
-  ID_51:"331d11d5-932d-4fc6-9762-f4ec18016a91",
-  ID_52:"fa04c095-e307-482c-9225-a1247a77b469",
-  ID_53:"21ccbf28-0c2b-4ea6-ad8a-e4f4178b3fdc",
-  ID_54:"0d787789-2a32-4d23-8521-95eeb82b3b20",
-  ID_55:"9e6d64e0-9857-4869-8065-0414ffda29df",
-  ID_56:"ca236497-06a6-4744-be14-b366b5ef0d23",
-  ID_57:"3911d57e-3a25-4976-b79b-e770db928b51",
-  ID_58:"5dc1081a-d3b8-4d0c-9e5a-92215c0d6fdf",
-  ID_59:"8f09a677-e325-4a71-a0ea-bf38801bc629",
-  ID_60:"28bbf3d3-b3b4-44ca-99b9-5175008884e4",
-  ID_61:"c116ef29-8bd2-4330-b353-255203e58e12",
-  ID_62:"afcf7f2c-3ca3-4c06-be90-63d15d229ea8",
-  ID_63:"0ec95493-09e1-42ac-aa79-1172cda1e1da",
-  ID_64:"04e591a6-74b9-4912-b145-1d2dd50d0eda",
-  ID_65:"b908eca6-53fe-4d26-8719-edf4ca3f3997",
-  ID_66:"0c073f50-e9f6-4c0b-b30e-59f39753ce60",
-  ID_67:"34320e19-fd03-4e4a-ba65-d06de959325e",
-  ID_68:"c0a646b7-f704-435f-aeae-6f21b309f951",
-  ID_69:"33b13c88-52ad-4e57-91aa-368ee21f259d",
-  ID_70:"f2f60d56-5459-419b-8364-9439b4fea8f5", 
+  ID_51: '331d11d5-932d-4fc6-9762-f4ec18016a91',
+  ID_52: 'fa04c095-e307-482c-9225-a1247a77b469',
+  ID_53: '21ccbf28-0c2b-4ea6-ad8a-e4f4178b3fdc',
+  ID_54: '0d787789-2a32-4d23-8521-95eeb82b3b20',
+  ID_55: '9e6d64e0-9857-4869-8065-0414ffda29df',
+  ID_56: 'ca236497-06a6-4744-be14-b366b5ef0d23',
+  ID_57: '3911d57e-3a25-4976-b79b-e770db928b51',
+  ID_58: '5dc1081a-d3b8-4d0c-9e5a-92215c0d6fdf',
+  ID_59: '8f09a677-e325-4a71-a0ea-bf38801bc629',
+  ID_60: '28bbf3d3-b3b4-44ca-99b9-5175008884e4',
+  ID_61: 'c116ef29-8bd2-4330-b353-255203e58e12',
+  ID_62: 'afcf7f2c-3ca3-4c06-be90-63d15d229ea8',
+  ID_63: '0ec95493-09e1-42ac-aa79-1172cda1e1da',
+  ID_64: '04e591a6-74b9-4912-b145-1d2dd50d0eda',
+  ID_65: 'b908eca6-53fe-4d26-8719-edf4ca3f3997',
+  ID_66: '0c073f50-e9f6-4c0b-b30e-59f39753ce60',
+  ID_67: '34320e19-fd03-4e4a-ba65-d06de959325e',
+  ID_68: 'c0a646b7-f704-435f-aeae-6f21b309f951',
+  ID_69: '33b13c88-52ad-4e57-91aa-368ee21f259d',
+  ID_70: 'f2f60d56-5459-419b-8364-9439b4fea8f5',
 };
 
-/*
- * ============= MKT LICENSE DATA SEEDS FOR TESTING =============
- *
- * Data này được thiết kế để test các trường hợp sau:
- *
- * 1. TỔNG BẢN QUYỀN:
- *    - ID_1 đến ID_50: Tổng 50 licenses
- *    - Tháng này (10/2025): 35 licenses (ID_1 đến ID_35)
- *    - Tháng trước (9/2025): 15 licenses (ID_36 đến ID_50)
- *    - Bao gồm tất cả trạng thái: ACTIVE, EXPIRED, ERROR, REFUND, RENEWING
- *
- * 2. ĐANG HOẠT ĐỘNG - ĐĂNG NHẬP HÔM NAY (2025-10-09):
- *    - ID_18, ID_19, ID_20, ID_32: lastLoginAt = 2025-10-09 (hôm nay)
- *    - ID_29, ID_30, ID_34, ID_35: Các license mới và đăng nhập gần đây
- *    - ID_41, ID_42, ID_43: Đăng nhập hôm qua (2025-10-08)
- *    - ID_37, ID_39: Hoạt động tháng trước
- *
- * 3. SỐ BẢN QUYỀN DÙNG THỬ:
- *    - Tháng này: ID_29 (trial 7 ngày còn hoạt động), ID_30 (trial 14 ngày còn hoạt động), ID_31 (đã hết hạn)
- *    - Tháng trước: ID_44 (trial tháng 9 đã hết hạn), ID_45 (trial tháng 9 còn hoạt động)
- *
- * 4. BẢN QUYỀN HẾT HẠN:
- *    - Tháng này: ID_21 (hết hạn 9/2024), ID_22 (hết hạn 10/2024), ID_23 (hết hạn 8/2024), ID_31 (trial hết hạn 22/9/2025)
- *    - Tháng trước: ID_46 (hết hạn 15/9/2025), ID_47 (hết hạn 20/9/2025), ID_48 (hết hạn 25/9/2025)
- *
- * 5. ĐÃ HOÀN TIỀN:
- *    - Tháng này: ID_26 ($299 tháng 9/2024), ID_27 ($599 tháng 10/2024)
- *    - Tháng trước: ID_49 ($399 tháng 9/2025), ID_50 ($199 tháng 9/2025)
- *    - status = REFUND để theo dõi số tiền hoàn
- *
- * 6. LICENSES SẮP HẾT HẠN (7 ngày tới):
- *    - ID_24: Hết hạn 11/10/2025 (3 ngày nữa)
- *    - ID_25: Hết hạn 13/10/2025 (5 ngày nữa)
- *
- * 7. TÌNH HÌNH SỬ DỤNG:
- *    - ID_32: Heavy user (đăng nhập hàng ngày)
- *    - ID_33: Light user (lâu không đăng nhập)
- *    - ID_28: Đang gia hạn (RENEWING status)
- *
- * 8. LICENSES MỚI (tháng này):
- *    - ID_34: Tạo ngày 5/10/2025
- *    - ID_35: Tạo ngày 7/10/2025
- *
- * 9. DATA THÁNG TRƯỚC (THÁNG 9/2025):
- *    - ID_36 đến ID_40: Licenses tạo tháng 9/2025 (5 licenses)
- *    - ID_41 đến ID_43: Hoạt động hôm qua 8/10/2025 (3 licenses)
- *    - ID_44 đến ID_45: Trial tháng trước (2 licenses)
- *    - ID_46 đến ID_48: Hết hạn tháng 9/2025 (3 licenses)
- *    - ID_49 đến ID_50: Hoàn tiền tháng 9/2025 (2 licenses)
- *
- * ============= TỔNG KẾT SỐ LIỆU DASHBOARD =============
- *
- * 📊 TỔNG BẢN QUYỀN: 50 licenses (35 tháng này + 15 tháng trước)
- * 🟢 ĐANG HOẠT ĐỘNG HÔM NAY (9/10): 8 licenses (ID_18,19,20,29,30,32,34,35)
- * 🟡 HOẠT ĐỘNG HÔM QUA (8/10): 3 licenses (ID_41,42,43)
- * 🔄 SỐ BẢN QUYỀN DÙNG THỬ: 3 tháng này + 2 tháng trước = 5 total
- * ❌ BẢN QUYỀN HẾT HẠN: 4 tháng này + 3 tháng trước = 7 total
- * 💰 ĐÃ HOÀN TIỀN: $898 tháng này + $598 tháng trước = $1496 total
- */
-
-// prettier-ignore
-export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
+export const LICENSE_DATA_SEEDS = [
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_1,
     name: 'License MKT Care Basic 1 năm - Gói chăm sóc Facebook',
@@ -244,7 +161,8 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-02-10T00:00:00.000Z'),
     lastLoginAt: new Date('2024-11-20T14:45:00.000Z'),
     deviceInfo: 'macOS Monterey - Safari Browser - IP: 10.0.1.50',
-    notes: 'License cho gói MKT Viral Basic 1 năm (2 license) - agency marketing',
+    notes:
+      'License cho gói MKT Viral Basic 1 năm (2 license) - agency marketing',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_VIRAL_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_2,
@@ -280,7 +198,8 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-03-05T00:00:00.000Z'),
     lastLoginAt: new Date('2024-10-15T09:20:00.000Z'),
     deviceInfo: 'Ubuntu 22.04 - Firefox Browser - IP: 172.16.0.25',
-    notes: 'License cho 3 MKT UID Basic 1 năm - team phân tích dữ liệu (đơn hàng tạm giữ)',
+    notes:
+      'License cho 3 MKT UID Basic 1 năm - team phân tích dữ liệu (đơn hàng tạm giữ)',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_UID_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
@@ -406,7 +325,8 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-06-20T00:00:00.000Z'),
     lastLoginAt: new Date('2024-11-21T15:20:00.000Z'),
     deviceInfo: 'Windows 11 - Firefox Browser - IP: 192.168.3.25',
-    notes: 'License cho gói MKT Group Basic 1 năm (2 license) - community manager',
+    notes:
+      'License cho gói MKT Group Basic 1 năm (2 license) - community manager',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_GROUP_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_8,
@@ -442,7 +362,8 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-07-05T00:00:00.000Z'),
     lastLoginAt: new Date('2024-07-05T12:00:00.000Z'),
     deviceInfo: 'Linux Mint - Chrome Browser - IP: 10.0.3.75',
-    notes: 'License cho MKT Twitter Basic 1 năm - thanh toán thất bại, cần xử lý',
+    notes:
+      'License cho MKT Twitter Basic 1 năm - thanh toán thất bại, cần xử lý',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_TWITTER_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_9,
@@ -525,7 +446,7 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
   },
 
   // ============= DATA TEST CHO CÁC TRƯỜNG HỢP ĐẶC BIỆT =============
-  
+
   // 1. LICENSES ĐANG HOẠT ĐỘNG - ĐĂNG NHẬP HÔM NAY (2025-10-08)
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_18,
@@ -867,7 +788,7 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
   },
 
   // ============= DATA THÁNG TRƯỚC (THÁNG 9/2025) =============
-  
+
   // 1. LICENSES TẠO THÁNG 9/2025 - HOẠT ĐỘNG BÌNh THƯỜNG
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_36,
@@ -1149,7 +1070,7 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
   },
 
   // ============= THÊM 20 LICENSE MỚI (ID_51 - ID_70) =============
-  
+
   // 1. LICENSES COMBO VÀ ENTERPRISE (ID_51-ID_55)
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_51,
@@ -1516,15 +1437,18 @@ export const LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Legacy User',
-  }
+  },
 ];
 //MKT_LICENSE_DATA_SEEDS
-const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] &
-  { accountOwnerId: string }[] = [];
+const MKT_LICENSE_DATA_SEEDS = [];
 
 for (const LICENSE of LICENSE_DATA_SEEDS) {
-  LICENSE.accountOwnerId = WORKSPACE_MEMBER_DATA_SEED_IDS.TIM;
-  MKT_LICENSE_DATA_SEEDS.push(LICENSE);
+  MKT_LICENSE_DATA_SEEDS.push({
+    ...LICENSE,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    departmentOwnerId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
+    teamOwnerId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
+  });
 }
 
 export { MKT_LICENSE_DATA_SEEDS };

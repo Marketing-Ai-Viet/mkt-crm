@@ -67,7 +67,10 @@ export class MktOrderCustomEventListener {
           await this.pushLicenseHistory(updateOrder);
         }
 
-        if (updateOrder?.status === ORDER_STATUS.OVERDUE) {
+        if (
+          updateOrder?.status === ORDER_STATUS.OVERDUE ||
+          updateOrder?.status === ORDER_STATUS.BLOCKED
+        ) {
           this.logger.log(
             `Order ${updateOrder.id} has moved to OVERDUE status.`,
           );
@@ -75,8 +78,10 @@ export class MktOrderCustomEventListener {
           await this.mktLicenseEventService.lockLicensesFromOrder(updateOrder);
         }
 
-        if (updateOrder?.status === ORDER_STATUS.WAIT) {
-          this.logger.log(`Order ${updateOrder.id} has moved to WAIT status.`);
+        if (updateOrder?.status === ORDER_STATUS.COMPLETED) {
+          this.logger.log(
+            `Order ${updateOrder.id} has moved to COMPLETED status.`,
+          );
           this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
           await this.mktLicenseEventService.activateLicensesFromOrder(
             updateOrder,
