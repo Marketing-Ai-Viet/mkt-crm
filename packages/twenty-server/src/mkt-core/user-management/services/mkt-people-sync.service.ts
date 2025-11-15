@@ -850,12 +850,13 @@ export class MktPeopleSyncService {
       where: { id: parentHierarchieId },
     });
     const departmentId = hiranchy?.parentDepartmentId;
+
     return departmentId ?? null;
   }
 
   private async getTeamDepartmentFromPerson(person: PersonWorkspaceEntity) {
     let departmentId = person.departmentId || null;
-    let teamId = person.teamId || null;
+    const teamId = person.teamId || null;
 
     if (teamId && !departmentId) {
       departmentId = await this.findDepartmentByTeamId(teamId);
