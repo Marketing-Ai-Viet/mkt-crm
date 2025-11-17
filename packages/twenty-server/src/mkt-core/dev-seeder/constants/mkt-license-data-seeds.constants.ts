@@ -1440,7 +1440,7 @@ export const LICENSE_DATA_SEEDS = [
   },
 ];
 //MKT_LICENSE_DATA_SEEDS
-const MKT_LICENSE_DATA_SEEDS = [];
+const MKT_LICENSE_DATA_SEEDS: Record<string, unknown>[] = [];
 
 for (const LICENSE of LICENSE_DATA_SEEDS) {
   MKT_LICENSE_DATA_SEEDS.push({

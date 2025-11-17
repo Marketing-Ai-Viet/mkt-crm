@@ -63,6 +63,46 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   memberType: string;
 
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.supportForMemberId,
+    type: FieldMetadataType.TEXT,
+    label: msg`Support For Member ID`,
+    description: msg`The member ID that this workspace member provides support for`,
+    icon: 'IconLifebuoy',
+  })
+  @WorkspaceIsNullable()
+  supportForMemberId: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.startDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Start Date`,
+    description: msg`The start date of the workspace member's employment`,
+    icon: 'IconCalendarStart',
+  })
+  @WorkspaceIsNullable()
+  startDate: Date | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.endDate,
+    type: FieldMetadataType.DATE,
+    label: msg`End Date`,
+    description: msg`The end date of the workspace member's employment`,
+    icon: 'IconCalendarEnd',
+  })
+  @WorkspaceIsNullable()
+  endDate: Date | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.status,
+    type: FieldMetadataType.TEXT,
+    label: msg`Status`,
+    description: msg`The current status of the workspace member`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  status: string | null;
+
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
     type: RelationType.MANY_TO_ONE,
@@ -468,6 +508,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   leaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.subLeaderForMktDepartments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Sub Leader For Departments`,
+    description: msg`Sub leader for departments`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'subLeader',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  subLeaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.staffStatusHistories,

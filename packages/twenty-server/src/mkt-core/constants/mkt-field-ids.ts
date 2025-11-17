@@ -857,6 +857,12 @@ export const MKT_KPI_TEMPLATE_HISTORY_FIELD_IDS = {
 export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   //core
   memberType: 'b4e7aabd-3b48-45ae-8c08-b513d329dc68',
+  supportForMemberId: '19278821-d3a2-4158-8056-fe6610e8690a',
+  startDate: 'cba65684-22e7-4a07-88a1-9b1db9175c80',
+  endDate: '81b70197-38b8-4ec4-bc87-eb9a63d9c61a',
+  status: '6f656294-ce00-499a-b8e5-bd9c4be9bde9',
+  leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
+  subLeaderForMktDepartments: '43ef504c-9e23-431e-993c-b31c0199252c',
   //options
   accountOwnerForMktOptions: '688c5537-77aa-4b1f-a557-d4d0d124c904',
   accountOwnerForMktReports: 'a55048e3-30c5-4a74-a5e0-70c41b159c00',
@@ -899,7 +905,6 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktSInvoiceMetadata: '1a930b9c-fc8e-49b6-a430-d765bfc07921',
   accountOwnerForMktSInvoiceFiles: 'f2a3e8c4-a763-42b6-9a8b-b0fab2c583f4',
   // departments
-  leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
   team: '8d93b8fd-1e5a-4ced-b248-0587fbd022d0',
   //kpi system
   accountOwnerForMktKpiTemplates: '40404040-7c8d-9e0f-1a2b-3c4d5e6f7a8b',
@@ -919,6 +924,10 @@ export const MKT_PERSON_FIELD_IDS = {
   // relations
   departmentId: '24674af6-c1c8-446e-92cb-8d9fd2bf3ed6',
   teamId: '3579b8fd-1e5a-4ced-b248-0587fbd022d0',
+  supportForMemberId: 'e7021859-8766-4f68-8730-d32da36774ef',
+  startDate: '697bb3ff-fe25-4ffb-b6ad-28a5dab6254f',
+  endDate: '8bc02b57-f02e-4853-91a3-ee6e38f989c6',
+  status: '3d8d2eb9-572e-4148-a110-c3cb7062f5f2',
 };
 
 export const MKT_RESELLER_TIER_FIELD_IDS = {
@@ -1077,6 +1086,7 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   // relations
   staffMembers: 'e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b',
   leader: 'c64c55df-a9c8-4607-84d2-a914f1bff0db',
+  subLeader: '3507df29-4966-4116-8be1-ee2e19b25af5',
   childHierarchies: 'a1d2c3b4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
   parentHierarchies: 'b2c3d4e5-f6a7-8b9c-0d1e-f2a3b4c5d6e7',
   dataAccessPolicies: '6742dde7-8567-4e8f-a30d-e6b6c70ede0a',

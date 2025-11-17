@@ -38,3 +38,45 @@ export const MEMBER_TYPE_OPTIONS = {
     },
   },
 };
+
+export enum MEMBER_STATUS {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  BLOCKED = 'BLOCKED',
+}
+
+export const MEMBER_STATUS_OPTIONS = {
+  statuses: MEMBER_STATUS,
+  options: [
+    {
+      value: MEMBER_STATUS.ACTIVE,
+      color: 'green',
+      label: 'Hoạt động',
+      position: 1,
+    },
+    {
+      value: MEMBER_STATUS.INACTIVE,
+      color: 'gray',
+      label: 'Không hoạt động',
+      position: 2,
+    },
+    {
+      value: MEMBER_STATUS.BLOCKED,
+      color: 'red',
+      label: 'Bị khóa',
+      position: 3,
+    },
+  ],
+  labels: {
+    EN: {
+      ACTIVE: 'Active',
+      INACTIVE: 'Inactive',
+      BLOCKED: 'Blocked',
+    },
+    VI: {
+      ACTIVE: 'Hoạt động',
+      INACTIVE: 'Không hoạt động',
+      BLOCKED: 'Bị khóa',
+    },
+  },
+};

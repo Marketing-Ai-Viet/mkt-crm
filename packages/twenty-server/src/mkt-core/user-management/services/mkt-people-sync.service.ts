@@ -30,6 +30,7 @@ export class MktPeopleSyncService {
   private readonly logger = new Logger(MktPeopleSyncService.name);
   private saleRoleId: string | null = null;
   private supportRoleId: string | null = null;
+  private accountantRoleId: string | null = null;
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
@@ -95,7 +96,9 @@ export class MktPeopleSyncService {
 
       const roleEntities = await this.roleRepo
         .createQueryBuilder('role')
-        .where('role.label IN (:...labels)', { labels: ['Sales', 'Support'] })
+        .where('role.label IN (:...labels)', {
+          labels: ['Sales', 'Support', 'Accountant'],
+        })
         .getMany();
 
       for (const roleEntity of roleEntities) {
@@ -103,6 +106,8 @@ export class MktPeopleSyncService {
           this.saleRoleId = roleEntity.id;
         } else if (roleEntity.label === 'Support') {
           this.supportRoleId = roleEntity.id;
+        } else if (roleEntity.label === 'Accountant') {
+          this.accountantRoleId = roleEntity.id;
         }
       }
 
@@ -120,7 +125,7 @@ export class MktPeopleSyncService {
         .andWhere('person.deletedAt IS NULL')
         .andWhere("person.emailsPrimaryEmail != ''")
         .andWhere('person.memberType in (:...memberTypes)', {
-          memberTypes: ['SALES', 'SUPPORT'],
+          memberTypes: ['SALES', 'SUPPORT', 'ACCOUNTANT'],
         }) // Only get people with memberType 'SALES' or 'SUPPORT'
         .andWhere('person.updatedAt >= :tenMinutesAgo', {
           tenMinutesAgo,
@@ -291,6 +296,9 @@ export class MktPeopleSyncService {
           case 'SUPPORT':
             roleId = this.supportRoleId;
             break;
+          case 'ACCOUNTANT':
+            roleId = this.accountantRoleId;
+            break;
           default: {
             const workspace = await workspaceRepo.findOne({
               where: { id: workspaceId },
@@ -323,6 +331,9 @@ export class MktPeopleSyncService {
     const { teamId, departmentId } =
       await this.getTeamDepartmentFromPerson(person);
 
+    const supportForMemberId =
+      person.memberType === 'SUPPORT' ? person.supportForMemberId : null;
+
     try {
       await workspaceMemberRepo.save({
         name: {
@@ -344,6 +355,10 @@ export class MktPeopleSyncService {
         teamId,
         employmentStatusId: null,
         organizationLevelId: null,
+        startDate: person.startDate || null,
+        endDate: person.endDate || null,
+        status: person.status || null,
+        supportForMemberId,
       });
     } catch (error) {
       this.logger.error(
@@ -424,6 +439,9 @@ export class MktPeopleSyncService {
     const { teamId, departmentId } =
       await this.getTeamDepartmentFromPerson(person);
 
+    const supportForMemberId =
+      person.memberType === 'SUPPORT' ? person.supportForMemberId : null;
+
     // Update workspace member with new department and member type
     await workspaceMemberRepo.update(
       { id: existingMember.id },
@@ -436,6 +454,10 @@ export class MktPeopleSyncService {
           lastName: person.name?.lastName || '',
         },
         avatarUrl: person.avatarUrl ?? '',
+        supportForMemberId,
+        startDate: person.startDate || null,
+        endDate: person.endDate || null,
+        status: person.status || null,
       },
     );
 
@@ -488,6 +510,9 @@ export class MktPeopleSyncService {
             break;
           case 'SUPPORT':
             newRoleId = this.supportRoleId;
+            break;
+          case 'ACCOUNTANT':
+            newRoleId = this.accountantRoleId;
             break;
           default: {
             const workspace = await workspaceRepo.findOne({

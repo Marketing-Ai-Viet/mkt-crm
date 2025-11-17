@@ -1,9 +1,9 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
@@ -245,6 +245,19 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   leader: Relation<WorkspaceMemberWorkspaceEntity>;
   @WorkspaceJoinColumn('leader')
   leaderId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.subLeader,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Sub Leader`,
+    description: msg`The sub-leader of this department`,
+    icon: 'IconCrown',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'subLeaderForMktDepartments',
+  })
+  subLeader: Relation<WorkspaceMemberWorkspaceEntity>;
+  @WorkspaceJoinColumn('subLeader')
+  subLeaderId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_DEPARTMENT_FIELD_IDS.childHierarchies,
