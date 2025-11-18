@@ -69,4 +69,6 @@ export const MKT_OBJECT_IDS = {
   mktReport: 'b8acdd19-4852-415a-a783-83bd1231381c',
   //user
   mktUser: '3f9d2c8e-6a41-4c3d-9b71-12a8f53e7b29',
+  // emails
+  mktEmail: '5d468431-2856-4039-84b4-98b9940bf731',
 };

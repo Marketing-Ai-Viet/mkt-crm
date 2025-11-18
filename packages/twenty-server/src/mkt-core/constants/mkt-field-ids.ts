@@ -678,8 +678,11 @@ export const MKT_TEMPLATE_FIELD_IDS = {
   //fields
   name: '9b5a19c7-fa6c-4a31-ab8f-7e0e83fb678b',
   type: '35760f3b-3bb8-48df-9eef-1ca4c05f12c7',
+  templateKey: 'abca0b71-1c05-40e7-96c1-42ea8aa32573',
   content: '3a3b49a8-6fed-4f99-a8c2-d3df9a4efa09',
   version: '2e6ade87-6f35-4dbc-8eb0-c3f4b25dc5c8',
+  metadata: '23fd709e-e187-46d3-aafd-55d90f2c1424',
+  locale: 'df08c10e-6508-4e21-a62a-f836b74f017d',
 
   //relations
   mktContracts: '5ff3cd2e-32f0-48f8-8196-2c879e15e7b8',
@@ -719,6 +722,26 @@ export const MKT_CONTRACT_FIELD_IDS = {
   accountOwner: 'b2e28989-9da6-4323-aa4f-9e208425c922',
   timelineActivities: '87d27317-4b2e-4643-a35c-b86065223abb',
   searchVector: '4769af80-5c7a-4c51-8272-e85bd5377a39',
+};
+
+export const MKT_EMAIL_FIELD_IDS = {
+  // fields
+  to: '37848b3e-f83e-4ba3-afb7-b21301007b11',
+  from: 'b86342d5-1894-47ee-967c-3e78eed36723',
+  subject: '230c0f83-17cf-4fd2-9865-8cd19b8ed9fd',
+  body: 'c788f6ea-301c-4827-ac36-293c3fb4b438',
+  sentAt: '04a0d894-e55f-459f-adf8-525dfdc21a17',
+  status: '7358037d-3342-4c6a-89bc-c1e8a761f181',
+  emailType: '480625cf-1f61-4418-aecb-975aeaa8c891',
+
+  // relations
+
+  // common relations or fields
+  position: '89501fd9-78c0-4562-a528-d17262e91968',
+  createdBy: '9394a32b-0b39-4ab9-8340-0c31aed6f396',
+  accountOwner: '49d616d0-210c-4b74-9221-188eb4705f90',
+  timelineActivities: '866b37d6-0c14-4f53-8a39-57f0d6229fa6',
+  searchVector: '2a32259b-5a20-4333-a61f-3b06edc2d4e8',
 };
 
 export const MKT_PAYMENT_FIELD_IDS = {

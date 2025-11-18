@@ -18,6 +18,9 @@ export const MKT_TEMPLATE_DATA_SEEDS_IDS = {
   ID_15: 'fdd4f417-934d-407e-8547-e66f5792cfbf',
   ID_16: '56d811a9-a73c-42ef-b31f-6a79bdc1ca70',
   SEPAY_QR_ID: 'fb171c91-8ef6-45b3-8b92-68119580b72b',
+  WELCOME_EMAIL_ID: '0c68ee2b-8cd1-477a-9a99-4e45dcf547f0',
+  NEW_ORDER_EMAIL_ID: 'eaa0ee90-5d3e-47f0-b7b0-645e42d82aa1',
+  ORDER_COMPLETED_EMAIL_ID: '2a5398db-b3e4-4905-bf73-ff459557ef78',
 };
 
 export const MKT_TEMPLATE = {
@@ -47,6 +50,8 @@ export enum MKT_TEMPLATE_TYPE {
   QUOTE = 'QUOTE',
   PAYMENT = 'PAYMENT',
   SEPAY = 'SEPAY',
+  WELCOME_EMAIL = 'WELCOME_EMAIL',
+  ORDER_EMAIL = 'ORDER_EMAIL',
 }
 
 export const MKT_TEMPLATE_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
@@ -175,5 +180,17 @@ export const MKT_TEMPLATE_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
     label: 'SEPay QR Code',
     position: 20,
     color: 'purple',
+  },
+  {
+    value: MKT_TEMPLATE_TYPE.WELCOME_EMAIL,
+    label: '👋 Email chào mừng',
+    position: 22,
+    color: 'orange',
+  },
+  {
+    value: MKT_TEMPLATE_TYPE.ORDER_EMAIL,
+    label: '🛒 Đơn hàng mới',
+    position: 21,
+    color: 'green',
   },
 ];

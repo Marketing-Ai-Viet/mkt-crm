@@ -25,10 +25,6 @@ import {
 import { MKT_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
-import {
-  MKT_TEMPLATE_TYPE,
-  MKT_TEMPLATE_TYPE_OPTIONS,
-} from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -65,14 +61,23 @@ export class MktTemplateWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_TEMPLATE_FIELD_IDS.type,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Template Type`,
     description: msg`Template type`,
     icon: 'IconTags',
-    options: MKT_TEMPLATE_TYPE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  type: MKT_TEMPLATE_TYPE;
+  type: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_TEMPLATE_FIELD_IDS.templateKey,
+    type: FieldMetadataType.TEXT,
+    label: msg`Template Key`,
+    description: msg`Template key`,
+    icon: 'IconTags',
+  })
+  @WorkspaceIsNullable()
+  templateKey: string | null;
 
   @WorkspaceField({
     standardId: MKT_TEMPLATE_FIELD_IDS.content,
@@ -93,6 +98,26 @@ export class MktTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   version?: string;
+
+  @WorkspaceField({
+    standardId: MKT_TEMPLATE_FIELD_IDS.locale,
+    type: FieldMetadataType.TEXT,
+    label: msg`Locale`,
+    description: msg`Template locale`,
+    icon: 'IconWorld',
+  })
+  @WorkspaceIsNullable()
+  locale?: string;
+
+  @WorkspaceField({
+    standardId: MKT_TEMPLATE_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional metadata for the template`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  metadata?: JSON | null;
 
   @WorkspaceField({
     standardId: MKT_TEMPLATE_FIELD_IDS.position,

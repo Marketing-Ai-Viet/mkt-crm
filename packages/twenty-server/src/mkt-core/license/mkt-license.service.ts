@@ -157,9 +157,9 @@ export class MktLicenseService {
               mktOrderId: order.id,
               mktVariantId: orderItem.mktVariantId,
               mktCustomerId,
-              accountOwnerId: order.accountOwnerId || null, // Ensure accountOwnerId is properly set
-              departmentOwnerId: order.accountOwner?.departmentId || null,
-              teamOwnerId: order.accountOwner?.teamId || null,
+              accountOwnerId: order?.accountOwnerId || null, // Ensure accountOwnerId is properly set
+              departmentOwnerId: order?.accountOwner?.departmentId || null,
+              teamOwnerId: order?.accountOwner?.teamId || null,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
 
