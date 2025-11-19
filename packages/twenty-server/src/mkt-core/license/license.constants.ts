@@ -7,6 +7,7 @@ export enum MKT_LICENSE_STATUS {
   CHANGE_VARIANT = 'CHANGE_VARIANT', // Thay đổi sản phẩm license
   REFUND = 'REFUND', // Hoàn tiền
   TRIAL = 'TRIAL', // Dùng thử
+  TRIAL_RENEW = 'TRIAL_RENEW', // Gia hạn dùng thử chờ xử lý
 }
 
 export const MKT_LICENSE_STATUS_OPTIONS = {
@@ -14,51 +15,57 @@ export const MKT_LICENSE_STATUS_OPTIONS = {
   options: [
     {
       value: MKT_LICENSE_STATUS.ACTIVE,
-      label: 'Active',
+      label: 'Hoạt động',
       color: 'green',
       position: 0,
     },
     {
       value: MKT_LICENSE_STATUS.EXPIRED,
-      label: 'Expired',
+      label: 'Hết hạn',
       color: 'red',
       position: 1,
     },
     {
       value: MKT_LICENSE_STATUS.REVOKED,
-      label: 'Revoked',
+      label: 'Bị thu hồi',
       color: 'gray',
       position: 2,
     },
     {
       value: MKT_LICENSE_STATUS.ERROR,
-      label: 'Error',
+      label: 'Có lỗi',
       color: 'orange',
       position: 3,
     },
     {
       value: MKT_LICENSE_STATUS.RENEWING,
-      label: 'Renewing',
+      label: 'Đang gia hạn',
       color: 'blue',
       position: 4,
     },
     {
       value: MKT_LICENSE_STATUS.CHANGE_VARIANT,
-      label: 'Change Variant',
+      label: 'Thay đổi sản phẩm',
       color: 'purple',
       position: 5,
     },
     {
       value: MKT_LICENSE_STATUS.REFUND,
-      label: 'Refund',
+      label: 'Hoàn tiền',
       color: 'black',
       position: 6,
     },
     {
       value: MKT_LICENSE_STATUS.TRIAL,
-      label: 'Trial',
+      label: 'Dùng thử',
       color: 'yellow',
       position: 7,
+    },
+    {
+      value: MKT_LICENSE_STATUS.TRIAL_RENEW,
+      label: 'Gia hạn dùng thử',
+      color: 'cyan',
+      position: 8,
     },
   ],
   labels: {
@@ -71,6 +78,7 @@ export const MKT_LICENSE_STATUS_OPTIONS = {
       CHANGE_VARIANT: 'Change Variant',
       REFUND: 'Refund',
       TRIAL: 'Trial',
+      TRIAL_RENEW: 'Trial Renew',
     },
     VI: {
       ACTIVE: 'Đang hoạt động',
@@ -81,6 +89,7 @@ export const MKT_LICENSE_STATUS_OPTIONS = {
       CHANGE_VARIANT: 'Thay đổi sản phẩm',
       REFUND: 'Hoàn tiền',
       TRIAL: 'Dùng thử',
+      TRIAL_RENEW: 'Gia hạn dùng thử',
     },
   },
 };

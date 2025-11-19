@@ -16,6 +16,7 @@ import { WORKSPACE_MEMBER_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
@@ -659,4 +660,17 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsSystem()
   permissionAudits: Relation<MktPermissionAuditWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktEmails,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Emails`,
+    description: msg`Account owner for emails`,
+    icon: 'IconMail',
+    inverseSideTarget: () => MktEmailWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  accountOwnerForMktEmails: Relation<MktEmailWorkspaceEntity[]>;
 }

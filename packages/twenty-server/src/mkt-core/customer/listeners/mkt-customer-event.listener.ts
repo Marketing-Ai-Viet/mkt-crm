@@ -8,6 +8,9 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
 import { WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { MKT_EMAIL_STATUS } from 'src/mkt-core/email/constants/mkt-email.constant';
+import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
+import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 
 @Injectable()
@@ -18,6 +21,7 @@ export class MktCustomerEventListener {
     private readonly mktRepo: MktRepositoryService,
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
+    private readonly mktEmailService: MktEmailService,
   ) {}
 
   @OnDatabaseBatchEvent('mktCustomer', DatabaseEventAction.CREATED)
@@ -80,11 +84,19 @@ export class MktCustomerEventListener {
         const subject = replaceAll(template.name || '');
         const html = replaceAll(template.content || '');
 
-        await this.emailService.send({
+        const emailData = {
           from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
           to: customer.email,
           subject,
-          html,
+        };
+
+        await this.emailService.send({ ...emailData, html });
+        this.mktEmailService.save({
+          ...emailData,
+          body: html,
+          status: MKT_EMAIL_STATUS.SENT,
+          emailType: MKT_TEMPLATE_TYPE.WELCOME_EMAIL,
+          sentAt: new Date(),
         });
 
         this.logger.log(

@@ -164,8 +164,7 @@ const ORDER_COMPLETED_EMAIL = [
   },
 ];
 
-export const ORDER_EMAIL_TEMPLATE = [
-  ...ORDER_COMPLETED_EMAIL,
+const ORDER_WAIT_EMAIL = [
   {
     id: MKT_TEMPLATE_DATA_SEEDS_IDS.NEW_ORDER_EMAIL_ID,
     name: 'Thông báo đơn hàng mới',
@@ -369,4 +368,215 @@ export const ORDER_EMAIL_TEMPLATE = [
     locale: 'VI',
     templateKey: 'new_order_notification',
   },
+];
+
+const ORDER_TRIAL_EMAIL = [
+  {
+    id: MKT_TEMPLATE_DATA_SEEDS_IDS.ORDER_TRIAL_EMAIL_ID,
+    name: 'Thông báo đơn hàng dùng thử',
+    type: MKT_TEMPLATE_TYPE.ORDER_EMAIL,
+    content: `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn hàng dùng thử #{{order_number}}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f7fa;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🎁</div>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                                Đơn hàng dùng thử #{{order_number}}
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Xin chào <strong>{{customer_name}}</strong>,
+                            </p>
+                            
+                            <p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Cảm ơn bạn đã đăng ký dùng thử sản phẩm của chúng tôi! 🎉
+                            </p>
+                            
+                            <!-- Trial Info Banner -->
+                            <table role="presentation" style="width: 100%; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; margin: 30px 0; border: 2px solid #fbbf24;">
+                                <tr>
+                                    <td style="padding: 25px; text-align: center;">
+                                        <h2 style="margin: 0 0 10px 0; color: #92400e; font-size: 20px; font-weight: 700;">
+                                            ⏰ Thời gian dùng thử
+                                        </h2>
+                                        <p style="margin: 0; color: #78350f; font-size: 24px; font-weight: 700;">
+                                            {{trial_duration}} ngày
+                                        </p>
+                                        <p style="margin: 10px 0 0 0; color: #92400e; font-size: 13px;">
+                                            Từ {{trial_start_date}} đến {{trial_end_date}}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Order Info Box -->
+                            <table role="presentation" style="width: 100%; background-color: #ede9fe; border-radius: 8px; margin: 30px 0; border-left: 4px solid #6366f1;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h2 style="margin: 0 0 20px 0; color: #4338ca; font-size: 18px; font-weight: 600;">
+                                            📋 Thông tin đơn hàng dùng thử
+                                        </h2>
+                                        
+                                        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;">
+                                                    Mã đơn hàng:
+                                                </td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600;">
+                                                    #{{order_number}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Trạng thái:
+                                                </td>
+                                                <td style="padding: 8px 0;">
+                                                    <span style="display: inline-block; padding: 4px 12px; background-color: #ddd6fe; color: #4338ca; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                        🎁 {{order_status}}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Ngày đăng ký:
+                                                </td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px;">
+                                                    {{order_date}}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Products Table -->
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 30px 0;">
+                                <thead>
+                                    <tr style="background-color: #f3f4f6;">
+                                        <th style="padding: 12px; text-align: left; color: #374151; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e5e7eb;">
+                                            Sản phẩm dùng thử
+                                        </th>
+                                        <th style="padding: 12px; text-align: center; color: #374151; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e5e7eb;">
+                                            Số lượng
+                                        </th>
+                                        <th style="padding: 12px; text-align: right; color: #374151; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e5e7eb;">
+                                            Giá trị
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{order_items}}
+                                </tbody>
+                            </table>
+                            
+                            <!-- Trial Benefits -->
+                            <table role="presentation" style="width: 100%; background-color: #f0fdf4; border-radius: 8px; margin: 30px 0; border-left: 4px solid #10b981;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h3 style="margin: 0 0 20px 0; color: #065f46; font-size: 18px; font-weight: 600;">
+                                            ✨ Những gì bạn nhận được
+                                        </h3>
+                                        <ul style="margin: 0; padding: 0 0 0 20px; color: #059669; font-size: 14px; line-height: 2;">
+                                            <li>Trải nghiệm đầy đủ tính năng của sản phẩm</li>
+                                            <li>Hỗ trợ kỹ thuật miễn phí 24/7</li>
+                                            <li>Tài liệu hướng dẫn chi tiết</li>
+                                            <li>Không yêu cầu thanh toán trong thời gian dùng thử</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Call to Action -->
+                            <table role="presentation" style="width: 100%; margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{activation_link}}" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);">
+                                            🚀 Bắt đầu dùng thử ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Important Notes -->
+                            <table role="presentation" style="width: 100%; background-color: #fef3f2; border-radius: 8px; margin: 30px 0; border-left: 4px solid #ef4444;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #991b1b; font-size: 16px; font-weight: 600;">
+                                            📌 Lưu ý quan trọng
+                                        </h3>
+                                        <p style="margin: 0 0 10px 0; color: #7f1d1d; font-size: 14px; line-height: 1.6;">
+                                            • Thời gian dùng thử sẽ tự động kết thúc sau {{trial_duration}} ngày
+                                        </p>
+                                        <p style="margin: 0 0 10px 0; color: #7f1d1d; font-size: 14px; line-height: 1.6;">
+                                            • Bạn sẽ nhận được thông báo trước khi thời gian dùng thử kết thúc
+                                        </p>
+                                        <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.6;">
+                                            • Không tự động gia hạn hoặc tính phí sau khi kết thúc
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="margin: 30px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.8; text-align: center;">
+                                Nếu có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi! 💬
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fc; padding: 30px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0 0 10px 0; color: #333333; font-size: 15px; font-weight: 600;">
+                                Chúc bạn có trải nghiệm tuyệt vời!
+                            </p>
+                            <p style="margin: 0; color: #6366f1; font-size: 16px; font-weight: 700;">
+                                Đội ngũ {{company_name}}
+                            </p>
+                            
+                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                <p style="margin: 0; color: #999999; font-size: 12px; line-height: 1.5;">
+                                    Email này được gửi tự động, vui lòng không trả lời.<br>
+                                    © 2025 {{company_name}}. Tất cả quyền được bảo lưu.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`,
+    version: '1.0.0',
+    position: 21,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'System',
+    locale: 'VI',
+    templateKey: 'order_trial_notification',
+  },
+];
+
+export const ORDER_EMAIL_TEMPLATE = [
+  ...ORDER_COMPLETED_EMAIL,
+  ...ORDER_WAIT_EMAIL,
+  ...ORDER_TRIAL_EMAIL,
 ];

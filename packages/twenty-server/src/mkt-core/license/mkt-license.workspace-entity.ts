@@ -164,6 +164,16 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   history?: JSON | null;
 
+  @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.trialLicense,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Trial License`,
+    description: msg`Is trial license`,
+    icon: 'IconToggleLeft',
+  })
+  @WorkspaceIsNullable()
+  trialLicense?: boolean;
+
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktVariant,
     type: RelationType.MANY_TO_ONE,

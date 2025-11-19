@@ -36,12 +36,14 @@ import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-s
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
 import { SeedVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seed-dev-workspace.command';
 import { SeedVariantValueModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-data-seed-dev-workspace.command';
+import { SeedMktEmailModuleCommand } from 'src/mkt-core/email/seeder/mkt-email-data-seed-dev-workspace.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 import { SeedMktReportModuleCommand } from 'src/mkt-core/report/seeder/mkt-report-data-seed-dev-workspace.command';
 import { SeedMktOptionModuleCommand } from 'src/mkt-core/setting/seeder/mkt-option-data-seed-dev-workspace.command';
 export const MKT_DATABASE_COMMAND_MODULES = [
   // core commands
   SeedMktOptionModuleCommand,
+  SeedMktEmailModuleCommand,
   // report commands
   SeedMktReportModuleCommand,
   // i18n commands

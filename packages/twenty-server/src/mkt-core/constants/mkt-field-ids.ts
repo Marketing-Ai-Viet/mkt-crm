@@ -407,7 +407,8 @@ export const MKT_LICENSE_FIELD_IDS = {
   deviceInfo: '7dc3c246-0a81-48b0-9343-70bf0431dfca',
   notes: 'dbf0752c-ed7c-45eb-88c0-e390ec42aed0',
   licenseUuid: '6f95b280-6fe8-4e6d-a722-aeb84efb67b8',
-  history: '34805764-9934-44bd-9b9f-b28d9928f8ff', // JSON array of activation/deactivation history
+  history: '34805764-9934-44bd-9b9f-b28d9928f8ff',
+  trialLicense: 'e618d82d-6b79-409e-a545-a0f43a581319',
   // relations
   mktCustomer: '11a10308-2c5c-4322-847d-4ec12d056d9c',
   mktSales: '4bb927d7-a6d2-4746-b771-731cb6ab9950', // nullable
@@ -726,8 +727,8 @@ export const MKT_CONTRACT_FIELD_IDS = {
 
 export const MKT_EMAIL_FIELD_IDS = {
   // fields
-  to: '37848b3e-f83e-4ba3-afb7-b21301007b11',
   from: 'b86342d5-1894-47ee-967c-3e78eed36723',
+  to: '37848b3e-f83e-4ba3-afb7-b21301007b11',
   subject: '230c0f83-17cf-4fd2-9865-8cd19b8ed9fd',
   body: 'c788f6ea-301c-4827-ac36-293c3fb4b438',
   sentAt: '04a0d894-e55f-459f-adf8-525dfdc21a17',
@@ -848,6 +849,8 @@ export const TIMELINE_ACTIVITY_MKT_FIELD_IDS = {
   mktSInvoiceItem: 'fe30be83-1b86-4ec5-b584-2c059f0438b7',
   mktSInvoiceFile: 'fdbfbbef-35e4-4971-9043-59da5c30f23e',
   //kpi system - removed timeline activity references as they're not implemented
+
+  mktEmail: 'c839e840-2190-45b4-8eb2-e0da1d53f339',
 };
 
 // KPI TEMPLATE HISTORY
@@ -940,6 +943,8 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   dataAccessPolicies: '70707070-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
   // permission audits
   permissionAudits: '80808080-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+
+  accountOwnerForMktEmails: '66a1da50-b66a-439a-99f2-aced752fc864',
 };
 
 export const MKT_PERSON_FIELD_IDS = {

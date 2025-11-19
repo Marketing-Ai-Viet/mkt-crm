@@ -92,6 +92,10 @@ export class MktOrderCreateOnePostQueryHook
       const action =
         await this.orderActionService.getActionFromMetadata(metadata);
 
+      if (action === ORDER_ACTION.TRIAL) {
+        this.orderConfirmService.mktLicenseService.isTrial = true;
+      }
+
       if (action === ORDER_ACTION.WAIT || action === ORDER_ACTION.TRIAL) {
         this.logger.log(`Processing ${action} action for order creation`);
         const fireBaseData: callFireBaseType | void =

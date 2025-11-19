@@ -23,6 +23,7 @@ type licenseType = {
 @Injectable()
 export class MktLicenseService {
   private readonly logger = new Logger(MktLicenseService.name);
+  public isTrial = false;
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
@@ -161,6 +162,7 @@ export class MktLicenseService {
               departmentOwnerId: order?.accountOwner?.departmentId || null,
               teamOwnerId: order?.accountOwner?.teamId || null,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
+              trialLicense: this.isTrial,
             });
 
             // save license

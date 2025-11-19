@@ -36,6 +36,10 @@ import {
   MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-department-hierarchy-data-seeds.constants';
 import {
+  MKT_EMAIL_DATA_SEED_COLUMNS,
+  MKT_EMAIL_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-email-data-seeds.constants';
+import {
   MKT_EMPLOYMENT_STATUS_DATA_SEED_COLUMNS,
   MKT_EMPLOYMENT_STATUS_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-employment-status-data-seeds.constants';
@@ -387,6 +391,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktCustomer',
     pgColumns: MKT_CUSTOMER_DATA_SEED_COLUMNS,
     recordSeeds: MKT_CUSTOMER_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktEmail',
+    pgColumns: MKT_EMAIL_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_EMAIL_DATA_SEEDS,
   },
   // Staff Status History - needs to be after workspace members
   {

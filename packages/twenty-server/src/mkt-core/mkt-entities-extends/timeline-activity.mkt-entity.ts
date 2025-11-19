@@ -12,6 +12,7 @@ import { TIMELINE_ACTIVITY_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-fiel
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
@@ -499,4 +500,20 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktContract')
   mktContractId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktEmail,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Email`,
+    description: msg`Event email`,
+    icon: 'IconMail',
+    inverseSideTarget: () => MktEmailWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktEmail: Relation<MktEmailWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktEmail')
+  mktEmailId: string | null;
 }

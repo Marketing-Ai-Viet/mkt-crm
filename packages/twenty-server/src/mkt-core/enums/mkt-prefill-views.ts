@@ -36,12 +36,14 @@ import { mktComboVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/
 import { mktProductsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-all.view';
 import { mktVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-all.view';
 import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
+import { mktEmailAllView } from 'src/mkt-core/email/seeder/mkt-email-all.view';
 import { mktReportsAllView } from 'src/mkt-core/report/seeder/mkt-report-all.view';
 import { mktOptionsAllView } from 'src/mkt-core/setting/seeder/mkt-option-all.view';
 
 export const MKT_ALL_VIEWS = [
   // core views
   mktOptionsAllView,
+  mktEmailAllView,
   // report views
   mktReportsAllView,
   // i18n views

@@ -37,12 +37,14 @@ import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
 import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
+import { prefillMktEmails } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
 import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
 import { prefillMktOptions } from 'src/mkt-core/setting/seeder/prefill-mkt-options';
 
 export const MKT_PREFILLS = [
   // core prefills
   prefillMktOptions,
+  prefillMktEmails,
   // report prefills
   prefillMktReports,
   // i18n prefills

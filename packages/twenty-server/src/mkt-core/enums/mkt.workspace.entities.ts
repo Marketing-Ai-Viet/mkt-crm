@@ -1,6 +1,7 @@
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
@@ -55,6 +56,7 @@ export const MKT_WORKSPACE_ENTITIES = [
   MktCustomerWorkspaceEntity,
   MktTagWorkspaceEntity,
   MktCustomerTagWorkspaceEntity,
+  MktEmailWorkspaceEntity,
   // Product
   MktCategoryWorkspaceEntity,
   MktProductWorkspaceEntity,

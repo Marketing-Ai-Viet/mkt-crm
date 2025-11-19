@@ -2,6 +2,7 @@ import {
   MKT_CUSTOMER_STATUS_OPTIONS,
   MKT_CUSTOMER_TIER_OPTIONS,
 } from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import { MKT_EMAIL_STATUS_OPTIONS } from 'src/mkt-core/email/constants/mkt-email.constant';
 import { MKT_LICENSE_STATUS_OPTIONS } from 'src/mkt-core/license/license.constants';
 import {
   MEMBER_STATUS_OPTIONS,
@@ -32,6 +33,18 @@ export const MKT_OPTION_DATA_SEEDS = [
     description: 'Số ngày trước khi hết hạn để gửi thông báo gia hạn license',
     metadata: JSON.stringify({ unit: 'days' }),
     position: 0,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Dev Seeder',
+  },
+  {
+    id: 'c8d123cb-2c15-42f0-bf44-3c1e519d437d',
+    name: 'Thời gian dùng thử mặc định',
+    key: 'default_trial_period_days',
+    value: '7',
+    description: 'Số ngày dùng thử mặc định cho license',
+    metadata: JSON.stringify({ unit: 'days' }),
+    position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',
@@ -120,6 +133,20 @@ export const MKT_OPTION_DATA_SEEDS = [
     description: 'Trạng thái license',
     metadata: JSON.stringify(MKT_LICENSE_STATUS_OPTIONS),
     position: 40,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Dev Seeder',
+  },
+
+  //email
+  {
+    id: '7135e86d-5722-4161-8df4-cafd1177528f',
+    name: 'Email Status',
+    key: 'email_status',
+    value: null,
+    description: 'Trạng thái email',
+    metadata: JSON.stringify(MKT_EMAIL_STATUS_OPTIONS),
+    position: 50,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',

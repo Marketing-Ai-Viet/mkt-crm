@@ -23,7 +23,7 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    private readonly mktLicenseService: MktLicenseService,
+    public mktLicenseService: MktLicenseService,
     private mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
     private mktRepo: MktRepositoryService,

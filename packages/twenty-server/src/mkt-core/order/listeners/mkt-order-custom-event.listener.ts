@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { EmailService } from 'src/engine/core-modules/email/email.service';
-import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 import {
   MKT_EVENT_TYPE,
@@ -10,16 +8,15 @@ import {
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
+import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktLicenseEventService } from 'src/mkt-core/license/services/mkt-license.event.service';
 import {
   ORDER_HISTORY_ACTION,
   ORDER_STATUS,
-  ORDER_STATUS_OPTIONS,
 } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 
 export interface MktOrderCustomEventData {
   eventType?: CustomEventName;
@@ -53,8 +50,7 @@ export class MktOrderCustomEventListener {
     private mktRepo: MktRepositoryService,
     public mktLicenseEventService: MktLicenseEventService,
     private customerQueueService: MktCustomerQueueService,
-    private readonly emailService: EmailService,
-    private readonly twentyConfigService: TwentyConfigService,
+    private readonly mktEmailService: MktEmailService,
   ) {}
 
   @OnEvent(MKT_EVENT_TYPE.MKT_ORDER)
@@ -73,20 +69,7 @@ export class MktOrderCustomEventListener {
           await this.pushLicenseHistory(updateOrder);
         }
 
-        if (updateOrder?.status === ORDER_STATUS.WAIT) {
-          await this.sendOrderCreatedEmail(updateOrder);
-        }
-
-        this.logger.log(
-          `check for send complete email ${updateOrder?.status} - ${updateOrder?.accountingConfirmed}`,
-        );
-
-        if (
-          updateOrder?.status === ORDER_STATUS.COMPLETED &&
-          updateOrder?.accountingConfirmed
-        ) {
-          await this.sendOrderCompletedEmail(updateOrder);
-        }
+        if (updateOrder) await this.mktEmailService.sendOrderEmail(updateOrder);
 
         if (
           updateOrder?.status === ORDER_STATUS.OVERDUE ||
@@ -217,86 +200,6 @@ export class MktOrderCustomEventListener {
     return updatedOrder;
   }
 
-  private async handleTrialOrderCreated(
-    event: MktOrderCustomEventData,
-  ): Promise<void> {
-    this.logger.log(`Processing trial order: ${event.orderId}`);
-  }
-
-  private async handleWaitOrderCreated(
-    event: MktOrderCustomEventData,
-  ): Promise<void> {
-    this.logger.log(`Processing wait order: ${event.orderId}`);
-  }
-
-  private async handleTrialToPaidOrderCreated(
-    event: MktOrderCustomEventData,
-  ): Promise<void> {
-    this.logger.log(`Processing trial to paid conversion: ${event.orderId}`);
-  }
-
-  private async handleRegularOrderCreated(
-    event: MktOrderCustomEventData,
-  ): Promise<void> {
-    this.logger.log(`Processing regular order: ${event.orderId}`);
-  }
-
-  private async sendNotifications(
-    event: MktOrderCustomEventData,
-  ): Promise<void> {
-    try {
-      this.logger.log(`Sending notifications for order: ${event.orderId}`);
-      const emailData = {
-        orderId: event.orderId,
-        orderStatus: event.orderData.status,
-        timestamp: event.timestamp,
-      };
-
-      this.logger.log(`Email notification data: ${JSON.stringify(emailData)}`);
-
-      const webhookData = {
-        event: 'order.created',
-        orderId: event.orderId,
-        workspaceId: event.workspaceId,
-        data: event.orderData,
-        timestamp: event.timestamp,
-      };
-
-      this.logger.log(
-        `Webhook notification data: ${JSON.stringify(webhookData)}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send notifications for order: ${event.orderId}`,
-        error,
-      );
-    }
-  }
-
-  private async updateAnalytics(event: MktOrderCustomEventData): Promise<void> {
-    try {
-      this.logger.log(`Updating analytics for order: ${event.orderId}`);
-
-      const analyticsEvent = {
-        event_name: 'mkt_order_created',
-        event_time: event.timestamp,
-        workspace_id: event.workspaceId,
-        properties: {
-          order_id: event.orderId,
-          order_status: event.orderData.status,
-          is_trial: event.orderData.trialLicense,
-        },
-      };
-
-      this.logger.log(`Analytics event: ${JSON.stringify(analyticsEvent)}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to update analytics for order: ${event.orderId}`,
-        error,
-      );
-    }
-  }
-
   private async makeOrderHistoryData(
     eventType?: CustomEventName,
     updatedOrder?: MktOrderWorkspaceEntity,
@@ -356,313 +259,6 @@ export class MktOrderCustomEventListener {
       this.logger.warn(
         `Order ${order.id} has no mktCustomerId, skipping tier update`,
       );
-    }
-  }
-
-  private async sendOrderCreatedEmail(
-    fullOrder: MktOrderWorkspaceEntity,
-  ): Promise<void> {
-    try {
-      const templateRepo = await this.mktRepo.getRepository(
-        MktTemplateWorkspaceEntity,
-      );
-
-      if (!fullOrder) {
-        this.logger.warn(`Order not found, skipping email`);
-
-        return;
-      }
-
-      // Check if customer has email
-      if (!fullOrder.mktCustomer?.email) {
-        this.logger.warn(`Order has no customer email, skipping notification`);
-
-        return;
-      }
-
-      // Find email template for new order
-      const template = await templateRepo.findOne({
-        where: {
-          templateKey: 'new_order_notification',
-        },
-      });
-
-      if (!template) {
-        this.logger.warn(
-          'New order email template not found, skipping email send',
-        );
-
-        return;
-      }
-
-      // Determine locale - map from workspace member or default to VN
-      // Map APP_LOCALES format (vi-VN, en) to template format (VN, EN)
-      // const workspaceLocale = fullOrder.accountOwner?.locale || 'vi-VN';
-      // const locale = workspaceLocale === 'vi-VN' ? 'VI' : 'EN';
-      const locale = 'VI';
-      const orderStatus =
-        ORDER_STATUS_OPTIONS.labels?.[locale]?.[
-          fullOrder?.status as ORDER_STATUS
-        ] || 'Đang chờ xử lý';
-
-      this.logger.log(`Using locale ${locale} for order email`);
-
-      const companyName = 'Phần Mềm MKT';
-      const customerName = fullOrder.mktCustomer.name || 'Quý khách';
-      const customerEmail = fullOrder.mktCustomer.email || '';
-      const customerPhone = fullOrder.mktCustomer.phone || 'N/A';
-      const orderCode = fullOrder.orderCode;
-      const orderTotal = this.formatCurrency(fullOrder.totalAmount || 0);
-      // Get translated order status
-      const _orderStatusTmp = this.getTranslatedOrderStatus(
-        fullOrder.status || '',
-        locale,
-      );
-      const orderDate = new Date(fullOrder.createdAt).toLocaleString('vi-VN');
-      const orderUrl = `${this.twentyConfigService.get('FRONTEND_URL')}/objects/mktOrder/${fullOrder.id}`;
-      const shippingAddress = fullOrder.mktCustomer.address || 'Chưa cập nhật';
-      const orderNotes = fullOrder.note || '';
-      const qrCodeUrl = fullOrder?.mktPayments?.[0]?.qrCodeUrl || '';
-      const paymentPageUrl = fullOrder.mktPayments?.[0]?.paymentPageUrl || '';
-
-      // Format order items as HTML table rows
-      const orderItemsHtml =
-        fullOrder.orderItems
-          ?.map(
-            (item) => `
-                                    <tr style="border-bottom: 1px solid #f3f4f6;">
-                                        <td style="padding: 12px; color: #111827; font-size: 14px;">
-                                            ${item.name || 'Sản phẩm'}
-                                        </td>
-                                        <td style="padding: 12px; text-align: center; color: #6b7280; font-size: 14px;">
-                                            ${item.quantity || 1}
-                                        </td>
-                                        <td style="padding: 12px; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">
-                                            ${this.formatCurrency(item.unitPrice || 0)}
-                                        </td>
-                                    </tr>`,
-          )
-          .join('') ||
-        `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6b7280;">Không có sản phẩm</td></tr>`;
-
-      // Replace placeholders in template
-      const replaceAll = (input: string) => {
-        let result = input;
-
-        // Step 1: Handle nested conditionals - process from innermost to outermost
-        // First process payment_page_url (innermost)
-        result = result.replace(
-          /{{#if\s+payment_page_url\s*}}([\s\S]*?){{\/if\s*}}/g,
-          paymentPageUrl ? '$1' : '',
-        );
-
-        // Then process qr_code_url (outer)
-        result = result.replace(
-          /{{#if\s+qr_code_url\s*}}([\s\S]*?){{\/if\s*}}/g,
-          qrCodeUrl ? '$1' : '',
-        );
-
-        // Process order_notes
-        result = result.replace(
-          /{{#if\s+order_notes\s*}}([\s\S]*?){{\/if\s*}}/g,
-          orderNotes ? '$1' : '',
-        );
-
-        // Step 2: Replace all placeholders with actual values AFTER conditionals
-        const replacements = {
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          company_name: companyName,
-          order_number: orderCode,
-          order_code: orderCode,
-          order_value: orderTotal,
-          order_total: orderTotal,
-          order_status: orderStatus,
-          order_date: orderDate,
-          order_items: orderItemsHtml,
-          order_url: orderUrl,
-          shipping_address: shippingAddress,
-          order_notes: orderNotes,
-          qr_code_url: qrCodeUrl,
-          payment_page_url: paymentPageUrl,
-        };
-
-        // Replace both {{ variable }} and { variable } patterns
-        Object.entries(replacements).forEach(([key, value]) => {
-          const pattern1 = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-          const pattern2 = new RegExp(`{\\s*${key}\\s*}`, 'g');
-
-          result = result.replace(pattern1, value).replace(pattern2, value);
-        });
-
-        return result;
-      };
-
-      const subject = replaceAll(template.name || '');
-      const html = replaceAll(template.content || '');
-
-      // Send email
-      await this.emailService.send({
-        from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
-        to: fullOrder.mktCustomer.email,
-        subject,
-        html,
-      });
-
-      this.logger.log(
-        `Sent order notification email for order to ${fullOrder.mktCustomer.email}`,
-      );
-    } catch (error) {
-      this.logger.error(`Failed to send order notification email for order`);
-      // Don't throw - we don't want email failures to break order creation
-    }
-  }
-
-  private formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
-  }
-
-  /**
-   * Get translated order status based on locale
-   * @param status - The ORDER_STATUS enum value
-   * @param locale - The locale (EN or VI)
-   * @returns Translated status label
-   */
-  private getTranslatedOrderStatus(
-    status: string,
-    locale: 'EN' | 'VI' = 'VI',
-  ): string {
-    const labels = ORDER_STATUS_OPTIONS.labels[locale];
-
-    if (!labels || !status) {
-      return status || 'Đang chờ xử lý';
-    }
-
-    return labels[status as keyof typeof labels] || status;
-  }
-
-  private async sendOrderCompletedEmail(
-    fullOrder: MktOrderWorkspaceEntity,
-  ): Promise<void> {
-    try {
-      // Set workspace context
-      const templateRepo = await this.mktRepo.getRepository(
-        MktTemplateWorkspaceEntity,
-      );
-
-      // Fetch full order with relations
-      if (!fullOrder) {
-        this.logger.warn(`Order not found, skipping email`);
-
-        return;
-      }
-
-      // Check if customer has email
-      if (!fullOrder.mktCustomer?.email) {
-        this.logger.warn(`Order has no customer email, skipping notification`);
-
-        return;
-      }
-
-      // Find email template for completed order
-      const template = await templateRepo.findOne({
-        where: {
-          templateKey: 'order_completed_notification',
-        },
-      });
-
-      if (!template) {
-        this.logger.warn(
-          'Order completed email template not found, skipping email send',
-        );
-
-        return;
-      }
-
-      // Determine locale
-      const locale = 'VI';
-      const orderStatus =
-        ORDER_STATUS_OPTIONS.labels?.[locale]?.[
-          fullOrder?.status as ORDER_STATUS
-        ] || 'Hoàn thành';
-
-      this.logger.log(`Using locale ${locale} for order completion email`);
-
-      const companyName = 'Phần Mềm MKT';
-      const customerName = fullOrder.mktCustomer.name || 'Quý khách';
-      const orderCode = fullOrder.orderCode;
-      const orderTotal = this.formatCurrency(fullOrder.totalAmount || 0);
-      const orderDate = new Date().toLocaleString('vi-VN');
-      const orderUrl = `${this.twentyConfigService.get('FRONTEND_URL')}/objects/mktOrder/${fullOrder.id}`;
-
-      // Format order items as HTML table rows
-      const orderItemsHtml =
-        fullOrder.orderItems
-          ?.map(
-            (item) => `
-                                    <tr style="border-bottom: 1px solid #f3f4f6;">
-                                        <td style="padding: 12px; color: #111827; font-size: 14px;">
-                                            ${item.name || 'Sản phẩm'}
-                                        </td>
-                                        <td style="padding: 12px; text-align: center; color: #6b7280; font-size: 14px;">
-                                            ${item.quantity || 1}
-                                        </td>
-                                        <td style="padding: 12px; text-align: right; color: #111827; font-size: 14px; font-weight: 600;">
-                                            ${this.formatCurrency(item.unitPrice || 0)}
-                                        </td>
-                                    </tr>`,
-          )
-          .join('') ||
-        `<tr><td colspan="3" style="padding: 12px; text-align: center; color: #6b7280;">Không có sản phẩm</td></tr>`;
-
-      // Replace placeholders in template
-      const replaceAll = (input: string) => {
-        let result = input;
-
-        const replacements = {
-          customer_name: customerName,
-          company_name: companyName,
-          order_number: orderCode,
-          order_code: orderCode,
-          order_total: orderTotal,
-          order_status: orderStatus,
-          order_date: orderDate,
-          order_items: orderItemsHtml,
-          order_url: orderUrl,
-        };
-
-        // Replace both {{ variable }} and { variable } patterns
-        Object.entries(replacements).forEach(([key, value]) => {
-          const pattern1 = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-          const pattern2 = new RegExp(`{\\s*${key}\\s*}`, 'g');
-
-          result = result.replace(pattern1, value).replace(pattern2, value);
-        });
-
-        return result;
-      };
-
-      const subject = replaceAll(template.name || '');
-      const html = replaceAll(template.content || '');
-
-      // Send email
-      await this.emailService.send({
-        from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
-        to: fullOrder.mktCustomer.email,
-        subject,
-        html,
-      });
-
-      this.logger.log(
-        `Sent order completed email for order to ${fullOrder.mktCustomer.email}`,
-      );
-    } catch (error) {
-      this.logger.error(`Failed to send order completed email for order`);
-      // Don't throw - we don't want email failures to break order processing
     }
   }
 }

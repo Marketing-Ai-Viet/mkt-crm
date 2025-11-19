@@ -23,6 +23,7 @@ import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/m
 export class MktLicenseRenewService {
   private readonly logger = new Logger(MktLicenseRenewService.name);
   public mktContractId: string | null = null;
+  public trialLicense = false;
   constructor(
     private readonly mktRepo: MktRepositoryService,
     private readonly mktFirebaseService: MktFirebaseService,
@@ -390,9 +391,13 @@ export class MktLicenseRenewService {
     const authFirebase =
       await this.mktFirebaseService.callFireBase(fireBaseData);
 
+    const orderStatus = license?.trialLicense
+      ? ORDER_STATUS.TRIAL
+      : ORDER_STATUS.WAIT;
+
     await this.mktCommonOrderService.updateOrderForRenew(
       order.id,
-      ORDER_STATUS.WAIT,
+      orderStatus,
       workspaceId,
       false,
       authFirebase,
@@ -482,6 +487,7 @@ export class MktLicenseRenewService {
       requireContract: null,
       mktContractId: this.mktContractId,
       name: 'License Renewal Order',
+      trialLicense: this.trialLicense,
     });
 
     const createdOrder = await orderRepo.save(newOrder);

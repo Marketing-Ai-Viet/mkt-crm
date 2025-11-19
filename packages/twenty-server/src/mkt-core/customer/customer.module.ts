@@ -12,9 +12,10 @@ import {
 } from 'src/mkt-core/customer/services';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services/mkt-customer-queue.service';
 import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
+import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 
 @Module({
-  imports: [MktCommonModule, EmailModule],
+  imports: [MktCommonModule, EmailModule, MktEmailModule],
   providers: [
     MktCustomerTierCalculationService,
     MktCustomerTierService,

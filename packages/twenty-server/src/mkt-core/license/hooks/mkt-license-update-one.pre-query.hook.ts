@@ -116,6 +116,7 @@ export class MktLicenseUpdateOnePreQueryHook
           data: {
             ...payload.data,
             metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
+            status: MKT_LICENSE_STATUS.ACTIVE,
           },
         };
       }
@@ -153,6 +154,8 @@ export class MktLicenseUpdateOnePreQueryHook
           data: {
             ...payload.data,
             metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
+            status: MKT_LICENSE_STATUS.ACTIVE,
+            trialLicense: false,
           },
         };
       }
@@ -174,6 +177,33 @@ export class MktLicenseUpdateOnePreQueryHook
         data: {
           ...payload.data,
           metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
+        },
+      };
+    }
+
+    if (status === MKT_LICENSE_STATUS.TRIAL_RENEW) {
+      const newMetadata: ORDER_METADATA = await this.makeMetadataForRenew(
+        license,
+        paymentMethods,
+        variants,
+      );
+
+      this.mktLicenseRenewService.trialLicense = true;
+
+      await this.mktLicenseRenewService.shouldRenewLicense(
+        status,
+        newMetadata,
+        licenseId,
+        license,
+      );
+
+      payload = {
+        ...payload,
+        data: {
+          ...payload.data,
+          metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
+          status: MKT_LICENSE_STATUS.ACTIVE,
+          trialLicense: true,
         },
       };
     }

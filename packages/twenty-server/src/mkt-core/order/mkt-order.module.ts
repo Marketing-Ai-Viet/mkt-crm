@@ -18,6 +18,7 @@ import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.s
 import { OrderService } from 'src/mkt-core/order/services/order.service';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
+import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 
 import { MktOrderCreateOnePostQueryHook } from './hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderCreateOnePreQueryHook } from './hooks/mkt-order-create-one.pre-query.hook';
@@ -29,6 +30,7 @@ import { OrderLicenseRenewService } from './services/order.license-renew.service
 @Module({
   imports: [
     EmailModule,
+    MktEmailModule,
     MessageQueueModule,
     RecordPositionModule,
     MktPaymentModule,
