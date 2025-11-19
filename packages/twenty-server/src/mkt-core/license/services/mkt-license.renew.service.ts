@@ -391,7 +391,7 @@ export class MktLicenseRenewService {
     const authFirebase =
       await this.mktFirebaseService.callFireBase(fireBaseData);
 
-    const orderStatus = license?.trialLicense
+    const orderStatus = this.trialLicense
       ? ORDER_STATUS.TRIAL
       : ORDER_STATUS.WAIT;
 
