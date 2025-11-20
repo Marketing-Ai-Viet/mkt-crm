@@ -181,7 +181,7 @@ export class MktLicenseUpdateOnePreQueryHook
       };
     }
 
-    if (status === MKT_LICENSE_STATUS.TRIAL_RENEW) {
+    if (status === MKT_LICENSE_STATUS.TRIAL_RENEW && license?.trialLicense) {
       const newMetadata: ORDER_METADATA = await this.makeMetadataForRenew(
         license,
         paymentMethods,

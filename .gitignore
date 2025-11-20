@@ -50,3 +50,4 @@ mcp.json
 GEMINI.md
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+qodana.yaml
