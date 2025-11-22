@@ -161,26 +161,6 @@ export class MktLicenseUpdateOnePreQueryHook
       }
     }
 
-    if (status === MKT_LICENSE_STATUS.REFUND) {
-      const newMetadata: ORDER_METADATA =
-        await this.makeMetadataForRefund(license);
-
-      await this.mktLicenseRenewService.shouldRefundLicense(
-        status,
-        newMetadata,
-        licenseId,
-        license,
-      );
-
-      payload = {
-        ...payload,
-        data: {
-          ...payload.data,
-          metadata: newMetadata as unknown as JSON, // Type assertion an toàn cho RAW_JSON field
-        },
-      };
-    }
-
     if (status === MKT_LICENSE_STATUS.TRIAL_RENEW && license?.trialLicense) {
       const newMetadata: ORDER_METADATA = await this.makeMetadataForRenew(
         license,
@@ -278,20 +258,6 @@ export class MktLicenseUpdateOnePreQueryHook
       },
       paymentMethods,
       variants,
-    };
-  }
-
-  async makeMetadataForRefund(
-    license: MktLicenseWorkspaceEntity | null,
-  ): Promise<ORDER_METADATA> {
-    return {
-      orderAction: ORDER_ACTION.REFUND,
-      variants: [
-        {
-          mktVariantId: license?.mktVariantId || 'unknown',
-          quantity: 1,
-        },
-      ],
     };
   }
 

@@ -24,6 +24,7 @@ export type ORDER_METADATA = {
   oldVariantId?: string;
   refund?: RefundItem[]; // Danh sách các mục hoàn tiền
   licenseHistory?: MktLicenseHistoryWorkspaceEntity | null; // Thông tin lịch sử license liên quan đến đơn hàng
+  licenseRefundIds?: string[]; // Danh sách ID của các license đã được hoàn tiền
 };
 
 export enum ORDER_STATUS {
@@ -36,6 +37,7 @@ export enum ORDER_STATUS {
   REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
   CONFIRMED = 'CONFIRMED', // đơn hàng đã được xác nhận
   BLOCKED = 'BLOCKED', // đơn hàng bị khóa (do nghi ngờ gian lận hoặc vi phạm chính sách)
+  REFUND_PARTIAL = 'REFUND_PARTIAL', // hoàn tiền một phần (đơn hàng đã được hoàn tiền một phần)
 }
 
 export const ORDER_STATUS_OPTIONS = {
@@ -95,6 +97,12 @@ export const ORDER_STATUS_OPTIONS = {
       color: 'black',
       position: 8,
     },
+    {
+      value: ORDER_STATUS.REFUND_PARTIAL,
+      label: 'Hoàn tiền một phần',
+      color: 'cyan',
+      position: 9,
+    },
   ],
   labels: {
     EN: {
@@ -107,6 +115,7 @@ export const ORDER_STATUS_OPTIONS = {
       REFUND: 'Refund',
       CONFIRMED: 'Confirmed',
       BLOCKED: 'Blocked',
+      REFUND_PARTIAL: 'Partial Refund',
     },
     VI: {
       DRAFT: 'Nháp',
@@ -118,6 +127,7 @@ export const ORDER_STATUS_OPTIONS = {
       REFUND: 'Hoàn tiền',
       CONFIRMED: 'Đã xác nhận',
       BLOCKED: 'Khóa đơn hàng',
+      REFUND_PARTIAL: 'Hoàn tiền một phần',
     },
   },
 };
@@ -142,6 +152,7 @@ export enum ORDER_ACTION {
   LICENSE_RENEWING = 'LICENSE_RENEWING',
   CHANGE_VARIANT = 'CHANGE_VARIANT',
   REFUND = 'REFUND',
+  REFUND_PARTIAL = 'REFUND_PARTIAL',
 }
 
 export enum SINVOICE_STATUS {

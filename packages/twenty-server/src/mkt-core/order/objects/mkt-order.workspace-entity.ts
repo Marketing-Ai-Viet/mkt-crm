@@ -147,6 +147,15 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   discount?: number;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.refundAmount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Refund Amount`,
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  refundAmount?: number;
+
   //discount_percent
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.discountPercent,
@@ -194,7 +203,7 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconBox',
   })
   @WorkspaceIsNullable()
-  metadata: JSON;
+  metadata: JSON | null;
 
   @WorkspaceField({
     standardId: MKT_ORDER_FIELD_IDS.accountingConfirmed,

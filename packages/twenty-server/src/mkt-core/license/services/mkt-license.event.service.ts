@@ -64,6 +64,29 @@ export class MktLicenseEventService {
     }
   }
 
+  async refundLicensesFromOrder(updateOrder: MktOrderWorkspaceEntity | void) {
+    const licenseHistoryRepo = await this.mktRepo.getLicenseHistoryRepository();
+
+    const licenses = updateOrder?.mktLicense || [];
+
+    for (const license of licenses) {
+      if (license.status !== MKT_LICENSE_STATUS.REFUND) continue;
+      const history =
+        await this.mktLicenseHistoryService.createHistoryItemFromUpdate(
+          null,
+          MKT_LICENSE_STATUS.REFUND,
+        );
+
+      await licenseHistoryRepo.save({
+        mktLicense: license,
+        name: history?.name || 'License ',
+        action: history?.action || 'LICENSE_REFUND',
+        note: history?.note || 'refund license.',
+        createdBy: license.createdBy,
+      });
+    }
+  }
+
   async activateLicensesFromOrder(updateOrder: MktOrderWorkspaceEntity) {
     const licenseRepo = await this.mktRepo.getLicenseRepository();
     const licenseHistoryRepo = await this.mktRepo.getLicenseHistoryRepository();

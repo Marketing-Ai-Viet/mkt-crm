@@ -16,6 +16,7 @@ import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.s
 import { OrderService } from 'src/mkt-core/order/services/order.service';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
+import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 
 export type Updated = MktOrderWorkspaceEntity;
 
@@ -55,10 +56,20 @@ export class MktOrderUpdateOnePostQueryHook
     if (!updated) return;
     let eventType = MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
 
-    if (updated?.accountingConfirmed === true)
+    const actionMetadata = await this.orderActionService.getOrderAction(
+      updated?.metadata,
+    );
+
+    this.logger.log('[Order POST HOOK] action: ' + actionMetadata);
+
+    if (updated?.accountingConfirmed === true && !actionMetadata)
       eventType = MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED;
+
+    if (actionMetadata === ORDER_ACTION.REFUND) {
+      eventType = MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED;
+    }
     try {
-      this.mktCommonOrderService.eventUpdated(
+      await this.mktCommonOrderService.eventUpdated(
         updated.id,
         workspaceId,
         eventType,

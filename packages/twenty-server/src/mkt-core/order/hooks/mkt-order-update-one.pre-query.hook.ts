@@ -16,6 +16,7 @@ import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constant
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
+import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 
 @WorkspaceQueryHook('mktOrder.updateOne')
 export class MktOrderUpdateOnePreQueryHook
@@ -31,6 +32,7 @@ export class MktOrderUpdateOnePreQueryHook
     private readonly orderActionService: OrderActionService,
     private readonly orderPayloadService: OrderPayloadService,
     private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
+    private readonly mktCommonService: MktCommonOrderService,
   ) {}
 
   async execute(
@@ -105,6 +107,17 @@ export class MktOrderUpdateOnePreQueryHook
 
     if (input?.note) updatePayload.note = input?.note;
 
+    if (
+      action === ORDER_ACTION.REFUND ||
+      action === ORDER_ACTION.REFUND_PARTIAL
+    ) {
+      this.logger.log('Handling refund process');
+      updatePayload.refundAmount = await this.mktCommonService.handleRefund(
+        currentOrder,
+        payload,
+      );
+    }
+
     return {
       ...newPayload,
       data: {
@@ -131,7 +144,7 @@ export class MktOrderUpdateOnePreQueryHook
   ): Promise<MktOrderWorkspaceEntity | null> {
     const currentOrder = await orderRepository.findOne({
       where: { id: orderId },
-      relations: ['orderItems'],
+      relations: ['orderItems', 'mktLicense'],
     });
 
     return currentOrder;

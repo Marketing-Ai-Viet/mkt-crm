@@ -42,7 +42,7 @@ export type Metadata = {
 };
 export type Created = MktOrderWorkspaceEntity & {
   id: string;
-  metadata?: Metadata;
+  metadata?: Metadata | null;
 };
 
 @Injectable()
@@ -79,7 +79,7 @@ export class MktOrderCreateOnePostQueryHook
 
     if (!created) return;
     try {
-      let metadata: Metadata = created?.metadata;
+      let metadata: Metadata = created?.metadata || {};
 
       await this.validateMetadata(metadata);
 

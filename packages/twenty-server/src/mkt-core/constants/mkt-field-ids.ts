@@ -307,6 +307,7 @@ export const MKT_ORDER_FIELD_IDS = {
   requireContract: '3bc491e5-3e65-44d4-97d5-f71300ab3d41',
   subtotal: 'a54ffe1f-a15e-471a-b644-f2a8f6396863',
   discount: '97e1ed20-01ba-48f0-b3b9-15eca354a115',
+  refundAmount: '89bb731b-1e21-4279-9ab2-9e0bef878e6e',
   discountPercent: 'd832fc15-950e-4c94-83b2-864e6dc3b904',
   tax: '86a4bf34-9808-4908-b2d6-65cb4d146bc0',
   sInvoiceStatus: '3986dded-a1f3-4f53-9c2a-8e67d1af8cd3',

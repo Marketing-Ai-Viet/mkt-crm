@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { In } from 'typeorm';
+
+import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
+
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import {
   FIREBASE_AUTH_RESPONSE,
@@ -15,6 +19,9 @@ import {
   RefundItem,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 @Injectable()
 export class MktCommonOrderService {
@@ -192,5 +199,93 @@ export class MktCommonOrderService {
         error,
       );
     }
+  }
+
+  async handleRefund(
+    currentOrder: Partial<MktOrderWorkspaceEntity> | null,
+    payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
+  ): Promise<number> {
+    this.logger.log('Handling refund process in MktCommonOrderService');
+    const licenseRefundIds = await this.getLicenseIdsRefund(
+      currentOrder,
+      payload,
+    );
+
+    this.logger.log(
+      `License IDs to refund: ${JSON.stringify(licenseRefundIds)}`,
+    );
+
+    await this.updateLicenseStatusForRefund(licenseRefundIds);
+
+    return await this.calculateRefundAmount(licenseRefundIds);
+  }
+
+  private async updateLicenseStatusForRefund(licenseRefundIds: string[]) {
+    if (licenseRefundIds.length === 0) return;
+
+    const licenseRepo = await this.mktRepo.getRepository(
+      MktLicenseWorkspaceEntity,
+    );
+
+    await licenseRepo.update(licenseRefundIds, {
+      status: MKT_LICENSE_STATUS.REFUND,
+    });
+  }
+
+  private async calculateRefundAmount(licenseRefundIds: string[]) {
+    const licenseRepo = await this.mktRepo.getRepository(
+      MktLicenseWorkspaceEntity,
+    );
+    const licenses = await licenseRepo.find({
+      where: {
+        id: In(licenseRefundIds),
+      },
+      relations: ['mktVariant'],
+    });
+
+    let totalRefundAmount = 0;
+
+    for (const license of licenses) {
+      const variant = license.mktVariant as MktVariantWorkspaceEntity;
+
+      this.logger.log(`Calculating refund for license `);
+
+      if (variant) {
+        totalRefundAmount += variant.price || 0;
+      }
+    }
+
+    return totalRefundAmount;
+  }
+
+  private async getLicenseIdsRefund(
+    currentOrder: Partial<MktOrderWorkspaceEntity> | null,
+    payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
+  ) {
+    const licenses = currentOrder?.mktLicense;
+
+    const licenseIds = licenses?.map((license) => license.id) || [];
+    let updateRefundLicenseIds: string[] = [];
+    let refundMetadata: ORDER_METADATA;
+    let licenseRefundIds: string[] = [];
+
+    try {
+      refundMetadata = JSON.parse(
+        payload.data?.metadata as unknown as string,
+      ) as ORDER_METADATA;
+      licenseRefundIds = refundMetadata.licenseRefundIds || [];
+    } catch (e) {
+      this.logger.log('No refund metadata found or failed to parse');
+    }
+
+    if (licenseRefundIds.length) {
+      updateRefundLicenseIds = licenseIds.filter((id) =>
+        licenseRefundIds.includes(id),
+      );
+    } else {
+      return licenseIds;
+    }
+
+    return updateRefundLicenseIds;
   }
 }

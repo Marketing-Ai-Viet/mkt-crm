@@ -75,11 +75,15 @@ export class MktOrderCustomEventListener {
           updateOrder?.status === ORDER_STATUS.OVERDUE ||
           updateOrder?.status === ORDER_STATUS.BLOCKED
         ) {
-          this.logger.log(
-            `Order ${updateOrder.id} has moved to OVERDUE status.`,
-          );
           this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
           await this.mktLicenseEventService.lockLicensesFromOrder(updateOrder);
+        }
+
+        this.logger.log(`Order type 82: ${orderType}`);
+        if (orderType === MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED) {
+          await this.mktLicenseEventService.refundLicensesFromOrder(
+            updateOrder,
+          );
         }
 
         if (updateOrder?.status === ORDER_STATUS.COMPLETED) {
@@ -227,6 +231,11 @@ export class MktOrderCustomEventListener {
         break;
       case MKT_ORDER_EVENT_TYPES.FROM_LICENSE:
         action = ORDER_HISTORY_ACTION.LICENSE_UPDATED;
+        break;
+      case MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED:
+        action = ORDER_HISTORY_ACTION.REFUNDED;
+        name = 'Hoàn tiền đơn hàng';
+        note = 'Đơn hàng đã được hoàn tiền';
         break;
       default:
         action = ORDER_HISTORY_ACTION.UPDATED;
