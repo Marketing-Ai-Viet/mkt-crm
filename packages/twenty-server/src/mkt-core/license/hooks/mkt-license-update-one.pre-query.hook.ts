@@ -123,6 +123,7 @@ export class MktLicenseUpdateOnePreQueryHook
     }
 
     if (status === MKT_LICENSE_STATUS.RENEWING) {
+      this.mktLicenseRenewService.trialLicense = false;
       const newMetadata: ORDER_METADATA = await this.makeMetadataForRenew(
         license,
         paymentMethods,
@@ -162,6 +163,7 @@ export class MktLicenseUpdateOnePreQueryHook
     }
 
     if (status === MKT_LICENSE_STATUS.TRIAL_RENEW && license?.trialLicense) {
+      this.mktLicenseRenewService.trialLicense = true;
       const newMetadata: ORDER_METADATA = await this.makeMetadataForRenew(
         license,
         paymentMethods,
