@@ -77,6 +77,21 @@ export class CreateUserInput {
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
+  teamId?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  memberType?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
   employmentStatusId?: string;
 
   @Field(() => String, { nullable: true })

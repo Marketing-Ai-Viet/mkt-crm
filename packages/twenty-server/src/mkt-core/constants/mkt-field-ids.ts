@@ -45,6 +45,8 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   mktWorkspaceId: '3393c870-41c7-4efd-b57a-cb497569a30a',
   mktCustomerCode: 'b4c82d9d-c204-4ef1-a636-0c9f2779c1ff',
   type: '204aef63-5db1-43d4-b1d6-d01f36df5558',
+  userId: '334fcd0c-c83f-4249-8590-7b81c1e8838c',
+  syncStatus: 'aee059bf-3d61-4eb8-8ae7-22d92864c0be',
   //basic_info
   name: 'bc3ac7d1-2e1c-4fe0-a43d-0fa961552cb6',
   companyName: 'b10c1418-0f38-4f63-8363-b7fbf3f7dd94',
@@ -950,6 +952,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
 
 export const MKT_PERSON_FIELD_IDS = {
   memberType: '0804050d-c4d3-4029-b401-b48369c00e70',
+  newEmail: '3dd95a4c-9902-4dbe-bd34-ed1c14f3391a',
   // relations
   departmentId: '24674af6-c1c8-446e-92cb-8d9fd2bf3ed6',
   teamId: '3579b8fd-1e5a-4ced-b248-0587fbd022d0',
@@ -957,6 +960,7 @@ export const MKT_PERSON_FIELD_IDS = {
   startDate: '697bb3ff-fe25-4ffb-b6ad-28a5dab6254f',
   endDate: '8bc02b57-f02e-4853-91a3-ee6e38f989c6',
   status: '3d8d2eb9-572e-4148-a110-c3cb7062f5f2',
+  syncStatus: '0b811f27-2dae-4370-a804-04a8955f7b40',
 };
 
 export const MKT_RESELLER_TIER_FIELD_IDS = {

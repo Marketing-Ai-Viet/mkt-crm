@@ -69,6 +69,27 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   mktCustomerCode: string;
 
   @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.syncStatus,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Sync Status`,
+    description: msg`Customer sync status`,
+    icon: 'IconSync',
+    defaultValue: true,
+  })
+  @WorkspaceIsNullable()
+  syncStatus: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.userId,
+    type: FieldMetadataType.TEXT,
+    label: msg`User ID`,
+    description: msg`Customer user ID`,
+    icon: 'IconUser',
+  })
+  @WorkspaceIsNullable()
+  userId: string;
+
+  @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.type,
     type: FieldMetadataType.TEXT,
     label: msg`Type`,

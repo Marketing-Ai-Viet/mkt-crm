@@ -16,6 +16,8 @@ import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.work
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 @Injectable()
 export class MktRepositoryService {
@@ -159,5 +161,13 @@ export class MktRepositoryService {
 
   async getCustomerRepository() {
     return await this.getRepository(MktCustomerWorkspaceEntity);
+  }
+
+  async getPeopleRepository() {
+    return await this.getRepository(PersonWorkspaceEntity);
+  }
+
+  async getWorkspaceMemberRepository() {
+    return await this.getRepository(WorkspaceMemberWorkspaceEntity);
   }
 }

@@ -18,6 +18,16 @@ export class PersonMktEntity extends BaseWorkspaceEntity {
   memberType: string;
 
   @WorkspaceField({
+    standardId: MKT_PERSON_FIELD_IDS.newEmail,
+    type: FieldMetadataType.TEXT,
+    label: msg`New Email`,
+    description: msg`The new email address of the workspace member`,
+    icon: 'IconMailForward',
+  })
+  @WorkspaceIsNullable()
+  newEmail: string | null;
+
+  @WorkspaceField({
     standardId: MKT_PERSON_FIELD_IDS.departmentId,
     type: FieldMetadataType.TEXT,
     label: msg`Department ID`,
@@ -76,4 +86,15 @@ export class PersonMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   status: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_PERSON_FIELD_IDS.syncStatus,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Sync Status`,
+    description: msg`Person sync status`,
+    icon: 'IconSync',
+    defaultValue: true,
+  })
+  @WorkspaceIsNullable()
+  syncStatus: boolean;
 }

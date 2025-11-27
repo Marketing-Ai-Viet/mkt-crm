@@ -21,6 +21,7 @@ export class MktPeopleSyncCronJob {
 
     try {
       await this.mktPeopleSyncService.syncPeopleToUsers(workspaceId);
+      // await this.mktPeopleSyncService.syncCustomerToUsers(workspaceId);
     } catch (error) {
       this.logger.error('Failed to process people sync:', error);
       throw error;

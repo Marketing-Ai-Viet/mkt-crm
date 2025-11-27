@@ -7,6 +7,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
+
 import { PASSWORD_REGEX } from 'src/engine/core-modules/auth/auth.util';
 
 @ArgsType()
