@@ -13,7 +13,9 @@ import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
+import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktPeopleSyncCronJob } from 'src/mkt-core/user-management/commands/mkt-people-sync.cron.job';
+import { MktCoreUserCreationService } from 'src/mkt-core/user-management/services/mkt-core-user-creation.service';
 import { MktCoreUserUpdateService } from 'src/mkt-core/user-management/services/mkt-core-user-update.service';
 import { MktDepartmentLookupService } from 'src/mkt-core/user-management/services/mkt-department-lookup.service';
 import { MktEmailNotificationService } from 'src/mkt-core/user-management/services/mkt-email-notification.service';
@@ -52,6 +54,7 @@ import { UserManagementService } from 'src/mkt-core/user-management/user-managem
     TwentyConfigModule,
     MktCommonModule,
     WorkspaceCacheStorageModule,
+    CustomerModule,
   ],
   providers: [
     UserManagementResolver,
@@ -65,6 +68,7 @@ import { UserManagementService } from 'src/mkt-core/user-management/user-managem
     MktPersonUserCreationService,
     MktPersonUserUpdateService,
     MktPersonDeletionService,
+    MktCoreUserCreationService,
     MktCoreUserUpdateService,
     MktWorkspaceMemberUpdateService,
     MktWorkspaceMemberChangeLoggerService,

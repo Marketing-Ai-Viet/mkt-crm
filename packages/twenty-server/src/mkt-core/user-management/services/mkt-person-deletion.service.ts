@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 
 @Injectable()
 export class MktPersonDeletionService {
@@ -16,6 +16,7 @@ export class MktPersonDeletionService {
     @InjectRepository(User, 'core')
     private readonly userRepository: Repository<User>,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   async softDeleteByPerson(
@@ -30,77 +31,45 @@ export class MktPersonDeletionService {
       return;
     }
 
-    this.logger.log(
-      `[DELETE BY EMAIL] Starting soft delete for email: ${email}, person: ${person.id}`,
-    );
+    this.logger.log(`[DELETE BY EMAIL] Starting deletion for email: ${email}`);
 
-    // Find all users with this email
+    // CASE 1: Soft delete all users with this email
     const users = await this.userRepository.find({
       where: { email },
     });
 
-    this.logger.log(
-      `[DELETE BY EMAIL] Found ${users.length} user(s) with email: ${email}`,
-    );
-
-    // CASE 1: Soft delete all users with this email
-    this.logger.log(
-      `[DELETE BY EMAIL] === CASE 1: Deleting users with email: ${email} ===`,
-    );
-
-    if (users.length === 0) {
-      this.logger.log(`[DELETE BY EMAIL] No users found - skipping Case 1`);
-    } else {
-      for (const user of users) {
-        await this.userRepository.softDelete({ id: user.id });
-        this.logger.log(
-          `[DELETE BY EMAIL] ✓ Soft deleted user: ${user.id} (${email})`,
-        );
-      }
-      this.logger.log(
-        `[DELETE BY EMAIL] Case 1 completed - Deleted ${users.length} user(s)`,
-      );
+    for (const user of users) {
+      await this.userRepository.softDelete({ id: user.id });
     }
 
-    // CASE 2: Soft delete all workspace members with this email (independent)
-    this.logger.log(
-      `[DELETE BY EMAIL] === CASE 2: Deleting workspace members with email: ${email} ===`,
-    );
-
-    const workspaceMemberRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
-        workspaceId,
-        'workspaceMember',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const members = await workspaceMemberRepo.find({
+    // CASE 2: Soft delete all workspace members with this email
+    const memberRepo = await this.mktRepo.getWorkspaceMemberRepository();
+    const members = await memberRepo.find({
       where: { userEmail: email },
     });
 
-    this.logger.log(
-      `[DELETE BY EMAIL] Found ${members.length} workspace member(s) with email: ${email}`,
-    );
-
-    let totalMembersDeleted = 0;
-
     for (const member of members) {
-      await workspaceMemberRepo.update(
+      await memberRepo.update(
         { id: member.id },
         { deletedAt: new Date().toISOString() },
       );
-      this.logger.log(
-        `[DELETE BY EMAIL] ✓ Soft deleted workspace member: ${member.id} (email: ${email})`,
+    }
+
+    // CASE 3: Soft delete all customers with this email
+    const cusRepo = await this.mktRepo.getCustomerRepository();
+    const customers = await cusRepo.find({
+      where: { email },
+    });
+
+    for (const customer of customers) {
+      await cusRepo.update(
+        { id: customer.id },
+        { deletedAt: new Date().toISOString() },
       );
-      totalMembersDeleted++;
     }
 
     this.logger.log(
-      `[DELETE BY EMAIL] Case 2 completed - Deleted ${totalMembersDeleted} workspace member(s)`,
-    );
-
-    this.logger.log(
-      `[DELETE BY EMAIL] ✅ Completed deletion for email: ${email} - Total: ${users.length} user(s) and ${totalMembersDeleted} workspace member(s)`,
+      `[DELETE BY EMAIL] ✅ Deleted ${users.length} user(s), ${members.length} member(s), ${customers.length} customer(s) for: ${email}`,
     );
   }
 }

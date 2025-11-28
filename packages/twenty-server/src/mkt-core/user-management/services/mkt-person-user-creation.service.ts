@@ -1,31 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable } from '@nestjs/common';
 
-import { Repository } from 'typeorm';
-
-import { hashPassword } from 'src/engine/core-modules/auth/auth.util';
-import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { User } from 'src/engine/core-modules/user/user.entity';
-import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
-import { MktEmailNotificationService } from 'src/mkt-core/user-management/services/mkt-email-notification.service';
-import { MktPasswordService } from 'src/mkt-core/user-management/services/mkt-password.service';
-import { MktWorkspaceMemberService } from 'src/mkt-core/user-management/services/mkt-workspace-member.service';
+import { MktCustomerCreationService } from 'src/mkt-core/customer/services/mkt-customer-creation.service';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
+
+import { MktCoreUserCreationService } from './mkt-core-user-creation.service';
+import { MktEmailNotificationService } from './mkt-email-notification.service';
+import { MktPasswordService } from './mkt-password.service';
+import { MktRoleCacheService } from './mkt-role-cache.service';
+import { MktWorkspaceMemberService } from './mkt-workspace-member.service';
 
 @Injectable()
 export class MktPersonUserCreationService {
-  private readonly logger = new Logger(MktPersonUserCreationService.name);
-
   constructor(
-    @InjectRepository(User, 'core')
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(UserWorkspace, 'core')
-    private readonly userWorkspaceRepository: Repository<UserWorkspace>,
-    @InjectRepository(RoleTargetsEntity, 'core')
-    private readonly roleTargetsRepository: Repository<RoleTargetsEntity>,
+    private readonly coreUserCreationService: MktCoreUserCreationService,
+    private readonly customerCreationService: MktCustomerCreationService,
     private readonly mktPasswordService: MktPasswordService,
     private readonly mktEmailNotificationService: MktEmailNotificationService,
     private readonly mktWorkspaceMemberService: MktWorkspaceMemberService,
+    private readonly roleCacheService: MktRoleCacheService,
   ) {}
 
   async createUserFromPerson(
@@ -36,43 +28,37 @@ export class MktPersonUserCreationService {
     const email = person.emails?.primaryEmail;
 
     if (!email) {
-      this.logger.warn(`Person ${person.id} has no email`);
-
       return;
     }
 
     const passwordRandom = this.mktPasswordService.generatePassword();
+    const passwordHash =
+      await this.coreUserCreationService.hashPassword(passwordRandom);
 
-    // Create core user
-    const coreUser = await this.userRepository.save({
-      email,
-      firstName: person.name?.firstName || '',
-      lastName: person.name?.lastName || '',
-      passwordHash: await hashPassword(passwordRandom),
-      isEmailVerified: true,
-      canImpersonate: false,
-      canAccessFullAdminPanel: false,
-      locale: 'en',
-      defaultAvatarUrl: person.avatarUrl || undefined,
-    });
+    const { coreUser, userWorkspace } =
+      await this.coreUserCreationService.createCoreUser(
+        workspaceId,
+        person,
+        passwordHash,
+      );
 
-    // Create user workspace
-    const userWorkspace = await this.userWorkspaceRepository.save({
-      userId: coreUser.id,
-      workspaceId,
-      locale: 'en',
-      defaultAvatarUrl: person.avatarUrl || undefined,
-    });
+    const isCustomerRole =
+      roleId && roleId === this.roleCacheService.getCustomerRoleId();
 
-    // Assign role
-    await this.roleTargetsRepository.save({
-      userWorkspaceId: userWorkspace.id,
+    if (isCustomerRole) {
+      await this.customerCreationService.createCustomerFromPerson(
+        workspaceId,
+        coreUser.id,
+        person,
+      );
+    }
+
+    await this.coreUserCreationService.assignRole(
+      userWorkspace.id,
       workspaceId,
       roleId,
-    });
+    );
 
-    // Create workspace member with full fields
-    // Note: departmentId will be looked up from teamId in MktWorkspaceMemberService
     await this.mktWorkspaceMemberService.createWorkspaceMember(workspaceId, {
       name: {
         firstName: person.name?.firstName || '',
@@ -91,13 +77,10 @@ export class MktPersonUserCreationService {
       memberType: person.memberType || '',
     });
 
-    // Send welcome email
     await this.mktEmailNotificationService.sendWelcomeEmail(
       workspaceId,
       email,
       passwordRandom,
     );
-
-    this.logger.log(`Created user for person: ${email}`);
   }
 }

@@ -11,8 +11,10 @@ import { MktCustomerExportController } from 'src/mkt-core/customer/controllers/m
 import { MktCustomerTierUpdateJob } from 'src/mkt-core/customer/jobs/mkt-customer-tier-update.job';
 import { MktCustomerLicenseResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-license.resolver';
 import {
+  MktCustomerCreationService,
   MktCustomerTierCalculationService,
   MktCustomerTierService,
+  MktCustomerUpdateService,
 } from 'src/mkt-core/customer/services';
 import { MktCustomerExportService } from 'src/mkt-core/customer/services/mkt-customer-export.service';
 import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/mkt-customer-license.service';
@@ -31,9 +33,11 @@ import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
   ],
   controllers: [MktCustomerExportController],
   providers: [
+    MktCustomerCreationService,
     MktCustomerTierCalculationService,
     MktCustomerTierService,
     MktCustomerQueueService,
+    MktCustomerUpdateService,
     //MktCustomerEventListener,
     MktCustomerTierUpdateJob,
     MktCustomerTierUpdateCommand,
@@ -44,10 +48,12 @@ import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
     MktCustomerLicenseResolver,
   ],
   exports: [
+    MktCustomerCreationService,
     MktCustomerQueueService,
     MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
+    MktCustomerUpdateService,
   ],
 })
 export class CustomerModule {}
