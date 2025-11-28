@@ -65,6 +65,36 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   memberType: string;
 
   @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.grade,
+    type: FieldMetadataType.TEXT,
+    label: msg`Grade`,
+    description: msg`The grade of the workspace member`,
+    icon: 'IconCertificate',
+  })
+  @WorkspaceIsNullable()
+  grade: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.address,
+    type: FieldMetadataType.TEXT,
+    label: msg`Address`,
+    description: msg`The address of the workspace member`,
+    icon: 'IconHome',
+  })
+  @WorkspaceIsNullable()
+  address: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`Member Code`,
+    description: msg`The code assigned to the workspace member`,
+    icon: 'IconIdBadge',
+  })
+  @WorkspaceIsNullable()
+  memberCode: string | null;
+
+  @WorkspaceField({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.supportForMemberId,
     type: FieldMetadataType.TEXT,
     label: msg`Support For Member ID`,

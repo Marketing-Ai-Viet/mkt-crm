@@ -29,6 +29,7 @@ import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.work
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 
 const TABLE_NAME = 'mktCustomer';
 const NAME_FIELD_NAME = 'name';
@@ -409,6 +410,19 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktOrders: Relation<MktOrderWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.contracts,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Contracts`,
+    description: msg`Contracts linked to the customer`,
+    icon: 'IconFileContract',
+    inverseSideTarget: () => MktContractWorkspaceEntity,
+    inverseSideFieldKey: 'customer',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  contracts: Relation<MktContractWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_CUSTOMER_FIELD_IDS.accountOwner,

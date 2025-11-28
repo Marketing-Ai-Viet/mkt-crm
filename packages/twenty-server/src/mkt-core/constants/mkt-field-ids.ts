@@ -47,6 +47,7 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   type: '204aef63-5db1-43d4-b1d6-d01f36df5558',
   userId: '334fcd0c-c83f-4249-8590-7b81c1e8838c',
   syncStatus: 'aee059bf-3d61-4eb8-8ae7-22d92864c0be',
+  contracts: 'c0964873-b9ec-4692-93fa-29233809f5af',
   //basic_info
   name: 'bc3ac7d1-2e1c-4fe0-a43d-0fa961552cb6',
   companyName: 'b10c1418-0f38-4f63-8363-b7fbf3f7dd94',
@@ -716,9 +717,15 @@ export const MKT_CONTRACT_FIELD_IDS = {
   status: '90a61a70-1871-4534-8215-8031ca107a99',
   startDate: '5cfe9cf4-3f1a-4a9a-bc84-7296da244819',
   endDate: '14548624-e9a4-4203-a1a2-c9b6341a5536',
+  contractType: '92440473-2b50-4cff-9100-18a5bf033f21',
+  signedDate: '2b57a1fb-9d10-4c97-98b5-6c1adf7d21cd',
+  filePath: '6bc6db5f-5879-495f-8244-c492b06eab0c',
+  fileName: 'd02c54fd-f3cf-42b6-8293-0860b05f9e17',
+  description: 'e72447c6-f775-4cf3-a67d-cc632dac1e65',
   // relations
   mktOrder: '8d607784-4a7f-4b03-b084-ed33561cb830',
   mktOrderId: '9e8ab2f5-3a4c-4d5e-8f1b-7c9d8e0f1a2b',
+  customer: '21c8ee47-b6a9-4c93-9fb7-04cbbf119d44',
   // mktTemplate: 'd7eb704c-1c00-4c08-b49d-4e1db26e5472',
   // common relations or fields
   position: '5781e4a6-4a32-46ab-8fe0-f72c6887c83c',
@@ -892,6 +899,9 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   status: '6f656294-ce00-499a-b8e5-bd9c4be9bde9',
   leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
   subLeaderForMktDepartments: '43ef504c-9e23-431e-993c-b31c0199252c',
+  grade: '5ffe14ec-94b9-4c49-b61e-e99493b18f5f',
+  address: 'a2312a29-32d9-4ea7-b411-7df882d3562d',
+  memberCode: 'bdcdd342-8d54-4686-9725-4c18df2f4977',
   //options
   accountOwnerForMktOptions: '688c5537-77aa-4b1f-a557-d4d0d124c904',
   accountOwnerForMktReports: 'a55048e3-30c5-4a74-a5e0-70c41b159c00',
@@ -1097,6 +1107,7 @@ export const MKT_STAFF_STATUS_HISTORY_FIELD_IDS = {
 export const MKT_DEPARTMENT_FIELD_IDS = {
   departmentType: '1a8cd0b1-19e3-4e72-a550-417b7b31f576',
   metadata: '764b1220-3891-4543-9ef5-f71cc2041891',
+  address: '6da75069-5b2d-45a3-8081-3699db04a7e6',
   // department definition
   departmentCode: 'c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f',
   departmentName: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a',

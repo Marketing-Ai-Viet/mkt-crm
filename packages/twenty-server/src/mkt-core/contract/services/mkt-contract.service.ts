@@ -121,6 +121,7 @@ export class MktContractService {
         startDate: startDate,
         endDate: formattedEndDate,
         status: MKT_CONTRACT_STATUS.ACTIVE,
+        customerId: mktCustomerId,
       });
 
       // Set the createdBy field

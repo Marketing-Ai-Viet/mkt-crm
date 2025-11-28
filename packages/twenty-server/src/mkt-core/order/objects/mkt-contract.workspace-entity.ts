@@ -27,6 +27,7 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 
 const TABLE_CONTRACT_NAME = 'mktContract';
 const NAME_FIELD_NAME = 'name';
@@ -97,6 +98,56 @@ export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
   status?: string | null;
 
   @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.contractType,
+    type: FieldMetadataType.TEXT,
+    label: msg`Contract Type`,
+    description: msg`Type of contract`,
+    icon: 'IconFileType',
+  })
+  @WorkspaceIsNullable()
+  contractType?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.signedDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Signed Date`,
+    description: msg`Date when the contract was signed`,
+    icon: 'IconSignature',
+  })
+  @WorkspaceIsNullable()
+  signedDate?: Date | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.filePath,
+    type: FieldMetadataType.TEXT,
+    label: msg`File Path`,
+    description: msg`Path to the contract file`,
+    icon: 'IconFile',
+  })
+  @WorkspaceIsNullable()
+  filePath?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.fileName,
+    type: FieldMetadataType.TEXT,
+    label: msg`File Name`,
+    description: msg`Name of the contract file`,
+    icon: 'IconFile',
+  })
+  @WorkspaceIsNullable()
+  fileName?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.description,
+    type: FieldMetadataType.TEXT,
+    label: msg`Description`,
+    description: msg`Detailed description of the contract`,
+    icon: 'IconTextWrap',
+  })
+  @WorkspaceIsNullable()
+  description?: string | null;
+
+  @WorkspaceField({
     standardId: MKT_CONTRACT_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,
@@ -127,6 +178,23 @@ export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktOrders: Relation<MktOrderWorkspaceEntity[]> | null;
+
+  //customer owner
+  @WorkspaceRelation({
+    standardId: MKT_CONTRACT_FIELD_IDS.customer,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Customer`,
+    description: msg`The customer associated with the contract`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => MktCustomerWorkspaceEntity, // Replace null with the actual CustomerWorkspaceEntity when available
+    inverseSideFieldKey: 'contracts',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  customer: Relation<MktCustomerWorkspaceEntity> | null; // Replace any with the actual CustomerWorkspaceEntity type when available
+
+  @WorkspaceJoinColumn('customer')
+  customerId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_CONTRACT_FIELD_IDS.accountOwner,

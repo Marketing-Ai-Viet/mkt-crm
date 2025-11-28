@@ -203,6 +203,16 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   isActive?: boolean;
 
   @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.address,
+    type: FieldMetadataType.TEXT,
+    label: msg`Address`,
+    description: msg`Physical address of the department`,
+    icon: 'IconMapPin',
+  })
+  @WorkspaceIsNullable()
+  address?: string;
+
+  @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,

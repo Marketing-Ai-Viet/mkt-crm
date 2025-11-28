@@ -5,6 +5,12 @@ export enum MKT_CONTRACT_STATUS {
   REVOKED = 'REVOKED',
 }
 
+export enum MKT_CONTRACT_TYPE {
+  ORIGIN = 'ORIGIN', // Hợp đồng gốc
+  RENEW = 'RENEW', // Hợp đồng gia hạn
+  UPGRADE = 'UPGRADE', // Hợp đồng nâng cấp
+}
+
 export const MKT_CONTRACT_STATUS_OPTIONS = {
   status: MKT_CONTRACT_STATUS,
   options: [
@@ -45,6 +51,42 @@ export const MKT_CONTRACT_STATUS_OPTIONS = {
       INACTIVE: 'Không hoạt động',
       EXPIRED: 'Hết hạn',
       REVOKED: 'Bị thu hồi',
+    },
+  },
+};
+
+export const MKT_CONTRACT_TYPE_OPTIONS = {
+  contractType: MKT_CONTRACT_TYPE,
+  options: [
+    {
+      value: MKT_CONTRACT_TYPE.ORIGIN,
+      color: 'blue',
+      label: 'Hợp đồng gốc',
+      position: 1,
+    },
+    {
+      value: MKT_CONTRACT_TYPE.RENEW,
+      color: 'green',
+      label: 'Hợp đồng gia hạn',
+      position: 2,
+    },
+    {
+      value: MKT_CONTRACT_TYPE.UPGRADE,
+      color: 'purple',
+      label: 'Hợp đồng nâng cấp',
+      position: 3,
+    },
+  ],
+  labels: {
+    EN: {
+      ORIGIN: 'Original Contract',
+      RENEW: 'Renewal Contract',
+      UPGRADE: 'Upgrade Contract',
+    },
+    VI: {
+      ORIGIN: 'Hợp đồng gốc',
+      RENEW: 'Hợp đồng gia hạn',
+      UPGRADE: 'Hợp đồng nâng cấp',
     },
   },
 };

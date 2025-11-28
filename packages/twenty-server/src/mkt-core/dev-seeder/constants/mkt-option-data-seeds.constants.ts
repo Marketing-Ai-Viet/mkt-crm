@@ -124,6 +124,18 @@ export const MKT_OPTION_DATA_SEEDS = [
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',
   },
+  {
+    id: '011c906f-8455-4d91-abe3-3b9c7ffbcc4f',
+    name: 'Contract Type',
+    key: 'contract_type',
+    value: null,
+    description: 'Loại hợp đồng',
+    metadata: JSON.stringify(MKT_CONTRACT_STATUS_OPTIONS),
+    position: 32,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Dev Seeder',
+  },
   // license option
   {
     id: '378b215c-674e-42db-ae33-d3b7706fdb89',
