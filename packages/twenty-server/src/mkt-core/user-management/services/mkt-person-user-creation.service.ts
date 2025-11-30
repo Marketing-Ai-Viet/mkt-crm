@@ -75,6 +75,7 @@ export class MktPersonUserCreationService {
       teamId: person.teamId || null,
       status: person.status || '',
       memberType: person.memberType || '',
+      // memberCode create
     });
 
     await this.mktEmailNotificationService.sendWelcomeEmail(

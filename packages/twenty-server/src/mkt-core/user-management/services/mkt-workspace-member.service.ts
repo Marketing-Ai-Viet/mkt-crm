@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDepartmentLookupService } from 'src/mkt-core/user-management/services/mkt-department-lookup.service';
+import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/services/mkt-member-code-generation.service';
 
 @Injectable()
 export class MktWorkspaceMemberService {
@@ -11,6 +12,7 @@ export class MktWorkspaceMemberService {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly departmentLookup: MktDepartmentLookupService,
+    private readonly memberCodeService: MktMemberCodeGenerationService,
   ) {}
 
   async createWorkspaceMember(
@@ -46,9 +48,22 @@ export class MktWorkspaceMemberService {
       `[CREATE WORKSPACE MEMBER] Fields: departmentId=${departmentId}, teamId=${data.teamId}, status=${data.status}, memberType=${data.memberType}`,
     );
 
+    // Tạo memberCode tự động nếu chưa có
+    let memberCode = data.memberCode;
+    if (!memberCode) {
+      memberCode = await this.memberCodeService.generateUniqueMemberCode(
+        workspaceId,
+        true, // dùng year prefix: MEM2025001
+      );
+      this.logger.log(
+        `[CREATE WORKSPACE MEMBER] Generated memberCode: ${memberCode}`,
+      );
+    }
+
     const member = await workspaceMemberRepo.save({
       ...data,
       departmentId,
+      memberCode,
     });
 
     this.logger.log(

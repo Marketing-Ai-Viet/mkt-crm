@@ -20,6 +20,7 @@ import { MktCustomerExportService } from 'src/mkt-core/customer/services/mkt-cus
 import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/mkt-customer-license.service';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services/mkt-customer-queue.service';
 import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
+import { MktCustomerCodeGenerationService } from 'src/mkt-core/customer/services/mkt-customer-code-generation.service';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 
 @Module({
@@ -46,6 +47,7 @@ import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
     MktCustomerExportService,
     MktCustomerLicenseService,
     MktCustomerLicenseResolver,
+    MktCustomerCodeGenerationService,
   ],
   exports: [
     MktCustomerCreationService,

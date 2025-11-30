@@ -7,6 +7,7 @@ import { MKT_LICENSE_STATUS_OPTIONS } from 'src/mkt-core/license/license.constan
 import {
   MEMBER_STATUS_OPTIONS,
   MEMBER_TYPE_OPTIONS,
+  MEMBER_GRADE_OPTIONS,
 } from 'src/mkt-core/mkt-entities-extends/mkt-member.constant';
 import { MKT_CONTRACT_STATUS_OPTIONS } from 'src/mkt-core/order/constants/mkt-contract.constant';
 import { ORDER_STATUS_OPTIONS } from 'src/mkt-core/order/constants/order-status.constants';
@@ -95,6 +96,18 @@ export const MKT_OPTION_DATA_SEEDS = [
     description: 'Trạng thái thành viên trong workspace',
     metadata: JSON.stringify(MEMBER_STATUS_OPTIONS),
     position: 21,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Dev Seeder',
+  },
+  {
+    id: 'd2fe31bc-fb18-41bd-adaf-0570579188f6',
+    name: 'Member Grade',
+    key: 'member_grade',
+    value: null,
+    description: 'Cấp bậc thành viên trong workspace',
+    metadata: JSON.stringify(MEMBER_GRADE_OPTIONS),
+    position: 22,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',

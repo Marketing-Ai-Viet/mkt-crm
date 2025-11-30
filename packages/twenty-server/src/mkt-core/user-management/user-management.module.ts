@@ -40,6 +40,7 @@ import { MktWorkspaceMemberUpdateService } from 'src/mkt-core/user-management/se
 import { MktWorkspaceMemberChangeLoggerService } from 'src/mkt-core/user-management/services/mkt-workspace-member-change-logger.service';
 import { MktWorkspaceMemberDataBuilderService } from 'src/mkt-core/user-management/services/mkt-workspace-member-data-builder.service';
 import { MktWorkspaceMemberService } from 'src/mkt-core/user-management/services/mkt-workspace-member.service';
+import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/services/mkt-member-code-generation.service';
 import { UserManagementResolver } from 'src/mkt-core/user-management/user-management.resolver';
 import { UserManagementService } from 'src/mkt-core/user-management/user-management.service';
 
@@ -85,6 +86,7 @@ import { UserManagementService } from 'src/mkt-core/user-management/user-managem
     MktRoleUpdateService,
     MktPasswordService,
     MktEmailNotificationService,
+    MktMemberCodeGenerationService,
   ],
   exports: [
     UserManagementService,
