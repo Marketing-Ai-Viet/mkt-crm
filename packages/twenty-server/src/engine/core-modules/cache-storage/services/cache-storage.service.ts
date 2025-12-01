@@ -145,6 +145,34 @@ export class CacheStorageService {
     await this.del(key);
   }
 
+  /**
+   * Health check ping với configurable timeout.
+   * Sử dụng Redis PING command để kiểm tra connection.
+   *
+   * @param options.timeoutMs - Timeout in milliseconds (default: 5000)
+   * @returns 'PONG' nếu thành công
+   * @throws Error nếu timeout hoặc connection failed
+   */
+  async ping(options?: { timeoutMs?: number }): Promise<'PONG'> {
+    if (!this.isRedisCache()) {
+      // For non-Redis cache, return immediately as healthy
+      return 'PONG';
+    }
+
+    const timeoutMs = options?.timeoutMs ?? 5000;
+    const redisClient = (this.cache as RedisCache).store.client;
+
+    return Promise.race([
+      redisClient.ping() as Promise<'PONG'>,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Redis ping timeout after ${timeoutMs}ms`)),
+          timeoutMs,
+        ),
+      ),
+    ]);
+  }
+
   private isRedisCache() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (this.cache.store as any)?.name === 'redis';

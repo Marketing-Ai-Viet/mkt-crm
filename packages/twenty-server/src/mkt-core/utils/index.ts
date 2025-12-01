@@ -2,6 +2,11 @@
 
 // Date utilities
 export { DateRangeUtils } from './date-range.utils';
+export {
+  DATE_TIME_FORMATS,
+  DateTimeRange,
+  DateTimeUtils,
+} from './date-time.utils';
 
 // Statistics utilities
 export { StatisticsUtils } from './statistics.utils';
