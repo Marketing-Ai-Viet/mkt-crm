@@ -5,10 +5,14 @@ services:
     image: twenty-server:${TAG:-latest}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
-      # Hot reload: Mount compiled dist folder from local build
-      # Run "npx nx build twenty-server --watch" locally to auto-rebuild on changes
-      - ../twenty-server/dist:/app/packages/twenty-server/dist:ro
-      - ../twenty-shared/dist:/app/packages/twenty-shared/dist:ro
+      # Hot reload: Mount source code (read-write for tsx watch to work)
+      - ../twenty-server/src:/app/packages/twenty-server/src
+      - ../twenty-server/scripts:/app/packages/twenty-server/scripts
+      - ../twenty-shared/src:/app/packages/twenty-shared/src
+      # Mount tsconfig files for tsx to resolve paths
+      - ../twenty-server/tsconfig.json:/app/packages/twenty-server/tsconfig.json:ro
+      - ../twenty-server/tsconfig.build.json:/app/packages/twenty-server/tsconfig.build.json:ro
+      - ../../tsconfig.base.json:/app/tsconfig.base.json:ro
     ports:
       - "3003:3003"
     env_file:
@@ -16,19 +20,13 @@ services:
     environment:
       NODE_PORT: 3003
       NODE_ENV: development
-      # Disable auto migrations on startup
-      DISABLE_DB_MIGRATIONS: "true"
-      # Disable cron registration in entrypoint (will use tsx which causes issues)
-      DISABLE_CRON_JOBS_REGISTRATION: "true"
       # Override host with Docker network service names
       PG_DATABASE_HOST: db
       PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:-postgres}@db:5432/${PG_DATABASE_NAME:-default}
       REDIS_HOST: redis
       REDIS_URL: redis://redis:6379
-      # Disable tsx loader for pure node execution
-      NODE_OPTIONS: ""
-    # Run from compiled dist (restart container after rebuild for hot reload)
-    command: ["node", "--no-node-snapshot", "dist/src/main"]
+    # Run from compiled dist (tsx doesn't support @lingui macros)
+    command: ["node", "dist/src/main"]
     # Enable host.docker.internal on Linux
     extra_hosts:
       - "host.docker.internal:host-gateway"
