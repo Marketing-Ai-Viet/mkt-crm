@@ -271,24 +271,22 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
 
     return this.circuitBreakerService.execute(async () => {
       const tokenUrl = `${this.serverUrl}${this.tokenEndpoint}`;
-      const scopesArray = this.scopes
-        ? this.scopes.split(',').map((s) => s.trim())
-        : [];
       const requestBody = {
         grant_type: 'client_credentials',
         client_id: this.clientId,
         client_secret: this.clientSecret,
-        scope: scopesArray,
+        scope: this.scopes,
       };
 
       // Debug logging
       this.logger.log(`[OAuth2 Debug] Token Endpoint: ${tokenUrl}`);
       this.logger.log(`[OAuth2 Debug] Server URL: ${this.serverUrl}`);
       this.logger.log(`[OAuth2 Debug] Client ID: ${this.clientId}`);
+      this.logger.log(`[OAuth2 Debug] requestBody `, requestBody);
       this.logger.log(
         `[OAuth2 Debug] Client Secret: ${this.clientSecret ? '***' + this.clientSecret.slice(-4) : 'NOT SET'}`,
       );
-      this.logger.log(`[OAuth2 Debug] Scopes: ${JSON.stringify(scopesArray)}`);
+      this.logger.log(`[OAuth2 Debug] Scopes: ${JSON.stringify(this.scopes)}`);
       this.logger.log(
         `[OAuth2 Debug] Request Body: ${JSON.stringify(requestBody)}`,
       );

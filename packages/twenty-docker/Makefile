@@ -46,6 +46,19 @@ prod-server-logs:
 prod-server-restart:
 	@docker compose -f docker-compose.server.yml restart
 
+# App-only commands (stop/start app while keeping db and redis running)
+app-down:
+	@docker compose -f docker-compose.server.yml stop server
+
+app-up:
+	@docker compose -f docker-compose.server.yml start server
+
+app-restart:
+	@docker compose -f docker-compose.server.yml restart server
+
+app-logs:
+	@docker compose -f docker-compose.server.yml logs -f server
+
 # Database commands (local development - uses packages/twenty-server/.env)
 db-reset:
 	@cd ../.. && npx nx database:reset twenty-server && cd -

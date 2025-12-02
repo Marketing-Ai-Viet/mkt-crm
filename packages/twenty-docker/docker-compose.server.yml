@@ -5,10 +5,14 @@ services:
     image: twenty-server:${TAG:-latest}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
-      # Hot reload: Mount source code
-      - ../twenty-server/src:/app/packages/twenty-server/src:ro
-      - ../twenty-server/scripts:/app/packages/twenty-server/scripts:ro
-      - ../twenty-shared/src:/app/packages/twenty-shared/src:ro
+      # Hot reload: Mount source code (read-write for tsx watch to work)
+      - ../twenty-server/src:/app/packages/twenty-server/src
+      - ../twenty-server/scripts:/app/packages/twenty-server/scripts
+      - ../twenty-shared/src:/app/packages/twenty-shared/src
+      # Mount tsconfig files for tsx to resolve paths
+      - ../twenty-server/tsconfig.json:/app/packages/twenty-server/tsconfig.json:ro
+      - ../twenty-server/tsconfig.build.json:/app/packages/twenty-server/tsconfig.build.json:ro
+      - ../../tsconfig.base.json:/app/tsconfig.base.json:ro
     ports:
       - "3003:3003"
     env_file:
@@ -21,7 +25,7 @@ services:
       PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:-postgres}@db:5432/${PG_DATABASE_NAME:-default}
       REDIS_HOST: redis
       REDIS_URL: redis://redis:6379
-    # Hot reload command using ts-node-dev or tsx watch
+    # Hot reload command using tsx watch
     command: ["npx", "tsx", "watch", "--clear-screen=false", "src/main.ts"]
     # Enable host.docker.internal on Linux
     extra_hosts:

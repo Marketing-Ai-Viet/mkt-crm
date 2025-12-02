@@ -18,6 +18,10 @@
     - prod-server-down: Stop server with docker compose
     - prod-server-logs: View server logs
     - prod-server-restart: Restart server
+    - app-down: Stop app only (keep db and redis running)
+    - app-up: Start app only
+    - app-restart: Restart app only
+    - app-logs: View app logs
     - db-reset: Reset database
     - db-migrate: Run database migrations
     - db-seed: Seed development data
@@ -49,6 +53,10 @@ param(
         "prod-server-down",
         "prod-server-logs",
         "prod-server-restart",
+        "app-down",
+        "app-up",
+        "app-restart",
+        "app-logs",
         "db-reset",
         "db-migrate",
         "db-seed",
@@ -89,6 +97,10 @@ Commands:
   prod-server-down      Stop server with docker compose
   prod-server-logs      View server logs (follow mode)
   prod-server-restart   Restart server containers
+  app-down              Stop app only (keep db and redis running)
+  app-up                Start app only
+  app-restart           Restart app only
+  app-logs              View app logs (follow mode)
   prod-server-db-init   Initialize database in container
   prod-server-db-migrate Run migrations in container
   db-reset              Reset local database
@@ -199,6 +211,46 @@ function Invoke-ProdServerRestart {
     }
 }
 
+function Invoke-AppDown {
+    Write-Host "Stopping app (keeping db and redis)..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
+    try {
+        docker compose -f docker-compose.server.yml stop server
+    } finally {
+        Pop-Location
+    }
+}
+
+function Invoke-AppUp {
+    Write-Host "Starting app..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
+    try {
+        docker compose -f docker-compose.server.yml start server
+    } finally {
+        Pop-Location
+    }
+}
+
+function Invoke-AppRestart {
+    Write-Host "Restarting app..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
+    try {
+        docker compose -f docker-compose.server.yml restart server
+    } finally {
+        Pop-Location
+    }
+}
+
+function Invoke-AppLogs {
+    Write-Host "Viewing app logs (Ctrl+C to exit)..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
+    try {
+        docker compose -f docker-compose.server.yml logs -f server
+    } finally {
+        Pop-Location
+    }
+}
+
 function Invoke-ProdServerDbInit {
     Write-Host "Initializing database in container..." -ForegroundColor Cyan
     Push-Location $ScriptDir
@@ -262,6 +314,10 @@ switch ($Command) {
     "prod-server-down" { Invoke-ProdServerDown }
     "prod-server-logs" { Invoke-ProdServerLogs }
     "prod-server-restart" { Invoke-ProdServerRestart }
+    "app-down" { Invoke-AppDown }
+    "app-up" { Invoke-AppUp }
+    "app-restart" { Invoke-AppRestart }
+    "app-logs" { Invoke-AppLogs }
     "prod-server-db-init" { Invoke-ProdServerDbInit }
     "prod-server-db-migrate" { Invoke-ProdServerDbMigrate }
     "db-reset" { Invoke-DbReset }
