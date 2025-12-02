@@ -22,6 +22,7 @@
     - app-up: Start app only
     - app-restart: Restart app only
     - app-logs: View app logs
+    - watch-build: Watch and rebuild server on code changes
     - db-reset: Reset database
     - db-migrate: Run database migrations
     - db-seed: Seed development data
@@ -57,6 +58,7 @@ param(
         "app-up",
         "app-restart",
         "app-logs",
+        "watch-build",
         "db-reset",
         "db-migrate",
         "db-seed",
@@ -101,6 +103,7 @@ Commands:
   app-up                Start app only
   app-restart           Restart app only
   app-logs              View app logs (follow mode)
+  watch-build           Watch and rebuild server on code changes
   prod-server-db-init   Initialize database in container
   prod-server-db-migrate Run migrations in container
   db-reset              Reset local database
@@ -251,6 +254,16 @@ function Invoke-AppLogs {
     }
 }
 
+function Invoke-WatchBuild {
+    Write-Host "Starting watch build for twenty-server (Ctrl+C to stop)..." -ForegroundColor Cyan
+    Push-Location $RootDir
+    try {
+        npx nx build twenty-server --watch
+    } finally {
+        Pop-Location
+    }
+}
+
 function Invoke-ProdServerDbInit {
     Write-Host "Initializing database in container..." -ForegroundColor Cyan
     Push-Location $ScriptDir
@@ -318,6 +331,7 @@ switch ($Command) {
     "app-up" { Invoke-AppUp }
     "app-restart" { Invoke-AppRestart }
     "app-logs" { Invoke-AppLogs }
+    "watch-build" { Invoke-WatchBuild }
     "prod-server-db-init" { Invoke-ProdServerDbInit }
     "prod-server-db-migrate" { Invoke-ProdServerDbMigrate }
     "db-reset" { Invoke-DbReset }
