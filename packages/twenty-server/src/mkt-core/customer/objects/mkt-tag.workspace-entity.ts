@@ -6,7 +6,6 @@ import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfa
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-on-delete-action.type';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
@@ -30,26 +29,6 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 
 const TABLE_NAME = 'mktTag';
 const NAME_FIELD_NAME = 'name';
-
-export enum MKT_TAG_TYPE {
-  SYSTEM = 'SYSTEM',
-  CUSTOM = 'CUSTOM',
-}
-
-export const MKT_TAG_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
-  {
-    value: MKT_TAG_TYPE.SYSTEM,
-    label: 'System',
-    color: 'gray',
-    position: 1,
-  },
-  {
-    value: MKT_TAG_TYPE.CUSTOM,
-    label: 'Custom',
-    color: 'green',
-    position: 2,
-  },
-];
 
 export const SEARCH_FIELDS_FOR_MKT_TAG: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
@@ -78,14 +57,31 @@ export class MktTagWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_TAG_FIELD_IDS.type,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Type`,
-    description: msg`Tag type`,
+    description: msg`Type of the tag`,
+    icon: 'IconTag',
+  })
+  type: string;
+
+  @WorkspaceField({
+    standardId: MKT_TAG_FIELD_IDS.labelVn,
+    type: FieldMetadataType.TEXT,
+    label: msg`Name (Vietnamese)`,
+    description: msg`Tag name in Vietnamese`,
     icon: 'IconUser',
-    options: MKT_TAG_TYPE_OPTIONS,
+  })
+  labelVn: string;
+
+  @WorkspaceField({
+    standardId: MKT_TAG_FIELD_IDS.labelEn,
+    type: FieldMetadataType.TEXT,
+    label: msg`Name (English)`,
+    description: msg`Tag name in English`,
+    icon: 'IconUser',
   })
   @WorkspaceIsNullable()
-  type: MKT_TAG_TYPE;
+  labelEn: string;
 
   // common fields & relations
   @WorkspaceField({

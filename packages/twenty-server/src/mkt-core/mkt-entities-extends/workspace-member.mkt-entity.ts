@@ -51,6 +51,7 @@ import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   // core fields
@@ -92,6 +93,7 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     icon: 'IconIdBadge',
   })
   @WorkspaceIsNullable()
+  @WorkspaceIsUnique()
   memberCode: string | null;
 
   @WorkspaceField({

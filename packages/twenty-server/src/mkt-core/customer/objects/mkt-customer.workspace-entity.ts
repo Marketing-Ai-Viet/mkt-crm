@@ -67,6 +67,7 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconCode',
   })
   @WorkspaceIsNullable()
+  @WorkspaceIsUnique()
   mktCustomerCode: string;
 
   @WorkspaceField({

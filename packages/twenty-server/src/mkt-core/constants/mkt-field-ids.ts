@@ -126,6 +126,8 @@ export const MKT_TAG_FIELD_IDS = {
   // fields
   name: 'a6346e30-e700-44bf-96b8-61dac09c59f8',
   type: 'eeef941e-7826-4152-88c9-ab203f445076',
+  labelVn: '76b923d6-161b-43fe-8080-9e867f09f957',
+  labelEn: '602bbd3b-4a87-4215-bf00-835ee901ddc0',
   // relations
   mktCustomerTags: '7af63ac8-fadc-4f13-a510-d2e7c397bd2a',
   // common relations or fields
