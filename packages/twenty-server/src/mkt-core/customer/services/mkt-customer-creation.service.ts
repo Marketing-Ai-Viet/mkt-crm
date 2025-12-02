@@ -20,7 +20,8 @@ export class MktCustomerCreationService {
     const repo = await this.mktRepo.getCustomerRepository();
 
     // Tạo customer code tự động
-    const mktCustomerCode = await this.customerCodeService.generateUniqueCustomerCode(true);
+    const mktCustomerCode =
+      await this.customerCodeService.generateUniqueCustomerCode(true);
 
     const customerData: Partial<MktCustomerWorkspaceEntity> = {
       userId,

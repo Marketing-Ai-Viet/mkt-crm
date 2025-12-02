@@ -10,7 +10,9 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
  */
 @Injectable()
 export class MktMemberCodeGenerationService {
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {}
+  constructor(
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+  ) {}
 
   /**
    * Tạo member code tự động dựa trên năm hiện tại và số thứ tự
@@ -95,7 +97,7 @@ export class MktMemberCodeGenerationService {
   async generateCustomMemberCode(
     workspaceId: string,
     customPrefix: string,
-    sequenceLength: number = 3,
+    sequenceLength = 3,
   ): Promise<string> {
     const repository =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
@@ -156,7 +158,7 @@ export class MktMemberCodeGenerationService {
    */
   async generateUniqueMemberCode(
     workspaceId: string,
-    useYearPrefix: boolean = true,
+    useYearPrefix = true,
   ): Promise<string> {
     let attempts = 0;
     const maxAttempts = 10;

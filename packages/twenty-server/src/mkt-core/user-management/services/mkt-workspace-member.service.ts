@@ -50,6 +50,7 @@ export class MktWorkspaceMemberService {
 
     // Tạo memberCode tự động nếu chưa có
     let memberCode = data.memberCode;
+
     if (!memberCode) {
       memberCode = await this.memberCodeService.generateUniqueMemberCode(
         workspaceId,

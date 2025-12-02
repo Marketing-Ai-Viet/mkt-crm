@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 
 /**
  * Service để tạo mã customer code tự động
@@ -91,7 +90,7 @@ export class MktCustomerCodeGenerationService {
    */
   async generateCustomCustomerCode(
     customPrefix: string,
-    sequenceLength: number = 3,
+    sequenceLength = 3,
   ): Promise<string> {
     const repository = await this.mktRepo.getCustomerRepository();
 
@@ -139,9 +138,7 @@ export class MktCustomerCodeGenerationService {
    * Tạo customer code duy nhất (đảm bảo không trùng)
    * Retry nếu code bị trùng
    */
-  async generateUniqueCustomerCode(
-    useYearPrefix: boolean = true,
-  ): Promise<string> {
+  async generateUniqueCustomerCode(useYearPrefix = true): Promise<string> {
     let attempts = 0;
     const maxAttempts = 10;
 
