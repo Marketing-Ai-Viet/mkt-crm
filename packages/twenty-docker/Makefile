@@ -59,6 +59,10 @@ app-restart:
 app-logs:
 	@docker compose -f docker-compose.server.yml logs -f server
 
+# Watch build for hot reload (run in separate terminal)
+watch-build:
+	@cd ../.. && npx nx build twenty-server --watch
+
 # Database commands (local development - uses packages/twenty-server/.env)
 db-reset:
 	@cd ../.. && npx nx database:reset twenty-server && cd -
