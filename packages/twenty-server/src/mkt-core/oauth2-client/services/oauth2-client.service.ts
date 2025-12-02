@@ -271,26 +271,42 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
 
     return this.circuitBreakerService.execute(async () => {
       const tokenUrl = `${this.serverUrl}${this.tokenEndpoint}`;
+      const scopesArray = this.scopes
+        ? this.scopes.split(',').map((s) => s.trim())
+        : [];
+      const requestBody = {
+        grant_type: 'client_credentials',
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        scope: scopesArray,
+      };
 
-      this.logger.debug(`Fetching OAuth2 token from ${tokenUrl}`);
+      // Debug logging
+      this.logger.log(`[OAuth2 Debug] Token Endpoint: ${tokenUrl}`);
+      this.logger.log(`[OAuth2 Debug] Server URL: ${this.serverUrl}`);
+      this.logger.log(`[OAuth2 Debug] Client ID: ${this.clientId}`);
+      this.logger.log(
+        `[OAuth2 Debug] Client Secret: ${this.clientSecret ? '***' + this.clientSecret.slice(-4) : 'NOT SET'}`,
+      );
+      this.logger.log(`[OAuth2 Debug] Scopes: ${JSON.stringify(scopesArray)}`);
+      this.logger.log(
+        `[OAuth2 Debug] Request Body: ${JSON.stringify(requestBody)}`,
+      );
+      this.logger.log(`[OAuth2 Debug] Timeout: ${this.httpTimeoutMs}ms`);
 
       try {
         const response = await firstValueFrom(
-          this.httpService.post<OAuth2TokenResponse>(
-            tokenUrl,
-            new URLSearchParams({
-              grant_type: 'client_credentials',
-              client_id: this.clientId,
-              client_secret: this.clientSecret,
-              scope: this.scopes,
-            }).toString(),
-            {
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              timeout: this.httpTimeoutMs,
+          this.httpService.post<OAuth2TokenResponse>(tokenUrl, requestBody, {
+            headers: {
+              'Content-Type': 'application/json',
             },
-          ),
+            timeout: this.httpTimeoutMs,
+          }),
+        );
+
+        this.logger.log(`[OAuth2 Debug] Response Status: ${response.status}`);
+        this.logger.log(
+          `[OAuth2 Debug] Response Data: ${JSON.stringify(response.data)}`,
         );
 
         const tokenResponse = response.data;
@@ -305,20 +321,42 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
 
+        // Debug error logging
         this.logger.error(
-          OAUTH2_ERROR_MESSAGES.TOKEN_FETCH_FAILED(errorMessage),
+          `[OAuth2 Debug] Error Type: ${error?.constructor?.name}`,
         );
+        this.logger.error(`[OAuth2 Debug] Error Message: ${errorMessage}`);
 
-        if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as { response?: { data?: unknown } };
-
-          if (axiosError.response?.data) {
-            throw OAuth2Exception.fromErrorResponse(
-              axiosError.response.data as {
-                error: (typeof OAuth2ErrorCode)[keyof typeof OAuth2ErrorCode];
-                error_description?: string;
-              },
+        if (error && typeof error === 'object') {
+          if ('code' in error) {
+            this.logger.error(
+              `[OAuth2 Debug] Error Code: ${(error as { code?: string }).code}`,
             );
+          }
+          if ('response' in error) {
+            const axiosError = error as {
+              response?: {
+                status?: number;
+                statusText?: string;
+                data?: unknown;
+              };
+            };
+
+            this.logger.error(
+              `[OAuth2 Debug] Response Status: ${axiosError.response?.status} ${axiosError.response?.statusText}`,
+            );
+            this.logger.error(
+              `[OAuth2 Debug] Response Data: ${JSON.stringify(axiosError.response?.data)}`,
+            );
+
+            if (axiosError.response?.data) {
+              throw OAuth2Exception.fromErrorResponse(
+                axiosError.response.data as {
+                  error: (typeof OAuth2ErrorCode)[keyof typeof OAuth2ErrorCode];
+                  error_description?: string;
+                },
+              );
+            }
           }
         }
 

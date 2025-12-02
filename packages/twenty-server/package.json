@@ -61,6 +61,7 @@
     "passport": "^0.7.0",
     "psl": "^1.9.0",
     "redis": "^4.7.0",
+    "transliteration": "^2.3.5",
     "ts-morph": "^24.0.0",
     "tsconfig-paths": "^4.2.0",
     "tsdav": "^2.1.5",
