@@ -286,9 +286,11 @@ function Invoke-ProdServerDbMigrate {
 
 function Invoke-DbReset {
     Write-Host "Resetting database in container..." -ForegroundColor Cyan
+    Write-Host "This will drop and recreate the database schema, then run migrations." -ForegroundColor Yellow
     Push-Location $ScriptDir
     try {
-        docker compose -f docker-compose.server.yml exec server yarn database:reset
+        # Drop and recreate schema, then run migrations
+        docker compose -f docker-compose.server.yml exec server yarn database:init:prod
     } finally {
         Pop-Location
     }
@@ -308,7 +310,7 @@ function Invoke-DbSeed {
     Write-Host "Seeding development data in container..." -ForegroundColor Cyan
     Push-Location $ScriptDir
     try {
-        docker compose -f docker-compose.server.yml exec server yarn command workspace:seed:dev
+        docker compose -f docker-compose.server.yml exec server yarn command:prod workspace:seed:dev
     } finally {
         Pop-Location
     }
