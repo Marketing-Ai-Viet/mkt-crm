@@ -285,30 +285,30 @@ function Invoke-ProdServerDbMigrate {
 }
 
 function Invoke-DbReset {
-    Write-Host "Resetting database..." -ForegroundColor Cyan
-    Push-Location $RootDir
+    Write-Host "Resetting database in container..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
     try {
-        npx nx database:reset twenty-server
+        docker compose -f docker-compose.server.yml exec server yarn database:reset
     } finally {
         Pop-Location
     }
 }
 
 function Invoke-DbMigrate {
-    Write-Host "Running database migrations..." -ForegroundColor Cyan
-    Push-Location $RootDir
+    Write-Host "Running database migrations in container..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
     try {
-        npx nx run twenty-server:database:migrate:prod
+        docker compose -f docker-compose.server.yml exec server yarn database:migrate:prod
     } finally {
         Pop-Location
     }
 }
 
 function Invoke-DbSeed {
-    Write-Host "Seeding development data..." -ForegroundColor Cyan
-    Push-Location $RootDir
+    Write-Host "Seeding development data in container..." -ForegroundColor Cyan
+    Push-Location $ScriptDir
     try {
-        npx nx command twenty-server -- workspace:seed:dev
+        docker compose -f docker-compose.server.yml exec server yarn command workspace:seed:dev
     } finally {
         Pop-Location
     }
