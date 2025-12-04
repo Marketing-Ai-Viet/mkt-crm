@@ -25,3 +25,50 @@ prod-website-build:
 
 prod-website-run:
 	@docker run -d -p 3000:3000 --name twenty-website twenty-website:$(TAG)
+
+# Server-only build (without frontend)
+prod-server-build:
+	@cd ../.. && docker build -f ./packages/twenty-docker/twenty/Dockerfile.server --platform $(PLATFORM) --tag twenty-server:$(TAG) . && cd -
+
+prod-server-run:
+	@docker run -d -p 3003:3003 --name twenty-server twenty-server:$(TAG)
+
+# Docker Compose commands for server-only (uses ../twenty-server/.env)
+prod-server-up:
+	@docker compose -f docker-compose.server.yml up -d
+
+prod-server-down:
+	@docker compose -f docker-compose.server.yml down
+
+prod-server-logs:
+	@docker compose -f docker-compose.server.yml logs -f
+
+prod-server-restart:
+	@docker compose -f docker-compose.server.yml restart
+
+# App-only commands (stop/start app while keeping db and redis running)
+app-down:
+	@docker compose -f docker-compose.server.yml stop server
+
+app-up:
+	@docker compose -f docker-compose.server.yml start server
+
+app-restart:
+	@docker compose -f docker-compose.server.yml restart server
+
+app-logs:
+	@docker compose -f docker-compose.server.yml logs -f server
+
+# Watch build for hot reload (run in separate terminal)
+watch-build:
+	@cd ../.. && npx nx build twenty-server --watch
+
+# Database commands (local development - uses packages/twenty-server/.env)
+db-reset:
+	@cd ../.. && npx nx database:reset twenty-server && cd -
+
+db-migrate:
+	@cd ../.. && npx nx run twenty-server:database:migrate:prod && cd -
+
+db-seed:
+	@cd ../.. && npx nx command twenty-server -- workspace:seed:dev && cd -

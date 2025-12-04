@@ -15,6 +15,9 @@ import {
   OAuth2HttpService,
 } from './services';
 
+import { LicenseProxyService } from './license/services';
+import { LicenseResolver } from './license/resolvers';
+
 @Module({
   imports: [
     ConfigModule.forFeature(oauth2ClientConfig),
@@ -29,7 +32,9 @@ import {
     OAuth2ClientService,
     OAuth2HttpService,
     OAuth2ManagementResolver,
+    LicenseProxyService,
+    LicenseResolver,
   ],
-  exports: [OAuth2ClientService, OAuth2HttpService],
+  exports: [OAuth2ClientService, OAuth2HttpService, LicenseProxyService],
 })
 export class OAuth2ClientModule {}
