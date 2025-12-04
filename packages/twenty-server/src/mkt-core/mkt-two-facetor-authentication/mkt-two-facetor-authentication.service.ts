@@ -166,13 +166,10 @@ export class MktTwoFacetorAuthenticationService {
   async mktTwoFacetorAuthGetOtpMail(
     mtkTwoFacetorAuthGetOtpSendMailInput: MtkTwoFacetorAuthGetOtpSendMailInput,
   ): Promise<AuthTokens> {
-    const {
-      sub: userEmail,
-      workspaceId: tokenWorkspaceId,
-      authProvider: _authProvider,
-    } = await this.loginTokenService.verifyLoginToken(
-      mtkTwoFacetorAuthGetOtpSendMailInput.loginToken,
-    );
+    const { sub: userEmail, workspaceId: tokenWorkspaceId } =
+      await this.loginTokenService.verifyLoginToken(
+        mtkTwoFacetorAuthGetOtpSendMailInput.loginToken,
+      );
 
     // Lấy workspace dựa trên origin hoặc workspace mặc định
     const workspace =

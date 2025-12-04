@@ -1,0 +1,69 @@
+name: twenty-server
+
+services:
+  server:
+    image: twenty-server:${TAG:-latest}
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+      # Hot reload: Mount source code (read-write for tsx watch to work)
+      - ../twenty-server/src:/app/packages/twenty-server/src
+      - ../twenty-server/scripts:/app/packages/twenty-server/scripts
+      - ../twenty-shared/src:/app/packages/twenty-shared/src
+      # Mount tsconfig files for tsx to resolve paths
+      - ../twenty-server/tsconfig.json:/app/packages/twenty-server/tsconfig.json:ro
+      - ../twenty-server/tsconfig.build.json:/app/packages/twenty-server/tsconfig.build.json:ro
+      - ../../tsconfig.base.json:/app/tsconfig.base.json:ro
+    ports:
+      - "3003:3003"
+    env_file:
+      - ../twenty-server/.env
+    environment:
+      NODE_PORT: 3003
+      NODE_ENV: development
+      # Override host with Docker network service names
+      PG_DATABASE_HOST: db
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:-postgres}@db:5432/${PG_DATABASE_NAME:-default}
+      REDIS_HOST: redis
+      REDIS_URL: redis://redis:6379
+    # Run from compiled dist (tsx doesn't support @lingui macros)
+    command: ["node", "dist/src/main"]
+    # Enable host.docker.internal on Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:3003/healthz
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    ports:
+      - "${PG_DATABASE_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${PG_DATABASE_NAME:-default}
+    healthcheck:
+      test: pg_isready -U ${PG_DATABASE_USER:-postgres} -h localhost -d postgres
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  redis:
+    image: redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: always
+    command: ["--maxmemory-policy", "noeviction"]
+
+volumes:
+  db-data:
+  server-local-data:

@@ -507,6 +507,8 @@ export const WORKFLOW_VERSION_STANDARD_FIELD_IDS = {
 };
 
 export const WORKSPACE_MEMBER_STANDARD_FIELD_IDS = {
+  startDate: 'c547a177-cf07-4197-ac04-079848304ab0',
+  endDate: '20202020-1d4f-4c3e-8e2a-0b5f6d7e8c9d',
   position: '20202020-1810-4591-a93c-d0df97dca843',
   name: '20202020-e914-43a6-9c26-3603c59065f4',
   colorScheme: '20202020-66bc-47f2-adac-f2ef7c598b63',

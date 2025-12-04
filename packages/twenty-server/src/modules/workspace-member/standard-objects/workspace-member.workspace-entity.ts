@@ -4,10 +4,10 @@ import { msg } from '@lingui/core/macro';
 import { APP_LOCALES, SOURCE_LOCALE } from 'twenty-shared/translations';
 import { FieldMetadataType } from 'twenty-shared/types';
 
+import { NumberDataType } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-settings.interface';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
-import { NumberDataType } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-settings.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { FullNameMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/full-name.composite-type';
@@ -26,6 +26,7 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+import { WorkspaceMemberMktEntity } from 'src/mkt-core/mkt-entities-extends/workspace-member.mkt-entity';
 import { AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';
 import { CalendarEventParticipantWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-event-participant.workspace-entity';
@@ -35,7 +36,6 @@ import { FavoriteWorkspaceEntity } from 'src/modules/favorite/standard-objects/f
 import { MessageParticipantWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-participant.workspace-entity';
 import { TaskWorkspaceEntity } from 'src/modules/task/standard-objects/task.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
-import { WorkspaceMemberMktEntity } from 'src/mkt-core/mkt-entities-extends/workspace-member.mkt-entity';
 
 export enum WorkspaceMemberDateFormatEnum {
   SYSTEM = 'SYSTEM',
@@ -83,6 +83,25 @@ export const SEARCH_FIELDS_FOR_WORKSPACE_MEMBER: FieldTypeAndNameMetadata[] = [
 @WorkspaceIsSearchable()
 export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
   @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.startDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Hire Date`,
+    description: msg`Workspace member hire date`,
+    icon: 'IconCalendarEvent',
+  })
+  startDate: Date;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.endDate,
+    type: FieldMetadataType.DATE,
+    label: msg`End Date`,
+    description: msg`Workspace member end date`,
+    icon: 'IconCalendarEvent',
+  })
+  @WorkspaceIsNullable()
+  endDate: Date | null;
+
+  @WorkspaceField({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
     label: msg`Position`,
@@ -90,7 +109,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     icon: 'IconHierarchy2',
     defaultValue: 0,
   })
-  @WorkspaceIsSystem()
   position: number;
 
   @WorkspaceField({
@@ -110,7 +128,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     icon: 'IconColorSwatch',
     defaultValue: "'System'",
   })
-  @WorkspaceIsSystem()
   colorScheme: string;
 
   @WorkspaceField({
@@ -121,7 +138,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     icon: 'IconLanguage',
     defaultValue: `'${SOURCE_LOCALE}'`,
   })
-  @WorkspaceIsSystem()
   locale: keyof typeof APP_LOCALES;
 
   @WorkspaceField({
@@ -131,7 +147,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     description: msg`Workspace member avatar`,
     icon: 'IconFileUpload',
   })
-  @WorkspaceIsSystem()
   avatarUrl: string;
 
   @WorkspaceField({
@@ -141,7 +156,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     description: msg`Related user email address`,
     icon: 'IconMail',
   })
-  @WorkspaceIsSystem()
   userEmail: string;
 
   @WorkspaceField({
@@ -154,7 +168,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
       dataType: NumberDataType.INT,
     },
   })
-  @WorkspaceIsSystem()
   calendarStartDay: number;
 
   @WorkspaceField({
@@ -164,7 +177,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     description: msg`Associated User Id`,
     icon: 'IconCircleUsers',
   })
-  @WorkspaceIsSystem()
   userId: string;
 
   @WorkspaceField({
@@ -175,7 +187,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     description: msg`User time zone`,
     icon: 'IconTimezone',
   })
-  @WorkspaceIsSystem()
   timeZone: string;
 
   @WorkspaceField({
@@ -212,7 +223,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     ],
     defaultValue: `'${WorkspaceMemberDateFormatEnum.SYSTEM}'`,
   })
-  @WorkspaceIsSystem()
   dateFormat: string;
 
   @WorkspaceField({
@@ -243,7 +253,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     ],
     defaultValue: `'${WorkspaceMemberTimeFormatEnum.SYSTEM}'`,
   })
-  @WorkspaceIsSystem()
   timeFormat: string;
 
   // Relations
@@ -293,7 +302,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     inverseSideFieldKey: 'author',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  @WorkspaceIsSystem()
   authoredAttachments: Relation<AttachmentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
@@ -356,7 +364,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     onDelete: RelationOnDeleteAction.CASCADE,
   })
   @WorkspaceIsNullable()
-  @WorkspaceIsSystem()
   timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
 
   @WorkspaceField({
@@ -371,7 +378,6 @@ export class WorkspaceMemberWorkspaceEntity extends WorkspaceMemberMktEntity {
     ),
   })
   @WorkspaceIsNullable()
-  @WorkspaceIsSystem()
   @WorkspaceFieldIndex({ indexType: IndexType.GIN })
   searchVector: string;
 }
