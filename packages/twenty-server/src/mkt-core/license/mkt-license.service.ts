@@ -23,6 +23,7 @@ type licenseType = {
 @Injectable()
 export class MktLicenseService {
   private readonly logger = new Logger(MktLicenseService.name);
+  public isTrial = false;
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
@@ -79,15 +80,46 @@ export class MktLicenseService {
 
   async createLicensesForOrderItems(
     order: MktOrderWorkspaceEntity,
-    _workspaceId: string,
+    mktCustomerId: string | null,
+    _workspaceId: string | null,
   ): Promise<MktLicenseWorkspaceEntity[]> {
     this.logger.log(`Creating licenses for order items ${order.id}`);
 
     const licenseRepository = await this.getLicenseRepository();
 
+    // Validate customer exists if provided
+    if (mktCustomerId) {
+      const customerRepository = await this.mktRepo.getCustomerRepository();
+      const customer = await customerRepository.findOne({
+        where: { id: mktCustomerId },
+      });
+
+      if (!customer) {
+        this.logger.error(
+          `Customer ${mktCustomerId} not found for order ${order.id}`,
+        );
+        throw new Error(`Customer ${mktCustomerId} not found`);
+      }
+    }
+
     const licensePromises = order.orderItems.flatMap(
       async (orderItem, _index) => {
         try {
+          // Validate variant exists if provided
+          if (orderItem.mktVariantId) {
+            const variantRepository = await this.mktRepo.getVariantRepository();
+            const variant = await variantRepository.findOne({
+              where: { id: orderItem.mktVariantId },
+            });
+
+            if (!variant) {
+              this.logger.error(
+                `Variant ${orderItem.mktVariantId} not found for order item ${orderItem.id}`,
+              );
+              throw new Error(`Variant ${orderItem.mktVariantId} not found`);
+            }
+          }
+
           // generate license name based on order item
           const productName =
             orderItem.snapshotProductName ||
@@ -110,6 +142,12 @@ export class MktLicenseService {
                 licenseName,
                 orderItem.id,
               );
+            const newLicenseHistory = {
+              name: 'Bản quyền được kích hoạt',
+              action: 'ACTIVE',
+              note: 'Khách hàng đã kích hoạt thành công bản quyền',
+            };
+
             const newLicense = licenseRepository.create({
               name: licenseName,
               licenseKey: licenseApiResponse.licenseKey,
@@ -119,9 +157,19 @@ export class MktLicenseService {
               licenseUuid: licenseApiResponse.licenseUuid as string,
               mktOrderId: order.id,
               mktVariantId: orderItem.mktVariantId,
+              mktCustomerId,
+              accountOwnerId: order?.accountOwnerId || null, // Ensure accountOwnerId is properly set
+              departmentOwnerId: order?.accountOwner?.departmentId || null,
+              teamOwnerId: order?.accountOwner?.teamId || null,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
+              trialLicense: this.isTrial,
             });
+
             // save license
+            newLicense.createdBy = order.createdBy;
+            newLicense.history = JSON.stringify([
+              newLicenseHistory,
+            ]) as unknown as JSON;
             const savedLicense = await licenseRepository.save(newLicense);
 
             licensePromises.push(savedLicense);
@@ -257,6 +305,8 @@ export class MktLicenseService {
         'mktVariant',
         'mktOrder.mktPayments',
         'mktOrder.mktCustomer',
+        'mktPaymentHistories',
+        'mktPaymentHistories.mktPayment.mktPaymentMethod',
       ],
     });
 

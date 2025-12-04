@@ -4,6 +4,7 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { Metadata } from 'src/mkt-core/license/hooks/mkt-license-update-one.pre-query.hook';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
@@ -26,6 +27,7 @@ export class MktLicenseHistoryService {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly mktRepo: MktRepositoryService,
   ) {}
 
   /**
@@ -35,7 +37,7 @@ export class MktLicenseHistoryService {
     authContext: AuthContext,
     license: MktLicenseWorkspaceEntity,
     newMetadata: Metadata | string,
-  ): Promise<void> {
+  ): Promise<MktLicenseHistoryWorkspaceEntity | null | undefined> {
     try {
       // Parse metadata if it's a string
       let parsedMetadata: Metadata;
@@ -62,7 +64,7 @@ export class MktLicenseHistoryService {
       // Check if variant changed
       if (currentVariantId !== newVariant.mktVariantId) {
         // Create custom history entry for variant change
-        await this.addHistoryEntryFromLicense(
+        return await this.addHistoryEntryFromLicense(
           authContext,
           license,
           'VARIANT_CHANGED',
@@ -84,19 +86,19 @@ export class MktLicenseHistoryService {
     license: MktLicenseWorkspaceEntity,
     status?: string,
     note?: string | undefined,
-  ): Promise<void> {
+  ): Promise<MktLicenseHistoryWorkspaceEntity | null | undefined> {
     this.note = note;
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
-    if (!workspaceId) return;
+    if (!workspaceId) return null;
 
     try {
-      const licenseRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseWorkspaceEntity>(
-          workspaceId,
-          'mktLicense',
-          { shouldBypassPermissionChecks: true },
-        );
+      // const licenseRepository =
+      //     await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseWorkspaceEntity>(
+      //         workspaceId,
+      //         'mktLicense',
+      //         { shouldBypassPermissionChecks: true },
+      //     );
 
       const licenseHistoryRepository =
         await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseHistoryWorkspaceEntity>(
@@ -120,12 +122,6 @@ export class MktLicenseHistoryService {
         const updatedHistory = [historyItem, ...currentHistory];
 
         // 1. Update the license with new history (JSON field)
-        await licenseRepository.update(
-          { id: license.id },
-          {
-            history: JSON.stringify(updatedHistory) as unknown as JSON,
-          },
-        );
 
         // 2. Create new record in mktLicenseHistory table
         const userName =
@@ -155,14 +151,39 @@ export class MktLicenseHistoryService {
           context: {},
         };
 
-        await licenseHistoryRepository.save(newLicenseHistory);
+        //
+
+        return newLicenseHistory;
       }
     } catch (error) {
       this.logger.error('Failed to update license history:', {
         error: error.message,
         licenseId: license.id,
       });
+
+      return null;
     }
+  }
+
+  async saveLicenseHistory(
+    license: MktLicenseWorkspaceEntity | null,
+    newLicenseHistory: MktLicenseHistoryWorkspaceEntity | null | undefined,
+  ) {
+    if (!license || !newLicenseHistory) return;
+    const licenseRepo = await this.mktRepo.getRepository(
+      MktLicenseWorkspaceEntity,
+    );
+    const licenseHistoryRepo = await this.mktRepo.getRepository(
+      MktLicenseHistoryWorkspaceEntity,
+    );
+
+    await licenseRepo.update(
+      { id: license.id },
+      {
+        history: JSON.stringify(newLicenseHistory) as unknown as JSON,
+      },
+    );
+    await licenseHistoryRepo.save(newLicenseHistory);
   }
 
   /**
@@ -217,18 +238,23 @@ export class MktLicenseHistoryService {
    * Create history item based on license update
    */
   async createHistoryItemFromUpdate(
-    authContext: AuthContext,
+    authContext: AuthContext | null,
     status?: string,
   ): Promise<HistoryItem | null> {
     const timestamp = new Date().toISOString();
-    const userId = authContext.user?.id || 'system';
-    const userName =
-      authContext.user?.firstName && authContext.user?.lastName
-        ? `${authContext.user.firstName} ${authContext.user.lastName}`
-        : authContext.user?.email || 'Unknown User';
+    let userName = 'unknown';
+    let userId = 'unknown';
 
-    this.createdByName = userName;
-    this.createdAt = timestamp;
+    if (authContext) {
+      userId = authContext.user?.id || 'system';
+      userName =
+        authContext.user?.firstName && authContext.user?.lastName
+          ? `${authContext.user.firstName} ${authContext.user.lastName}`
+          : authContext.user?.email || 'Unknown User';
+
+      this.createdByName = userName;
+      this.createdAt = timestamp;
+    }
     // Create history based on status
     switch (status) {
       case MKT_LICENSE_STATUS.ACTIVE:

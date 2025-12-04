@@ -25,12 +25,10 @@ import {
 import { MKT_LICENSE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import {
-  MKT_LICENSE_STATUS,
-  MKT_LICENSE_STATUS_OPTIONS,
-} from 'src/mkt-core/license/license.constants';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -53,7 +51,7 @@ export const SEARCH_FIELDS_FOR_MKT_LICENSE: FieldTypeAndNameMetadata[] = [
   icon: 'IconBox',
   labelIdentifierStandardId: MKT_LICENSE_FIELD_IDS.name,
 })
-@WorkspaceDuplicateCriteria([['name'], ['licenseKey']])
+@WorkspaceDuplicateCriteria([['licenseKey']])
 @WorkspaceIsSearchable()
 export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({
@@ -74,18 +72,17 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  metadata?: JSON;
+  metadata?: JSON | null;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.status,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`License Status`,
     description: msg`License status (active, inactive, expired, revoked)`,
     icon: 'IconTags',
-    options: MKT_LICENSE_STATUS_OPTIONS,
   })
   @WorkspaceIsNullable()
-  status: MKT_LICENSE_STATUS;
+  status?: string | null;
 
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.licenseKey,
@@ -165,7 +162,17 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconHistory',
   })
   @WorkspaceIsNullable()
-  history?: JSON;
+  history?: JSON | null;
+
+  @WorkspaceField({
+    standardId: MKT_LICENSE_FIELD_IDS.trialLicense,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Trial License`,
+    description: msg`Is trial license`,
+    icon: 'IconToggleLeft',
+  })
+  @WorkspaceIsNullable()
+  trialLicense?: boolean;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktVariant,
@@ -215,6 +222,19 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string | null;
 
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.mktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payment Histories`,
+    description: msg`Payment history records linked to the license`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'mktLicense',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
+
   @WorkspaceField({
     standardId: MKT_LICENSE_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,
@@ -249,6 +269,38 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('accountOwner')
   accountOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.departmentOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Department Owner`,
+    description: msg`The department responsible for managing the license`,
+    icon: 'IconUsersGroup',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'departmentOwnerForMktLicenses',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  departmentOwner: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('departmentOwner')
+  departmentOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_LICENSE_FIELD_IDS.teamOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Team Owner`,
+    description: msg`The team responsible for managing the license`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'teamOwnerForMktLicenses',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  teamOwner: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('teamOwner')
+  teamOwnerId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_LICENSE_FIELD_IDS.mktLicenseHistories,

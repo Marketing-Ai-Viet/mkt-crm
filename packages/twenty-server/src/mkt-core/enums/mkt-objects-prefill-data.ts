@@ -16,9 +16,11 @@ import { prefillMktKpiTemplates } from 'src/mkt-core/dev-seeder/prefill-data/pre
 import { prefillMktKpis } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-kpis';
 import { prefillMktLicenseHistory } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-license-history';
 import { prefillMktLicenses } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-licenses';
+import { prefillMktOrderHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-order-histories';
 import { prefillMktOrderItems } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-organization-levels';
+import { prefillMktPaymentHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payment-methods';
 import { prefillMktPayments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payments';
 import { prefillMktPermissionAudits } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-audits';
@@ -35,9 +37,14 @@ import { prefillMktCombos } from 'src/mkt-core/dev-seeder/product-seeder/prefill
 import { prefillMktProducts } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-products';
 import { prefillMktVariantValues } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variant-values';
 import { prefillMktVariants } from 'src/mkt-core/dev-seeder/product-seeder/prefill-mkt-variants';
+import { prefillMktEmails } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
 import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
+import { prefillMktOptions } from 'src/mkt-core/setting/seeder/prefill-mkt-options';
 
 export const MKT_PREFILLS = [
+  // core prefills
+  prefillMktOptions,
+  prefillMktEmails,
   // report prefills
   prefillMktReports,
   // i18n prefills
@@ -57,6 +64,7 @@ export const MKT_PREFILLS = [
   // order prefills
   prefillMktOrders,
   prefillMktOrderItems,
+  prefillMktOrderHistories,
   // template prefills
   prefillMktTemplates,
   // contract prefills
@@ -74,6 +82,7 @@ export const MKT_PREFILLS = [
   // payment prefills (after orders to reference existing orders)
   prefillMktPaymentMethods,
   prefillMktPayments,
+  prefillMktPaymentHistories,
   // reseller prefills
   prefillMktResellerTiers,
   prefillMktResellers,

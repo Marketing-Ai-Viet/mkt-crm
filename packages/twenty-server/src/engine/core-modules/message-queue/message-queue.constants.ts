@@ -16,4 +16,5 @@ export enum MessageQueue {
   workflowQueue = 'workflow-queue',
   deleteCascadeQueue = 'delete-cascade-queue',
   subscriptionsQueue = 'subscriptions-queue',
+  customerQueue = 'customer-queue',
 }

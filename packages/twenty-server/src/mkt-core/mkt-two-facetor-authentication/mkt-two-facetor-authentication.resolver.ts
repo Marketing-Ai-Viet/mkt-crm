@@ -1,3 +1,4 @@
+import { UseGuards } from '@nestjs/common';
 import { Args, Field, Mutation, ObjectType, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
@@ -24,6 +25,7 @@ export class MktTwoFacetorAuthenticationResolver {
     private readonly mktTwoFacetorAuthenticationService: MktTwoFacetorAuthenticationService,
   ) {}
 
+  @UseGuards(PublicEndpointGuard)
   @Mutation(() => Boolean)
   async mtkTwoFacetorAuthSetOtpSendMail(
     @Args()
@@ -37,6 +39,7 @@ export class MktTwoFacetorAuthenticationResolver {
     );
   }
 
+  @UseGuards(PublicEndpointGuard)
   @Mutation(() => AuthTokens)
   async mktTwoFacetorAuthGetOtpMail(
     @Args()

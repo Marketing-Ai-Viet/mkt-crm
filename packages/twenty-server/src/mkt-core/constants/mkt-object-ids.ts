@@ -8,6 +8,7 @@
 export const MKT_OBJECT_IDS = {
   // core
   mktI18n: 'f161d3a7-cb44-48ef-a0c0-67b5b4efd71c',
+  mktOption: '0aa7d15c-2e4b-45a0-927e-f0dec82f973d',
   mktSendmailTemplate: '7f2a6d3c-5b8e-4f1a-9c2d-0e1f2a3b4c5d',
   // products
   mktCategory: '4cf3c9a1-6b33-487e-b06c-f5dd6d56943d',
@@ -21,6 +22,7 @@ export const MKT_OBJECT_IDS = {
   mktComboVariant: '2628a37a-113c-4c6a-8b58-63f64e5500b0',
   //orders
   mktOrder: '9ff5be11-0088-456e-b7cb-9885fd167a48',
+  mktOrderHistory: 'c88afe19-ea58-4b9d-9592-7c770fe55416',
   mktLicense: 'bedb60ad-9854-4618-b912-c93f8df3e756',
   mktLicenseHistory: '9308d0a2-f9c5-417d-8017-3e4a75c01afa',
   mktContract: 'f5a03266-1b62-4f41-94a2-a843221f307b',
@@ -37,6 +39,7 @@ export const MKT_OBJECT_IDS = {
   mktTemplate: '0b9f9dbd-6c1a-4418-9302-97c38c2dc0a0',
   mktPayment: '8b4c2d1e-5f6a-7b8c-9d0e-1f2a3b4c5d6e',
   mktPaymentMethod: '9c5d3e2f-6a7b-8c9d-0e1f-2a3b4c5d6e7f',
+  mktPaymentHistory: 'f10cf936-b5c9-4d3c-aa5b-2ceb236519ac',
   // resellers
   mktResellerTier: 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
   mktReseller: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',
@@ -66,4 +69,6 @@ export const MKT_OBJECT_IDS = {
   mktReport: 'b8acdd19-4852-415a-a783-83bd1231381c',
   //user
   mktUser: '3f9d2c8e-6a41-4c3d-9b71-12a8f53e7b29',
+  // emails
+  mktEmail: '5d468431-2856-4039-84b4-98b9940bf731',
 };

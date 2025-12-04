@@ -36,6 +36,10 @@ import {
   MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-department-hierarchy-data-seeds.constants';
 import {
+  MKT_EMAIL_DATA_SEED_COLUMNS,
+  MKT_EMAIL_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-email-data-seeds.constants';
+import {
   MKT_EMPLOYMENT_STATUS_DATA_SEED_COLUMNS,
   MKT_EMPLOYMENT_STATUS_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-employment-status-data-seeds.constants';
@@ -60,9 +64,17 @@ import {
   MKT_LICENSE_HISTORY_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-license-history-data-seeds.constants';
 import {
+  MKT_OPTION_DATA_SEED_COLUMNS,
+  MKT_OPTION_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-option-data-seeds.constants';
+import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
+import {
+  MKT_ORDER_HISTORY_DATA_SEED_COLUMNS,
+  MKT_ORDER_HISTORY_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-order-history-data-seeds.constants';
 import {
   MKT_ORDER_ITEM_DATA_SEED_COLUMNS,
   MKT_ORDER_ITEM_DATA_SEEDS,
@@ -75,6 +87,10 @@ import {
   MKT_PAYMENT_DATA_SEED_COLUMNS,
   MKT_PAYMENT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
+import {
+  MKT_PAYMENT_HISTORY_DATA_SEED_COLUMNS,
+  MKT_PAYMENT_HISTORY_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-payment-history-data-seeds.constants';
 import {
   MKT_PAYMENT_METHOD_DATA_SEED_COLUMNS,
   MKT_PAYMENT_METHOD_DATA_SEEDS,
@@ -184,6 +200,12 @@ export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
 ];
 
 export const MKT_RECORD_SEEDS_CONFIGS = [
+  // core
+  {
+    tableName: 'mktOption',
+    pgColumns: MKT_OPTION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_OPTION_DATA_SEEDS,
+  },
   // I18n configs
   {
     tableName: 'mktI18N',
@@ -267,6 +289,12 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     pgColumns: MKT_ORDER_ITEM_DATA_SEED_COLUMNS,
     recordSeeds: MKT_ORDER_ITEM_DATA_SEEDS,
   },
+  // Order History configs
+  {
+    tableName: 'mktOrderHistory',
+    pgColumns: MKT_ORDER_HISTORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_ORDER_HISTORY_DATA_SEEDS,
+  },
   {
     tableName: 'mktLicense',
     pgColumns: MKT_LICENSE_DATA_SEED_COLUMNS,
@@ -320,6 +348,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     pgColumns: MKT_PAYMENT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PAYMENT_DATA_SEEDS,
   },
+  {
+    tableName: 'mktPaymentHistory',
+    pgColumns: MKT_PAYMENT_HISTORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PAYMENT_HISTORY_DATA_SEEDS,
+  },
   // Reseller configs
   {
     tableName: 'mktResellerTier',
@@ -358,6 +391,11 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktCustomer',
     pgColumns: MKT_CUSTOMER_DATA_SEED_COLUMNS,
     recordSeeds: MKT_CUSTOMER_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktEmail',
+    pgColumns: MKT_EMAIL_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_EMAIL_DATA_SEEDS,
   },
   // Staff Status History - needs to be after workspace members
   {

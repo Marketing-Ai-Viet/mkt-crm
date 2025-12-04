@@ -1,10 +1,12 @@
 import { msg } from '@lingui/core/macro';
+import { FieldMetadataType } from 'twenty-shared/types';
 
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
@@ -14,6 +16,7 @@ import { WORKSPACE_MEMBER_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
@@ -37,6 +40,7 @@ import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contr
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
 import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
@@ -46,8 +50,135 @@ import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
+  // core fields
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberType,
+    type: FieldMetadataType.TEXT,
+    label: msg`Member Type`,
+    description: msg`The type of the workspace member in the marketing module`,
+    icon: 'IconUserCheck',
+  })
+  @WorkspaceIsNullable()
+  memberType: string;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.grade,
+    type: FieldMetadataType.TEXT,
+    label: msg`Grade`,
+    description: msg`The grade of the workspace member`,
+    icon: 'IconCertificate',
+  })
+  @WorkspaceIsNullable()
+  grade: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.address,
+    type: FieldMetadataType.TEXT,
+    label: msg`Address`,
+    description: msg`The address of the workspace member`,
+    icon: 'IconHome',
+  })
+  @WorkspaceIsNullable()
+  address: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`Member Code`,
+    description: msg`The code assigned to the workspace member`,
+    icon: 'IconIdBadge',
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsUnique()
+  memberCode: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.supportForMemberId,
+    type: FieldMetadataType.TEXT,
+    label: msg`Support For Member ID`,
+    description: msg`The member ID that this workspace member provides support for`,
+    icon: 'IconLifebuoy',
+  })
+  @WorkspaceIsNullable()
+  supportForMemberId: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.startDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Start Date`,
+    description: msg`The start date of the workspace member's employment`,
+    icon: 'IconCalendarStart',
+  })
+  @WorkspaceIsNullable()
+  startDate: Date | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.endDate,
+    type: FieldMetadataType.DATE,
+    label: msg`End Date`,
+    description: msg`The end date of the workspace member's employment`,
+    icon: 'IconCalendarEnd',
+  })
+  @WorkspaceIsNullable()
+  endDate: Date | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.status,
+    type: FieldMetadataType.TEXT,
+    label: msg`Status`,
+    description: msg`The current status of the workspace member`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  status: string | null;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Department`,
+    description: msg`Person's department`,
+    icon: 'IconBuilding',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'people',
+  })
+  @WorkspaceIsNullable()
+  department: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('department')
+  departmentId: string | null;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.team,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Team`,
+    description: msg`Person's team`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'teamMembers',
+  })
+  @WorkspaceIsNullable()
+  team: Relation<MktDepartmentWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('team')
+  teamId: string | null;
+
+  // other relations
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOptions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Options`,
+    description: msg`Account owner for options`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktOptionWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktOptions: Relation<MktOptionWorkspaceEntity[]>;
+
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForI18ns,
     type: RelationType.ONE_TO_MANY,
@@ -256,6 +387,21 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktOrderItems: Relation<MktOrderItemWorkspaceEntity[]>;
 
   @WorkspaceRelation({
+    standardId:
+      WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner for Payment Histories`,
+    description: msg`The account owner for the payment histories created by this member`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+  })
+  @WorkspaceIsSystem()
+  accountOwnerForMktPaymentHistories: Relation<
+    MktPaymentHistoryWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktSInvoiceAuths,
     type: RelationType.ONE_TO_MANY,
     label: msg`Account Owner For SInvoice Auths`,
@@ -385,19 +531,28 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   // accountOwnerForMktKpiTemplates: Relation<MktKpiTemplateWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Department`,
-    description: msg`Person's department`,
-    icon: 'IconBuilding',
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.leaderForMktDepartments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Leader For Departments`,
+    description: msg`Leader for departments`,
+    icon: 'IconBox',
     inverseSideTarget: () => MktDepartmentWorkspaceEntity,
-    inverseSideFieldKey: 'people',
+    inverseSideFieldKey: 'leader',
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  @WorkspaceIsNullable()
-  department: Relation<MktDepartmentWorkspaceEntity> | null;
+  leaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
 
-  @WorkspaceJoinColumn('department')
-  departmentId: string | null;
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.subLeaderForMktDepartments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Sub Leader For Departments`,
+    description: msg`Sub leader for departments`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'subLeader',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  subLeaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.staffStatusHistories,
@@ -537,4 +692,17 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsSystem()
   permissionAudits: Relation<MktPermissionAuditWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktEmails,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Emails`,
+    description: msg`Account owner for emails`,
+    icon: 'IconMail',
+    inverseSideTarget: () => MktEmailWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  accountOwnerForMktEmails: Relation<MktEmailWorkspaceEntity[]>;
 }

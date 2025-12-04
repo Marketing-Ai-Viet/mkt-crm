@@ -15,6 +15,7 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import {
@@ -23,27 +24,12 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_CUSTOMER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import {
-  MKT_CUSTOMER_COMPANY_SIZE,
-  MKT_CUSTOMER_COMPANY_SIZE_OPTIONS,
-  MKT_CUSTOMER_INDUSTRY,
-  MKT_CUSTOMER_INDUSTRY_OPTIONS,
-  MKT_CUSTOMER_LIFECYCLE_STAGE,
-  MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
-  MKT_CUSTOMER_STATUS,
-  MKT_CUSTOMER_STATUS_OPTIONS,
-  MKT_CUSTOMER_TAGS,
-  MKT_CUSTOMER_TAGS_OPTIONS,
-  MKT_CUSTOMER_TIER,
-  MKT_CUSTOMER_TIER_OPTIONS,
-  MKT_CUSTOMER_TYPE,
-  MKT_CUSTOMER_TYPE_OPTIONS,
-} from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 
 const TABLE_NAME = 'mktCustomer';
 const NAME_FIELD_NAME = 'name';
@@ -81,18 +67,39 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconCode',
   })
   @WorkspaceIsNullable()
+  @WorkspaceIsUnique()
   mktCustomerCode: string;
 
   @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.syncStatus,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Sync Status`,
+    description: msg`Customer sync status`,
+    icon: 'IconSync',
+    defaultValue: true,
+  })
+  @WorkspaceIsNullable()
+  syncStatus: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.userId,
+    type: FieldMetadataType.TEXT,
+    label: msg`User ID`,
+    description: msg`Customer user ID`,
+    icon: 'IconUser',
+  })
+  @WorkspaceIsNullable()
+  userId: string;
+
+  @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.type,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Type`,
     description: msg`Customer type`,
     icon: 'IconUser',
-    options: MKT_CUSTOMER_TYPE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  type: MKT_CUSTOMER_TYPE;
+  type: string;
 
   // basic_info
   @WorkspaceField({
@@ -131,6 +138,7 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Customer email`,
     icon: 'IconMail',
   })
+  @WorkspaceIsUnique()
   @WorkspaceIsNullable()
   email: string;
 
@@ -178,25 +186,23 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.companySize,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Company Size`,
     description: msg`Customer company size`,
     icon: 'IconBuilding',
-    options: MKT_CUSTOMER_COMPANY_SIZE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  companySize: MKT_CUSTOMER_COMPANY_SIZE;
+  companySize: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.industry,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Industry`,
     description: msg`Customer industry`,
     icon: 'IconIndustry',
-    options: MKT_CUSTOMER_INDUSTRY_OPTIONS,
   })
   @WorkspaceIsNullable()
-  industry: MKT_CUSTOMER_INDUSTRY;
+  industry: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.legalRepresentative,
@@ -237,36 +243,33 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   //system_info
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.status,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Status`,
     description: msg`Customer status`,
     icon: 'IconStatus',
-    options: MKT_CUSTOMER_STATUS_OPTIONS,
   })
   @WorkspaceIsNullable()
-  status: MKT_CUSTOMER_STATUS;
+  status: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.tier,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Tier`,
     description: msg`Customer tier`,
     icon: 'IconTiers',
-    options: MKT_CUSTOMER_TIER_OPTIONS,
   })
   @WorkspaceIsNullable()
-  tier: MKT_CUSTOMER_TIER;
+  tier: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.lifecycleStage,
-    type: FieldMetadataType.SELECT,
+    type: FieldMetadataType.TEXT,
     label: msg`Lifecycle Stage`,
     description: msg`Customer lifecycle stage`,
     icon: 'IconLifeCycle',
-    options: MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS,
   })
   @WorkspaceIsNullable()
-  lifecycleStage: MKT_CUSTOMER_LIFECYCLE_STAGE;
+  lifecycleStage: string;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.registrationDate,
@@ -277,17 +280,6 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   registrationDate: Date;
-
-  @WorkspaceField({
-    standardId: MKT_CUSTOMER_FIELD_IDS.tags,
-    type: FieldMetadataType.MULTI_SELECT,
-    label: msg`Tags`,
-    description: msg`Customer tags`,
-    icon: 'IconTag',
-    options: MKT_CUSTOMER_TAGS_OPTIONS,
-  })
-  @WorkspaceIsNullable()
-  tags: MKT_CUSTOMER_TAGS[];
 
   //tracking_info
   @WorkspaceField({
@@ -402,7 +394,7 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconTag',
     inverseSideTarget: () => MktCustomerTagWorkspaceEntity,
     inverseSideFieldKey: 'mktCustomer',
-    onDelete: RelationOnDeleteAction.CASCADE,
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
   mktCustomerTags: Relation<MktCustomerTagWorkspaceEntity[]>;
@@ -419,6 +411,19 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktOrders: Relation<MktOrderWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.contracts,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Contracts`,
+    description: msg`Contracts linked to the customer`,
+    icon: 'IconFileContract',
+    inverseSideTarget: () => MktContractWorkspaceEntity,
+    inverseSideFieldKey: 'customer',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  contracts: Relation<MktContractWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_CUSTOMER_FIELD_IDS.accountOwner,

@@ -133,6 +133,7 @@ export class OrderService {
       discount: updateOrderInfo.discount,
       totalAmount: updateOrderInfo.totalAmount,
       name: updateOrderInfo.name ?? '',
+      mktContractId: updateOrderInfo.mktContractId || null,
     });
   }
 

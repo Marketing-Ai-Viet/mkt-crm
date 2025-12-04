@@ -10,6 +10,7 @@ import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
+import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   MKT_ORDER_LICENSE_STATUS,
   ORDER_CODE_PREFIX,
@@ -21,6 +22,10 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import {
+  BidvSepayApiResponse,
+  BidvSepayOrderRequest,
+} from 'src/mkt-core/payment/types/bidv-sepay.types';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 export type CalculateOrderResult = {
@@ -32,6 +37,10 @@ export type CalculateOrderResult = {
 
 @Injectable()
 export class MktOrderCommonConfirmService {
+  public changeVariantData = {
+    oldVariantName: '',
+    newVariantName: '',
+  };
   private readonly logger = new Logger(MktOrderCommonConfirmService.name);
   public orderMetadata: ORDER_METADATA | null = null;
 
@@ -429,6 +438,8 @@ export class MktOrderCommonConfirmService {
       variantsMeta.map(async (v, _index) => {
         const variant = variantById.get(v.mktVariantId);
 
+        this.changeVariantData.newVariantName = variant?.name || '';
+
         if (!variant) return [];
 
         const unitPrice = variant?.price ?? 0;
@@ -516,6 +527,8 @@ export class MktOrderCommonConfirmService {
               mktVariantId: orderItem.mktVariantId,
               notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
             });
+
+            newLicense.createdBy = order.createdBy;
             // save license
             const savedLicense = await licenseRepository.save(newLicense);
 
@@ -718,7 +731,7 @@ export class MktOrderCommonConfirmService {
 
             if (!pm) return null;
             // generate position
-            const qrCodeUrl = await this.generateSepayQrCodeUrl(
+            const { qrCodeUrl, expiredAt } = await this.generateSepayQrCodeUrl(
               pm,
               paymentData.totalAmount || 0,
               paymentData.generatedOrderCode,
@@ -733,6 +746,10 @@ export class MktOrderCommonConfirmService {
               amount: paymentData.totalAmount || 0,
               currency: paymentData.currency || 'VND',
               qrCodeUrl: qrCodeUrl || undefined,
+              duration: p.duration || null,
+              expiredAt: expiredAt || null,
+              paymentPageUrl: `${process.env.SERVER_URL}/payment/${paymentData.generatedOrderCode}`,
+              mktTemplateId: MKT_TEMPLATE.SEPAY,
             } as Partial<MktPaymentWorkspaceEntity>);
           }),
         );
@@ -746,25 +763,38 @@ export class MktOrderCommonConfirmService {
     return result;
   }
 
-  private async generateSepayQrCodeUrl(
+  async generateSepayQrCodeUrl(
     mktPaymentMethod: MktPaymentMethodWorkspaceEntity,
     customAmount?: number,
     orderCode?: string | null,
-  ): Promise<string> {
+  ) {
+    const result: { qrCodeUrl: string; expiredAt: string | null } = {
+      qrCodeUrl: '',
+      expiredAt: null,
+    };
+
     this.logger.log('Generating SEPay QR code URL...');
-    if (mktPaymentMethod?.name !== 'SEPay QR') return '';
+    if (mktPaymentMethod?.name !== 'SEPay QR') return result;
+
+    // Check if BIDV business mode is enabled
+    const isBidvBusiness = process.env.IS_BIDV_BUSINESS === 'true';
+
+    if (isBidvBusiness) {
+      return this.generateBidvSepayQr(customAmount, orderCode);
+    }
+
     try {
       // Get environment variables
       const sepayAcc = process.env.SEPAY_ACC || '';
       const sepayBank = process.env.SEPAY_BANK || '';
-      const sepayVa = process.env.SEPAY_VA || 'TKPD23';
+      const sepayVa = process.env.SEPAY_VA || '';
 
       if (!sepayAcc || !sepayBank) {
         this.logger.warn(
           'SEPAY_ACC or SEPAY_BANK environment variables not set',
         );
 
-        return '';
+        return result;
       }
 
       // Get order information
@@ -772,13 +802,13 @@ export class MktOrderCommonConfirmService {
       if (!orderCode) {
         this.logger.warn('No order code found for payment');
 
-        return '';
+        return result;
       }
 
       if (!customAmount || customAmount <= 0) {
         this.logger.warn('Invalid amount for QR code generation');
 
-        return '';
+        return result;
       }
 
       // Generate QR code URL
@@ -788,11 +818,11 @@ export class MktOrderCommonConfirmService {
         `Generated SEPay QR code URL for order ${orderCode} with amount ${customAmount}`,
       );
 
-      return qrCodeUrl;
+      return { ...result, qrCodeUrl };
     } catch (error) {
       this.logger.error('Error generating SEPay QR code URL:', error);
 
-      return '';
+      return result;
     }
   }
 
@@ -819,7 +849,19 @@ export class MktOrderCommonConfirmService {
     }
 
     this.orderMetadata = { ...metadata, oldOrderId: orderId };
-    //
+    let note = '';
+
+    if (
+      this.changeVariantData.oldVariantName &&
+      this.changeVariantData.newVariantName
+    ) {
+      note = `\n
+Đã thay đổi sản phẩm cho ${this.changeVariantData.oldVariantName}\n
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sản phẩm mới: -> ${this.changeVariantData.newVariantName}.\n
+Thời gian: ${new Date().toISOString()}
+`;
+    }
     await orderRepository.update(orderId, {
       mktCustomerId: updateOrderInfo.mktCustomerId || null,
       orderCode: updateOrderInfo.orderCode ?? '',
@@ -828,7 +870,9 @@ export class MktOrderCommonConfirmService {
       discount: updateOrderInfo.discount,
       totalAmount: updateOrderInfo.totalAmount,
       name: updateOrderInfo.name ?? '',
+      note,
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
+      accountOwnerId: oldOrder?.accountOwnerId || null,
     });
   }
 
@@ -841,5 +885,95 @@ export class MktOrderCommonConfirmService {
 
     metadata = { ...metadata, oldLicenseId: licenseId };
     orderRepo.update(oldOrder.id, { metadata });
+  }
+
+  private async generateBidvSepayQr(
+    customAmount?: number,
+    orderCode?: string | null,
+  ) {
+    const result: { qrCodeUrl: string; expiredAt: string | null } = {
+      qrCodeUrl: '',
+      expiredAt: null,
+    };
+
+    this.logger.log('Generating BIDV SEPay QR code...');
+
+    try {
+      // Get environment variables for BIDV API
+      const bidvApiUrl = process.env.BIDV_SEPAY_API_URL || '';
+      const bidvAuthToken = process.env.BIDV_SEPAY_AUTH_TOKEN || '';
+      const _bidvCookie = process.env.BIDV_SEPAY_COOKIE || '';
+
+      if (!bidvApiUrl || !bidvAuthToken) {
+        this.logger.warn('BIDV SEPay API URL or Auth Token not configured');
+
+        return result;
+      }
+
+      if (!orderCode) {
+        this.logger.warn('No order code found for BIDV payment');
+
+        return result;
+      }
+
+      if (!customAmount || customAmount <= 0) {
+        this.logger.warn('Invalid amount for BIDV QR code generation');
+
+        return result;
+      }
+
+      // Prepare API request
+      const requestData: BidvSepayOrderRequest = {
+        amount: customAmount,
+        order_code: orderCode,
+        duration: 300, // 5 minutes expiry
+        with_qrcode: true,
+      };
+
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${bidvAuthToken}`,
+        //Cookie: bidvCookie,
+      };
+
+      this.logger.log(
+        `Calling BIDV SEPay API for order ${orderCode} with amount ${customAmount}`,
+      );
+
+      // Call BIDV SEPay API
+      const response = await firstValueFrom(
+        this.httpService.post<BidvSepayApiResponse>(bidvApiUrl, requestData, {
+          headers,
+        }),
+      );
+
+      if (response.data.status === 'success' && response.data.data) {
+        const { qr_code_url, qr_code, order_id, expired_at } =
+          response.data.data;
+
+        this.logger.log(
+          `Successfully generated BIDV SEPay QR for order ${orderCode}, order_id: ${order_id}`,
+        );
+
+        // Return QR code URL if available, otherwise return base64 QR code
+        result.qrCodeUrl = qr_code_url || qr_code || '';
+        result.expiredAt = expired_at || null;
+
+        return result;
+      } else {
+        this.logger.error(`BIDV SEPay API error: ${response.data.message}`);
+
+        return result;
+      }
+    } catch (error) {
+      this.logger.error('Error calling BIDV SEPay API:', error);
+
+      // Log additional error details if available
+      if (error?.response?.data) {
+        this.logger.error('API Response:', error.response.data);
+      }
+
+      return result;
+    }
   }
 }

@@ -6,13 +6,22 @@
 # TAG      - defaults to 'latest'
 #
 # Example: make
+# Example: source .env && make mkt TAG=v1.4.5
 # Example: make PLATFORM=linux/aarch64 TAG=my-tag
 
 PLATFORM ?= linux/amd64
 TAG ?= latest
+BASE_IMAGE ?= twentycrm/twenty:v1.2.0
 
 prod-build:
 	@cd ../.. && docker build -f ./packages/twenty-docker/twenty/Dockerfile --platform $(PLATFORM) --tag twenty:$(TAG) . && cd -
+
+mkt:
+	@cd ../.. && docker build \
+	 -f ./packages/twenty-docker/twenty/server/Dockerfile \
+	 --platform $(PLATFORM) \
+	 --build-arg BASE_IMAGE=$(BASE_IMAGE) \
+	 --tag mkt:$(TAG) . && cd -
 
 prod-run:
 	@docker run -d -p 3000:3000 --name twenty twenty:$(TAG)

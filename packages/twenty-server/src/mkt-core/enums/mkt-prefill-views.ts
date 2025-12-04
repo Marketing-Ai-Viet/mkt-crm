@@ -4,6 +4,7 @@ import { mktSInvoiceItemsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/
 import { mktSInvoiceMetadataAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-metadata-all.view';
 import { mktSInvoicePaymentsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-payment-all.view';
 import { mktSInvoiceTaxBreakdownsAllView } from 'src/mkt-core/dev-seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-all.view';
+import { mktOrderHistoryAllView } from 'src/mkt-core/dev-seeder/order-seeder/mkt-order-history-all.view';
 import { mktContractsAllView } from 'src/mkt-core/dev-seeder/prefill-data/mkt-contract-all.view';
 import { mktLicensesAllView } from 'src/mkt-core/dev-seeder/prefill-data/mkt-license-all.view';
 import { mktOrdersAllView } from 'src/mkt-core/dev-seeder/prefill-data/mkt-order-all.view';
@@ -20,6 +21,7 @@ import { mktI18nAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-i18n-al
 import { mktKpisAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-kpi-all.view';
 import { mktLicenseHistoryAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-organization-level-all.view';
+import { mktPaymentHistoriesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-payment-history-all.view';
 import { mktPermissionAuditsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-permission-audit-all.view';
 import { mktResellersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-reseller-all.view';
 import { mktResellerTiersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-reseller-tier-all.view';
@@ -34,9 +36,14 @@ import { mktComboVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/
 import { mktProductsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-all.view';
 import { mktVariantsAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-all.view';
 import { mktVariantValuesAllView } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-all.view';
+import { mktEmailAllView } from 'src/mkt-core/email/seeder/mkt-email-all.view';
 import { mktReportsAllView } from 'src/mkt-core/report/seeder/mkt-report-all.view';
+import { mktOptionsAllView } from 'src/mkt-core/setting/seeder/mkt-option-all.view';
 
 export const MKT_ALL_VIEWS = [
+  // core views
+  mktOptionsAllView,
+  mktEmailAllView,
   // report views
   mktReportsAllView,
   // i18n views
@@ -56,6 +63,7 @@ export const MKT_ALL_VIEWS = [
   // order views
   mktOrdersAllView,
   mktOrderItemsAllView,
+  mktOrderHistoryAllView,
   // template views
   mktTemplatesAllView,
   // license views
@@ -73,6 +81,7 @@ export const MKT_ALL_VIEWS = [
   // payment views
   mktPaymentMethodsAllView,
   mktPaymentsAllView,
+  mktPaymentHistoriesAllView,
   // reseller views
   mktResellerTiersAllView,
   mktResellersAllView,

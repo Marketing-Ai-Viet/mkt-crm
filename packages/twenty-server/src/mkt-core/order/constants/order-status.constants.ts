@@ -1,4 +1,5 @@
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 
 export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV'; // Mặc định là 'DEV' nếu không có biến môi trường
 
@@ -22,6 +23,8 @@ export type ORDER_METADATA = {
   oldLicenseId?: string;
   oldVariantId?: string;
   refund?: RefundItem[]; // Danh sách các mục hoàn tiền
+  licenseHistory?: MktLicenseHistoryWorkspaceEntity | null; // Thông tin lịch sử license liên quan đến đơn hàng
+  licenseRefundIds?: string[]; // Danh sách ID của các license đã được hoàn tiền
 };
 
 export enum ORDER_STATUS {
@@ -32,7 +35,103 @@ export enum ORDER_STATUS {
   OVERDUE = 'OVERDUE', // quá hạn (đơn hàng đã được tạo nhưng chưa thanh toán trong thời gian quy định)
   REFUSE = 'REFUSE', // từ chối (người mua/người bán)
   REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
+  CONFIRMED = 'CONFIRMED', // đơn hàng đã được xác nhận
+  BLOCKED = 'BLOCKED', // đơn hàng bị khóa (do nghi ngờ gian lận hoặc vi phạm chính sách)
+  REFUND_PARTIAL = 'REFUND_PARTIAL', // hoàn tiền một phần (đơn hàng đã được hoàn tiền một phần)
 }
+
+export const ORDER_STATUS_OPTIONS = {
+  status: ORDER_STATUS,
+  options: [
+    {
+      value: ORDER_STATUS.DRAFT,
+      label: 'Nháp',
+      color: 'gray',
+      position: 0,
+    },
+    {
+      value: ORDER_STATUS.TRIAL,
+      label: 'Dùng thử',
+      color: 'yellow',
+      position: 1,
+    },
+    {
+      value: ORDER_STATUS.COMPLETED,
+      label: 'Hoàn thành',
+      color: 'green',
+      position: 2,
+    },
+    {
+      value: ORDER_STATUS.WAIT,
+      label: 'Chờ xử lý',
+      color: 'orange',
+      position: 3,
+    },
+    {
+      value: ORDER_STATUS.OVERDUE,
+      label: 'Quá hạn',
+      color: 'red',
+      position: 4,
+    },
+    {
+      value: ORDER_STATUS.REFUSE,
+      label: 'Từ chối',
+      color: 'purple',
+      position: 5,
+    },
+    {
+      value: ORDER_STATUS.REFUND,
+      label: 'Hoàn tiền',
+      color: 'blue',
+      position: 6,
+    },
+    {
+      value: ORDER_STATUS.CONFIRMED,
+      label: 'Đã xác nhận',
+      color: 'blue',
+      position: 7,
+    },
+    {
+      value: ORDER_STATUS.BLOCKED,
+      label: 'Khóa đơn hàng',
+      color: 'black',
+      position: 8,
+    },
+    {
+      value: ORDER_STATUS.REFUND_PARTIAL,
+      label: 'Hoàn tiền một phần',
+      color: 'cyan',
+      position: 9,
+    },
+  ],
+  labels: {
+    EN: {
+      DRAFT: 'Draft',
+      TRIAL: 'Trial',
+      COMPLETED: 'Completed',
+      WAIT: 'Wait',
+      OVERDUE: 'Overdue',
+      REFUSE: 'Refuse',
+      REFUND: 'Refund',
+      CONFIRMED: 'Confirmed',
+      BLOCKED: 'Blocked',
+      REFUND_PARTIAL: 'Partial Refund',
+    },
+    VI: {
+      DRAFT: 'Nháp',
+      TRIAL: 'Dùng thử',
+      COMPLETED: 'Hoàn thành',
+      WAIT: 'Chờ xử lý',
+      OVERDUE: 'Quá hạn',
+      REFUSE: 'Từ chối',
+      REFUND: 'Hoàn tiền',
+      CONFIRMED: 'Đã xác nhận',
+      BLOCKED: 'Khóa đơn hàng',
+      REFUND_PARTIAL: 'Hoàn tiền một phần',
+    },
+  },
+};
+
 export enum ORDER_ACTION {
   DRAFT = 'DRAFT',
   CONFIRMED = 'CONFIRMED',
@@ -53,46 +152,8 @@ export enum ORDER_ACTION {
   LICENSE_RENEWING = 'LICENSE_RENEWING',
   CHANGE_VARIANT = 'CHANGE_VARIANT',
   REFUND = 'REFUND',
+  REFUND_PARTIAL = 'REFUND_PARTIAL',
 }
-
-export const ORDER_STATUS_OPTIONS = [
-  {
-    value: ORDER_STATUS.DRAFT,
-    label: 'Draft',
-    color: 'gray' as TagColor,
-    position: 0,
-  },
-  {
-    value: ORDER_STATUS.TRIAL,
-    label: 'Trial',
-    color: 'yellow' as TagColor,
-    position: 1,
-  },
-  {
-    value: ORDER_STATUS.COMPLETED,
-    label: 'Completed',
-    color: 'green' as TagColor,
-    position: 2,
-  },
-  {
-    value: ORDER_STATUS.WAIT,
-    label: 'Wait',
-    color: 'orange' as TagColor,
-    position: 3,
-  },
-  {
-    value: ORDER_STATUS.OVERDUE,
-    label: 'Overdue',
-    color: 'red' as TagColor,
-    position: 4,
-  },
-  {
-    value: ORDER_STATUS.REFUSE,
-    label: 'Refuse',
-    color: 'red' as TagColor,
-    position: 5,
-  },
-];
 
 export enum SINVOICE_STATUS {
   PENDING = 'PENDING',

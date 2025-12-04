@@ -11,6 +11,7 @@ export interface OrderStateContext {
   getTrialLicense(): boolean | null;
   getLicenseStatus(): string | null;
   getSInvoiceStatus(): string | null;
+  getAccountingConfirmed(): boolean | null;
 }
 
 export interface OrderStateInput {
@@ -18,6 +19,8 @@ export interface OrderStateInput {
   trialLicense?: boolean | null;
   licenseStatus?: string | null;
   sInvoiceStatus?: string | null;
+  accountingConfirmed?: boolean | null;
+  metadata?: unknown | null;
 }
 
 export abstract class OrderState {

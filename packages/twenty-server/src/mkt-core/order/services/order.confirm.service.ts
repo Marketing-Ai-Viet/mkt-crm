@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { ORDER_CODE_PREFIX } from 'src/mkt-core/order/constants/order-status.constants';
@@ -22,10 +23,11 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    private readonly mktLicenseService: MktLicenseService,
+    public mktLicenseService: MktLicenseService,
     private mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
     private mktRepo: MktRepositoryService,
+    private readonly mktContractService: MktContractService,
   ) {}
 
   /**
@@ -68,6 +70,16 @@ export class OrderConfirmService {
         this.logger.debug(
           `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal}, tax=${itemTax}`,
         );
+      }
+
+      if (currentOrder?.discountPercent) {
+        const discountAmount = (subtotal * currentOrder.discountPercent) / 100;
+
+        this.logger.log(
+          `Applying discountPercent ${currentOrder.discountPercent}%: discountAmount=${discountAmount}`,
+        );
+
+        currentOrder.discount = discountAmount;
       }
 
       const discount = currentOrder?.discount || 0;
@@ -230,6 +242,8 @@ export class OrderConfirmService {
     paymentMethodsMeta: Metadata['paymentMethods'] | null,
     licenseId?: string,
   ): Promise<callFireBaseType | void> {
+    const mktCustomerId = customerMeta?.mktCustomerId || null;
+
     if (
       action !== ORDER_ACTION.WAIT &&
       action !== ORDER_ACTION.TRIAL &&
@@ -253,7 +267,7 @@ export class OrderConfirmService {
 
     const order = await orderRepository.findOne({
       where: { id: createdOrder.id },
-      relations: ['orderItems'],
+      relations: ['orderItems', 'mktCustomer', 'accountOwner'],
     });
 
     this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);
@@ -263,6 +277,7 @@ export class OrderConfirmService {
         if (action !== ORDER_ACTION.LICENSE_RENEWING)
           await this.mktLicenseService.createLicensesForOrderItems(
             order,
+            mktCustomerId,
             workspaceId,
           );
 
@@ -288,6 +303,13 @@ export class OrderConfirmService {
     const calculatedValues: CalculateOrderResult =
       await this.calculateOrderValues(order);
 
+    const mktContractId = await this.createContractIfRequired(
+      order,
+      workspaceId,
+      customerMeta?.mktCustomerId || null,
+      generatedOrderCode ?? '',
+    );
+
     const updateOrderInfo = {
       id: createdOrder.id,
       mktCustomerId: customerMeta?.mktCustomerId || null,
@@ -297,6 +319,7 @@ export class OrderConfirmService {
       discount: calculatedValues.discount,
       totalAmount: calculatedValues.totalAmount,
       name: generatedOrderName ?? '',
+      mktContractId,
     };
 
     await this.orderService.updateOrderInformation(
@@ -318,6 +341,8 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
+      createdBy: order?.createdBy,
+      discount: calculatedValues.discount || 0,
     };
 
     this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
@@ -404,6 +429,7 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
+      createdBy: createdOrder?.createdBy,
     };
 
     await this.mktPaymentService.createPaymentFromOrder(
@@ -423,5 +449,37 @@ export class OrderConfirmService {
     if (!workspaceId) return this.mktRepo.getOrderRepository();
 
     return this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
+  }
+
+  private async createContractIfRequired(
+    order: MktOrderWorkspaceEntity | null,
+    workspaceId: string,
+    mktCustomerId: string | null,
+    generatedOrderCode: string,
+  ) {
+    if (order && order.requireContract) {
+      try {
+        this.logger.log(`Creating contract for order: ${order.id}`);
+
+        const contract = await this.mktContractService.createContractForOrder(
+          order,
+          workspaceId,
+          mktCustomerId,
+          generatedOrderCode,
+        );
+
+        this.logger.log(
+          `Successfully created and linked contract ${contract.contractNumber} to order ${order.id}`,
+        );
+
+        return contract.id;
+      } catch (contractError) {
+        this.logger.error(
+          `Failed to create contract for order ${order.id}:`,
+          contractError,
+        );
+        // Continue with order processing even if contract creation fails
+      }
+    }
   }
 }

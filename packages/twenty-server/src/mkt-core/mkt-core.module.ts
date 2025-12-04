@@ -5,6 +5,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 
+import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
@@ -26,6 +27,7 @@ import { UserManagementModule } from 'src/mkt-core/user-management/user-manageme
     UserManagementModule,
     MktOrganizationLevelModule,
     MktProductModule,
+    CustomerModule,
     OAuth2ClientModule,
   ],
 })

@@ -25,6 +25,7 @@ export default defineConfig(({ command, mode }) => {
     SSL_KEY_PATH,
     REACT_APP_PORT,
     IS_DEBUG_MODE,
+    ALLOW_HOSTS,
   } = env;
 
   const port = isNonEmptyString(REACT_APP_PORT)
@@ -101,6 +102,7 @@ export default defineConfig(({ command, mode }) => {
           '**/@blocknote/core/src/fonts/**',
         ],
       },
+      allowedHosts: ALLOW_HOSTS ? ALLOW_HOSTS.split(',') : undefined,
     },
 
     plugins: [

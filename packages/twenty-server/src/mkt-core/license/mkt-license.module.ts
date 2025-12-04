@@ -9,9 +9,6 @@ import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
-import { MktLicenseDashboardStatsCommand } from 'src/mkt-core/license/commands/mkt-license-dashboard-stats.command';
-import { MktLicenseDashboardStatsCronCommand } from 'src/mkt-core/license/crons/commands/mkt-license-dashboard-stats.cron.command';
-import { MktLicenseDashboardStatsCronJob } from 'src/mkt-core/license/crons/jobs/mkt-license-dashboard-stats.cron.job';
 import { MktLicenseUpdateOnePostQueryHook } from 'src/mkt-core/license/hooks/mkt-license-update-one.post-query.hook';
 import { MktLicenseUpdateOnePreQueryHook } from 'src/mkt-core/license/hooks/mkt-license-update-one.pre-query.hook';
 import { MktLicenseApiService } from 'src/mkt-core/license/integration/mkt-license-api.service';
@@ -51,18 +48,12 @@ import { MktLicenseRenewService } from 'src/mkt-core/license/services/mkt-licens
     MktLicenseUpdateOnePostQueryHook,
     MktLicenseRenewService,
     MktLicenseDashboardService,
-    MktLicenseDashboardStatsCommand,
-    MktLicenseDashboardStatsCronCommand,
-    MktLicenseDashboardStatsCronJob,
   ],
   exports: [
     MktLicenseService,
     MktLicenseEventService,
     MktLicenseDashboardService,
     MktLicenseCsvExportService,
-    MktLicenseDashboardStatsCommand,
-    MktLicenseDashboardStatsCronCommand,
-    MktLicenseDashboardStatsCronJob,
   ],
 })
 export class MktLicenseModule {}

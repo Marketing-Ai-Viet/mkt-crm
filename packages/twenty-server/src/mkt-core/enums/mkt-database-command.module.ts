@@ -11,9 +11,11 @@ import { SeedMktKpiTemplateCommand } from 'src/mkt-core/dev-seeder/commands/mkt-
 import { SeedLicenseModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-data-seed-dev-workspace.command';
 import { SeedLicenseHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-license-history-data-seed-dev-workspace.command';
 import { SeedOrderModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-data-seed-dev-workspace.command';
+import { SeedMktOrderHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-history-data-seed-dev-workspace.command';
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
 import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-data-seed-dev-workspace.command';
+import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-history-data-seed-dev-workspace.command';
 import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-method-data-seed-dev-workspace.command';
 import { SeedMktPermissionAuditCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-audit-data-seed-dev-workspace.command';
 import { SeedResellerModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-reseller-data-seed-dev-workspace.command';
@@ -34,11 +36,14 @@ import { SeedComboVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-s
 import { SeedProductModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
 import { SeedVariantModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seed-dev-workspace.command';
 import { SeedVariantValueModuleCommand } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-value-data-seed-dev-workspace.command';
-import { MktLicenseDashboardStatsCommand } from 'src/mkt-core/license/commands/mkt-license-dashboard-stats.command';
+import { SeedMktEmailModuleCommand } from 'src/mkt-core/email/seeder/mkt-email-data-seed-dev-workspace.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 import { SeedMktReportModuleCommand } from 'src/mkt-core/report/seeder/mkt-report-data-seed-dev-workspace.command';
-
+import { SeedMktOptionModuleCommand } from 'src/mkt-core/setting/seeder/mkt-option-data-seed-dev-workspace.command';
 export const MKT_DATABASE_COMMAND_MODULES = [
+  // core commands
+  SeedMktOptionModuleCommand,
+  SeedMktEmailModuleCommand,
   // report commands
   SeedMktReportModuleCommand,
   // i18n commands
@@ -57,6 +62,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // order commands
   SeedOrderModuleCommand,
   SeedOrderItemModuleCommand,
+  SeedMktOrderHistoryModuleCommand,
   EnsureOrderUpdatedAtTriggerCommand,
   // template commands
   SeedTemplateModuleCommand,
@@ -65,7 +71,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // license commands
   SeedLicenseModuleCommand,
   SeedLicenseHistoryModuleCommand,
-  MktLicenseDashboardStatsCommand,
   // invoice commands
   SeedSInvoiceAuthModuleCommand,
   SeedSInvoiceModuleCommand,
@@ -76,6 +81,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // payment commands
   MktPaymentMethodDataSeedDevWorkspaceCommand,
   MktPaymentDataSeedDevWorkspaceCommand,
+  SeedMktPaymentHistoryModuleCommand,
   // reseller commands
   SeedResellerTierModuleCommand,
   SeedResellerModuleCommand,

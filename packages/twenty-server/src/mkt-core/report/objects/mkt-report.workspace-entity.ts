@@ -23,14 +23,13 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_REPORT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { SEARCH_FIELDS_FOR_MKT_ATTRIBUTE } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 const TABLE_REPORT_NAME = 'mktReport';
 const NAME_FIELD_NAME = 'name';
 
-export const SEARCH_FIELDS_FOR_MKT_REPORT: FieldTypeAndNameMetadata[] = [
+export const SEARCH_FIELDS: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
 ];
 
@@ -141,9 +140,7 @@ export class MktReportWorkspaceEntity extends BaseWorkspaceEntity {
     description: SEARCH_VECTOR_FIELD.description,
     icon: 'IconUser',
     generatedType: 'STORED',
-    asExpression: getTsVectorColumnExpressionFromFields(
-      SEARCH_FIELDS_FOR_MKT_ATTRIBUTE,
-    ),
+    asExpression: getTsVectorColumnExpressionFromFields(SEARCH_FIELDS),
   })
   @WorkspaceIsNullable()
   @WorkspaceIsSystem()

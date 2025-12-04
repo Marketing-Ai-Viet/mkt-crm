@@ -12,6 +12,7 @@ import { TIMELINE_ACTIVITY_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-fiel
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
@@ -22,10 +23,13 @@ import { MktSInvoiceTaxBreakdownWorkspaceEntity } from 'src/mkt-core/invoice/obj
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
 import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
 import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
@@ -35,8 +39,23 @@ import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.
 import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
 export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktOption,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Option`,
+    description: msg`Event option`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktOptionWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  mktOption: Relation<MktOptionWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktOption')
+  mktOptionId: string | null;
+
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktI18n,
     type: RelationType.MANY_TO_ONE,
@@ -243,6 +262,37 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   mktPaymentId: string | null;
 
   @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktPaymentHistory,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Payment History`,
+    description: msg`Event payment history`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktPaymentHistory: Relation<MktPaymentHistoryWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('mktPaymentHistory')
+  mktPaymentHistoryId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktOrderHistory,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Order History`,
+    description: msg`Event order history`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktOrderHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktOrderHistory: Relation<MktOrderHistoryWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktOrderHistory')
+  mktOrderHistoryId: string | null;
+
+  @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktLicense,
     type: RelationType.MANY_TO_ONE,
     label: msg`License`,
@@ -434,4 +484,36 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktReport')
   mktReportId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktContract,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Contract`,
+    description: msg`Event contract`,
+    icon: 'IconFileContract',
+    inverseSideTarget: () => MktContractWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktContract: Relation<MktContractWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktContract')
+  mktContractId: string | null;
+
+  @WorkspaceRelation({
+    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktEmail,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Email`,
+    description: msg`Event email`,
+    icon: 'IconMail',
+    inverseSideTarget: () => MktEmailWorkspaceEntity,
+    inverseSideFieldKey: 'timelineActivities',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  mktEmail: Relation<MktEmailWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('mktEmail')
+  mktEmailId: string | null;
 }

@@ -9,14 +9,18 @@ import {
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { WaitState } from 'src/mkt-core/order/states';
 import { CompletedState } from 'src/mkt-core/order/states/completed-state';
-
-import { DraftState } from './draft-state';
+import { ConfirmedState } from 'src/mkt-core/order/states/confirm-state';
+import { BlockedState } from 'src/mkt-core/order/states/blocked-state';
+import { OverdueState } from 'src/mkt-core/order/states/overdue-state';
+import { DraftState } from 'src/mkt-core/order/states/draft-state';
 import {
   OrderState,
   OrderStateContext,
   OrderStateInput,
-} from './order-state.interface';
-import { TrialState } from './trial-state';
+} from 'src/mkt-core/order/states/order-state.interface';
+import { TrialState } from 'src/mkt-core/order/states/trial-state';
+import { RefundState } from 'src/mkt-core/order/states/refund-state';
+import { RefundPartialState } from 'src/mkt-core/order/states/refund-partial-state';
 
 export class OrderStateMachine implements OrderStateContext {
   private readonly logger = new Logger(OrderStateMachine.name);
@@ -29,7 +33,7 @@ export class OrderStateMachine implements OrderStateContext {
   }
 
   getCurrentStatus(): ORDER_STATUS | null {
-    return this.currentOrder?.status || null;
+    return (this.currentOrder?.status as ORDER_STATUS) || null;
   }
 
   getTrialLicense(): boolean | null {
@@ -42,6 +46,10 @@ export class OrderStateMachine implements OrderStateContext {
 
   getSInvoiceStatus(): string | null {
     return this.currentOrder?.sInvoiceStatus || null;
+  }
+
+  getAccountingConfirmed(): boolean | null {
+    return this.currentOrder?.accountingConfirmed ?? null;
   }
 
   /**
@@ -63,7 +71,16 @@ export class OrderStateMachine implements OrderStateContext {
         return new WaitState();
       case ORDER_STATUS.COMPLETED:
         return new CompletedState();
-
+      case ORDER_STATUS.CONFIRMED:
+        return new ConfirmedState();
+      case ORDER_STATUS.BLOCKED:
+        return new BlockedState();
+      case ORDER_STATUS.OVERDUE:
+        return new OverdueState();
+      case ORDER_STATUS.REFUND:
+        return new RefundState();
+      case ORDER_STATUS.REFUND_PARTIAL:
+        return new RefundPartialState();
       default:
         this.logger.warn(
           `Unknown order status: ${order.status}, defaulting to DraftState`,
@@ -80,10 +97,12 @@ export class OrderStateMachine implements OrderStateContext {
     payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
   ): ORDER_ACTION | null {
     const input: OrderStateInput = {
-      status: payload.data?.status,
+      status: payload.data?.status as ORDER_STATUS,
       trialLicense: payload.data?.trialLicense,
       licenseStatus: payload.data?.licenseStatus,
       sInvoiceStatus: payload.data?.sInvoiceStatus,
+      accountingConfirmed: payload.data?.accountingConfirmed,
+      metadata: payload.data?.metadata,
     };
 
     return this.currentState.getAction(this, input);
@@ -100,7 +119,7 @@ export class OrderStateMachine implements OrderStateContext {
   }
 
   /**
-   * check if can transition to new status
+   * check if you can transition to new status
    */
   canTransitionTo(newStatus: ORDER_STATUS): boolean {
     const input: OrderStateInput = {
@@ -113,7 +132,7 @@ export class OrderStateMachine implements OrderStateContext {
   /**
    * transition to new status
    */
-  transitionTo(newStatus: ORDER_STATUS): void {
+  _transitionTo(newStatus: ORDER_STATUS): void {
     if (!this.canTransitionTo(newStatus)) {
       throw new Error(
         `Cannot transition from ${this.currentState.getStatus()} to ${newStatus}`,
@@ -136,14 +155,14 @@ export class OrderStateMachine implements OrderStateContext {
   /**
    * get current state
    */
-  getCurrentState(): OrderState {
+  _getCurrentState(): OrderState {
     return this.currentState;
   }
 
   /**
    * update current order
    */
-  updateOrder(order: Partial<MktOrderWorkspaceEntity> | null): void {
+  _updateOrder(order: Partial<MktOrderWorkspaceEntity> | null): void {
     this.currentOrder = order;
     this.currentState = this.createStateFromOrder(order);
   }

@@ -8,6 +8,8 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
+import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
@@ -16,7 +18,10 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
 import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
 import { OrderService } from 'src/mkt-core/order/services/order.service';
-import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
+import {
+  PAYMENT_HISTORY_TYPE,
+  callFireBaseType,
+} from 'src/mkt-core/payment/constants/payment.type';
 import {
   FireBaseIntegrationService,
   FirebaseAuthResponse,
@@ -25,7 +30,11 @@ import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-paym
 
 export type Metadata = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
-  paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
+  paymentMethods?: Array<{
+    mktPaymentMethodId: string;
+    name?: string;
+    duration?: number;
+  }>;
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
   trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi
@@ -33,7 +42,7 @@ export type Metadata = {
 };
 export type Created = MktOrderWorkspaceEntity & {
   id: string;
-  metadata?: Metadata;
+  metadata?: Metadata | null;
 };
 
 @Injectable()
@@ -55,6 +64,7 @@ export class MktOrderCreateOnePostQueryHook
     private readonly orderService: OrderService,
     private readonly orderActionService: OrderActionService,
     private readonly fireBaseIntegrationService: FireBaseIntegrationService,
+    private readonly mktCommonOrderService: MktCommonOrderService,
   ) {}
 
   async execute(
@@ -69,7 +79,7 @@ export class MktOrderCreateOnePostQueryHook
 
     if (!created) return;
     try {
-      let metadata: Metadata = created?.metadata;
+      let metadata: Metadata = created?.metadata || {};
 
       await this.validateMetadata(metadata);
 
@@ -81,6 +91,10 @@ export class MktOrderCreateOnePostQueryHook
       const trialOrderId = metadata?.trialOrderId || null;
       const action =
         await this.orderActionService.getActionFromMetadata(metadata);
+
+      if (action === ORDER_ACTION.TRIAL) {
+        this.orderConfirmService.mktLicenseService.isTrial = true;
+      }
 
       if (action === ORDER_ACTION.WAIT || action === ORDER_ACTION.TRIAL) {
         this.logger.log(`Processing ${action} action for order creation`);
@@ -105,8 +119,6 @@ export class MktOrderCreateOnePostQueryHook
           authFirebase,
           workspaceId,
         );
-
-        return;
       }
 
       if (action === ORDER_ACTION.TRIAL_TO_PAID) {
@@ -118,9 +130,22 @@ export class MktOrderCreateOnePostQueryHook
           trialOrderId,
           paymentMethodsMeta,
         );
-
-        return;
       }
+      this.mktCommonOrderService.eventUpdated(
+        created.id,
+        workspaceId,
+        MKT_ORDER_EVENT_TYPES.ORDER_CREATED,
+      );
+
+      if (action !== ORDER_ACTION.TRIAL) {
+        await this.mktCommonOrderService.paymentUpdated(
+          created.id,
+          workspaceId,
+          PAYMENT_HISTORY_TYPE.PAYMENT,
+        );
+      }
+
+      return;
     } catch (error) {
       this.logger.error(
         '[Order POST HOOK] Failed to create related entities',

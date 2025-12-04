@@ -10,12 +10,12 @@ import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-enti
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { MKT_DEPARTMENT_HIERARCHY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
-import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPE_OPTIONS } from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartmentHierarchy,
@@ -25,9 +25,20 @@ import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPE_OPTIONS } from 'src/mkt-core/mkt
   description: msg`Hierarchical relationships between departments in the marketing system.`,
   icon: 'IconHierarchy',
   shortcut: 'H',
+  labelIdentifierStandardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.name,
 })
 @WorkspaceIsSearchable()
 export class MktDepartmentHierarchyWorkspaceEntity extends BaseWorkspaceEntity {
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.name,
+    type: FieldMetadataType.TEXT,
+    label: msg`Hierarchy Name`,
+    description: msg`Name of the department hierarchy relationship`,
+    icon: 'IconTag',
+  })
+  @WorkspaceIsNullable()
+  name: string;
+
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.hierarchyLevel,
     type: FieldMetadataType.NUMBER,
@@ -35,7 +46,8 @@ export class MktDepartmentHierarchyWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Level in the organizational hierarchy (0 = root, 1 = direct child, etc.)`,
     icon: 'IconLayers',
   })
-  hierarchyLevel: number;
+  @WorkspaceIsNullable()
+  hierarchyLevel: number | null;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.relationshipType,
@@ -45,7 +57,8 @@ export class MktDepartmentHierarchyWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconLink',
     options: DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPE_OPTIONS,
   })
-  relationshipType: string;
+  @WorkspaceIsNullable()
+  relationshipType: string | null;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_HIERARCHY_FIELD_IDS.validFrom,

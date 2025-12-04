@@ -1,49 +1,29 @@
-import { MKT_CUSTOMER_DATA_SEEDS_IDS as MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC } from 'src/mkt-core/dev-seeder/constants/mkt-customer-data-seeds.constants';
+import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
+import { MKT_CUSTOMER_DATA_SEEDS_IDS as MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
 import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seeds.constants';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
-
-type MktLicenseDataSeed = {
-  id: string;
-  name: string;
-  licenseKey: string;
-  status: MKT_LICENSE_STATUS;
-  activatedAt: Date;
-  expiresAt: Date;
-  lastLoginAt: Date;
-  deviceInfo: string;
-  notes: string;
-
-  mktOrderId: string;
-  mktVariantId: string;
-  mktCustomerId: string;
-
-  position: number;
-  createdBySource: string;
-  createdByWorkspaceMemberId: string | null;
-  createdByName: string;
-};
+import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
 export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
-  ID_1: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.TECH_CORP,
-  ID_2: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.FINANCE_LTD,
-  ID_3: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.HEALTH_CARE,
-  ID_4: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.MARKETING_AGENCY,
-  ID_5: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CONSULTING_FIRM,
-  ID_6: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.RETAIL_CHAIN,
-  ID_7: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.STARTUP_TECH,
-  ID_8: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.LOCAL_RESTAURANT,
-  ID_9: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.FREELANCE_DESIGNER,
-  ID_10: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CONSULTING_FIRM,
-  ID_11: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.RETAIL_CHAIN,
-  ID_12: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.STARTUP_TECH,
-  ID_13: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.LOCAL_RESTAURANT,
-  ID_14: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.FREELANCE_DESIGNER,
-  ID_15: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CONSULTING_FIRM,
+  ID_1: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.DIAMOND_CUSTOMER,
+  ID_2: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.GOLD_CUSTOMER,
+  ID_3: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.SILVER_CUSTOMER,
+  ID_4: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.BRONZE_CUSTOMER,
+  ID_5: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CHURNED_CUSTOMER,
+  ID_6: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.DIAMOND_CUSTOMER,
+  ID_7: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.GOLD_CUSTOMER,
+  ID_8: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.SILVER_CUSTOMER,
+  ID_9: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.BRONZE_CUSTOMER,
+  ID_10: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CHURNED_CUSTOMER,
+  ID_11: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.DIAMOND_CUSTOMER,
+  ID_12: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.GOLD_CUSTOMER,
+  ID_13: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.SILVER_CUSTOMER,
+  ID_14: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.BRONZE_CUSTOMER,
+  ID_15: MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC.CHURNED_CUSTOMER,
 };
 
-// prettier-ignore
-export const MKT_LICENSE_DATA_SEED_COLUMNS: (keyof MktLicenseDataSeed)[] = [
+export const MKT_LICENSE_DATA_SEED_COLUMNS = [
   'id',
   'name',
   'licenseKey',
@@ -60,9 +40,11 @@ export const MKT_LICENSE_DATA_SEED_COLUMNS: (keyof MktLicenseDataSeed)[] = [
   'createdBySource',
   'createdByWorkspaceMemberId',
   'createdByName',
+  'accountOwnerId',
+  'departmentOwnerId',
+  'teamOwnerId',
 ];
 
-// prettier-ignore
 export const MKT_LICENSE_DATA_SEEDS_IDS = {
   ID_1: 'e8f55f59-dcda-4e17-8660-930617781a14',
   ID_2: 'f852a725-c8a3-4683-902f-1a048b6aa279',
@@ -100,96 +82,58 @@ export const MKT_LICENSE_DATA_SEEDS_IDS = {
   ID_33: 'b3e57071-021d-4326-8632-204b78b90aa3',
   ID_34: 'bd2a7c1d-893a-4e48-86ec-aa930df27025',
   ID_35: '2bf1c429-7df4-4d4e-b90d-4e26c733e481',
-  
+
   // ============= THÊM ID CHO DATA TEST MỚI =============
   // Tháng trước (tháng 9/2025)
-  ID_36: '74cb3b24-007f-4d37-b44f-d115e2c0545b',	
-  ID_37: '2d7b098e-60a7-4193-8d48-59e356297920',	
-  ID_38: '27167c20-5116-4a70-a4f7-6148c81ed07d',	
-  ID_39: '362bd25d-6bcb-4988-b335-165fd91b43d6',	
-  ID_40: 'f7d7d4cd-bf0d-43a4-bde0-17774709f042',	
-  
+  ID_36: '74cb3b24-007f-4d37-b44f-d115e2c0545b',
+  ID_37: '2d7b098e-60a7-4193-8d48-59e356297920',
+  ID_38: '27167c20-5116-4a70-a4f7-6148c81ed07d',
+  ID_39: '362bd25d-6bcb-4988-b335-165fd91b43d6',
+  ID_40: 'f7d7d4cd-bf0d-43a4-bde0-17774709f042',
+
   // Hoạt động hôm qua (7/10/2025)
-  ID_41: 'b2a7d8ea-98cd-441b-834b-2db7486d87ec',      
-  ID_42: 'b1054e40-0c3a-4a92-a6e5-d6a763332085',      
-  ID_43: 'b4b8270d-8937-461c-a22f-3d35f16f6504',      
-  
+  ID_41: 'b2a7d8ea-98cd-441b-834b-2db7486d87ec',
+  ID_42: 'b1054e40-0c3a-4a92-a6e5-d6a763332085',
+  ID_43: 'b4b8270d-8937-461c-a22f-3d35f16f6504',
+
   // Dùng thử tháng trước
-  ID_44: '3644e529-1857-4e33-a2fb-e697b46ef8dc',      
-  ID_45: '7cd21033-c93a-4135-9dd6-e6c0a3b56791',     
-  
+  ID_44: '3644e529-1857-4e33-a2fb-e697b46ef8dc',
+  ID_45: '7cd21033-c93a-4135-9dd6-e6c0a3b56791',
+
   // Hết hạn tháng trước
-  ID_46: 'f168de00-0c5c-4085-a5fd-c1dd0e5bb606',      
-  ID_47: '1045172c-7db4-4001-91e3-fcb16c05d0b1',      
-  ID_48: '3ed4d320-2a39-4eef-8d27-79a6010c376c',  
-  
+  ID_46: 'f168de00-0c5c-4085-a5fd-c1dd0e5bb606',
+  ID_47: '1045172c-7db4-4001-91e3-fcb16c05d0b1',
+  ID_48: '3ed4d320-2a39-4eef-8d27-79a6010c376c',
+
   // Hoàn tiền tháng trước
-  ID_49: '5bbdb0ba-8a5a-4b22-99aa-9e3b97f6ce41',      
-  ID_50: '31827c05-2eac-4983-b5de-9696245f0a5f',   
+  ID_49: '5bbdb0ba-8a5a-4b22-99aa-9e3b97f6ce41',
+  ID_50: '31827c05-2eac-4983-b5de-9696245f0a5f',
+
+  // ============= THÊM 20 LICENSE MỚI =============
+  // Tháng này (10/2025) - Licenses mới
+  ID_51: '331d11d5-932d-4fc6-9762-f4ec18016a91',
+  ID_52: 'fa04c095-e307-482c-9225-a1247a77b469',
+  ID_53: '21ccbf28-0c2b-4ea6-ad8a-e4f4178b3fdc',
+  ID_54: '0d787789-2a32-4d23-8521-95eeb82b3b20',
+  ID_55: '9e6d64e0-9857-4869-8065-0414ffda29df',
+  ID_56: 'ca236497-06a6-4744-be14-b366b5ef0d23',
+  ID_57: '3911d57e-3a25-4976-b79b-e770db928b51',
+  ID_58: '5dc1081a-d3b8-4d0c-9e5a-92215c0d6fdf',
+  ID_59: '8f09a677-e325-4a71-a0ea-bf38801bc629',
+  ID_60: '28bbf3d3-b3b4-44ca-99b9-5175008884e4',
+  ID_61: 'c116ef29-8bd2-4330-b353-255203e58e12',
+  ID_62: 'afcf7f2c-3ca3-4c06-be90-63d15d229ea8',
+  ID_63: '0ec95493-09e1-42ac-aa79-1172cda1e1da',
+  ID_64: '04e591a6-74b9-4912-b145-1d2dd50d0eda',
+  ID_65: 'b908eca6-53fe-4d26-8719-edf4ca3f3997',
+  ID_66: '0c073f50-e9f6-4c0b-b30e-59f39753ce60',
+  ID_67: '34320e19-fd03-4e4a-ba65-d06de959325e',
+  ID_68: 'c0a646b7-f704-435f-aeae-6f21b309f951',
+  ID_69: '33b13c88-52ad-4e57-91aa-368ee21f259d',
+  ID_70: 'f2f60d56-5459-419b-8364-9439b4fea8f5',
 };
 
-/*
- * ============= MKT LICENSE DATA SEEDS FOR TESTING =============
- *
- * Data này được thiết kế để test các trường hợp sau:
- *
- * 1. TỔNG BẢN QUYỀN:
- *    - ID_1 đến ID_50: Tổng 50 licenses
- *    - Tháng này (10/2025): 35 licenses (ID_1 đến ID_35)
- *    - Tháng trước (9/2025): 15 licenses (ID_36 đến ID_50)
- *    - Bao gồm tất cả trạng thái: ACTIVE, EXPIRED, ERROR, REFUND, RENEWING
- *
- * 2. ĐANG HOẠT ĐỘNG - ĐĂNG NHẬP HÔM NAY (2025-10-09):
- *    - ID_18, ID_19, ID_20, ID_32: lastLoginAt = 2025-10-09 (hôm nay)
- *    - ID_29, ID_30, ID_34, ID_35: Các license mới và đăng nhập gần đây
- *    - ID_41, ID_42, ID_43: Đăng nhập hôm qua (2025-10-08)
- *    - ID_37, ID_39: Hoạt động tháng trước
- *
- * 3. SỐ BẢN QUYỀN DÙNG THỬ:
- *    - Tháng này: ID_29 (trial 7 ngày còn hoạt động), ID_30 (trial 14 ngày còn hoạt động), ID_31 (đã hết hạn)
- *    - Tháng trước: ID_44 (trial tháng 9 đã hết hạn), ID_45 (trial tháng 9 còn hoạt động)
- *
- * 4. BẢN QUYỀN HẾT HẠN:
- *    - Tháng này: ID_21 (hết hạn 9/2024), ID_22 (hết hạn 10/2024), ID_23 (hết hạn 8/2024), ID_31 (trial hết hạn 22/9/2025)
- *    - Tháng trước: ID_46 (hết hạn 15/9/2025), ID_47 (hết hạn 20/9/2025), ID_48 (hết hạn 25/9/2025)
- *
- * 5. ĐÃ HOÀN TIỀN:
- *    - Tháng này: ID_26 ($299 tháng 9/2024), ID_27 ($599 tháng 10/2024)
- *    - Tháng trước: ID_49 ($399 tháng 9/2025), ID_50 ($199 tháng 9/2025)
- *    - status = REFUND để theo dõi số tiền hoàn
- *
- * 6. LICENSES SẮP HẾT HẠN (7 ngày tới):
- *    - ID_24: Hết hạn 11/10/2025 (3 ngày nữa)
- *    - ID_25: Hết hạn 13/10/2025 (5 ngày nữa)
- *
- * 7. TÌNH HÌNH SỬ DỤNG:
- *    - ID_32: Heavy user (đăng nhập hàng ngày)
- *    - ID_33: Light user (lâu không đăng nhập)
- *    - ID_28: Đang gia hạn (RENEWING status)
- *
- * 8. LICENSES MỚI (tháng này):
- *    - ID_34: Tạo ngày 5/10/2025
- *    - ID_35: Tạo ngày 7/10/2025
- *
- * 9. DATA THÁNG TRƯỚC (THÁNG 9/2025):
- *    - ID_36 đến ID_40: Licenses tạo tháng 9/2025 (5 licenses)
- *    - ID_41 đến ID_43: Hoạt động hôm qua 8/10/2025 (3 licenses)
- *    - ID_44 đến ID_45: Trial tháng trước (2 licenses)
- *    - ID_46 đến ID_48: Hết hạn tháng 9/2025 (3 licenses)
- *    - ID_49 đến ID_50: Hoàn tiền tháng 9/2025 (2 licenses)
- *
- * ============= TỔNG KẾT SỐ LIỆU DASHBOARD =============
- *
- * 📊 TỔNG BẢN QUYỀN: 50 licenses (35 tháng này + 15 tháng trước)
- * 🟢 ĐANG HOẠT ĐỘNG HÔM NAY (9/10): 8 licenses (ID_18,19,20,29,30,32,34,35)
- * 🟡 HOẠT ĐỘNG HÔM QUA (8/10): 3 licenses (ID_41,42,43)
- * 🔄 SỐ BẢN QUYỀN DÙNG THỬ: 3 tháng này + 2 tháng trước = 5 total
- * ❌ BẢN QUYỀN HẾT HẠN: 4 tháng này + 3 tháng trước = 7 total
- * 💰 ĐÃ HOÀN TIỀN: $898 tháng này + $598 tháng trước = $1496 total
- */
-
-// prettier-ignore
-export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
+export const LICENSE_DATA_SEEDS = [
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_1,
     name: 'License MKT Care Basic 1 năm - Gói chăm sóc Facebook',
@@ -217,7 +161,8 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-02-10T00:00:00.000Z'),
     lastLoginAt: new Date('2024-11-20T14:45:00.000Z'),
     deviceInfo: 'macOS Monterey - Safari Browser - IP: 10.0.1.50',
-    notes: 'License cho gói MKT Viral Basic 1 năm (2 license) - agency marketing',
+    notes:
+      'License cho gói MKT Viral Basic 1 năm (2 license) - agency marketing',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_VIRAL_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_2,
@@ -253,7 +198,8 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-03-05T00:00:00.000Z'),
     lastLoginAt: new Date('2024-10-15T09:20:00.000Z'),
     deviceInfo: 'Ubuntu 22.04 - Firefox Browser - IP: 172.16.0.25',
-    notes: 'License cho 3 MKT UID Basic 1 năm - team phân tích dữ liệu (đơn hàng tạm giữ)',
+    notes:
+      'License cho 3 MKT UID Basic 1 năm - team phân tích dữ liệu (đơn hàng tạm giữ)',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_UID_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
@@ -379,7 +325,8 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-06-20T00:00:00.000Z'),
     lastLoginAt: new Date('2024-11-21T15:20:00.000Z'),
     deviceInfo: 'Windows 11 - Firefox Browser - IP: 192.168.3.25',
-    notes: 'License cho gói MKT Group Basic 1 năm (2 license) - community manager',
+    notes:
+      'License cho gói MKT Group Basic 1 năm (2 license) - community manager',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_GROUP_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_8,
@@ -415,7 +362,8 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     expiresAt: new Date('2025-07-05T00:00:00.000Z'),
     lastLoginAt: new Date('2024-07-05T12:00:00.000Z'),
     deviceInfo: 'Linux Mint - Chrome Browser - IP: 10.0.3.75',
-    notes: 'License cho MKT Twitter Basic 1 năm - thanh toán thất bại, cần xử lý',
+    notes:
+      'License cho MKT Twitter Basic 1 năm - thanh toán thất bại, cần xử lý',
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
     mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_TWITTER_BASIC_1_YEAR,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_9,
@@ -498,7 +446,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
   },
 
   // ============= DATA TEST CHO CÁC TRƯỜNG HỢP ĐẶC BIỆT =============
-  
+
   // 1. LICENSES ĐANG HOẠT ĐỘNG - ĐĂNG NHẬP HÔM NAY (2025-10-08)
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_18,
@@ -840,7 +788,7 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
   },
 
   // ============= DATA THÁNG TRƯỚC (THÁNG 9/2025) =============
-  
+
   // 1. LICENSES TẠO THÁNG 9/2025 - HOẠT ĐỘNG BÌNh THƯỜNG
   {
     id: MKT_LICENSE_DATA_SEEDS_IDS.ID_36,
@@ -1119,5 +1067,388 @@ export const MKT_LICENSE_DATA_SEEDS: MktLicenseDataSeed[] = [
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
     createdByName: 'Refund Sep User 2',
-  }
+  },
+
+  // ============= THÊM 20 LICENSE MỚI (ID_51 - ID_70) =============
+
+  // 1. LICENSES COMBO VÀ ENTERPRISE (ID_51-ID_55)
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_51,
+    name: 'License MKT All-in-One Combo - Full Package',
+    licenseKey: 'MKT-COMBO-ALL-2025-001-full001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-10-01T00:00:00.000Z'),
+    expiresAt: new Date('2026-10-01T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T08:00:00.000Z'),
+    deviceInfo: 'Windows 11 Pro - Chrome Browser - IP: 192.168.8.10',
+    notes: 'License combo tất cả sản phẩm - khách hàng doanh nghiệp lớn',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
+    position: 51,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Enterprise User 1',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_52,
+    name: 'License MKT Enterprise Suite - Multi-user (10 seats)',
+    licenseKey: 'MKT-ENT-SUITE-2025-002-multi10',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-09-15T00:00:00.000Z'),
+    expiresAt: new Date('2027-09-15T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T09:30:00.000Z'),
+    deviceInfo: 'macOS Ventura - Safari Browser - IP: 10.0.8.25',
+    notes: 'License enterprise 10 chỗ ngồi - agency marketing lớn',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_VIRAL_BASIC_2_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_2,
+    position: 52,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Enterprise User 2',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_53,
+    name: 'License MKT Premium Bundle - Social Media Pack',
+    licenseKey: 'MKT-PREMIUM-SOCIAL-2025-003-bundle3',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-08-20T00:00:00.000Z'),
+    expiresAt: new Date('2026-08-20T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-08T14:45:00.000Z'),
+    deviceInfo: 'Ubuntu 22.04 LTS - Firefox Browser - IP: 172.16.3.50',
+    notes: 'Bundle bao gồm Facebook, Instagram, YouTube tools',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_INSTA_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_4,
+    position: 53,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Premium User 1',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_54,
+    name: 'License MKT Data Analytics Pro - Advanced Package',
+    licenseKey: 'MKT-DATA-PRO-2025-004-analytics',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-07-10T00:00:00.000Z'),
+    expiresAt: new Date('2026-07-10T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T16:20:00.000Z'),
+    deviceInfo: 'Windows 10 Enterprise - Edge Browser - IP: 192.168.9.75',
+    notes: 'Gói phân tích dữ liệu nâng cao với AI insights',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_UID_BASIC_2_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
+    position: 54,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Data Analyst 1',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_55,
+    name: 'License MKT White Label Solution - Reseller Package',
+    licenseKey: 'MKT-WHITE-LABEL-2025-005-reseller',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-06-01T00:00:00.000Z'),
+    expiresAt: new Date('2027-06-01T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T10:15:00.000Z'),
+    deviceInfo: 'macOS Sonoma - Chrome Browser - IP: 10.0.9.100',
+    notes: 'License white-label cho đối tác reseller',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_TUBE_BASIC_2_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_5,
+    position: 55,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Reseller Partner',
+  },
+
+  // 2. LICENSES MỚI NHẤT - THÁNG 10/2025 (ID_56-ID_60)
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_56,
+    name: 'License MKT TikTok Pro - Video Marketing Tool',
+    licenseKey: 'MKT-TIKTOK-PRO-2025-006-video001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-10-05T00:00:00.000Z'),
+    expiresAt: new Date('2026-10-05T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T12:30:00.000Z'),
+    deviceInfo: 'iPhone 15 - Safari Mobile - IP: 172.20.2.50',
+    notes: 'Tool marketing TikTok mới ra mắt tháng 10',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_POST_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
+    position: 56,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'TikTok Creator',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_57,
+    name: 'License MKT LinkedIn Business - B2B Marketing',
+    licenseKey: 'MKT-LINKEDIN-BIZ-2025-007-b2b001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-10-03T00:00:00.000Z'),
+    expiresAt: new Date('2026-10-03T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T11:45:00.000Z'),
+    deviceInfo: 'Windows 11 - Chrome Browser - IP: 192.168.10.35',
+    notes: 'Tool LinkedIn marketing cho doanh nghiệp B2B',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_ZALO_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_2,
+    position: 57,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'B2B Marketer',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_58,
+    name: 'License MKT Shopee Seller - E-commerce Tool',
+    licenseKey: 'MKT-SHOPEE-SELL-2025-008-ecom001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-10-02T00:00:00.000Z'),
+    expiresAt: new Date('2025-12-31T23:59:59.000Z'),
+    lastLoginAt: new Date('2025-10-09T15:00:00.000Z'),
+    deviceInfo: 'Android 14 - Chrome Mobile - IP: 192.168.11.60',
+    notes: 'Tool hỗ trợ bán hàng trên Shopee - gói 3 tháng',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_GROUP_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
+    position: 58,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Shopee Seller',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_59,
+    name: 'License MKT AI Content Generator - GPT Integration',
+    licenseKey: 'MKT-AI-CONTENT-2025-009-gpt001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-10-06T00:00:00.000Z'),
+    expiresAt: new Date('2026-10-06T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T13:15:00.000Z'),
+    deviceInfo: 'macOS Ventura - Chrome Browser - IP: 10.0.10.40',
+    notes: 'AI tạo nội dung tự động với tích hợp GPT',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_TWITTER_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_4,
+    position: 59,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Content Creator',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_60,
+    name: 'License MKT Telegram Marketing - Messaging Tool',
+    licenseKey: 'MKT-TELEGRAM-2025-010-msg001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-10-04T00:00:00.000Z'),
+    expiresAt: new Date('2026-10-04T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T17:30:00.000Z'),
+    deviceInfo: 'Linux Mint - Firefox Browser - IP: 172.16.4.85',
+    notes: 'Tool marketing qua Telegram channels và bots',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_PAGE_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_5,
+    position: 60,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Telegram Marketer',
+  },
+
+  // 3. LICENSES TRIAL VÀ TESTING (ID_61-ID_65)
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_61,
+    name: 'License MKT Beta Testing - New Features',
+    licenseKey: 'MKT-BETA-TEST-2025-011-beta001',
+    status: MKT_LICENSE_STATUS.TRIAL,
+    activatedAt: new Date('2025-10-01T00:00:00.000Z'),
+    expiresAt: new Date('2025-10-31T23:59:59.000Z'),
+    lastLoginAt: new Date('2025-10-09T09:00:00.000Z'),
+    deviceInfo: 'Windows 11 Dev - Chrome Canary - IP: 192.168.12.15',
+    notes: 'License beta testing cho tính năng mới - 30 ngày',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_MAPS_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_6,
+    position: 61,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Beta Tester',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_62,
+    name: 'License MKT Student Pack - Educational Discount',
+    licenseKey: 'MKT-STUDENT-2025-012-edu001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-09-20T00:00:00.000Z'),
+    expiresAt: new Date('2026-09-20T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-08T20:45:00.000Z'),
+    deviceInfo: 'MacBook Air M2 - Safari Browser - IP: 10.0.11.75',
+    notes: 'Gói giảm giá cho sinh viên - 50% off',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_MAPS_BASIC_FOREVER,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_7,
+    position: 62,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Student User',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_63,
+    name: 'License MKT Startup Pack - Early Stage Discount',
+    licenseKey: 'MKT-STARTUP-2025-013-early001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-08-15T00:00:00.000Z'),
+    expiresAt: new Date('2026-08-15T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-07T12:00:00.000Z'),
+    deviceInfo: 'Windows 11 - Edge Browser - IP: 192.168.13.90',
+    notes: 'Gói ưu đãi cho startup giai đoạn đầu',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_UID_BASIC_2_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_8,
+    position: 63,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Startup Founder',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_64,
+    name: 'License MKT Freelancer Pro - Individual Creator',
+    licenseKey: 'MKT-FREELANCE-2025-014-indie001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-09-10T00:00:00.000Z'),
+    expiresAt: new Date('2026-03-10T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T19:20:00.000Z'),
+    deviceInfo: 'iPad Air - Safari Mobile - IP: 172.20.3.45',
+    notes: 'Gói dành cho freelancer và creator cá nhân',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
+    position: 64,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Freelancer Pro',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_65,
+    name: 'License MKT Agency Premium - Multi-client Management',
+    licenseKey: 'MKT-AGENCY-2025-015-multi001',
+    status: MKT_LICENSE_STATUS.RENEWING,
+    activatedAt: new Date('2024-10-08T00:00:00.000Z'),
+    expiresAt: new Date('2025-10-08T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-08T16:30:00.000Z'),
+    deviceInfo: 'Windows 11 Pro - Chrome Browser - IP: 192.168.14.20',
+    notes: 'License agency quản lý nhiều client - đang gia hạn',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_VIRAL_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_15,
+    position: 65,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Agency Manager',
+  },
+
+  // 4. LICENSES ĐẶC BIỆT VÀ ERROR CASES (ID_66-ID_70)
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_66,
+    name: 'License MKT API Access - Developer Tools',
+    licenseKey: 'MKT-API-DEV-2025-016-dev001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-07-20T00:00:00.000Z'),
+    expiresAt: new Date('2025-12-31T23:59:59.000Z'),
+    lastLoginAt: new Date('2025-10-09T14:00:00.000Z'),
+    deviceInfo: 'Ubuntu Server - Curl/API - IP: 172.16.5.10',
+    notes: 'License truy cập API cho developers',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_CARE_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_1,
+    position: 66,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Developer',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_67,
+    name: 'License MKT Custom Integration - Enterprise API',
+    licenseKey: 'MKT-CUSTOM-INT-2025-017-ent001',
+    status: MKT_LICENSE_STATUS.ERROR,
+    activatedAt: new Date('2025-09-01T00:00:00.000Z'),
+    expiresAt: new Date('2026-09-01T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-09-01T10:00:00.000Z'),
+    deviceInfo: 'CentOS Server - API Integration - IP: 10.0.12.100',
+    notes: 'License tích hợp tùy chỉnh - lỗi kết nối API',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_VIRAL_BASIC_2_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_2,
+    position: 67,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Integration Team',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_68,
+    name: 'License MKT VIP Support - Priority Service',
+    licenseKey: 'MKT-VIP-SUPPORT-2025-018-vip001',
+    status: MKT_LICENSE_STATUS.ACTIVE,
+    activatedAt: new Date('2025-05-15T00:00:00.000Z'),
+    expiresAt: new Date('2026-05-15T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-10-09T07:45:00.000Z'),
+    deviceInfo: 'Windows 11 Enterprise - Teams App - IP: 192.168.15.55',
+    notes: 'License VIP với hỗ trợ ưu tiên 24/7',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_UID_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_3,
+    position: 68,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'VIP Customer',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_69,
+    name: 'License MKT Training Package - Course Access',
+    licenseKey: 'MKT-TRAINING-2025-019-course001',
+    status: MKT_LICENSE_STATUS.EXPIRED,
+    activatedAt: new Date('2024-10-01T00:00:00.000Z'),
+    expiresAt: new Date('2025-01-01T00:00:00.000Z'),
+    lastLoginAt: new Date('2024-12-30T23:45:00.000Z'),
+    deviceInfo: 'MacBook Pro M3 - Safari Browser - IP: 10.0.13.80',
+    notes: 'License khóa học training - đã hết hạn',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_INSTA_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_4,
+    position: 69,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Training Student',
+  },
+  {
+    id: MKT_LICENSE_DATA_SEEDS_IDS.ID_70,
+    name: 'License MKT Legacy System - Migration Package',
+    licenseKey: 'MKT-LEGACY-MIG-2025-020-legacy001',
+    status: MKT_LICENSE_STATUS.REFUND,
+    activatedAt: new Date('2025-08-01T00:00:00.000Z'),
+    expiresAt: new Date('2026-08-01T00:00:00.000Z'),
+    lastLoginAt: new Date('2025-08-15T14:20:00.000Z'),
+    deviceInfo: 'Windows Server 2019 - Legacy Browser - IP: 192.168.16.200',
+    notes: 'License migration từ hệ thống cũ - hoàn tiền do không tương thích',
+    mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
+    mktVariantId: MKT_VARIANT_DATA_SEEDS_IDS.MKT_TUBE_BASIC_1_YEAR,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.ID_5,
+    position: 70,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'Legacy User',
+  },
 ];
+//MKT_LICENSE_DATA_SEEDS
+const MKT_LICENSE_DATA_SEEDS: Record<string, unknown>[] = [];
+
+for (const LICENSE of LICENSE_DATA_SEEDS) {
+  MKT_LICENSE_DATA_SEEDS.push({
+    ...LICENSE,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    departmentOwnerId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
+    teamOwnerId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH_BACKEND,
+  });
+}
+
+export { MKT_LICENSE_DATA_SEEDS };

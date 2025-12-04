@@ -53,6 +53,24 @@ export class OrderActionService {
     return ORDER_ACTION.WAIT;
   }
 
+  async getOrderAction(metadata: unknown): Promise<ORDER_ACTION | null> {
+    if (!metadata) return null;
+    try {
+      if (typeof metadata === 'string') {
+        metadata = JSON.parse(metadata);
+      }
+      const { orderAction } = metadata as Metadata;
+
+      if (orderAction && Object.values(ORDER_ACTION).includes(orderAction)) {
+        return orderAction;
+      }
+    } catch (error) {
+      //
+    }
+
+    return null;
+  }
+
   async getOrderStatusFromAction(action: ORDER_ACTION): Promise<ORDER_STATUS> {
     if (action === ORDER_ACTION.TRIAL) {
       return ORDER_STATUS.TRIAL;

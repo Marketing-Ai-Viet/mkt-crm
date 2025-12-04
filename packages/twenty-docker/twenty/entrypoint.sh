@@ -41,6 +41,13 @@ register_background_jobs() {
     else
         echo "Warning: Failed to register background jobs, but continuing startup..."
     fi
+
+    # Register mkt background jobs
+    if yarn command:prod cron:register:mkt; then
+        echo "Successfully registered mkt background jobs!"
+    else
+        echo "Warning: Failed to register mkt background jobs, but continuing startup..."
+    fi
 }
 
 setup_and_migrate_db

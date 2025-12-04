@@ -200,7 +200,9 @@ export class LicenseGenerationJob {
           mktVariantId: orderItem.mktVariantId,
           notes: `License được tạo cho order item: ${orderItem.name} (Quantity: ${orderItem.quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
         });
+
         // save license
+        newLicense.createdBy = order.createdBy;
         const savedLicense = await licenseRepository.save(newLicense);
 
         return savedLicense as MktLicenseWorkspaceEntity;

@@ -27,6 +27,7 @@ export class WaitState extends OrderState {
       ORDER_STATUS.COMPLETED,
       ORDER_STATUS.REFUSE,
       ORDER_STATUS.OVERDUE,
+      ORDER_STATUS.CONFIRMED,
     ].includes(newStatus);
   }
 
@@ -37,6 +38,11 @@ export class WaitState extends OrderState {
     // Wait -> Draft
     if (input.status === ORDER_STATUS.DRAFT) {
       return ORDER_ACTION.DRAFT;
+    }
+
+    // Wait -> Draft
+    if (input.status === ORDER_STATUS.CONFIRMED) {
+      return ORDER_ACTION.CONFIRMED;
     }
 
     // Wait -> COMPLETED
@@ -90,6 +96,14 @@ export class WaitState extends OrderState {
           ...payload,
           data: {
             status: ORDER_STATUS.OVERDUE,
+          },
+        };
+
+      case ORDER_ACTION.CONFIRMED:
+        return {
+          ...payload,
+          data: {
+            status: ORDER_STATUS.CONFIRMED,
           },
         };
 

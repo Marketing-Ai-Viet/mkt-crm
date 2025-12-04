@@ -1,22 +1,44 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
+import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
+import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
+import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import {
+  FieldTypeAndNameMetadata,
+  getTsVectorColumnExpressionFromFields,
+} from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import {
+  DEPARTMENT_TYPE,
+  DEPARTMENT_TYPE_OPTIONS,
+} from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+
+//SEARCH_FIELDS_FOR_ENTITY
+// Define fields to be used for search
+const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
+  { name: 'departmentCode', type: FieldMetadataType.TEXT },
+  { name: 'departmentName', type: FieldMetadataType.TEXT },
+];
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartment,
@@ -26,6 +48,7 @@ import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access
   description: msg`Departments in the marketing system.`,
   icon: 'IconBuilding',
   shortcut: 'D',
+  labelIdentifierStandardId: MKT_DEPARTMENT_FIELD_IDS.departmentCode,
 })
 @WorkspaceIsSearchable()
 export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
@@ -38,6 +61,27 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsUnique()
   departmentCode: string;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional metadata for the department`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  metadata?: JSON | null;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.departmentType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Department Type`,
+    description: msg`Type of the department`,
+    icon: 'IconBuildingCommunity',
+    options: DEPARTMENT_TYPE_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  departmentType: DEPARTMENT_TYPE | null;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.departmentName,
@@ -125,7 +169,8 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Order of display in department list`,
     icon: 'IconList',
   })
-  displayOrder: number;
+  @WorkspaceIsNullable()
+  displayOrder?: number;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.colorCode,
@@ -156,6 +201,16 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   isActive?: boolean;
+
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.address,
+    type: FieldMetadataType.TEXT,
+    label: msg`Address`,
+    description: msg`Physical address of the department`,
+    icon: 'IconMapPin',
+  })
+  @WorkspaceIsNullable()
+  address?: string;
 
   @WorkspaceField({
     standardId: MKT_DEPARTMENT_FIELD_IDS.position,
@@ -189,6 +244,32 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   people: Relation<WorkspaceMemberWorkspaceEntity[]>;
 
   @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.leader,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Leader`,
+    description: msg`The leader of this department`,
+    icon: 'IconCrown',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'leaderForMktDepartments',
+  })
+  leader: Relation<WorkspaceMemberWorkspaceEntity>;
+  @WorkspaceJoinColumn('leader')
+  leaderId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.subLeader,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Sub Leader`,
+    description: msg`The sub-leader of this department`,
+    icon: 'IconCrown',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'subLeaderForMktDepartments',
+  })
+  subLeader: Relation<WorkspaceMemberWorkspaceEntity>;
+  @WorkspaceJoinColumn('subLeader')
+  subLeaderId: string | null;
+
+  @WorkspaceRelation({
     standardId: MKT_DEPARTMENT_FIELD_IDS.childHierarchies,
     type: RelationType.ONE_TO_MANY,
     label: msg`Child Hierarchies`,
@@ -220,4 +301,59 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'department',
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.departmentOwnerForMktLicenses,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Department Owner for Mkt Licenses`,
+    description: msg`The owner of this department for Mkt Licenses`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => MktLicenseWorkspaceEntity,
+    inverseSideFieldKey: 'departmentOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  departmentOwnerForMktLicenses: Relation<MktLicenseWorkspaceEntity[]> | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.teamOwnerForMktLicenses,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Team Owner for Mkt Licenses`,
+    description: msg`The team owner of this department for Mkt Licenses`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktLicenseWorkspaceEntity,
+    inverseSideFieldKey: 'teamOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  teamOwnerForMktLicenses: Relation<MktLicenseWorkspaceEntity[]> | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.teamMembers,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Team Members`,
+    description: msg`Team members in this department`,
+    icon: 'IconUserCheck',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'team',
+  })
+  @WorkspaceIsNullable()
+  teamMembers: Relation<WorkspaceMemberWorkspaceEntity[]>;
+
+  // ✅ Search vector field
+  @WorkspaceField({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.searchVector,
+    type: FieldMetadataType.TS_VECTOR,
+    label: SEARCH_VECTOR_FIELD.label,
+    description: SEARCH_VECTOR_FIELD.description,
+    icon: 'IconSearch',
+    generatedType: 'STORED',
+    asExpression: getTsVectorColumnExpressionFromFields(
+      SEARCH_FIELDS_FOR_ENTITY,
+    ),
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  @WorkspaceFieldIndex({ indexType: IndexType.GIN })
+  searchVector: string;
 }
