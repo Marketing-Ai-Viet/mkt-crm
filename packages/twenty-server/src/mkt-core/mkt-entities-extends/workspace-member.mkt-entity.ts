@@ -107,26 +107,6 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   supportForMemberId: string | null;
 
   @WorkspaceField({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.startDate,
-    type: FieldMetadataType.DATE,
-    label: msg`Start Date`,
-    description: msg`The start date of the workspace member's employment`,
-    icon: 'IconCalendarStart',
-  })
-  @WorkspaceIsNullable()
-  startDate: Date | null;
-
-  @WorkspaceField({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.endDate,
-    type: FieldMetadataType.DATE,
-    label: msg`End Date`,
-    description: msg`The end date of the workspace member's employment`,
-    icon: 'IconCalendarEnd',
-  })
-  @WorkspaceIsNullable()
-  endDate: Date | null;
-
-  @WorkspaceField({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.status,
     type: FieldMetadataType.TEXT,
     label: msg`Status`,
