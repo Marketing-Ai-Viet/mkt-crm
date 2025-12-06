@@ -896,7 +896,6 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   //core
   memberType: 'b4e7aabd-3b48-45ae-8c08-b513d329dc68',
   supportForMemberId: '19278821-d3a2-4158-8056-fe6610e8690a',
-  startDate: 'cba65684-22e7-4a07-88a1-9b1db9175c80',
   endDate: '81b70197-38b8-4ec4-bc87-eb9a63d9c61a',
   status: '6f656294-ce00-499a-b8e5-bd9c4be9bde9',
   leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
