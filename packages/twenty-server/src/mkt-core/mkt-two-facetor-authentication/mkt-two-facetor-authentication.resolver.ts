@@ -1,6 +1,5 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Field, Mutation, ObjectType, Resolver } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
 
 import { AuthTokens } from 'src/engine/core-modules/auth/dto/token.entity';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';

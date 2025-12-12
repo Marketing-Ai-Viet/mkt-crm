@@ -7,7 +7,7 @@ import { v4 } from 'uuid';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { LICENSE_API_RESPONSE } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/constants/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';

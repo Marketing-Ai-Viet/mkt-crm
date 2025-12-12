@@ -5,7 +5,7 @@ import { Between, MoreThanOrEqual } from 'typeorm';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/constants/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';

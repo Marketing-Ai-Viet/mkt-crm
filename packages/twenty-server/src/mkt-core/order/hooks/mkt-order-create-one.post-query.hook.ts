@@ -81,7 +81,7 @@ export class MktOrderCreateOnePostQueryHook
     try {
       let metadata: Metadata = created?.metadata || {};
 
-      await this.validateMetadata(metadata);
+      this.validateMetadata(metadata);
 
       if (typeof metadata === 'string') metadata = JSON.parse(metadata);
 
@@ -191,7 +191,7 @@ export class MktOrderCreateOnePostQueryHook
     }
   }
 
-  private async validateMetadata(metadata: Metadata): Promise<void> {
+  private validateMetadata(metadata: Metadata): void {
     // Handle case where metadata might be stored as JSON string
     if (typeof metadata === 'string') {
       try {

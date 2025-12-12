@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
-import { MktLicenseHistoryService } from 'src/mkt-core/license/mkt-license-history.service';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/constants/license.constants';
+import { MktLicenseHistoryService } from 'src/mkt-core/license/services/mkt-license-history.service';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 @Injectable()

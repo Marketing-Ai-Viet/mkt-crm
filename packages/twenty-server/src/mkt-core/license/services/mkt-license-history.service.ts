@@ -6,7 +6,7 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { Metadata } from 'src/mkt-core/license/hooks/mkt-license-update-one.pre-query.hook';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/constants/license.constants';
 import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 
@@ -93,13 +93,6 @@ export class MktLicenseHistoryService {
     if (!workspaceId) return null;
 
     try {
-      // const licenseRepository =
-      //     await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseWorkspaceEntity>(
-      //         workspaceId,
-      //         'mktLicense',
-      //         { shouldBypassPermissionChecks: true },
-      //     );
-
       const licenseHistoryRepository =
         await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktLicenseHistoryWorkspaceEntity>(
           workspaceId,
@@ -121,9 +114,7 @@ export class MktLicenseHistoryService {
       if (historyItem) {
         const updatedHistory = [historyItem, ...currentHistory];
 
-        // 1. Update the license with new history (JSON field)
-
-        // 2. Create new record in mktLicenseHistory table
+        // Create new record in mktLicenseHistory table
         const userName =
           authContext.user?.firstName && authContext.user?.lastName
             ? `${authContext.user.firstName} ${authContext.user.lastName}`
@@ -150,8 +141,6 @@ export class MktLicenseHistoryService {
           name: userName,
           context: {},
         };
-
-        //
 
         return newLicenseHistory;
       }

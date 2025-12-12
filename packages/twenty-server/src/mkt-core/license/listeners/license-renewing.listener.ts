@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { OnCustomBatchEvent } from 'src/engine/api/graphql/graphql-query-runner/decorators/on-custom-batch-event.decorator';
-import { MKT_LICENSE_RENEWING_EVENT } from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_RENEWING_EVENT } from 'src/mkt-core/license/constants/license.constants';
 import { LicenseRenewingEvent } from 'src/mkt-core/license/types/license-event.types';
 
 @Injectable()

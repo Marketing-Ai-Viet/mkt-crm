@@ -102,6 +102,21 @@ export class DateTimeUtils {
   }
 
   /**
+   * Convert flexible date input (Date | DateTime | string) to JavaScript Date
+   */
+  static toJsDate(value: Date | DateTime | string): Date {
+    if (value instanceof DateTime) {
+      return value.toJSDate();
+    }
+
+    if (value instanceof Date) {
+      return value;
+    }
+
+    return DateTime.fromISO(value, { zone: 'utc' }).toJSDate();
+  }
+
+  /**
    * Convert DateTime to ISO string
    */
   static toISO(dateTime: DateTime): string {

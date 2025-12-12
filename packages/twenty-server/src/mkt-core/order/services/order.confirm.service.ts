@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
-import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
+import { MktLicenseService } from 'src/mkt-core/license/services/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { ORDER_CODE_PREFIX } from 'src/mkt-core/order/constants/order-status.constants';
 import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';

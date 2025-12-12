@@ -2,7 +2,7 @@ import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev
 import { MKT_CUSTOMER_DATA_SEEDS_IDS as MKT_CUSTOMER_DATA_SEEDS_IDS_SYNC } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-order-data-seeds.constants';
 import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/product-seeder/mkt-variant-data-seeds.constants';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/constants/license.constants';
 import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
 export const MKT_CUSTOMER_DATA_SEEDS_IDS = {

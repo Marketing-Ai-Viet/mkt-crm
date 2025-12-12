@@ -1,4 +1,4 @@
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
+import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/constants/license.constants';
 
 type MktLicenseHistoryDataSeed = {
   //fields

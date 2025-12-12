@@ -5,10 +5,9 @@ import { CreateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktLicenseRenewService } from 'src/mkt-core/license/services/mkt-license.renew.service';
-
-import { MktLicenseService } from './mkt-license.service';
-import { MktLicenseWorkspaceEntity } from './mkt-license.workspace-entity';
+import { MktLicenseService } from 'src/mkt-core/license/services/mkt-license.service';
 
 @Injectable()
 @WorkspaceQueryHook('mktLicense.createOne')
