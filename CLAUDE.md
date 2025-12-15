@@ -246,3 +246,4 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 - Use early return pattern instead of nested if-else
 - Use lodash for array/object operations
 - Declare constants with const or enum, add default values when needed
+- chạy npx nx reset khi lỗi với nx

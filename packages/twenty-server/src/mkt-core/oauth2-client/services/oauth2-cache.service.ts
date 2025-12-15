@@ -43,9 +43,10 @@ export class OAuth2CacheService {
     this.redisTtlMs = redisTtlSeconds * 1000;
 
     // Create a named cache instance for OAuth2 tokens
+    // Note: Namespace 'mkt:oauth2' already provides context, so use minimal prefix
     this.cache = this.redisCacheService.createCache<OAuth2Token>(
       OAUTH2_CACHE_NAME,
-      { keyPrefix: 'oauth2:token:' },
+      { keyPrefix: 'token:' },
     );
   }
 

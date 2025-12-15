@@ -254,6 +254,36 @@ export class MktProductProxyService {
   }
 
   /**
+   * Get packages list with pagination
+   * Used by MktProductSyncService for bulk sync
+   */
+  async getPackages(
+    params: { page?: number; limit?: number } = {},
+    userContext?: UserContext,
+  ): Promise<MktPaginatedData<MktProductPackage>> {
+    this.logger.debug('Fetching packages list from MKT Server', { params });
+
+    try {
+      const url = this.buildUrl(MKT_PRODUCT_ENDPOINTS.PACKAGES_LIST);
+
+      const response = await this.oauth2Http.get<
+        MktApiResponse<MktPaginatedData<MktProductPackage>>
+      >(url, { params }, userContext);
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        MKT_PRODUCT_ERROR_BUILDER.fetchPackageFailed(
+          this.getErrorMessage(error),
+        ),
+        { params },
+      );
+
+      throw error;
+    }
+  }
+
+  /**
    * Get packages by product ID with caching
    */
   async getPackagesByProductId(

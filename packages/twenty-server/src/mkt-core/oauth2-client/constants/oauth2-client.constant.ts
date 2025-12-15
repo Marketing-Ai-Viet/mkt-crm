@@ -10,7 +10,6 @@ export const OAUTH2_CACHE_DEFAULTS = {
   LRU_MAX: 10,
   LRU_TTL_MS: 3600000,
   REDIS_TTL_SECONDS: 3600,
-  REDIS_KEY_PREFIX: 'token',
 } as const;
 
 export const OAUTH2_REFRESH_DEFAULTS = {

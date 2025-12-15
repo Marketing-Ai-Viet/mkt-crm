@@ -9,19 +9,29 @@ import {
 
 /**
  * MKT Product API Endpoints
+ *
+ * IMPORTANT: Endpoints must match MKT Server controllers:
+ * - ProductOAuthController: `/api/oauth/products`
+ * - ProductPackageOAuthController: `/api/oauth/product-packages`
  */
 export const MKT_PRODUCT_ENDPOINTS = {
-  // Product endpoints
+  // Product endpoints (từ ProductOAuthController)
   LIST: '/api/oauth/products',
   GET_BY_ID: '/api/oauth/products/:id',
   GET_BY_CODE: '/api/oauth/products/by-code/:code',
   GET_LOCALIZED: '/api/oauth/products/:id/localized',
+  LIST_LOCALIZED: '/api/oauth/products/localized',
   SEARCH: '/api/oauth/products/search/:lang',
   GET_PRODUCT_PACKAGES: '/api/oauth/products/:id/packages',
 
-  // Package endpoints
-  GET_PACKAGE: '/api/oauth/packages/:id',
-  GET_PACKAGE_BY_CODE: '/api/oauth/packages/by-code/:code',
+  // Package endpoints (từ ProductPackageOAuthController)
+  // FIX: Changed from /api/oauth/packages to /api/oauth/product-packages
+  PACKAGES_LIST: '/api/oauth/product-packages',
+  GET_PACKAGE: '/api/oauth/product-packages/:id',
+  GET_PACKAGE_BY_CODE: '/api/oauth/product-packages/by-code/:code',
+  GET_PACKAGES_BY_PRODUCT: '/api/oauth/product-packages/by-product/:productId',
+  GET_PACKAGES_BY_LICENSE_TYPE:
+    '/api/oauth/product-packages/by-license-type/:licenseType',
 } as const;
 
 export type MktProductEndpointsType =

@@ -1,17 +1,17 @@
 import {
   Injectable,
   Logger,
+  OnApplicationBootstrap,
   OnModuleDestroy,
-  OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { DateTime } from 'luxon';
 import { firstValueFrom } from 'rxjs';
 
 import {
-  OAUTH2_CACHE_DEFAULTS,
   OAUTH2_LOG_CONTEXT,
   OAUTH2_SUCCESS_MESSAGES,
   OAUTH2_ERROR_MESSAGES,
@@ -25,6 +25,8 @@ import {
   OAuth2TokenMetadata,
   OAuth2TokenResponse,
   RateLimitException,
+  OAUTH2_EVENTS,
+  OAuth2TokenAcquiredEvent,
 } from 'src/mkt-core/oauth2-client/types';
 
 import { OAuth2CacheService } from './oauth2-cache.service';
@@ -33,7 +35,9 @@ import { OAuth2RateLimiterService } from './oauth2-rate-limiter.service';
 import { OAuth2CircuitBreakerService } from './oauth2-circuit-breaker.service';
 
 @Injectable()
-export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
+export class OAuth2ClientService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(OAUTH2_LOG_CONTEXT);
   private readonly serverUrl: string;
   private readonly clientId: string;
@@ -57,6 +61,7 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
     private readonly lockService: OAuth2LockService,
     private readonly rateLimiterService: OAuth2RateLimiterService,
     private readonly circuitBreakerService: OAuth2CircuitBreakerService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.serverUrl =
       this.configService.get<string>('oauth2Client.serverUrl') ?? '';
@@ -78,7 +83,11 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<number>('oauth2Client.http.timeoutMs') ?? 10000;
   }
 
-  async onModuleInit(): Promise<void> {
+  /**
+   * Called after all modules have been initialized and all event listeners registered.
+   * This ensures MktProductSyncService's @OnEvent listener is ready to receive events.
+   */
+  async onApplicationBootstrap(): Promise<void> {
     // Skip if clientId or clientSecret not configured
     if (!this.clientId || !this.clientSecret) {
       this.logger.warn(
@@ -88,6 +97,17 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Delay token initialization to next event loop iteration
+    // This ensures ALL modules have completed their onApplicationBootstrap
+    // before we emit TOKEN_ACQUIRED event
+    setImmediate(() => {
+      this.initializeTokenAndStartRefresh().catch((error) => {
+        this.logger.error('Failed to initialize token on startup', error);
+      });
+    });
+  }
+
+  private async initializeTokenAndStartRefresh(): Promise<void> {
     // Fetch initial token on startup
     await this.initializeToken();
 
@@ -168,12 +188,18 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
           return recheckedToken.accessToken;
         }
 
+        // Check if this is a refresh (had token before) or initial acquisition
+        const isRefresh = cachedToken !== null;
+
         // Fetch token mới
         const newToken = await this.fetchNewToken();
 
         await this.cacheService.setToken(cacheKey, newToken);
         this.lastRefreshedAt = DateTime.utc();
         this.refreshCount++;
+
+        // Emit token acquired event
+        this.emitTokenAcquiredEvent(newToken, isRefresh);
 
         return newToken.accessToken;
       },
@@ -413,7 +439,9 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getCacheKey(): string {
-    return `${OAUTH2_CACHE_DEFAULTS.REDIS_KEY_PREFIX}:${this.clientId}`;
+    // Key prefix 'token:' is already added in OAuth2CacheService.createCache()
+    // Just use clientId directly to avoid duplicate prefixes
+    return this.clientId;
   }
 
   private startBackgroundRefresh(): void {
@@ -487,5 +515,28 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       this.refreshInterval = undefined;
       this.logger.log('Background token refresh stopped');
     }
+  }
+
+  // ============================================
+  // EVENT EMISSION
+  // ============================================
+
+  /**
+   * Emit token acquired event for subscribers (e.g., MktProductSyncService)
+   */
+  private emitTokenAcquiredEvent(token: OAuth2Token, isRefresh: boolean): void {
+    const eventPayload: OAuth2TokenAcquiredEvent = {
+      clientId: this.clientId,
+      scopes: token.scopes,
+      expiresIn: token.expiresIn,
+      isRefresh,
+      timestamp: new Date(),
+    };
+
+    this.eventEmitter.emit(OAUTH2_EVENTS.TOKEN_ACQUIRED, eventPayload);
+
+    this.logger.log(
+      `Emitted ${OAUTH2_EVENTS.TOKEN_ACQUIRED} event (isRefresh: ${isRefresh}, scopes: ${token.scopes.join(', ')})`,
+    );
   }
 }

@@ -19,6 +19,12 @@ import {
 import { LicenseProxyService } from './license/services';
 import { LicenseResolver } from './license/resolvers';
 
+/**
+ * OAuth2 Client Module
+ *
+ * NOTE: EventEmitter2 is available globally via EventEmitterModule.forRoot()
+ * in CoreEngineModule. No need to import it here.
+ */
 @Module({
   imports: [
     ConfigModule.forFeature(oauth2ClientConfig),
