@@ -12,7 +12,7 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
-import { OrderCalculationService } from 'src/mkt-core/order/services/order-calculation.service';
+import { OrderCalculationService } from 'src/mkt-core/order/services/core';
 import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 

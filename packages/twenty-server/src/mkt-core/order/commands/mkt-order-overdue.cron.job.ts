@@ -5,7 +5,7 @@ import { Process } from 'src/engine/core-modules/message-queue/decorators/proces
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MKT_ORDER_OVERDUE_CRON_PATTERN } from 'src/mkt-core/order/constants/mkt-order-overdue.constants';
-import { MktOrderOverdueService } from 'src/mkt-core/order/services/mkt-order-overdue.service';
+import { MktOrderOverdueService } from 'src/mkt-core/order/services/legacy';
 
 @Processor(MessageQueue.cronQueue)
 export class MktOrderOverdueCronJob {

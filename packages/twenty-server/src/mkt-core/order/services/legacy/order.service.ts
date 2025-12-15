@@ -3,12 +3,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
-import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
+import {
+  ORDER_METADATA,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { FirebaseAuthResponse } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { VariantService } from 'src/mkt-core/product/services/variant.service';
+import { safeJsonStringify } from 'src/mkt-core/utils';
 
 @Injectable()
 export class OrderService {
@@ -20,7 +23,7 @@ export class OrderService {
   ) {}
 
   async createOrderItemsFromVariants(
-    variantsMeta: Metadata['variants'] | null,
+    variantsMeta: ORDER_METADATA['variants'] | null,
     createdOrder: MktOrderWorkspaceEntity,
     workspaceId: string,
   ) {
@@ -146,7 +149,7 @@ export class OrderService {
   ) {
     const orderRepository = await this.getOrderRepo();
 
-    this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
+    this.logger.log('authFirebase: ' + safeJsonStringify(authFirebase));
 
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
@@ -155,14 +158,16 @@ export class OrderService {
 
     // Nếu có authFirebase thì update vào metadata
     if (authFirebase) {
-      updateData.metadata = JSON.stringify({ authFirebase }) as unknown as JSON;
+      updateData.metadata = safeJsonStringify({
+        authFirebase,
+      }) as unknown as JSON;
       this.logger.log(
         `Updated metadata with Firebase auth info for order: ${orderId}`,
       );
     }
 
     this.logger.log(
-      `Updating order ${orderId} with data: ${JSON.stringify(updateData)}`,
+      `Updating order ${orderId} with data: ${safeJsonStringify(updateData)}`,
     );
 
     await orderRepository.update(orderId, updateData);

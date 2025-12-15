@@ -4,11 +4,12 @@ import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 
 import {
   ORDER_ACTION,
+  ORDER_METADATA,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderStateMachine } from 'src/mkt-core/order/states';
+import { parseJsonOrNull } from 'src/mkt-core/utils';
 
 export class OrderActionService {
   private readonly logger = new Logger(OrderActionService.name);
@@ -39,8 +40,8 @@ export class OrderActionService {
     }
   }
 
-  async getActionFromMetadata(
-    metadata: Metadata,
+  async getActionFromORDER_METADATA(
+    metadata: ORDER_METADATA,
   ): Promise<ORDER_ACTION | null> {
     if (!metadata) return null;
 
@@ -55,17 +56,18 @@ export class OrderActionService {
 
   async getOrderAction(metadata: unknown): Promise<ORDER_ACTION | null> {
     if (!metadata) return null;
-    try {
-      if (typeof metadata === 'string') {
-        metadata = JSON.parse(metadata);
-      }
-      const { orderAction } = metadata as Metadata;
 
-      if (orderAction && Object.values(ORDER_ACTION).includes(orderAction)) {
-        return orderAction;
-      }
-    } catch (error) {
-      //
+    const parsedORDER_METADATA: ORDER_METADATA | null =
+      typeof metadata === 'string'
+        ? parseJsonOrNull<ORDER_METADATA>(metadata)
+        : (metadata as ORDER_METADATA);
+
+    if (!parsedORDER_METADATA) return null;
+
+    const { orderAction } = parsedORDER_METADATA;
+
+    if (orderAction && Object.values(ORDER_ACTION).includes(orderAction)) {
+      return orderAction;
     }
 
     return null;

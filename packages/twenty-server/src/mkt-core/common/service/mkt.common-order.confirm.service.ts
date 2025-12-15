@@ -16,7 +16,6 @@ import {
   ORDER_CODE_PREFIX,
   ORDER_METADATA,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
@@ -246,9 +245,9 @@ export class MktOrderCommonConfirmService {
     action: ORDER_ACTION,
     createdOrder: MktOrderWorkspaceEntity,
     workspaceId: string,
-    variantsMeta: Metadata['variants'] | null,
-    customerMeta: Metadata['customer'] | null,
-    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+    variantsMeta: ORDER_METADATA['variants'] | null,
+    customerMeta: ORDER_METADATA['customer'] | null,
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
     licenseId?: string,
     license?: MktLicenseWorkspaceEntity | null,
   ): Promise<callFireBaseType | void> {
@@ -425,7 +424,7 @@ export class MktOrderCommonConfirmService {
   }
 
   private async createOrderItemsFromVariants(
-    variantsMeta: Metadata['variants'] | null,
+    variantsMeta: ORDER_METADATA['variants'] | null,
     createdOrder: MktOrderWorkspaceEntity,
     _workspaceId: string,
   ) {
@@ -701,7 +700,7 @@ export class MktOrderCommonConfirmService {
       orderId: string;
       workspaceId: string | null;
     },
-    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
   ): Promise<callFireBaseType | void> {
     const paymentRepository = await this.mktRepo.getPaymentRepository();
     const paymentMethodRepository =

@@ -14,7 +14,7 @@ import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/servic
 import { MktLicenseDashboardStatsCronJob } from 'src/mkt-core/license/commands/mkt-license-dashboard-stats.cron.job';
 import { MktLicenseDashboardStatsRegistrationService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats-registration.service';
 import { MktLicenseDashboardStatsService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats.service';
-import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/mkt-order-overdue-registration.service';
+import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/legacy';
 import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 
 @Module({

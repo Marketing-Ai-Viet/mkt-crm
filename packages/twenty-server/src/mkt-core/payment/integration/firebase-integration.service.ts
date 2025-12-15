@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
-import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
+import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 export interface FirebaseAuthResponse {
@@ -95,7 +95,7 @@ export class FireBaseIntegrationService {
     this.logger.log(
       `Preparing to send completed order ${order?.orderCode} to Firebase`,
     );
-    let metadata = order?.metadata as Metadata;
+    let metadata = order?.metadata as ORDER_METADATA;
 
     // Handle case where metadata might be stored as JSON string
     if (typeof metadata === 'string') {

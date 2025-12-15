@@ -51,6 +51,7 @@ import { MktLicenseRenewService } from 'src/mkt-core/license/services/mkt-licens
   ],
   exports: [
     MktLicenseService,
+    MktLicenseApiService,
     MktLicenseEventService,
     MktLicenseDashboardService,
     MktLicenseCsvExportService,

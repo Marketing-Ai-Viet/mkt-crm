@@ -130,6 +130,17 @@ export type RefundOrderResponse = {
   error?: string;
 };
 
+/**
+ * Response khi update order status
+ */
+export type UpdateOrderStatusResponse = {
+  success: boolean;
+  orderId?: string;
+  previousStatus?: ORDER_STATUS;
+  newStatus?: ORDER_STATUS;
+  error?: string;
+};
+
 // ============================================
 // INTERNAL TYPES
 // ============================================
@@ -157,4 +168,26 @@ export type OrderItemWithCalculation = {
   taxPercentage: number;
   taxAmount: number;
   totalAmountWithTax: number;
+};
+
+/**
+ * Input để update order item
+ */
+export type UpdateOrderItemInput = {
+  orderItemId: string;
+  variantId?: string;
+  quantity?: number;
+  unitPrice?: number;
+  note?: string;
+  updatedAt?: string; // For optimistic locking
+};
+
+/**
+ * Response khi update order item
+ */
+export type UpdateOrderItemResponse = {
+  success: boolean;
+  orderItemId?: string;
+  orderId?: string;
+  error?: string;
 };

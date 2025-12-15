@@ -27,3 +27,5 @@ export {
 
 // Array processing utilities
 export { ArrayUtils } from './array.utils';
+
+export * from './json.util';

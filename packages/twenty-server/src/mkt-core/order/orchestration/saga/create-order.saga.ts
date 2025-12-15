@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { DataSource, QueryRunner } from 'typeorm';
+import { QueryRunner } from 'typeorm';
 
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
 import {
   CreateOrderWithItemsInput,
@@ -19,7 +20,7 @@ import { SagaContext, SagaStep, SagaStepResult } from './order-saga.interface';
  * 2. CreateOrderItemsStep - Tạo order items từ variants
  * 3. CreateLicensesStep - Tạo licenses cho order items
  * 4. CreatePaymentStep - Tạo payment (nếu không phải TRIAL)
- * 5. NotifyExternalStep - Emit event để async processing
+ * 5. FinalizeOrderStep - Finalize order status
  *
  * Nếu bất kỳ step nào fail, saga sẽ rollback tất cả steps đã thực thi
  * theo thứ tự ngược lại (compensate pattern)
@@ -30,7 +31,7 @@ export class CreateOrderSaga {
   private steps: SagaStep<CreateOrderWithItemsInput, unknown>[] = [];
 
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -51,7 +52,13 @@ export class CreateOrderSaga {
     workspaceMemberId: string | undefined,
     input: CreateOrderWithItemsInput,
   ): Promise<CreateOrderResponse> {
-    const queryRunner = this.dataSource.createQueryRunner();
+    // Get workspace-specific DataSource
+    const dataSource =
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId,
+      });
+
+    const queryRunner = dataSource.createQueryRunner();
 
     await queryRunner.connect();
     await queryRunner.startTransaction();

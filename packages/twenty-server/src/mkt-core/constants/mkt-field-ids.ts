@@ -353,6 +353,16 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   taxAmount: '2b69aed9-7a4a-472d-8966-fe6162aafa30',
   totalAmountWithTax: '47e19201-d41f-43e2-89a0-beeb0da30731',
 
+  // External MKT Product fields (from MKT Server)
+  externalMktProductId: '08c49fb4-dcc4-4015-bc23-14cf525502b8',
+  externalMktProductCode: '8cb472c9-9810-45d5-bda4-6de5cdd4a207',
+  externalMktPackageId: '79afd095-f1ce-4297-a222-fd0e8c563285',
+  externalMktPackageCode: '1aa9ffbe-e0d7-40f8-a498-f6de75effc2e',
+  snapshotMktProduct: '9d4213c6-5a0e-4478-9835-a57a9858fcac',
+  snapshotMktPackage: 'a9763746-b410-4822-8228-a1b3aaf3366c',
+  snapshotPackageName: 'db2c5492-eb14-477e-a9e1-94d009d7da7b',
+  orderLanguage: '35d900f3-d659-42f1-91c1-dfca25a8733d',
+
   // relations
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',
   mktProduct: '81a3b4c5-d6e7-f890-9012-345678901234',

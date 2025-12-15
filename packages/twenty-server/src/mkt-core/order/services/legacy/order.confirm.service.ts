@@ -4,12 +4,16 @@ import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
-import { ORDER_CODE_PREFIX } from 'src/mkt-core/order/constants/order-status.constants';
-import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
+import {
+  ORDER_CODE_PREFIX,
+  ORDER_METADATA,
+} from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { OrderService } from 'src/mkt-core/order/services/order.service';
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+import { safeJsonStringify } from 'src/mkt-core/utils';
+
+import { OrderService } from './order.service';
 
 export type CalculateOrderResult = {
   subtotal: number;
@@ -237,9 +241,9 @@ export class OrderConfirmService {
     action: ORDER_ACTION,
     createdOrder: MktOrderWorkspaceEntity,
     workspaceId: string,
-    variantsMeta: Metadata['variants'] | null,
-    customerMeta: Metadata['customer'] | null,
-    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+    variantsMeta: ORDER_METADATA['variants'] | null,
+    customerMeta: ORDER_METADATA['customer'] | null,
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
     licenseId?: string,
   ): Promise<callFireBaseType | void> {
     const mktCustomerId = customerMeta?.mktCustomerId || null;
@@ -270,7 +274,7 @@ export class OrderConfirmService {
       relations: ['orderItems', 'mktCustomer', 'accountOwner'],
     });
 
-    this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);
+    this.logger.log(`Fetched order with items: ${safeJsonStringify(order)}`);
 
     if (order && order.orderItems?.length > 0) {
       try {
@@ -360,7 +364,7 @@ export class OrderConfirmService {
     createdOrder: MktOrderWorkspaceEntity,
     workspaceId: string,
     trialOrderId: string | null,
-    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
   ): Promise<void> {
     if (action !== ORDER_ACTION.TRIAL_TO_PAID)
       throw new Error(
