@@ -126,10 +126,7 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       return 0;
     }
 
-    const expiresAt =
-      token.expiresAt instanceof Date
-        ? DateTime.fromJSDate(token.expiresAt)
-        : DateTime.fromISO(String(token.expiresAt));
+    const expiresAt = DateTime.fromJSDate(token.expiresAt);
 
     return Math.max(
       0,
@@ -198,14 +195,8 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
 
-    const expiresAt =
-      token.expiresAt instanceof Date
-        ? DateTime.fromJSDate(token.expiresAt)
-        : DateTime.fromISO(String(token.expiresAt));
-    const issuedAt =
-      token.issuedAt instanceof Date
-        ? DateTime.fromJSDate(token.issuedAt)
-        : DateTime.fromISO(String(token.issuedAt));
+    const expiresAt = DateTime.fromJSDate(token.expiresAt);
+    const issuedAt = DateTime.fromJSDate(token.issuedAt);
     const expiresIn = Math.max(
       0,
       Math.floor(expiresAt.diff(DateTime.utc()).as('seconds')),
@@ -226,16 +217,13 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
     const cacheKey = this.getCacheKey();
     const token = await this.cacheService.getToken(cacheKey);
     const cacheStats = this.cacheService.getStats();
-    const circuitBreakerStatus = this.circuitBreakerService.getStatus();
-    const rateLimitStatus = this.rateLimiterService.getStatus();
+    const circuitBreakerStatus = await this.circuitBreakerService.getStatus();
+    const rateLimitStatus = await this.rateLimiterService.getStatus();
 
     let tokenInfo: OAuth2HealthCheckResult['token'] = { valid: false };
 
     if (token) {
-      const expiresAt =
-        token.expiresAt instanceof Date
-          ? DateTime.fromJSDate(token.expiresAt)
-          : DateTime.fromISO(String(token.expiresAt));
+      const expiresAt = DateTime.fromJSDate(token.expiresAt);
       const expiresIn = Math.max(
         0,
         Math.floor(expiresAt.diff(DateTime.utc()).as('seconds')),
@@ -266,8 +254,8 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async fetchNewToken(): Promise<OAuth2Token> {
-    this.rateLimiterService.checkRateLimit();
-    this.rateLimiterService.recordAttempt();
+    await this.rateLimiterService.checkRateLimit();
+    await this.rateLimiterService.recordAttempt();
 
     return this.circuitBreakerService.execute(async () => {
       const tokenUrl = `${this.serverUrl}${this.tokenEndpoint}`;
@@ -419,10 +407,7 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
    * Tính số giây còn lại trước khi token hết hạn.
    */
   private getSecondsUntilExpiry(token: OAuth2Token): number {
-    const expiresAt =
-      token.expiresAt instanceof Date
-        ? DateTime.fromJSDate(token.expiresAt)
-        : DateTime.fromISO(String(token.expiresAt));
+    const expiresAt = DateTime.fromJSDate(token.expiresAt);
 
     return Math.floor(expiresAt.diff(DateTime.utc()).as('seconds'));
   }
