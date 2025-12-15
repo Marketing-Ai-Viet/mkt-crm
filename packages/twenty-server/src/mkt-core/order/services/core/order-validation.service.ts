@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import {
   ORDER_ACTION,
@@ -10,6 +11,7 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import {
   CreateOrderWithItemsInput,
   ConfirmOrderInput,
+  ExternalMktProductInput,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
@@ -36,9 +38,15 @@ export type ValidationResult = {
 export const ORDER_VALIDATION_ERROR_CODES = {
   CUSTOMER_REQUIRED: 'CUSTOMER_REQUIRED',
   CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
+  ITEMS_REQUIRED: 'ITEMS_REQUIRED',
   VARIANTS_REQUIRED: 'VARIANTS_REQUIRED',
   VARIANT_NOT_FOUND: 'VARIANT_NOT_FOUND',
   VARIANT_INACTIVE: 'VARIANT_INACTIVE',
+  EXTERNAL_PRODUCT_NOT_FOUND: 'EXTERNAL_PRODUCT_NOT_FOUND',
+  EXTERNAL_PRODUCT_INACTIVE: 'EXTERNAL_PRODUCT_INACTIVE',
+  EXTERNAL_PACKAGE_NOT_FOUND: 'EXTERNAL_PACKAGE_NOT_FOUND',
+  EXTERNAL_PACKAGE_INACTIVE: 'EXTERNAL_PACKAGE_INACTIVE',
+  EXTERNAL_PACKAGE_MISMATCH: 'EXTERNAL_PACKAGE_MISMATCH',
   PAYMENT_METHOD_REQUIRED: 'PAYMENT_METHOD_REQUIRED',
   PAYMENT_METHOD_NOT_FOUND: 'PAYMENT_METHOD_NOT_FOUND',
   ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
@@ -51,6 +59,10 @@ export const ORDER_VALIDATION_ERROR_CODES = {
 /**
  * Service để validate order data trước khi xử lý
  * Tách biệt với business logic
+ *
+ * Supports validation for:
+ * - Internal variants (CRM products)
+ * - External MKT Server products via OAuth2 API
  */
 @Injectable()
 export class OrderValidationService {
@@ -58,6 +70,7 @@ export class OrderValidationService {
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly mktProductProxy: MktProductProxyService,
   ) {}
 
   // ============================================
@@ -66,6 +79,11 @@ export class OrderValidationService {
 
   /**
    * Validate input để tạo order mới
+   *
+   * Supports:
+   * - Internal variants (CRM products)
+   * - External MKT Server products
+   * - Mixed orders with both types
    */
   async validateCreateOrderInput(
     workspaceId: string,
@@ -100,20 +118,36 @@ export class OrderValidationService {
       }
     }
 
-    // Validate variants
-    if (!input.variants || input.variants.length === 0) {
+    // Check if we have any items (variants OR externalProducts)
+    const hasVariants = input.variants && input.variants.length > 0;
+    const hasExternalProducts =
+      input.externalProducts && input.externalProducts.length > 0;
+
+    if (!hasVariants && !hasExternalProducts) {
       errors.push({
-        field: 'variants',
-        message: 'At least one variant is required',
-        code: ORDER_VALIDATION_ERROR_CODES.VARIANTS_REQUIRED,
+        field: 'items',
+        message: 'At least one variant or external product is required',
+        code: ORDER_VALIDATION_ERROR_CODES.ITEMS_REQUIRED,
       });
-    } else {
+    }
+
+    // Validate internal variants
+    if (hasVariants && input.variants) {
       const variantErrors = await this.validateVariants(
         workspaceId,
         input.variants.map((v) => v.variantId),
       );
 
       errors.push(...variantErrors);
+    }
+
+    // Validate external MKT products
+    if (hasExternalProducts && input.externalProducts) {
+      const externalErrors = await this.validateExternalProducts(
+        input.externalProducts,
+      );
+
+      errors.push(...externalErrors);
     }
 
     // Validate payment methods (not required for TRIAL)
@@ -274,7 +308,7 @@ export class OrderValidationService {
   }
 
   /**
-   * Validate danh sách variants
+   * Validate danh sách variants (internal CRM products)
    */
   private async validateVariants(
     workspaceId: string,
@@ -307,6 +341,69 @@ export class OrderValidationService {
     }
 
     return errors;
+  }
+
+  /**
+   * Validate danh sách external MKT products
+   * Uses MktProductProxyService to validate against MKT Server
+   */
+  private async validateExternalProducts(
+    externalProducts: ExternalMktProductInput[],
+  ): Promise<ValidationError[]> {
+    const errors: ValidationError[] = [];
+
+    // Use MktProductProxyService validation
+    const validationResult = await this.mktProductProxy.validateForOrder(
+      externalProducts.map((p) => ({
+        productId: p.productId,
+        packageId: p.packageId,
+      })),
+    );
+
+    if (!validationResult.valid) {
+      for (const error of validationResult.errors) {
+        const errorCode = this.mapExternalProductErrorToCode(error.reason);
+
+        errors.push({
+          field: error.packageId
+            ? 'externalProducts.package'
+            : 'externalProducts.product',
+          message: error.packageId
+            ? `Package ${error.packageId}: ${error.reason}`
+            : `Product ${error.productId}: ${error.reason}`,
+          code: errorCode,
+        });
+      }
+    }
+
+    return errors;
+  }
+
+  /**
+   * Map external product validation error reasons to error codes
+   */
+  private mapExternalProductErrorToCode(reason: string): string {
+    if (reason.includes('Product not found')) {
+      return ORDER_VALIDATION_ERROR_CODES.EXTERNAL_PRODUCT_NOT_FOUND;
+    }
+
+    if (reason.includes('Product status is')) {
+      return ORDER_VALIDATION_ERROR_CODES.EXTERNAL_PRODUCT_INACTIVE;
+    }
+
+    if (reason.includes('Package not found')) {
+      return ORDER_VALIDATION_ERROR_CODES.EXTERNAL_PACKAGE_NOT_FOUND;
+    }
+
+    if (reason.includes('Package does not belong')) {
+      return ORDER_VALIDATION_ERROR_CODES.EXTERNAL_PACKAGE_MISMATCH;
+    }
+
+    if (reason.includes('Package is not active')) {
+      return ORDER_VALIDATION_ERROR_CODES.EXTERNAL_PACKAGE_INACTIVE;
+    }
+
+    return 'EXTERNAL_PRODUCT_VALIDATION_ERROR';
   }
 
   /**

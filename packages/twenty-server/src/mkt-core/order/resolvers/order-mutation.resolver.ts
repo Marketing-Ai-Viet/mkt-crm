@@ -68,10 +68,16 @@ export class OrderMutationResolver {
         note: input.note,
         requireContract: input.requireContract,
         discountPercent: input.discountPercent,
-        variants: input.variants.map((v) => ({
+        variants: input.variants?.map((v) => ({
           variantId: v.variantId,
           quantity: v.quantity,
         })),
+        externalProducts: input.externalProducts?.map((p) => ({
+          productId: p.productId,
+          packageId: p.packageId,
+          quantity: p.quantity,
+        })),
+        orderLanguage: input.orderLanguage as 'vi' | 'en' | 'ko' | undefined,
         paymentMethods: input.paymentMethods?.map((p) => ({
           paymentMethodId: p.paymentMethodId,
           name: p.name,
@@ -126,10 +132,16 @@ export class OrderMutationResolver {
           note: input.note,
           requireContract: input.requireContract,
           discountPercent: input.discountPercent,
-          variants: input.variants.map((v) => ({
+          variants: input.variants?.map((v) => ({
             variantId: v.variantId,
             quantity: v.quantity,
           })),
+          externalProducts: input.externalProducts?.map((p) => ({
+            productId: p.productId,
+            packageId: p.packageId,
+            quantity: p.quantity,
+          })),
+          orderLanguage: input.orderLanguage as 'vi' | 'en' | 'ko' | undefined,
           paymentMethods: input.paymentMethods?.map((p) => ({
             paymentMethodId: p.paymentMethodId,
             name: p.name,

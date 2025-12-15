@@ -1,10 +1,10 @@
 import { Field, InputType, Int, registerEnumType } from '@nestjs/graphql';
 
 import {
-  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -15,6 +15,7 @@ import {
 import { Type } from 'class-transformer';
 
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
+import { MKT_SUPPORTED_LANGUAGES } from 'src/mkt-core/mkt-product-integration/constants';
 
 // Register enum for GraphQL
 registerEnumType(ORDER_ACTION, {
@@ -22,6 +23,9 @@ registerEnumType(ORDER_ACTION, {
   description: 'Action to perform when creating/confirming order',
 });
 
+/**
+ * Input for internal CRM product variant
+ */
 @InputType()
 export class OrderVariantInputDto {
   @Field(() => String)
@@ -29,6 +33,34 @@ export class OrderVariantInputDto {
   variantId: string;
 
   @Field(() => Int, { nullable: true, defaultValue: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  quantity?: number;
+}
+
+/**
+ * Input for external MKT Server product
+ */
+@InputType()
+export class ExternalMktProductInputDto {
+  @Field(() => String, { description: 'Product ID from MKT Server (UUIDv7)' })
+  @IsString()
+  productId: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Package ID from MKT Server',
+  })
+  @IsOptional()
+  @IsString()
+  packageId?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    defaultValue: 1,
+    description: 'Quantity',
+  })
   @IsOptional()
   @IsNumber()
   @Min(1)
@@ -57,6 +89,15 @@ export class OrderPaymentMethodInputDto {
   amount?: number;
 }
 
+/**
+ * Input DTO for creating order with items
+ *
+ * Supports 2 types of products:
+ * - variants: Internal CRM products from mktVariant table
+ * - externalProducts: Products from MKT Server via OAuth2 API
+ *
+ * At least one of variants or externalProducts must be provided.
+ */
 @InputType()
 export class CreateOrderWithItemsInputDto {
   @Field(() => String, { description: 'Customer ID' })
@@ -88,12 +129,37 @@ export class CreateOrderWithItemsInputDto {
   @IsNumber()
   discountPercent?: number;
 
-  @Field(() => [OrderVariantInputDto], { description: 'List of variants' })
+  @Field(() => [OrderVariantInputDto], {
+    nullable: true,
+    description:
+      'List of internal CRM variants (optional if using externalProducts)',
+  })
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => OrderVariantInputDto)
-  variants: OrderVariantInputDto[];
+  variants?: OrderVariantInputDto[];
+
+  @Field(() => [ExternalMktProductInputDto], {
+    nullable: true,
+    description:
+      'List of external MKT Server products (optional if using variants)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExternalMktProductInputDto)
+  externalProducts?: ExternalMktProductInputDto[];
+
+  @Field(() => String, {
+    nullable: true,
+    defaultValue: 'vi',
+    description: 'Order language for display names from MKT Server (vi/en/ko)',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(MKT_SUPPORTED_LANGUAGES)
+  orderLanguage?: string;
 
   @Field(() => [OrderPaymentMethodInputDto], {
     nullable: true,

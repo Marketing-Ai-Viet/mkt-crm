@@ -8,6 +8,7 @@ import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
+import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
 import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-overdue.cron.job';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
@@ -61,6 +62,7 @@ import {
     MktLicenseModule,
     MktInvoiceModule,
     MktProductModule,
+    MktProductIntegrationModule, // External MKT Server product integration
     MktCommonModule,
     MktContractModule,
     CustomerModule,

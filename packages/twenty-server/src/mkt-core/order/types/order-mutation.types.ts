@@ -2,16 +2,29 @@ import {
   ORDER_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
+import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
 
 // ============================================
 // INPUT TYPES
 // ============================================
 
 /**
- * Variant item trong order
+ * Variant item trong order (internal CRM product)
  */
 export type OrderVariantInput = {
   variantId: string;
+  quantity?: number;
+};
+
+/**
+ * External MKT product trong order (từ MKT Server)
+ */
+export type ExternalMktProductInput = {
+  /** ID của product từ MKT Server (UUIDv7) */
+  productId: string;
+  /** ID của package từ MKT Server */
+  packageId?: string;
+  /** Số lượng */
   quantity?: number;
 };
 
@@ -36,6 +49,10 @@ export type OrderCustomerInput = {
 /**
  * Input để tạo Order với đầy đủ items, licenses, payment
  * Thay thế việc sử dụng createMktOrder + post-hook
+ *
+ * Supports 2 types of products:
+ * - Internal variants: CRM products từ mktVariant table
+ * - External products: Products từ MKT Server via OAuth2 API
  */
 export type CreateOrderWithItemsInput = {
   // Customer
@@ -48,8 +65,14 @@ export type CreateOrderWithItemsInput = {
   requireContract?: boolean;
   discountPercent?: number;
 
-  // Items
-  variants: OrderVariantInput[];
+  // Items - Internal CRM products (optional if using externalProducts)
+  variants?: OrderVariantInput[];
+
+  // Items - External MKT Server products (optional if using variants)
+  externalProducts?: ExternalMktProductInput[];
+
+  // Order language for display names from MKT Server (default: 'vi')
+  orderLanguage?: MktSupportedLanguage;
 
   // Payment
   paymentMethods?: OrderPaymentMethodInput[];
