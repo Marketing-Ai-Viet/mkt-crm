@@ -94,6 +94,22 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 
 ---
 
+### Task: Work with MKT Product Integration
+
+**Load**:
+1. `reference/architecture.md` - MKT Product Integration Module section
+2. Read source files in `mkt-core/mkt-product-integration/`
+
+**Key Services**:
+- `MktProductProxyService` - Facade for product operations (cache, validation, snapshots)
+- `MktProductSyncService` - Auto-sync products on OAuth2 token acquired
+- `MktSnapshotService` - Create immutable snapshots for orders
+- `MktValidationService` - Validate products/packages for orders
+
+**GraphQL Queries**: `mktDigitalProduct`, `mktDigitalProducts`, `mktDigitalPackage`, `mktDigitalPackagesByProduct`
+
+---
+
 ## Critical Rules Summary
 
 > Load `reference/typescript-rules.md` for complete rules
@@ -203,6 +219,7 @@ npx nx command twenty-server -- mkt-customer-tag-data-seed-dev-workspace
 - **Fix TypeScript errors** -> Load: `typescript-rules.md`
 - **Database migration** -> Load: `database.md`
 - **Understand architecture** -> Load: `architecture.md`
+- **Work with MKT Product Integration** -> Load: `architecture.md` (MKT Product Integration section)
 
 ---
 
@@ -219,6 +236,17 @@ packages/twenty-server/src/mkt-core/
 ├── mkt-department/    # Department hierarchy
 ├── mkt-kpi/           # KPI tracking
 ├── mkt-reseller/      # Reseller management
+├── mkt-product-integration/  # MKT Server product integration
+│   ├── configs/       # Zod-validated configuration
+│   ├── constants/     # API endpoints, cache keys
+│   ├── dto/           # GraphQL input/output types
+│   ├── jobs/          # Scheduled sync job (cron)
+│   ├── message/       # Centralized messages
+│   ├── repositories/  # Data access layer (HTTP)
+│   ├── resolvers/     # GraphQL resolvers
+│   ├── services/      # Business logic services
+│   ├── types/         # TypeScript type definitions
+│   └── utils/         # Mapper utilities
 └── constants/
     ├── mkt-object-ids.ts   # Entity IDs (IMMUTABLE)
     └── mkt-field-ids.ts    # Field IDs (IMMUTABLE)

@@ -129,6 +129,7 @@ packages/
 │       │   ├── customer/      # Customer management
 │       │   ├── product/       # Product management
 │       │   ├── mkt-department/  # Department hierarchy
+│       │   ├── mkt-product-integration/  # MKT Server product integration
 │       │   └── ...            # More modules
 │       │
 │       └── database/          # Migrations
@@ -180,6 +181,141 @@ mkt-core/
 └── dev-seeder/                # Development data seeding
     └── commands/
 ```
+
+---
+
+## MKT Product Integration Module
+
+**Location**: `mkt-core/mkt-product-integration/`
+
+Module tích hợp với MKT Server để lấy dữ liệu Product và ProductPackage thông qua OAuth2 authentication.
+
+### Architecture Pattern
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     GraphQL Resolver Layer                        │
+│               (MktDigitalProductResolver)                         │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+                             ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    Proxy Service (Facade)                         │
+│                  (MktProductProxyService)                         │
+│  - Orchestrate cache, repository, and business logic             │
+└──────────┬───────────────────────┬────────────────────┬──────────┘
+           │                       │                    │
+           ▼                       ▼                    ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Cache Service   │    │ Validation Svc  │    │ Snapshot Service│
+│ (Redis caching)  │    │ (Order rules)   │    │ (Immutable data)│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    Repository Layer                               │
+│     (MktProductRepository, MktPackageRepository)                  │
+│  - HTTP calls to MKT Server via OAuth2HttpService                │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Directory Structure
+
+```
+mkt-product-integration/
+├── configs/                          # Configuration (Zod validated)
+│   └── mkt-sync.config.ts            # Sync configuration (env vars)
+├── constants/
+│   └── mkt-product.constants.ts      # API endpoints, cache keys, defaults
+├── dto/
+│   ├── mkt-digital-product.input.ts  # GraphQL input types
+│   └── mkt-digital-product.output.ts # GraphQL output types
+├── jobs/
+│   └── mkt-product-scheduled-sync.job.ts  # Cron job (every 30 min)
+├── message/
+│   └── index.ts                      # Centralized messages (createModuleMessages)
+├── repositories/                     # Data Access Layer
+│   ├── mkt-product.repository.ts     # HTTP calls for products
+│   └── mkt-package.repository.ts     # HTTP calls for packages
+├── resolvers/
+│   └── mkt-digital-product.resolver.ts  # GraphQL queries
+├── services/
+│   ├── mkt-product-cache.service.ts  # Redis caching
+│   ├── mkt-product-proxy.service.ts  # Facade service
+│   ├── mkt-product-sync.service.ts   # Auto-sync on token acquired
+│   ├── mkt-snapshot.service.ts       # Immutable snapshots
+│   └── mkt-validation.service.ts     # Order validation
+├── types/
+│   └── mkt-product-proxy.types.ts    # Type definitions
+├── utils/
+│   └── mkt-product-mapper.utils.ts   # DTO mappers
+└── mkt-product-integration.module.ts # NestJS module
+```
+
+### Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `MktProductProxyService` | Facade - orchestrates cache, repos, validation |
+| `MktProductCacheService` | Redis distributed caching (24h TTL) |
+| `MktProductSyncService` | Event-driven sync on OAuth2 token acquired |
+| `MktSnapshotService` | Immutable snapshots with SHA-256 checksum |
+| `MktValidationService` | Validate products/packages for orders |
+
+### Key Types
+
+| Type | Description |
+|------|-------------|
+| `MktProduct` | Product from MKT Server API |
+| `MktProductPackage` | Package from MKT Server API |
+| `MktProductSnapshot` | Immutable product snapshot (multi-lang) |
+| `MktPackageSnapshot` | Immutable package snapshot |
+| `MktValidationResult` | Order validation result |
+
+### GraphQL Queries
+
+```graphql
+# Get single product by ID
+mktDigitalProduct(productId: String!): MktDigitalProductResponseDto
+
+# Get product by code
+mktDigitalProductByCode(code: String!): MktDigitalProductResponseDto
+
+# Get paginated products
+mktDigitalProducts(input: MktDigitalProductQueryInput): MktDigitalProductListResponseDto
+
+# Get single package
+mktDigitalPackage(input: MktDigitalSinglePackageInput!): MktDigitalPackageResponseDto
+
+# Get packages by product ID
+mktDigitalPackagesByProduct(input: MktDigitalPackageQueryInput!): MktDigitalPackageListResponseDto
+```
+
+### Cache Structure
+
+```
+CacheStorageNamespace.MktProduct + CACHE_KEYS:
+├── digital:{productId}      → Product data (24h TTL)
+├── digital:code:{code}      → productId mapping (24h TTL)
+└── digital:pkgs:{productId} → [packages] array (24h TTL)
+```
+
+### Sync Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MKT_AUTO_SYNC_ENABLED` | `true` | Auto-sync on token acquired |
+| `MKT_SYNC_ON_STARTUP` | `true` | Sync on startup |
+| `MKT_SYNC_BATCH_SIZE` | `50` | Pagination batch size |
+| `MKT_SYNC_MIN_INTERVAL_MS` | `300000` | Min interval (5 minutes) |
+| `MKT_SCHEDULED_SYNC_ENABLED` | `true` | Enable cron sync |
+| `MKT_SCHEDULED_SYNC_CRON` | `0 */30 * * * *` | Every 30 minutes |
+
+### Dependencies
+
+- `OAuth2ClientModule` - Token management and authenticated HTTP client
+- `RedisInfrastructureModule` - Distributed caching infrastructure
+- `EventEmitter2` - Event-driven sync triggers (global)
 
 ---
 

@@ -124,6 +124,7 @@ Module tùy biến chính nằm tại `packages/twenty-server/src/mkt-core/` v�
 | `MktDepartmentModule` | Phân cấp phòng ban (tree structure) |
 | `MktCustomerModule` | Quản lý khách hàng và tags |
 | `MktProductModule` | Quản lý sản phẩm và biến thể |
+| `MktProductIntegrationModule` | Tích hợp với MKT Server (OAuth2, caching, sync) |
 | `UserManagementModule` | Quản lý người dùng và roles |
 
 ### Key Features
@@ -135,6 +136,7 @@ Module tùy biến chính nằm tại `packages/twenty-server/src/mkt-core/` v�
 - **KPI System**: Theo dõi KPI với templates và history
 - **2FA**: OTP-based authentication
 - **Reseller Management**: Tier system (Bronze, Silver, Gold)
+- **Product Integration**: OAuth2 sync với MKT Server, Redis caching, immutable snapshots
 
 ### Key Files
 ```
@@ -157,6 +159,17 @@ mkt-core/
 ├── mkt-kpi/                              # KPI tracking
 ├── mkt-reseller/                         # Reseller management
 ├── mkt-two-facetor-authentication/       # 2FA
+├── mkt-product-integration/              # MKT Server product integration
+│   ├── configs/                          # Zod-validated sync configuration
+│   ├── constants/                        # API endpoints, cache keys
+│   ├── dto/                              # GraphQL input/output types
+│   ├── jobs/                             # Scheduled sync job (cron)
+│   ├── message/                          # Centralized messages
+│   ├── repositories/                     # Data access layer (HTTP)
+│   ├── resolvers/                        # GraphQL resolvers
+│   ├── services/                         # Business logic services
+│   ├── types/                            # TypeScript type definitions
+│   └── utils/                            # Mapper utilities
 └── dev-seeder/                           # Development data seeding
 ```
 
@@ -177,6 +190,38 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
   customer: MktCustomerWorkspaceEntity;
 }
 ```
+
+### MKT Product Integration Module
+
+Module tích hợp với MKT Server để lấy dữ liệu Product và ProductPackage thông qua OAuth2.
+
+**Architecture**: Repository-Service pattern với Facade (MktProductProxyService)
+
+**Key Services**:
+| Service | Purpose |
+|---------|---------|
+| `MktProductProxyService` | Facade - orchestrates cache, repos, validation |
+| `MktProductCacheService` | Redis distributed caching (24h TTL) |
+| `MktProductSyncService` | Event-driven sync on OAuth2 token acquired |
+| `MktSnapshotService` | Immutable snapshots with SHA-256 checksum |
+| `MktValidationService` | Validate products/packages for orders |
+
+**GraphQL Queries**:
+- `mktDigitalProduct(productId)` - Get single product by ID
+- `mktDigitalProductByCode(code)` - Get product by code
+- `mktDigitalProducts(input)` - Get paginated products
+- `mktDigitalPackage(input)` - Get single package
+- `mktDigitalPackagesByProduct(input)` - Get packages by product
+
+**Cache Keys** (CacheStorageNamespace.MktProduct):
+- `digital:{productId}` → Product data (24h TTL)
+- `digital:code:{code}` → productId mapping
+- `digital:pkgs:{productId}` → [packages] array
+
+**Sync Environment Variables**:
+- `MKT_AUTO_SYNC_ENABLED` (default: true) - Auto-sync on token acquired
+- `MKT_SCHEDULED_SYNC_ENABLED` (default: true) - Enable cron sync
+- `MKT_SCHEDULED_SYNC_CRON` (default: `0 */30 * * * *`) - Every 30 minutes
 
 ## Key Development Principles
 
