@@ -294,31 +294,36 @@ export class MktProductSyncService implements OnModuleInit {
 
   /**
    * Sync packages using streaming (memory-efficient)
+   * Stores packages grouped by productId only (no individual pkg caching)
    */
   private async syncPackagesWithStreaming(): Promise<SyncItemResult> {
     let count = 0;
     const errors: string[] = [];
+    // Group packages by productId for efficient lookup
+    const packagesByProduct = new Map<string, MktProductPackage[]>();
 
     try {
       for await (const packageBatch of this.streamPackages()) {
-        const results = await Promise.allSettled(
-          packageBatch.map((pkg) => this.cacheService.setPackage(pkg.id, pkg)),
-        );
+        // Group packages by productId (no individual caching)
+        for (const pkg of packageBatch) {
+          if (pkg?.productId) {
+            const existing = packagesByProduct.get(pkg.productId) ?? [];
 
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i];
-
-          if (result.status === 'fulfilled') {
+            existing.push(pkg);
+            packagesByProduct.set(pkg.productId, existing);
             count++;
           } else {
-            const packageId = packageBatch[i]?.id ?? 'unknown';
-
-            errors.push(`Package ${packageId}: ${result.reason}`);
+            errors.push(`Package ${pkg?.id ?? 'unknown'}: missing productId`);
           }
         }
       }
 
-      this.logger.log(`Synced ${count} packages`);
+      // Cache packages grouped by productId
+      await this.cachePackagesByProductId(packagesByProduct, errors);
+
+      this.logger.log(
+        `Synced ${count} packages for ${packagesByProduct.size} products`,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
@@ -327,6 +332,29 @@ export class MktProductSyncService implements OnModuleInit {
     }
 
     return { count, errors };
+  }
+
+  /**
+   * Cache packages grouped by productId for efficient lookup
+   */
+  private async cachePackagesByProductId(
+    packagesByProduct: Map<string, MktProductPackage[]>,
+    errors: string[],
+  ): Promise<void> {
+    const cachePromises = Array.from(packagesByProduct.entries()).map(
+      async ([productId, packages]) => {
+        try {
+          await this.cacheService.setPackagesByProductId(productId, packages);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Unknown error';
+
+          errors.push(`PackagesByProduct ${productId}: ${message}`);
+        }
+      },
+    );
+
+    await Promise.allSettled(cachePromises);
   }
 
   // ============================================

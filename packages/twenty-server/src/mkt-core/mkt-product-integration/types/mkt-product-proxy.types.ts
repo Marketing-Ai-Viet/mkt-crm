@@ -27,13 +27,13 @@ export type MktSupportedLanguage = 'vi' | 'en' | 'ko';
 export type MktProductStatus = 'active' | 'beta' | 'inactive' | 'deprecated';
 
 /**
- * Product từ MKT Server API
+ * Product từ MKT Server API (localized response)
  */
 export type MktProduct = {
   id: string;
-  productName: MktMultiLangField;
-  productDescription: MktMultiLangField | null;
-  productOverview: MktMultiLangField | null;
+  productName: string;
+  productDescription: string | null;
+  productOverview: string | null;
   code: string;
   status: MktProductStatus;
   version: string | null;
@@ -62,14 +62,14 @@ export type MktBillingCycle =
 export type MktCurrency = 'VND' | 'USD' | 'EUR';
 
 /**
- * ProductPackage từ MKT Server API
+ * ProductPackage từ MKT Server API (localized response)
  */
 export type MktProductPackage = {
   id: string;
   licenseType: string;
   packageCode: string;
-  packageName: MktMultiLangField;
-  packageDescription: MktMultiLangField | null;
+  packageName: string;
+  packageDescription: string | null;
   packageType: MktPackageType;
   currency: MktCurrency;
   billingCycle: MktBillingCycle;

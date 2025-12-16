@@ -8,7 +8,6 @@ import {
   MktProductPackage,
 } from 'src/mkt-core/mkt-product-integration/types';
 import {
-  MKT_CACHE_TTL,
   MKT_FALLBACK_CACHE_TTL,
   MKT_PRODUCT_LOG_CONTEXT,
   MKT_PRODUCT_ERROR_BUILDER,
@@ -16,9 +15,23 @@ import {
 } from 'src/mkt-core/mkt-product-integration/constants';
 import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
 
+/**
+ * MktProductCacheService - Optimized cache service (Option A)
+ *
+ * Cache structure:
+ * - digital:{productId} → Product data (24h TTL)
+ * - digital:code:{code} → productId mapping (24h TTL)
+ * - digital:pkgs:{productId} → [packages] array (24h TTL)
+ *
+ * Optimizations:
+ * - No fallback duplicate (use longer TTL directly)
+ * - No individual pkg:{id} (lookup from pkgs array)
+ * - Code→id mapping for efficient lookup by code
+ */
 @Injectable()
 export class MktProductCacheService {
   private readonly logger = new Logger(MKT_PRODUCT_LOG_CONTEXT);
+  private readonly cacheTtlMs = MKT_FALLBACK_CACHE_TTL * 1000; // 24 hours
 
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.MktProduct)
@@ -53,7 +66,7 @@ export class MktProductCacheService {
   }
 
   /**
-   * Get product from cache by code
+   * Get product from cache by code (uses code→id mapping)
    */
   async getProductByCode(code: string): Promise<MktProduct | null> {
     try {
@@ -76,20 +89,18 @@ export class MktProductCacheService {
   }
 
   /**
-   * Set product in cache
+   * Set product in cache (single entry with 24h TTL)
    */
   async setProduct(productId: string, product: MktProduct): Promise<void> {
     try {
       const key = CACHE_KEYS.product(productId);
-      const ttlMs = MKT_CACHE_TTL * 1000;
 
-      await this.cacheStorage.set(key, product, ttlMs);
+      await this.cacheStorage.set(key, product, this.cacheTtlMs);
 
-      // Also set fallback cache with longer TTL
-      const fallbackKey = CACHE_KEYS.productFallback(productId);
-      const fallbackTtlMs = MKT_FALLBACK_CACHE_TTL * 1000;
-
-      await this.cacheStorage.set(fallbackKey, product, fallbackTtlMs);
+      // Also set code→id mapping if product has code
+      if (product.code) {
+        await this.setProductCodeMapping(product.code, productId);
+      }
 
       this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_SET, { key });
     } catch (error) {
@@ -101,14 +112,13 @@ export class MktProductCacheService {
   }
 
   /**
-   * Set product code to ID mapping
+   * Set product code→id mapping
    */
   async setProductCodeMapping(code: string, productId: string): Promise<void> {
     try {
       const key = CACHE_KEYS.productCode(code);
-      const ttlMs = MKT_CACHE_TTL * 1000;
 
-      await this.cacheStorage.set(key, productId, ttlMs);
+      await this.cacheStorage.set(key, productId, this.cacheTtlMs);
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
@@ -117,69 +127,9 @@ export class MktProductCacheService {
     }
   }
 
-  /**
-   * Get product from fallback cache (used when API is unavailable)
-   */
-  async getProductFromFallback(productId: string): Promise<MktProduct | null> {
-    try {
-      const key = CACHE_KEYS.productFallback(productId);
-
-      return (await this.cacheStorage.get<MktProduct>(key)) ?? null;
-    } catch (error) {
-      this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
-        { productId },
-      );
-
-      return null;
-    }
-  }
-
   // ============================================
-  // PACKAGE CACHE
+  // PACKAGE CACHE (by product only)
   // ============================================
-
-  /**
-   * Get package from cache by ID
-   */
-  async getPackage(packageId: string): Promise<MktProductPackage | null> {
-    try {
-      const key = CACHE_KEYS.package(packageId);
-      const cached = await this.cacheStorage.get<MktProductPackage>(key);
-
-      if (cached) {
-        this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, { key });
-      }
-
-      return cached ?? null;
-    } catch (error) {
-      this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
-        { packageId },
-      );
-
-      return null;
-    }
-  }
-
-  /**
-   * Set package in cache
-   */
-  async setPackage(packageId: string, pkg: MktProductPackage): Promise<void> {
-    try {
-      const key = CACHE_KEYS.package(packageId);
-      const ttlMs = MKT_CACHE_TTL * 1000;
-
-      await this.cacheStorage.set(key, pkg, ttlMs);
-
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_SET, { key });
-    } catch (error) {
-      this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
-        { packageId },
-      );
-    }
-  }
 
   /**
    * Get packages by product ID from cache
@@ -189,8 +139,16 @@ export class MktProductCacheService {
   ): Promise<MktProductPackage[] | null> {
     try {
       const key = CACHE_KEYS.packagesByProduct(productId);
+      const cached = await this.cacheStorage.get<MktProductPackage[]>(key);
 
-      return (await this.cacheStorage.get<MktProductPackage[]>(key)) ?? null;
+      if (cached) {
+        this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, {
+          key,
+          count: cached.length,
+        });
+      }
+
+      return cached ?? null;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
@@ -202,7 +160,7 @@ export class MktProductCacheService {
   }
 
   /**
-   * Set packages by product ID in cache
+   * Set packages by product ID in cache (single array entry)
    */
   async setPackagesByProductId(
     productId: string,
@@ -210,16 +168,13 @@ export class MktProductCacheService {
   ): Promise<void> {
     try {
       const key = CACHE_KEYS.packagesByProduct(productId);
-      const ttlMs = MKT_CACHE_TTL * 1000;
 
-      await this.cacheStorage.set(key, packages, ttlMs);
+      await this.cacheStorage.set(key, packages, this.cacheTtlMs);
 
-      // Also cache individual packages
-      for (const pkg of packages) {
-        await this.setPackage(pkg.id, pkg);
-      }
-
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_SET, { key });
+      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_SET, {
+        key,
+        count: packages.length,
+      });
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
@@ -228,17 +183,53 @@ export class MktProductCacheService {
     }
   }
 
+  /**
+   * Get single package by ID (searches in pkgs arrays)
+   * Returns null if not found - caller should fetch from API
+   */
+  async getPackageById(
+    packageId: string,
+    productId?: string,
+  ): Promise<MktProductPackage | null> {
+    try {
+      // If productId is provided, search in that product's packages only
+      if (productId) {
+        const packages = await this.getPackagesByProductId(productId);
+
+        return packages?.find((pkg) => pkg.id === packageId) ?? null;
+      }
+
+      // Without productId, we can't efficiently find the package
+      // Return null and let caller fetch from API
+      return null;
+    } catch (error) {
+      this.logger.error(
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        { packageId, productId },
+      );
+
+      return null;
+    }
+  }
+
   // ============================================
   // CACHE INVALIDATION
   // ============================================
 
   /**
-   * Invalidate product cache
+   * Invalidate product cache (product + packages + code mapping)
    */
-  async invalidateProduct(productId: string): Promise<void> {
+  async invalidateProduct(
+    productId: string,
+    productCode?: string,
+  ): Promise<void> {
     try {
       await this.cacheStorage.del(CACHE_KEYS.product(productId));
       await this.cacheStorage.del(CACHE_KEYS.packagesByProduct(productId));
+
+      if (productCode) {
+        await this.cacheStorage.del(CACHE_KEYS.productCode(productCode));
+      }
 
       this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_INVALIDATE, { productId });
     } catch (error) {
@@ -250,17 +241,20 @@ export class MktProductCacheService {
   }
 
   /**
-   * Invalidate package cache
+   * Invalidate packages for a product
    */
-  async invalidatePackage(packageId: string): Promise<void> {
+  async invalidatePackagesByProduct(productId: string): Promise<void> {
     try {
-      await this.cacheStorage.del(CACHE_KEYS.package(packageId));
+      await this.cacheStorage.del(CACHE_KEYS.packagesByProduct(productId));
 
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_INVALIDATE, { packageId });
+      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_INVALIDATE, {
+        productId,
+        type: 'packages',
+      });
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
-        { packageId },
+        { productId },
       );
     }
   }

@@ -48,6 +48,7 @@ export class MktProductProxyService {
 
   /**
    * Get product by ID with caching
+   * Also attaches packages from cache if available
    */
   async getProduct(
     productId: string,
@@ -58,6 +59,16 @@ export class MktProductProxyService {
 
     if (cached) {
       this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, { productId });
+
+      // Attach packages from cache if not already present
+      if (!cached.packages || cached.packages.length === 0) {
+        const cachedPackages =
+          await this.cacheService.getPackagesByProductId(productId);
+
+        if (cachedPackages) {
+          cached.packages = cachedPackages;
+        }
+      }
 
       return cached;
     }
@@ -80,25 +91,25 @@ export class MktProductProxyService {
         return null;
       }
 
-      // Cache result
-      await this.cacheService.setProduct(productId, response.data);
+      const product = response.data;
 
-      return response.data;
+      // Cache result
+      await this.cacheService.setProduct(productId, product);
+
+      // Attach packages from cache if available
+      const cachedPackages =
+        await this.cacheService.getPackagesByProductId(productId);
+
+      if (cachedPackages) {
+        product.packages = cachedPackages;
+      }
+
+      return product;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(this.getErrorMessage(error)),
         { productId },
       );
-
-      // Try fallback cache
-      const fallback =
-        await this.cacheService.getProductFromFallback(productId);
-
-      if (fallback) {
-        this.logger.warn('Using fallback cache for product', { productId });
-
-        return fallback;
-      }
 
       throw error;
     }
@@ -106,6 +117,7 @@ export class MktProductProxyService {
 
   /**
    * Get product by code with caching
+   * Also attaches packages from cache if available
    */
   async getProductByCode(
     code: string,
@@ -116,6 +128,17 @@ export class MktProductProxyService {
 
     if (cached) {
       this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, { code });
+
+      // Attach packages from cache if not already present
+      if (!cached.packages || cached.packages.length === 0) {
+        const cachedPackages = await this.cacheService.getPackagesByProductId(
+          cached.id,
+        );
+
+        if (cachedPackages) {
+          cached.packages = cachedPackages;
+        }
+      }
 
       return cached;
     }
@@ -136,11 +159,22 @@ export class MktProductProxyService {
         return null;
       }
 
-      // Cache result
-      await this.cacheService.setProduct(response.data.id, response.data);
-      await this.cacheService.setProductCodeMapping(code, response.data.id);
+      const product = response.data;
 
-      return response.data;
+      // Cache result
+      await this.cacheService.setProduct(product.id, product);
+      await this.cacheService.setProductCodeMapping(code, product.id);
+
+      // Attach packages from cache if available
+      const cachedPackages = await this.cacheService.getPackagesByProductId(
+        product.id,
+      );
+
+      if (cachedPackages) {
+        product.packages = cachedPackages;
+      }
+
+      return product;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(this.getErrorMessage(error)),
@@ -153,6 +187,7 @@ export class MktProductProxyService {
 
   /**
    * Get products list with pagination
+   * Automatically attaches packages from cache for each product
    */
   async getProducts(
     params: MktProductQueryParams = {},
@@ -167,7 +202,14 @@ export class MktProductProxyService {
         MktApiResponse<MktPaginatedData<MktProduct>>
       >(url, { params }, userContext);
 
-      return response.data;
+      const result = response.data;
+
+      // Cache products and attach packages from cache
+      if (result.data.length > 0) {
+        await this.cacheProductsAndAttachPackages(result.data);
+      }
+
+      return result;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(this.getErrorMessage(error)),
@@ -176,6 +218,31 @@ export class MktProductProxyService {
 
       throw error;
     }
+  }
+
+  /**
+   * Cache products and attach packages from cache
+   */
+  private async cacheProductsAndAttachPackages(
+    products: MktProduct[],
+  ): Promise<void> {
+    const cachePromises = products.map(async (product) => {
+      // Cache product
+      await this.cacheService.setProduct(product.id, product);
+
+      // Attach packages from cache if not already present
+      if (!product.packages || product.packages.length === 0) {
+        const cachedPackages = await this.cacheService.getPackagesByProductId(
+          product.id,
+        );
+
+        if (cachedPackages) {
+          product.packages = cachedPackages;
+        }
+      }
+    });
+
+    await Promise.all(cachePromises);
   }
 
   /**
@@ -207,18 +274,25 @@ export class MktProductProxyService {
 
   /**
    * Get package by ID with caching
+   * Note: Cache lookup requires productId for efficiency (searches in pkgs:{productId} array)
    */
   async getPackage(
     packageId: string,
     userContext?: UserContext,
+    productId?: string,
   ): Promise<MktProductPackage | null> {
-    // Check cache first
-    const cached = await this.cacheService.getPackage(packageId);
+    // Check cache first (if productId provided)
+    if (productId) {
+      const cached = await this.cacheService.getPackageById(
+        packageId,
+        productId,
+      );
 
-    if (cached) {
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, { packageId });
+      if (cached) {
+        this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, { packageId });
 
-      return cached;
+        return cached;
+      }
     }
 
     // Fetch from API
@@ -237,8 +311,23 @@ export class MktProductProxyService {
         return null;
       }
 
-      // Cache result
-      await this.cacheService.setPackage(packageId, response.data);
+      // Cache packages by productId if available
+      const pkg = response.data;
+
+      if (pkg.productId) {
+        const existingPackages =
+          (await this.cacheService.getPackagesByProductId(pkg.productId)) ?? [];
+
+        // Update or add package in the array
+        const updatedPackages = existingPackages.some((p) => p.id === packageId)
+          ? existingPackages.map((p) => (p.id === packageId ? pkg : p))
+          : [...existingPackages, pkg];
+
+        await this.cacheService.setPackagesByProductId(
+          pkg.productId,
+          updatedPackages,
+        );
+      }
 
       return response.data;
     } catch (error) {
@@ -308,8 +397,8 @@ export class MktProductProxyService {
     });
 
     try {
-      const url = this.buildUrl(MKT_PRODUCT_ENDPOINTS.GET_PRODUCT_PACKAGES, {
-        id: productId,
+      const url = this.buildUrl(MKT_PRODUCT_ENDPOINTS.GET_PACKAGES_BY_PRODUCT, {
+        productId,
       });
 
       const response = await this.oauth2Http.get<
@@ -353,11 +442,8 @@ export class MktProductProxyService {
   /**
    * Create package snapshot for order
    */
-  createPackageSnapshot(
-    pkg: MktProductPackage,
-    language: MktSupportedLanguage = MKT_DEFAULT_LANGUAGE,
-  ): MktPackageSnapshot {
-    return this.snapshotService.createPackageSnapshot(pkg, language);
+  createPackageSnapshot(pkg: MktProductPackage): MktPackageSnapshot {
+    return this.snapshotService.createPackageSnapshot(pkg);
   }
 
   /**
@@ -404,7 +490,11 @@ export class MktProductProxyService {
       }
 
       if (item.packageId) {
-        const pkg = await this.getPackage(item.packageId, userContext);
+        const pkg = await this.getPackage(
+          item.packageId,
+          userContext,
+          item.productId,
+        );
 
         if (!pkg) {
           errors.push({
@@ -461,10 +551,11 @@ export class MktProductProxyService {
   }
 
   /**
-   * Invalidate package cache
+   * Invalidate packages cache by product ID
+   * Note: Packages are cached by productId, not individually
    */
-  async invalidatePackageCache(packageId: string): Promise<void> {
-    await this.cacheService.invalidatePackage(packageId);
+  async invalidatePackagesByProductCache(productId: string): Promise<void> {
+    await this.cacheService.invalidatePackagesByProduct(productId);
   }
 
   // ============================================

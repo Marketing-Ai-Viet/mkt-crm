@@ -10,6 +10,7 @@ import {
   MktProductSyncService,
 } from './services';
 import { MktProductScheduledSyncJob } from './jobs';
+import { MktDigitalProductResolver } from './resolvers';
 
 /**
  * MKT Product Integration Module
@@ -39,6 +40,8 @@ import { MktProductScheduledSyncJob } from './jobs';
     MktProductSyncService,
     // Jobs
     MktProductScheduledSyncJob,
+    // Resolvers
+    MktDigitalProductResolver,
   ],
   exports: [MktProductProxyService, MktSnapshotService, MktProductSyncService],
 })

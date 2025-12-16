@@ -22,7 +22,6 @@ export const MKT_PRODUCT_ENDPOINTS = {
   GET_LOCALIZED: '/api/oauth/products/:id/localized',
   LIST_LOCALIZED: '/api/oauth/products/localized',
   SEARCH: '/api/oauth/products/search/:lang',
-  GET_PRODUCT_PACKAGES: '/api/oauth/products/:id/packages',
 
   // Package endpoints (từ ProductPackageOAuthController)
   // FIX: Changed from /api/oauth/packages to /api/oauth/product-packages
@@ -85,30 +84,30 @@ export const MKT_DEFAULT_PRODUCT_CACHE_PREFIX =
   MKT_PRODUCT_TYPE_CACHE_PREFIX[MKT_PRODUCT_TYPE.DIGITAL];
 
 /**
- * Cache key patterns
+ * Cache key patterns (Optimized - Option A)
  *
  * NOTE: CacheStorageNamespace.MktProduct adds prefix "mkt:product:"
  * So keys here should NOT include "product:" prefix to avoid duplication
  *
  * Final key format: mkt:product:{type}:{key}
+ *
+ * Optimizations:
+ * - Removed fallback (use longer TTL instead)
+ * - Removed individual pkg:{id} (use pkgs:{productId} only)
+ * - Added code→id mapping for efficient lookup
  */
 export const CACHE_KEYS = {
+  /** Product by ID: digital:{productId} */
   product: (id: string, type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL) =>
     `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:${id}`,
+
+  /** Product code→id mapping: digital:code:{code} → productId */
   productCode: (
     code: string,
     type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
   ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:code:${code}`,
-  productFallback: (
-    id: string,
-    type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
-  ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:fallback:${id}`,
-  package: (id: string, type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL) =>
-    `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:pkg:${id}`,
-  packageCode: (
-    code: string,
-    type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
-  ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:pkg:code:${code}`,
+
+  /** Packages by product: digital:pkgs:{productId} → [packages] */
   packagesByProduct: (
     productId: string,
     type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,

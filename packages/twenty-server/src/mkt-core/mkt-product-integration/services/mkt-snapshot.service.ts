@@ -7,12 +7,10 @@ import {
   MktProductPackage,
   MktProductSnapshot,
   MktPackageSnapshot,
-  MktMultiLangField,
   MktSupportedLanguage,
 } from 'src/mkt-core/mkt-product-integration/types';
 import {
   MKT_DEFAULT_CURRENCY,
-  MKT_LANGUAGE_FALLBACK_ORDER,
   MKT_PRODUCT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-product-integration/constants';
 import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
@@ -35,12 +33,20 @@ export class MktSnapshotService {
     const snapshot: MktProductSnapshot = {
       id: product.id,
       code: product.code,
-      productName: product.productName,
-      productDescription: product.productDescription,
-      displayName: this.getLocalizedText(product.productName, language),
-      displayDescription: product.productDescription
-        ? this.getLocalizedText(product.productDescription, language)
+      productName: {
+        vi: product.productName,
+        en: product.productName,
+        ko: product.productName,
+      },
+      productDescription: product.productDescription
+        ? {
+            vi: product.productDescription,
+            en: product.productDescription,
+            ko: product.productDescription,
+          }
         : null,
+      displayName: product.productName,
+      displayDescription: product.productDescription,
       displayLanguage: language,
       basePrice: product.basePrice,
       currency: MKT_DEFAULT_CURRENCY,
@@ -67,23 +73,27 @@ export class MktSnapshotService {
    * Create immutable package snapshot
    *
    * @param pkg - Package data from MKT Server
-   * @param language - Display language for snapshot
    * @returns Immutable package snapshot
    */
-  createPackageSnapshot(
-    pkg: MktProductPackage,
-    language: MktSupportedLanguage = 'vi',
-  ): MktPackageSnapshot {
+  createPackageSnapshot(pkg: MktProductPackage): MktPackageSnapshot {
     const snapshot: MktPackageSnapshot = {
       id: pkg.id,
       packageCode: pkg.packageCode,
       productId: pkg.productId,
-      packageName: pkg.packageName,
-      packageDescription: pkg.packageDescription,
-      displayName: this.getLocalizedText(pkg.packageName, language),
-      displayDescription: pkg.packageDescription
-        ? this.getLocalizedText(pkg.packageDescription, language)
+      packageName: {
+        vi: pkg.packageName,
+        en: pkg.packageName,
+        ko: pkg.packageName,
+      },
+      packageDescription: pkg.packageDescription
+        ? {
+            vi: pkg.packageDescription,
+            en: pkg.packageDescription,
+            ko: pkg.packageDescription,
+          }
         : null,
+      displayName: pkg.packageName,
+      displayDescription: pkg.packageDescription,
       packageType: pkg.packageType,
       licenseType: pkg.licenseType,
       billingCycle: pkg.billingCycle,
@@ -122,31 +132,6 @@ export class MktSnapshotService {
     }
 
     return isValid;
-  }
-
-  /**
-   * Get localized text with fallback
-   *
-   * @param field - Multi-language field
-   * @param language - Preferred language
-   * @returns Localized text or fallback
-   */
-  getLocalizedText(
-    field: MktMultiLangField,
-    language: MktSupportedLanguage,
-  ): string {
-    if (field[language]) {
-      return field[language];
-    }
-
-    // Fallback order: vi -> en -> ko
-    for (const lang of MKT_LANGUAGE_FALLBACK_ORDER) {
-      if (field[lang]) {
-        return field[lang];
-      }
-    }
-
-    return '';
   }
 
   /**
