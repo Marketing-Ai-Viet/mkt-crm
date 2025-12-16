@@ -3,11 +3,13 @@ import { Module } from '@nestjs/common';
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis';
 
+import { MktPackageRepository, MktProductRepository } from './repositories';
 import {
-  MktSnapshotService,
   MktProductCacheService,
   MktProductProxyService,
   MktProductSyncService,
+  MktSnapshotService,
+  MktValidationService,
 } from './services';
 import { MktProductScheduledSyncJob } from './jobs';
 import { MktDigitalProductResolver } from './resolvers';
@@ -15,9 +17,16 @@ import { MktDigitalProductResolver } from './resolvers';
 /**
  * MKT Product Integration Module
  *
+ * Architecture:
+ * - Repositories: Data access layer (HTTP calls to MKT Server)
+ * - Services: Business logic layer
+ * - Jobs: Scheduled background tasks
+ * - Resolvers: GraphQL resolvers
+ *
  * Provides services for:
  * - Product/Package proxy (API calls with caching)
  * - Product/Package snapshots (for order immutability)
+ * - Order validation
  * - Auto-sync products on OAuth2 token acquisition
  *
  * Dependencies:
@@ -33,16 +42,29 @@ import { MktDigitalProductResolver } from './resolvers';
     RedisInfrastructureModule, // Distributed caching infrastructure
   ],
   providers: [
-    // Services
+    // Repositories (Data Access Layer)
+    MktProductRepository,
+    MktPackageRepository,
+    // Services (Business Logic Layer)
     MktSnapshotService,
     MktProductCacheService,
-    MktProductProxyService,
+    MktValidationService,
+    MktProductProxyService, // Facade service - depends on repositories and other services
     MktProductSyncService,
     // Jobs
     MktProductScheduledSyncJob,
     // Resolvers
     MktDigitalProductResolver,
   ],
-  exports: [MktProductProxyService, MktSnapshotService, MktProductSyncService],
+  exports: [
+    // Public API
+    MktProductProxyService,
+    MktSnapshotService,
+    MktProductSyncService,
+    MktValidationService,
+    // Repositories for direct access if needed
+    MktProductRepository,
+    MktPackageRepository,
+  ],
 })
 export class MktProductIntegrationModule {}

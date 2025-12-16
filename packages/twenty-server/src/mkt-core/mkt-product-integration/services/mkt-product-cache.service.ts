@@ -8,12 +8,13 @@ import {
   MktProductPackage,
 } from 'src/mkt-core/mkt-product-integration/types';
 import {
-  MKT_FALLBACK_CACHE_TTL,
-  MKT_PRODUCT_LOG_CONTEXT,
-  MKT_PRODUCT_ERROR_BUILDER,
   CACHE_KEYS,
+  MKT_FALLBACK_CACHE_TTL,
+  MKT_PRODUCT_ERROR_BUILDER,
+  MKT_PRODUCT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-product-integration/constants';
-import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
+import { MKT_CACHE_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
+import { getErrorMessage } from 'src/mkt-core/utils';
 
 /**
  * MktProductCacheService - Optimized cache service (Option A)
@@ -51,13 +52,13 @@ export class MktProductCacheService {
       const cached = await this.cacheStorage.get<MktProduct>(key);
 
       if (cached) {
-        this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, { key });
+        this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.HIT, { key });
       }
 
       return cached ?? null;
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { productId },
       );
 
@@ -80,7 +81,7 @@ export class MktProductCacheService {
       return this.getProduct(productId);
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { code },
       );
 
@@ -102,10 +103,10 @@ export class MktProductCacheService {
         await this.setProductCodeMapping(product.code, productId);
       }
 
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_SET, { key });
+      this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.SET, { key });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { productId },
       );
     }
@@ -121,7 +122,7 @@ export class MktProductCacheService {
       await this.cacheStorage.set(key, productId, this.cacheTtlMs);
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { code, productId },
       );
     }
@@ -142,7 +143,7 @@ export class MktProductCacheService {
       const cached = await this.cacheStorage.get<MktProductPackage[]>(key);
 
       if (cached) {
-        this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_HIT, {
+        this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.HIT, {
           key,
           count: cached.length,
         });
@@ -151,7 +152,7 @@ export class MktProductCacheService {
       return cached ?? null;
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { productId },
       );
 
@@ -171,13 +172,13 @@ export class MktProductCacheService {
 
       await this.cacheStorage.set(key, packages, this.cacheTtlMs);
 
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_SET, {
+      this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.SET, {
         key,
         count: packages.length,
       });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { productId },
       );
     }
@@ -204,7 +205,7 @@ export class MktProductCacheService {
       return null;
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { packageId, productId },
       );
 
@@ -231,10 +232,10 @@ export class MktProductCacheService {
         await this.cacheStorage.del(CACHE_KEYS.productCode(productCode));
       }
 
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_INVALIDATE, { productId });
+      this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.INVALIDATED, { productId });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { productId },
       );
     }
@@ -247,27 +248,15 @@ export class MktProductCacheService {
     try {
       await this.cacheStorage.del(CACHE_KEYS.packagesByProduct(productId));
 
-      this.logger.debug(MKT_PRODUCT_MESSAGES.CACHE_INVALIDATE, {
+      this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.INVALIDATED, {
         productId,
         type: 'packages',
       });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(this.getErrorMessage(error)),
+        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
         { productId },
       );
     }
-  }
-
-  // ============================================
-  // HELPERS
-  // ============================================
-
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
   }
 }

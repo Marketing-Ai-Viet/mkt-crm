@@ -1,33 +1,69 @@
+import { createModuleMessages } from 'src/mkt-core/common/messages';
+
 // ============================================
-// OPERATION MESSAGES
+// PRODUCT MESSAGES
 // ============================================
 
-export const MKT_PRODUCT_MESSAGES = {
-  // Product operations
-  FETCH_PRODUCT: 'Fetching product from MKT Server',
-  FETCH_PRODUCT_BY_CODE: 'Fetching product by code from MKT Server',
-  FETCH_PRODUCTS: 'Fetching products list from MKT Server',
-  PRODUCT_NOT_FOUND: 'Product not found',
-  PRODUCT_CACHED: 'Product cached successfully',
+export const MKT_PRODUCT_MESSAGES = createModuleMessages({
+  entityName: 'Product',
+  entityNamePlural: 'Products',
+  customSuccess: {
+    CACHED: 'Product cached successfully',
+    SNAPSHOT_CREATED: 'Product snapshot created',
+    SNAPSHOT_VERIFIED: 'Product snapshot verified',
+  },
+  customError: {
+    SNAPSHOT_CHECKSUM_MISMATCH: 'Product snapshot checksum mismatch',
+  },
+  customOperation: {
+    FETCH_FROM_MKT: 'Fetching product from MKT Server',
+    FETCH_BY_CODE: 'Fetching product by code from MKT Server',
+    FETCH_LIST_FROM_MKT: 'Fetching products list from MKT Server',
+  },
+});
 
-  // Package operations
-  FETCH_PACKAGE: 'Fetching package from MKT Server',
-  FETCH_PACKAGES_BY_PRODUCT: 'Fetching packages for product',
-  PACKAGE_NOT_FOUND: 'Package not found',
+// ============================================
+// PACKAGE MESSAGES
+// ============================================
 
-  // Cache operations
-  CACHE_HIT: 'Cache hit',
-  CACHE_MISS: 'Cache miss',
-  CACHE_SET: 'Cache set',
-  CACHE_INVALIDATE: 'Cache invalidated',
+export const MKT_PACKAGE_MESSAGES = createModuleMessages({
+  entityName: 'Package',
+  entityNamePlural: 'Packages',
+  customOperation: {
+    FETCH_FROM_MKT: 'Fetching package from MKT Server',
+    FETCH_BY_PRODUCT: 'Fetching packages for product',
+  },
+});
 
-  // Snapshot operations
-  SNAPSHOT_CREATED: 'Snapshot created',
-  SNAPSHOT_VERIFIED: 'Snapshot verified',
-  SNAPSHOT_CHECKSUM_MISMATCH: 'Snapshot checksum mismatch',
+// ============================================
+// CACHE MESSAGES
+// ============================================
 
-  // Validation
-  VALIDATION_START: 'Starting order validation',
-  VALIDATION_SUCCESS: 'Order validation successful',
-  VALIDATION_FAILED: 'Order validation failed',
-} as const;
+export const MKT_CACHE_MESSAGES = createModuleMessages({
+  entityName: 'Cache',
+  customSuccess: {
+    HIT: 'Cache hit',
+    SET: 'Cache set successfully',
+    INVALIDATED: 'Cache invalidated successfully',
+  },
+  customInfo: {
+    MISS: 'Cache miss',
+  },
+});
+
+// ============================================
+// ORDER VALIDATION MESSAGES
+// ============================================
+
+export const MKT_ORDER_VALIDATION_MESSAGES = createModuleMessages({
+  entityName: 'Order validation',
+  customSuccess: {
+    PASSED: 'Order validation successful',
+  },
+  customError: {
+    FAILED: 'Order validation failed',
+  },
+  customOperation: {
+    START: 'Starting order validation',
+  },
+});

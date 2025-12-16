@@ -61,7 +61,7 @@ export class MktSnapshotService {
 
     snapshot.checksum = this.generateChecksum(snapshot);
 
-    this.logger.debug(MKT_PRODUCT_MESSAGES.SNAPSHOT_CREATED, {
+    this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
       productId: product.id,
       checksum: snapshot.checksum,
     });
@@ -103,7 +103,7 @@ export class MktSnapshotService {
       capturedAt: new Date().toISOString(),
     };
 
-    this.logger.debug(MKT_PRODUCT_MESSAGES.SNAPSHOT_CREATED, {
+    this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
       packageId: pkg.id,
     });
 
@@ -124,7 +124,7 @@ export class MktSnapshotService {
     const isValid = originalChecksum === calculatedChecksum;
 
     if (!isValid) {
-      this.logger.warn(MKT_PRODUCT_MESSAGES.SNAPSHOT_CHECKSUM_MISMATCH, {
+      this.logger.warn(MKT_PRODUCT_MESSAGES.ERROR.SNAPSHOT_CHECKSUM_MISMATCH, {
         productId: snapshot.id,
         expected: originalChecksum,
         calculated: calculatedChecksum,

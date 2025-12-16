@@ -29,3 +29,5 @@ export {
 export { ArrayUtils } from './array.utils';
 
 export * from './json.util';
+export * from './url-builder.util';
+export * from './error.util';

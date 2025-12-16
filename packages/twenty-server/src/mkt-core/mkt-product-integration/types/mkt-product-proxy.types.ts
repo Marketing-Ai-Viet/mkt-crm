@@ -8,6 +8,8 @@
 // MULTI-LANGUAGE SUPPORT
 // ============================================
 
+import { UserContext } from 'src/mkt-core/oauth2-client/types';
+
 /**
  * Multi-language field từ MKT Server
  * Hỗ trợ 3 ngôn ngữ: Vietnamese, English, Korean
@@ -222,3 +224,18 @@ export type SyncItemResult = {
   count: number;
   errors: string[];
 };
+
+/**
+ * Product/Package fetcher interface for dependency injection
+ * This allows the validation service to be decoupled from the data fetching logic
+ */
+export type ProductFetcher = (
+  productId: string,
+  userContext?: UserContext,
+) => Promise<MktProduct | null>;
+
+export type PackageFetcher = (
+  packageId: string,
+  userContext?: UserContext,
+  productId?: string,
+) => Promise<MktProductPackage | null>;
