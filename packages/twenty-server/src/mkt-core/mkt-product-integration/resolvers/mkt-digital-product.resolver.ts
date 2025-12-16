@@ -16,6 +16,10 @@ import {
   MktDigitalPackageResponseDto,
   MktDigitalPackageListResponseDto,
 } from 'src/mkt-core/mkt-product-integration/dto/mkt-digital-product.output';
+import {
+  MKT_PACKAGE_MESSAGES,
+  MKT_PRODUCT_MESSAGES,
+} from 'src/mkt-core/mkt-product-integration/message';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import {
   mapProductToDto,
@@ -55,14 +59,14 @@ export class MktDigitalProductResolver {
       if (!product) {
         return {
           success: false,
-          error: `Product not found: ${productId}`,
+          error: MKT_PRODUCT_MESSAGES.notFoundWithId(productId),
         };
       }
 
       return {
         success: true,
         data: mapProductToDto(product),
-        message: 'Product retrieved successfully',
+        message: MKT_PRODUCT_MESSAGES.SUCCESS.RETRIEVED,
       };
     } catch (error) {
       return {
@@ -88,14 +92,14 @@ export class MktDigitalProductResolver {
       if (!product) {
         return {
           success: false,
-          error: `Product not found with code: ${code}`,
+          error: MKT_PRODUCT_MESSAGES.error('NOT_FOUND_BY_CODE', { code }),
         };
       }
 
       return {
         success: true,
         data: mapProductToDto(product),
-        message: 'Product retrieved successfully',
+        message: MKT_PRODUCT_MESSAGES.SUCCESS.RETRIEVED,
       };
     } catch (error) {
       return {
@@ -134,7 +138,7 @@ export class MktDigitalProductResolver {
         page: result.page,
         limit: result.limit,
         totalPages: result.totalPages,
-        message: 'Products retrieved successfully',
+        message: MKT_PRODUCT_MESSAGES.SUCCESS.LIST_RETRIEVED,
       };
     } catch (error) {
       return {
@@ -170,14 +174,14 @@ export class MktDigitalProductResolver {
       if (!pkg) {
         return {
           success: false,
-          error: `Package not found: ${input.packageId}`,
+          error: MKT_PACKAGE_MESSAGES.notFoundWithId(input.packageId),
         };
       }
 
       return {
         success: true,
         data: mapPackageToDto(pkg),
-        message: 'Package retrieved successfully',
+        message: MKT_PACKAGE_MESSAGES.SUCCESS.RETRIEVED,
       };
     } catch (error) {
       return {
@@ -202,7 +206,7 @@ export class MktDigitalProductResolver {
         return {
           success: false,
           data: [],
-          error: 'productId is required',
+          error: MKT_PACKAGE_MESSAGES.ERROR.PRODUCT_ID_REQUIRED,
         };
       }
 
@@ -219,7 +223,7 @@ export class MktDigitalProductResolver {
       return {
         success: true,
         data: mapPackagesToDto(filteredPackages),
-        message: 'Packages retrieved successfully',
+        message: MKT_PACKAGE_MESSAGES.SUCCESS.LIST_RETRIEVED,
       };
     } catch (error) {
       return {

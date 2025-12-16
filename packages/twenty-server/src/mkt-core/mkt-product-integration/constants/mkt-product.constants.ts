@@ -182,5 +182,4 @@ export const MKT_PRODUCT_ERROR_BUILDER = {
   fetchFailed: (error: string) => `Failed to fetch product: ${error}`,
   fetchPackageFailed: (error: string) => `Failed to fetch package: ${error}`,
   validationFailed: (error: string) => `Validation failed: ${error}`,
-  cacheError: (error: string) => `Cache error: ${error}`,
 } as const;

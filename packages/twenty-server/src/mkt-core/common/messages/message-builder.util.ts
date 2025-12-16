@@ -33,15 +33,12 @@ type PlaceholderValues = Record<string, string | number>;
 export const replacePlaceholders = (
   template: string,
   values: PlaceholderValues,
-): string => {
-  let result = template;
-
-  for (const [key, value] of Object.entries(values)) {
-    result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
-  }
-
-  return result;
-};
+): string =>
+  Object.entries(values).reduce(
+    (result, [key, value]) =>
+      result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),
+    template,
+  );
 
 // =============================================================================
 // MODULE MESSAGE FACTORY
@@ -112,6 +109,69 @@ export type ModuleMessages<
   ) => string;
 };
 
+// =============================================================================
+// HELPER FUNCTIONS (extracted to reduce complexity)
+// =============================================================================
+
+/**
+ * Process messages by replacing placeholders with base values
+ */
+const processMessages = <T extends Record<string, string>>(
+  messages: T,
+  basePlaceholders: PlaceholderValues,
+): T =>
+  Object.fromEntries(
+    Object.entries(messages).map(([key, msg]) => [
+      key,
+      replacePlaceholders(msg, basePlaceholders),
+    ]),
+  ) as T;
+
+/**
+ * Merge base messages with custom messages
+ */
+const mergeMessages = <
+  TBase extends Record<string, string>,
+  TCustom extends Record<string, string>,
+>(
+  baseMessages: TBase,
+  customMessages: TCustom,
+  basePlaceholders: PlaceholderValues,
+): TBase & TCustom => ({
+  ...processMessages(baseMessages, basePlaceholders),
+  ...processMessages(customMessages, basePlaceholders),
+});
+
+/**
+ * Create a message getter function for a category
+ */
+const createMessageGetter =
+  <TKey extends string>(messages: Record<TKey, string>) =>
+  (key: TKey, extra?: PlaceholderValues): string => {
+    const message = messages[key];
+
+    return extra ? replacePlaceholders(message, extra) : message;
+  };
+
+/**
+ * Bulk operation key mappings
+ */
+const BULK_SUCCESS_KEY_MAP = {
+  created: 'BULK_CREATED',
+  updated: 'BULK_UPDATED',
+  deleted: 'BULK_DELETED',
+} as const;
+
+const BULK_ERROR_KEY_MAP = {
+  create: 'BULK_CREATE_FAILED',
+  update: 'BULK_UPDATE_FAILED',
+  delete: 'BULK_DELETE_FAILED',
+} as const;
+
+// =============================================================================
+// MAIN FACTORY FUNCTION
+// =============================================================================
+
 /**
  * Factory function để tạo messages cho một module
  * Cho phép extend base messages với custom messages
@@ -172,93 +232,39 @@ export const createModuleMessages = <
     entities: entityNamePlural,
   };
 
-  // Helper to replace placeholders in all messages of an object
-  const processMessages = <T extends Record<string, string>>(
-    messages: T,
-  ): T => {
-    const result = {} as T;
+  // Merge base and custom messages for each category
+  const SUCCESS = mergeMessages(
+    BASE_SUCCESS_MESSAGES,
+    customSuccess,
+    basePlaceholders,
+  ) as Record<BaseSuccessMessageKey | TCustomSuccess, string>;
+  const ERROR = mergeMessages(
+    BASE_ERROR_MESSAGES,
+    customError,
+    basePlaceholders,
+  ) as Record<BaseErrorMessageKey | TCustomError, string>;
+  const OPERATION = mergeMessages(
+    BASE_OPERATION_MESSAGES,
+    customOperation,
+    basePlaceholders,
+  ) as Record<BaseOperationMessageKey | TCustomOperation, string>;
+  const WARNING = mergeMessages(
+    BASE_WARNING_MESSAGES,
+    customWarning,
+    basePlaceholders,
+  ) as Record<BaseWarningMessageKey | TCustomWarning, string>;
+  const INFO = mergeMessages(
+    BASE_INFO_MESSAGES,
+    customInfo,
+    basePlaceholders,
+  ) as Record<BaseInfoMessageKey | TCustomInfo, string>;
 
-    for (const [key, msg] of Object.entries(messages)) {
-      (result as Record<string, string>)[key] = replacePlaceholders(
-        msg,
-        basePlaceholders,
-      );
-    }
-
-    return result;
-  };
-
-  // Process base messages
-  const SUCCESS = {
-    ...processMessages(BASE_SUCCESS_MESSAGES),
-    ...processMessages(customSuccess),
-  } as Record<BaseSuccessMessageKey | TCustomSuccess, string>;
-
-  const ERROR = {
-    ...processMessages(BASE_ERROR_MESSAGES),
-    ...processMessages(customError),
-  } as Record<BaseErrorMessageKey | TCustomError, string>;
-
-  const OPERATION = {
-    ...processMessages(BASE_OPERATION_MESSAGES),
-    ...processMessages(customOperation),
-  } as Record<BaseOperationMessageKey | TCustomOperation, string>;
-
-  const WARNING = {
-    ...processMessages(BASE_WARNING_MESSAGES),
-    ...processMessages(customWarning),
-  } as Record<BaseWarningMessageKey | TCustomWarning, string>;
-
-  const INFO = {
-    ...processMessages(BASE_INFO_MESSAGES),
-    ...processMessages(customInfo),
-  } as Record<BaseInfoMessageKey | TCustomInfo, string>;
-
-  // Builder functions
-  const success = (
-    key: BaseSuccessMessageKey | TCustomSuccess,
-    extra?: PlaceholderValues,
-  ): string => {
-    const message = SUCCESS[key];
-
-    return extra ? replacePlaceholders(message, extra) : message;
-  };
-
-  const error = (
-    key: BaseErrorMessageKey | TCustomError,
-    extra?: PlaceholderValues,
-  ): string => {
-    const message = ERROR[key];
-
-    return extra ? replacePlaceholders(message, extra) : message;
-  };
-
-  const operation = (
-    key: BaseOperationMessageKey | TCustomOperation,
-    extra?: PlaceholderValues,
-  ): string => {
-    const message = OPERATION[key];
-
-    return extra ? replacePlaceholders(message, extra) : message;
-  };
-
-  const warning = (
-    key: BaseWarningMessageKey | TCustomWarning,
-    extra?: PlaceholderValues,
-  ): string => {
-    const message = WARNING[key];
-
-    return extra ? replacePlaceholders(message, extra) : message;
-  };
-
-  const info = (
-    key: BaseInfoMessageKey | TCustomInfo,
-    extra?: PlaceholderValues,
-  ): string => {
-    const message = INFO[key];
-
-    return extra ? replacePlaceholders(message, extra) : message;
-  };
+  // Create getter functions using helper
+  const success = createMessageGetter(SUCCESS);
+  const error = createMessageGetter(ERROR);
+  const operation = createMessageGetter(OPERATION);
+  const warning = createMessageGetter(WARNING);
+  const info = createMessageGetter(INFO);
 
   // Extended builders
   const errorWithDetails = (
@@ -272,28 +278,14 @@ export const createModuleMessages = <
   const bulkSuccess = (
     op: 'created' | 'updated' | 'deleted',
     count: number,
-  ): string => {
-    const operationMap = {
-      created: 'BULK_CREATED',
-      updated: 'BULK_UPDATED',
-      deleted: 'BULK_DELETED',
-    } as const;
-
-    return success(operationMap[op] as BaseSuccessMessageKey, { count });
-  };
+  ): string =>
+    success(BULK_SUCCESS_KEY_MAP[op] as BaseSuccessMessageKey, { count });
 
   const bulkError = (
     op: 'create' | 'update' | 'delete',
     errorMsg: string,
-  ): string => {
-    const operationMap = {
-      create: 'BULK_CREATE_FAILED',
-      update: 'BULK_UPDATE_FAILED',
-      delete: 'BULK_DELETE_FAILED',
-    } as const;
-
-    return errorWithDetails(operationMap[op] as BaseErrorMessageKey, errorMsg);
-  };
+  ): string =>
+    errorWithDetails(BULK_ERROR_KEY_MAP[op] as BaseErrorMessageKey, errorMsg);
 
   return {
     SUCCESS,

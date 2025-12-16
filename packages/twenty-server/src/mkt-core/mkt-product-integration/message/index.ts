@@ -14,6 +14,8 @@ export const MKT_PRODUCT_MESSAGES = createModuleMessages({
   },
   customError: {
     SNAPSHOT_CHECKSUM_MISMATCH: 'Product snapshot checksum mismatch',
+    STATUS_NOT_ORDERABLE: 'Product status is {status}',
+    NOT_FOUND_BY_CODE: 'Product not found with code: {code}',
   },
   customOperation: {
     FETCH_FROM_MKT: 'Fetching product from MKT Server',
@@ -29,6 +31,11 @@ export const MKT_PRODUCT_MESSAGES = createModuleMessages({
 export const MKT_PACKAGE_MESSAGES = createModuleMessages({
   entityName: 'Package',
   entityNamePlural: 'Packages',
+  customError: {
+    NOT_BELONG_TO_PRODUCT: 'Package does not belong to this product',
+    INACTIVE: 'Package is not active',
+    PRODUCT_ID_REQUIRED: 'productId is required',
+  },
   customOperation: {
     FETCH_FROM_MKT: 'Fetching package from MKT Server',
     FETCH_BY_PRODUCT: 'Fetching packages for product',
@@ -45,6 +52,9 @@ export const MKT_CACHE_MESSAGES = createModuleMessages({
     HIT: 'Cache hit',
     SET: 'Cache set successfully',
     INVALIDATED: 'Cache invalidated successfully',
+  },
+  customError: {
+    CACHE_OPERATION_FAILED: 'Cache operation failed',
   },
   customInfo: {
     MISS: 'Cache miss',

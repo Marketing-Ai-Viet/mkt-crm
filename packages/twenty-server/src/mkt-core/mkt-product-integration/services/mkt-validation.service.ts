@@ -138,7 +138,9 @@ export class MktValidationService {
     if (!MKT_ORDERABLE_STATUSES.includes(product.status as never)) {
       return {
         productId,
-        reason: `Product status is ${product.status}`,
+        reason: MKT_PRODUCT_MESSAGES.error('STATUS_NOT_ORDERABLE', {
+          status: product.status,
+        }),
       };
     }
 
@@ -169,7 +171,7 @@ export class MktValidationService {
       errors.push({
         productId,
         packageId,
-        reason: 'Package does not belong to this product',
+        reason: MKT_PACKAGE_MESSAGES.ERROR.NOT_BELONG_TO_PRODUCT,
       });
 
       return errors;
@@ -179,7 +181,7 @@ export class MktValidationService {
       errors.push({
         productId,
         packageId,
-        reason: 'Package is not active',
+        reason: MKT_PACKAGE_MESSAGES.ERROR.INACTIVE,
       });
     }
 

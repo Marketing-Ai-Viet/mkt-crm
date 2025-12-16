@@ -10,7 +10,6 @@ import {
 import {
   CACHE_KEYS,
   MKT_FALLBACK_CACHE_TTL,
-  MKT_PRODUCT_ERROR_BUILDER,
   MKT_PRODUCT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-product-integration/constants';
 import { MKT_CACHE_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
@@ -58,7 +57,10 @@ export class MktProductCacheService {
       return cached ?? null;
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { productId },
       );
 
@@ -81,7 +83,10 @@ export class MktProductCacheService {
       return this.getProduct(productId);
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { code },
       );
 
@@ -106,7 +111,10 @@ export class MktProductCacheService {
       this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.SET, { key });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { productId },
       );
     }
@@ -122,7 +130,10 @@ export class MktProductCacheService {
       await this.cacheStorage.set(key, productId, this.cacheTtlMs);
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { code, productId },
       );
     }
@@ -152,7 +163,10 @@ export class MktProductCacheService {
       return cached ?? null;
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { productId },
       );
 
@@ -178,7 +192,10 @@ export class MktProductCacheService {
       });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { productId },
       );
     }
@@ -205,7 +222,10 @@ export class MktProductCacheService {
       return null;
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { packageId, productId },
       );
 
@@ -235,7 +255,10 @@ export class MktProductCacheService {
       this.logger.debug(MKT_CACHE_MESSAGES.SUCCESS.INVALIDATED, { productId });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { productId },
       );
     }
@@ -254,7 +277,10 @@ export class MktProductCacheService {
       });
     } catch (error) {
       this.logger.error(
-        MKT_PRODUCT_ERROR_BUILDER.cacheError(getErrorMessage(error)),
+        MKT_CACHE_MESSAGES.errorWithDetails(
+          'CACHE_OPERATION_FAILED',
+          getErrorMessage(error),
+        ),
         { productId },
       );
     }
