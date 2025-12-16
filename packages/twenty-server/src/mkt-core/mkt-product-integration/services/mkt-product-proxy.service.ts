@@ -20,9 +20,9 @@ import {
   MKT_DEFAULT_LANGUAGE,
   MKT_ORDERABLE_STATUSES,
   MKT_PRODUCT_LOG_CONTEXT,
-  MKT_PRODUCT_MESSAGES,
   MKT_PRODUCT_ERROR_BUILDER,
 } from 'src/mkt-core/mkt-product-integration/constants';
+import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
 
 import { MktProductCacheService } from './mkt-product-cache.service';
 import { MktSnapshotService } from './mkt-snapshot.service';

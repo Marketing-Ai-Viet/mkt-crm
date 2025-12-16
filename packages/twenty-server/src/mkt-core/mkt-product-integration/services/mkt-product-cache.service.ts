@@ -11,26 +11,10 @@ import {
   MKT_CACHE_TTL,
   MKT_FALLBACK_CACHE_TTL,
   MKT_PRODUCT_LOG_CONTEXT,
-  MKT_PRODUCT_MESSAGES,
   MKT_PRODUCT_ERROR_BUILDER,
+  CACHE_KEYS,
 } from 'src/mkt-core/mkt-product-integration/constants';
-
-// ============================================
-// CACHE KEY BUILDERS
-// ============================================
-
-const CACHE_KEYS = {
-  product: (id: string) => `product:${id}`,
-  productCode: (code: string) => `product:code:${code}`,
-  productFallback: (id: string) => `product:fallback:${id}`,
-  package: (id: string) => `package:${id}`,
-  packageCode: (code: string) => `package:code:${code}`,
-  packagesByProduct: (productId: string) => `packages:product:${productId}`,
-} as const;
-
-// ============================================
-// SERVICE
-// ============================================
+import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
 
 @Injectable()
 export class MktProductCacheService {

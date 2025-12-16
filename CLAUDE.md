@@ -143,6 +143,8 @@ mkt-core/
 ├── constants/
 │   ├── mkt-object-ids.ts                 # Entity identifiers (immutable)
 │   └── mkt-field-ids.ts                  # Field identifiers (immutable)
+├── utils/
+│   └── date-time.utils.ts                # DateTimeUtils - use for all date/time operations
 ├── license/                              # License management
 ├── order/                                # Order processing
 ├── invoice/                              # Invoice system
@@ -187,6 +189,7 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 - **No hard-coded values** - khai báo bằng const hoặc enum với default values
 - **Early return pattern** - tránh chuỗi if-else
 - **Prefer lodash** để tối ưu code size
+- **Use DateTimeUtils** cho date/time operations (không dùng `new Date()` trực tiếp)
 
 ### State Management
 - **Recoil** for global state management
@@ -246,4 +249,5 @@ export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
 - Use early return pattern instead of nested if-else
 - Use lodash for array/object operations
 - Declare constants with const or enum, add default values when needed
+- Use `DateTimeUtils` from `src/mkt-core/utils/date-time.utils.ts` for all date/time operations
 - chạy npx nx reset khi lỗi với nx

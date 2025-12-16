@@ -14,8 +14,8 @@ import {
   MKT_DEFAULT_CURRENCY,
   MKT_LANGUAGE_FALLBACK_ORDER,
   MKT_PRODUCT_LOG_CONTEXT,
-  MKT_PRODUCT_MESSAGES,
 } from 'src/mkt-core/mkt-product-integration/constants';
+import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
 
 @Injectable()
 export class MktSnapshotService {

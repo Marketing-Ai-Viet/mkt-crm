@@ -8,6 +8,7 @@ const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_MIN_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_SCHEDULED_SYNC_CRON = '0 */30 * * * *'; // Every 30 minutes
 
 // ============================================
 // ZOD SCHEMAS
@@ -34,6 +35,15 @@ const positiveIntEnvSchema = (defaultValue: number) =>
     .refine((val) => val > 0, { message: 'Must be a positive integer' });
 
 /**
+ * Zod schema for cron expression environment variables
+ */
+const cronEnvSchema = (defaultValue: string) =>
+  z
+    .string()
+    .optional()
+    .transform((val) => val ?? defaultValue);
+
+/**
  * MKT Product Sync Configuration Schema
  *
  * Environment variables:
@@ -44,6 +54,8 @@ const positiveIntEnvSchema = (defaultValue: number) =>
  * - MKT_SYNC_MAX_RETRIES: Max retry attempts for sync (default: 3)
  * - MKT_SYNC_PARALLEL: Enable parallel batch processing (default: true)
  * - MKT_SYNC_INVALIDATE_STALE: Enable stale cache invalidation (default: false)
+ * - MKT_SCHEDULED_SYNC_ENABLED: Enable scheduled sync via cron (default: true)
+ * - MKT_SCHEDULED_SYNC_CRON: Cron expression for scheduled sync (default: every 30 minutes)
  */
 const mktSyncConfigSchema = z.object({
   MKT_AUTO_SYNC_ENABLED: booleanEnvSchema(true),
@@ -53,6 +65,8 @@ const mktSyncConfigSchema = z.object({
   MKT_SYNC_MAX_RETRIES: positiveIntEnvSchema(DEFAULT_MAX_RETRIES),
   MKT_SYNC_PARALLEL: booleanEnvSchema(true),
   MKT_SYNC_INVALIDATE_STALE: booleanEnvSchema(false),
+  MKT_SCHEDULED_SYNC_ENABLED: booleanEnvSchema(true),
+  MKT_SCHEDULED_SYNC_CRON: cronEnvSchema(DEFAULT_SCHEDULED_SYNC_CRON),
 });
 
 // ============================================
@@ -67,6 +81,8 @@ const parsedEnv = mktSyncConfigSchema.safeParse({
   MKT_SYNC_MAX_RETRIES: process.env.MKT_SYNC_MAX_RETRIES,
   MKT_SYNC_PARALLEL: process.env.MKT_SYNC_PARALLEL,
   MKT_SYNC_INVALIDATE_STALE: process.env.MKT_SYNC_INVALIDATE_STALE,
+  MKT_SCHEDULED_SYNC_ENABLED: process.env.MKT_SCHEDULED_SYNC_ENABLED,
+  MKT_SCHEDULED_SYNC_CRON: process.env.MKT_SCHEDULED_SYNC_CRON,
 });
 
 if (!parsedEnv.success) {
@@ -106,6 +122,12 @@ export const MKT_SYNC_CONFIG = {
 
   /** Enable stale cache invalidation */
   ENABLE_STALE_INVALIDATION: validatedEnv.MKT_SYNC_INVALIDATE_STALE,
+
+  /** Enable scheduled sync via cron job */
+  SCHEDULED_SYNC_ENABLED: validatedEnv.MKT_SCHEDULED_SYNC_ENABLED,
+
+  /** Cron expression for scheduled sync (default: every 30 minutes) */
+  SCHEDULED_SYNC_CRON: validatedEnv.MKT_SCHEDULED_SYNC_CRON,
 } as const;
 
 export type MktSyncConfigType = typeof MKT_SYNC_CONFIG;

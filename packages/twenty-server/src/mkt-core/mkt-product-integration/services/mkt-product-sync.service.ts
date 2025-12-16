@@ -19,6 +19,8 @@ import {
 import {
   MktProduct,
   MktProductPackage,
+  SyncItemResult,
+  SyncResult,
 } from 'src/mkt-core/mkt-product-integration/types';
 
 import { MktProductProxyService } from './mkt-product-proxy.service';
@@ -27,18 +29,6 @@ import { MktProductCacheService } from './mkt-product-cache.service';
 // ============================================
 // TYPES
 // ============================================
-
-type SyncResult = {
-  productsCount: number;
-  packagesCount: number;
-  errors: string[];
-  duration: number;
-};
-
-type SyncItemResult = {
-  count: number;
-  errors: string[];
-};
 
 // ============================================
 // SERVICE

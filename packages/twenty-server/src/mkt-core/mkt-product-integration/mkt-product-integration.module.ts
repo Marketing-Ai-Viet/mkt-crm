@@ -9,6 +9,7 @@ import {
   MktProductProxyService,
   MktProductSyncService,
 } from './services';
+import { MktProductScheduledSyncJob } from './jobs';
 
 /**
  * MKT Product Integration Module
@@ -31,10 +32,13 @@ import {
     RedisInfrastructureModule, // Distributed caching infrastructure
   ],
   providers: [
+    // Services
     MktSnapshotService,
     MktProductCacheService,
     MktProductProxyService,
     MktProductSyncService,
+    // Jobs
+    MktProductScheduledSyncJob,
   ],
   exports: [MktProductProxyService, MktSnapshotService, MktProductSyncService],
 })

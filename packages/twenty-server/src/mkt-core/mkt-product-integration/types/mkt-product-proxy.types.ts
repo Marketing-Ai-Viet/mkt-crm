@@ -210,3 +210,15 @@ export type MktValidationResult = {
   valid: boolean;
   errors: MktValidationError[];
 };
+
+export type SyncResult = {
+  productsCount: number;
+  packagesCount: number;
+  errors: string[];
+  duration: number;
+};
+
+export type SyncItemResult = {
+  count: number;
+  errors: string[];
+};

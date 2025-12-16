@@ -49,25 +49,70 @@ export const MKT_CACHE_PREFIX = 'mkt' as const;
 /**
  * Cache TTL in seconds
  */
-export const MKT_CACHE_TTL = 300 as const; // 5 minutes
+export const MKT_CACHE_TTL = 3600 as const; // 1 hour
 
 /**
  * Fallback cache TTL in seconds (used when API is unavailable)
  */
 export const MKT_FALLBACK_CACHE_TTL = 86400 as const; // 24 hours
 
+// ============================================
+// PRODUCT TYPE
+// ============================================
+
+export enum MKT_PRODUCT_TYPE {
+  PHYSICAL = 'PHYSICAL',
+  DIGITAL = 'DIGITAL',
+  SERVICE = 'SERVICE',
+  OTHER = 'OTHER',
+}
+
+/**
+ * Cache prefix for product types
+ * Used to differentiate cache keys by product type
+ */
+export const MKT_PRODUCT_TYPE_CACHE_PREFIX = {
+  [MKT_PRODUCT_TYPE.DIGITAL]: 'digital',
+  [MKT_PRODUCT_TYPE.PHYSICAL]: 'physical',
+  [MKT_PRODUCT_TYPE.SERVICE]: 'service',
+  [MKT_PRODUCT_TYPE.OTHER]: 'other',
+} as const;
+
+/**
+ * Default cache prefix for product endpoints
+ */
+export const MKT_DEFAULT_PRODUCT_CACHE_PREFIX =
+  MKT_PRODUCT_TYPE_CACHE_PREFIX[MKT_PRODUCT_TYPE.DIGITAL];
+
 /**
  * Cache key patterns
+ *
+ * NOTE: CacheStorageNamespace.MktProduct adds prefix "mkt:product:"
+ * So keys here should NOT include "product:" prefix to avoid duplication
+ *
+ * Final key format: mkt:product:{type}:{key}
  */
-export const MKT_CACHE_KEYS = {
-  PRODUCT: (id: string) => `${MKT_CACHE_PREFIX}:product:${id}`,
-  PRODUCT_CODE: (code: string) => `${MKT_CACHE_PREFIX}:product:code:${code}`,
-  PRODUCT_FALLBACK: (id: string) =>
-    `${MKT_CACHE_PREFIX}:product:fallback:${id}`,
-  PACKAGE: (id: string) => `${MKT_CACHE_PREFIX}:package:${id}`,
-  PACKAGE_CODE: (code: string) => `${MKT_CACHE_PREFIX}:package:code:${code}`,
-  PACKAGES_BY_PRODUCT: (productId: string) =>
-    `${MKT_CACHE_PREFIX}:packages:product:${productId}`,
+export const CACHE_KEYS = {
+  product: (id: string, type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL) =>
+    `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:${id}`,
+  productCode: (
+    code: string,
+    type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
+  ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:code:${code}`,
+  productFallback: (
+    id: string,
+    type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
+  ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:fallback:${id}`,
+  package: (id: string, type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL) =>
+    `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:pkg:${id}`,
+  packageCode: (
+    code: string,
+    type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
+  ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:pkg:code:${code}`,
+  packagesByProduct: (
+    productId: string,
+    type: MKT_PRODUCT_TYPE = MKT_PRODUCT_TYPE.DIGITAL,
+  ) => `${MKT_PRODUCT_TYPE_CACHE_PREFIX[type]}:pkgs:${productId}`,
 } as const;
 
 // ============================================
@@ -133,40 +178,6 @@ export const MKT_PRODUCT_QUERY_DEFAULTS = {
 // ============================================
 
 export const MKT_PRODUCT_LOG_CONTEXT = 'MktProductIntegration' as const;
-
-// ============================================
-// OPERATION MESSAGES
-// ============================================
-
-export const MKT_PRODUCT_MESSAGES = {
-  // Product operations
-  FETCH_PRODUCT: 'Fetching product from MKT Server',
-  FETCH_PRODUCT_BY_CODE: 'Fetching product by code from MKT Server',
-  FETCH_PRODUCTS: 'Fetching products list from MKT Server',
-  PRODUCT_NOT_FOUND: 'Product not found',
-  PRODUCT_CACHED: 'Product cached successfully',
-
-  // Package operations
-  FETCH_PACKAGE: 'Fetching package from MKT Server',
-  FETCH_PACKAGES_BY_PRODUCT: 'Fetching packages for product',
-  PACKAGE_NOT_FOUND: 'Package not found',
-
-  // Cache operations
-  CACHE_HIT: 'Cache hit',
-  CACHE_MISS: 'Cache miss',
-  CACHE_SET: 'Cache set',
-  CACHE_INVALIDATE: 'Cache invalidated',
-
-  // Snapshot operations
-  SNAPSHOT_CREATED: 'Snapshot created',
-  SNAPSHOT_VERIFIED: 'Snapshot verified',
-  SNAPSHOT_CHECKSUM_MISMATCH: 'Snapshot checksum mismatch',
-
-  // Validation
-  VALIDATION_START: 'Starting order validation',
-  VALIDATION_SUCCESS: 'Order validation successful',
-  VALIDATION_FAILED: 'Order validation failed',
-} as const;
 
 export const MKT_PRODUCT_ERROR_BUILDER = {
   fetchFailed: (error: string) => `Failed to fetch product: ${error}`,

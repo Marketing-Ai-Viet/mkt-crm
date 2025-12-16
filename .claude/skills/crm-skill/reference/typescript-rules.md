@@ -195,7 +195,32 @@ const usersByRole = users.reduce((acc, user) => {
 
 ---
 
-### 8. Named Exports Only
+### 8. Use DateTimeUtils for Date/Time Operations
+
+```typescript
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+// OK - Use DateTimeUtils
+const now = DateTimeUtils.now();
+const fromDate = DateTimeUtils.fromDate(jsDate);
+const diffMs = DateTimeUtils.diffInMillis(startDateTime, endDateTime);
+const isExpired = DateTimeUtils.isExpired(expiryDateTime);
+
+// NO - Direct Date manipulation
+const now = new Date();
+const diffMs = Date.now() - lastSync.getTime();
+```
+
+**Available methods**:
+- Factory: `now()`, `fromDate()`, `fromISO()`, `fromMillis()`
+- Conversion: `toDate()`, `toISO()`, `toMillis()`
+- Comparison: `isPast()`, `isFuture()`, `isExpired()`, `isInRange()`
+- Difference: `diffInMillis()`, `diffInSeconds()`, `diffInMinutes()`, `diffInDays()`
+- Ranges: `getToday()`, `getCurrentMonth()`, `getLastNDays()`
+
+---
+
+### 9. Named Exports Only
 
 ```typescript
 // OK
