@@ -17,6 +17,7 @@ import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 import { TimelineActivityMiddleware } from 'src/mkt-core/timeline/timeline-activity.middleware';
 import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
+import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-user-integration.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { UserManagementModule } from 'src/mkt-core/user-management/user-manageme
     CustomerModule,
     OAuth2ClientModule,
     MktProductIntegrationModule,
+    MktUserIntegrationModule,
   ],
 })
 export class MktCoreModule implements NestModule {

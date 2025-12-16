@@ -350,10 +350,7 @@ export class CreateOrderItemsStep extends SagaStep<
         );
 
         if (pkg) {
-          packageSnapshot = this.mktProductProxy.createPackageSnapshot(
-            pkg,
-            language,
-          );
+          packageSnapshot = this.mktProductProxy.createPackageSnapshot(pkg);
           unitPrice = pkg.price;
         } else {
           this.logger.warn(
