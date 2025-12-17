@@ -8,43 +8,49 @@ import {
 
 import GraphQLJSON from 'graphql-type-json';
 
-// Enums
-export enum LicenseStatus {
+// ============================================
+// ENUMS
+// ============================================
+
+export enum MktLicenseStatusEnum {
   ACTIVE = 'active',
   PENDING = 'pending',
   EXPIRED = 'expired',
   REVOKED = 'revoked',
 }
 
-export enum LicenseType {
+export enum MktLicenseTypeEnum {
   PERPETUAL = 'perpetual',
   SUBSCRIPTION = 'subscription',
   TRIAL = 'trial',
 }
 
-export enum AnalyticsGroupBy {
+export enum MktAnalyticsGroupByEnum {
   DAY = 'day',
   WEEK = 'week',
   MONTH = 'month',
 }
 
-registerEnumType(LicenseStatus, {
-  name: 'LicenseStatus',
+registerEnumType(MktLicenseStatusEnum, {
+  name: 'MktLicenseStatus',
   description: 'License status values',
 });
 
-registerEnumType(LicenseType, {
-  name: 'LicenseType',
+registerEnumType(MktLicenseTypeEnum, {
+  name: 'MktLicenseType',
   description: 'License type values',
 });
 
-registerEnumType(AnalyticsGroupBy, {
-  name: 'AnalyticsGroupBy',
+registerEnumType(MktAnalyticsGroupByEnum, {
+  name: 'MktAnalyticsGroupBy',
   description: 'Analytics grouping options',
 });
 
-// GraphQL Descriptions
-export const LICENSE_GRAPHQL_DESCRIPTIONS = {
+// ============================================
+// GRAPHQL DESCRIPTIONS
+// ============================================
+
+export const MKT_LICENSE_GRAPHQL_DESCRIPTIONS = {
   // Queries
   LICENSES_QUERY: 'Get paginated list of licenses',
   LICENSE_BY_ID_QUERY: 'Get license by ID',
@@ -63,9 +69,12 @@ export const LICENSE_GRAPHQL_DESCRIPTIONS = {
   BULK_DELETE_LICENSE_MUTATION: 'Bulk delete licenses',
 } as const;
 
-// Actor Output Types
+// ============================================
+// ACTOR OUTPUT TYPES
+// ============================================
+
 @ObjectType()
-export class ActorContextOutput {
+export class MktActorContextOutput {
   @Field({ nullable: true })
   name?: string;
 
@@ -80,7 +89,7 @@ export class ActorContextOutput {
 }
 
 @ObjectType()
-export class CreatedByActorOutput {
+export class MktCreatedByActorOutput {
   @Field()
   type: string;
 
@@ -90,25 +99,28 @@ export class CreatedByActorOutput {
   @Field()
   actorId: string;
 
-  @Field(() => ActorContextOutput, { nullable: true })
-  context?: ActorContextOutput;
+  @Field(() => MktActorContextOutput, { nullable: true })
+  context?: MktActorContextOutput;
 }
 
 @ObjectType()
-export class UpdatedByActorOutput {
+export class MktUpdatedByActorOutput {
   @Field()
   type: string;
 
   @Field()
   actorId: string;
 
-  @Field(() => ActorContextOutput, { nullable: true })
-  context?: ActorContextOutput;
+  @Field(() => MktActorContextOutput, { nullable: true })
+  context?: MktActorContextOutput;
 }
 
-// Localized Text Output Type
+// ============================================
+// LOCALIZED TEXT OUTPUT
+// ============================================
+
 @ObjectType()
-export class LocalizedTextOutput {
+export class MktLocalizedTextOutput {
   @Field({ nullable: true })
   en?: string;
 
@@ -119,9 +131,12 @@ export class LocalizedTextOutput {
   vi?: string;
 }
 
-// Product Output Type
+// ============================================
+// PRODUCT OUTPUT
+// ============================================
+
 @ObjectType()
-export class ProductOutput {
+export class MktLicenseProductOutput {
   @Field()
   id: string;
 
@@ -134,20 +149,20 @@ export class ProductOutput {
   @Field({ nullable: true })
   deletedAt?: string;
 
-  @Field(() => CreatedByActorOutput, { nullable: true })
-  createdBy?: CreatedByActorOutput;
+  @Field(() => MktCreatedByActorOutput, { nullable: true })
+  createdBy?: MktCreatedByActorOutput;
 
-  @Field(() => UpdatedByActorOutput, { nullable: true })
-  updatedBy?: UpdatedByActorOutput;
+  @Field(() => MktUpdatedByActorOutput, { nullable: true })
+  updatedBy?: MktUpdatedByActorOutput;
 
-  @Field(() => LocalizedTextOutput)
-  productName: LocalizedTextOutput;
+  @Field(() => MktLocalizedTextOutput)
+  productName: MktLocalizedTextOutput;
 
-  @Field(() => LocalizedTextOutput)
-  productDescription: LocalizedTextOutput;
+  @Field(() => MktLocalizedTextOutput)
+  productDescription: MktLocalizedTextOutput;
 
-  @Field(() => LocalizedTextOutput)
-  productOverview: LocalizedTextOutput;
+  @Field(() => MktLocalizedTextOutput)
+  productOverview: MktLocalizedTextOutput;
 
   @Field()
   code: string;
@@ -186,9 +201,12 @@ export class ProductOutput {
   description?: string;
 }
 
-// Output Types
+// ============================================
+// LICENSE OUTPUT
+// ============================================
+
 @ObjectType()
-export class LicenseOutput {
+export class MktLicenseOutput {
   @Field()
   id: string;
 
@@ -201,11 +219,11 @@ export class LicenseOutput {
   @Field({ nullable: true })
   deletedAt?: string;
 
-  @Field(() => CreatedByActorOutput, { nullable: true })
-  createdBy?: CreatedByActorOutput;
+  @Field(() => MktCreatedByActorOutput, { nullable: true })
+  createdBy?: MktCreatedByActorOutput;
 
-  @Field(() => UpdatedByActorOutput, { nullable: true })
-  updatedBy?: UpdatedByActorOutput;
+  @Field(() => MktUpdatedByActorOutput, { nullable: true })
+  updatedBy?: MktUpdatedByActorOutput;
 
   @Field(() => Int)
   version: number;
@@ -213,14 +231,14 @@ export class LicenseOutput {
   @Field()
   licenseKey: string;
 
-  @Field(() => LicenseType)
-  type: LicenseType;
+  @Field(() => MktLicenseTypeEnum)
+  type: MktLicenseTypeEnum;
 
-  @Field(() => LicenseType)
-  originalType: LicenseType;
+  @Field(() => MktLicenseTypeEnum)
+  originalType: MktLicenseTypeEnum;
 
-  @Field(() => LicenseStatus)
-  status: LicenseStatus;
+  @Field(() => MktLicenseStatusEnum)
+  status: MktLicenseStatusEnum;
 
   @Field({ nullable: true })
   startDate?: string;
@@ -240,14 +258,18 @@ export class LicenseOutput {
   @Field()
   productId: string;
 
-  @Field(() => ProductOutput, { nullable: true })
-  product?: ProductOutput;
+  @Field(() => MktLicenseProductOutput, { nullable: true })
+  product?: MktLicenseProductOutput;
 }
 
+// ============================================
+// PAGINATED OUTPUT
+// ============================================
+
 @ObjectType()
-export class PaginatedLicenseOutput {
-  @Field(() => [LicenseOutput])
-  data: LicenseOutput[];
+export class MktPaginatedLicenseOutput {
+  @Field(() => [MktLicenseOutput])
+  data: MktLicenseOutput[];
 
   @Field(() => Int)
   total: number;
@@ -262,20 +284,28 @@ export class PaginatedLicenseOutput {
   totalPages: number;
 }
 
+// ============================================
+// VALIDATION OUTPUT
+// ============================================
+
 @ObjectType()
-export class LicenseValidationOutput {
+export class MktLicenseValidationOutput {
   @Field()
   isValid: boolean;
 
   @Field({ nullable: true })
   reason?: string;
 
-  @Field(() => LicenseOutput, { nullable: true })
-  license?: LicenseOutput;
+  @Field(() => MktLicenseOutput, { nullable: true })
+  license?: MktLicenseOutput;
 }
 
+// ============================================
+// ANALYTICS OUTPUT
+// ============================================
+
 @ObjectType()
-export class LicenseAnalyticsOutput {
+export class MktLicenseAnalyticsOutput {
   @Field(() => Int)
   total: number;
 
@@ -289,36 +319,43 @@ export class LicenseAnalyticsOutput {
   };
 }
 
+// ============================================
+// ACTION OUTPUTS
+// ============================================
+
 @ObjectType()
-export class LicenseActionOutput {
+export class MktLicenseActionOutput {
   @Field()
   success: boolean;
 
   @Field()
   message: string;
 
-  @Field(() => LicenseOutput, { nullable: true })
-  license?: LicenseOutput;
+  @Field(() => MktLicenseOutput, { nullable: true })
+  license?: MktLicenseOutput;
 }
 
 @ObjectType()
-export class BulkLicenseActionOutput {
+export class MktBulkLicenseActionOutput {
   @Field()
   success: boolean;
 
   @Field()
   message: string;
 
-  @Field(() => [LicenseOutput], { nullable: true })
-  licenses?: LicenseOutput[];
+  @Field(() => [MktLicenseOutput], { nullable: true })
+  licenses?: MktLicenseOutput[];
 
   @Field(() => Int)
   count: number;
 }
 
-// Input Types
+// ============================================
+// INPUT TYPES
+// ============================================
+
 @InputType()
-export class QueryLicensesInput {
+export class MktQueryLicensesInput {
   @Field(() => Int, { nullable: true, defaultValue: 1 })
   page?: number;
 
@@ -331,12 +368,12 @@ export class QueryLicensesInput {
   @Field({ nullable: true })
   productId?: string;
 
-  @Field(() => LicenseStatus, { nullable: true })
-  status?: LicenseStatus;
+  @Field(() => MktLicenseStatusEnum, { nullable: true })
+  status?: MktLicenseStatusEnum;
 }
 
 @InputType()
-export class CreateLicenseInput {
+export class MktCreateLicenseInput {
   @Field()
   productPackageId: string;
 
@@ -351,12 +388,12 @@ export class CreateLicenseInput {
 }
 
 @InputType()
-export class UpdateLicenseInput {
+export class MktUpdateLicenseInput {
   @Field({ nullable: true })
   type?: string;
 
-  @Field(() => LicenseStatus, { nullable: true })
-  status?: LicenseStatus;
+  @Field(() => MktLicenseStatusEnum, { nullable: true })
+  status?: MktLicenseStatusEnum;
 
   @Field({ nullable: true })
   startDate?: string;
@@ -375,7 +412,7 @@ export class UpdateLicenseInput {
 }
 
 @InputType()
-export class ValidateLicenseInput {
+export class MktValidateLicenseInput {
   @Field()
   licenseKey: string;
 
@@ -384,7 +421,7 @@ export class ValidateLicenseInput {
 }
 
 @InputType()
-export class LicenseAnalyticsInput {
+export class MktLicenseAnalyticsInput {
   @Field({ nullable: true })
   productId?: string;
 
@@ -394,33 +431,33 @@ export class LicenseAnalyticsInput {
   @Field({ nullable: true })
   endDate?: string;
 
-  @Field(() => AnalyticsGroupBy, { nullable: true })
-  groupBy?: AnalyticsGroupBy;
+  @Field(() => MktAnalyticsGroupByEnum, { nullable: true })
+  groupBy?: MktAnalyticsGroupByEnum;
 }
 
 @InputType()
-export class BulkUpdateLicenseItemInput {
+export class MktBulkUpdateLicenseItemInput {
   @Field()
   id: string;
 
-  @Field(() => UpdateLicenseInput)
-  updates: UpdateLicenseInput;
+  @Field(() => MktUpdateLicenseInput)
+  updates: MktUpdateLicenseInput;
 }
 
 @InputType()
-export class BulkCreateLicenseInput {
-  @Field(() => [CreateLicenseInput])
-  items: CreateLicenseInput[];
+export class MktBulkCreateLicenseInput {
+  @Field(() => [MktCreateLicenseInput])
+  items: MktCreateLicenseInput[];
 }
 
 @InputType()
-export class BulkUpdateLicenseInput {
-  @Field(() => [BulkUpdateLicenseItemInput])
-  items: BulkUpdateLicenseItemInput[];
+export class MktBulkUpdateLicenseInput {
+  @Field(() => [MktBulkUpdateLicenseItemInput])
+  items: MktBulkUpdateLicenseItemInput[];
 }
 
 @InputType()
-export class BulkDeleteLicenseInput {
+export class MktBulkDeleteLicenseInput {
   @Field(() => [String])
   ids: string[];
 }

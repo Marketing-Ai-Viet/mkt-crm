@@ -16,11 +16,11 @@ import {
   OAuth2HttpService,
 } from './services';
 
-import { LicenseProxyService } from './license/services';
-import { LicenseResolver } from './license/resolvers';
-
 /**
  * OAuth2 Client Module
+ *
+ * Provides OAuth2 authentication and HTTP client services.
+ * License integration has been moved to MktLicenseIntegrationModule.
  *
  * NOTE: EventEmitter2 is available globally via EventEmitterModule.forRoot()
  * in CoreEngineModule. No need to import it here.
@@ -40,9 +40,7 @@ import { LicenseResolver } from './license/resolvers';
     OAuth2ClientService,
     OAuth2HttpService,
     OAuth2ManagementResolver,
-    LicenseProxyService,
-    LicenseResolver,
   ],
-  exports: [OAuth2ClientService, OAuth2HttpService, LicenseProxyService],
+  exports: [OAuth2ClientService, OAuth2HttpService],
 })
 export class OAuth2ClientModule {}
