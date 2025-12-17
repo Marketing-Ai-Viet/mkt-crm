@@ -13,7 +13,7 @@ export const MKT_USER_ENDPOINTS = {
   LIST: '/api/oauth/users',
   GET_BY_ID: '/api/oauth/users/:id',
   GET_BY_EMAIL: '/api/oauth/users/by-email/:email',
-  CREATE: '/api/oauth/users',
+  CREATE: '/api/oauth/users/register',
   UPDATE: '/api/oauth/users/:id',
   LOGIN_HISTORY_BY_EMAIL: '/api/oauth/users/by-email/:email/login-history',
 } as const;

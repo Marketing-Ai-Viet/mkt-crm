@@ -1,27 +1,34 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
+import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
+import { User } from 'src/engine/core-modules/user/user.entity';
 import {
   MktCreateUserInputDto,
   MktUpdateUserInputDto,
-  MktUserQueryInput,
 } from 'src/mkt-core/mkt-user-integration/dto/mkt-user.input';
 import {
   MktUserResponseDto,
-  MktUserListResponseDto,
   MktUserLoginHistoryResponseDto,
 } from 'src/mkt-core/mkt-user-integration/dto/mkt-user.output';
 import { MKT_USER_MESSAGES } from 'src/mkt-core/mkt-user-integration/message';
 import { MktUserProxyService } from 'src/mkt-core/mkt-user-integration/services';
 import {
   mapUserToDto,
-  mapPaginatedUsersToDto,
   mapLoginHistoryToDto,
-  createUserListErrorResponse,
 } from 'src/mkt-core/mkt-user-integration/utils';
 import { getErrorMessage } from 'src/mkt-core/utils';
+import { UserContext } from 'src/mkt-core/oauth2-client/types';
+
+/**
+ * Build UserContext from CRM User for OAuth2 HTTP headers
+ */
+const buildUserContext = (user: User): UserContext => ({
+  userId: user.id,
+  userName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+});
 
 /**
  * MktUserResolver - GraphQL resolver for MKT users
@@ -127,35 +134,6 @@ export class MktUserResolver {
     }
   }
 
-  /**
-   * Get paginated list of users
-   */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
-  @Query(() => MktUserListResponseDto, {
-    name: 'mktUsers',
-    description: 'Get paginated list of MKT users',
-  })
-  async getUsers(
-    @Args('input', { type: () => MktUserQueryInput, nullable: true })
-    input?: MktUserQueryInput,
-  ): Promise<MktUserListResponseDto> {
-    try {
-      const result = await this.userProxyService.getUsers({
-        page: input?.page,
-        limit: input?.limit,
-        search: input?.search,
-        status: input?.status,
-      });
-
-      return mapPaginatedUsersToDto(
-        result,
-        MKT_USER_MESSAGES.SUCCESS.LIST_FETCHED,
-      );
-    } catch (error) {
-      return createUserListErrorResponse(getErrorMessage(error));
-    }
-  }
-
   // ============================================
   // MUTATIONS
   // ============================================
@@ -169,21 +147,25 @@ export class MktUserResolver {
     description: 'Create a new MKT user',
   })
   async createUser(
+    @AuthUser() authUser: User,
     @Args('input', { type: () => MktCreateUserInputDto })
     input: MktCreateUserInputDto,
   ): Promise<MktUserResponseDto> {
     try {
-      const user = await this.userProxyService.createUser({
-        email: input.email,
-        password: input.password,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        fullName: input.fullName,
-        phone: input.phone,
-        code: input.code,
-        roleId: input.roleId,
-        status: input.status,
-      });
+      const user = await this.userProxyService.createUser(
+        {
+          email: input.email,
+          password: input.password,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          fullName: input.fullName,
+          phone: input.phone,
+          code: input.code,
+          roleId: input.roleId,
+          status: input.status,
+        },
+        buildUserContext(authUser),
+      );
 
       return {
         success: true,
@@ -207,20 +189,25 @@ export class MktUserResolver {
     description: 'Update an existing MKT user',
   })
   async updateUser(
+    @AuthUser() authUser: User,
     @Args('userId', { type: () => String }) userId: string,
     @Args('input', { type: () => MktUpdateUserInputDto })
     input: MktUpdateUserInputDto,
   ): Promise<MktUserResponseDto> {
     try {
-      const user = await this.userProxyService.updateUser(userId, {
-        email: input.email,
-        username: input.username,
-        fullName: input.fullName,
-        phone: input.phone,
-        role: input.role,
-        status: input.status,
-        avatarUrl: input.avatarUrl,
-      });
+      const user = await this.userProxyService.updateUser(
+        userId,
+        {
+          email: input.email,
+          username: input.username,
+          fullName: input.fullName,
+          phone: input.phone,
+          role: input.role,
+          status: input.status,
+          avatarUrl: input.avatarUrl,
+        },
+        buildUserContext(authUser),
+      );
 
       return {
         success: true,

@@ -10,6 +10,7 @@ import {
   OAUTH2_LOG_CONTEXT,
 } from 'src/mkt-core/oauth2-client/constants';
 import { UserContext } from 'src/mkt-core/oauth2-client/types';
+import { isAxiosError, mapAxiosErrorToHttpException } from 'src/mkt-core/utils';
 
 import { OAuth2ClientService } from './oauth2-client.service';
 
@@ -172,6 +173,10 @@ export class OAuth2HttpService {
         lastError = error instanceof Error ? error : new Error(String(error));
 
         if (!this.shouldRetry(error, attempt)) {
+          // Map Axios error to HttpException to preserve status code and message
+          if (isAxiosError(error)) {
+            throw mapAxiosErrorToHttpException(error);
+          }
           throw error;
         }
 
@@ -189,6 +194,11 @@ export class OAuth2HttpService {
           await this.delay(delay);
         }
       }
+    }
+
+    // Map Axios error to HttpException after all retries exhausted
+    if (isAxiosError(lastError)) {
+      throw mapAxiosErrorToHttpException(lastError);
     }
 
     throw lastError;
