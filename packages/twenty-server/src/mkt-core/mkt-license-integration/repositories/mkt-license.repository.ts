@@ -1,36 +1,45 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { LICENSE_API_ENDPOINTS } from 'src/mkt-core/oauth2-client/constants';
 import { OAuth2HttpService } from 'src/mkt-core/oauth2-client/services/oauth2-http.service';
 import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import {
-  LICENSE_OPERATION_MESSAGES,
-  LICENSE_ERROR_MESSAGE_BUILDER,
-} from 'src/mkt-core/oauth2-client/license/constants';
+  MKT_LICENSE_ENDPOINTS,
+  MKT_LICENSE_LOG_CONTEXT,
+  MKT_LICENSE_ERROR_BUILDER,
+} from 'src/mkt-core/mkt-license-integration/constants';
+import { MKT_LICENSE_MESSAGES } from 'src/mkt-core/mkt-license-integration/message';
 import {
-  LicenseResponse,
-  PaginatedLicenseResponse,
-  LicenseValidationResult,
-  LicenseAnalytics,
-  LicenseApiResponse,
-} from 'src/mkt-core/oauth2-client/license/types';
-import {
-  QueryLicensesParams,
-  CreateLicensePayload,
-  UpdateLicensePayload,
-  ValidateLicensePayload,
-  BulkCreateLicensePayload,
-  BulkUpdateLicensePayload,
-  BulkDeleteLicensePayload,
-  LicenseAnalyticsQueryParams,
-} from 'src/mkt-core/oauth2-client/license/dto';
+  MktLicenseResponse,
+  MktPaginatedLicenseResponse,
+  MktLicenseValidationResult,
+  MktLicenseAnalytics,
+  MktLicenseApiResponse,
+  MktQueryLicensesParams,
+  MktCreateLicensePayload,
+  MktUpdateLicensePayload,
+  MktValidateLicensePayload,
+  MktBulkCreateLicensePayload,
+  MktBulkUpdateLicensePayload,
+  MktBulkDeleteLicensePayload,
+  MktLicenseAnalyticsQueryParams,
+} from 'src/mkt-core/mkt-license-integration/types';
+import { buildFullUrl } from 'src/mkt-core/utils/url-builder.util';
 
-const LOG_CONTEXT = 'LicenseProxyService';
-
+/**
+ * MKT License Repository
+ *
+ * Data Access Layer - handles all HTTP calls to MKT Server License API.
+ * This repository is responsible for:
+ * - Making HTTP requests to the License OAuth endpoints
+ * - Error logging
+ * - URL building
+ *
+ * NOTE: No caching or business logic here. Use MktLicenseProxyService for that.
+ */
 @Injectable()
-export class LicenseProxyService {
-  private readonly logger = new Logger(LOG_CONTEXT);
+export class MktLicenseRepository {
+  private readonly logger = new Logger(MKT_LICENSE_LOG_CONTEXT);
   private readonly apiBaseUrl: string;
 
   constructor(
@@ -44,19 +53,19 @@ export class LicenseProxyService {
   // ==================== READ OPERATIONS ====================
 
   async findAll(
-    query: QueryLicensesParams,
+    query: MktQueryLicensesParams,
     userContext?: UserContext,
-  ): Promise<PaginatedLicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSES);
+  ): Promise<MktPaginatedLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSES);
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.FETCH_ALL, { url, query });
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.FETCH_ALL, { url, query });
 
     try {
       const response = await this.oauth2Http.get<
-        LicenseApiResponse<PaginatedLicenseResponse>
+        MktLicenseApiResponse<MktPaginatedLicenseResponse>
       >(url, { params: query }, userContext);
 
-      this.logger.log(LICENSE_OPERATION_MESSAGES.FETCH_ALL, {
+      this.logger.log(MKT_LICENSE_MESSAGES.OPERATION.FETCH_ALL, {
         count: response.data.data.length,
         total: response.data.total,
       });
@@ -64,7 +73,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.fetchFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.fetchAllFailed(this.getErrorMessage(error)),
         { query },
       );
       throw error;
@@ -74,20 +83,20 @@ export class LicenseProxyService {
   async findById(
     id: string,
     userContext?: UserContext,
-  ): Promise<LicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_DETAIL, { id });
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_DETAIL, { id });
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.FETCH_BY_ID, { id });
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.FETCH_BY_ID, { id });
 
     try {
       const response = await this.oauth2Http.get<
-        LicenseApiResponse<LicenseResponse>
+        MktLicenseApiResponse<MktLicenseResponse>
       >(url, undefined, userContext);
 
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.fetchFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.fetchFailed(this.getErrorMessage(error)),
         { id },
       );
       throw error;
@@ -97,22 +106,24 @@ export class LicenseProxyService {
   async findByLicenseKey(
     licenseKey: string,
     userContext?: UserContext,
-  ): Promise<LicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_BY_KEY, {
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_BY_KEY, {
       licenseKey,
     });
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.FETCH_BY_KEY, { licenseKey });
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.FETCH_BY_KEY, {
+      licenseKey,
+    });
 
     try {
       const response = await this.oauth2Http.get<
-        LicenseApiResponse<LicenseResponse>
+        MktLicenseApiResponse<MktLicenseResponse>
       >(url, undefined, userContext);
 
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.fetchFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.fetchFailed(this.getErrorMessage(error)),
         { licenseKey },
       );
       throw error;
@@ -120,26 +131,24 @@ export class LicenseProxyService {
   }
 
   async validate(
-    payload: ValidateLicensePayload,
+    payload: MktValidateLicensePayload,
     userContext?: UserContext,
-  ): Promise<LicenseValidationResult> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_VALIDATE);
+  ): Promise<MktLicenseValidationResult> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_VALIDATE);
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.VALIDATE, {
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.VALIDATE, {
       licenseKey: payload.licenseKey,
     });
 
     try {
       const response = await this.oauth2Http.post<
-        LicenseApiResponse<LicenseValidationResult>
+        MktLicenseApiResponse<MktLicenseValidationResult>
       >(url, payload, undefined, userContext);
 
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.validationFailed(
-          this.getErrorMessage(error),
-        ),
+        MKT_LICENSE_ERROR_BUILDER.validationFailed(this.getErrorMessage(error)),
         { licenseKey: payload.licenseKey },
       );
       throw error;
@@ -149,19 +158,19 @@ export class LicenseProxyService {
   // ==================== WRITE OPERATIONS ====================
 
   async create(
-    payload: CreateLicensePayload,
+    payload: MktCreateLicensePayload,
     userContext?: UserContext,
-  ): Promise<LicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSES);
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSES);
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.CREATE, { payload });
+    this.logger.debug(MKT_LICENSE_MESSAGES.SUCCESS.CREATED, { payload });
 
     try {
       const response = await this.oauth2Http.post<
-        LicenseApiResponse<LicenseResponse>
+        MktLicenseApiResponse<MktLicenseResponse>
       >(url, payload, undefined, userContext);
 
-      this.logger.log(LICENSE_OPERATION_MESSAGES.CREATE, {
+      this.logger.log(MKT_LICENSE_MESSAGES.SUCCESS.CREATED, {
         licenseId: response.data.id,
         createdBy: userContext?.userName ?? 'System',
       });
@@ -169,7 +178,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.createFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.createFailed(this.getErrorMessage(error)),
         { payload },
       );
       throw error;
@@ -178,19 +187,19 @@ export class LicenseProxyService {
 
   async update(
     id: string,
-    payload: UpdateLicensePayload,
+    payload: MktUpdateLicensePayload,
     userContext?: UserContext,
-  ): Promise<LicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_DETAIL, { id });
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_DETAIL, { id });
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.UPDATE, { id, payload });
+    this.logger.debug(MKT_LICENSE_MESSAGES.SUCCESS.UPDATED, { id, payload });
 
     try {
       const response = await this.oauth2Http.patch<
-        LicenseApiResponse<LicenseResponse>
+        MktLicenseApiResponse<MktLicenseResponse>
       >(url, payload, undefined, userContext);
 
-      this.logger.log(LICENSE_OPERATION_MESSAGES.UPDATE, {
+      this.logger.log(MKT_LICENSE_MESSAGES.SUCCESS.UPDATED, {
         licenseId: id,
         updatedBy: userContext?.userName ?? 'System',
       });
@@ -198,7 +207,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.updateFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.updateFailed(this.getErrorMessage(error)),
         { id, payload },
       );
       throw error;
@@ -206,20 +215,20 @@ export class LicenseProxyService {
   }
 
   async remove(id: string, userContext?: UserContext): Promise<void> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_DETAIL, { id });
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_DETAIL, { id });
 
-    this.logger.warn(LICENSE_OPERATION_MESSAGES.DELETE, { id });
+    this.logger.warn(MKT_LICENSE_MESSAGES.SUCCESS.DELETED, { id });
 
     try {
       await this.oauth2Http.delete(url, undefined, userContext);
 
-      this.logger.warn(LICENSE_OPERATION_MESSAGES.DELETE, {
+      this.logger.warn(MKT_LICENSE_MESSAGES.SUCCESS.DELETED, {
         licenseId: id,
         deletedBy: userContext?.userName ?? 'System',
       });
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.deleteFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.deleteFailed(this.getErrorMessage(error)),
         { id },
       );
       throw error;
@@ -231,17 +240,17 @@ export class LicenseProxyService {
   async activate(
     id: string,
     userContext?: UserContext,
-  ): Promise<LicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_ACTIVATE, { id });
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_ACTIVATE, { id });
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.ACTIVATE, { id });
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.ACTIVATE, { id });
 
     try {
       const response = await this.oauth2Http.patch<
-        LicenseApiResponse<LicenseResponse>
+        MktLicenseApiResponse<MktLicenseResponse>
       >(url, undefined, undefined, userContext);
 
-      this.logger.log(LICENSE_OPERATION_MESSAGES.ACTIVATE, {
+      this.logger.log(MKT_LICENSE_MESSAGES.SUCCESS.ACTIVATED, {
         licenseId: id,
         activatedBy: userContext?.userName ?? 'System',
       });
@@ -249,9 +258,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.activateFailed(
-          this.getErrorMessage(error),
-        ),
+        MKT_LICENSE_ERROR_BUILDER.activateFailed(this.getErrorMessage(error)),
         { id },
       );
       throw error;
@@ -261,17 +268,17 @@ export class LicenseProxyService {
   async revoke(
     id: string,
     userContext?: UserContext,
-  ): Promise<LicenseResponse> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSE_REVOKE, { id });
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_REVOKE, { id });
 
-    this.logger.warn(LICENSE_OPERATION_MESSAGES.REVOKE, { id });
+    this.logger.warn(MKT_LICENSE_MESSAGES.OPERATION.REVOKE, { id });
 
     try {
       const response = await this.oauth2Http.patch<
-        LicenseApiResponse<LicenseResponse>
+        MktLicenseApiResponse<MktLicenseResponse>
       >(url, undefined, undefined, userContext);
 
-      this.logger.warn(LICENSE_OPERATION_MESSAGES.REVOKE, {
+      this.logger.warn(MKT_LICENSE_MESSAGES.SUCCESS.REVOKED, {
         licenseId: id,
         revokedBy: userContext?.userName ?? 'System',
       });
@@ -279,7 +286,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.revokeFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.revokeFailed(this.getErrorMessage(error)),
         { id },
       );
       throw error;
@@ -289,21 +296,21 @@ export class LicenseProxyService {
   // ==================== BULK OPERATIONS ====================
 
   async bulkCreate(
-    payload: BulkCreateLicensePayload,
+    payload: MktBulkCreateLicensePayload,
     userContext?: UserContext,
-  ): Promise<LicenseResponse[]> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSES_BULK);
+  ): Promise<MktLicenseResponse[]> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSES_BULK);
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.BULK_CREATE, {
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.BULK_CREATE, {
       count: payload.items.length,
     });
 
     try {
       const response = await this.oauth2Http.post<
-        LicenseApiResponse<LicenseResponse[]>
+        MktLicenseApiResponse<MktLicenseResponse[]>
       >(url, payload, undefined, userContext);
 
-      this.logger.log(LICENSE_OPERATION_MESSAGES.BULK_CREATE, {
+      this.logger.log(MKT_LICENSE_MESSAGES.SUCCESS.BULK_CREATED, {
         count: response.data.length,
         createdBy: userContext?.userName ?? 'System',
       });
@@ -311,7 +318,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.createFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.createFailed(this.getErrorMessage(error)),
         { itemCount: payload.items.length },
       );
       throw error;
@@ -319,21 +326,21 @@ export class LicenseProxyService {
   }
 
   async bulkUpdate(
-    payload: BulkUpdateLicensePayload,
+    payload: MktBulkUpdateLicensePayload,
     userContext?: UserContext,
-  ): Promise<LicenseResponse[]> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSES_BULK);
+  ): Promise<MktLicenseResponse[]> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSES_BULK);
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.BULK_UPDATE, {
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.BULK_UPDATE, {
       count: payload.items.length,
     });
 
     try {
       const response = await this.oauth2Http.patch<
-        LicenseApiResponse<LicenseResponse[]>
+        MktLicenseApiResponse<MktLicenseResponse[]>
       >(url, payload, undefined, userContext);
 
-      this.logger.log(LICENSE_OPERATION_MESSAGES.BULK_UPDATE, {
+      this.logger.log(MKT_LICENSE_MESSAGES.SUCCESS.BULK_UPDATED, {
         count: response.data.length,
         updatedBy: userContext?.userName ?? 'System',
       });
@@ -341,7 +348,7 @@ export class LicenseProxyService {
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.updateFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.updateFailed(this.getErrorMessage(error)),
         { itemCount: payload.items.length },
       );
       throw error;
@@ -349,25 +356,25 @@ export class LicenseProxyService {
   }
 
   async bulkDelete(
-    payload: BulkDeleteLicensePayload,
+    payload: MktBulkDeleteLicensePayload,
     userContext?: UserContext,
   ): Promise<void> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSES_BULK);
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSES_BULK);
 
-    this.logger.warn(LICENSE_OPERATION_MESSAGES.BULK_DELETE, {
+    this.logger.warn(MKT_LICENSE_MESSAGES.OPERATION.BULK_DELETE, {
       count: payload.ids.length,
     });
 
     try {
       await this.oauth2Http.delete(url, { data: payload }, userContext);
 
-      this.logger.warn(LICENSE_OPERATION_MESSAGES.BULK_DELETE, {
+      this.logger.warn(MKT_LICENSE_MESSAGES.SUCCESS.BULK_DELETED, {
         count: payload.ids.length,
         deletedBy: userContext?.userName ?? 'System',
       });
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.deleteFailed(this.getErrorMessage(error)),
+        MKT_LICENSE_ERROR_BUILDER.deleteFailed(this.getErrorMessage(error)),
         { idCount: payload.ids.length },
       );
       throw error;
@@ -377,24 +384,22 @@ export class LicenseProxyService {
   // ==================== ANALYTICS ====================
 
   async getAnalytics(
-    query: LicenseAnalyticsQueryParams,
+    query: MktLicenseAnalyticsQueryParams,
     userContext?: UserContext,
-  ): Promise<LicenseAnalytics> {
-    const url = this.buildUrl(LICENSE_API_ENDPOINTS.LICENSES_ANALYTICS);
+  ): Promise<MktLicenseAnalytics> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSES_ANALYTICS);
 
-    this.logger.debug(LICENSE_OPERATION_MESSAGES.ANALYTICS, { query });
+    this.logger.debug(MKT_LICENSE_MESSAGES.OPERATION.ANALYTICS, { query });
 
     try {
       const response = await this.oauth2Http.get<
-        LicenseApiResponse<LicenseAnalytics>
+        MktLicenseApiResponse<MktLicenseAnalytics>
       >(url, { params: query }, userContext);
 
       return response.data;
     } catch (error) {
       this.logger.error(
-        LICENSE_ERROR_MESSAGE_BUILDER.analyticsFailure(
-          this.getErrorMessage(error),
-        ),
+        MKT_LICENSE_ERROR_BUILDER.analyticsFailure(this.getErrorMessage(error)),
         { query },
       );
       throw error;
@@ -407,15 +412,7 @@ export class LicenseProxyService {
     path: string,
     params?: Record<string, string | number>,
   ): string {
-    let processedPath = path;
-
-    if (params) {
-      for (const [key, value] of Object.entries(params)) {
-        processedPath = processedPath.replace(`:${key}`, String(value));
-      }
-    }
-
-    return `${this.apiBaseUrl}${processedPath}`;
+    return buildFullUrl(this.apiBaseUrl, path, params);
   }
 
   private getErrorMessage(error: unknown): string {
