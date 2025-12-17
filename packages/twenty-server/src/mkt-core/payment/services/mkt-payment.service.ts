@@ -8,7 +8,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
-import { Metadata } from 'src/mkt-core/order/hooks/mkt-order-create-one.post-query.hook';
+import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import {
   RequestSepayJWT,
@@ -45,7 +45,7 @@ export class MktPaymentService {
       };
       discount?: number | null;
     },
-    paymentMethodsMeta: Metadata['paymentMethods'] | null,
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
   ): Promise<callFireBaseType | void> {
     const paymentRepository = await this.getPaymentRepository();
     const paymentMethodRepository = await this.getPaymentMethodRepository();

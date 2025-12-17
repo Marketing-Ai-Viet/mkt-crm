@@ -1,92 +1,73 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { DateTime } from 'luxon';
-
-import { OAUTH2_RATE_LIMIT_DEFAULTS } from 'src/mkt-core/oauth2-client/constants';
 import {
-  RateLimitException,
+  RedisRateLimiterService,
+  RateLimiterConfig,
   RateLimitStatus,
-} from 'src/mkt-core/oauth2-client/types';
+  RateLimitException,
+} from 'src/mkt-core/infrastructure/redis';
+import {
+  OAUTH2_LOG_CONTEXT,
+  OAUTH2_RATE_LIMIT_DEFAULTS,
+} from 'src/mkt-core/oauth2-client/constants';
 
+// Re-export for backward compatibility
+export { RateLimitException, RateLimitStatus };
+
+const OAUTH2_RATE_LIMITER_KEY = 'oauth2-client';
+
+/**
+ * OAuth2 Rate Limiter Service
+ *
+ * Wrapper around RedisRateLimiterService with OAuth2-specific configuration.
+ * Uses distributed Redis for rate limiting across instances.
+ */
 @Injectable()
 export class OAuth2RateLimiterService {
-  private readonly attempts: DateTime[] = [];
-  private readonly enabled: boolean;
-  private readonly maxAttempts: number;
-  private readonly windowMs: number;
+  private readonly logger = new Logger(OAUTH2_LOG_CONTEXT);
+  private readonly config: RateLimiterConfig;
+  private readonly limiter: ReturnType<
+    RedisRateLimiterService['createLimiter']
+  >;
 
-  constructor(private readonly configService: ConfigService) {
-    this.enabled =
-      this.configService.get<boolean>('oauth2Client.rateLimit.enabled') ??
-      OAUTH2_RATE_LIMIT_DEFAULTS.ENABLED;
-    this.maxAttempts =
-      this.configService.get<number>('oauth2Client.rateLimit.maxAttempts') ??
-      OAUTH2_RATE_LIMIT_DEFAULTS.MAX_ATTEMPTS;
-    this.windowMs =
-      this.configService.get<number>('oauth2Client.rateLimit.windowMs') ??
-      OAUTH2_RATE_LIMIT_DEFAULTS.WINDOW_MS;
-  }
-
-  checkRateLimit(): void {
-    if (!this.enabled) {
-      return;
-    }
-
-    this.cleanupOldAttempts();
-
-    if (this.attempts.length >= this.maxAttempts) {
-      const oldestAttempt = this.attempts[0];
-      const retryAfterMs =
-        oldestAttempt.toMillis() + this.windowMs - DateTime.utc().toMillis();
-
-      throw new RateLimitException(retryAfterMs);
-    }
-  }
-
-  recordAttempt(): void {
-    if (!this.enabled) {
-      return;
-    }
-
-    this.attempts.push(DateTime.utc());
-    this.cleanupOldAttempts();
-  }
-
-  getStatus(): RateLimitStatus {
-    this.cleanupOldAttempts();
-
-    const isLimited = this.attempts.length >= this.maxAttempts;
-    let retryAfterMs: number | undefined;
-
-    if (isLimited && this.attempts.length > 0) {
-      const oldestAttempt = this.attempts[0];
-
-      retryAfterMs = Math.max(
-        0,
-        oldestAttempt.toMillis() + this.windowMs - DateTime.utc().toMillis(),
-      );
-    }
-
-    return {
-      enabled: this.enabled,
-      currentAttempts: this.attempts.length,
-      maxAttempts: this.maxAttempts,
-      windowMs: this.windowMs,
-      isLimited,
-      retryAfterMs,
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly redisRateLimiter: RedisRateLimiterService,
+  ) {
+    this.config = {
+      enabled:
+        this.configService.get<boolean>('oauth2Client.rateLimit.enabled') ??
+        OAUTH2_RATE_LIMIT_DEFAULTS.ENABLED,
+      maxAttempts:
+        this.configService.get<number>('oauth2Client.rateLimit.maxAttempts') ??
+        OAUTH2_RATE_LIMIT_DEFAULTS.MAX_ATTEMPTS,
+      windowMs:
+        this.configService.get<number>('oauth2Client.rateLimit.windowMs') ??
+        OAUTH2_RATE_LIMIT_DEFAULTS.WINDOW_MS,
+      keyPrefix: 'oauth2:rate-limit:',
     };
+
+    this.limiter = this.redisRateLimiter.createLimiter(
+      OAUTH2_RATE_LIMITER_KEY,
+      this.config,
+    );
   }
 
-  reset(): void {
-    this.attempts.length = 0;
+  async checkRateLimit(): Promise<void> {
+    return this.limiter.checkLimit();
   }
 
-  private cleanupOldAttempts(): void {
-    const cutoffTime = DateTime.utc().minus({ milliseconds: this.windowMs });
+  async recordAttempt(): Promise<void> {
+    return this.limiter.recordAttempt();
+  }
 
-    while (this.attempts.length > 0 && this.attempts[0] < cutoffTime) {
-      this.attempts.shift();
-    }
+  async getStatus(): Promise<RateLimitStatus> {
+    return this.limiter.getStatus();
+  }
+
+  async reset(): Promise<void> {
+    await this.limiter.reset();
+    this.logger.debug('Rate limiter reset');
   }
 }

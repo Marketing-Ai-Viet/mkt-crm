@@ -17,6 +17,7 @@ import {
 } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { safeJsonStringify } from 'src/mkt-core/utils';
 
 export interface MktOrderCustomEventData {
   eventType?: CustomEventName;
@@ -197,7 +198,7 @@ export class MktOrderCustomEventListener {
 
     if (updatedOrder.metadata) {
       this.logger.log(
-        `Order metadata: ${JSON.stringify(updatedOrder.metadata)}`,
+        `Order metadata: ${safeJsonStringify(updatedOrder.metadata)}`,
       );
     }
 

@@ -1,12 +1,23 @@
-import { DateTime } from 'luxon';
-
+// Re-export types from infrastructure for backward compatibility
+import {
+  CircuitBreakerStatus,
+  RateLimitStatus,
+  RedisHealthStatus,
+  CacheStats,
+} from 'src/mkt-core/infrastructure/redis';
 import {
   CircuitBreakerStateType,
   CIRCUIT_BREAKER_STATE,
 } from 'src/mkt-core/oauth2-client/constants';
 
+// Re-export infrastructure types
+export type { CircuitBreakerStatus, RateLimitStatus, RedisHealthStatus };
+
 // Re-export CIRCUIT_BREAKER_STATE for type guard usage
 export { CIRCUIT_BREAKER_STATE };
+
+// Use CacheStats as OAuth2CacheStats for backward compatibility
+export type OAuth2CacheStats = CacheStats;
 
 // Health Status Constants
 export const OAUTH2_HEALTH_STATUS = {
@@ -30,44 +41,6 @@ export const isCircuitBreakerState = (
   Object.values(CIRCUIT_BREAKER_STATE).includes(
     value as CircuitBreakerStateType,
   );
-
-// Circuit Breaker Types
-export type CircuitBreakerStatus = {
-  state: CircuitBreakerStateType;
-  failureCount: number;
-  successCount: number;
-  lastFailureTime?: DateTime;
-  nextRetryTime?: DateTime;
-};
-
-// Rate Limiter Types
-export type RateLimitStatus = {
-  enabled: boolean;
-  currentAttempts: number;
-  maxAttempts: number;
-  windowMs: number;
-  isLimited: boolean;
-  retryAfterMs?: number;
-};
-
-// Redis Health Status Types
-export type RedisHealthStatus = {
-  connected: boolean;
-  lastErrorAt?: Date;
-  lastHealthCheckAt?: Date;
-  latencyMs?: number;
-  fallbackCount: number;
-  consecutiveFailures: number;
-};
-
-// Cache Types
-export type OAuth2CacheStats = {
-  lru: {
-    size: number;
-    maxSize: number;
-  };
-  redis: RedisHealthStatus;
-};
 
 // HTTP Service Types
 export type UserContext = {

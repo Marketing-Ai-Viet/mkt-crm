@@ -6,6 +6,7 @@ import {
   SINVOICE_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { safeJsonStringify } from 'src/mkt-core/utils';
 
 import {
   OrderState,
@@ -70,7 +71,7 @@ export class CompletedState extends OrderState {
     // eslint-disable-next-line no-console
     console.log('=== CompletedState getPayload DEBUG ===');
     // eslint-disable-next-line no-console
-    console.log('Input payload:', JSON.stringify(payload, null, 2));
+    console.log('Input payload:', safeJsonStringify(payload, { spaces: 2 }));
     // eslint-disable-next-line no-console
     console.log('Action:', action);
 

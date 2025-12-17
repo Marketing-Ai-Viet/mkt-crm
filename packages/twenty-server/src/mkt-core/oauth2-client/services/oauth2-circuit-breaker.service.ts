@@ -1,146 +1,76 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { DateTime } from 'luxon';
-
 import {
-  CIRCUIT_BREAKER_STATE,
-  CircuitBreakerStateType,
+  RedisCircuitBreakerService,
+  CircuitBreakerConfig,
+  CircuitBreakerStatus,
+  CircuitBreakerOpenException,
+} from 'src/mkt-core/infrastructure/redis';
+import {
   OAUTH2_CIRCUIT_BREAKER_DEFAULTS,
   OAUTH2_LOG_CONTEXT,
 } from 'src/mkt-core/oauth2-client/constants';
-import {
-  CircuitBreakerOpenException,
-  CircuitBreakerStatus,
-} from 'src/mkt-core/oauth2-client/types';
 
+// Re-export for backward compatibility
+export { CircuitBreakerOpenException, CircuitBreakerStatus };
+
+const OAUTH2_CIRCUIT_BREAKER_KEY = 'oauth2-client';
+
+/**
+ * OAuth2 Circuit Breaker Service
+ *
+ * Wrapper around RedisCircuitBreakerService with OAuth2-specific configuration.
+ * Uses distributed Redis for state sharing across instances.
+ */
 @Injectable()
 export class OAuth2CircuitBreakerService {
   private readonly logger = new Logger(OAUTH2_LOG_CONTEXT);
-  private readonly enabled: boolean;
-  private readonly failureThreshold: number;
-  private readonly resetTimeoutMs: number;
-  private readonly halfOpenAttempts: number;
+  private readonly config: CircuitBreakerConfig;
+  private readonly breaker: ReturnType<
+    RedisCircuitBreakerService['createBreaker']
+  >;
 
-  private state: CircuitBreakerStateType = CIRCUIT_BREAKER_STATE.CLOSED;
-  private failureCount = 0;
-  private successCount = 0;
-  private lastFailureTime?: DateTime;
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly redisCircuitBreaker: RedisCircuitBreakerService,
+  ) {
+    this.config = {
+      enabled:
+        this.configService.get<boolean>(
+          'oauth2Client.circuitBreaker.enabled',
+        ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.ENABLED,
+      failureThreshold:
+        this.configService.get<number>(
+          'oauth2Client.circuitBreaker.failureThreshold',
+        ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.FAILURE_THRESHOLD,
+      resetTimeoutMs:
+        this.configService.get<number>(
+          'oauth2Client.circuitBreaker.resetTimeoutMs',
+        ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.RESET_TIMEOUT_MS,
+      halfOpenAttempts:
+        this.configService.get<number>(
+          'oauth2Client.circuitBreaker.halfOpenAttempts',
+        ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.HALF_OPEN_ATTEMPTS,
+      keyPrefix: 'oauth2:circuit-breaker:',
+    };
 
-  constructor(private readonly configService: ConfigService) {
-    this.enabled =
-      this.configService.get<boolean>('oauth2Client.circuitBreaker.enabled') ??
-      OAUTH2_CIRCUIT_BREAKER_DEFAULTS.ENABLED;
-    this.failureThreshold =
-      this.configService.get<number>(
-        'oauth2Client.circuitBreaker.failureThreshold',
-      ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.FAILURE_THRESHOLD;
-    this.resetTimeoutMs =
-      this.configService.get<number>(
-        'oauth2Client.circuitBreaker.resetTimeoutMs',
-      ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.RESET_TIMEOUT_MS;
-    this.halfOpenAttempts =
-      this.configService.get<number>(
-        'oauth2Client.circuitBreaker.halfOpenAttempts',
-      ) ?? OAUTH2_CIRCUIT_BREAKER_DEFAULTS.HALF_OPEN_ATTEMPTS;
+    this.breaker = this.redisCircuitBreaker.createBreaker(
+      OAUTH2_CIRCUIT_BREAKER_KEY,
+      this.config,
+    );
   }
 
   async execute<T>(fn: () => Promise<T>): Promise<T> {
-    if (!this.enabled) {
-      return fn();
-    }
-
-    this.checkStateTransition();
-
-    if (this.state === CIRCUIT_BREAKER_STATE.OPEN) {
-      throw new CircuitBreakerOpenException();
-    }
-
-    try {
-      const result = await fn();
-
-      this.recordSuccess();
-
-      return result;
-    } catch (error) {
-      this.recordFailure();
-      throw error;
-    }
+    return this.breaker.execute(fn);
   }
 
-  getStatus(): CircuitBreakerStatus {
-    this.checkStateTransition();
-
-    const status: CircuitBreakerStatus = {
-      state: this.state,
-      failureCount: this.failureCount,
-      successCount: this.successCount,
-      lastFailureTime: this.lastFailureTime,
-    };
-
-    if (this.state === CIRCUIT_BREAKER_STATE.OPEN && this.lastFailureTime) {
-      status.nextRetryTime = this.lastFailureTime.plus({
-        milliseconds: this.resetTimeoutMs,
-      });
-    }
-
-    return status;
+  async getStatus(): Promise<CircuitBreakerStatus> {
+    return this.breaker.getStatus();
   }
 
-  reset(): void {
-    this.state = CIRCUIT_BREAKER_STATE.CLOSED;
-    this.failureCount = 0;
-    this.successCount = 0;
-    this.lastFailureTime = undefined;
+  async reset(): Promise<void> {
+    await this.breaker.reset();
     this.logger.log('Circuit breaker reset to CLOSED state');
-  }
-
-  private checkStateTransition(): void {
-    if (
-      this.state === CIRCUIT_BREAKER_STATE.OPEN &&
-      this.lastFailureTime &&
-      DateTime.utc().diff(this.lastFailureTime).milliseconds >=
-        this.resetTimeoutMs
-    ) {
-      this.state = CIRCUIT_BREAKER_STATE.HALF_OPEN;
-      this.successCount = 0;
-      this.logger.log('Circuit breaker transitioned to HALF_OPEN state');
-    }
-  }
-
-  private recordSuccess(): void {
-    if (this.state === CIRCUIT_BREAKER_STATE.HALF_OPEN) {
-      this.successCount++;
-
-      if (this.successCount >= this.halfOpenAttempts) {
-        this.state = CIRCUIT_BREAKER_STATE.CLOSED;
-        this.failureCount = 0;
-        this.successCount = 0;
-        this.lastFailureTime = undefined;
-        this.logger.log('Circuit breaker transitioned to CLOSED state');
-      }
-    } else if (this.state === CIRCUIT_BREAKER_STATE.CLOSED) {
-      this.failureCount = 0;
-    }
-  }
-
-  private recordFailure(): void {
-    this.failureCount++;
-    this.lastFailureTime = DateTime.utc();
-
-    if (this.state === CIRCUIT_BREAKER_STATE.HALF_OPEN) {
-      this.state = CIRCUIT_BREAKER_STATE.OPEN;
-      this.logger.warn(
-        'Circuit breaker transitioned to OPEN state (from HALF_OPEN)',
-      );
-    } else if (
-      this.state === CIRCUIT_BREAKER_STATE.CLOSED &&
-      this.failureCount >= this.failureThreshold
-    ) {
-      this.state = CIRCUIT_BREAKER_STATE.OPEN;
-      this.logger.warn(
-        `Circuit breaker transitioned to OPEN state (failures: ${this.failureCount})`,
-      );
-    }
   }
 }

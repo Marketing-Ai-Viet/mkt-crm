@@ -23,6 +23,11 @@ import {
 import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import {
+  MktPackageSnapshot,
+  MktProductSnapshot,
+  MktSupportedLanguage,
+} from 'src/mkt-core/order/types';
 import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
 import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
@@ -142,6 +147,102 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   totalPrice?: number;
+
+  // ============================================
+  // EXTERNAL MKT PRODUCT REFERENCE FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktProductId,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Product ID`,
+    description: msg`ID of product from MKT Server (UUIDv7)`,
+    icon: 'IconLink',
+  })
+  @WorkspaceIsNullable()
+  externalMktProductId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktProductCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Product Code`,
+    description: msg`Unique code of product from MKT Server`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  externalMktProductCode: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktPackageId,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Package ID`,
+    description: msg`ID of package from MKT Server`,
+    icon: 'IconPackage',
+  })
+  @WorkspaceIsNullable()
+  externalMktPackageId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktPackageCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Package Code`,
+    description: msg`Code of package from MKT Server`,
+    icon: 'IconBarcode',
+  })
+  @WorkspaceIsNullable()
+  externalMktPackageCode: string | null;
+
+  // ============================================
+  // SNAPSHOT FIELDS - IMMUTABLE AFTER CREATION
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotMktProduct,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Product Snapshot`,
+    description: msg`Immutable snapshot of MKT product at order time`,
+    icon: 'IconCamera',
+  })
+  @WorkspaceIsNullable()
+  snapshotMktProduct: MktProductSnapshot | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotMktPackage,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Package Snapshot`,
+    description: msg`Immutable snapshot of MKT package at order time`,
+    icon: 'IconPackage',
+  })
+  @WorkspaceIsNullable()
+  snapshotMktPackage: MktPackageSnapshot | null;
+
+  // ============================================
+  // DISPLAY FIELDS (denormalized for quick access)
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotPackageName,
+    type: FieldMetadataType.TEXT,
+    label: msg`Package Name (Snapshot)`,
+    description: msg`Package name at order time`,
+    icon: 'IconTag',
+  })
+  @WorkspaceIsNullable()
+  snapshotPackageName: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.orderLanguage,
+    type: FieldMetadataType.TEXT,
+    label: msg`Order Language`,
+    description: msg`Display language for order (vi/en/ko)`,
+    icon: 'IconLanguage',
+  })
+  @WorkspaceIsNullable()
+  orderLanguage: MktSupportedLanguage | null;
+
+  // ============================================
+  // RELATIONS
+  // ============================================
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.mktOrder,

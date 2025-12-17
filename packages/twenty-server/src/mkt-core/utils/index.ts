@@ -27,3 +27,8 @@ export {
 
 // Array processing utilities
 export { ArrayUtils } from './array.utils';
+
+export * from './json.util';
+export * from './url-builder.util';
+export * from './error.util';
+export * from './http-exception-mapper.util';

@@ -1,17 +1,17 @@
 import {
   Injectable,
   Logger,
+  OnApplicationBootstrap,
   OnModuleDestroy,
-  OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { DateTime } from 'luxon';
 import { firstValueFrom } from 'rxjs';
 
 import {
-  OAUTH2_CACHE_DEFAULTS,
   OAUTH2_LOG_CONTEXT,
   OAUTH2_SUCCESS_MESSAGES,
   OAUTH2_ERROR_MESSAGES,
@@ -25,6 +25,8 @@ import {
   OAuth2TokenMetadata,
   OAuth2TokenResponse,
   RateLimitException,
+  OAUTH2_EVENTS,
+  OAuth2TokenAcquiredEvent,
 } from 'src/mkt-core/oauth2-client/types';
 
 import { OAuth2CacheService } from './oauth2-cache.service';
@@ -33,7 +35,9 @@ import { OAuth2RateLimiterService } from './oauth2-rate-limiter.service';
 import { OAuth2CircuitBreakerService } from './oauth2-circuit-breaker.service';
 
 @Injectable()
-export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
+export class OAuth2ClientService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(OAUTH2_LOG_CONTEXT);
   private readonly serverUrl: string;
   private readonly clientId: string;
@@ -57,6 +61,7 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
     private readonly lockService: OAuth2LockService,
     private readonly rateLimiterService: OAuth2RateLimiterService,
     private readonly circuitBreakerService: OAuth2CircuitBreakerService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.serverUrl =
       this.configService.get<string>('oauth2Client.serverUrl') ?? '';
@@ -78,7 +83,11 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       this.configService.get<number>('oauth2Client.http.timeoutMs') ?? 10000;
   }
 
-  async onModuleInit(): Promise<void> {
+  /**
+   * Called after all modules have been initialized and all event listeners registered.
+   * This ensures MktProductSyncService's @OnEvent listener is ready to receive events.
+   */
+  async onApplicationBootstrap(): Promise<void> {
     // Skip if clientId or clientSecret not configured
     if (!this.clientId || !this.clientSecret) {
       this.logger.warn(
@@ -88,6 +97,17 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Delay token initialization to next event loop iteration
+    // This ensures ALL modules have completed their onApplicationBootstrap
+    // before we emit TOKEN_ACQUIRED event
+    setImmediate(() => {
+      this.initializeTokenAndStartRefresh().catch((error) => {
+        this.logger.error('Failed to initialize token on startup', error);
+      });
+    });
+  }
+
+  private async initializeTokenAndStartRefresh(): Promise<void> {
     // Fetch initial token on startup
     await this.initializeToken();
 
@@ -126,10 +146,7 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       return 0;
     }
 
-    const expiresAt =
-      token.expiresAt instanceof Date
-        ? DateTime.fromJSDate(token.expiresAt)
-        : DateTime.fromISO(String(token.expiresAt));
+    const expiresAt = DateTime.fromJSDate(token.expiresAt);
 
     return Math.max(
       0,
@@ -171,12 +188,18 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
           return recheckedToken.accessToken;
         }
 
+        // Check if this is a refresh (had token before) or initial acquisition
+        const isRefresh = cachedToken !== null;
+
         // Fetch token mới
         const newToken = await this.fetchNewToken();
 
         await this.cacheService.setToken(cacheKey, newToken);
         this.lastRefreshedAt = DateTime.utc();
         this.refreshCount++;
+
+        // Emit token acquired event
+        this.emitTokenAcquiredEvent(newToken, isRefresh);
 
         return newToken.accessToken;
       },
@@ -198,14 +221,8 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
 
-    const expiresAt =
-      token.expiresAt instanceof Date
-        ? DateTime.fromJSDate(token.expiresAt)
-        : DateTime.fromISO(String(token.expiresAt));
-    const issuedAt =
-      token.issuedAt instanceof Date
-        ? DateTime.fromJSDate(token.issuedAt)
-        : DateTime.fromISO(String(token.issuedAt));
+    const expiresAt = DateTime.fromJSDate(token.expiresAt);
+    const issuedAt = DateTime.fromJSDate(token.issuedAt);
     const expiresIn = Math.max(
       0,
       Math.floor(expiresAt.diff(DateTime.utc()).as('seconds')),
@@ -226,16 +243,13 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
     const cacheKey = this.getCacheKey();
     const token = await this.cacheService.getToken(cacheKey);
     const cacheStats = this.cacheService.getStats();
-    const circuitBreakerStatus = this.circuitBreakerService.getStatus();
-    const rateLimitStatus = this.rateLimiterService.getStatus();
+    const circuitBreakerStatus = await this.circuitBreakerService.getStatus();
+    const rateLimitStatus = await this.rateLimiterService.getStatus();
 
     let tokenInfo: OAuth2HealthCheckResult['token'] = { valid: false };
 
     if (token) {
-      const expiresAt =
-        token.expiresAt instanceof Date
-          ? DateTime.fromJSDate(token.expiresAt)
-          : DateTime.fromISO(String(token.expiresAt));
+      const expiresAt = DateTime.fromJSDate(token.expiresAt);
       const expiresIn = Math.max(
         0,
         Math.floor(expiresAt.diff(DateTime.utc()).as('seconds')),
@@ -266,8 +280,8 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async fetchNewToken(): Promise<OAuth2Token> {
-    this.rateLimiterService.checkRateLimit();
-    this.rateLimiterService.recordAttempt();
+    await this.rateLimiterService.checkRateLimit();
+    await this.rateLimiterService.recordAttempt();
 
     return this.circuitBreakerService.execute(async () => {
       const tokenUrl = `${this.serverUrl}${this.tokenEndpoint}`;
@@ -419,16 +433,15 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
    * Tính số giây còn lại trước khi token hết hạn.
    */
   private getSecondsUntilExpiry(token: OAuth2Token): number {
-    const expiresAt =
-      token.expiresAt instanceof Date
-        ? DateTime.fromJSDate(token.expiresAt)
-        : DateTime.fromISO(String(token.expiresAt));
+    const expiresAt = DateTime.fromJSDate(token.expiresAt);
 
     return Math.floor(expiresAt.diff(DateTime.utc()).as('seconds'));
   }
 
   private getCacheKey(): string {
-    return `${OAUTH2_CACHE_DEFAULTS.REDIS_KEY_PREFIX}:${this.clientId}`;
+    // Key prefix 'token:' is already added in OAuth2CacheService.createCache()
+    // Just use clientId directly to avoid duplicate prefixes
+    return this.clientId;
   }
 
   private startBackgroundRefresh(): void {
@@ -502,5 +515,28 @@ export class OAuth2ClientService implements OnModuleInit, OnModuleDestroy {
       this.refreshInterval = undefined;
       this.logger.log('Background token refresh stopped');
     }
+  }
+
+  // ============================================
+  // EVENT EMISSION
+  // ============================================
+
+  /**
+   * Emit token acquired event for subscribers (e.g., MktProductSyncService)
+   */
+  private emitTokenAcquiredEvent(token: OAuth2Token, isRefresh: boolean): void {
+    const eventPayload: OAuth2TokenAcquiredEvent = {
+      clientId: this.clientId,
+      scopes: token.scopes,
+      expiresIn: token.expiresIn,
+      isRefresh,
+      timestamp: new Date(),
+    };
+
+    this.eventEmitter.emit(OAUTH2_EVENTS.TOKEN_ACQUIRED, eventPayload);
+
+    this.logger.log(
+      `Emitted ${OAUTH2_EVENTS.TOKEN_ACQUIRED} event (isRefresh: ${isRefresh}, scopes: ${token.scopes.join(', ')})`,
+    );
   }
 }

@@ -13,7 +13,12 @@ export type RefundItem = {
 
 export type ORDER_METADATA = {
   variants?: Array<{ mktVariantId: string; quantity?: number }>;
-  paymentMethods?: Array<{ mktPaymentMethodId: string; name?: string }>;
+  paymentMethods?: Array<{
+    mktPaymentMethodId: string;
+    name?: string;
+    duration?: number;
+    amount?: number;
+  }>;
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
   trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi
