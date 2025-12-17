@@ -6,61 +6,19 @@ import {
   MKT_ORDER_EVENT_TYPES,
   PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/common/common.type';
-import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
-
-/**
- * Order event payload structure
- */
-export type OrderEventPayload = {
-  eventType: MKT_ORDER_EVENT_TYPES;
-  orderId: string;
-  workspaceId: string;
-  orderData: {
-    id: string;
-    note?: string;
-    [key: string]: unknown;
-  };
-  timestamp: string;
-};
-
-/**
- * Payment event payload structure
- */
-export type PaymentEventPayload = {
-  eventType: PAYMENT_HISTORY_TYPE;
-  orderId: string;
-  workspaceId: string;
-  orderData: {
-    id: string;
-    note?: string;
-    [key: string]: unknown;
-  };
-  timestamp: string;
-};
-
-/**
- * Mapping from ORDER_ACTION to MKT_ORDER_EVENT_TYPES
- */
-const ACTION_TO_EVENT_TYPE: Partial<
-  Record<ORDER_ACTION, MKT_ORDER_EVENT_TYPES>
-> = {
-  [ORDER_ACTION.REFUND]: MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED,
-  [ORDER_ACTION.REFUND_PARTIAL]: MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED,
-  [ORDER_ACTION.LICENSE]: MKT_ORDER_EVENT_TYPES.FROM_LICENSE,
-  [ORDER_ACTION.LICENSE_RENEWING]: MKT_ORDER_EVENT_TYPES.FROM_LICENSE,
-};
-
-/**
- * Mapping from ORDER_ACTION to PAYMENT_HISTORY_TYPE
- */
-const ACTION_TO_PAYMENT_TYPE: Partial<
-  Record<ORDER_ACTION, PAYMENT_HISTORY_TYPE>
-> = {
-  [ORDER_ACTION.REFUND]: PAYMENT_HISTORY_TYPE.REFUND,
-  [ORDER_ACTION.REFUND_PARTIAL]: PAYMENT_HISTORY_TYPE.REFUND,
-  [ORDER_ACTION.CHANGE_VARIANT]: PAYMENT_HISTORY_TYPE.CHANGE_VARIANT,
-  [ORDER_ACTION.LICENSE_RENEWING]: PAYMENT_HISTORY_TYPE.RENEW,
-};
+import {
+  ACTION_TO_ORDER_EVENT_TYPE,
+  ACTION_TO_PAYMENT_TYPE,
+  ORDER_ACTION,
+} from 'src/mkt-core/order/constants';
+import {
+  MKT_ORDER_EVENT_LOG_CONTEXT,
+  MKT_ORDER_EVENT_LOG_MESSAGES,
+} from 'src/mkt-core/order/messages';
+import {
+  OrderEventPayload,
+  PaymentEventPayload,
+} from 'src/mkt-core/order/types';
 
 /**
  * OrderEventService - Centralized service for emitting order-related events
@@ -78,7 +36,7 @@ const ACTION_TO_PAYMENT_TYPE: Partial<
  */
 @Injectable()
 export class OrderEventService {
-  private readonly logger = new Logger(OrderEventService.name);
+  private readonly logger = new Logger(MKT_ORDER_EVENT_LOG_CONTEXT);
 
   constructor(private readonly workspaceEventEmitter: WorkspaceEventEmitter) {}
 
@@ -164,7 +122,7 @@ export class OrderEventService {
     if (accountingConfirmed) {
       eventType = MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED;
     } else {
-      const mappedEventType = ACTION_TO_EVENT_TYPE[action];
+      const mappedEventType = ACTION_TO_ORDER_EVENT_TYPE[action];
 
       if (mappedEventType) {
         eventType = mappedEventType;
@@ -185,7 +143,9 @@ export class OrderEventService {
   ): Promise<void> {
     if (!orderId || !workspaceId) {
       this.logger.warn(
-        'Cannot emit order event: missing orderId or workspaceId',
+        MKT_ORDER_EVENT_LOG_MESSAGES.EMIT_ORDER_EVENT_SKIPPED(
+          'missing orderId or workspaceId',
+        ),
       );
 
       return;
@@ -209,11 +169,19 @@ export class OrderEventService {
         workspaceId,
       );
 
-      this.logger.log(`Emitted ${eventType} event for order: ${orderId}`);
+      this.logger.log(
+        MKT_ORDER_EVENT_LOG_MESSAGES.EMIT_ORDER_EVENT_SUCCESS(
+          orderId,
+          eventType,
+        ),
+      );
     } catch (error) {
       this.logger.error(
-        `Failed to emit ${eventType} event for order: ${orderId}`,
-        error,
+        MKT_ORDER_EVENT_LOG_MESSAGES.EMIT_ORDER_EVENT_FAILED(
+          orderId,
+          eventType,
+          error.message,
+        ),
       );
       // Don't throw to prevent disrupting main flow
     }
@@ -230,7 +198,9 @@ export class OrderEventService {
   ): Promise<void> {
     if (!orderId || !workspaceId) {
       this.logger.warn(
-        'Cannot emit payment event: missing orderId or workspaceId',
+        MKT_ORDER_EVENT_LOG_MESSAGES.EMIT_ORDER_EVENT_SKIPPED(
+          'missing orderId or workspaceId',
+        ),
       );
 
       return;
@@ -255,12 +225,18 @@ export class OrderEventService {
       );
 
       this.logger.log(
-        `Emitted ${paymentType} payment event for order: ${orderId}`,
+        MKT_ORDER_EVENT_LOG_MESSAGES.EMIT_PAYMENT_EVENT_SUCCESS(
+          orderId,
+          paymentType,
+        ),
       );
     } catch (error) {
       this.logger.error(
-        `Failed to emit ${paymentType} payment event for order: ${orderId}`,
-        error,
+        MKT_ORDER_EVENT_LOG_MESSAGES.EMIT_PAYMENT_EVENT_FAILED(
+          orderId,
+          paymentType,
+          error.message,
+        ),
       );
       // Don't throw to prevent disrupting main flow
     }

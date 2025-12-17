@@ -3,85 +3,25 @@ import { Injectable, Logger } from '@nestjs/common';
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
 import {
+  INITIAL_ORDER_STATUSES,
+  MODIFIABLE_ORDER_STATUSES,
   ORDER_ACTION,
   ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
+  REFUND_ACTIONS,
+  STATUS_ACTION_MAP,
+  TERMINAL_ORDER_STATUSES,
+  TRIAL_ACTIONS,
+  VALID_STATUS_TRANSITIONS,
+  LICENSE_PROCESSING_ACTIONS,
+  PAYMENT_PROCESSING_ACTIONS,
+} from 'src/mkt-core/order/constants';
+import {
+  MKT_ORDER_STATUS_LOG_CONTEXT,
+  MKT_ORDER_STATUS_LOG_MESSAGES,
+} from 'src/mkt-core/order/messages';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderStateMachine } from 'src/mkt-core/order/states';
-
-/**
- * Result of status transition validation
- */
-export type StatusTransitionResult = {
-  valid: boolean;
-  action: ORDER_ACTION | null;
-  newStatus: ORDER_STATUS | null;
-  error?: string;
-};
-
-/**
- * Input for determining action
- */
-export type StatusInput = {
-  status?: ORDER_STATUS | null;
-  trialLicense?: boolean | null;
-  licenseStatus?: string | null;
-  sInvoiceStatus?: string | null;
-  accountingConfirmed?: boolean | null;
-  metadata?: unknown | null;
-};
-
-/**
- * Status to action mapping
- */
-const STATUS_ACTION_MAP: Record<ORDER_STATUS, ORDER_ACTION> = {
-  [ORDER_STATUS.DRAFT]: ORDER_ACTION.DRAFT,
-  [ORDER_STATUS.TRIAL]: ORDER_ACTION.TRIAL,
-  [ORDER_STATUS.WAIT]: ORDER_ACTION.WAIT,
-  [ORDER_STATUS.COMPLETED]: ORDER_ACTION.COMPLETED,
-  [ORDER_STATUS.CONFIRMED]: ORDER_ACTION.CONFIRMED,
-  [ORDER_STATUS.BLOCKED]: ORDER_ACTION.LOCKED,
-  [ORDER_STATUS.OVERDUE]: ORDER_ACTION.OVERDUE,
-  [ORDER_STATUS.REFUSE]: ORDER_ACTION.REFUSE,
-  [ORDER_STATUS.REFUND]: ORDER_ACTION.REFUND,
-  [ORDER_STATUS.REFUND_PARTIAL]: ORDER_ACTION.REFUND_PARTIAL,
-};
-
-/**
- * Valid status transitions matrix
- * Key: current status, Value: array of allowed target statuses
- */
-const VALID_TRANSITIONS: Record<ORDER_STATUS, ORDER_STATUS[]> = {
-  [ORDER_STATUS.DRAFT]: [ORDER_STATUS.WAIT, ORDER_STATUS.TRIAL],
-  [ORDER_STATUS.TRIAL]: [
-    ORDER_STATUS.CONFIRMED,
-    ORDER_STATUS.WAIT,
-    ORDER_STATUS.REFUSE,
-  ],
-  [ORDER_STATUS.WAIT]: [
-    ORDER_STATUS.CONFIRMED,
-    ORDER_STATUS.COMPLETED,
-    ORDER_STATUS.OVERDUE,
-    ORDER_STATUS.REFUSE,
-    ORDER_STATUS.BLOCKED,
-  ],
-  [ORDER_STATUS.CONFIRMED]: [
-    ORDER_STATUS.COMPLETED,
-    ORDER_STATUS.REFUND,
-    ORDER_STATUS.REFUND_PARTIAL,
-    ORDER_STATUS.BLOCKED,
-  ],
-  [ORDER_STATUS.COMPLETED]: [ORDER_STATUS.REFUND, ORDER_STATUS.REFUND_PARTIAL],
-  [ORDER_STATUS.OVERDUE]: [
-    ORDER_STATUS.WAIT,
-    ORDER_STATUS.REFUSE,
-    ORDER_STATUS.BLOCKED,
-  ],
-  [ORDER_STATUS.BLOCKED]: [ORDER_STATUS.WAIT, ORDER_STATUS.REFUSE],
-  [ORDER_STATUS.REFUSE]: [],
-  [ORDER_STATUS.REFUND]: [],
-  [ORDER_STATUS.REFUND_PARTIAL]: [ORDER_STATUS.REFUND],
-};
+import { StatusInput, StatusTransitionResult } from 'src/mkt-core/order/types';
 
 /**
  * OrderStatusService - Centralized service for order status management
@@ -94,7 +34,7 @@ const VALID_TRANSITIONS: Record<ORDER_STATUS, ORDER_STATUS[]> = {
  */
 @Injectable()
 export class OrderStatusService {
-  private readonly logger = new Logger(OrderStatusService.name);
+  private readonly logger = new Logger(MKT_ORDER_STATUS_LOG_CONTEXT);
 
   /**
    * Determine valid action based on current order and target input
@@ -135,7 +75,10 @@ export class OrderStatusService {
       const newStatus = this.getStatusFromAction(action, currentStatus);
 
       this.logger.debug(
-        `Determined action: ${action} for transition ${currentStatus ?? 'null'} -> ${newStatus}`,
+        MKT_ORDER_STATUS_LOG_MESSAGES.DETERMINE_ACTION_SUCCESS(
+          action,
+          newStatus,
+        ),
       );
 
       return {
@@ -164,18 +107,14 @@ export class OrderStatusService {
   ): boolean {
     // From null/undefined -> any initial status is allowed
     if (!currentStatus) {
-      return [
-        ORDER_STATUS.DRAFT,
-        ORDER_STATUS.WAIT,
-        ORDER_STATUS.TRIAL,
-      ].includes(targetStatus);
+      return INITIAL_ORDER_STATUSES.includes(targetStatus);
     }
 
-    const allowedTransitions = VALID_TRANSITIONS[currentStatus];
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus];
 
     if (!allowedTransitions) {
       this.logger.warn(
-        `No transition rules defined for status: ${currentStatus}`,
+        MKT_ORDER_STATUS_LOG_MESSAGES.NO_TRANSITION_RULES(currentStatus),
       );
 
       return false;
@@ -189,10 +128,10 @@ export class OrderStatusService {
    */
   getAllowedTransitions(currentStatus: ORDER_STATUS | null): ORDER_STATUS[] {
     if (!currentStatus) {
-      return [ORDER_STATUS.DRAFT, ORDER_STATUS.WAIT, ORDER_STATUS.TRIAL];
+      return [...INITIAL_ORDER_STATUSES];
     }
 
-    return VALID_TRANSITIONS[currentStatus] ?? [];
+    return VALID_STATUS_TRANSITIONS[currentStatus] ?? [];
   }
 
   /**
@@ -250,9 +189,7 @@ export class OrderStatusService {
         return ORDER_STATUS.COMPLETED;
 
       default:
-        this.logger.warn(
-          `Unknown action: ${action}, defaulting to current status`,
-        );
+        this.logger.warn(MKT_ORDER_STATUS_LOG_MESSAGES.UNKNOWN_ACTION(action));
 
         return currentStatus ?? ORDER_STATUS.DRAFT;
     }
@@ -269,44 +206,28 @@ export class OrderStatusService {
    * Check if action is a trial-related action
    */
   isTrialAction(action: ORDER_ACTION): boolean {
-    return [
-      ORDER_ACTION.TRIAL,
-      ORDER_ACTION.TRIAL_TO_CONFIRMED,
-      ORDER_ACTION.TRIAL_TO_PAID,
-    ].includes(action);
+    return TRIAL_ACTIONS.includes(action);
   }
 
   /**
    * Check if action is a refund-related action
    */
   isRefundAction(action: ORDER_ACTION): boolean {
-    return [ORDER_ACTION.REFUND, ORDER_ACTION.REFUND_PARTIAL].includes(action);
+    return REFUND_ACTIONS.includes(action);
   }
 
   /**
    * Check if action requires license processing
    */
   requiresLicenseProcessing(action: ORDER_ACTION): boolean {
-    return [
-      ORDER_ACTION.COMPLETED,
-      ORDER_ACTION.PAID,
-      ORDER_ACTION.FREE,
-      ORDER_ACTION.REFUND,
-      ORDER_ACTION.REFUND_PARTIAL,
-      ORDER_ACTION.LICENSE,
-      ORDER_ACTION.LICENSE_RENEWING,
-    ].includes(action);
+    return LICENSE_PROCESSING_ACTIONS.includes(action);
   }
 
   /**
    * Check if action requires payment processing
    */
   requiresPaymentProcessing(action: ORDER_ACTION): boolean {
-    return [
-      ORDER_ACTION.WAIT,
-      ORDER_ACTION.TRIAL_TO_PAID,
-      ORDER_ACTION.LICENSE_RENEWING,
-    ].includes(action);
+    return PAYMENT_PROCESSING_ACTIONS.includes(action);
   }
 
   /**
@@ -320,7 +241,7 @@ export class OrderStatusService {
    * Check if status is terminal (no further transitions allowed)
    */
   isTerminalStatus(status: ORDER_STATUS): boolean {
-    return [ORDER_STATUS.REFUSE, ORDER_STATUS.REFUND].includes(status);
+    return TERMINAL_ORDER_STATUSES.includes(status);
   }
 
   /**
@@ -329,7 +250,7 @@ export class OrderStatusService {
   allowsModification(status: ORDER_STATUS | null): boolean {
     if (!status) return true;
 
-    return [ORDER_STATUS.DRAFT].includes(status);
+    return MODIFIABLE_ORDER_STATUSES.includes(status);
   }
 
   /**

@@ -1,0 +1,230 @@
+import {
+  MKT_ORDER_EVENT_TYPES,
+  PAYMENT_HISTORY_TYPE,
+} from 'src/mkt-core/common/common.type';
+import {
+  ORDER_ACTION,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants/order-status.constants';
+
+// ============================================
+// ORDER ITEM DEFAULTS
+// ============================================
+
+export const ORDER_ITEM_DEFAULTS = {
+  TAX_PERCENTAGE: 0,
+  UNIT_NAME: 'pcs',
+  QUANTITY: 1,
+} as const;
+
+// ============================================
+// ORDER CALCULATION CONFIG
+// ============================================
+
+export const ORDER_CALCULATION_CONFIG = {
+  /**
+   * Tax percentage mặc định (%)
+   */
+  DEFAULT_TAX_PERCENTAGE: 0,
+
+  /**
+   * Số chữ số thập phân khi làm tròn
+   */
+  DECIMAL_PLACES: 2,
+
+  /**
+   * Default currency
+   */
+  DEFAULT_CURRENCY: 'VND',
+} as const;
+
+// ============================================
+// STATUS ACTION MAPPING
+// ============================================
+
+/**
+ * Mapping from ORDER_STATUS to ORDER_ACTION
+ */
+export const STATUS_ACTION_MAP: Record<ORDER_STATUS, ORDER_ACTION> = {
+  [ORDER_STATUS.DRAFT]: ORDER_ACTION.DRAFT,
+  [ORDER_STATUS.TRIAL]: ORDER_ACTION.TRIAL,
+  [ORDER_STATUS.WAIT]: ORDER_ACTION.WAIT,
+  [ORDER_STATUS.COMPLETED]: ORDER_ACTION.COMPLETED,
+  [ORDER_STATUS.CONFIRMED]: ORDER_ACTION.CONFIRMED,
+  [ORDER_STATUS.BLOCKED]: ORDER_ACTION.LOCKED,
+  [ORDER_STATUS.OVERDUE]: ORDER_ACTION.OVERDUE,
+  [ORDER_STATUS.REFUSE]: ORDER_ACTION.REFUSE,
+  [ORDER_STATUS.REFUND]: ORDER_ACTION.REFUND,
+  [ORDER_STATUS.REFUND_PARTIAL]: ORDER_ACTION.REFUND_PARTIAL,
+};
+
+/**
+ * Valid status transitions matrix
+ * Key: current status, Value: array of allowed target statuses
+ */
+export const VALID_STATUS_TRANSITIONS: Record<ORDER_STATUS, ORDER_STATUS[]> = {
+  [ORDER_STATUS.DRAFT]: [ORDER_STATUS.WAIT, ORDER_STATUS.TRIAL],
+  [ORDER_STATUS.TRIAL]: [
+    ORDER_STATUS.CONFIRMED,
+    ORDER_STATUS.WAIT,
+    ORDER_STATUS.REFUSE,
+  ],
+  [ORDER_STATUS.WAIT]: [
+    ORDER_STATUS.CONFIRMED,
+    ORDER_STATUS.COMPLETED,
+    ORDER_STATUS.OVERDUE,
+    ORDER_STATUS.REFUSE,
+    ORDER_STATUS.BLOCKED,
+  ],
+  [ORDER_STATUS.CONFIRMED]: [
+    ORDER_STATUS.COMPLETED,
+    ORDER_STATUS.REFUND,
+    ORDER_STATUS.REFUND_PARTIAL,
+    ORDER_STATUS.BLOCKED,
+  ],
+  [ORDER_STATUS.COMPLETED]: [ORDER_STATUS.REFUND, ORDER_STATUS.REFUND_PARTIAL],
+  [ORDER_STATUS.OVERDUE]: [
+    ORDER_STATUS.WAIT,
+    ORDER_STATUS.REFUSE,
+    ORDER_STATUS.BLOCKED,
+  ],
+  [ORDER_STATUS.BLOCKED]: [ORDER_STATUS.WAIT, ORDER_STATUS.REFUSE],
+  [ORDER_STATUS.REFUSE]: [],
+  [ORDER_STATUS.REFUND]: [],
+  [ORDER_STATUS.REFUND_PARTIAL]: [ORDER_STATUS.REFUND],
+};
+
+/**
+ * Valid actions for creating new orders
+ */
+export const VALID_CREATE_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.WAIT,
+  ORDER_ACTION.TRIAL,
+  ORDER_ACTION.TRIAL_TO_PAID,
+  ORDER_ACTION.LICENSE_RENEWING,
+];
+
+/**
+ * Initial statuses allowed when creating an order
+ */
+export const INITIAL_ORDER_STATUSES: ORDER_STATUS[] = [
+  ORDER_STATUS.DRAFT,
+  ORDER_STATUS.WAIT,
+  ORDER_STATUS.TRIAL,
+];
+
+/**
+ * Terminal statuses - no further transitions allowed
+ */
+export const TERMINAL_ORDER_STATUSES: ORDER_STATUS[] = [
+  ORDER_STATUS.REFUSE,
+  ORDER_STATUS.REFUND,
+];
+
+/**
+ * Statuses that allow order modification
+ */
+export const MODIFIABLE_ORDER_STATUSES: ORDER_STATUS[] = [ORDER_STATUS.DRAFT];
+
+// ============================================
+// EVENT MAPPINGS
+// ============================================
+
+/**
+ * Mapping from ORDER_ACTION to MKT_ORDER_EVENT_TYPES
+ */
+export const ACTION_TO_ORDER_EVENT_TYPE: Partial<
+  Record<ORDER_ACTION, MKT_ORDER_EVENT_TYPES>
+> = {
+  [ORDER_ACTION.REFUND]: MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED,
+  [ORDER_ACTION.REFUND_PARTIAL]: MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED,
+  [ORDER_ACTION.LICENSE]: MKT_ORDER_EVENT_TYPES.FROM_LICENSE,
+  [ORDER_ACTION.LICENSE_RENEWING]: MKT_ORDER_EVENT_TYPES.FROM_LICENSE,
+};
+
+/**
+ * Mapping from ORDER_ACTION to PAYMENT_HISTORY_TYPE
+ */
+export const ACTION_TO_PAYMENT_TYPE: Partial<
+  Record<ORDER_ACTION, PAYMENT_HISTORY_TYPE>
+> = {
+  [ORDER_ACTION.REFUND]: PAYMENT_HISTORY_TYPE.REFUND,
+  [ORDER_ACTION.REFUND_PARTIAL]: PAYMENT_HISTORY_TYPE.REFUND,
+  [ORDER_ACTION.CHANGE_VARIANT]: PAYMENT_HISTORY_TYPE.CHANGE_VARIANT,
+  [ORDER_ACTION.LICENSE_RENEWING]: PAYMENT_HISTORY_TYPE.RENEW,
+};
+
+// ============================================
+// VALID ACTION TRANSITIONS BY STATUS
+// ============================================
+
+/**
+ * Valid actions for each status (for confirm/update operations)
+ */
+export const VALID_ACTIONS_BY_STATUS: Record<ORDER_STATUS, ORDER_ACTION[]> = {
+  [ORDER_STATUS.DRAFT]: [ORDER_ACTION.WAIT, ORDER_ACTION.TRIAL],
+  [ORDER_STATUS.WAIT]: [
+    ORDER_ACTION.CONFIRMED,
+    ORDER_ACTION.REFUSE,
+    ORDER_ACTION.OVERDUE,
+  ],
+  [ORDER_STATUS.TRIAL]: [
+    ORDER_ACTION.TRIAL_TO_PAID,
+    ORDER_ACTION.COMPLETED,
+    ORDER_ACTION.REFUSE,
+  ],
+  [ORDER_STATUS.CONFIRMED]: [
+    ORDER_ACTION.COMPLETED,
+    ORDER_ACTION.REFUND,
+    ORDER_ACTION.REFUND_PARTIAL,
+  ],
+  [ORDER_STATUS.OVERDUE]: [ORDER_ACTION.CONFIRMED, ORDER_ACTION.REFUSE],
+  [ORDER_STATUS.COMPLETED]: [ORDER_ACTION.REFUND, ORDER_ACTION.REFUND_PARTIAL],
+  [ORDER_STATUS.REFUSE]: [],
+  [ORDER_STATUS.REFUND]: [],
+  [ORDER_STATUS.BLOCKED]: [],
+  [ORDER_STATUS.REFUND_PARTIAL]: [ORDER_ACTION.REFUND],
+};
+
+// ============================================
+// TRIAL-RELATED ACTIONS
+// ============================================
+
+export const TRIAL_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.TRIAL,
+  ORDER_ACTION.TRIAL_TO_CONFIRMED,
+  ORDER_ACTION.TRIAL_TO_PAID,
+];
+
+// ============================================
+// REFUND-RELATED ACTIONS
+// ============================================
+
+export const REFUND_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.REFUND,
+  ORDER_ACTION.REFUND_PARTIAL,
+];
+
+// ============================================
+// LICENSE PROCESSING ACTIONS
+// ============================================
+
+export const LICENSE_PROCESSING_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.COMPLETED,
+  ORDER_ACTION.PAID,
+  ORDER_ACTION.FREE,
+  ORDER_ACTION.REFUND,
+  ORDER_ACTION.REFUND_PARTIAL,
+  ORDER_ACTION.LICENSE,
+  ORDER_ACTION.LICENSE_RENEWING,
+];
+
+// ============================================
+// PAYMENT PROCESSING ACTIONS
+// ============================================
+
+export const PAYMENT_PROCESSING_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.WAIT,
+  ORDER_ACTION.TRIAL_TO_PAID,
+  ORDER_ACTION.LICENSE_RENEWING,
+];

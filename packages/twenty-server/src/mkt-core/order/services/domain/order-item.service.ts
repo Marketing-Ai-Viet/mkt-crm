@@ -1,60 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  ORDER_ITEM_DEFAULTS,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants';
+import { MKT_ORDER_ITEM_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
+import {
+  BulkRecalculateResult,
+  OrderItemCalculatedValues,
+  OrderItemValidationResult,
+  UpdateOrderItemInput,
+  UpdateOrderItemResult,
+} from 'src/mkt-core/order/types';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
-
-/**
- * Input for updating order item
- */
-export type UpdateOrderItemInput = {
-  orderItemId: string;
-  variantId?: string;
-  quantity?: number;
-  unitPrice?: number;
-  note?: string;
-  updatedAt?: string; // For optimistic locking
-};
-
-/**
- * Calculated values for order item
- */
-export type OrderItemCalculatedValues = {
-  name: string;
-  snapshotProductName: string;
-  mktProductId: string | null;
-  unitName: string;
-  unitPrice: number;
-  quantity: number;
-  taxPercentage: number;
-  taxAmount: number;
-  totalPrice: number;
-  totalAmountWithTax: number;
-};
-
-/**
- * Validation result
- */
-export type OrderItemValidationResult = {
-  valid: boolean;
-  error?: string;
-  orderItem?: MktOrderItemWorkspaceEntity;
-};
-
-/**
- * Update result
- */
-export type UpdateOrderItemResult = {
-  success: boolean;
-  orderItem?: MktOrderItemWorkspaceEntity;
-  error?: string;
-};
-
-const DEFAULT_TAX_PERCENTAGE = 0;
-const DEFAULT_UNIT_NAME = 'pcs';
-const DEFAULT_QUANTITY = 1;
 
 /**
  * OrderItemService - Centralized service for order item operations
@@ -70,10 +32,13 @@ const DEFAULT_QUANTITY = 1;
  */
 @Injectable()
 export class OrderItemService {
-  private readonly logger = new Logger(OrderItemService.name);
+  private readonly logger = new Logger(MKT_ORDER_ITEM_LOG_CONTEXT);
   private readonly optimisticLockingEnabled: boolean;
 
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {
+  constructor(
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderItemRepository: MktOrderItemRepository,
+  ) {
     this.optimisticLockingEnabled =
       process.env.ORDER_OPTIMISTIC_LOCKING_ENABLED !== 'false';
   }
@@ -87,9 +52,9 @@ export class OrderItemService {
     input: UpdateOrderItemInput,
   ): Promise<OrderItemValidationResult> {
     try {
-      const orderItem = await this.getOrderItemWithRelations(
-        orderItemId,
+      const orderItem = await this.orderItemRepository.findByIdWithRelations(
         workspaceId,
+        orderItemId,
       );
 
       if (!orderItem) {
@@ -154,10 +119,10 @@ export class OrderItemService {
    */
   calculateValuesFromVariant(
     variant: MktVariantWorkspaceEntity,
-    quantity: number = DEFAULT_QUANTITY,
-    taxPercentage: number = DEFAULT_TAX_PERCENTAGE,
+    quantity: number = ORDER_ITEM_DEFAULTS.QUANTITY,
+    taxPercentage: number = ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
   ): OrderItemCalculatedValues {
-    const safeQuantity = quantity > 0 ? quantity : DEFAULT_QUANTITY;
+    const safeQuantity = quantity > 0 ? quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
     const unitPrice = variant.price ?? 0;
     const totalPrice = this.roundToTwoDecimals(safeQuantity * unitPrice);
     const taxAmount = this.roundToTwoDecimals(
@@ -169,7 +134,7 @@ export class OrderItemService {
       name: `${variant.name} (x${safeQuantity})`,
       snapshotProductName: variant.name,
       mktProductId: variant.mktProductId ?? null,
-      unitName: DEFAULT_UNIT_NAME,
+      unitName: ORDER_ITEM_DEFAULTS.UNIT_NAME,
       unitPrice,
       quantity: safeQuantity,
       taxPercentage,
@@ -203,8 +168,6 @@ export class OrderItemService {
       }
 
       const { orderItem } = validation;
-      const orderItemRepository =
-        await this.getOrderItemRepository(workspaceId);
 
       // Build update data
       const updateData: Partial<MktOrderItemWorkspaceEntity> = {};
@@ -230,11 +193,11 @@ export class OrderItemService {
       // Calculate values if we have a variant
       if (variant) {
         const quantity =
-          input.quantity ?? orderItem.quantity ?? DEFAULT_QUANTITY;
+          input.quantity ?? orderItem.quantity ?? ORDER_ITEM_DEFAULTS.QUANTITY;
         const calculatedValues = this.calculateValuesFromVariant(
           variant,
           quantity,
-          orderItem.taxPercentage ?? DEFAULT_TAX_PERCENTAGE,
+          orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
         );
 
         Object.assign(updateData, calculatedValues);
@@ -242,7 +205,7 @@ export class OrderItemService {
         // Manual update without variant recalculation
         if (input.quantity !== undefined) {
           updateData.quantity =
-            input.quantity > 0 ? input.quantity : DEFAULT_QUANTITY;
+            input.quantity > 0 ? input.quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
         }
 
         if (input.unitPrice !== undefined) {
@@ -255,10 +218,12 @@ export class OrderItemService {
           updateData.unitPrice !== undefined
         ) {
           const quantity =
-            updateData.quantity ?? orderItem.quantity ?? DEFAULT_QUANTITY;
+            updateData.quantity ??
+            orderItem.quantity ??
+            ORDER_ITEM_DEFAULTS.QUANTITY;
           const unitPrice = updateData.unitPrice ?? orderItem.unitPrice ?? 0;
           const taxPercentage =
-            orderItem.taxPercentage ?? DEFAULT_TAX_PERCENTAGE;
+            orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE;
 
           const totalPrice = this.roundToTwoDecimals(quantity * unitPrice);
           const taxAmount = this.roundToTwoDecimals(
@@ -274,13 +239,18 @@ export class OrderItemService {
       }
 
       // Update the order item
-      await orderItemRepository.update(orderItemId, updateData);
+      await this.orderItemRepository.update(
+        workspaceId,
+        orderItemId,
+        updateData,
+      );
 
       // Fetch updated order item
-      const updatedOrderItem = await orderItemRepository.findOne({
-        where: { id: orderItemId },
-        relations: ['mktOrder', 'mktVariant', 'mktProduct'],
-      });
+      const updatedOrderItem =
+        await this.orderItemRepository.findByIdWithRelations(
+          workspaceId,
+          orderItemId,
+        );
 
       this.logger.log(`Order item ${orderItemId} updated successfully`);
 
@@ -306,9 +276,9 @@ export class OrderItemService {
     workspaceId: string,
   ): Promise<UpdateOrderItemResult> {
     try {
-      const orderItem = await this.getOrderItemWithRelations(
-        orderItemId,
+      const orderItem = await this.orderItemRepository.findByIdWithRelations(
         workspaceId,
+        orderItemId,
       );
 
       if (!orderItem) {
@@ -331,19 +301,21 @@ export class OrderItemService {
 
       const calculatedValues = this.calculateValuesFromVariant(
         variant,
-        orderItem.quantity ?? DEFAULT_QUANTITY,
-        orderItem.taxPercentage ?? DEFAULT_TAX_PERCENTAGE,
+        orderItem.quantity ?? ORDER_ITEM_DEFAULTS.QUANTITY,
+        orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
       );
 
-      const orderItemRepository =
-        await this.getOrderItemRepository(workspaceId);
+      await this.orderItemRepository.update(
+        workspaceId,
+        orderItemId,
+        calculatedValues,
+      );
 
-      await orderItemRepository.update(orderItemId, calculatedValues);
-
-      const updatedOrderItem = await orderItemRepository.findOne({
-        where: { id: orderItemId },
-        relations: ['mktOrder', 'mktVariant', 'mktProduct'],
-      });
+      const updatedOrderItem =
+        await this.orderItemRepository.findByIdWithRelations(
+          workspaceId,
+          orderItemId,
+        );
 
       this.logger.log(`Order item ${orderItemId} recalculated successfully`);
 
@@ -368,12 +340,10 @@ export class OrderItemService {
     orderItemId: string,
     workspaceId: string,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    const orderItemRepository = await this.getOrderItemRepository(workspaceId);
-
-    return orderItemRepository.findOne({
-      where: { id: orderItemId },
-      relations: ['mktOrder', 'mktVariant', 'mktProduct'],
-    });
+    return this.orderItemRepository.findByIdWithRelations(
+      workspaceId,
+      orderItemId,
+    );
   }
 
   /**
@@ -398,18 +368,13 @@ export class OrderItemService {
   async recalculateAllOrderItems(
     orderId: string,
     workspaceId: string,
-  ): Promise<{
-    success: boolean;
-    updatedCount: number;
-    errors: string[];
-  }> {
+  ): Promise<BulkRecalculateResult> {
     try {
-      const orderItemRepository =
-        await this.getOrderItemRepository(workspaceId);
-      const orderItems = await orderItemRepository.find({
-        where: { mktOrderId: orderId },
-        relations: ['mktVariant'],
-      });
+      const orderItems = await this.orderItemRepository.findByOrderId(
+        workspaceId,
+        orderId,
+        { relations: { mktVariant: true } },
+      );
 
       let updatedCount = 0;
       const errors: string[] = [];
@@ -441,14 +406,6 @@ export class OrderItemService {
   // ============================================
   // PRIVATE HELPERS
   // ============================================
-
-  private async getOrderItemRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
-      workspaceId,
-      'mktOrderItem',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
 
   private async getVariant(
     variantId: string,

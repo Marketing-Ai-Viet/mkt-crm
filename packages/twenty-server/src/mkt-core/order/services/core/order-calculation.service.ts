@@ -1,41 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { ORDER_CALCULATION_CONFIG } from 'src/mkt-core/order/constants';
+import { MKT_ORDER_CALCULATION_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import {
   OrderCalculatedValues,
   OrderItemWithCalculation,
+  VariantForCalculation,
 } from 'src/mkt-core/order/types';
-
-// ============================================
-// CALCULATION CONFIGURATION
-// ============================================
-
-export const ORDER_CALCULATION_CONFIG = {
-  /**
-   * Tax percentage mặc định (%)
-   */
-  DEFAULT_TAX_PERCENTAGE: 0,
-
-  /**
-   * Số chữ số thập phân khi làm tròn
-   */
-  DECIMAL_PLACES: 2,
-
-  /**
-   * Default currency
-   */
-  DEFAULT_CURRENCY: 'VND',
-} as const;
-
-// ============================================
-// VARIANT DATA TYPE
-// ============================================
-
-export type VariantForCalculation = {
-  id: string;
-  name: string;
-  price: number;
-};
 
 /**
  * Service để tính toán các giá trị trong order
@@ -43,7 +15,7 @@ export type VariantForCalculation = {
  */
 @Injectable()
 export class OrderCalculationService {
-  private readonly logger = new Logger(OrderCalculationService.name);
+  private readonly logger = new Logger(MKT_ORDER_CALCULATION_LOG_CONTEXT);
 
   // ============================================
   // ORDER ITEM CALCULATIONS

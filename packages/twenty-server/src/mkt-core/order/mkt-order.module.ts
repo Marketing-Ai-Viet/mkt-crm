@@ -13,8 +13,11 @@ import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-ov
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
+import {
+  MktOrderRepository,
+  MktOrderItemRepository,
+} from 'src/mkt-core/order/repositories';
 
-// Clean Architecture Services
 import {
   // Core Services
   OrderCalculationService,
@@ -71,6 +74,10 @@ import {
     // Event Listeners
     MktOrderCustomEventListener,
 
+    // Repositories (Data Access Layer)
+    MktOrderRepository,
+    MktOrderItemRepository,
+
     // Core Services (stateless business logic)
     OrderStatusService,
     OrderCalculationService,
@@ -112,10 +119,14 @@ import {
     OrderItemMutationResolver,
   ],
   exports: [
+    // Repositories
+    MktOrderRepository,
+    MktOrderItemRepository,
     // Services
     OrderStatusService,
     OrderEventService,
     OrderItemService,
+    OrderCrudService,
     OrderOrchestrationService,
     // Sagas
     ConfirmOrderSaga,

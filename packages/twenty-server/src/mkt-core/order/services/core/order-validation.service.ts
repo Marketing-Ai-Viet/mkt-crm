@@ -6,55 +6,21 @@ import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-cu
 import {
   ORDER_ACTION,
   ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
+  VALID_ACTIONS_BY_STATUS,
+  VALID_CREATE_ACTIONS,
+} from 'src/mkt-core/order/constants';
+import { MKT_ORDER_VALIDATION_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   CreateOrderWithItemsInput,
   ConfirmOrderInput,
   ExternalMktProductInput,
+  ValidationError,
+  ValidationResult,
+  ORDER_VALIDATION_ERROR_CODES,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
-
-// ============================================
-// VALIDATION RESULT TYPES
-// ============================================
-
-export type ValidationError = {
-  field: string;
-  message: string;
-  code: string;
-};
-
-export type ValidationResult = {
-  valid: boolean;
-  errors: ValidationError[];
-};
-
-// ============================================
-// ERROR CODES
-// ============================================
-
-export const ORDER_VALIDATION_ERROR_CODES = {
-  CUSTOMER_REQUIRED: 'CUSTOMER_REQUIRED',
-  CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
-  ITEMS_REQUIRED: 'ITEMS_REQUIRED',
-  VARIANTS_REQUIRED: 'VARIANTS_REQUIRED',
-  VARIANT_NOT_FOUND: 'VARIANT_NOT_FOUND',
-  VARIANT_INACTIVE: 'VARIANT_INACTIVE',
-  EXTERNAL_PRODUCT_NOT_FOUND: 'EXTERNAL_PRODUCT_NOT_FOUND',
-  EXTERNAL_PRODUCT_INACTIVE: 'EXTERNAL_PRODUCT_INACTIVE',
-  EXTERNAL_PACKAGE_NOT_FOUND: 'EXTERNAL_PACKAGE_NOT_FOUND',
-  EXTERNAL_PACKAGE_INACTIVE: 'EXTERNAL_PACKAGE_INACTIVE',
-  EXTERNAL_PACKAGE_MISMATCH: 'EXTERNAL_PACKAGE_MISMATCH',
-  PAYMENT_METHOD_REQUIRED: 'PAYMENT_METHOD_REQUIRED',
-  PAYMENT_METHOD_NOT_FOUND: 'PAYMENT_METHOD_NOT_FOUND',
-  ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
-  INVALID_ORDER_STATUS: 'INVALID_ORDER_STATUS',
-  INVALID_ACTION: 'INVALID_ACTION',
-  TRIAL_ORDER_REQUIRED: 'TRIAL_ORDER_REQUIRED',
-  TRIAL_ORDER_NOT_FOUND: 'TRIAL_ORDER_NOT_FOUND',
-} as const;
 
 /**
  * Service để validate order data trước khi xử lý
@@ -66,7 +32,7 @@ export const ORDER_VALIDATION_ERROR_CODES = {
  */
 @Injectable()
 export class OrderValidationService {
-  private readonly logger = new Logger(OrderValidationService.name);
+  private readonly logger = new Logger(MKT_ORDER_VALIDATION_LOG_CONTEXT);
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
@@ -465,14 +431,7 @@ export class OrderValidationService {
    * Kiểm tra action hợp lệ cho tạo order
    */
   private isValidCreateAction(action: ORDER_ACTION): boolean {
-    const validActions = [
-      ORDER_ACTION.WAIT,
-      ORDER_ACTION.TRIAL,
-      ORDER_ACTION.TRIAL_TO_PAID,
-      ORDER_ACTION.LICENSE_RENEWING,
-    ];
-
-    return validActions.includes(action);
+    return VALID_CREATE_ACTIONS.includes(action);
   }
 
   /**
@@ -482,35 +441,7 @@ export class OrderValidationService {
     currentStatus: ORDER_STATUS,
     action: ORDER_ACTION,
   ): boolean {
-    const validTransitions: Record<ORDER_STATUS, ORDER_ACTION[]> = {
-      [ORDER_STATUS.DRAFT]: [ORDER_ACTION.WAIT, ORDER_ACTION.TRIAL],
-      [ORDER_STATUS.WAIT]: [
-        ORDER_ACTION.CONFIRMED,
-        ORDER_ACTION.REFUSE,
-        ORDER_ACTION.OVERDUE,
-      ],
-      [ORDER_STATUS.TRIAL]: [
-        ORDER_ACTION.TRIAL_TO_PAID,
-        ORDER_ACTION.COMPLETED,
-        ORDER_ACTION.REFUSE,
-      ],
-      [ORDER_STATUS.CONFIRMED]: [
-        ORDER_ACTION.COMPLETED,
-        ORDER_ACTION.REFUND,
-        ORDER_ACTION.REFUND_PARTIAL,
-      ],
-      [ORDER_STATUS.OVERDUE]: [ORDER_ACTION.CONFIRMED, ORDER_ACTION.REFUSE],
-      [ORDER_STATUS.COMPLETED]: [
-        ORDER_ACTION.REFUND,
-        ORDER_ACTION.REFUND_PARTIAL,
-      ],
-      [ORDER_STATUS.REFUSE]: [],
-      [ORDER_STATUS.REFUND]: [],
-      [ORDER_STATUS.BLOCKED]: [],
-      [ORDER_STATUS.REFUND_PARTIAL]: [ORDER_ACTION.REFUND],
-    };
-
-    const allowedActions = validTransitions[currentStatus] || [];
+    const allowedActions = VALID_ACTIONS_BY_STATUS[currentStatus] ?? [];
 
     return allowedActions.includes(action);
   }
