@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import round from 'lodash.round';
-import sumBy from 'lodash.sumby';
+import Big from 'big.js';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import {
+  MoneyUtils,
+  MONEY_DECIMAL_PLACES,
+} from 'src/mkt-core/utils/money.utils';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services/mkt-product-proxy.service';
 import {
   MktSupportedLanguage,
@@ -67,8 +70,8 @@ export class GenericComboCalculationService {
       items,
     );
 
-    // Tính giá gốc
-    const originalPrice = sumBy(itemCalculations, 'totalPrice');
+    // Tính giá gốc sử dụng MoneyUtils (tránh floating-point errors)
+    const originalPrice = MoneyUtils.sumBy(itemCalculations, 'totalPrice');
 
     // Áp dụng pricing strategy
     const comboPrice = this.applyPricingStrategy(
@@ -78,24 +81,35 @@ export class GenericComboCalculationService {
       combo.discountPercent,
     );
 
-    // Tính savings
-    const savings = Math.max(0, originalPrice - comboPrice);
-    const savingsPercent =
-      originalPrice > 0 ? round((savings / originalPrice) * 100, 2) : 0;
+    // Tính savings sử dụng MoneyUtils
+    const savings = MoneyUtils.max(
+      MoneyUtils.zero(),
+      MoneyUtils.subtract(originalPrice, comboPrice),
+    );
 
-    // Tính adjusted prices (pro-rata)
-    const discountRatio = originalPrice > 0 ? comboPrice / originalPrice : 1;
+    // Tính % savings
+    const savingsPercent = MoneyUtils.percentageOf(savings, originalPrice);
+
+    // Tính adjusted prices (pro-rata) sử dụng MoneyUtils
+    const discountRatio = MoneyUtils.isPositive(originalPrice)
+      ? MoneyUtils.divideSafe(comboPrice, originalPrice)
+      : MoneyUtils.from(1);
+
     const adjustedItems = itemCalculations.map((item) => ({
       ...item,
-      adjustedUnitPrice: round(item.unitPrice * discountRatio, 2),
-      adjustedTotalPrice: round(item.totalPrice * discountRatio, 2),
+      adjustedUnitPrice: MoneyUtils.multiply(item.unitPrice, discountRatio)
+        .round(MONEY_DECIMAL_PLACES.CURRENCY)
+        .toNumber(),
+      adjustedTotalPrice: MoneyUtils.multiply(item.totalPrice, discountRatio)
+        .round(MONEY_DECIMAL_PLACES.CURRENCY)
+        .toNumber(),
     }));
 
     return {
-      originalPrice: round(originalPrice, 2),
-      comboPrice: round(comboPrice, 2),
-      savings: round(savings, 2),
-      savingsPercent,
+      originalPrice: MoneyUtils.round(originalPrice).toNumber(),
+      comboPrice: MoneyUtils.round(comboPrice).toNumber(),
+      savings: MoneyUtils.round(savings).toNumber(),
+      savingsPercent: savingsPercent.toNumber(),
       currency: combo.currency,
       itemDetails: adjustedItems,
       calculatedAt: new Date(),
@@ -126,18 +140,23 @@ export class GenericComboCalculationService {
       (i) => i.itemType === COMBO_ITEM_TYPE.CUSTOM,
     );
 
-    // Parallel fetch external products
-    const [
-      externalProducts,
-      externalPackages,
-      internalProducts,
-      internalVariants,
-    ] = await Promise.all([
-      this.fetchExternalProductsBatch(digitalExternalItems),
-      this.fetchExternalPackagesBatch(digitalExternalItems),
-      this.fetchInternalProductsBatch(workspaceId, internalProductItems),
-      this.fetchInternalVariantsBatch(workspaceId, internalVariantItems),
-    ]);
+    // Fetch packages trước để lấy productIds từ packages
+    const externalPackages =
+      await this.fetchExternalPackagesBatch(digitalExternalItems);
+
+    // Lấy productIds từ packages để fetch products
+    const packageProductIds = externalPackages.map((pkg) => pkg.productId);
+
+    // Parallel fetch products (từ items + từ packages) và internal entities
+    const [externalProducts, internalProducts, internalVariants] =
+      await Promise.all([
+        this.fetchExternalProductsBatch(
+          digitalExternalItems,
+          packageProductIds,
+        ),
+        this.fetchInternalProductsBatch(workspaceId, internalProductItems),
+        this.fetchInternalVariantsBatch(workspaceId, internalVariantItems),
+      ]);
 
     // Build lookup maps
     const externalProductMap = new Map(externalProducts.map((p) => [p.id, p]));
@@ -184,15 +203,20 @@ export class GenericComboCalculationService {
       displayName = displayName || priceAndName.displayName;
     }
 
+    // Tính totalPrice sử dụng MoneyUtils để tránh floating-point errors
+    const totalPrice = MoneyUtils.multiply(unitPrice, item.quantity)
+      .round(MONEY_DECIMAL_PLACES.CURRENCY)
+      .toNumber();
+
     return {
       id: item.id,
       itemType: item.itemType as ComboItemType,
       displayName,
       quantity: item.quantity,
       unitPrice,
-      totalPrice: unitPrice * item.quantity,
+      totalPrice,
       adjustedUnitPrice: unitPrice,
-      adjustedTotalPrice: unitPrice * item.quantity,
+      adjustedTotalPrice: totalPrice,
     };
   }
 
@@ -208,31 +232,39 @@ export class GenericComboCalculationService {
   ): { unitPrice: number; displayName: string } {
     switch (item.itemType) {
       case COMBO_ITEM_TYPE.DIGITAL_EXTERNAL: {
-        // Package có priority cao hơn product
-        if (item.externalPackageId) {
-          const pkg = externalPackageMap.get(item.externalPackageId);
+        // Bán theo package - package là bắt buộc
+        if (!item.externalPackageId) {
+          this.logger.warn(
+            `Digital external item ${item.id} missing externalPackageId`,
+          );
 
-          if (pkg) {
-            return {
-              unitPrice: pkg.price,
-              displayName: pkg.packageName,
-            };
-          }
+          return { unitPrice: 0, displayName: '' };
         }
 
-        // Fallback to product
-        if (item.externalProductId) {
-          const product = externalProductMap.get(item.externalProductId);
+        const pkg = externalPackageMap.get(item.externalPackageId);
 
-          if (product) {
-            return {
-              unitPrice: product.basePrice ?? 0,
-              displayName: product.productName,
-            };
-          }
+        if (!pkg) {
+          this.logger.warn(
+            `Package ${item.externalPackageId} not found for item ${item.id}`,
+          );
+
+          return { unitPrice: 0, displayName: '' };
         }
 
-        return { unitPrice: 0, displayName: '' };
+        // Lấy product name từ item.externalProductId hoặc package.productId
+        const productId = item.externalProductId ?? pkg.productId;
+        const product = externalProductMap.get(productId);
+        const productName = product?.productName ?? '';
+
+        // Display name: "Product Name - Package Name" hoặc chỉ "Package Name"
+        const displayName = productName
+          ? `${productName} - ${pkg.packageName}`
+          : pkg.packageName;
+
+        return {
+          unitPrice: pkg.price,
+          displayName,
+        };
       }
 
       case COMBO_ITEM_TYPE.INTERNAL_PRODUCT: {
@@ -286,21 +318,24 @@ export class GenericComboCalculationService {
 
   /**
    * Batch fetch external products với retry
+   * Lấy products từ items + products từ packages (để hiển thị tên product)
    */
   private async fetchExternalProductsBatch(
     items: MktGenericComboItemWorkspaceEntity[],
+    additionalProductIds: string[] = [],
   ): Promise<MktProduct[]> {
-    const productIds = [
-      ...new Set(
-        items
-          .map((i) => i.externalProductId)
-          .filter((id): id is string => id !== null),
-      ),
+    // Combine productIds từ items và từ packages
+    const itemProductIds = items
+      .map((i) => i.externalProductId)
+      .filter((id): id is string => id !== null);
+
+    const allProductIds = [
+      ...new Set([...itemProductIds, ...additionalProductIds]),
     ];
 
     const results: MktProduct[] = [];
 
-    for (const productId of productIds) {
+    for (const productId of allProductIds) {
       try {
         const product = await this.fetchWithRetry(() =>
           this.mktProductProxy.getProduct(productId),
@@ -461,22 +496,26 @@ export class GenericComboCalculationService {
   }
 
   /**
-   * Áp dụng pricing strategy
+   * Áp dụng pricing strategy sử dụng MoneyUtils
+   * - FIXED: Sử dụng fixedPrice
+   * - DISCOUNT: Áp dụng % giảm giá
+   * - SUM: Giữ nguyên tổng giá
    */
   private applyPricingStrategy(
     pricingType: GenericComboPricingType,
-    originalPrice: number,
+    originalPrice: Big,
     fixedPrice: number | null,
     discountPercent: number | null,
-  ): number {
+  ): Big {
     switch (pricingType) {
       case GENERIC_COMBO_PRICING_TYPE.FIXED:
-        return fixedPrice ?? originalPrice;
+        return fixedPrice !== null
+          ? MoneyUtils.from(fixedPrice)
+          : originalPrice;
 
       case GENERIC_COMBO_PRICING_TYPE.DISCOUNT: {
-        const discount = (discountPercent ?? 0) / 100;
-
-        return originalPrice * (1 - discount);
+        // Sử dụng MoneyUtils.applyDiscount để tính chính xác
+        return MoneyUtils.applyDiscount(originalPrice, discountPercent ?? 0);
       }
 
       case GENERIC_COMBO_PRICING_TYPE.SUM:

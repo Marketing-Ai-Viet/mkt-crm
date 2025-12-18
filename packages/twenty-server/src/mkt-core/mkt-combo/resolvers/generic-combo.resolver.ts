@@ -40,11 +40,14 @@ import { mapGenericComboToOutput } from 'src/mkt-core/mkt-combo/utils';
  * Generic Combo Resolver
  *
  * Xử lý combo với nhiều loại item:
- * - DIGITAL_EXTERNAL: Sản phẩm từ MKT Server
- * - INTERNAL_PRODUCT: Sản phẩm nội bộ CRM
- * - INTERNAL_VARIANT: Variant nội bộ CRM
- * - SERVICE: Dịch vụ
- * - CUSTOM: Item tùy chỉnh
+ * - DIGITAL_EXTERNAL: Sản phẩm số từ MKT Server (BÁN THEO PACKAGE)
+ *   + externalPackageId: BẮT BUỘC
+ *   + externalProductId: optional (lấy từ package.productId)
+ *   + Giá lấy từ package.price
+ * - INTERNAL_PRODUCT: (deprecated) Dùng DIGITAL_EXTERNAL
+ * - INTERNAL_VARIANT: (deprecated) Dùng DIGITAL_EXTERNAL
+ * - SERVICE: Dịch vụ (serviceName, servicePrice)
+ * - CUSTOM: Item tùy chỉnh (customName, customPrice)
  */
 @Resolver()
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)

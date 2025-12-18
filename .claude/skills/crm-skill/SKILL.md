@@ -110,6 +110,61 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 
 ---
 
+### Task: Work with Generic Combo (mkt-combo)
+
+**Load**:
+1. Read source files in `mkt-core/mkt-combo/`
+2. `reference/code-patterns.md` - Service patterns
+
+**Key Concepts**:
+- **DIGITAL_EXTERNAL**: Bán theo package (externalPackageId BẮT BUỘC)
+- Items từ `mkt-product-integration` module
+- Giá lấy từ `package.price`
+
+**Key Services**:
+- `GenericComboService` - Main service for combo operations
+- `GenericComboCalculationService` - Price calculation with MoneyUtils
+- `GenericComboValidationService` - Validate items with MKT Server
+- `GenericComboSnapshotService` - Create immutable snapshots for orders
+- `GenericComboCacheService` - Redis caching
+
+**GraphQL Operations**:
+- `mktGenericCombo`, `mktGenericComboByCode` - Query combo
+- `mktCalculateGenericComboPrice` - Calculate price
+- `mktValidateGenericCombo` - Validate for order
+- `mktCreateGenericCombo`, `mktUpdateGenericCombo`, `mktDeleteGenericCombo` - Mutations
+
+---
+
+### Task: Money Calculations
+
+**Load**: `mkt-core/utils/money.utils.ts`
+
+**MoneyUtils** - Tính toán tiền tệ chính xác với Big.js (tránh floating-point errors)
+
+**Common Operations**:
+```typescript
+import { MoneyUtils, MONEY_DECIMAL_PLACES } from 'src/mkt-core/utils/money.utils';
+
+// Sum
+MoneyUtils.sumBy(items, 'price').toNumber();
+
+// Multiply
+MoneyUtils.multiply(price, quantity).round(MONEY_DECIMAL_PLACES.CURRENCY).toNumber();
+
+// Percentage
+MoneyUtils.applyDiscount(price, 10); // 10% discount
+MoneyUtils.percentageOf(part, total); // % of total
+
+// Safe operations
+MoneyUtils.divideSafe(value, divisor); // Returns 0 if divisor is 0
+MoneyUtils.fromSafe(value); // Returns 0 if invalid
+```
+
+**Important**: LUÔN sử dụng MoneyUtils cho các phép tính tiền tệ thay vì JavaScript native math.
+
+---
+
 ## Critical Rules Summary
 
 > Load `reference/typescript-rules.md` for complete rules
@@ -220,6 +275,8 @@ npx nx command twenty-server -- mkt-customer-tag-data-seed-dev-workspace
 - **Database migration** -> Load: `database.md`
 - **Understand architecture** -> Load: `architecture.md`
 - **Work with MKT Product Integration** -> Load: `architecture.md` (MKT Product Integration section)
+- **Work with Generic Combo** -> Read: `mkt-core/mkt-combo/` source files
+- **Money calculations** -> Use: `MoneyUtils` from `mkt-core/utils/money.utils.ts`
 
 ---
 
@@ -240,13 +297,20 @@ packages/twenty-server/src/mkt-core/
 │   ├── configs/       # Zod-validated configuration
 │   ├── constants/     # API endpoints, cache keys
 │   ├── dto/           # GraphQL input/output types
-│   ├── jobs/          # Scheduled sync job (cron)
-│   ├── message/       # Centralized messages
-│   ├── repositories/  # Data access layer (HTTP)
-│   ├── resolvers/     # GraphQL resolvers
 │   ├── services/      # Business logic services
+│   └── types/         # TypeScript type definitions
+├── mkt-combo/         # Generic Combo (bán theo package)
+│   ├── constants/     # Object IDs, field IDs, pricing types
+│   ├── dto/           # GraphQL input/output types
+│   ├── objects/       # WorkspaceEntity definitions
+│   ├── repositories/  # Data access layer
+│   ├── resolvers/     # GraphQL resolvers
+│   ├── services/      # Calculation, Validation, Snapshot, Cache
 │   ├── types/         # TypeScript type definitions
 │   └── utils/         # Mapper utilities
+├── utils/
+│   ├── money.utils.ts      # MoneyUtils - precise decimal calculations
+│   └── date-time.utils.ts  # DateTimeUtils - date/time operations
 └── constants/
     ├── mkt-object-ids.ts   # Entity IDs (IMMUTABLE)
     └── mkt-field-ids.ts    # Field IDs (IMMUTABLE)

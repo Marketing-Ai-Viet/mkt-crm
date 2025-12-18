@@ -40,11 +40,21 @@ registerEnumType(COMBO_ITEM_TYPE, {
 
 /**
  * Input tạo generic combo item
- * Sử dụng polymorphic fields dựa trên itemType
+ *
+ * Polymorphic fields dựa trên itemType:
+ * - DIGITAL_EXTERNAL: Bán theo package từ MKT Server
+ *   + externalPackageId: BẮT BUỘC - ID của package
+ *   + externalProductId: optional - lấy tự động từ package.productId nếu không cung cấp
+ * - INTERNAL_PRODUCT: mktProductId (deprecated - dùng DIGITAL_EXTERNAL)
+ * - INTERNAL_VARIANT: mktVariantId (deprecated - dùng DIGITAL_EXTERNAL)
+ * - SERVICE: serviceName, servicePrice
+ * - CUSTOM: customName, customPrice
  */
 @InputType()
 export class CreateGenericComboItemInput {
-  @Field(() => COMBO_ITEM_TYPE)
+  @Field(() => COMBO_ITEM_TYPE, {
+    description: 'Loại item. DIGITAL_EXTERNAL yêu cầu externalPackageId',
+  })
   @IsEnum(COMBO_ITEM_TYPE)
   itemType: ComboItemType;
 
@@ -71,8 +81,12 @@ export class CreateGenericComboItemInput {
   @Min(0)
   position?: number;
 
-  // DIGITAL_EXTERNAL fields
-  @Field(() => String, { nullable: true })
+  // DIGITAL_EXTERNAL fields (bán theo package)
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'Product ID từ MKT Server (optional - lấy từ package.productId)',
+  })
   @IsOptional()
   @IsString()
   externalProductId?: string;
@@ -82,7 +96,10 @@ export class CreateGenericComboItemInput {
   @IsString()
   externalProductCode?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {
+    nullable: true,
+    description: 'BẮT BUỘC cho DIGITAL_EXTERNAL - Package ID từ MKT Server',
+  })
   @IsOptional()
   @IsString()
   externalPackageId?: string;

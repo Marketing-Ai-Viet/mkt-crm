@@ -8,6 +8,16 @@ import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/option
 // COMBO ITEM TYPE
 // ============================================
 
+/**
+ * Các loại item trong combo:
+ * - DIGITAL_EXTERNAL: Sản phẩm số từ MKT Server (bán theo package)
+ *   + Yêu cầu externalPackageId (bắt buộc)
+ *   + externalProductId optional (lấy tự động từ package.productId)
+ * - INTERNAL_PRODUCT: Sản phẩm trong CRM (deprecated - dùng DIGITAL_EXTERNAL)
+ * - INTERNAL_VARIANT: Variant trong CRM (deprecated - dùng DIGITAL_EXTERNAL)
+ * - SERVICE: Dịch vụ (serviceName, servicePrice)
+ * - CUSTOM: Item tùy chỉnh (customName, customPrice)
+ */
 export const COMBO_ITEM_TYPE = {
   DIGITAL_EXTERNAL: 'DIGITAL_EXTERNAL',
   INTERNAL_PRODUCT: 'INTERNAL_PRODUCT',
@@ -22,7 +32,7 @@ export type ComboItemType =
 export const COMBO_ITEM_TYPE_OPTIONS = [
   {
     value: COMBO_ITEM_TYPE.DIGITAL_EXTERNAL,
-    label: 'Digital Product (External)',
+    label: 'Digital Package (External)',
     color: 'blue' as TagColor,
     position: 0,
   },

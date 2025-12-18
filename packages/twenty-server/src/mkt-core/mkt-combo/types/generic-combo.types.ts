@@ -168,6 +168,10 @@ export type CreateGenericComboData = {
 
 /**
  * Input tạo combo item
+ *
+ * DIGITAL_EXTERNAL type yêu cầu externalPackageId (bán theo package)
+ * - externalPackageId: BẮT BUỘC - ID của package từ MKT Server
+ * - externalProductId: optional - ID của product (lấy tự động từ package nếu không cung cấp)
  */
 export type CreateGenericComboItemData = {
   itemType: ComboItemType;
@@ -176,7 +180,8 @@ export type CreateGenericComboItemData = {
   overridePrice?: number | null;
   position?: number;
 
-  // DIGITAL_EXTERNAL fields
+  // DIGITAL_EXTERNAL fields (bán theo package)
+  // externalPackageId là BẮT BUỘC cho DIGITAL_EXTERNAL type
   externalProductId?: string | null;
   externalProductCode?: string | null;
   externalPackageId?: string | null;

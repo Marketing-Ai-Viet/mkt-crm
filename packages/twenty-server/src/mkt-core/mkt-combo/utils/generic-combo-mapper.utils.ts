@@ -3,7 +3,19 @@ import { MktGenericComboItemWorkspaceEntity } from 'src/mkt-core/mkt-combo/objec
 import {
   GenericComboOutput,
   GenericComboItemOutput,
+  ExternalProductInfoOutput,
+  ExternalPackageInfoOutput,
+  GenericComboItemSnapshotOutput,
+  ProductSnapshotOutput,
+  PackageSnapshotOutput,
 } from 'src/mkt-core/mkt-combo/dto/generic-combo.output';
+import {
+  MktProduct,
+  MktProductPackage,
+  MktProductSnapshot,
+  MktPackageSnapshot,
+} from 'src/mkt-core/mkt-product-integration/types';
+import { GenericComboItemSnapshot } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
 
 /**
  * Map MktGenericComboWorkspaceEntity to GenericComboOutput
@@ -31,6 +43,7 @@ export const mapGenericComboToOutput = (
 
 /**
  * Map MktGenericComboItemWorkspaceEntity to GenericComboItemOutput
+ * externalProduct và externalPackage sẽ được populate bởi field resolver
  */
 export const mapGenericComboItemToOutput = (
   item: MktGenericComboItemWorkspaceEntity,
@@ -41,14 +54,17 @@ export const mapGenericComboItemToOutput = (
   quantity: item.quantity,
   overridePrice: item.overridePrice,
   position: item.position,
-  // DIGITAL_EXTERNAL fields
+  // DIGITAL_EXTERNAL fields (bán theo package)
   externalProductId: item.externalProductId,
   externalProductCode: item.externalProductCode,
   externalPackageId: item.externalPackageId,
   externalPackageCode: item.externalPackageCode,
-  // INTERNAL_PRODUCT fields
+  // Resolved info (populate separately)
+  externalProduct: null,
+  externalPackage: null,
+  // INTERNAL_PRODUCT fields (deprecated)
   mktProductId: item.mktProductId,
-  // INTERNAL_VARIANT fields
+  // INTERNAL_VARIANT fields (deprecated)
   mktVariantId: item.mktVariantId,
   // SERVICE fields
   serviceName: item.serviceName,
@@ -61,6 +77,100 @@ export const mapGenericComboItemToOutput = (
   // Timestamps
   createdAt: new Date(item.createdAt),
   updatedAt: new Date(item.updatedAt),
+});
+
+/**
+ * Map MktProduct to ExternalProductInfoOutput
+ */
+export const mapProductToOutput = (
+  product: MktProduct,
+): ExternalProductInfoOutput => ({
+  id: product.id,
+  code: product.code,
+  productName: product.productName,
+  productDescription: product.productDescription,
+  status: product.status,
+  basePrice: product.basePrice,
+  iconUrl: product.iconUrl,
+});
+
+/**
+ * Map MktProductPackage to ExternalPackageInfoOutput
+ */
+export const mapPackageToOutput = (
+  pkg: MktProductPackage,
+): ExternalPackageInfoOutput => ({
+  id: pkg.id,
+  packageCode: pkg.packageCode,
+  packageName: pkg.packageName,
+  packageDescription: pkg.packageDescription,
+  packageType: pkg.packageType,
+  licenseType: pkg.licenseType,
+  billingCycle: pkg.billingCycle,
+  durationDays: pkg.durationDays,
+  price: pkg.price,
+  currency: pkg.currency,
+  isActive: pkg.isActive,
+  productId: pkg.productId,
+});
+
+/**
+ * Map MktProductSnapshot to ProductSnapshotOutput
+ */
+export const mapProductSnapshotToOutput = (
+  snapshot: MktProductSnapshot,
+): ProductSnapshotOutput => ({
+  id: snapshot.id,
+  code: snapshot.code,
+  displayName: snapshot.displayName,
+  displayDescription: snapshot.displayDescription,
+  displayLanguage: snapshot.displayLanguage,
+  basePrice: snapshot.basePrice,
+  status: snapshot.status,
+  iconUrl: snapshot.iconUrl,
+  capturedAt: snapshot.capturedAt,
+  checksum: snapshot.checksum,
+});
+
+/**
+ * Map MktPackageSnapshot to PackageSnapshotOutput
+ */
+export const mapPackageSnapshotToOutput = (
+  snapshot: MktPackageSnapshot,
+): PackageSnapshotOutput => ({
+  id: snapshot.id,
+  packageCode: snapshot.packageCode,
+  productId: snapshot.productId,
+  displayName: snapshot.displayName,
+  displayDescription: snapshot.displayDescription,
+  packageType: snapshot.packageType,
+  licenseType: snapshot.licenseType,
+  billingCycle: snapshot.billingCycle,
+  durationDays: snapshot.durationDays,
+  price: snapshot.price,
+  currency: snapshot.currency,
+  capturedAt: snapshot.capturedAt,
+});
+
+/**
+ * Map GenericComboItemSnapshot to GenericComboItemSnapshotOutput
+ */
+export const mapItemSnapshotToOutput = (
+  snapshot: GenericComboItemSnapshot,
+): GenericComboItemSnapshotOutput => ({
+  id: snapshot.id,
+  itemType: snapshot.itemType,
+  displayName: snapshot.displayName,
+  quantity: snapshot.quantity,
+  unitPrice: snapshot.unitPrice,
+  totalPrice: snapshot.totalPrice,
+  position: snapshot.position,
+  externalProductSnapshot: snapshot.externalProductSnapshot
+    ? mapProductSnapshotToOutput(snapshot.externalProductSnapshot)
+    : null,
+  externalPackageSnapshot: snapshot.externalPackageSnapshot
+    ? mapPackageSnapshotToOutput(snapshot.externalPackageSnapshot)
+    : null,
 });
 
 /**

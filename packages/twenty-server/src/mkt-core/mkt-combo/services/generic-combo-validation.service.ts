@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MktGenericComboRepository } from 'src/mkt-core/mkt-combo/repositories/mkt-generic-combo.repository';
+import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services/mkt-product-proxy.service';
+import { MktGenericComboItemWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo-item.workspace-entity';
 import {
   GenericComboWithItems,
   CreateGenericComboData,
@@ -38,7 +40,10 @@ export type GenericComboValidationResult = {
 export class GenericComboValidationService {
   private readonly logger = new Logger(GENERIC_COMBO_LOG_CONTEXT);
 
-  constructor(private readonly comboRepository: MktGenericComboRepository) {}
+  constructor(
+    private readonly comboRepository: MktGenericComboRepository,
+    private readonly mktProductProxy: MktProductProxyService,
+  ) {}
 
   /**
    * Validate dữ liệu tạo combo
@@ -179,15 +184,18 @@ export class GenericComboValidationService {
 
     switch (itemType) {
       case COMBO_ITEM_TYPE.DIGITAL_EXTERNAL: {
-        // Phải có productId hoặc packageId
-        if (!item.externalProductId && !item.externalPackageId) {
+        // Phải có packageId (vì bán theo package)
+        if (!item.externalPackageId) {
           errors.push({
-            field: `${prefix}`,
+            field: `${prefix}.externalPackageId`,
             message:
-              'DIGITAL_EXTERNAL item requires either externalProductId or externalPackageId',
+              'DIGITAL_EXTERNAL item requires externalPackageId (sold by package)',
             code: 'REQUIRED',
           });
         }
+
+        // productId là optional nhưng nếu có thì để cross-validate
+        // Package phải thuộc về product
         break;
       }
 
@@ -345,10 +353,93 @@ export class GenericComboValidationService {
       });
     }
 
+    // Validate digital external items với MKT Server
+    if (items.length > 0) {
+      const digitalItemErrors = await this.validateDigitalExternalItems(items);
+
+      errors.push(...digitalItemErrors);
+    }
+
     return {
       valid: errors.length === 0,
       errors,
       combo: comboWithItems,
     };
+  }
+
+  /**
+   * Validate các digital external items với MKT Server
+   * Kiểm tra package tồn tại và active
+   */
+  private async validateDigitalExternalItems(
+    items: MktGenericComboItemWorkspaceEntity[],
+  ): Promise<GenericComboValidationErrorDetail[]> {
+    const errors: GenericComboValidationErrorDetail[] = [];
+
+    const digitalItems = items.filter(
+      (item) => item.itemType === COMBO_ITEM_TYPE.DIGITAL_EXTERNAL,
+    );
+
+    // Parallel validate tất cả digital items
+    const validationPromises = digitalItems.map(async (item, index) => {
+      const itemErrors: GenericComboValidationErrorDetail[] = [];
+
+      // Phải có packageId vì bán theo package
+      if (!item.externalPackageId) {
+        itemErrors.push({
+          field: `items[${index}].externalPackageId`,
+          message: 'Package ID is required for digital external item',
+          code: 'REQUIRED',
+        });
+
+        return itemErrors;
+      }
+
+      // Validate package tồn tại và active
+      const pkg = await this.mktProductProxy.getPackage(
+        item.externalPackageId,
+        undefined,
+        item.externalProductId ?? undefined,
+      );
+
+      if (!pkg) {
+        itemErrors.push({
+          field: `items[${index}].externalPackageId`,
+          message: `Package ${item.externalPackageId} not found in MKT Server`,
+          code: 'NOT_FOUND',
+        });
+
+        return itemErrors;
+      }
+
+      if (!pkg.isActive) {
+        itemErrors.push({
+          field: `items[${index}].externalPackageId`,
+          message: `Package ${item.externalPackageId} is not active`,
+          code: 'INACTIVE',
+        });
+      }
+
+      // Validate product nếu có externalProductId
+      if (item.externalProductId) {
+        if (pkg.productId !== item.externalProductId) {
+          itemErrors.push({
+            field: `items[${index}].externalProductId`,
+            message: `Package ${item.externalPackageId} does not belong to product ${item.externalProductId}`,
+            code: 'PRODUCT_MISMATCH',
+          });
+        }
+      }
+
+      return itemErrors;
+    });
+
+    const results = await Promise.all(validationPromises);
+
+    for (const itemErrors of results) {
+      errors.push(...itemErrors);
+    }
+
+    return errors;
   }
 }

@@ -3,6 +3,75 @@ import { Field, ObjectType, Int, Float, ID } from '@nestjs/graphql';
 import { COMBO_ITEM_TYPE } from 'src/mkt-core/mkt-combo/constants/generic-combo.constants';
 
 /**
+ * Output thông tin product từ MKT Server
+ */
+@ObjectType()
+export class ExternalProductInfoOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  code: string;
+
+  @Field(() => String)
+  productName: string;
+
+  @Field(() => String, { nullable: true })
+  productDescription: string | null;
+
+  @Field(() => String)
+  status: string;
+
+  @Field(() => Float, { nullable: true })
+  basePrice: number | null;
+
+  @Field(() => String, { nullable: true })
+  iconUrl: string | null;
+}
+
+/**
+ * Output thông tin package từ MKT Server
+ */
+@ObjectType()
+export class ExternalPackageInfoOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  packageCode: string;
+
+  @Field(() => String)
+  packageName: string;
+
+  @Field(() => String, { nullable: true })
+  packageDescription: string | null;
+
+  @Field(() => String)
+  packageType: string;
+
+  @Field(() => String)
+  licenseType: string;
+
+  @Field(() => String)
+  billingCycle: string;
+
+  @Field(() => Int, { nullable: true })
+  durationDays: number | null;
+
+  @Field(() => Float)
+  price: number;
+
+  @Field(() => String)
+  currency: string;
+
+  @Field(() => Boolean)
+  isActive: boolean;
+
+  @Field(() => String)
+  productId: string;
+}
+
+/**
  * Output cho generic combo item
  */
 @ObjectType()
@@ -25,20 +94,39 @@ export class GenericComboItemOutput {
   @Field(() => Int)
   position: number;
 
-  // DIGITAL_EXTERNAL fields
-  @Field(() => String, { nullable: true })
+  // DIGITAL_EXTERNAL fields (bán theo package)
+  @Field(() => String, {
+    nullable: true,
+    description: 'Product ID từ MKT Server',
+  })
   externalProductId: string | null;
 
   @Field(() => String, { nullable: true })
   externalProductCode: string | null;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {
+    nullable: true,
+    description: 'BẮT BUỘC cho DIGITAL_EXTERNAL - Package ID từ MKT Server',
+  })
   externalPackageId: string | null;
 
   @Field(() => String, { nullable: true })
   externalPackageCode: string | null;
 
-  // INTERNAL_PRODUCT fields
+  // Resolved product/package info (populated khi query)
+  @Field(() => ExternalProductInfoOutput, {
+    nullable: true,
+    description: 'Thông tin product từ MKT Server (populated khi resolve)',
+  })
+  externalProduct?: ExternalProductInfoOutput | null;
+
+  @Field(() => ExternalPackageInfoOutput, {
+    nullable: true,
+    description: 'Thông tin package từ MKT Server (populated khi resolve)',
+  })
+  externalPackage?: ExternalPackageInfoOutput | null;
+
+  // INTERNAL_PRODUCT fields (deprecated)
   @Field(() => String, { nullable: true })
   mktProductId: string | null;
 
@@ -230,7 +318,85 @@ export class GenericComboValidationOutput {
 }
 
 /**
- * Output snapshot cho item (simplified)
+ * Output snapshot product (từ MktProductSnapshot)
+ */
+@ObjectType()
+export class ProductSnapshotOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  code: string;
+
+  @Field(() => String)
+  displayName: string;
+
+  @Field(() => String, { nullable: true })
+  displayDescription: string | null;
+
+  @Field(() => String)
+  displayLanguage: string;
+
+  @Field(() => Float, { nullable: true })
+  basePrice: number | null;
+
+  @Field(() => String)
+  status: string;
+
+  @Field(() => String, { nullable: true })
+  iconUrl: string | null;
+
+  @Field(() => String)
+  capturedAt: string;
+
+  @Field(() => String)
+  checksum: string;
+}
+
+/**
+ * Output snapshot package (từ MktPackageSnapshot)
+ */
+@ObjectType()
+export class PackageSnapshotOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  packageCode: string;
+
+  @Field(() => String)
+  productId: string;
+
+  @Field(() => String)
+  displayName: string;
+
+  @Field(() => String, { nullable: true })
+  displayDescription: string | null;
+
+  @Field(() => String)
+  packageType: string;
+
+  @Field(() => String)
+  licenseType: string;
+
+  @Field(() => String)
+  billingCycle: string;
+
+  @Field(() => Int, { nullable: true })
+  durationDays: number | null;
+
+  @Field(() => Float)
+  price: number;
+
+  @Field(() => String)
+  currency: string;
+
+  @Field(() => String)
+  capturedAt: string;
+}
+
+/**
+ * Output snapshot cho item (bao gồm package/product snapshots)
  */
 @ObjectType()
 export class GenericComboItemSnapshotOutput {
@@ -254,6 +420,19 @@ export class GenericComboItemSnapshotOutput {
 
   @Field(() => Int)
   position: number;
+
+  // Snapshots cho DIGITAL_EXTERNAL items
+  @Field(() => ProductSnapshotOutput, {
+    nullable: true,
+    description: 'Product snapshot (cho DIGITAL_EXTERNAL)',
+  })
+  externalProductSnapshot?: ProductSnapshotOutput | null;
+
+  @Field(() => PackageSnapshotOutput, {
+    nullable: true,
+    description: 'Package snapshot (cho DIGITAL_EXTERNAL - bắt buộc)',
+  })
+  externalPackageSnapshot?: PackageSnapshotOutput | null;
 }
 
 /**

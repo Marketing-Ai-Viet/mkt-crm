@@ -175,43 +175,46 @@ export class GenericComboSnapshotService {
 
     switch (item.itemType) {
       case COMBO_ITEM_TYPE.DIGITAL_EXTERNAL: {
-        // Fetch và tạo external snapshots sử dụng MktProductProxyService
-        if (item.externalProductId) {
-          try {
-            const product = await this.mktProductProxy.getProduct(
-              item.externalProductId,
-            );
-
-            if (product) {
-              // Sử dụng service để tạo snapshot đúng format
-              result.externalProductSnapshot =
-                this.mktProductProxy.createProductSnapshot(product);
-            }
-          } catch (error) {
-            this.logger.warn(
-              `Failed to fetch external product ${item.externalProductId}`,
-              error,
-            );
-          }
+        // Bán theo package - package là bắt buộc
+        if (!item.externalPackageId) {
+          this.logger.warn(
+            `Digital external item ${item.id} missing externalPackageId`,
+          );
+          break;
         }
 
-        if (item.externalPackageId && item.externalProductId) {
-          try {
-            const pkg = await this.mktProductProxy.getPackage(
-              item.externalPackageId,
-            );
+        // Fetch package trước
+        try {
+          const pkg = await this.mktProductProxy.getPackage(
+            item.externalPackageId,
+          );
 
-            if (pkg) {
-              // Sử dụng service để tạo snapshot đúng format
-              result.externalPackageSnapshot =
-                this.mktProductProxy.createPackageSnapshot(pkg);
-            }
-          } catch (error) {
+          if (!pkg) {
             this.logger.warn(
-              `Failed to fetch external package ${item.externalPackageId}`,
-              error,
+              `Package ${item.externalPackageId} not found for item ${item.id}`,
             );
+            break;
           }
+
+          // Tạo package snapshot
+          result.externalPackageSnapshot =
+            this.mktProductProxy.createPackageSnapshot(pkg);
+
+          // Lấy productId từ item hoặc package
+          const productId = item.externalProductId ?? pkg.productId;
+
+          // Fetch product để tạo product snapshot
+          const product = await this.mktProductProxy.getProduct(productId);
+
+          if (product) {
+            result.externalProductSnapshot =
+              this.mktProductProxy.createProductSnapshot(product);
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to create snapshots for digital external item ${item.id}`,
+            error,
+          );
         }
         break;
       }
