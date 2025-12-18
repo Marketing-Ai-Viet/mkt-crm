@@ -104,18 +104,6 @@ import {
   MKT_REPORT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-report-data-seeds.constants';
 import {
-  MKT_RESELLER_DATA_SEED_COLUMNS,
-  MKT_RESELLER_DATA_SEEDS,
-} from 'src/mkt-core/dev-seeder/constants/mkt-reseller-data-seeds.constants';
-import {
-  MKT_RESELLER_TIER_DATA_SEED_COLUMNS,
-  MKT_RESELLER_TIER_DATA_SEEDS,
-} from 'src/mkt-core/dev-seeder/constants/mkt-reseller-tier-data-seeds.constants';
-import {
-  MKT_RESELLER_TIER_HISTORY_DATA_SEED_COLUMNS,
-  MKT_RESELLER_TIER_HISTORY_DATA_SEEDS,
-} from 'src/mkt-core/dev-seeder/constants/mkt-reseller-tier-history-data-seeds.constants';
-import {
   MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/constants/mkt-sendmail-template-seeds.constant.ts';
@@ -371,22 +359,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktPaymentHistory',
     pgColumns: MKT_PAYMENT_HISTORY_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PAYMENT_HISTORY_DATA_SEEDS,
-  },
-  // Reseller configs
-  {
-    tableName: 'mktResellerTier',
-    pgColumns: MKT_RESELLER_TIER_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_RESELLER_TIER_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktReseller',
-    pgColumns: MKT_RESELLER_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_RESELLER_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktResellerTierHistory',
-    pgColumns: MKT_RESELLER_TIER_HISTORY_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_RESELLER_TIER_HISTORY_DATA_SEEDS,
   },
   // KPI System configs
   {

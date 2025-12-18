@@ -20,9 +20,6 @@ import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/c
 import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-history-data-seed-dev-workspace.command';
 import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-payment-method-data-seed-dev-workspace.command';
 import { SeedMktPermissionAuditCommand } from 'src/mkt-core/dev-seeder/commands/mkt-permission-audit-data-seed-dev-workspace.command';
-import { SeedResellerModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-reseller-data-seed-dev-workspace.command';
-import { SeedResellerTierModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-reseller-tier-data-seed-dev-workspace.command';
-import { SeedResellerTierHistoryModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-reseller-tier-history-data-seed-dev-workspace.command';
 import { SeedTagModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-tag-data-seed-dev-workspace.command';
 import { SeedTemplateModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-template-data-seed-dev-workspace.command';
 import { SeedMktTemporaryPermissionCommand } from 'src/mkt-core/dev-seeder/commands/mkt-temporary-permission-data-seed-dev-workspace.command';
@@ -87,10 +84,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   MktPaymentMethodDataSeedDevWorkspaceCommand,
   MktPaymentDataSeedDevWorkspaceCommand,
   SeedMktPaymentHistoryModuleCommand,
-  // reseller commands
-  SeedResellerTierModuleCommand,
-  SeedResellerModuleCommand,
-  SeedResellerTierHistoryModuleCommand,
   // organization level commands
   SeedOrganizationLevelModuleCommand,
   SeedEmploymentStatusModuleCommand,

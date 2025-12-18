@@ -26,9 +26,6 @@ import { prefillMktPaymentHistories } from 'src/mkt-core/dev-seeder/prefill-data
 import { prefillMktPaymentMethods } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payment-methods';
 import { prefillMktPayments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-payments';
 import { prefillMktPermissionAudits } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-permission-audits';
-import { prefillMktResellerTierHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-reseller-tier-histories';
-import { prefillMktResellerTiers } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-reseller-tiers';
-import { prefillMktResellers } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-resellers';
 import { prefillMktStaffStatusHistories } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-staff-status-histories';
 import { prefillMktTags } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-templates';
@@ -88,10 +85,6 @@ export const MKT_PREFILLS = [
   prefillMktPaymentMethods,
   prefillMktPayments,
   prefillMktPaymentHistories,
-  // reseller prefills
-  prefillMktResellerTiers,
-  prefillMktResellers,
-  prefillMktResellerTierHistories,
   // organization level prefills
   prefillMktOrganizationLevels,
   prefillMktEmploymentStatuses,
