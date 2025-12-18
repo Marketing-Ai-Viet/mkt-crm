@@ -15,6 +15,8 @@ import { mktCustomersAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-cu
 import { mktCustomerTagsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-customer-tag-all.view';
 import { mktDataAccessPoliciesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-data-access-policy-all.view';
 import { mktDepartmentsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-all.view';
+import { mktGenericCombosAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-generic-combo-all.view';
+import { mktGenericComboItemsAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-generic-combo-item-all.view';
 import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-department-hierarchy-all.view';
 import { mktEmploymentStatusesAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-employment-status-all.view';
 import { mktI18nAllView } from 'src/mkt-core/dev-seeder/prefill-view/mkt-i18n-all.view';
@@ -60,6 +62,9 @@ export const MKT_ALL_VIEWS = [
   // combo views
   mktCombosAllView,
   mktComboVariantsAllView,
+  // generic combo views
+  mktGenericCombosAllView,
+  mktGenericComboItemsAllView,
   // order views
   mktOrdersAllView,
   mktOrderItemsAllView,

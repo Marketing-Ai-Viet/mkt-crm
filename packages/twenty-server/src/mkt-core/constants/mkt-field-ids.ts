@@ -188,6 +188,7 @@ export const MKT_PRODUCT_FIELD_IDS = {
   accountOwner: 'f836dd4e-1a6e-40ec-b8ce-4bcee5125fe0',
   timelineActivities: 'e4ecfb53-2ad5-4a78-ae3f-a293a8478405',
   searchVector: 'dc61cde2-4483-4418-91e4-bb7bc8ded759',
+  genericComboItems: 'b2c3d4e5-f6a7-8901-2345-678901234567',
 };
 
 export const MKT_ATTRIBUTE_FIELD_IDS = {
@@ -242,6 +243,7 @@ export const MKT_VARIANT_FIELD_IDS = {
   accountOwner: '60914403-db18-454f-a11c-7b8387539edf',
   timelineActivities: 'af6607e3-b106-44e9-9c3a-483a7ee342f3',
   searchVector: '1b50d19d-459d-466f-8560-c1ec12470936',
+  genericComboItems: 'c3d4e5f6-a7b8-9012-3456-789012345678',
 };
 
 export const MKT_VARIANT_ATTRIBUTE_FIELD_IDS = {

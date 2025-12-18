@@ -13,6 +13,11 @@ export type OAuth2ClientConfig = {
   circuitBreaker: OAuth2CircuitBreakerConfig;
   jwt: OAuth2JwtConfig;
   redisHealth: OAuth2RedisHealthConfig;
+  startup: OAuth2StartupConfig;
+};
+
+export type OAuth2StartupConfig = {
+  skipInit: boolean;
 };
 
 export type OAuth2CacheConfig = {

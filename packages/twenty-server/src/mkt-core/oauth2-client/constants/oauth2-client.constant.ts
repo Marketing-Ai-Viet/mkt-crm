@@ -56,6 +56,10 @@ export const OAUTH2_REDIS_HEALTH_DEFAULTS = {
   MAX_TIMEOUT_MS: 10000,
 } as const;
 
+export const OAUTH2_STARTUP_DEFAULTS = {
+  SKIP_INIT: false,
+} as const;
+
 export const CIRCUIT_BREAKER_STATE = {
   CLOSED: 'CLOSED',
   OPEN: 'OPEN',

@@ -176,6 +176,14 @@ import {
   MKT_COMBO_VARIANT_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-combo-variant-data-seeds.constants';
 import {
+  MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
+  MKT_GENERIC_COMBO_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-generic-combo-data-seeds.constants';
+import {
+  MKT_GENERIC_COMBO_ITEM_DATA_SEED_COLUMNS,
+  MKT_GENERIC_COMBO_ITEM_DATA_SEEDS,
+} from 'src/mkt-core/dev-seeder/constants/mkt-generic-combo-item-data-seeds.constants';
+import {
   MKT_VALUE_DATA_SEED_COLUMNS,
   MKT_VALUE_DATA_SEEDS,
 } from 'src/mkt-core/dev-seeder/product-seeder/mkt-value-data-seeds.constants';
@@ -268,6 +276,17 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktComboVariant',
     pgColumns: MKT_COMBO_VARIANT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_COMBO_VARIANT_DATA_SEEDS,
+  },
+  // Generic combo configs
+  {
+    tableName: 'mktGenericCombo',
+    pgColumns: MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_GENERIC_COMBO_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktGenericComboItem',
+    pgColumns: MKT_GENERIC_COMBO_ITEM_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_GENERIC_COMBO_ITEM_DATA_SEEDS,
   },
   {
     tableName: 'mktTemplate',

@@ -8,6 +8,16 @@ export {
   DateTimeUtils,
 } from './date-time.utils';
 
+// Money utilities
+export {
+  MONEY_DECIMAL_PLACES,
+  MoneyInput,
+  MoneyResult,
+  MoneyUtils,
+  PercentageOptions,
+  ROUNDING_MODE,
+} from './money.utils';
+
 // Statistics utilities
 export { StatisticsUtils } from './statistics.utils';
 

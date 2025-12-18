@@ -3,6 +3,8 @@ import { SeedCustomerModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-
 import { SeedCustomerTagModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-customer-tag-data-seed-dev-workspace.command';
 import { SeedMktDataAccessPolicyCommand } from 'src/mkt-core/dev-seeder/commands/mkt-data-access-policy-data-seed-dev-workspace.command';
 import { SeedDepartmentModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-department-data-seed-dev-workspace.command';
+import { MktGenericComboDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-generic-combo-data-seed-dev-workspace.command';
+import { MktGenericComboItemDataSeedDevWorkspaceCommand } from 'src/mkt-core/dev-seeder/commands/mkt-generic-combo-item-data-seed-dev-workspace.command';
 import { SeedMktDepartmentHierarchyCommand } from 'src/mkt-core/dev-seeder/commands/mkt-department-hierarchy-data-seed-dev-workspace.command';
 import { SeedEmploymentStatusModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-employment-status-data-seed-dev-workspace.command';
 import { SeedI18nModuleCommand } from 'src/mkt-core/dev-seeder/commands/mkt-i18n-data-seed-dev-workspace.command';
@@ -59,6 +61,9 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedComboModuleCommand,
   SeedComboVariantModuleCommand,
   SeedVariantValueModuleCommand,
+  // generic combo commands
+  MktGenericComboDataSeedDevWorkspaceCommand,
+  MktGenericComboItemDataSeedDevWorkspaceCommand,
   // order commands
   SeedOrderModuleCommand,
   SeedOrderItemModuleCommand,

@@ -9,6 +9,7 @@ import {
   OAUTH2_RATE_LIMIT_DEFAULTS,
   OAUTH2_REDIS_HEALTH_DEFAULTS,
   OAUTH2_REFRESH_DEFAULTS,
+  OAUTH2_STARTUP_DEFAULTS,
 } from 'src/mkt-core/oauth2-client/constants';
 import {
   OAuth2CacheConfig,
@@ -19,6 +20,7 @@ import {
   OAuth2RateLimitConfig,
   OAuth2RedisHealthConfig,
   OAuth2RefreshConfig,
+  OAuth2StartupConfig,
 } from 'src/mkt-core/oauth2-client/types';
 
 const getEnvString = (key: string, defaultValue: string): string =>
@@ -143,6 +145,13 @@ const buildRedisHealthConfig = (): OAuth2RedisHealthConfig => ({
   ),
 });
 
+const buildStartupConfig = (): OAuth2StartupConfig => ({
+  skipInit: getEnvBoolean(
+    'OAUTH2_SKIP_STARTUP_INIT',
+    OAUTH2_STARTUP_DEFAULTS.SKIP_INIT,
+  ),
+});
+
 export const oauth2ClientConfig = registerAs(
   'oauth2Client',
   (): OAuth2ClientConfig => ({
@@ -172,5 +181,6 @@ export const oauth2ClientConfig = registerAs(
     circuitBreaker: buildCircuitBreakerConfig(),
     jwt: buildJwtConfig(),
     redisHealth: buildRedisHealthConfig(),
+    startup: buildStartupConfig(),
   }),
 );

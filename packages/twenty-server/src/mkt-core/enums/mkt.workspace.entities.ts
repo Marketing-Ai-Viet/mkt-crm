@@ -46,6 +46,10 @@ import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt
 import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import {
+  MktGenericComboItemWorkspaceEntity,
+  MktGenericComboWorkspaceEntity,
+} from 'src/mkt-core/mkt-combo/objects';
 
 export const MKT_WORKSPACE_ENTITIES = [
   //core
@@ -67,6 +71,9 @@ export const MKT_WORKSPACE_ENTITIES = [
   // Combo
   MktComboWorkspaceEntity,
   MktComboVariantWorkspaceEntity,
+  // Generic Combo (must be before Product/Variant due to relations)
+  MktGenericComboWorkspaceEntity,
+  MktGenericComboItemWorkspaceEntity,
   // Order
   MktOrderWorkspaceEntity,
   MktOrderItemWorkspaceEntity,

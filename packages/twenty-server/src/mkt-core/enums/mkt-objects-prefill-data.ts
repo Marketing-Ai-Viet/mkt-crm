@@ -10,6 +10,8 @@ import { prefillMktCustomers } from 'src/mkt-core/dev-seeder/prefill-data/prefil
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-data-access-policies';
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-department-hierarchies';
 import { prefillMktDepartments } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-departments';
+import { prefillMktGenericComboItems } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-generic-combo-items';
+import { prefillMktGenericCombos } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-generic-combos';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-employment-statuses';
 import { prefillMktI18n } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/dev-seeder/prefill-data/prefill-mkt-kpi-templates';
@@ -61,6 +63,9 @@ export const MKT_PREFILLS = [
   // combo prefills
   prefillMktCombos,
   prefillMktComboVariants,
+  // generic combo prefills
+  prefillMktGenericCombos,
+  prefillMktGenericComboItems,
   // order prefills
   prefillMktOrders,
   prefillMktOrderItems,

@@ -47,6 +47,7 @@ export class OAuth2ClientService
   private readonly refreshThresholdSeconds: number;
   private readonly refreshIntervalMs: number;
   private readonly httpTimeoutMs: number;
+  private readonly skipStartupInit: boolean;
 
   private refreshInterval?: ReturnType<typeof setTimeout>;
   private lastRefreshedAt?: DateTime;
@@ -81,6 +82,8 @@ export class OAuth2ClientService
       30000;
     this.httpTimeoutMs =
       this.configService.get<number>('oauth2Client.http.timeoutMs') ?? 10000;
+    this.skipStartupInit =
+      this.configService.get<boolean>('oauth2Client.startup.skipInit') ?? false;
   }
 
   /**
@@ -88,6 +91,25 @@ export class OAuth2ClientService
    * This ensures MktProductSyncService's @OnEvent listener is ready to receive events.
    */
   async onApplicationBootstrap(): Promise<void> {
+    // Skip startup initialization if configured (e.g., during database:reset)
+    if (this.skipStartupInit) {
+      this.logger.log(
+        'OAuth2 startup initialization skipped (OAUTH2_SKIP_STARTUP_INIT=true)',
+      );
+
+      return;
+    }
+
+    // Skip initialization when running in command mode (e.g., database:reset, workspace:seed)
+    // Detect by checking process.argv for command.js
+    if (this.isCommandMode()) {
+      this.logger.log(
+        'OAuth2 startup initialization skipped (running in command mode)',
+      );
+
+      return;
+    }
+
     // Skip if clientId or clientSecret not configured
     if (!this.clientId || !this.clientSecret) {
       this.logger.warn(
@@ -105,6 +127,14 @@ export class OAuth2ClientService
         this.logger.error('Failed to initialize token on startup', error);
       });
     });
+  }
+
+  /**
+   * Detect if running in command mode (e.g., database:reset, workspace:seed)
+   * by checking process.argv for command.js
+   */
+  private isCommandMode(): boolean {
+    return process.argv.some((arg) => arg.includes('command.js'));
   }
 
   private async initializeTokenAndStartRefresh(): Promise<void> {
