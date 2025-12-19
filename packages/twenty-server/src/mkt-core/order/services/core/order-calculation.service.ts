@@ -101,7 +101,7 @@ export class OrderCalculationService {
     discountPercent = 0,
   ): OrderCalculatedValues {
     const items: OrderItemWithCalculation[] = orderItems.map((item) => ({
-      variantId: item.mktVariantId ?? '',
+      variantId: item.externalMktProductId ?? '',
       name: item.name,
       unitPrice: item.unitPrice ?? 0,
       quantity: item.quantity ?? 1,

@@ -273,20 +273,6 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   orderLanguage: MktSupportedLanguage | null;
 
   // ============================================
-  // LEGACY FIELDS (deprecated - product module removed)
-  // ============================================
-
-  @WorkspaceField({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktVariant,
-    type: FieldMetadataType.TEXT,
-    label: msg`Variant ID (Legacy)`,
-    description: msg`DEPRECATED: Legacy variant ID reference`,
-    icon: 'IconBox',
-  })
-  @WorkspaceIsNullable()
-  mktVariantId: string | null;
-
-  // ============================================
   // RELATIONS
   // ============================================
 

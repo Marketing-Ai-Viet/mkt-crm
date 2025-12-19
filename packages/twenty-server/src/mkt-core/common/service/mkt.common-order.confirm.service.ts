@@ -446,7 +446,7 @@ export class MktOrderCommonConfirmService {
 
   async getVariantValueById(
     _ids: string[],
-  ): Promise<Record<string, unknown>[]> {
+  ): Promise<Array<{ id: string; name: string | null; price: number | null }>> {
     // TODO: Implement variant fetching using product integration services
     this.logger.warn(
       'Variant fetching needs to be reimplemented with product integration services',

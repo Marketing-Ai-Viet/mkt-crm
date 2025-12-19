@@ -14,6 +14,8 @@ import {
   MKT_PRODUCT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-product-integration/constants';
 import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
+import { MktLicenseResponse } from 'src/mkt-core/mkt-license-integration/types';
+import { MktLicenseSnapshot } from 'src/mkt-core/order/types';
 
 @Injectable()
 export class MktSnapshotService {
@@ -108,6 +110,50 @@ export class MktSnapshotService {
     });
 
     return snapshot;
+  }
+
+  /**
+   * Create immutable license snapshot
+   *
+   * @param license - License data from MKT Server
+   * @returns Immutable license snapshot
+   */
+  createLicenseSnapshot(license: MktLicenseResponse): MktLicenseSnapshot {
+    const snapshot: MktLicenseSnapshot = {
+      id: license.id,
+      licenseKey: license.licenseKey,
+      licenseType: license.type,
+      status: this.mapLicenseStatus(license.status),
+      productId: license.productId,
+      packageId: license.metadata?.sourceConfig?.configId ?? '',
+      activatedAt: license.startDate,
+      expiresAt: license.endDate,
+      maxDevices: license.maxDevices,
+      customerId: license.userId,
+      metadata: license.metadata,
+      capturedAt: new Date().toISOString(),
+      sourceVersion: String(license.version),
+    };
+
+    this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
+      licenseId: license.id,
+    });
+
+    return snapshot;
+  }
+
+  /**
+   * Map MKT Server license status to MktLicenseSnapshot status
+   */
+  private mapLicenseStatus(status: string): MktLicenseSnapshot['status'] {
+    const statusMap: Record<string, MktLicenseSnapshot['status']> = {
+      active: 'ACTIVE',
+      pending: 'INACTIVE',
+      expired: 'EXPIRED',
+      revoked: 'CANCELLED',
+    };
+
+    return statusMap[status] ?? 'INACTIVE';
   }
 
   /**

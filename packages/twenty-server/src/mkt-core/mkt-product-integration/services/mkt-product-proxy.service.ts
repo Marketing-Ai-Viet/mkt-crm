@@ -12,6 +12,8 @@ import {
   MktSupportedLanguage,
   MktValidationResult,
 } from 'src/mkt-core/mkt-product-integration/types';
+import { MktLicenseResponse } from 'src/mkt-core/mkt-license-integration/types';
+import { MktLicenseSnapshot } from 'src/mkt-core/order/types';
 import {
   MKT_DEFAULT_LANGUAGE,
   MKT_PRODUCT_LOG_CONTEXT,
@@ -270,6 +272,13 @@ export class MktProductProxyService {
    */
   verifyProductSnapshot(snapshot: MktProductSnapshot): boolean {
     return this.snapshotService.verifyChecksum(snapshot);
+  }
+
+  /**
+   * Create license snapshot for order
+   */
+  createLicenseSnapshot(license: MktLicenseResponse): MktLicenseSnapshot {
+    return this.snapshotService.createLicenseSnapshot(license);
   }
 
   // ============================================

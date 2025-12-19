@@ -22,9 +22,6 @@ type MktOrderItemDataSeed = {
   totalAmountWithTax: number;
   position: number;
   mktOrderId: string;
-  mktProductId: string | null; // DEPRECATED: Product module removed
-  mktVariantId: string | null; // DEPRECATED: Product module removed
-  mktComboId: string | null;
   // External MKT Product fields
   externalMktProductId: string | null;
   externalMktProductCode: string | null;
@@ -58,9 +55,6 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] = 
   'totalAmountWithTax',
   'position',
   'mktOrderId',
-  'mktProductId',
-  'mktVariantId',
-  'mktComboId',
   'externalMktProductId',
   'externalMktProductCode',
   'externalMktPackageId',
@@ -103,9 +97,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS_IDS = {
 
 // Default null values for external product and license fields
 const DEFAULT_EXTERNAL_FIELDS = {
-  // Product module removed - using null for mktProductId and mktVariantId
-  mktProductId: null,
-  mktVariantId: null,
   // External product fields
   externalMktProductId: null,
   externalMktProductCode: null,
@@ -137,7 +128,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 4400000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -156,7 +146,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 7700000,
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -177,7 +166,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 6600000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -196,7 +184,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 11000000,
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -217,7 +204,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 6600000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -238,7 +224,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 5500000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -257,7 +242,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 11000000,
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -278,7 +262,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 4400000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -297,7 +280,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 5500000,
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -318,7 +300,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 3300000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -339,7 +320,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 5500000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -360,7 +340,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 6600000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -379,7 +358,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 11000000,
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -400,7 +378,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 3300000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -421,7 +398,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 5500000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -442,7 +418,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 9900000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -463,7 +438,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 11000000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -484,7 +458,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 3850000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -503,7 +476,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 5500000,
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -524,7 +496,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     totalAmountWithTax: 13200000,
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13, // Reusing ID_13 for premium package
-    mktComboId: null,
     ...DEFAULT_EXTERNAL_FIELDS,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,

@@ -26,6 +26,7 @@ import {
   // Domain Services
   OrderCrudService,
   OrderItemService,
+  OrderLicenseQueryService,
   // Application Services
   OrderOrchestrationService,
   // Legacy Services
@@ -38,8 +39,11 @@ import {
   MktOrderOverdueRegistrationService,
 } from './services';
 import { OrderMutationResolver, OrderItemMutationResolver } from './resolvers';
+import {
+  MktOrderCustomEventListener,
+  LicenseLifecycleListener,
+} from './listeners';
 
-import { MktOrderCustomEventListener } from './listeners/mkt-order-custom-event.listener';
 import {
   CreateOrderSaga,
   ConfirmOrderSaga,
@@ -71,6 +75,7 @@ import {
   providers: [
     // Event Listeners
     MktOrderCustomEventListener,
+    LicenseLifecycleListener,
 
     // Repositories (Data Access Layer)
     MktOrderRepository,
@@ -85,6 +90,7 @@ import {
     // Domain Services (domain operations)
     OrderCrudService,
     OrderItemService,
+    OrderLicenseQueryService,
 
     // Application Services (orchestration)
     OrderOrchestrationService,
@@ -125,6 +131,7 @@ import {
     OrderEventService,
     OrderItemService,
     OrderCrudService,
+    OrderLicenseQueryService,
     OrderOrchestrationService,
     // Sagas
     ConfirmOrderSaga,

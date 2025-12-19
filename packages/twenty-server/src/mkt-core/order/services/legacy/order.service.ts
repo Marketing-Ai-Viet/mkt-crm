@@ -59,7 +59,6 @@ export class OrderService {
 
         return orderItemRepository.create({
           mktOrderId: createdOrder.id,
-          mktVariantId: item.mktVariantId,
           name: item.name,
           snapshotProductName: item.snapshotProductName,
           unitName: item.unitName,

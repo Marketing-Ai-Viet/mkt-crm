@@ -76,7 +76,8 @@ export const mktOrderItemsAllView = (
       {
         fieldMetadataId:
           orderItemObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_ORDER_ITEM_FIELD_IDS.mktProduct,
+            (field) =>
+              field.standardId === MKT_ORDER_ITEM_FIELD_IDS.snapshotProductName,
           )?.id ?? '',
         position: 5,
         isVisible: true,

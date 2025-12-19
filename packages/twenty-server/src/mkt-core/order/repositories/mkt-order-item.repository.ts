@@ -148,23 +148,19 @@ export class MktOrderItemRepository {
   }
 
   /**
-   * Find order items by variant ID (internal product)
+   * @deprecated Variant module has been removed. Use findByExternalProductId instead.
+   * Find order items by variant ID - returns empty array as variants are removed
    */
   async findByVariantId(
-    workspaceId: string,
+    _workspaceId: string,
     variantId: string,
-    options?: FindOrderItemOptions,
+    _options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    this.logger.debug(
-      MKT_ORDER_ITEM_LOG_MESSAGES.FIND_BY_VARIANT_START(variantId),
+    this.logger.warn(
+      `findByVariantId is deprecated. Variant ${variantId} lookup returns empty.`,
     );
 
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.find({
-      where: { mktVariantId: variantId },
-      relations: options?.relations,
-    });
+    return [];
   }
 
   /**
