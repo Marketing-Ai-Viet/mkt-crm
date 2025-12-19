@@ -71,4 +71,10 @@ export const MKT_OBJECT_IDS = {
   mktUser: '3f9d2c8e-6a41-4c3d-9b71-12a8f53e7b29',
   // emails
   mktEmail: '5d468431-2856-4039-84b4-98b9940bf731',
+  // promotion module
+  mktPromotion: '550e8400-e29b-41d4-a716-446655440101',
+  mktPromotionRule: '550e8400-e29b-41d4-a716-446655440102',
+  mktCoupon: '550e8400-e29b-41d4-a716-446655440103',
+  mktPromotionUsage: '550e8400-e29b-41d4-a716-446655440104',
+  mktPromotionAudit: '550e8400-e29b-41d4-a716-446655440105',
 };

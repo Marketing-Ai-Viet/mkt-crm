@@ -120,6 +120,8 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   idNumberValidated: '3afb4d6f-2e95-42f9-9297-6dbc70242e82', // boolean
   taxCodeValidated: 'e3ea4d21-09a0-4f2a-872e-4f00cd7a621c', // boolean
   mergeSuggestion: 'ee1d2375-75fc-4575-8374-18120e31d740', // JSON: suggested duplicate customers
+  promotionUsages: '660e8400-e29b-41d4-a716-446655440604',
+  assignedCoupons: '660e8400-e29b-41d4-a716-446655440605',
 };
 
 export const MKT_TAG_FIELD_IDS = {
@@ -341,6 +343,7 @@ export const MKT_ORDER_FIELD_IDS = {
   timelineActivities: '5ddc8d4c-e8f3-4b36-a367-3b812d9f7d02',
   searchVector: '68623375-43f6-49ed-b29f-291f4cd34921',
   orderItems: '1a2b3c4d-5e6f-7890-1234-567890abcdef',
+  promotionUsages: '660e8400-e29b-41d4-a716-446655440603',
 };
 
 export const MKT_ORDER_ITEM_FIELD_IDS = {

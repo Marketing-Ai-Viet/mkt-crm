@@ -149,7 +149,7 @@ export class MktGenericComboWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconCode',
   })
   @WorkspaceIsNullable()
-  metadata: Record<string, unknown> | null;
+  metadata: JSON | null;
 
   // ============================================
   // AUDIT & VERSIONING

@@ -69,7 +69,7 @@ export class MktCommonOrderService {
       updateData.createdBy = this.licenseHistory.createdBy;
     }
 
-    await orderRepository.update(orderId, updateData);
+    await orderRepository.update(orderId, updateData as never);
   }
 
   async updateOrderForRefund(
@@ -87,7 +87,7 @@ export class MktCommonOrderService {
       updateData.createdBy = this.licenseHistory.createdBy;
     }
 
-    await orderRepository.update(updateOrder?.id, updateData);
+    await orderRepository.update(updateOrder?.id, updateData as never);
   }
 
   async updateFirstMetadata(

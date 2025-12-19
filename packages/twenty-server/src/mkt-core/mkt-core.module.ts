@@ -11,6 +11,7 @@ import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
+import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration/mkt-product-integration.module';
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
@@ -37,6 +38,7 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
     MktLicenseIntegrationModule,
     MktUserIntegrationModule,
     MktComboModule,
+    MktPromotionModule,
   ],
 })
 export class MktCoreModule implements NestModule {

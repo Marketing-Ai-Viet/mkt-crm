@@ -31,6 +31,7 @@ import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-o
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -380,4 +381,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktCustomer')
   mktCustomerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_ORDER_FIELD_IDS.promotionUsages,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Promotion Usages`,
+    description: msg`Promotion usages linked to this order`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktPromotionUsageWorkspaceEntity,
+    inverseSideFieldKey: 'order',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  promotionUsages: Relation<MktPromotionUsageWorkspaceEntity[]>;
 }
