@@ -119,20 +119,6 @@ export class MktCouponWorkspaceEntity extends BaseWorkspaceEntity {
   validTo: Date | null;
 
   // ============================================
-  // CUSTOMER ASSIGNMENT
-  // ============================================
-
-  @WorkspaceField({
-    standardId: MKT_PROMOTION_FIELD_IDS.mktCoupon.assignedCustomerId,
-    type: FieldMetadataType.UUID,
-    label: msg`Assigned Customer ID`,
-    description: msg`Customer ID if assigned to specific customer`,
-    icon: 'IconUser',
-  })
-  @WorkspaceIsNullable()
-  assignedCustomerId: string | null;
-
-  // ============================================
   // METADATA
   // ============================================
 
@@ -179,6 +165,9 @@ export class MktCouponWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   assignedCustomer: Relation<MktCustomerWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('assignedCustomer')
+  assignedCustomerId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_PROMOTION_RELATION_IDS.mktCouponToUsages,

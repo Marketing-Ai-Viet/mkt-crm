@@ -7,7 +7,7 @@ import {
   CALL_FIREBASE_DATA,
   FIREBASE_AUTH_RESPONSE,
 } from 'src/mkt-core/common/common.type';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
 
 @Injectable()
 export class MktFirebaseService {

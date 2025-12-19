@@ -45,9 +45,7 @@ export const MKT_PROMOTION_FIELD_IDS = {
     currentUsageCount: '553e8400-e29b-41d4-a716-446655440104',
     validFrom: '553e8400-e29b-41d4-a716-446655440105',
     validTo: '553e8400-e29b-41d4-a716-446655440106',
-    assignedCustomerId: '553e8400-e29b-41d4-a716-446655440107',
     metadata: '553e8400-e29b-41d4-a716-446655440108',
-    deletedAt: '553e8400-e29b-41d4-a716-446655440109',
   },
   mktPromotionUsage: {
     discountAmount: '554e8400-e29b-41d4-a716-446655440101',

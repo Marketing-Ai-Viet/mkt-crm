@@ -8,7 +8,7 @@ import { prefillPeople } from 'src/engine/workspace-manager/standard-objects-pre
 import { prefillViews } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-views';
 import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
 import { prefillWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workflows';
-import { MKT_PREFILLS } from 'src/mkt-core/enums/mkt-objects-prefill-data';
+import { MKT_PREFILLS } from 'src/mkt-core/workspace-config/mkt-objects-prefill-data';
 
 export const standardObjectsPrefillData = async (
   mainDataSource: DataSource,

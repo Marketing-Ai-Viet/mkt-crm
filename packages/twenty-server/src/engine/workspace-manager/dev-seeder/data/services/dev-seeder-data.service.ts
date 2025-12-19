@@ -97,7 +97,7 @@ import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard
 import {
   MKT_RECORD_SEEDS_CONFIGS,
   MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
-} from 'src/mkt-core/enums/mkt-dev-seeder-data.config';
+} from 'src/mkt-core/workspace-config/mkt-dev-seeder-data.config';
 
 const RECORD_SEEDS_CONFIGS = [
   ...MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
