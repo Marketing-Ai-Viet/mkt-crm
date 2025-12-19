@@ -20,7 +20,16 @@ import {
   ExternalMktProductInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+
+// ============================================
+// INTERNAL VARIANT TYPE (for legacy compatibility)
+// ============================================
+
+type InternalVariant = {
+  id: string;
+  name: string | null;
+  price: number | null;
+};
 
 // ============================================
 // STEP OUTPUT TYPE
@@ -673,21 +682,19 @@ export class CreateOrderItemsStep extends SagaStep<
 
   /**
    * Get variants từ database
+   * NOTE: Variant module has been removed. This method returns empty array.
+   * Use external MKT products instead via MktProductProxyService.
    */
   private async getVariants(
-    workspaceId: string,
-    variantIds: string[],
-  ): Promise<MktVariantWorkspaceEntity[]> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktVariantWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    _workspaceId: string,
+    _variantIds: string[],
+  ): Promise<InternalVariant[]> {
+    // TODO: Replace with actual variant data source or remove variant support
+    this.logger.warn(
+      'getVariants called but variant module is deleted. Returning empty array.',
+    );
 
-    return repository.find({
-      where: variantIds.map((id) => ({ id })),
-    });
+    return [];
   }
 
   /**

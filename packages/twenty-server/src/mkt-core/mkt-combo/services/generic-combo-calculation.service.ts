@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import Big from 'big.js';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   MoneyUtils,
   MONEY_DECIMAL_PLACES,
@@ -13,8 +12,6 @@ import {
   MktProduct,
   MktProductPackage,
 } from 'src/mkt-core/mkt-product-integration/types';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
 import { MktGenericComboItemWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo-item.workspace-entity';
 import {
@@ -33,15 +30,15 @@ import {
 /**
  * Service tính toán giá combo cho nhiều loại item
  * Xử lý parallel fetching và áp dụng pricing strategy
+ *
+ * NOTE: INTERNAL_PRODUCT and INTERNAL_VARIANT types are deprecated.
+ * Only DIGITAL_EXTERNAL, SERVICE, and CUSTOM types are supported.
  */
 @Injectable()
 export class GenericComboCalculationService {
   private readonly logger = new Logger(GENERIC_COMBO_LOG_CONTEXT);
 
-  constructor(
-    private readonly mktProductProxy: MktProductProxyService,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+  constructor(private readonly mktProductProxy: MktProductProxyService) {}
 
   /**
    * Tính giá combo với parallel fetching
@@ -120,25 +117,26 @@ export class GenericComboCalculationService {
    * Parallel fetch và tính giá cho từng item dựa trên item type
    */
   private async calculateItemPricesParallel(
-    workspaceId: string,
+    _workspaceId: string,
     items: MktGenericComboItemWorkspaceEntity[],
   ): Promise<GenericComboItemCalculation[]> {
     // Group items by type để batch fetch
     const digitalExternalItems = items.filter(
       (i) => i.itemType === COMBO_ITEM_TYPE.DIGITAL_EXTERNAL,
     );
-    const internalProductItems = items.filter(
-      (i) => i.itemType === COMBO_ITEM_TYPE.INTERNAL_PRODUCT,
+
+    // Log warning for deprecated types
+    const deprecatedItems = items.filter(
+      (i) =>
+        i.itemType === COMBO_ITEM_TYPE.INTERNAL_PRODUCT ||
+        i.itemType === COMBO_ITEM_TYPE.INTERNAL_VARIANT,
     );
-    const internalVariantItems = items.filter(
-      (i) => i.itemType === COMBO_ITEM_TYPE.INTERNAL_VARIANT,
-    );
-    const _serviceItems = items.filter(
-      (i) => i.itemType === COMBO_ITEM_TYPE.SERVICE,
-    );
-    const _customItems = items.filter(
-      (i) => i.itemType === COMBO_ITEM_TYPE.CUSTOM,
-    );
+
+    if (deprecatedItems.length > 0) {
+      this.logger.warn(
+        `Found ${deprecatedItems.length} items using deprecated INTERNAL_PRODUCT/INTERNAL_VARIANT types. These will be treated as having 0 price unless overridePrice is set.`,
+      );
+    }
 
     // Fetch packages trước để lấy productIds từ packages
     const externalPackages =
@@ -147,22 +145,15 @@ export class GenericComboCalculationService {
     // Lấy productIds từ packages để fetch products
     const packageProductIds = externalPackages.map((pkg) => pkg.productId);
 
-    // Parallel fetch products (từ items + từ packages) và internal entities
-    const [externalProducts, internalProducts, internalVariants] =
-      await Promise.all([
-        this.fetchExternalProductsBatch(
-          digitalExternalItems,
-          packageProductIds,
-        ),
-        this.fetchInternalProductsBatch(workspaceId, internalProductItems),
-        this.fetchInternalVariantsBatch(workspaceId, internalVariantItems),
-      ]);
+    // Parallel fetch external products only
+    const externalProducts = await this.fetchExternalProductsBatch(
+      digitalExternalItems,
+      packageProductIds,
+    );
 
     // Build lookup maps
     const externalProductMap = new Map(externalProducts.map((p) => [p.id, p]));
     const externalPackageMap = new Map(externalPackages.map((p) => [p.id, p]));
-    const internalProductMap = new Map(internalProducts.map((p) => [p.id, p]));
-    const internalVariantMap = new Map(internalVariants.map((v) => [v.id, v]));
 
     // Tính giá cho mỗi item
     return items.map((item) =>
@@ -170,8 +161,6 @@ export class GenericComboCalculationService {
         item,
         externalProductMap,
         externalPackageMap,
-        internalProductMap,
-        internalVariantMap,
       ),
     );
   }
@@ -183,8 +172,6 @@ export class GenericComboCalculationService {
     item: MktGenericComboItemWorkspaceEntity,
     externalProductMap: Map<string, MktProduct>,
     externalPackageMap: Map<string, MktProductPackage>,
-    internalProductMap: Map<string, MktProductWorkspaceEntity>,
-    internalVariantMap: Map<string, MktVariantWorkspaceEntity>,
   ): GenericComboItemCalculation {
     let unitPrice = item.overridePrice ?? 0;
     let displayName = item.displayName ?? '';
@@ -195,8 +182,6 @@ export class GenericComboCalculationService {
         item,
         externalProductMap,
         externalPackageMap,
-        internalProductMap,
-        internalVariantMap,
       );
 
       unitPrice = priceAndName.unitPrice;
@@ -227,8 +212,6 @@ export class GenericComboCalculationService {
     item: MktGenericComboItemWorkspaceEntity,
     externalProductMap: Map<string, MktProduct>,
     externalPackageMap: Map<string, MktProductPackage>,
-    internalProductMap: Map<string, MktProductWorkspaceEntity>,
-    internalVariantMap: Map<string, MktVariantWorkspaceEntity>,
   ): { unitPrice: number; displayName: string } {
     switch (item.itemType) {
       case COMBO_ITEM_TYPE.DIGITAL_EXTERNAL: {
@@ -267,32 +250,12 @@ export class GenericComboCalculationService {
         };
       }
 
-      case COMBO_ITEM_TYPE.INTERNAL_PRODUCT: {
-        if (item.mktProductId) {
-          const product = internalProductMap.get(item.mktProductId);
-
-          if (product) {
-            return {
-              unitPrice: product.price ?? 0,
-              displayName: product.name ?? '',
-            };
-          }
-        }
-
-        return { unitPrice: 0, displayName: '' };
-      }
-
+      case COMBO_ITEM_TYPE.INTERNAL_PRODUCT:
       case COMBO_ITEM_TYPE.INTERNAL_VARIANT: {
-        if (item.mktVariantId) {
-          const variant = internalVariantMap.get(item.mktVariantId);
-
-          if (variant) {
-            return {
-              unitPrice: variant.price ?? 0,
-              displayName: variant.name ?? '',
-            };
-          }
-        }
+        // Deprecated types - return 0 price
+        this.logger.warn(
+          `Item ${item.id} uses deprecated type ${item.itemType}. Returning 0 price. Use overridePrice or migrate to DIGITAL_EXTERNAL.`,
+        );
 
         return { unitPrice: 0, displayName: '' };
       }
@@ -389,80 +352,6 @@ export class GenericComboCalculationService {
     }
 
     return results;
-  }
-
-  /**
-   * Batch fetch internal products
-   */
-  private async fetchInternalProductsBatch(
-    workspaceId: string,
-    items: MktGenericComboItemWorkspaceEntity[],
-  ): Promise<MktProductWorkspaceEntity[]> {
-    const productIds = [
-      ...new Set(
-        items
-          .map((i) => i.mktProductId)
-          .filter((id): id is string => id !== null),
-      ),
-    ];
-
-    if (productIds.length === 0) {
-      return [];
-    }
-
-    try {
-      const repository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktProductWorkspaceEntity>(
-          workspaceId,
-          'mktProduct',
-        );
-
-      return repository
-        .createQueryBuilder('product')
-        .where('product.id IN (:...ids)', { ids: productIds })
-        .getMany();
-    } catch (error) {
-      this.logger.warn('Failed to fetch internal products', error);
-
-      return [];
-    }
-  }
-
-  /**
-   * Batch fetch internal variants
-   */
-  private async fetchInternalVariantsBatch(
-    workspaceId: string,
-    items: MktGenericComboItemWorkspaceEntity[],
-  ): Promise<MktVariantWorkspaceEntity[]> {
-    const variantIds = [
-      ...new Set(
-        items
-          .map((i) => i.mktVariantId)
-          .filter((id): id is string => id !== null),
-      ),
-    ];
-
-    if (variantIds.length === 0) {
-      return [];
-    }
-
-    try {
-      const repository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktVariantWorkspaceEntity>(
-          workspaceId,
-          'mktVariant',
-        );
-
-      return repository
-        .createQueryBuilder('variant')
-        .where('variant.id IN (:...ids)', { ids: variantIds })
-        .getMany();
-    } catch (error) {
-      this.logger.warn('Failed to fetch internal variants', error);
-
-      return [];
-    }
   }
 
   /**

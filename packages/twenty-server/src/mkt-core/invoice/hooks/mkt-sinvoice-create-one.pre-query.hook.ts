@@ -269,8 +269,8 @@ export class MktSInvoiceCreateOnePreQueryHook
           `Item ${index + 1}`,
         lineNumber: item.lineNumber,
         selection: item.selection || 1,
-        itemCode: orderItem.mktProductId
-          ? `MKT_${orderItem.mktProductId}`
+        itemCode: orderItem.externalMktProductId
+          ? `MKT_${orderItem.externalMktProductId}`
           : null,
         itemName:
           orderItem.name ||

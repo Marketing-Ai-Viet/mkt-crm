@@ -368,6 +368,11 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   snapshotPackageName: 'db2c5492-eb14-477e-a9e1-94d009d7da7b',
   orderLanguage: '35d900f3-d659-42f1-91c1-dfca25a8733d',
 
+  // External MKT License fields (from MKT Server)
+  externalMktLicenseId: 'd13bf167-c4ee-4991-b5fd-2fc9422fd2e1',
+  externalMktLicenseKey: '501d54b3-848d-443c-96c1-57fd13f5b126',
+  licenseSnapshot: '282984d2-0d56-4c73-bed3-adc1b96369df',
+
   // relations
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',
   mktProduct: '81a3b4c5-d6e7-f890-9012-345678901234',

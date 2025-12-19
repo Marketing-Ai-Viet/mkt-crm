@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
-import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import {
   ORDER_CODE_PREFIX,
@@ -27,7 +26,6 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    public mktLicenseService: MktLicenseService,
     private mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
     private mktRepo: MktRepositoryService,
@@ -195,12 +193,13 @@ export class OrderConfirmService {
         if (item.snapshotProductName) {
           return item.snapshotProductName;
         }
-        if (item.mktProduct?.name) {
-          const variantName = item.mktVariant?.name;
+        // Use snapshot data if available
+        if (item.snapshotMktProduct) {
+          const packageName = item.snapshotMktPackage?.displayName;
 
-          return variantName
-            ? `${item.mktProduct.name} - ${variantName}`
-            : item.mktProduct.name;
+          return packageName
+            ? `${item.snapshotMktProduct.displayName} - ${packageName}`
+            : item.snapshotMktProduct.displayName;
         }
 
         return 'Sản phẩm';
@@ -246,7 +245,7 @@ export class OrderConfirmService {
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
     licenseId?: string,
   ): Promise<callFireBaseType | void> {
-    const mktCustomerId = customerMeta?.mktCustomerId || null;
+    // const mktCustomerId = customerMeta?.mktCustomerId || null; // Unused
 
     if (
       action !== ORDER_ACTION.WAIT &&
@@ -277,27 +276,18 @@ export class OrderConfirmService {
     this.logger.log(`Fetched order with items: ${safeJsonStringify(order)}`);
 
     if (order && order.orderItems?.length > 0) {
-      try {
-        if (action !== ORDER_ACTION.LICENSE_RENEWING)
-          await this.mktLicenseService.createLicensesForOrderItems(
-            order,
-            mktCustomerId,
-            workspaceId,
-          );
+      // TODO: Implement license creation using new license module
+      // The old MktLicenseService has been removed with the license module
+      this.logger.warn(
+        'License creation/linking is not implemented - license module removed',
+      );
 
-        if (action === ORDER_ACTION.LICENSE_RENEWING) {
-          if (!licenseId)
-            throw new Error('License ID is required for license renewal');
-          await this.mktLicenseService.linkLicensesForOrderItems(
-            licenseId,
-            order,
-            workspaceId,
-          );
-        }
-
-        this.logger.log(`Successfully licenses for order: ${order.id}`);
-      } catch (licenseError) {
-        throw new Error('Failed to licenses for order');
+      if (action === ORDER_ACTION.LICENSE_RENEWING) {
+        if (!licenseId)
+          throw new Error('License ID is required for license renewal');
+        throw new Error(
+          'License module has been removed. License renewal is not available.',
+        );
       }
     }
 
@@ -414,9 +404,10 @@ export class OrderConfirmService {
       workspaceId,
     );
 
-    await this.mktLicenseService.updateReferenceLicenseOrder(
-      trialOrderId,
-      createdOrder.id,
+    // TODO: Implement license order reference update using new license module
+    // The old MktLicenseService has been removed with the license module
+    this.logger.warn(
+      'License order reference update is not implemented - license module removed',
     );
 
     const generatedOrderCode = await this.generateOrderCode(workspaceId);

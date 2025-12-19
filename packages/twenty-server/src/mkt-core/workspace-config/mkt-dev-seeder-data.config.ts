@@ -1,15 +1,3 @@
-import {
-  MKT_PRODUCT_DATA_SEED_COLUMNS,
-  MKT_PRODUCT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-product-data-seeds.constants';
-import {
-  MKT_VARIANT_DATA_SEED_COLUMNS,
-  MKT_VARIANT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-variant-data-seeds.constants';
-import {
-  MKT_VARIANT_VALUE_DATA_SEED_COLUMNS,
-  MKT_VARIANT_VALUE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-variant-value-data-seeds.constants';
 //Order configs
 import {
   MKT_CONTRACT_DATA_SEED_COLUMNS,
@@ -55,14 +43,6 @@ import {
   MKT_KPI_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_KPI_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-kpi-template-data-seeds.constants';
-import {
-  MKT_LICENSE_DATA_SEED_COLUMNS,
-  MKT_LICENSE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-license-data-seeds.constants';
-import {
-  MKT_LICENSE_HISTORY_DATA_SEED_COLUMNS,
-  MKT_LICENSE_HISTORY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-license-history-data-seeds.constants';
 import {
   MKT_OPTION_DATA_SEED_COLUMNS,
   MKT_OPTION_DATA_SEEDS,
@@ -148,22 +128,6 @@ import {
   MKT_SINVOICE_TAX_BREAKDOWN_DATA_SEEDS,
 } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seeds.constants';
 import {
-  MKT_ATTRIBUTE_DATA_SEED_COLUMNS,
-  MKT_ATTRIBUTE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-attribute-data-seeds.constants';
-import {
-  MKT_CATEGORY_DATA_SEED_COLUMNS,
-  MKT_CATEGORY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-category-data-seeds.constants';
-import {
-  MKT_COMBO_DATA_SEED_COLUMNS,
-  MKT_COMBO_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-combo-data-seeds.constants';
-import {
-  MKT_COMBO_VARIANT_DATA_SEED_COLUMNS,
-  MKT_COMBO_VARIANT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-combo-variant-data-seeds.constants';
-import {
   MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-generic-combo-data-seeds.constants';
@@ -171,10 +135,6 @@ import {
   MKT_GENERIC_COMBO_ITEM_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_ITEM_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-generic-combo-item-data-seeds.constants';
-import {
-  MKT_VALUE_DATA_SEED_COLUMNS,
-  MKT_VALUE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/product-seeder/mkt-value-data-seeds.constants';
 // Promotion seeder configs
 import {
   MKT_PROMOTION_DATA_SEED_COLUMNS,
@@ -245,47 +205,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     pgColumns: MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
     recordSeeds: MKT_CUSTOMER_TAG_DATA_SEEDS,
   },
-  {
-    tableName: 'mktCategory',
-    pgColumns: MKT_CATEGORY_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_CATEGORY_DATA_SEEDS,
-  },
-  // Product configs
-  {
-    tableName: 'mktProduct',
-    pgColumns: MKT_PRODUCT_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_PRODUCT_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktVariant',
-    pgColumns: MKT_VARIANT_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_VARIANT_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktAttribute',
-    pgColumns: MKT_ATTRIBUTE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_ATTRIBUTE_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktValue',
-    pgColumns: MKT_VALUE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_VALUE_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktVariantValue',
-    pgColumns: MKT_VARIANT_VALUE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_VARIANT_VALUE_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktCombo',
-    pgColumns: MKT_COMBO_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_COMBO_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktComboVariant',
-    pgColumns: MKT_COMBO_VARIANT_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_COMBO_VARIANT_DATA_SEEDS,
-  },
   // Generic combo configs
   {
     tableName: 'mktGenericCombo',
@@ -322,17 +241,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktOrderHistory',
     pgColumns: MKT_ORDER_HISTORY_DATA_SEED_COLUMNS,
     recordSeeds: MKT_ORDER_HISTORY_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktLicense',
-    pgColumns: MKT_LICENSE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_LICENSE_DATA_SEEDS,
-  },
-  // License History
-  {
-    tableName: 'mktLicenseHistory',
-    pgColumns: MKT_LICENSE_HISTORY_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_LICENSE_HISTORY_DATA_SEEDS,
   },
   // Invoice configs
   {

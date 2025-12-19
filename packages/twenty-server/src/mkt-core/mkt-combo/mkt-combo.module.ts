@@ -4,7 +4,6 @@ import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
-import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 
 // Generic Combo imports
 import { MktGenericComboRepository } from './repositories/mkt-generic-combo.repository';
@@ -43,7 +42,6 @@ import { GenericComboResolver } from './resolvers/generic-combo.resolver';
  * Dependencies:
  * - TwentyORMModule: Database access
  * - MktProductIntegrationModule: Product data from MKT Server
- * - MktProductModule: Internal product/variant data
  */
 @Module({
   imports: [
@@ -51,7 +49,6 @@ import { GenericComboResolver } from './resolvers/generic-combo.resolver';
     TwentyORMModule,
     WorkspaceCacheStorageModule,
     MktProductIntegrationModule,
-    MktProductModule,
   ],
   providers: [
     // Repositories (Data Access Layer)

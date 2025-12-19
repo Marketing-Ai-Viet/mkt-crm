@@ -22,6 +22,7 @@ import { MktCustomerQueueService } from 'src/mkt-core/customer/services/mkt-cust
 import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
 import { MktCustomerCodeGenerationService } from 'src/mkt-core/customer/services/mkt-customer-code-generation.service';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
+import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
     TokenModule,
     TwentyORMModule,
     WorkspaceCacheStorageModule,
+    MktLicenseIntegrationModule,
   ],
   controllers: [MktCustomerExportController],
   providers: [

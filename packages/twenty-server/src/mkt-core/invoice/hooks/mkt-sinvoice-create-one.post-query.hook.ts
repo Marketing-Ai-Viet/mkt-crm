@@ -116,8 +116,8 @@ export class MktSInvoiceCreateOnePostQueryHook
               `Item ${index + 1}`,
             lineNumber: index + 1,
             selection: 1,
-            itemCode: orderItem.mktProductId
-              ? `MKT_${orderItem.mktProductId}`
+            itemCode: orderItem.externalMktProductId
+              ? `MKT_${orderItem.externalMktProductId}`
               : null,
             itemName:
               orderItem.name ||

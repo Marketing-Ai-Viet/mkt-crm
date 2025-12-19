@@ -3,7 +3,6 @@ import {
   MKT_CUSTOMER_TIER_OPTIONS,
 } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MKT_EMAIL_STATUS_OPTIONS } from 'src/mkt-core/email/constants/mkt-email.constant';
-import { MKT_LICENSE_STATUS_OPTIONS } from 'src/mkt-core/license/license.constants';
 import {
   MEMBER_STATUS_OPTIONS,
   MEMBER_TYPE_OPTIONS,
@@ -26,30 +25,31 @@ export const MKT_OPTION_DATA_SEED_COLUMNS = [
 ];
 
 export const MKT_OPTION_DATA_SEEDS = [
-  {
-    id: '34ff9bff-b7aa-4de8-869c-54910b366fc3',
-    name: 'License Renew Before Days',
-    key: 'license_renew_before_days',
-    value: '1050',
-    description: 'Số ngày trước khi hết hạn để gửi thông báo gia hạn license',
-    metadata: JSON.stringify({ unit: 'days' }),
-    position: 0,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Dev Seeder',
-  },
-  {
-    id: 'c8d123cb-2c15-42f0-bf44-3c1e519d437d',
-    name: 'Thời gian dùng thử mặc định',
-    key: 'default_trial_period_days',
-    value: '7',
-    description: 'Số ngày dùng thử mặc định cho license',
-    metadata: JSON.stringify({ unit: 'days' }),
-    position: 1,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Dev Seeder',
-  },
+  // COMMENTED OUT: License module has been removed
+  // {
+  //   id: '34ff9bff-b7aa-4de8-869c-54910b366fc3',
+  //   name: 'License Renew Before Days',
+  //   key: 'license_renew_before_days',
+  //   value: '1050',
+  //   description: 'Số ngày trước khi hết hạn để gửi thông báo gia hạn license',
+  //   metadata: JSON.stringify({ unit: 'days' }),
+  //   position: 0,
+  //   createdBySource: 'API',
+  //   createdByWorkspaceMemberId: null,
+  //   createdByName: 'Dev Seeder',
+  // },
+  // {
+  //   id: 'c8d123cb-2c15-42f0-bf44-3c1e519d437d',
+  //   name: 'Thời gian dùng thử mặc định',
+  //   key: 'default_trial_period_days',
+  //   value: '7',
+  //   description: 'Số ngày dùng thử mặc định cho license',
+  //   metadata: JSON.stringify({ unit: 'days' }),
+  //   position: 1,
+  //   createdBySource: 'API',
+  //   createdByWorkspaceMemberId: null,
+  //   createdByName: 'Dev Seeder',
+  // },
   // Customer Option
   {
     id: 'f885431f-eadd-400a-8ba7-edb382cc93bf',
@@ -149,19 +149,19 @@ export const MKT_OPTION_DATA_SEEDS = [
     createdByWorkspaceMemberId: null,
     createdByName: 'Dev Seeder',
   },
-  // license option
-  {
-    id: '378b215c-674e-42db-ae33-d3b7706fdb89',
-    name: 'License Status',
-    key: 'license_status',
-    value: null,
-    description: 'Trạng thái license',
-    metadata: JSON.stringify(MKT_LICENSE_STATUS_OPTIONS),
-    position: 40,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Dev Seeder',
-  },
+  // license option - COMMENTED OUT: License module has been removed
+  // {
+  //   id: '378b215c-674e-42db-ae33-d3b7706fdb89',
+  //   name: 'License Status',
+  //   key: 'license_status',
+  //   value: null,
+  //   description: 'Trạng thái license',
+  //   metadata: JSON.stringify(MKT_LICENSE_STATUS_OPTIONS),
+  //   position: 40,
+  //   createdBySource: 'API',
+  //   createdByWorkspaceMemberId: null,
+  //   createdByName: 'Dev Seeder',
+  // },
 
   //email
   {

@@ -130,6 +130,51 @@ export type MktPackageSnapshot = {
 };
 
 /**
+ * License status from MKT Server
+ */
+export type MktLicenseStatus =
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'TRIAL'
+  | 'EXPIRED'
+  | 'SUSPENDED'
+  | 'CANCELLED';
+
+/**
+ * License Snapshot - IMMUTABLE after creation
+ * Captured at order time for historical reference
+ * Contains license information from MKT Server
+ */
+export type MktLicenseSnapshot = {
+  /** License ID from MKT Server */
+  id: string;
+  /** Unique license key */
+  licenseKey: string;
+  /** License type (e.g., 'standard', 'enterprise') */
+  licenseType: string;
+  /** Status at capture time */
+  status: MktLicenseStatus;
+  /** Related product ID */
+  productId: string;
+  /** Related package ID */
+  packageId: string;
+  /** Activation date (ISO string) */
+  activatedAt: string | null;
+  /** Expiration date (ISO string) */
+  expiresAt: string | null;
+  /** Maximum allowed devices/users */
+  maxDevices: number | null;
+  /** Customer ID from MKT Server */
+  customerId: string | null;
+  /** Additional metadata (stored as JSON) */
+  metadata?: object;
+  /** Timestamp when snapshot was captured */
+  capturedAt: string;
+  /** Source version for tracking */
+  sourceVersion: string;
+};
+
+/**
  * API Response wrapper (matching MKT Server format)
  */
 export type MktApiResponse<T> = {

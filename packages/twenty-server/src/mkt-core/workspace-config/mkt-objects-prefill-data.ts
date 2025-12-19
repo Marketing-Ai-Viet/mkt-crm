@@ -16,8 +16,6 @@ import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/p
 import { prefillMktI18n } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpi-templates';
 import { prefillMktKpis } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpis';
-import { prefillMktLicenseHistory } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-license-history';
-import { prefillMktLicenses } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-licenses';
 import { prefillMktOrderHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-order-histories';
 import { prefillMktOrderItems } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-orders';
@@ -30,12 +28,6 @@ import { prefillMktStaffStatusHistories } from 'src/mkt-core/seeder/prefill-data
 import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-templates';
 import { prefillMktTemporaryPermissions } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-temporary-permissions';
-import { prefillMktCategories } from 'src/mkt-core/seeder/product-seeder/prefill-mkt-categories';
-import { prefillMktComboVariants } from 'src/mkt-core/seeder/product-seeder/prefill-mkt-combo-variants';
-import { prefillMktCombos } from 'src/mkt-core/seeder/product-seeder/prefill-mkt-combos';
-import { prefillMktProducts } from 'src/mkt-core/seeder/product-seeder/prefill-mkt-products';
-import { prefillMktVariantValues } from 'src/mkt-core/seeder/product-seeder/prefill-mkt-variant-values';
-import { prefillMktVariants } from 'src/mkt-core/seeder/product-seeder/prefill-mkt-variants';
 import { prefillMktEmails } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
 import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
 import { prefillMktCoupons } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-coupons';
@@ -57,14 +49,6 @@ export const MKT_PREFILLS = [
   prefillMktCustomers,
   prefillMktTags,
   prefillMktCustomerTags,
-  // product prefills
-  prefillMktCategories,
-  prefillMktProducts,
-  prefillMktVariants,
-  prefillMktVariantValues,
-  // combo prefills
-  prefillMktCombos,
-  prefillMktComboVariants,
   // generic combo prefills
   prefillMktGenericCombos,
   prefillMktGenericComboItems,
@@ -82,9 +66,9 @@ export const MKT_PREFILLS = [
   prefillMktTemplates,
   // contract prefills
   prefillMktContracts,
-  // license prefills
-  prefillMktLicenses,
-  prefillMktLicenseHistory,
+  // license prefills - COMMENTED OUT: License module has been removed
+  // prefillMktLicenses,
+  // prefillMktLicenseHistory,
   // invoice prefills
   prefillMktSInvoiceAuths,
   prefillMktSInvoices,

@@ -1,19 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
 import {
   UserLicenseDto,
   UserLicensesResponseDto,
 } from 'src/mkt-core/customer/dto/get-user-licenses.dto';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 
 @Injectable()
 export class MktCustomerLicenseService {
   constructor(
-    private readonly twentyORMManager: TwentyORMManager,
     private readonly mktRepo: MktRepositoryService,
+    private readonly licenseProxyService: MktLicenseProxyService,
   ) {}
 
   async getLicensesForUser(
@@ -22,10 +21,6 @@ export class MktCustomerLicenseService {
   ): Promise<UserLicensesResponseDto> {
     const customerRepository = await this.mktRepo.getRepository(
       MktCustomerWorkspaceEntity,
-    );
-
-    const licenseRepository = await this.mktRepo.getRepository(
-      MktLicenseWorkspaceEntity,
     );
 
     // Find customer by userId
@@ -39,37 +34,38 @@ export class MktCustomerLicenseService {
       throw new NotFoundException(`Customer not found for user ID: ${userId}`);
     }
 
-    // Get all licenses for this customer
-    const licenses = await licenseRepository.find({
-      where: {
-        mktCustomerId: customer.id,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
+    // Get licenses from external MKT Server using integration module
+    const licenseResponse = await this.licenseProxyService.findAll({
+      userId: userId,
+      page: 1,
+      limit: 1000,
     });
 
     // Map to DTO
-    const licenseDtos: UserLicenseDto[] = licenses.map((license) => ({
-      id: license.id,
-      name: license.name,
-      licenseKey: license.licenseKey,
-      status: license.status ?? undefined,
-      activatedAt: license.activatedAt,
-      expiresAt: license.expiresAt,
-      lastLoginAt: license.lastLoginAt,
-      trialLicense: license.trialLicense,
-      deviceInfo: license.deviceInfo,
-      notes: license.notes,
-      createdAt: new Date(license.createdAt),
-      updatedAt: new Date(license.updatedAt),
-      customerId: customer.id,
-      customerName: customer.name,
-    }));
+    const licenseDtos: UserLicenseDto[] = licenseResponse.data.map(
+      (license) => ({
+        id: license.id,
+        name: license.product?.name ?? license.licenseKey,
+        licenseKey: license.licenseKey,
+        status: license.status,
+        activatedAt: license.startDate
+          ? new Date(license.startDate)
+          : undefined,
+        expiresAt: license.endDate ? new Date(license.endDate) : undefined,
+        lastLoginAt: undefined,
+        trialLicense: license.type === 'trial',
+        deviceInfo: undefined,
+        notes: undefined,
+        createdAt: new Date(license.createdAt),
+        updatedAt: new Date(license.updatedAt),
+        customerId: customer.id,
+        customerName: customer.name,
+      }),
+    );
 
     return {
       licenses: licenseDtos,
-      total: licenseDtos.length,
+      total: licenseResponse.total,
       customerId: customer.id,
       customerName: customer.name,
     };
@@ -79,47 +75,46 @@ export class MktCustomerLicenseService {
     licenseKey: string,
     _workspaceId: string,
   ): Promise<UserLicenseDto | null> {
-    const licenseRepository = await this.mktRepo.getRepository(
-      MktLicenseWorkspaceEntity,
-    );
+    try {
+      // Get license from external MKT Server using integration module
+      const license =
+        await this.licenseProxyService.findByLicenseKey(licenseKey);
 
-    const license = await licenseRepository.findOne({
-      where: {
-        licenseKey: licenseKey,
-      },
-    });
+      if (!license) {
+        return null;
+      }
 
-    if (!license) {
+      const customerRepository = await this.mktRepo.getRepository(
+        MktCustomerWorkspaceEntity,
+      );
+
+      // Try to find customer by userId from license
+      const customer = await customerRepository.findOne({
+        where: {
+          userId: license.userId,
+        },
+      });
+
+      return {
+        id: license.id,
+        name: license.product?.name ?? license.licenseKey,
+        licenseKey: license.licenseKey,
+        status: license.status,
+        activatedAt: license.startDate
+          ? new Date(license.startDate)
+          : undefined,
+        expiresAt: license.endDate ? new Date(license.endDate) : undefined,
+        lastLoginAt: undefined,
+        trialLicense: license.type === 'trial',
+        deviceInfo: undefined,
+        notes: undefined,
+        createdAt: new Date(license.createdAt),
+        updatedAt: new Date(license.updatedAt),
+        customerId: customer?.id,
+        customerName: customer?.name,
+      };
+    } catch (error) {
       return null;
     }
-
-    const customerRepository = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
-    );
-
-    const customer = license.mktCustomerId
-      ? await customerRepository.findOne({
-          where: {
-            id: license.mktCustomerId,
-          },
-        })
-      : null;
-
-    return {
-      id: license.id,
-      name: license.name,
-      licenseKey: license.licenseKey,
-      status: license.status ?? undefined,
-      activatedAt: license.activatedAt,
-      expiresAt: license.expiresAt,
-      lastLoginAt: license.lastLoginAt,
-      trialLicense: license.trialLicense,
-      deviceInfo: license.deviceInfo,
-      notes: license.notes,
-      createdAt: new Date(license.createdAt),
-      updatedAt: new Date(license.updatedAt),
-      customerId: customer?.id,
-      customerName: customer?.name,
-    };
   }
 }

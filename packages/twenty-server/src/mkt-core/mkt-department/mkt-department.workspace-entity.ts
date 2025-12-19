@@ -1,7 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
-import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
@@ -24,7 +23,6 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import {
@@ -301,32 +299,6 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'department',
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: MKT_DEPARTMENT_FIELD_IDS.departmentOwnerForMktLicenses,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Department Owner for Mkt Licenses`,
-    description: msg`The owner of this department for Mkt Licenses`,
-    icon: 'IconUserCircle',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'departmentOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  departmentOwnerForMktLicenses: Relation<MktLicenseWorkspaceEntity[]> | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_DEPARTMENT_FIELD_IDS.teamOwnerForMktLicenses,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Team Owner for Mkt Licenses`,
-    description: msg`The team owner of this department for Mkt Licenses`,
-    icon: 'IconUsers',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'teamOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  teamOwnerForMktLicenses: Relation<MktLicenseWorkspaceEntity[]> | null;
 
   @WorkspaceRelation({
     standardId: MKT_DEPARTMENT_FIELD_IDS.teamMembers,

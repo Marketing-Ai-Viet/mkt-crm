@@ -10,75 +10,32 @@ import {
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { FirebaseAuthResponse } from 'src/mkt-core/payment/integration/firebase-integration.service';
-import { VariantService } from 'src/mkt-core/product/services/variant.service';
 import { safeJsonStringify } from 'src/mkt-core/utils';
 
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
   constructor(
-    private readonly variantService: VariantService,
     private readonly recordPositionService: RecordPositionService,
     private mktRepo: MktRepositoryService,
   ) {}
 
   async createOrderItemsFromVariants(
     variantsMeta: ORDER_METADATA['variants'] | null,
-    createdOrder: MktOrderWorkspaceEntity,
-    workspaceId: string,
+    _createdOrder: MktOrderWorkspaceEntity,
+    _workspaceId: string,
   ) {
+    // TODO: Implement variant lookup using mkt-product-integration module
+    // The old VariantService has been removed with the product module
+    this.logger.warn(
+      'createOrderItemsFromVariants is not fully implemented - product module removed',
+    );
+
     if (!variantsMeta || variantsMeta.length === 0) return [];
-    const ids = variantsMeta.map((v) => v.mktVariantId).filter(Boolean);
-    const variants = await this.variantService.getVariantValueById(
-      ids,
-      workspaceId,
+
+    throw new Error(
+      'Product module has been removed. Use mkt-product-integration module instead.',
     );
-    const variantById = new Map(variants.map((v) => [v.id, v]));
-    const orderItemRepository = await this.getOrderItemRepo(workspaceId);
-    const itemsFromVariants = await Promise.all(
-      variantsMeta.map(async (v, _index) => {
-        const variant = variantById.get(v.mktVariantId);
-
-        if (!variant) return [];
-
-        const unitPrice = variant?.price ?? 0;
-        const quantity = v.quantity ?? 1;
-        const totalPrice = unitPrice * quantity;
-        const position = await this.recordPositionService.buildRecordPosition({
-          value: 'last',
-          objectMetadata: {
-            isCustom: false,
-            nameSingular: 'mktOrderItem',
-          },
-          workspaceId,
-        });
-
-        return orderItemRepository.create({
-          mktOrderId: createdOrder.id,
-          mktVariantId: variant.id,
-          name: variant.name ?? 'Item',
-          snapshotProductName: variant.name ?? 'Item',
-          unitName: 'unit',
-          unitPrice,
-          quantity,
-          totalPrice,
-          taxPercentage: 0,
-          taxAmount: 0,
-          totalAmountWithTax: totalPrice,
-          position,
-        } as Partial<MktOrderItemWorkspaceEntity>);
-      }),
-    );
-
-    const toCreate = itemsFromVariants.filter(
-      Boolean,
-    ) as MktOrderItemWorkspaceEntity[];
-
-    if (toCreate.length > 0) {
-      await orderItemRepository.save(toCreate);
-    } else {
-      throw new Error('No order items to create');
-    }
   }
 
   async cloneOrderItems(

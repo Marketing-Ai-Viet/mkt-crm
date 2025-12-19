@@ -33,7 +33,6 @@ export const DEFAULT_ORDER_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEnti
     orderItems: true,
     mktCustomer: true,
     mktPayments: true,
-    mktLicense: true,
     mktContract: true,
   };
 
@@ -65,6 +64,4 @@ export type FindOrderItemOptions = {
 export const DEFAULT_ORDER_ITEM_RELATIONS: FindOptionsRelations<MktOrderItemWorkspaceEntity> =
   {
     mktOrder: true,
-    mktVariant: true,
-    mktProduct: true,
   };

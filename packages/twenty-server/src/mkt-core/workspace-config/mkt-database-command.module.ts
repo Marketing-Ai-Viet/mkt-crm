@@ -10,8 +10,6 @@ import { SeedEmploymentStatusModuleCommand } from 'src/mkt-core/seeder/commands/
 import { SeedI18nModuleCommand } from 'src/mkt-core/seeder/commands/mkt-i18n-data-seed-dev-workspace.command';
 import { SeedMktKpiCommand } from 'src/mkt-core/seeder/commands/mkt-kpi-data-seed-dev-workspace.command';
 import { SeedMktKpiTemplateCommand } from 'src/mkt-core/seeder/commands/mkt-kpi-template-data-seed-dev-workspace.command';
-import { SeedLicenseModuleCommand } from 'src/mkt-core/seeder/commands/mkt-license-data-seed-dev-workspace.command';
-import { SeedLicenseHistoryModuleCommand } from 'src/mkt-core/seeder/commands/mkt-license-history-data-seed-dev-workspace.command';
 import { SeedOrderModuleCommand } from 'src/mkt-core/seeder/commands/mkt-order-data-seed-dev-workspace.command';
 import { SeedMktOrderHistoryModuleCommand } from 'src/mkt-core/seeder/commands/mkt-order-history-data-seed-dev-workspace.command';
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/seeder/commands/mkt-order-item-data-seed-dev-workspace.command';
@@ -29,12 +27,6 @@ import { SeedSInvoiceItemModuleCommand } from 'src/mkt-core/seeder/invoice-seede
 import { SeedSInvoiceMetadataModuleCommand } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-metadata-data-seed-dev-workspace.command';
 import { SeedSInvoicePaymentModuleCommand } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-payment-data-seed-dev-workspace.command';
 import { SeedSInvoiceTaxBreakdownModuleCommand } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seed-dev-workspace.command';
-import { SeedCategoryModuleCommand } from 'src/mkt-core/seeder/product-seeder/mkt-category-data-seed-dev-workspace.command';
-import { SeedComboModuleCommand } from 'src/mkt-core/seeder/product-seeder/mkt-combo-data-seed-dev-workspace.command';
-import { SeedComboVariantModuleCommand } from 'src/mkt-core/seeder/product-seeder/mkt-combo-variant-data-seed-dev-workspace.command';
-import { SeedProductModuleCommand } from 'src/mkt-core/seeder/product-seeder/mkt-product-data-seed-dev-workspace.command';
-import { SeedVariantModuleCommand } from 'src/mkt-core/seeder/product-seeder/mkt-variant-data-seed-dev-workspace.command';
-import { SeedVariantValueModuleCommand } from 'src/mkt-core/seeder/product-seeder/mkt-variant-value-data-seed-dev-workspace.command';
 import { SeedMktEmailModuleCommand } from 'src/mkt-core/email/seeder/mkt-email-data-seed-dev-workspace.command';
 import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 import { SeedMktReportModuleCommand } from 'src/mkt-core/report/seeder/mkt-report-data-seed-dev-workspace.command';
@@ -59,12 +51,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedTagModuleCommand,
   SeedCustomerTagModuleCommand,
   // product commands
-  SeedCategoryModuleCommand,
-  SeedProductModuleCommand,
-  SeedVariantModuleCommand,
-  SeedComboModuleCommand,
-  SeedComboVariantModuleCommand,
-  SeedVariantValueModuleCommand,
   // generic combo commands
   MktGenericComboDataSeedDevWorkspaceCommand,
   MktGenericComboItemDataSeedDevWorkspaceCommand,
@@ -77,9 +63,9 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedTemplateModuleCommand,
   // contract commands
   SeedContractModuleCommand,
-  // license commands
-  SeedLicenseModuleCommand,
-  SeedLicenseHistoryModuleCommand,
+  // license commands - COMMENTED OUT: License module has been removed
+  // SeedLicenseModuleCommand,
+  // SeedLicenseHistoryModuleCommand,
   // invoice commands
   SeedSInvoiceAuthModuleCommand,
   SeedSInvoiceModuleCommand,

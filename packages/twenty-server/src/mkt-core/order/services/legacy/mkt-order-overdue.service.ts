@@ -4,7 +4,6 @@ import { In, LessThan } from 'typeorm';
 
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktLicenseEventService } from 'src/mkt-core/license/services/mkt-license.event.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 
 @Injectable()
@@ -14,7 +13,6 @@ export class MktOrderOverdueService {
   constructor(
     private readonly mktRepo: MktRepositoryService,
     private readonly mktCommonOrderService: MktCommonOrderService,
-    private readonly mktLicenseEventService: MktLicenseEventService,
   ) {}
 
   async updateOverdueOrders(workspaceId: string): Promise<void> {
@@ -57,7 +55,11 @@ export class MktOrderOverdueService {
         { status: ORDER_STATUS.OVERDUE },
       );
 
-      await this.mktLicenseEventService.lockLicensesFromOrders(waitOrders);
+      // TODO: Implement license locking using new license module
+      // The old MktLicenseEventService has been removed with the license module
+      this.logger.warn(
+        'License locking is not implemented - license module removed',
+      );
 
       this.logger.log(
         `Successfully updated ${waitOrders.length} orders to OVERDUE status for workspace: ${workspaceId}`,

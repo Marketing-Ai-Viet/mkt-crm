@@ -16,7 +16,14 @@ import {
   UpdateOrderItemInput,
   UpdateOrderItemResult,
 } from 'src/mkt-core/order/types';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+
+// TODO: Replace with new product entity type when product module is restored
+type MktVariantWorkspaceEntity = {
+  id: string;
+  name: string;
+  price: number;
+  mktProductId?: string | null;
+};
 
 /**
  * OrderItemService - Centralized service for order item operations
@@ -173,21 +180,17 @@ export class OrderItemService {
       const updateData: Partial<MktOrderItemWorkspaceEntity> = {};
 
       // Get variant for calculation
-      let variant: MktVariantWorkspaceEntity | null = null;
+      const variant: MktVariantWorkspaceEntity | null = null;
 
+      // NOTE: Product module has been removed
+      // Variant lookup is deprecated - use external product integration instead
       if (input.variantId) {
-        variant = await this.getVariant(input.variantId, workspaceId);
-
-        if (!variant) {
-          return {
-            success: false,
-            error: `Variant not found: ${input.variantId}`,
-          };
-        }
-
-        updateData.mktVariantId = input.variantId;
-      } else if (orderItem.mktVariant) {
-        variant = orderItem.mktVariant as MktVariantWorkspaceEntity;
+        this.logger.warn(
+          'Variant lookup is deprecated - product module has been removed',
+        );
+        // Store the variant ID for legacy compatibility but don't look it up
+        (updateData as Record<string, string | null>).mktVariantId =
+          input.variantId;
       }
 
       // Calculate values if we have a variant
@@ -288,28 +291,13 @@ export class OrderItemService {
         };
       }
 
-      const variant = orderItem.mktVariant as
-        | MktVariantWorkspaceEntity
-        | undefined;
-
-      if (!variant) {
-        return {
-          success: false,
-          error: 'Order item has no associated variant for recalculation',
-        };
-      }
-
-      const calculatedValues = this.calculateValuesFromVariant(
-        variant,
-        orderItem.quantity ?? ORDER_ITEM_DEFAULTS.QUANTITY,
-        orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
+      // NOTE: Product module has been removed - variant recalculation is deprecated
+      this.logger.warn(
+        'recalculateOrderItem is deprecated - product module has been removed',
       );
 
-      await this.orderItemRepository.update(
-        workspaceId,
-        orderItemId,
-        calculatedValues,
-      );
+      // Return success without recalculation since variants are no longer available
+      // The order item will keep its existing values
 
       const updatedOrderItem =
         await this.orderItemRepository.findByIdWithRelations(
@@ -373,7 +361,7 @@ export class OrderItemService {
       const orderItems = await this.orderItemRepository.findByOrderId(
         workspaceId,
         orderId,
-        { relations: { mktVariant: true } },
+        { relations: { mktOrder: true } },
       );
 
       let updatedCount = 0;
@@ -411,17 +399,13 @@ export class OrderItemService {
     variantId: string,
     workspaceId: string,
   ): Promise<MktVariantWorkspaceEntity | null> {
-    const variantRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktVariantWorkspaceEntity>(
-        workspaceId,
-        'mktVariant',
-        { shouldBypassPermissionChecks: true },
-      );
+    // TODO: Implement variant lookup using mkt-product-integration module
+    // The old MktVariantWorkspaceEntity has been removed with the product module
+    this.logger.warn(
+      `getVariant not implemented - product module removed. Variant ID: ${variantId}, Workspace: ${workspaceId}`,
+    );
 
-    return variantRepository.findOne({
-      where: { id: variantId },
-      relations: ['mktProduct'],
-    });
+    return null;
   }
 
   private roundToTwoDecimals(value: number): number {
