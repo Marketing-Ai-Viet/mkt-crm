@@ -190,6 +190,27 @@ export class CreateOrderWithItemsInputDto {
   @IsOptional()
   @IsUUID()
   trialOrderId?: string;
+
+  // ============================================
+  // PROMOTION FIELDS
+  // ============================================
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Coupon code to apply for discount',
+  })
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: true,
+    description: 'Whether to automatically apply eligible promotions',
+  })
+  @IsOptional()
+  @IsBoolean()
+  applyAutoPromotions?: boolean;
 }
 
 @InputType()

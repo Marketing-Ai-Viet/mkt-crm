@@ -30,6 +30,7 @@ import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-orde
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
+import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -214,6 +215,41 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   accountingConfirmed?: boolean;
+
+  // ============================================
+  // PROMOTION FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.couponCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`Coupon Code`,
+    description: msg`Applied coupon code for this order`,
+    icon: 'IconTicket',
+  })
+  @WorkspaceIsNullable()
+  couponCode?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.promotionDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Promotion Discount`,
+    description: msg`Total discount from promotions`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  promotionDiscount?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.appliedPromotions,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Applied Promotions`,
+    description: msg`Immutable snapshot of applied promotions at order time`,
+    icon: 'IconGift',
+  })
+  @WorkspaceIsNullable()
+  appliedPromotions?: PromotionSnapshot[] | null;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,

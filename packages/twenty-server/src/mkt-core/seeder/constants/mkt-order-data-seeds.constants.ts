@@ -1,6 +1,7 @@
 import { MKT_CUSTOMER_DATA_SEEDS_IDS } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { ORDER_STATUS, SINVOICE_STATUS } from 'src/mkt-core/order/constants';
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
+import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
 
 type MktOrderDataSeed = {
   id: string;
@@ -25,6 +26,10 @@ type MktOrderDataSeed = {
   accountOwnerId: string;
   mktCustomerId: string;
   createdById: string;
+  // Promotion fields
+  couponCode: string | null;
+  promotionDiscount: number;
+  appliedPromotions: PromotionSnapshot[] | null;
 };
 
 // prettier-ignore
@@ -51,7 +56,17 @@ export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
   'accountOwnerId',
   'mktCustomerId',
   'createdById',
+  'couponCode',
+  'promotionDiscount',
+  'appliedPromotions',
 ];
+
+// Default promotion fields for seed data
+const DEFAULT_PROMOTION_FIELDS = {
+  couponCode: null,
+  promotionDiscount: 0,
+  appliedPromotions: null,
+};
 
 //prettier-ignore
 export const MKT_ORDER_DATA_SEEDS_IDS = {
@@ -119,6 +134,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.BRONZE_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
@@ -143,6 +159,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
@@ -167,6 +184,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
@@ -191,6 +209,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
@@ -215,6 +234,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
@@ -239,6 +259,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
@@ -263,6 +284,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
@@ -287,6 +309,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
@@ -311,6 +334,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
@@ -335,6 +359,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
@@ -359,6 +384,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
@@ -383,6 +409,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
@@ -407,6 +434,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_14,
@@ -431,6 +459,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   // GOLD_CUSTOMER orders
   {
@@ -456,6 +485,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_2,
@@ -480,6 +510,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_3,
@@ -504,6 +535,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   // DIAMOND_CUSTOMER orders
   {
@@ -529,6 +561,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_2,
@@ -553,6 +586,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_3,
@@ -577,6 +611,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_4,
@@ -601,6 +636,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_5,
@@ -625,6 +661,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_6,
@@ -649,6 +686,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_7,
@@ -673,6 +711,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_8,
@@ -697,6 +736,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_9,
@@ -721,6 +761,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_10,
@@ -745,6 +786,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_11,
@@ -769,6 +811,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_12,
@@ -793,6 +836,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_13,
@@ -817,6 +861,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_14,
@@ -841,6 +886,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_15,
@@ -865,6 +911,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_16,
@@ -889,6 +936,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_17,
@@ -913,6 +961,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_18,
@@ -937,6 +986,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_19,
@@ -961,6 +1011,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_20,
@@ -985,5 +1036,6 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
   }
 ];

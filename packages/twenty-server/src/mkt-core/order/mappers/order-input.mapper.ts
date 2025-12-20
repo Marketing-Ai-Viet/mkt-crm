@@ -60,6 +60,9 @@ export const OrderInputMapper = {
       action: dto.action,
       licenseId: dto.licenseId,
       trialOrderId: dto.trialOrderId,
+      // Promotion fields
+      couponCode: dto.couponCode,
+      applyAutoPromotions: dto.applyAutoPromotions ?? true,
     };
   },
 

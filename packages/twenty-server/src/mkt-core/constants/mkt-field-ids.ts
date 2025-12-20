@@ -344,6 +344,10 @@ export const MKT_ORDER_FIELD_IDS = {
   searchVector: '68623375-43f6-49ed-b29f-291f4cd34921',
   orderItems: '1a2b3c4d-5e6f-7890-1234-567890abcdef',
   promotionUsages: '660e8400-e29b-41d4-a716-446655440603',
+  // Promotion fields
+  couponCode: '631e7f75-b806-447b-81d2-18cc42fb2042',
+  promotionDiscount: '4be6781b-b704-406f-9f24-dc9d5607fcf8',
+  appliedPromotions: '0165b922-6861-42c4-a905-12699c9e526f',
 };
 
 export const MKT_ORDER_ITEM_FIELD_IDS = {
@@ -378,6 +382,9 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   mktProduct: '81a3b4c5-d6e7-f890-9012-345678901234',
   mktVariant: '63c0be01-54b2-4b5e-b24c-7879c881b479',
   mktCombo: '45c7d839-e7f7-44db-9d86-37dc84415dd5',
+  // Promotion discount for item
+  itemDiscount: '684661fb-6376-473b-a16e-f0315a24816f',
+
   // common relations or fields
   position: '5e6f7081-9293-b4c5-6789-012345678901',
   createdBy: '6f708192-a3b4-c5d6-7890-123456789012',

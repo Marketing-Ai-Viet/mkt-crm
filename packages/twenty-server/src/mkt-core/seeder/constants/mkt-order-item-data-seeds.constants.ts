@@ -19,6 +19,8 @@ type MktOrderItemDataSeed = {
   totalAmountWithTax: number;
   position: number;
   mktOrderId: string;
+  // Promotion field
+  itemDiscount: number;
   // External MKT Product fields
   externalMktProductId: string | null;
   externalMktProductCode: string | null;
@@ -48,6 +50,7 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] = 
   'totalAmountWithTax',
   'position',
   'mktOrderId',
+  'itemDiscount',
   'externalMktProductId',
   'externalMktProductCode',
   'externalMktPackageId',
@@ -87,6 +90,8 @@ export const MKT_ORDER_ITEM_DATA_SEEDS_IDS = {
 
 // Default null values for external product and license fields
 const DEFAULT_EXTERNAL_FIELDS = {
+  // Promotion field
+  itemDiscount: 0,
   // External product fields
   externalMktProductId: null,
   externalMktProductCode: null,

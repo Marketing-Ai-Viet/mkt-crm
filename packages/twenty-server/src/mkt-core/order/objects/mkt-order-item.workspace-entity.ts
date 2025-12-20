@@ -146,6 +146,17 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   totalPrice?: number;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Item Discount`,
+    description: msg`Discount amount from promotions for this item`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  itemDiscount?: number;
+
   // ============================================
   // EXTERNAL MKT PRODUCT REFERENCE FIELDS
   // ============================================
