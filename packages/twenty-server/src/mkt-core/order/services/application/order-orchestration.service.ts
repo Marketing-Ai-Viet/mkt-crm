@@ -129,10 +129,11 @@ export class OrderOrchestrationService implements OnModuleInit {
    */
   async confirmOrder(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: ConfirmOrderInput,
   ): Promise<ConfirmOrderResponse> {
     this.logger.log(
-      `Confirming order: ${input.orderId}, action: ${input.action}`,
+      `Confirming order: ${input.orderId}, action: ${input.action}, by: ${workspaceMemberId ?? 'system'}`,
     );
 
     // Validate input
@@ -155,7 +156,11 @@ export class OrderOrchestrationService implements OnModuleInit {
 
     // Execute saga
     try {
-      const result = await this.confirmOrderSaga.execute(workspaceId, input);
+      const result = await this.confirmOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
 
       if (result.success) {
         this.logger.log(
@@ -181,14 +186,19 @@ export class OrderOrchestrationService implements OnModuleInit {
    */
   async updateOrderStatus(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
     this.logger.log(
-      `Updating order status: ${input.orderId}, target: ${input.status}`,
+      `Updating order status: ${input.orderId}, target: ${input.status}, by: ${workspaceMemberId ?? 'system'}`,
     );
 
     try {
-      const result = await this.updateOrderSaga.execute(workspaceId, input);
+      const result = await this.updateOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
 
       if (result.success) {
         this.logger.log(
@@ -214,14 +224,19 @@ export class OrderOrchestrationService implements OnModuleInit {
    */
   async refundOrder(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
     this.logger.log(
-      `Refunding order: ${input.orderId}, partial: ${input.isPartial ?? false}`,
+      `Refunding order: ${input.orderId}, partial: ${input.isPartial ?? false}, by: ${workspaceMemberId ?? 'system'}`,
     );
 
     try {
-      const result = await this.refundOrderSaga.execute(workspaceId, input);
+      const result = await this.refundOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
 
       if (result.success) {
         this.logger.log(

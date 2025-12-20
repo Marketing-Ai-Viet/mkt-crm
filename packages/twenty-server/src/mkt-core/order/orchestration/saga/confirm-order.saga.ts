@@ -48,6 +48,7 @@ export class ConfirmOrderSaga {
    */
   async execute(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: ConfirmOrderInput,
   ): Promise<ConfirmOrderResponse> {
     const dataSource =
@@ -62,6 +63,7 @@ export class ConfirmOrderSaga {
 
     const context: SagaContext = {
       workspaceId,
+      workspaceMemberId,
       rollbackData: new Map(),
       metadata: new Map(),
     };

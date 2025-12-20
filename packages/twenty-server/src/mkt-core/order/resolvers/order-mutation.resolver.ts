@@ -7,10 +7,6 @@ import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
-  ORDER_ACTION,
-  ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
-import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
@@ -23,10 +19,19 @@ import {
   UpdateOrderStatusResponseDto,
   ValidationResultDto,
 } from 'src/mkt-core/order/dto/order-response.output';
+import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
+import { OrderStatusService } from 'src/mkt-core/order/services/core';
 
 /**
  * OrderMutationResolver - GraphQL resolver for order mutations
+ *
+ * Responsibilities:
+ * - Authentication & Authorization (Guards)
+ * - Input transformation (DTO → Domain via Mapper)
+ * - Delegation to OrderOrchestrationService
+ *
+ * NO business logic in this layer.
  *
  * Provides mutations for:
  * - createOrderWithItems: Create new order with items, licenses, and payment
@@ -39,6 +44,7 @@ import { OrderOrchestrationService } from 'src/mkt-core/order/services/applicati
 export class OrderMutationResolver {
   constructor(
     private readonly orderOrchestrationService: OrderOrchestrationService,
+    private readonly orderStatusService: OrderStatusService,
   ) {}
 
   /**
@@ -58,36 +64,12 @@ export class OrderMutationResolver {
     @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: CreateOrderWithItemsInputDto,
   ): Promise<CreateOrderResponseDto> {
+    const domainInput = OrderInputMapper.toCreateOrderInput(input);
+
     return this.orderOrchestrationService.createOrderWithItems(
       workspace.id,
       workspaceMemberId,
-      {
-        customerId: input.customerId,
-        name: input.name,
-        currency: input.currency,
-        note: input.note,
-        requireContract: input.requireContract,
-        discountPercent: input.discountPercent,
-        variants: input.variants?.map((v) => ({
-          variantId: v.variantId,
-          quantity: v.quantity,
-        })),
-        externalProducts: input.externalProducts?.map((p) => ({
-          productId: p.productId,
-          packageId: p.packageId,
-          quantity: p.quantity,
-        })),
-        orderLanguage: input.orderLanguage as 'vi' | 'en' | 'ko' | undefined,
-        paymentMethods: input.paymentMethods?.map((p) => ({
-          paymentMethodId: p.paymentMethodId,
-          name: p.name,
-          duration: p.duration,
-          amount: p.amount,
-        })),
-        action: input.action,
-        licenseId: input.licenseId,
-        trialOrderId: input.trialOrderId,
-      },
+      domainInput,
     );
   }
 
@@ -100,14 +82,16 @@ export class OrderMutationResolver {
   })
   async confirmOrder(
     @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: ConfirmOrderInputDto,
   ): Promise<ConfirmOrderResponseDto> {
-    return this.orderOrchestrationService.confirmOrder(workspace.id, {
-      orderId: input.orderId,
-      action: input.action,
-      accountingConfirmed: input.accountingConfirmed,
-      note: input.note,
-    });
+    const domainInput = OrderInputMapper.toConfirmOrderInput(input);
+
+    return this.orderOrchestrationService.confirmOrder(
+      workspace.id,
+      workspaceMemberId,
+      domainInput,
+    );
   }
 
   /**
@@ -122,36 +106,13 @@ export class OrderMutationResolver {
     @AuthWorkspace() workspace: Workspace,
     @Args('input') input: CreateOrderWithItemsInputDto,
   ): Promise<ValidationResultDto> {
+    // Use same mapper - NO DUPLICATION
+    const domainInput = OrderInputMapper.toCreateOrderInput(input);
+
     const result =
       await this.orderOrchestrationService.validateCreateOrderInput(
         workspace.id,
-        {
-          customerId: input.customerId,
-          name: input.name,
-          currency: input.currency,
-          note: input.note,
-          requireContract: input.requireContract,
-          discountPercent: input.discountPercent,
-          variants: input.variants?.map((v) => ({
-            variantId: v.variantId,
-            quantity: v.quantity,
-          })),
-          externalProducts: input.externalProducts?.map((p) => ({
-            productId: p.productId,
-            packageId: p.packageId,
-            quantity: p.quantity,
-          })),
-          orderLanguage: input.orderLanguage as 'vi' | 'en' | 'ko' | undefined,
-          paymentMethods: input.paymentMethods?.map((p) => ({
-            paymentMethodId: p.paymentMethodId,
-            name: p.name,
-            duration: p.duration,
-            amount: p.amount,
-          })),
-          action: input.action,
-          licenseId: input.licenseId,
-          trialOrderId: input.trialOrderId,
-        },
+        domainInput,
       );
 
     return {
@@ -173,13 +134,19 @@ export class OrderMutationResolver {
   })
   async updateOrderStatus(
     @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: UpdateOrderStatusInputDto,
   ): Promise<UpdateOrderStatusResponseDto> {
-    return this.orderOrchestrationService.updateOrderStatus(workspace.id, {
-      orderId: input.orderId,
-      status: this.mapActionToStatus(input.action),
-      note: input.note,
-    });
+    const domainInput = OrderInputMapper.toUpdateOrderStatusInput(
+      input,
+      this.orderStatusService,
+    );
+
+    return this.orderOrchestrationService.updateOrderStatus(
+      workspace.id,
+      workspaceMemberId,
+      domainInput,
+    );
   }
 
   /**
@@ -191,44 +158,15 @@ export class OrderMutationResolver {
   })
   async refundOrder(
     @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: RefundOrderInputDto,
   ): Promise<RefundOrderResponseDto> {
-    return this.orderOrchestrationService.refundOrder(workspace.id, {
-      orderId: input.orderId,
-      licenseIds: input.licenseIds,
-      refundAmount: input.refundAmount,
-      reason: input.reason,
-      isPartial: input.isPartial,
-    });
-  }
+    const domainInput = OrderInputMapper.toRefundOrderInput(input);
 
-  /**
-   * Map ORDER_ACTION to ORDER_STATUS
-   */
-  private mapActionToStatus(action: ORDER_ACTION): ORDER_STATUS {
-    const actionToStatusMap: Partial<Record<ORDER_ACTION, ORDER_STATUS>> = {
-      [ORDER_ACTION.DRAFT]: ORDER_STATUS.DRAFT,
-      [ORDER_ACTION.CONFIRMED]: ORDER_STATUS.CONFIRMED,
-      [ORDER_ACTION.COMPLETED]: ORDER_STATUS.COMPLETED,
-      [ORDER_ACTION.LOCKED]: ORDER_STATUS.BLOCKED,
-      [ORDER_ACTION.CANCELLED]: ORDER_STATUS.REFUSE,
-      [ORDER_ACTION.OVERDUE]: ORDER_STATUS.OVERDUE,
-      [ORDER_ACTION.REFUND]: ORDER_STATUS.REFUND,
-      [ORDER_ACTION.REFUND_PARTIAL]: ORDER_STATUS.REFUND_PARTIAL,
-      [ORDER_ACTION.TRIAL]: ORDER_STATUS.TRIAL,
-      [ORDER_ACTION.TRIAL_TO_PAID]: ORDER_STATUS.WAIT,
-      [ORDER_ACTION.LICENSE_RENEWING]: ORDER_STATUS.WAIT,
-      [ORDER_ACTION.SINVOICE]: ORDER_STATUS.COMPLETED,
-      [ORDER_ACTION.WAIT]: ORDER_STATUS.WAIT,
-      [ORDER_ACTION.REFUSE]: ORDER_STATUS.REFUSE,
-      [ORDER_ACTION.PAID]: ORDER_STATUS.CONFIRMED,
-      [ORDER_ACTION.PROCESSING]: ORDER_STATUS.WAIT,
-      [ORDER_ACTION.FREE]: ORDER_STATUS.COMPLETED,
-      [ORDER_ACTION.LICENSE]: ORDER_STATUS.COMPLETED,
-      [ORDER_ACTION.TRIAL_TO_CONFIRMED]: ORDER_STATUS.CONFIRMED,
-      [ORDER_ACTION.CHANGE_VARIANT]: ORDER_STATUS.WAIT,
-    };
-
-    return actionToStatusMap[action] ?? ORDER_STATUS.DRAFT;
+    return this.orderOrchestrationService.refundOrder(
+      workspace.id,
+      workspaceMemberId,
+      domainInput,
+    );
   }
 }

@@ -49,6 +49,7 @@ export class RefundOrderSaga {
    */
   async execute(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
     const dataSource =
@@ -63,6 +64,7 @@ export class RefundOrderSaga {
 
     const context: SagaContext = {
       workspaceId,
+      workspaceMemberId,
       rollbackData: new Map(),
       metadata: new Map(),
     };

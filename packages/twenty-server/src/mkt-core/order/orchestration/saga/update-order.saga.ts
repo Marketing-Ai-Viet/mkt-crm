@@ -46,6 +46,7 @@ export class UpdateOrderSaga {
    */
   async execute(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
     const dataSource =
@@ -60,6 +61,7 @@ export class UpdateOrderSaga {
 
     const context: SagaContext = {
       workspaceId,
+      workspaceMemberId,
       rollbackData: new Map(),
       metadata: new Map(),
     };
