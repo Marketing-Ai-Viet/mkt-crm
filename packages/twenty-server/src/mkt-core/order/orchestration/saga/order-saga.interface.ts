@@ -59,6 +59,10 @@ export type SagaContext = {
   orderHistoryId?: string;
   paymentHistoryId?: string;
 
+  // Promotion data
+  promotionIds?: string[];
+  couponId?: string;
+
   // External integration
   firebaseAuthData?: unknown;
 
