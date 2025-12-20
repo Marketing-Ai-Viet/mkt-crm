@@ -17,10 +17,7 @@ import {
   OrderProductIntegrationService,
   ProductWithSnapshot,
 } from 'src/mkt-core/order/services/integration/order-product.integration';
-import {
-  CreateOrderWithItemsInput,
-  ExternalMktProductInput,
-} from 'src/mkt-core/order/types';
+import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
 
 // ============================================
@@ -133,7 +130,7 @@ export class CreateSnapshotsStep extends SagaStep<
       }
 
       // Build snapshots map for efficient lookup
-      const snapshotsMap = this.buildSnapshotsMap(snapshots, externalProducts);
+      const snapshotsMap = this.buildSnapshotsMap(snapshots);
 
       // Store in context for subsequent steps
       context.metadata.set('productSnapshots', snapshots);
@@ -180,10 +177,7 @@ export class CreateSnapshotsStep extends SagaStep<
   /**
    * Build map from productId -> snapshots for efficient lookup
    */
-  private buildSnapshotsMap(
-    snapshots: ProductWithSnapshot[],
-    externalProducts: ExternalMktProductInput[],
-  ): Map<
+  private buildSnapshotsMap(snapshots: ProductWithSnapshot[]): Map<
     string,
     {
       productSnapshot: MktProductSnapshot;

@@ -9,6 +9,7 @@ import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
+import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-overdue.cron.job';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
@@ -56,7 +57,16 @@ import {
   CreateOrderStep,
   CreatePaymentStep,
   FinalizeOrderStep,
+  // New steps for snapshots and promotions
+  CreateSnapshotsStep,
+  CalculatePromotionStep,
+  RecordPromotionUsageStep,
 } from './orchestration/steps';
+import {
+  OrderProductIntegrationService,
+  OrderLicenseIntegrationService,
+  OrderPromotionIntegrationService,
+} from './services/integration';
 
 @Module({
   imports: [
@@ -68,6 +78,7 @@ import {
     MktInvoiceModule,
     MktProductIntegrationModule, // External MKT Server product integration
     MktLicenseIntegrationModule, // External MKT Server license integration
+    MktPromotionModule, // Promotion and coupon management
     MktCommonModule,
     MktContractModule,
     CustomerModule,
@@ -107,6 +118,15 @@ import {
     CreateLicensesStep,
     CreatePaymentStep,
     FinalizeOrderStep,
+    // New steps for snapshots and promotions
+    CreateSnapshotsStep,
+    CalculatePromotionStep,
+    RecordPromotionUsageStep,
+
+    // Integration Services (bridge to other MKT modules)
+    OrderProductIntegrationService,
+    OrderLicenseIntegrationService,
+    OrderPromotionIntegrationService,
 
     // Legacy Services (backward compatibility)
     OrderService,
@@ -133,6 +153,10 @@ import {
     OrderCrudService,
     OrderLicenseQueryService,
     OrderOrchestrationService,
+    // Integration Services
+    OrderProductIntegrationService,
+    OrderLicenseIntegrationService,
+    OrderPromotionIntegrationService,
     // Sagas
     ConfirmOrderSaga,
     UpdateOrderSaga,
