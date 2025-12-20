@@ -5,6 +5,7 @@ import { In, LessThan } from 'typeorm';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 @Injectable()
 export class MktOrderOverdueService {
@@ -23,10 +24,10 @@ export class MktOrderOverdueService {
         await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
 
       // Tìm tất cả orders có status WAIT và được tạo từ 24h trước
-      const twentyFourHoursAgo = new Date();
-
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-      const twentyFourHoursAgoISO = twentyFourHoursAgo.toISOString();
+      const twentyFourHoursAgo = DateTimeUtils.subtract(DateTimeUtils.now(), {
+        hours: 24,
+      });
+      const twentyFourHoursAgoISO = DateTimeUtils.toISO(twentyFourHoursAgo);
 
       const waitOrders = await orderRepository.find({
         where: {

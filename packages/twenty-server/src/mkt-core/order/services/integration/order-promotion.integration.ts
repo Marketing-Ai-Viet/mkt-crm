@@ -13,6 +13,8 @@ import {
 } from 'src/mkt-core/mkt-promotion/types';
 import { CreatePromotionUsageData } from 'src/mkt-core/mkt-promotion/repositories';
 import { PROMOTION_TYPE } from 'src/mkt-core/mkt-promotion/constants';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 const ORDER_PROMOTION_LOG_CONTEXT = 'OrderPromotionIntegration';
 
@@ -188,7 +190,7 @@ export class OrderPromotionIntegrationService {
           discountAmount: input.discountAmount,
           originalAmount: input.originalAmount,
           couponId: input.couponId,
-          appliedAt: new Date(),
+          appliedAt: DateTimeUtils.toDateRequired(DateTimeUtils.now()),
         };
 
         await this.usageService.recordUsage(workspaceId, usageData);
@@ -314,7 +316,7 @@ export class OrderPromotionIntegrationService {
         discountValue: applied.discountValue,
         couponCode: applied.couponCode ?? couponCode ?? null,
         discountAmount: applied.discountAmount,
-        appliedAt: new Date().toISOString(),
+        appliedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
         checksum: '',
       };
 
@@ -330,11 +332,12 @@ export class OrderPromotionIntegrationService {
   private generateChecksum(
     snapshot: Omit<PromotionSnapshot, 'checksum'> & { checksum: string },
   ): string {
-    const dataToHash = JSON.stringify({
-      promotionId: snapshot.promotionId,
-      discountAmount: snapshot.discountAmount,
-      appliedAt: snapshot.appliedAt,
-    });
+    const dataToHash =
+      safeJsonStringify({
+        promotionId: snapshot.promotionId,
+        discountAmount: snapshot.discountAmount,
+        appliedAt: snapshot.appliedAt,
+      }) ?? '';
 
     return createHash('sha256')
       .update(dataToHash)

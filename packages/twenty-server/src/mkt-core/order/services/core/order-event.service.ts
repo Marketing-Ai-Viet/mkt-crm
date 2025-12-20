@@ -19,6 +19,7 @@ import {
   OrderEventPayload,
   PaymentEventPayload,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * OrderEventService - Centralized service for emitting order-related events
@@ -160,7 +161,7 @@ export class OrderEventService {
           id: orderId,
           ...additionalData,
         },
-        timestamp: new Date().toISOString(),
+        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
       };
 
       this.workspaceEventEmitter.emitCustomBatchEvent(
@@ -215,7 +216,7 @@ export class OrderEventService {
           id: orderId,
           ...additionalData,
         },
-        timestamp: new Date().toISOString(),
+        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
       };
 
       this.workspaceEventEmitter.emitCustomBatchEvent(

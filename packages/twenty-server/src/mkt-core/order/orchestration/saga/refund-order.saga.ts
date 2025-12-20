@@ -15,6 +15,8 @@ import {
   RefundOrderInput,
   RefundOrderResponse,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 import { SagaContext, SagaStepResult } from './order-saga.interface';
 
@@ -270,9 +272,10 @@ export class RefundOrderSaga {
   ): Promise<SagaStepResult> {
     try {
       // Build refund metadata
+      const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
       const refundMetadata = {
         orderAction: action,
-        refundedAt: new Date().toISOString(),
+        refundedAt: nowISO,
         refundedLicenseIds,
         refundAmount,
         reason: input.reason,
@@ -281,8 +284,8 @@ export class RefundOrderSaga {
       const updateData: Partial<MktOrderWorkspaceEntity> = {
         status: newStatus,
         refundAmount,
-        updatedAt: new Date().toISOString(),
-        metadata: JSON.stringify(refundMetadata) as unknown as JSON,
+        updatedAt: nowISO,
+        metadata: safeJsonStringify(refundMetadata) as unknown as JSON,
       };
 
       await queryRunner.manager.update(
@@ -330,7 +333,7 @@ export class RefundOrderSaga {
             reason: input.reason,
             isPartial: input.isPartial,
           },
-          timestamp: new Date().toISOString(),
+          timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         },
       ],
     });

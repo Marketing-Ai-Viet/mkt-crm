@@ -11,6 +11,10 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { safeJsonStringify } from 'src/mkt-core/utils';
+import {
+  DATE_TIME_FORMATS,
+  DateTimeUtils,
+} from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 import { OrderService } from './order.service';
@@ -128,10 +132,10 @@ export class OrderConfirmService {
     try {
       const orderRepository = await this.getOrderRepo(workspaceId);
 
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const now = DateTimeUtils.now();
+      const year = now.year;
+      const month = String(now.month).padStart(2, '0');
+      const day = String(now.day).padStart(2, '0');
       const datePrefix = `${year}${month}${day}`;
 
       // Find the highest order number for today
@@ -167,7 +171,9 @@ export class OrderConfirmService {
 
       if (existingOrder) {
         // If somehow duplicate, try with timestamp
-        const timestamp = Date.now().toString().slice(-6);
+        const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+          .toString()
+          .slice(-6);
 
         return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
       }
@@ -190,8 +196,10 @@ export class OrderConfirmService {
   ): Promise<string | null> {
     try {
       if (!currentOrder?.orderItems || currentOrder.orderItems.length === 0) {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('vi-VN');
+        const dateStr = DateTimeUtils.format(
+          DateTimeUtils.now(),
+          DATE_TIME_FORMATS.DISPLAY_DATE,
+        );
 
         return `Đơn hàng ${dateStr}`;
       }

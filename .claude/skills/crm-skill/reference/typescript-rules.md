@@ -220,7 +220,63 @@ const diffMs = Date.now() - lastSync.getTime();
 
 ---
 
-### 9. Named Exports Only
+### 9. Use MoneyUtils for Financial Calculations
+
+```typescript
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+
+// OK - Use MoneyUtils (Big.js precision)
+const total = MoneyUtils.multiply(quantity, unitPrice).toNumber();
+const tax = MoneyUtils.percentage(amount, taxPercent).toNumber();
+const sum = MoneyUtils.add(subtotal, taxAmount).toNumber();
+const diff = MoneyUtils.subtract(total, discount).toNumber();
+const itemsTotal = MoneyUtils.sumBy(items, 'price').toNumber();
+const rounded = MoneyUtils.round(value, 2).toNumber();
+const safe = MoneyUtils.divideSafe(amount, days); // handles division by zero
+
+// NO - Manual arithmetic (floating-point errors)
+const total = quantity * unitPrice;
+const tax = (amount * taxPercent) / 100;
+const rounded = Math.round(value * 100) / 100;
+```
+
+**Available methods**:
+- Basic: `add()`, `subtract()`, `multiply()`, `divide()`, `divideSafe()`
+- Percentage: `percentage()`, `applyDiscount()`, `applyTax()`
+- Aggregation: `sumBy()`, `sum()`
+- Rounding: `round()`
+- Factory: `from()` - convert any input to Big
+
+**Why**: Big.js provides precision for financial calculations, avoiding floating-point errors like `0.1 + 0.2 !== 0.3`
+
+---
+
+### 10. Use JSON Utilities for Safe JSON Operations
+
+```typescript
+import { safeJsonStringify, safeJsonParse, parseJsonOrDefault } from 'src/mkt-core/utils/json.util';
+
+// OK - Use safe JSON utilities
+const jsonStr = safeJsonStringify(data);                    // returns null if error
+const parsed = safeJsonParse<MyType>(jsonString);           // returns { success, data, error }
+const withDefault = parseJsonOrDefault(str, defaultValue);  // returns default if parse fails
+
+// NO - Direct JSON operations (can throw)
+const jsonStr = JSON.stringify(data);
+const parsed = JSON.parse(jsonString);
+```
+
+**Available functions**:
+- `safeJsonStringify(value, options?)` - Stringify safely, returns null on error
+- `safeJsonParse<T>(jsonString, options?)` - Parse safely, returns `{ success, data, error }`
+- `parseJsonOrDefault<T>(jsonString, defaultValue)` - Parse or return default
+- `parseJsonOrNull<T>(jsonString)` - Parse or return null
+
+**Why**: Prevents uncaught exceptions from malformed JSON, provides consistent error handling
+
+---
+
+### 11. Named Exports Only
 
 ```typescript
 // OK
@@ -407,8 +463,11 @@ Before committing, verify:
 - [ ] Imports organized correctly
 - [ ] Naming conventions followed
 - [ ] Named exports only (no default exports)
+- [ ] `DateTimeUtils` used for date/time (no `new Date()`, `Date.now()`)
+- [ ] `MoneyUtils` used for financial calculations (no manual `*`, `/`, `Math.round`)
+- [ ] `safeJsonStringify`/`safeJsonParse` used for JSON (no direct `JSON.stringify`, `JSON.parse`)
 
 ---
 
-**Version**: 1.0
-**Last Updated**: 2025-12-13
+**Version**: 1.1
+**Last Updated**: 2025-12-20

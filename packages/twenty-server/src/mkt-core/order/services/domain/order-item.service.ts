@@ -16,6 +16,7 @@ import {
   UpdateOrderItemInput,
   UpdateOrderItemResult,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 // TODO: Replace with new product entity type when product module is restored
@@ -421,9 +422,11 @@ export class OrderItemService {
     orderUpdatedAt: string,
     inputUpdatedAt: string,
   ): boolean {
-    const orderDate = new Date(orderUpdatedAt);
-    const inputDate = new Date(inputUpdatedAt);
+    const orderDate = DateTimeUtils.fromISO(orderUpdatedAt);
+    const inputDate = DateTimeUtils.fromISO(inputUpdatedAt);
 
-    return orderDate.getTime() === inputDate.getTime();
+    return (
+      DateTimeUtils.toMillis(orderDate) === DateTimeUtils.toMillis(inputDate)
+    );
   }
 }

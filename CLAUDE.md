@@ -146,7 +146,9 @@ mkt-core/
 │   ├── mkt-object-ids.ts                 # Entity identifiers (immutable)
 │   └── mkt-field-ids.ts                  # Field identifiers (immutable)
 ├── utils/
-│   └── date-time.utils.ts                # DateTimeUtils - use for all date/time operations
+│   ├── date-time.utils.ts                # DateTimeUtils - use for all date/time operations
+│   ├── money.utils.ts                    # MoneyUtils - use for all financial calculations
+│   └── json.util.ts                      # safeJsonParse/safeJsonStringify - use for JSON operations
 ├── license/                              # License management
 ├── order/                                # Order processing
 ├── invoice/                              # Invoice system
@@ -294,5 +296,49 @@ Module tích hợp với MKT Server để lấy dữ liệu Product và ProductP
 - Use early return pattern instead of nested if-else
 - Use lodash for array/object operations
 - Declare constants with const or enum, add default values when needed
-- Use `DateTimeUtils` from `src/mkt-core/utils/date-time.utils.ts` for all date/time operations
 - chạy npx nx reset khi lỗi với nx
+
+### Required Utilities
+
+Luôn sử dụng các utilities sau thay cho các hàm mặc định:
+
+#### DateTimeUtils (date/time operations)
+```typescript
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+// KHÔNG dùng: new Date(), Date.now()
+// SỬ DỤNG:
+const now = DateTimeUtils.now();
+const fromISO = DateTimeUtils.fromISO('2024-01-01');
+const isoString = DateTimeUtils.toISO(dateTime);
+const jsDate = DateTimeUtils.toDate(dateTime);
+const millis = DateTimeUtils.toMillis(dateTime);
+const future = DateTimeUtils.add(dateTime, { days: 30 });
+const past = DateTimeUtils.subtract(dateTime, { hours: 24 });
+```
+
+#### MoneyUtils (financial calculations)
+```typescript
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+
+// KHÔNG dùng: manual arithmetic (quantity * price, Math.round())
+// SỬ DỤNG:
+const total = MoneyUtils.multiply(quantity, unitPrice).toNumber();
+const tax = MoneyUtils.percentage(amount, taxPercent).toNumber();
+const sum = MoneyUtils.add(subtotal, taxAmount).toNumber();
+const diff = MoneyUtils.subtract(total, discount).toNumber();
+const itemsTotal = MoneyUtils.sumBy(items, 'price').toNumber();
+const rounded = MoneyUtils.round(value, 2).toNumber();
+const safe = MoneyUtils.divideSafe(amount, days); // handles division by zero
+```
+
+#### JSON Utilities (safe JSON operations)
+```typescript
+import { safeJsonStringify, safeJsonParse, parseJsonOrDefault } from 'src/mkt-core/utils/json.util';
+
+// KHÔNG dùng: JSON.stringify(), JSON.parse() trực tiếp
+// SỬ DỤNG:
+const jsonStr = safeJsonStringify(data);              // returns null if error
+const parsed = safeJsonParse<MyType>(jsonString);     // returns { success, data, error }
+const withDefault = parseJsonOrDefault(str, {});      // returns default if parse fails
+```

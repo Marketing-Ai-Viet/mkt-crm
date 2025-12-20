@@ -15,6 +15,10 @@ import {
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
 import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
+import {
+  DATE_TIME_FORMATS,
+  DateTimeUtils,
+} from 'src/mkt-core/utils/date-time.utils';
 
 // ============================================
 // STEP OUTPUT TYPE
@@ -250,8 +254,10 @@ export class FinalizeOrderStep extends SagaStep<
    */
   private generateOrderName(order: MktOrderWorkspaceEntity): string {
     if (!order.orderItems || order.orderItems.length === 0) {
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('vi-VN');
+      const dateStr = DateTimeUtils.format(
+        DateTimeUtils.now(),
+        DATE_TIME_FORMATS.DISPLAY_DATE,
+      );
 
       return `Đơn hàng ${dateStr}`;
     }
