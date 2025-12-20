@@ -12,31 +12,12 @@ import {
   MktSupportedLanguage,
 } from 'src/mkt-core/mkt-product-integration/types';
 import { ExternalMktProductInput } from 'src/mkt-core/order/types/order-mutation.types';
+import {
+  ProductValidationResult,
+  ProductWithSnapshot,
+} from 'src/mkt-core/order/types';
 
 const ORDER_PRODUCT_LOG_CONTEXT = 'OrderProductIntegration';
-
-/**
- * Result of product validation for order
- */
-export type ProductValidationResult = {
-  valid: boolean;
-  errors: Array<{
-    productId: string;
-    packageId?: string;
-    reason: string;
-  }>;
-};
-
-/**
- * Product with snapshot for order
- */
-export type ProductWithSnapshot = {
-  product: MktProduct;
-  package: MktProductPackage | null;
-  productSnapshot: MktProductSnapshot;
-  packageSnapshot: MktPackageSnapshot | null;
-  quantity: number;
-};
 
 /**
  * OrderProductIntegrationService

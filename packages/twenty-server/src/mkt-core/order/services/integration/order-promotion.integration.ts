@@ -9,50 +9,18 @@ import {
   PromotionEvaluationContext,
   AppliedPromotionsResult,
   PromotionSnapshot,
-  OrderItemForPromotion,
 } from 'src/mkt-core/mkt-promotion/types';
 import { CreatePromotionUsageData } from 'src/mkt-core/mkt-promotion/repositories';
 import { PROMOTION_TYPE } from 'src/mkt-core/mkt-promotion/constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+import {
+  OrderDiscountContext,
+  OrderPromotionResult,
+  PromotionUsageInput,
+} from 'src/mkt-core/order/types';
 
 const ORDER_PROMOTION_LOG_CONTEXT = 'OrderPromotionIntegration';
-
-/**
- * Order discount context - input for promotion calculation
- */
-export type OrderDiscountContext = {
-  workspaceId: string;
-  customerId: string;
-  orderItems: OrderItemForPromotion[];
-  orderSubtotal: number;
-  couponCode?: string;
-  customerTags?: string[];
-  isFirstOrder?: boolean;
-};
-
-/**
- * Promotion calculation result for order
- */
-export type OrderPromotionResult = {
-  success: boolean;
-  totalDiscount: number;
-  finalOrderAmount: number;
-  promotions: PromotionSnapshot[];
-  errors?: string[];
-};
-
-/**
- * Promotion usage record input
- */
-export type PromotionUsageInput = {
-  promotionId: string;
-  orderId: string;
-  customerId: string;
-  discountAmount: number;
-  originalAmount: number;
-  couponId?: string;
-};
 
 /**
  * OrderPromotionIntegrationService

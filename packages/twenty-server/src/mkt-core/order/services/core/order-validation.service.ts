@@ -54,98 +54,151 @@ export class OrderValidationService {
     workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationResult> {
-    const errors: ValidationError[] = [];
-
-    // Skip validation cho TRIAL_TO_PAID action
+    // Early return cho TRIAL_TO_PAID action
     if (input.action === ORDER_ACTION.TRIAL_TO_PAID) {
       return this.validateTrialToPaidInput(workspaceId, input);
     }
 
-    // Validate customer
-    if (!input.customerId) {
-      errors.push({
-        field: 'customerId',
-        message: 'Customer ID is required',
-        code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_REQUIRED,
-      });
-    } else {
-      const customerExists = await this.customerExists(
-        workspaceId,
-        input.customerId,
-      );
+    // Run all validations in parallel where possible
+    const [customerErrors, itemErrors, paymentErrors, actionErrors] =
+      await Promise.all([
+        this.validateCustomer(workspaceId, input.customerId),
+        this.validateOrderItems(workspaceId, input),
+        this.validatePaymentMethodsForAction(workspaceId, input),
+        Promise.resolve(this.validateAction(input.action)),
+      ]);
 
-      if (!customerExists) {
-        errors.push({
-          field: 'customerId',
-          message: `Customer with ID ${input.customerId} not found`,
-          code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_NOT_FOUND,
-        });
-      }
-    }
-
-    // Check if we have any items (variants OR externalProducts)
-    const hasVariants = input.variants && input.variants.length > 0;
-    const hasExternalProducts =
-      input.externalProducts && input.externalProducts.length > 0;
-
-    if (!hasVariants && !hasExternalProducts) {
-      errors.push({
-        field: 'items',
-        message: 'At least one variant or external product is required',
-        code: ORDER_VALIDATION_ERROR_CODES.ITEMS_REQUIRED,
-      });
-    }
-
-    // Validate internal variants
-    if (hasVariants && input.variants) {
-      const variantErrors = await this.validateVariants(
-        workspaceId,
-        input.variants.map((v) => v.variantId),
-      );
-
-      errors.push(...variantErrors);
-    }
-
-    // Validate external MKT products
-    if (hasExternalProducts && input.externalProducts) {
-      const externalErrors = await this.validateExternalProducts(
-        input.externalProducts,
-      );
-
-      errors.push(...externalErrors);
-    }
-
-    // Validate payment methods (not required for TRIAL)
-    if (input.action !== ORDER_ACTION.TRIAL) {
-      if (!input.paymentMethods || input.paymentMethods.length === 0) {
-        errors.push({
-          field: 'paymentMethods',
-          message: 'At least one payment method is required',
-          code: ORDER_VALIDATION_ERROR_CODES.PAYMENT_METHOD_REQUIRED,
-        });
-      } else {
-        const paymentErrors = await this.validatePaymentMethods(
-          workspaceId,
-          input.paymentMethods.map((p) => p.paymentMethodId),
-        );
-
-        errors.push(...paymentErrors);
-      }
-    }
-
-    // Validate action
-    if (!this.isValidCreateAction(input.action)) {
-      errors.push({
-        field: 'action',
-        message: `Invalid action: ${input.action}`,
-        code: ORDER_VALIDATION_ERROR_CODES.INVALID_ACTION,
-      });
-    }
+    const errors = [
+      ...customerErrors,
+      ...itemErrors,
+      ...paymentErrors,
+      ...actionErrors,
+    ];
 
     return {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * Validate customer exists
+   */
+  private async validateCustomer(
+    workspaceId: string,
+    customerId: string | undefined,
+  ): Promise<ValidationError[]> {
+    if (!customerId) {
+      return [
+        {
+          field: 'customerId',
+          message: 'Customer ID is required',
+          code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_REQUIRED,
+        },
+      ];
+    }
+
+    const exists = await this.customerExists(workspaceId, customerId);
+
+    if (!exists) {
+      return [
+        {
+          field: 'customerId',
+          message: `Customer with ID ${customerId} not found`,
+          code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_NOT_FOUND,
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  /**
+   * Validate order items (variants and external products)
+   */
+  private async validateOrderItems(
+    workspaceId: string,
+    input: CreateOrderWithItemsInput,
+  ): Promise<ValidationError[]> {
+    const hasVariants = input.variants && input.variants.length > 0;
+    const hasExternalProducts =
+      input.externalProducts && input.externalProducts.length > 0;
+
+    if (!hasVariants && !hasExternalProducts) {
+      return [
+        {
+          field: 'items',
+          message: 'At least one variant or external product is required',
+          code: ORDER_VALIDATION_ERROR_CODES.ITEMS_REQUIRED,
+        },
+      ];
+    }
+
+    const validationPromises: Promise<ValidationError[]>[] = [];
+
+    if (hasVariants && input.variants) {
+      validationPromises.push(
+        this.validateVariants(
+          workspaceId,
+          input.variants.map((v) => v.variantId),
+        ),
+      );
+    }
+
+    if (hasExternalProducts && input.externalProducts) {
+      validationPromises.push(
+        this.validateExternalProducts(input.externalProducts),
+      );
+    }
+
+    const results = await Promise.all(validationPromises);
+
+    return results.flat();
+  }
+
+  /**
+   * Validate payment methods based on action type
+   */
+  private async validatePaymentMethodsForAction(
+    workspaceId: string,
+    input: CreateOrderWithItemsInput,
+  ): Promise<ValidationError[]> {
+    // Payment not required for TRIAL
+    if (input.action === ORDER_ACTION.TRIAL) {
+      return [];
+    }
+
+    if (!input.paymentMethods || input.paymentMethods.length === 0) {
+      return [
+        {
+          field: 'paymentMethods',
+          message: 'At least one payment method is required',
+          code: ORDER_VALIDATION_ERROR_CODES.PAYMENT_METHOD_REQUIRED,
+        },
+      ];
+    }
+
+    return this.validatePaymentMethods(
+      workspaceId,
+      input.paymentMethods.map((p) => p.paymentMethodId),
+    );
+  }
+
+  /**
+   * Validate action is valid for create order
+   */
+  private validateAction(action: ORDER_ACTION): ValidationError[] {
+    if (!this.isValidCreateAction(action)) {
+      return [
+        {
+          field: 'action',
+          message: `Invalid action: ${action}`,
+          code: ORDER_VALIDATION_ERROR_CODES.INVALID_ACTION,
+        },
+      ];
+    }
+
+    return [];
   }
 
   /**
@@ -278,7 +331,7 @@ export class OrderValidationService {
    * The old MktVariantWorkspaceEntity has been removed with the product module
    */
   private async validateVariants(
-    workspaceId: string,
+    _workspaceId: string,
     variantIds: string[],
   ): Promise<ValidationError[]> {
     const errors: ValidationError[] = [];

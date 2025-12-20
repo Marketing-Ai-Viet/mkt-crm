@@ -3,41 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 import { MktLicenseResponse } from 'src/mkt-core/mkt-license-integration/types';
 import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
-
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * License status response from MKT Server
- */
-export type LicenseStatus = {
-  id: string;
-  licenseKey: string;
-  status: string;
-  type: string;
-  startDate: string | null;
-  endDate: string | null;
-  maxDevices: number;
-  productId: string;
-  orderItemId?: string;
-};
-
-/**
- * Order license summary
- */
-export type OrderLicenseSummary = {
-  orderId: string;
-  totalLicenses: number;
-  activeLicenses: number;
-  expiredLicenses: number;
-  revokedLicenses: number;
-  licenses: LicenseStatus[];
-};
-
-// ============================================
-// SERVICE
-// ============================================
+import { LicenseStatus, OrderLicenseSummary } from 'src/mkt-core/order/types';
 
 /**
  * OrderLicenseQueryService - Query license status from MKT Server

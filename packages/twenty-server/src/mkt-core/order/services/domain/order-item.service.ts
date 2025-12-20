@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   ORDER_ITEM_DEFAULTS,
   ORDER_STATUS,
@@ -16,38 +15,31 @@ import {
   UpdateOrderItemInput,
   UpdateOrderItemResult,
 } from 'src/mkt-core/order/types';
+import {
+  MktPackageSnapshot,
+  MktProductSnapshot,
+} from 'src/mkt-core/mkt-product-integration/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
-
-// TODO: Replace with new product entity type when product module is restored
-type MktVariantWorkspaceEntity = {
-  id: string;
-  name: string;
-  price: number;
-  mktProductId?: string | null;
-};
 
 /**
  * OrderItemService - Centralized service for order item operations
  *
  * Responsibilities:
  * - Validate order items for update
- * - Calculate order item values from variant
+ * - Calculate order item values from external product snapshots
  * - Update order items with recalculation
  * - Handle optimistic locking
  *
- * Replaces logic from:
- * - MktOrderItemUpdateOnePreQueryHook
+ * Note: MktVariantWorkspaceEntity has been removed.
+ * Order items now use external MKT Server products via snapshots.
  */
 @Injectable()
 export class OrderItemService {
   private readonly logger = new Logger(MKT_ORDER_ITEM_LOG_CONTEXT);
   private readonly optimisticLockingEnabled: boolean;
 
-  constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly orderItemRepository: MktOrderItemRepository,
-  ) {
+  constructor(private readonly orderItemRepository: MktOrderItemRepository) {
     this.optimisticLockingEnabled =
       process.env.ORDER_OPTIMISTIC_LOCKING_ENABLED !== 'false';
   }
@@ -83,10 +75,10 @@ export class OrderItemService {
       // Check if order status allows modification
       const orderStatus = orderItem.mktOrder.status;
 
-      if (this.optimisticLockingEnabled && orderStatus) {
+      if (!this.canModifyOrderItems(orderItem.mktOrder)) {
         return {
           valid: false,
-          error: 'Order item cannot be updated because order is locked',
+          error: `Order item cannot be updated - order status: ${orderStatus}`,
         };
       }
 
@@ -124,16 +116,17 @@ export class OrderItemService {
   }
 
   /**
-   * Calculate order item values from variant
-   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
+   * Calculate order item values from package snapshot
+   * Uses MoneyUtils for precise financial calculations
    */
-  calculateValuesFromVariant(
-    variant: MktVariantWorkspaceEntity,
+  calculateValuesFromSnapshot(
+    productSnapshot: MktProductSnapshot,
+    packageSnapshot: MktPackageSnapshot,
     quantity: number = ORDER_ITEM_DEFAULTS.QUANTITY,
     taxPercentage: number = ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
   ): OrderItemCalculatedValues {
     const safeQuantity = quantity > 0 ? quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
-    const unitPrice = variant.price ?? 0;
+    const unitPrice = packageSnapshot.price ?? 0;
     const totalPrice = MoneyUtils.multiply(safeQuantity, unitPrice).toNumber();
     const taxAmount = MoneyUtils.percentage(
       totalPrice,
@@ -142,13 +135,46 @@ export class OrderItemService {
     const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
 
     return {
-      name: `${variant.name} (x${safeQuantity})`,
-      snapshotProductName: variant.name,
-      mktProductId: variant.mktProductId ?? null,
+      name: `${packageSnapshot.displayName} (x${safeQuantity})`,
+      snapshotProductName: productSnapshot.displayName,
+      mktProductId: null, // No internal product relation
       unitName: ORDER_ITEM_DEFAULTS.UNIT_NAME,
       unitPrice,
       quantity: safeQuantity,
       taxPercentage,
+      taxAmount,
+      totalPrice,
+      totalAmountWithTax,
+    };
+  }
+
+  /**
+   * Calculate order item values from existing order item snapshots
+   * Used for recalculation when quantity changes
+   */
+  calculateValuesFromOrderItem(
+    orderItem: MktOrderItemWorkspaceEntity,
+    quantity?: number,
+    taxPercentage?: number,
+  ): Partial<OrderItemCalculatedValues> {
+    const safeQuantity =
+      quantity ?? orderItem.quantity ?? ORDER_ITEM_DEFAULTS.QUANTITY;
+    const unitPrice = orderItem.unitPrice ?? 0;
+    const safeTaxPercentage =
+      taxPercentage ??
+      orderItem.taxPercentage ??
+      ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE;
+
+    const totalPrice = MoneyUtils.multiply(safeQuantity, unitPrice).toNumber();
+    const taxAmount = MoneyUtils.percentage(
+      totalPrice,
+      safeTaxPercentage,
+    ).toNumber();
+    const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
+
+    return {
+      quantity: safeQuantity,
+      taxPercentage: safeTaxPercentage,
       taxAmount,
       totalPrice,
       totalAmountWithTax,
@@ -183,53 +209,34 @@ export class OrderItemService {
       // Build update data
       const updateData: Partial<MktOrderItemWorkspaceEntity> = {};
 
-      // Get variant for calculation
-      const variant: MktVariantWorkspaceEntity | null = null;
-
-      // NOTE: Product module has been removed
-      // Variant lookup is deprecated - use external product integration instead
-      if (input.variantId) {
-        this.logger.warn(
-          'Variant lookup is deprecated - product module has been removed',
-        );
-        // Store the variant ID for legacy compatibility but don't look it up
-        (updateData as Record<string, string | null>).mktVariantId =
-          input.variantId;
+      // Handle quantity update
+      if (input.quantity !== undefined) {
+        updateData.quantity =
+          input.quantity > 0 ? input.quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
       }
 
-      // Calculate values if we have a variant
-      if (variant) {
-        const quantity =
-          input.quantity ?? orderItem.quantity ?? ORDER_ITEM_DEFAULTS.QUANTITY;
-        const calculatedValues = this.calculateValuesFromVariant(
-          variant,
-          quantity,
-          orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
+      // Handle unit price update
+      if (input.unitPrice !== undefined) {
+        updateData.unitPrice = input.unitPrice;
+      }
+
+      // Recalculate totals if quantity or price changed
+      if (
+        updateData.quantity !== undefined ||
+        updateData.unitPrice !== undefined
+      ) {
+        const calculatedValues = this.calculateValuesFromOrderItem(
+          orderItem,
+          updateData.quantity,
         );
 
-        Object.assign(updateData, calculatedValues);
-      } else {
-        // Manual update without variant recalculation
-        if (input.quantity !== undefined) {
-          updateData.quantity =
-            input.quantity > 0 ? input.quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
-        }
-
-        if (input.unitPrice !== undefined) {
-          updateData.unitPrice = input.unitPrice;
-        }
-
-        // Recalculate totals if quantity or price changed
-        // Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
-        if (
-          updateData.quantity !== undefined ||
-          updateData.unitPrice !== undefined
-        ) {
+        // Override with new unit price if provided
+        if (updateData.unitPrice !== undefined) {
           const quantity =
             updateData.quantity ??
             orderItem.quantity ??
             ORDER_ITEM_DEFAULTS.QUANTITY;
-          const unitPrice = updateData.unitPrice ?? orderItem.unitPrice ?? 0;
+          const unitPrice = updateData.unitPrice;
           const taxPercentage =
             orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE;
 
@@ -248,6 +255,9 @@ export class OrderItemService {
             totalPrice,
             taxAmount,
           ).toNumber();
+        } else {
+          // Use calculated values from existing order item
+          Object.assign(updateData, calculatedValues);
         }
       }
 
@@ -282,7 +292,7 @@ export class OrderItemService {
   }
 
   /**
-   * Recalculate order item from its variant
+   * Recalculate order item from its stored snapshots/values
    */
   async recalculateOrderItem(
     orderItemId: string,
@@ -301,13 +311,15 @@ export class OrderItemService {
         };
       }
 
-      // NOTE: Product module has been removed - variant recalculation is deprecated
-      this.logger.warn(
-        'recalculateOrderItem is deprecated - product module has been removed',
-      );
+      // Recalculate from existing values
+      const calculatedValues = this.calculateValuesFromOrderItem(orderItem);
 
-      // Return success without recalculation since variants are no longer available
-      // The order item will keep its existing values
+      // Update the order item
+      await this.orderItemRepository.update(
+        workspaceId,
+        orderItemId,
+        calculatedValues as Partial<MktOrderItemWorkspaceEntity>,
+      );
 
       const updatedOrderItem =
         await this.orderItemRepository.findByIdWithRelations(
@@ -353,11 +365,7 @@ export class OrderItemService {
     const status = order.status as ORDER_STATUS | null;
 
     // Only DRAFT orders can have items modified
-    if (!status || status === ORDER_STATUS.DRAFT) {
-      return true;
-    }
-
-    return false;
+    return !status || status === ORDER_STATUS.DRAFT;
   }
 
   /**
@@ -404,19 +412,6 @@ export class OrderItemService {
   // ============================================
   // PRIVATE HELPERS
   // ============================================
-
-  private async getVariant(
-    variantId: string,
-    workspaceId: string,
-  ): Promise<MktVariantWorkspaceEntity | null> {
-    // TODO: Implement variant lookup using mkt-product-integration module
-    // The old MktVariantWorkspaceEntity has been removed with the product module
-    this.logger.warn(
-      `getVariant not implemented - product module removed. Variant ID: ${variantId}, Workspace: ${workspaceId}`,
-    );
-
-    return null;
-  }
 
   private validateUpdatedAt(
     orderUpdatedAt: string,

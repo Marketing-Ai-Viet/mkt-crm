@@ -7,44 +7,13 @@ import {
   MktLicenseResponse,
   MktCreateLicensePayload,
 } from 'src/mkt-core/mkt-license-integration/types';
-import { MktLicenseSnapshot } from 'src/mkt-core/order/types';
+import {
+  BulkLicenseResult,
+  MktLicenseSnapshot,
+  OrderLicenseInput,
+} from 'src/mkt-core/order/types';
 
 const ORDER_LICENSE_LOG_CONTEXT = 'OrderLicenseIntegration';
-
-/**
- * License creation input for order
- */
-export type OrderLicenseInput = {
-  productId: string;
-  packageId: string;
-  customerId: string;
-  maxDevices?: number;
-};
-
-/**
- * License creation result
- */
-export type LicenseCreationResult = {
-  success: boolean;
-  license?: MktLicenseResponse;
-  snapshot?: MktLicenseSnapshot;
-  error?: string;
-};
-
-/**
- * Bulk license creation result
- */
-export type BulkLicenseResult = {
-  success: boolean;
-  licenses: Array<{
-    license: MktLicenseResponse;
-    snapshot: MktLicenseSnapshot;
-  }>;
-  errors: Array<{
-    input: OrderLicenseInput;
-    error: string;
-  }>;
-};
 
 /**
  * OrderLicenseIntegrationService
