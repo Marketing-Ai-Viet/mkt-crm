@@ -11,6 +11,7 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { safeJsonStringify } from 'src/mkt-core/utils';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 import { OrderService } from './order.service';
 
@@ -34,6 +35,7 @@ export class OrderConfirmService {
 
   /**
    * calculate order values from order items
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   async calculateOrderValues(
     currentOrder: MktOrderWorkspaceEntity | null,
@@ -53,29 +55,32 @@ export class OrderConfirmService {
         };
       }
 
-      let subtotal = 0;
-      let totalTax = 0;
+      let subtotal = MoneyUtils.from(0);
+      let totalTax = MoneyUtils.from(0);
 
       for (const item of orderItems) {
         const quantity = item.quantity || 0;
         const unitPrice = item.unitPrice || 0;
         const taxPercentage = item.taxPercentage || 0;
 
-        const itemSubtotal = quantity * unitPrice;
+        const itemSubtotal = MoneyUtils.multiply(quantity, unitPrice);
 
-        subtotal += itemSubtotal;
+        subtotal = MoneyUtils.add(subtotal, itemSubtotal);
 
-        const itemTax = (itemSubtotal * taxPercentage) / 100;
+        const itemTax = MoneyUtils.percentage(itemSubtotal, taxPercentage);
 
-        totalTax += itemTax;
+        totalTax = MoneyUtils.add(totalTax, itemTax);
 
         this.logger.debug(
-          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal}, tax=${itemTax}`,
+          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal.toNumber()}, tax=${itemTax.toNumber()}`,
         );
       }
 
       if (currentOrder?.discountPercent) {
-        const discountAmount = (subtotal * currentOrder.discountPercent) / 100;
+        const discountAmount = MoneyUtils.percentage(
+          subtotal,
+          currentOrder.discountPercent,
+        ).toNumber();
 
         this.logger.log(
           `Applying discountPercent ${currentOrder.discountPercent}%: discountAmount=${discountAmount}`,
@@ -84,19 +89,22 @@ export class OrderConfirmService {
         currentOrder.discount = discountAmount;
       }
 
-      const discount = currentOrder?.discount || 0;
+      const discount = MoneyUtils.from(currentOrder?.discount || 0);
 
-      const totalAmount = subtotal + totalTax - discount;
+      const totalAmount = MoneyUtils.subtract(
+        MoneyUtils.add(subtotal, totalTax),
+        discount,
+      );
 
       this.logger.log(
-        `Calculated order values: subtotal=${subtotal}, tax=${totalTax}, discount=${discount}, totalAmount=${totalAmount}`,
+        `Calculated order values: subtotal=${subtotal.toNumber()}, tax=${totalTax.toNumber()}, discount=${discount.toNumber()}, totalAmount=${totalAmount.toNumber()}`,
       );
 
       return {
-        subtotal: Math.round(subtotal * 100) / 100, // Round to 2 decimal places
-        tax: Math.round(totalTax * 100) / 100,
-        discount: Math.round(discount * 100) / 100,
-        totalAmount: Math.round(totalAmount * 100) / 100,
+        subtotal: MoneyUtils.round(subtotal, 2).toNumber(),
+        tax: MoneyUtils.round(totalTax, 2).toNumber(),
+        discount: MoneyUtils.round(discount, 2).toNumber(),
+        totalAmount: MoneyUtils.round(totalAmount, 2).toNumber(),
       };
     } catch (error) {
       this.logger.error(

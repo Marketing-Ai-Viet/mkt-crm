@@ -8,6 +8,7 @@ import {
   OrderItemWithCalculation,
   VariantForCalculation,
 } from 'src/mkt-core/order/types';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 /**
  * Service để tính toán các giá trị trong order
@@ -23,6 +24,7 @@ export class OrderCalculationService {
 
   /**
    * Tính toán giá trị cho một order item
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   calculateOrderItem(
     variant: VariantForCalculation,
@@ -30,9 +32,12 @@ export class OrderCalculationService {
     taxPercentage: number = ORDER_CALCULATION_CONFIG.DEFAULT_TAX_PERCENTAGE,
   ): OrderItemWithCalculation {
     const unitPrice = variant.price;
-    const totalPrice = this.round(unitPrice * quantity);
-    const taxAmount = this.round(totalPrice * (taxPercentage / 100));
-    const totalAmountWithTax = this.round(totalPrice + taxAmount);
+    const totalPrice = MoneyUtils.multiply(unitPrice, quantity).toNumber();
+    const taxAmount = MoneyUtils.percentage(
+      totalPrice,
+      taxPercentage,
+    ).toNumber();
+    const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
 
     return {
       variantId: variant.id,
@@ -67,26 +72,33 @@ export class OrderCalculationService {
 
   /**
    * Tính tổng các giá trị cho order từ danh sách items
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   calculateOrderTotals(
     items: OrderItemWithCalculation[],
     discountPercent = 0,
   ): OrderCalculatedValues {
     // Subtotal = tổng totalPrice của các items
-    const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const subtotal = MoneyUtils.sumBy(items, 'totalPrice').toNumber();
 
     // Tax = tổng taxAmount của các items
-    const tax = items.reduce((sum, item) => sum + item.taxAmount, 0);
+    const tax = MoneyUtils.sumBy(items, 'taxAmount').toNumber();
 
     // Discount = subtotal * discount percent
-    const discount = this.round(subtotal * (discountPercent / 100));
+    const discount = MoneyUtils.percentage(
+      subtotal,
+      discountPercent,
+    ).toNumber();
 
     // Total = subtotal + tax - discount
-    const totalAmount = this.round(subtotal + tax - discount);
+    const totalAmount = MoneyUtils.subtract(
+      MoneyUtils.add(subtotal, tax),
+      discount,
+    ).toNumber();
 
     return {
-      subtotal: this.round(subtotal),
-      tax: this.round(tax),
+      subtotal,
+      tax,
       taxPercentage: items[0]?.taxPercentage ?? 0,
       discount,
       totalAmount,
@@ -120,6 +132,7 @@ export class OrderCalculationService {
 
   /**
    * Tính số tiền hoàn lại dựa trên số ngày đã sử dụng
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   calculateRefundAmount(
     originalAmount: number,
@@ -131,37 +144,31 @@ export class OrderCalculationService {
     }
 
     const remainingDays = totalDays - usedDays;
-    const dailyRate = originalAmount / totalDays;
-    const refundAmount = dailyRate * remainingDays;
+    const dailyRate = MoneyUtils.divideSafe(originalAmount, totalDays);
+    const refundAmount = MoneyUtils.multiply(dailyRate, remainingDays);
 
-    return this.round(refundAmount);
+    return MoneyUtils.round(
+      refundAmount,
+      ORDER_CALCULATION_CONFIG.DECIMAL_PLACES,
+    ).toNumber();
   }
 
   /**
    * Tính số tiền còn lại sau hoàn tiền
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   calculateRemainingAmount(
     originalAmount: number,
     refundAmount: number,
   ): number {
-    return this.round(Math.max(0, originalAmount - refundAmount));
+    const remaining = MoneyUtils.subtract(originalAmount, refundAmount);
+
+    return MoneyUtils.max(remaining, 0).toNumber();
   }
 
   // ============================================
   // HELPER METHODS
   // ============================================
-
-  /**
-   * Làm tròn số theo số chữ số thập phân
-   */
-  private round(
-    value: number,
-    decimals: number = ORDER_CALCULATION_CONFIG.DECIMAL_PLACES,
-  ): number {
-    const multiplier = Math.pow(10, decimals);
-
-    return Math.round(value * multiplier) / multiplier;
-  }
 
   /**
    * Format số tiền theo currency

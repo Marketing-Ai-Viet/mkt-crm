@@ -16,6 +16,7 @@ import {
   UpdateOrderItemInput,
   UpdateOrderItemResult,
 } from 'src/mkt-core/order/types';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 // TODO: Replace with new product entity type when product module is restored
 type MktVariantWorkspaceEntity = {
@@ -123,6 +124,7 @@ export class OrderItemService {
 
   /**
    * Calculate order item values from variant
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   calculateValuesFromVariant(
     variant: MktVariantWorkspaceEntity,
@@ -131,11 +133,12 @@ export class OrderItemService {
   ): OrderItemCalculatedValues {
     const safeQuantity = quantity > 0 ? quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
     const unitPrice = variant.price ?? 0;
-    const totalPrice = this.roundToTwoDecimals(safeQuantity * unitPrice);
-    const taxAmount = this.roundToTwoDecimals(
-      (totalPrice * taxPercentage) / 100,
-    );
-    const totalAmountWithTax = this.roundToTwoDecimals(totalPrice + taxAmount);
+    const totalPrice = MoneyUtils.multiply(safeQuantity, unitPrice).toNumber();
+    const taxAmount = MoneyUtils.percentage(
+      totalPrice,
+      taxPercentage,
+    ).toNumber();
+    const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
 
     return {
       name: `${variant.name} (x${safeQuantity})`,
@@ -216,6 +219,7 @@ export class OrderItemService {
         }
 
         // Recalculate totals if quantity or price changed
+        // Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
         if (
           updateData.quantity !== undefined ||
           updateData.unitPrice !== undefined
@@ -228,16 +232,21 @@ export class OrderItemService {
           const taxPercentage =
             orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE;
 
-          const totalPrice = this.roundToTwoDecimals(quantity * unitPrice);
-          const taxAmount = this.roundToTwoDecimals(
-            (totalPrice * taxPercentage) / 100,
-          );
+          const totalPrice = MoneyUtils.multiply(
+            quantity,
+            unitPrice,
+          ).toNumber();
+          const taxAmount = MoneyUtils.percentage(
+            totalPrice,
+            taxPercentage,
+          ).toNumber();
 
           updateData.totalPrice = totalPrice;
           updateData.taxAmount = taxAmount;
-          updateData.totalAmountWithTax = this.roundToTwoDecimals(
-            totalPrice + taxAmount,
-          );
+          updateData.totalAmountWithTax = MoneyUtils.add(
+            totalPrice,
+            taxAmount,
+          ).toNumber();
         }
       }
 
@@ -406,10 +415,6 @@ export class OrderItemService {
     );
 
     return null;
-  }
-
-  private roundToTwoDecimals(value: number): number {
-    return Math.round(value * 100) / 100;
   }
 
   private validateUpdatedAt(
