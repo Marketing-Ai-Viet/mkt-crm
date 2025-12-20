@@ -23,6 +23,7 @@ import {
 } from 'src/mkt-core/mkt-promotion/message';
 import { PROMOTION_LOG_CONTEXT } from 'src/mkt-core/mkt-promotion/constants';
 import { MktCouponWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-coupon.workspace-entity';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * Coupon Resolver
@@ -258,13 +259,17 @@ export class CouponResolver {
       status: coupon.status,
       usageLimit: coupon.usageLimit,
       currentUsageCount: coupon.currentUsageCount,
-      validFrom: coupon.validFrom ? new Date(coupon.validFrom) : null,
-      validTo: coupon.validTo ? new Date(coupon.validTo) : null,
+      validFrom: coupon.validFrom ?? null,
+      validTo: coupon.validTo ?? null,
       assignedCustomerId: coupon.assignedCustomerId,
       promotionId: coupon.promotionId,
       metadata: coupon.metadata ?? null,
-      createdAt: new Date(coupon.createdAt),
-      updatedAt: new Date(coupon.updatedAt),
+      createdAt: DateTimeUtils.toDateRequired(
+        DateTimeUtils.fromISO(coupon.createdAt),
+      ),
+      updatedAt: DateTimeUtils.toDateRequired(
+        DateTimeUtils.fromISO(coupon.updatedAt),
+      ),
     };
   }
 }

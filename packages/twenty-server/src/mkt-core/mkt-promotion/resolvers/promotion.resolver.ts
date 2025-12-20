@@ -31,6 +31,7 @@ import {
 import { CreatePromotionRuleData } from 'src/mkt-core/mkt-promotion/types';
 import { MktPromotionWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion.workspace-entity';
 import { MktPromotionRuleWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-rule.workspace-entity';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * Promotion Resolver
@@ -375,8 +376,8 @@ export class PromotionResolver {
       maxDiscountAmount: promotion.maxDiscountAmount,
       minOrderAmount: promotion.minOrderAmount,
       currency: promotion.currency,
-      startDate: new Date(promotion.startDate),
-      endDate: promotion.endDate ? new Date(promotion.endDate) : null,
+      startDate: promotion.startDate,
+      endDate: promotion.endDate ?? null,
       usageLimit: promotion.usageLimit,
       usageLimitPerCustomer: promotion.usageLimitPerCustomer,
       currentUsageCount: promotion.currentUsageCount,
@@ -394,8 +395,12 @@ export class PromotionResolver {
         logicOperator: r.logicOperator,
         position: r.position,
       })),
-      createdAt: new Date(promotion.createdAt),
-      updatedAt: new Date(promotion.updatedAt),
+      createdAt: DateTimeUtils.toDateRequired(
+        DateTimeUtils.fromISO(promotion.createdAt),
+      ),
+      updatedAt: DateTimeUtils.toDateRequired(
+        DateTimeUtils.fromISO(promotion.updatedAt),
+      ),
     };
   }
 }

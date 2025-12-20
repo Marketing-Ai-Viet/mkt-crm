@@ -7,6 +7,7 @@ import { User } from 'src/engine/core-modules/user/user.entity';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 @Injectable()
 export class MktPersonDeletionService {
@@ -48,11 +49,10 @@ export class MktPersonDeletionService {
       where: { userEmail: email },
     });
 
+    const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
+
     for (const member of members) {
-      await memberRepo.update(
-        { id: member.id },
-        { deletedAt: new Date().toISOString() },
-      );
+      await memberRepo.update({ id: member.id }, { deletedAt: nowISO });
     }
 
     // CASE 3: Soft delete all customers with this email
@@ -62,10 +62,7 @@ export class MktPersonDeletionService {
     });
 
     for (const customer of customers) {
-      await cusRepo.update(
-        { id: customer.id },
-        { deletedAt: new Date().toISOString() },
-      );
+      await cusRepo.update({ id: customer.id }, { deletedAt: nowISO });
     }
 
     this.logger.log(

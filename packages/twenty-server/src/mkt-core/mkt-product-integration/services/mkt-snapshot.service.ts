@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { createHash } from 'crypto';
 
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 import {
   MktProduct,
   MktProductPackage,
@@ -56,7 +58,7 @@ export class MktSnapshotService {
       version: product.version,
       iconUrl: product.iconUrl,
       bannerUrl: product.bannerUrl,
-      capturedAt: new Date().toISOString(),
+      capturedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       sourceVersion: product.updatedAt,
       checksum: '',
     };
@@ -102,7 +104,7 @@ export class MktSnapshotService {
       durationDays: pkg.durationDays,
       price: pkg.price,
       currency: pkg.currency,
-      capturedAt: new Date().toISOString(),
+      capturedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
     };
 
     this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
@@ -131,7 +133,7 @@ export class MktSnapshotService {
       maxDevices: license.maxDevices,
       customerId: license.userId,
       metadata: license.metadata,
-      capturedAt: new Date().toISOString(),
+      capturedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       sourceVersion: String(license.version),
     };
 
@@ -186,12 +188,13 @@ export class MktSnapshotService {
   private generateChecksum(
     snapshot: Omit<MktProductSnapshot, 'checksum'> & { checksum: string },
   ): string {
-    const dataToHash = JSON.stringify({
-      id: snapshot.id,
-      code: snapshot.code,
-      basePrice: snapshot.basePrice,
-      capturedAt: snapshot.capturedAt,
-    });
+    const dataToHash =
+      safeJsonStringify({
+        id: snapshot.id,
+        code: snapshot.code,
+        basePrice: snapshot.basePrice,
+        capturedAt: snapshot.capturedAt,
+      }) ?? '';
 
     return createHash('sha256')
       .update(dataToHash)

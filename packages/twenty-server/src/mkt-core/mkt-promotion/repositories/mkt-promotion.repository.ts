@@ -4,6 +4,7 @@ import { IsNull, LessThanOrEqual, QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import {
   PROMOTION_STATUS,
   PROMOTION_LOG_CONTEXT,
@@ -447,7 +448,7 @@ export class MktPromotionRepository {
       ? Math.max(0, usageLimit - currentUsageCount)
       : null;
     const usagePercentage = usageLimit
-      ? (currentUsageCount / usageLimit) * 100
+      ? MoneyUtils.percentage(currentUsageCount, usageLimit).toNumber()
       : null;
 
     return {

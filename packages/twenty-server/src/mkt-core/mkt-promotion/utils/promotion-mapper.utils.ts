@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+
 /**
  * Promotion mapper utilities
  *
@@ -22,7 +25,7 @@ export const mapPromotionToSnapshot = (
   discountValue: promotion.discountValue,
   couponCode: couponCode ?? null,
   discountAmount,
-  appliedAt: new Date().toISOString(),
+  appliedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
 });
 
 /**
@@ -31,7 +34,7 @@ export const mapPromotionToSnapshot = (
 export const calculatePromotionChecksum = (
   snapshot: Record<string, unknown>,
 ): string => {
-  const data = JSON.stringify(snapshot);
+  const data = safeJsonStringify(snapshot) ?? '';
 
   return createHash('sha256').update(data).digest('hex');
 };
