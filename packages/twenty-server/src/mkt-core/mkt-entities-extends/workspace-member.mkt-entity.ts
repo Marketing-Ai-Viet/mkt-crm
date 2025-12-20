@@ -210,6 +210,19 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktContracts: Relation<MktContractWorkspaceEntity[]>;
 
   @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdMktContracts,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Created Contracts`,
+    description: msg`Contracts created by this workspace member`,
+    icon: 'IconFilePlus',
+    inverseSideTarget: () => MktContractWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  createdMktContracts: Relation<MktContractWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOrders,
     type: RelationType.ONE_TO_MANY,
     label: msg`Account Owner For Orders`,
@@ -220,6 +233,19 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktOrders: Relation<MktOrderWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdMktOrders,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Created Orders`,
+    description: msg`Orders created by this workspace member`,
+    icon: 'IconShoppingCartPlus',
+    inverseSideTarget: () => MktOrderWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  createdMktOrders: Relation<MktOrderWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOrderItems,

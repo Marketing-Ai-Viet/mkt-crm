@@ -7,11 +7,7 @@ export const MKT_CONTRACT_DATA_SEED_COLUMNS = [
   'startDate',
   'endDate',
   'status',
-
   'position',
-  'createdBySource',
-  'createdByWorkspaceMemberId',
-  'createdByName',
 ];
 
 export const MKT_CONTRACT_DATA_SEEDS_IDS = {
@@ -33,7 +29,7 @@ export const MKT_CONTRACT_DATA_SEEDS_IDS = {
 };
 
 // prettier-ignore
-export const MKT_CONTRACT_DATA_SEEDS =[
+export const MKT_CONTRACT_DATA_SEEDS = [
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_1,
     name: 'Software License Agreement - Microsoft Office 365',
@@ -42,9 +38,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-01-14',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 1,
-    createdBySource: 'MANUAL',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Sarah Johnson',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_2,
@@ -54,9 +47,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2027-02-28',
     status: MKT_CONTRACT_STATUS.EXPIRED,
     position: 2,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Michael Chen',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_3,
@@ -66,9 +56,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-02-09',
     status: MKT_CONTRACT_STATUS.INACTIVE,
     position: 3,
-    createdBySource: 'IMPORT',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Emily Rodriguez',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_4,
@@ -78,9 +65,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2024-05-31',
     status: MKT_CONTRACT_STATUS.REVOKED,
     position: 4,
-    createdBySource: 'MANUAL',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'David Kim',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_5,
@@ -90,9 +74,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2024-12-31',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 5,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Lisa Wang',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_6,
@@ -102,9 +83,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2026-09-14',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 6,
-    createdBySource: 'MANUAL',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Robert Taylor',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_7,
@@ -114,9 +92,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2024-11-30',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 7,
-    createdBySource: 'IMPORT',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jennifer Lee',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_8,
@@ -126,9 +101,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-03-31',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 8,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Alex Morgan',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_9,
@@ -138,9 +110,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-02-14',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 9,
-    createdBySource: 'MANUAL',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Thomas Brown',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_10,
@@ -150,9 +119,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2024-10-31',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 10,
-    createdBySource: 'IMPORT',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Maria Garcia',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_11,
@@ -162,9 +128,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-01-07',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 11,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'James Wilson',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_12,
@@ -174,9 +137,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-03-19',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 12,
-    createdBySource: 'MANUAL',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Sophie Davis',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_13,
@@ -186,9 +146,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2024-07-31',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 13,
-    createdBySource: 'IMPORT',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Daniel Martinez',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_14,
@@ -198,9 +155,6 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-04-30',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 14,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Rachel Thompson',
   },
   {
     id: MKT_CONTRACT_DATA_SEEDS_IDS.ID_15,
@@ -210,8 +164,5 @@ export const MKT_CONTRACT_DATA_SEEDS =[
     endDate: '2025-06-14',
     status: MKT_CONTRACT_STATUS.ACTIVE,
     position: 15,
-    createdBySource: 'MANUAL',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Kevin Anderson',
   },
 ];

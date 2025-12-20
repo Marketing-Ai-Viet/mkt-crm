@@ -1,6 +1,3 @@
-// REMOVED: Product module has been deleted
-// import { MKT_PRODUCT_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/product-seeder/mkt-product-data-seeds.constants';
-// import { MKT_VARIANT_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/product-seeder/mkt-variant-data-seeds.constants';
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/constants/mkt-order-data-seeds.constants';
 import {
   MktLicenseSnapshot,
@@ -35,10 +32,6 @@ type MktOrderItemDataSeed = {
   externalMktLicenseId: string | null;
   externalMktLicenseKey: string | null;
   licenseSnapshot: MktLicenseSnapshot | null;
-  // Audit fields
-  createdBySource: string;
-  createdByWorkspaceMemberId: string | null;
-  createdByName: string;
 };
 
 // prettier-ignore
@@ -66,9 +59,6 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] = 
   'externalMktLicenseId',
   'externalMktLicenseKey',
   'licenseSnapshot',
-  'createdBySource',
-  'createdByWorkspaceMemberId',
-  'createdByName',
 ];
 
 //prettier-ignore
@@ -129,9 +119,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_2,
@@ -147,9 +134,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
 
   // Order 2 - MKT Viral Package
@@ -167,9 +151,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_4,
@@ -185,9 +166,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
 
   // Order 3 - MKT UID Package
@@ -205,9 +183,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Mike Johnson',
   },
 
   // Order 4 - MKT Insta Package
@@ -225,9 +200,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_7,
@@ -243,9 +215,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
 
   // Order 5 - MKT Tube Package
@@ -263,9 +232,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_9,
@@ -281,9 +247,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
 
   // Order 6 - MKT Post Package
@@ -301,9 +264,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Mike Johnson',
   },
 
   // Order 7 - MKT Zalo Package
@@ -321,9 +281,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
 
   // Order 8 - MKT Group Package
@@ -341,9 +298,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_13,
@@ -359,9 +313,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
 
   // Order 9 - MKT Twitter Package
@@ -379,9 +330,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Mike Johnson',
   },
 
   // Order 10 - MKT Page Package
@@ -399,9 +347,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
 
   // Order 11 - MKT Maps Package
@@ -419,9 +364,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Jane Smith',
   },
 
   // Order 12 - MKT Maps Forever Package
@@ -439,9 +381,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'Mike Johnson',
   },
 
   // Order 13 - Mixed Package (UID + Post)
@@ -459,9 +398,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_19,
@@ -477,9 +413,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
 
   // Order 14 - Premium Package (Care Forever + Viral Forever)
@@ -497,8 +430,5 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13, // Reusing ID_13 for premium package
     ...DEFAULT_EXTERNAL_FIELDS,
-    createdBySource: 'API',
-    createdByWorkspaceMemberId: null,
-    createdByName: 'John Doe',
   },
 ];

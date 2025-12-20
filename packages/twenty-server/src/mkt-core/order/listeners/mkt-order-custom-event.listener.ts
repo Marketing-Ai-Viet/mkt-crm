@@ -147,8 +147,7 @@ export class MktOrderCustomEventListener {
       note: orderHistoryData.note ?? '',
     });
 
-    orderHistory.createdBy = updatedOrder.createdBy;
-
+    // TODO: Update OrderHistory entity to use relation instead of ActorMetadata for createdBy
     await orderHistoryRepo.save(orderHistory);
 
     this.logger.log(

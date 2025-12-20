@@ -6,7 +6,6 @@ import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfa
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
-import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
@@ -304,13 +303,12 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconUserCircle',
     inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
     inverseSideFieldKey: 'accountOwnerForMktOrders',
-    onDelete: RelationOnDeleteAction.SET_NULL,
+    onDelete: RelationOnDeleteAction.CASCADE,
   })
-  @WorkspaceIsNullable()
-  accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
+  accountOwner: Relation<WorkspaceMemberWorkspaceEntity>;
 
   @WorkspaceJoinColumn('accountOwner')
-  accountOwnerId: string | null;
+  accountOwnerId: string;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.timelineActivities,
@@ -343,14 +341,21 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceFieldIndex({ indexType: IndexType.GIN })
   searchVector: string;
 
-  @WorkspaceField({
+  @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.createdBy,
-    type: FieldMetadataType.ACTOR,
-    label: msg`Created by`,
-    icon: 'IconCreativeCommonsSa',
-    description: msg`The creator of the record`,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Created By`,
+    description: msg`The workspace member who created this order`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'createdMktOrders',
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  createdBy: ActorMetadata;
+  @WorkspaceIsNullable()
+  createdBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('createdBy')
+  createdById: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktCustomer,

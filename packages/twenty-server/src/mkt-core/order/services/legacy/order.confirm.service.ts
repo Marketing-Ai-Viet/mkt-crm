@@ -335,7 +335,6 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
-      createdBy: order?.createdBy,
       discount: calculatedValues.discount || 0,
     };
 
@@ -424,7 +423,6 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
-      createdBy: createdOrder?.createdBy,
     };
 
     await this.mktPaymentService.createPaymentFromOrder(

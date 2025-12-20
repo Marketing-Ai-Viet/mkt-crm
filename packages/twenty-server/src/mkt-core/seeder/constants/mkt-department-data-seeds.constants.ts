@@ -6,11 +6,6 @@ import {
   TEAM,
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
-export const MKT_DEPARTMENT_CODE = {
-  ...DEPARTMENT,
-  ...TEAM,
-};
-
 export const MKT_DEPARTMENT_DATA_SEED_COLUMNS = [
   'id',
   'departmentCode',

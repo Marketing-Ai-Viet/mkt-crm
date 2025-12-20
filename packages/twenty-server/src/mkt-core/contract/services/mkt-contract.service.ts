@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MKT_CONTRACT_STATUS } from 'src/mkt-core/order/constants/mkt-contract.constant';
@@ -124,12 +123,8 @@ export class MktContractService {
         customerId: mktCustomerId,
       });
 
-      // Set the createdBy field
-      contract.createdBy = order.createdBy || {
-        source: FieldActorSource.SYSTEM,
-        workspaceMemberId: null,
-        name: 'System',
-      };
+      // Set the createdById field (reference to workspace member who created the order)
+      contract.createdById = order.createdById;
 
       // Save the contract
       const savedContract = await contractRepository.save(contract);

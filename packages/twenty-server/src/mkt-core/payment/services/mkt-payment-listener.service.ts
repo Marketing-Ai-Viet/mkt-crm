@@ -102,7 +102,7 @@ export class MktPaymentListenerService {
       mktPaymentId: payment.id,
     });
 
-    paymentHistory.createdBy = order.createdBy;
+    // TODO: Update PaymentHistory entity to use relation instead of ActorMetadata for createdBy
     await paymentHistoryRepo.save(paymentHistory);
 
     this.logger.log(`Created payment history entry for order ${order.id}.`);
