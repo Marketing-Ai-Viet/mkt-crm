@@ -380,3 +380,22 @@ export const MKT_ORDER_ITEM_SERVICE_LOG_MESSAGES = {
   RECALCULATE_ALL_PARTIAL: (orderId: string, success: number, failed: number) =>
     `Recalculated ${success} items, ${failed} failed for order: ${orderId}`,
 } as const;
+
+export const LICENSE_LIFECYCLE_MESSAGES = {
+  ACTIVATE_START: (orderId: string) =>
+    `Starting license activation for order: ${orderId}`,
+  ACTIVATE_SUCCESS: (orderId: string, count: number) =>
+    `Successfully activated ${count} licenses for order: ${orderId}`,
+  ACTIVATE_FAILED: (orderId: string) =>
+    `Failed to activate licenses for order: ${orderId}`,
+  REVOKE_START: (orderId: string) =>
+    `Starting license revocation for order: ${orderId}`,
+  REVOKE_SUCCESS: (orderId: string, count: number) =>
+    `Successfully revoked ${count} licenses for order: ${orderId}`,
+  REVOKE_FAILED: (orderId: string) =>
+    `Failed to revoke licenses for order: ${orderId}`,
+  NO_LICENSES: (orderId: string) =>
+    `No external licenses found for order: ${orderId}`,
+  SKIP_EVENT: (eventType: string) =>
+    `Skipping license lifecycle for event type: ${eventType}`,
+};

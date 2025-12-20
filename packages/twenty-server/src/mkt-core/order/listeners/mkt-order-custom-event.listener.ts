@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
+  MktCustomEventName,
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
@@ -16,31 +16,10 @@ import {
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { safeJsonStringify } from 'src/mkt-core/utils';
-
-export interface MktOrderCustomEventData {
-  eventType?: CustomEventName;
-  orderId?: string;
-  workspaceId: string;
-  orderData: {
-    id: string;
-    status: string;
-    note?: string;
-    licenseHistory?: {
-      action: string;
-      note?: string;
-    };
-    trialLicense?: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-  timestamp: string;
-}
-
-export interface MktOrderCustomEventPayload {
-  name: CustomEventName;
-  workspaceId: string;
-  events: MktOrderCustomEventData[];
-}
+import {
+  MktOrderCustomEventData,
+  MktOrderCustomEventPayload,
+} from 'src/mkt-core/order/types';
 
 @Injectable()
 export class MktOrderCustomEventListener {
@@ -164,7 +143,7 @@ export class MktOrderCustomEventListener {
   }
 
   private async makeOrderHistoryData(
-    eventType?: CustomEventName,
+    eventType?: MktCustomEventName,
     updatedOrder?: MktOrderWorkspaceEntity,
   ) {
     let name = 'Cập nhật trạng thái';

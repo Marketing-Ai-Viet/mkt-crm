@@ -16,24 +16,11 @@ import {
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
 import { OrderCalculationService } from 'src/mkt-core/order/services/core';
 import {
+  CreateOrderItemsStepOutput,
   CreateOrderWithItemsInput,
   ExternalMktProductInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreateOrderItemsStepOutput = {
-  orderItems: MktOrderItemWorkspaceEntity[];
-  totals: {
-    subtotal: number;
-    tax: number;
-    discount: number;
-    totalAmount: number;
-  };
-};
 
 /**
  * CreateOrderItemsStep - Step 2: Tạo order items từ external products

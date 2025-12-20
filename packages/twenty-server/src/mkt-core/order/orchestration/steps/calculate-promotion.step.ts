@@ -3,33 +3,20 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {
-  PromotionSnapshot,
-  OrderItemForPromotion,
-} from 'src/mkt-core/mkt-promotion/types';
+import { OrderItemForPromotion } from 'src/mkt-core/mkt-promotion/types';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import { OrderPromotionIntegrationService } from 'src/mkt-core/order/services/integration/order-promotion.integration';
 import {
-  OrderPromotionIntegrationService,
+  CalculatePromotionStepOutput,
+  CreateOrderWithItemsInput,
   OrderDiscountContext,
   OrderPromotionResult,
-} from 'src/mkt-core/order/services/integration/order-promotion.integration';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CalculatePromotionStepOutput = {
-  promotionResult: OrderPromotionResult;
-  appliedPromotions: PromotionSnapshot[];
-  totalDiscount: number;
-  finalAmount: number;
-};
+} from 'src/mkt-core/order/types';
 
 // ============================================
 // STEP CONSTANTS

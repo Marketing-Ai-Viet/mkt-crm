@@ -8,20 +8,12 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import { OrderPromotionIntegrationService } from 'src/mkt-core/order/services/integration/order-promotion.integration';
 import {
-  OrderPromotionIntegrationService,
+  CreateOrderWithItemsInput,
   PromotionUsageInput,
-} from 'src/mkt-core/order/services/integration/order-promotion.integration';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type RecordPromotionUsageStepOutput = {
-  recordedCount: number;
-  errors: string[];
-};
+  RecordPromotionUsageStepOutput,
+} from 'src/mkt-core/order/types';
 
 // ============================================
 // STEP CONSTANTS

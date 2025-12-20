@@ -14,20 +14,14 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
+import {
+  CreateOrderWithItemsInput,
+  FinalizeOrderStepOutput,
+} from 'src/mkt-core/order/types';
 import {
   DATE_TIME_FORMATS,
   DateTimeUtils,
 } from 'src/mkt-core/utils/date-time.utils';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type FinalizeOrderStepOutput = {
-  orderStatus: ORDER_STATUS;
-  contractId?: string;
-};
 
 /**
  * FinalizeOrderStep - Step 5: Finalize order và tạo contract nếu cần
@@ -266,7 +260,7 @@ export class FinalizeOrderStep extends SagaStep<
       return item.snapshotProductName ?? item.name ?? 'Sản phẩm';
     });
 
-    let orderName = '';
+    let orderName: string | undefined = '';
 
     if (productNames.length === 1) {
       orderName = productNames[0];

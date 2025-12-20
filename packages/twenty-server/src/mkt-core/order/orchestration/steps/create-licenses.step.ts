@@ -11,20 +11,11 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
+import {
+  CreateLicensesStepOutput,
+  CreateOrderWithItemsInput,
+} from 'src/mkt-core/order/types';
 import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreateLicensesStepOutput = {
-  licenses: Array<{
-    id: string;
-    licenseKey: string;
-    orderItemId: string;
-  }>;
-};
 
 // ============================================
 // DEFAULT VALUES

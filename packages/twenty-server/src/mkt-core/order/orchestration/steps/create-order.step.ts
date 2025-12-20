@@ -13,17 +13,11 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
+import {
+  CreateOrderStepOutput,
+  CreateOrderWithItemsInput,
+} from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreateOrderStepOutput = {
-  order: MktOrderWorkspaceEntity;
-  orderCode: string;
-};
 
 // ============================================
 // ORDER CODE CONSTANTS

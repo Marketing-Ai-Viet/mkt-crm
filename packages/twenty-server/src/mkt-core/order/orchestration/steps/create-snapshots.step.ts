@@ -13,27 +13,13 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import { OrderProductIntegrationService } from 'src/mkt-core/order/services/integration/order-product.integration';
 import {
-  OrderProductIntegrationService,
+  CreateOrderWithItemsInput,
+  CreateSnapshotsStepOutput,
   ProductWithSnapshot,
-} from 'src/mkt-core/order/services/integration/order-product.integration';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
+} from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreateSnapshotsStepOutput = {
-  snapshots: ProductWithSnapshot[];
-  snapshotsMap: Map<
-    string,
-    {
-      productSnapshot: MktProductSnapshot;
-      packageSnapshot: MktPackageSnapshot | null;
-    }
-  >;
-};
 
 // ============================================
 // STEP CONSTANTS

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
@@ -9,7 +9,6 @@ import {
   VALID_ACTIONS_BY_STATUS,
   VALID_CREATE_ACTIONS,
 } from 'src/mkt-core/order/constants';
-import { MKT_ORDER_VALIDATION_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   CreateOrderWithItemsInput,
@@ -25,14 +24,10 @@ import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt
  * Service để validate order data trước khi xử lý
  * Tách biệt với business logic
  *
- * Supports validation for:
- * - Internal variants (CRM products)
- * - External MKT Server products via OAuth2 API
+ * Supports validation for external MKT Server products via OAuth2 API
  */
 @Injectable()
 export class OrderValidationService {
-  private readonly logger = new Logger(MKT_ORDER_VALIDATION_LOG_CONTEXT);
-
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktProductProxy: MktProductProxyService,
@@ -114,46 +109,26 @@ export class OrderValidationService {
   }
 
   /**
-   * Validate order items (variants and external products)
+   * Validate order items (external MKT products only)
    */
   private async validateOrderItems(
-    workspaceId: string,
+    _workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationError[]> {
-    const hasVariants = input.variants && input.variants.length > 0;
     const hasExternalProducts =
       input.externalProducts && input.externalProducts.length > 0;
 
-    if (!hasVariants && !hasExternalProducts) {
+    if (!hasExternalProducts || !input.externalProducts) {
       return [
         {
-          field: 'items',
-          message: 'At least one variant or external product is required',
+          field: 'externalProducts',
+          message: 'At least one external product is required',
           code: ORDER_VALIDATION_ERROR_CODES.ITEMS_REQUIRED,
         },
       ];
     }
 
-    const validationPromises: Promise<ValidationError[]>[] = [];
-
-    if (hasVariants && input.variants) {
-      validationPromises.push(
-        this.validateVariants(
-          workspaceId,
-          input.variants.map((v) => v.variantId),
-        ),
-      );
-    }
-
-    if (hasExternalProducts && input.externalProducts) {
-      validationPromises.push(
-        this.validateExternalProducts(input.externalProducts),
-      );
-    }
-
-    const results = await Promise.all(validationPromises);
-
-    return results.flat();
+    return this.validateExternalProducts(input.externalProducts);
   }
 
   /**
@@ -323,30 +298,6 @@ export class OrderValidationService {
     });
 
     return !!customer;
-  }
-
-  /**
-   * Validate danh sách variants (internal CRM products)
-   * TODO: Implement variant validation using new product integration module
-   * The old MktVariantWorkspaceEntity has been removed with the product module
-   */
-  private async validateVariants(
-    _workspaceId: string,
-    variantIds: string[],
-  ): Promise<ValidationError[]> {
-    const errors: ValidationError[] = [];
-
-    this.logger.warn(
-      'Variant validation is not fully implemented - product module removed',
-    );
-
-    // TODO: Replace with mkt-product-integration validation or new product module
-    // For now, skip validation to allow compilation
-    for (const variantId of variantIds) {
-      this.logger.debug(`Skipping validation for variant ID: ${variantId}`);
-    }
-
-    return errors;
   }
 
   /**

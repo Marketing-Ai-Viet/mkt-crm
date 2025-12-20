@@ -8,50 +8,18 @@ import {
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants';
 import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
-
 import {
+  LicenseOperationResult,
   MktOrderCustomEventData,
   MktOrderCustomEventPayload,
-} from './mkt-order-custom-event.listener';
+} from 'src/mkt-core/order/types';
+import { LICENSE_LIFECYCLE_MESSAGES } from 'src/mkt-core/order/messages';
 
 // ============================================
 // CONSTANTS
 // ============================================
 
 const LICENSE_LIFECYCLE_LOG_CONTEXT = 'LicenseLifecycleListener';
-
-const LICENSE_LIFECYCLE_MESSAGES = {
-  ACTIVATE_START: (orderId: string) =>
-    `Starting license activation for order: ${orderId}`,
-  ACTIVATE_SUCCESS: (orderId: string, count: number) =>
-    `Successfully activated ${count} licenses for order: ${orderId}`,
-  ACTIVATE_FAILED: (orderId: string) =>
-    `Failed to activate licenses for order: ${orderId}`,
-  REVOKE_START: (orderId: string) =>
-    `Starting license revocation for order: ${orderId}`,
-  REVOKE_SUCCESS: (orderId: string, count: number) =>
-    `Successfully revoked ${count} licenses for order: ${orderId}`,
-  REVOKE_FAILED: (orderId: string) =>
-    `Failed to revoke licenses for order: ${orderId}`,
-  NO_LICENSES: (orderId: string) =>
-    `No external licenses found for order: ${orderId}`,
-  SKIP_EVENT: (eventType: string) =>
-    `Skipping license lifecycle for event type: ${eventType}`,
-};
-
-// ============================================
-// TYPES
-// ============================================
-
-type LicenseOperationResult = {
-  success: boolean;
-  licenseId: string;
-  error?: string;
-};
-
-// ============================================
-// LISTENER
-// ============================================
 
 /**
  * LicenseLifecycleListener - Handle license lifecycle based on order events
