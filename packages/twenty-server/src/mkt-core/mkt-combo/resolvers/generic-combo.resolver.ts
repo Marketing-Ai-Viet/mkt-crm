@@ -62,11 +62,11 @@ export class GenericComboResolver {
    * Lấy combo theo ID
    */
   @Query(() => GenericComboOutput, {
-    name: 'mktGenericCombo',
+    name: 'mktGenericComboDetail',
     nullable: true,
     description: GENERIC_COMBO_GRAPHQL_DESCRIPTIONS.COMBO_QUERY,
   })
-  async mktGenericCombo(
+  async mktGenericComboDetail(
     @AuthWorkspace() workspace: Workspace,
     @Args('comboId') comboId: string,
   ): Promise<GenericComboOutput | null> {
@@ -110,10 +110,10 @@ export class GenericComboResolver {
    * Lấy danh sách combos có phân trang
    */
   @Query(() => PaginatedGenericCombosOutput, {
-    name: 'mktGenericCombos',
+    name: 'mktGenericCombosList',
     description: GENERIC_COMBO_GRAPHQL_DESCRIPTIONS.COMBOS_QUERY,
   })
-  async mktGenericCombos(
+  async mktGenericCombosList(
     @AuthWorkspace() workspace: Workspace,
     @Args('input', { nullable: true }) input?: GetGenericCombosInput,
   ): Promise<PaginatedGenericCombosOutput> {

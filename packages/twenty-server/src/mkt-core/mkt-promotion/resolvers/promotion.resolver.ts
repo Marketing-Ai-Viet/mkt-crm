@@ -62,11 +62,11 @@ export class PromotionResolver {
    * Lấy promotion theo ID
    */
   @Query(() => PromotionOutput, {
-    name: 'mktPromotion',
+    name: 'mktPromotionDetail',
     nullable: true,
     description: PROMOTION_GRAPHQL_DESCRIPTIONS.PROMOTION_QUERY,
   })
-  async mktPromotion(
+  async mktPromotionDetail(
     @AuthWorkspace() workspace: Workspace,
     @Args('id') id: string,
   ): Promise<PromotionOutput | null> {
@@ -95,10 +95,10 @@ export class PromotionResolver {
    * Lấy danh sách promotions có phân trang
    */
   @Query(() => PaginatedPromotionsOutput, {
-    name: 'mktPromotions',
+    name: 'mktPromotionsList',
     description: PROMOTION_GRAPHQL_DESCRIPTIONS.PROMOTION_LIST_QUERY,
   })
-  async mktPromotions(
+  async mktPromotionsList(
     @AuthWorkspace() workspace: Workspace,
     @Args('input', { nullable: true }) input?: GetPromotionsInput,
   ): Promise<PaginatedPromotionsOutput> {

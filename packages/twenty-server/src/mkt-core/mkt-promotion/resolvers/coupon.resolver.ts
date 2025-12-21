@@ -53,11 +53,11 @@ export class CouponResolver {
    * Lấy coupon theo code
    */
   @Query(() => CouponOutput, {
-    name: 'mktCoupon',
+    name: 'mktCouponByCode',
     nullable: true,
     description: 'Get coupon by code',
   })
-  async mktCoupon(
+  async mktCouponByCode(
     @AuthWorkspace() workspace: Workspace,
     @Args('code') code: string,
   ): Promise<CouponOutput | null> {
