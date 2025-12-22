@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { UserContext } from 'src/mkt-core/oauth2-client/types';
-import { MKT_LICENSE_LOG_CONTEXT } from 'src/mkt-core/mkt-license-integration/constants';
 import {
   MktLicenseResponse,
   MktPaginatedLicenseResponse,
@@ -36,8 +35,6 @@ import { MktLicenseRepository } from 'src/mkt-core/mkt-license-integration/repos
  */
 @Injectable()
 export class MktLicenseProxyService {
-  private readonly logger = new Logger(MKT_LICENSE_LOG_CONTEXT);
-
   constructor(private readonly licenseRepository: MktLicenseRepository) {}
 
   // ==================== READ OPERATIONS ====================

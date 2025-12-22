@@ -1,17 +1,22 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
 import {
+  ConfirmOrderSagaContext,
+  createConfirmOrderContext,
+} from 'src/mkt-core/order/orchestration/context';
+import {
+  ValidateOrderStep,
+  ValidateTransitionStep,
+  UpdateStatusStep,
+} from 'src/mkt-core/order/orchestration/steps/confirm-order';
+import {
   ConfirmOrderInput,
   ConfirmOrderResponse,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import {
-  ConfirmOrderSagaContext,
-  createConfirmOrderContext,
-} from 'src/mkt-core/order/orchestration/context';
 
 import { SagaContext } from './order-saga.interface';
 
@@ -40,18 +45,45 @@ import { BaseSaga } from './base/base-saga';
  * - And other status transitions
  */
 @Injectable()
-export class ConfirmOrderSaga extends BaseSaga<
-  ConfirmOrderInput,
-  ConfirmOrderResponse
-> {
+export class ConfirmOrderSaga
+  extends BaseSaga<ConfirmOrderInput, ConfirmOrderResponse>
+  implements OnModuleInit
+{
   protected readonly logger = new Logger(ConfirmOrderSaga.name);
   protected readonly sagaName = 'ConfirmOrderSaga';
 
   constructor(
     twentyORMGlobalManager: TwentyORMGlobalManager,
     eventEmitter: EventEmitter2,
+    // Inject steps directly
+    private readonly validateOrderStep: ValidateOrderStep,
+    private readonly validateTransitionStep: ValidateTransitionStep,
+    private readonly updateStatusStep: UpdateStatusStep,
   ) {
     super(twentyORMGlobalManager, eventEmitter);
+    // Register steps immediately in constructor
+    // (onModuleInit may not be called for lazy-loaded providers)
+    this.initializeSteps();
+  }
+
+  /**
+   * Initialize and register steps
+   */
+  private initializeSteps(): void {
+    this.registerSteps([
+      this.validateOrderStep,
+      this.validateTransitionStep,
+      this.updateStatusStep,
+    ]);
+  }
+
+  /**
+   * OnModuleInit - fallback if constructor initialization didn't run
+   */
+  onModuleInit(): void {
+    if (this.steps.length === 0) {
+      this.initializeSteps();
+    }
   }
 
   /**

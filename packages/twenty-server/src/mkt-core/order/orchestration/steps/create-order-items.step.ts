@@ -3,17 +3,19 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_DEFAULT_LANGUAGE } from 'src/mkt-core/mkt-product-integration/constants';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import {
+  MktOrderItemRepository,
+  MktOrderRepository,
+} from 'src/mkt-core/order/repositories';
 import { OrderCalculationService } from 'src/mkt-core/order/services/core';
 import {
   CreateOrderItemsStepOutput,
@@ -41,12 +43,13 @@ export class CreateOrderItemsStep extends SagaStep<
 > {
   readonly name = 'create_order_items';
   readonly description =
-    'Create order items from variants and calculate totals';
+    'Create order items from external products and calculate totals';
 
   private readonly logger = new Logger(CreateOrderItemsStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly orderItemRepository: MktOrderItemRepository,
     private readonly calculationService: OrderCalculationService,
     private readonly recordPositionService: RecordPositionService,
     private readonly mktProductProxy: MktProductProxyService,
@@ -103,7 +106,7 @@ export class CreateOrderItemsStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       orderItemIds: string[];
@@ -118,8 +121,9 @@ export class CreateOrderItemsStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.orderItemIds.length} order items`);
 
-      await queryRunner.manager.delete(
-        MktOrderItemWorkspaceEntity,
+      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
+      await this.orderItemRepository.hardDeleteMany(
+        context.workspaceId,
         data.orderItemIds,
       );
 
@@ -140,15 +144,8 @@ export class CreateOrderItemsStep extends SagaStep<
   private async createOrderItemsFromExternalProducts(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateOrderItemsStepOutput>> {
-    const orderItemRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderItemWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     const orderLanguage = (input.orderLanguage ??
       MKT_DEFAULT_LANGUAGE) as MktSupportedLanguage;
 
@@ -166,12 +163,11 @@ export class CreateOrderItemsStep extends SagaStep<
       };
     }
 
-    // Save order items
-    const orderItems = orderItemsData.map((data) =>
-      orderItemRepository.create(data),
+    // Save order items using repository
+    const savedOrderItems = await this.orderItemRepository.createMany(
+      context.workspaceId,
+      orderItemsData,
     );
-
-    const savedOrderItems = await queryRunner.manager.save(orderItems);
 
     this.logger.log(`Created ${savedOrderItems.length} order items`);
 
@@ -193,7 +189,7 @@ export class CreateOrderItemsStep extends SagaStep<
     );
 
     // Update order with totals
-    await this.updateOrderTotals(context, totals, queryRunner);
+    await this.updateOrderTotals(context, totals);
 
     // Store rollback data
     context.orderItemIds = savedOrderItems.map((item) => item.id);
@@ -318,7 +314,7 @@ export class CreateOrderItemsStep extends SagaStep<
   private async cloneOrderItemsFromTrial(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateOrderItemsStepOutput>> {
     if (!input.trialOrderId) {
       return {
@@ -328,17 +324,11 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Get trial order with items
-    const orderRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const trialOrder = await orderRepository.findOne({
-      where: { id: input.trialOrderId },
-      relations: ['orderItems'],
-    });
+    const trialOrder = await this.orderRepository.findById(
+      context.workspaceId,
+      input.trialOrderId,
+      { relations: { orderItems: true } },
+    );
 
     if (!trialOrder) {
       return {
@@ -355,13 +345,6 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Clone order items
-    const orderItemRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderItemWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     const clonedItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
 
     for (const item of trialOrder.orderItems) {
@@ -402,11 +385,11 @@ export class CreateOrderItemsStep extends SagaStep<
       });
     }
 
-    const clonedItems = clonedItemsData.map((data) =>
-      orderItemRepository.create(data),
+    // Save order items using repository
+    const savedOrderItems = await this.orderItemRepository.createMany(
+      context.workspaceId,
+      clonedItemsData,
     );
-
-    const savedOrderItems = await queryRunner.manager.save(clonedItems);
 
     this.logger.log(
       `Cloned ${savedOrderItems.length} order items from trial order`,
@@ -421,16 +404,17 @@ export class CreateOrderItemsStep extends SagaStep<
     };
 
     // Update new order with totals and trial order reference
-    await this.updateOrderTotals(context, totals, queryRunner);
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: context.orderId },
-      {
-        note: `Converted from trial order: ${input.trialOrderId}`,
-        name: trialOrder.name,
-        mktCustomerId: trialOrder.mktCustomerId,
-      },
-    );
+    await this.updateOrderTotals(context, totals);
+
+    // Update order with trial order reference
+    if (!context.orderId) {
+      throw new Error('Order ID is required');
+    }
+    await this.orderRepository.update(context.workspaceId, context.orderId, {
+      note: `Converted from trial order: ${input.trialOrderId}`,
+      name: trialOrder.name,
+      mktCustomerId: trialOrder.mktCustomerId,
+    });
 
     // Store rollback data
     context.orderItemIds = savedOrderItems.map((item) => item.id);
@@ -459,18 +443,18 @@ export class CreateOrderItemsStep extends SagaStep<
       discount: number;
       totalAmount: number;
     },
-    queryRunner: QueryRunner,
   ): Promise<void> {
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: context.orderId },
-      {
-        subtotal: totals.subtotal,
-        tax: totals.tax,
-        discount: totals.discount,
-        totalAmount: totals.totalAmount,
-      },
-    );
+    if (!context.orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
+    await this.orderRepository.update(context.workspaceId, context.orderId, {
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      discount: totals.discount,
+      totalAmount: totals.totalAmount,
+    });
 
     // Store in context for subsequent steps
     context.metadata.set('totalAmount', totals.totalAmount);

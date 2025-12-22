@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_DEFAULT_LANGUAGE } from 'src/mkt-core/mkt-product-integration/constants';
 import {
   MktProductSnapshot,
@@ -54,7 +53,6 @@ export class CreateSnapshotsStep extends SagaStep<
   private readonly logger = new Logger(CreateSnapshotsStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly productIntegration: OrderProductIntegrationService,
   ) {
     super();

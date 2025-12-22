@@ -36,6 +36,7 @@ export class MktPromotionRepository {
     return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPromotionWorkspaceEntity>(
       workspaceId,
       'mktPromotion',
+      { shouldBypassPermissionChecks: true },
     );
   }
 

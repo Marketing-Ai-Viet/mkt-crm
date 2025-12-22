@@ -2,17 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import {
   CreateOrderStepOutput,
   CreateOrderWithItemsInput,
@@ -47,14 +46,14 @@ export class CreateOrderStep extends SagaStep<
 
   private readonly logger = new Logger(CreateOrderStep.name);
 
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {
+  constructor(private readonly orderRepository: MktOrderRepository) {
     super();
   }
 
   async execute(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateOrderStepOutput>> {
     try {
       this.logger.log(`Creating order for workspace: ${context.workspaceId}`);
@@ -68,34 +67,25 @@ export class CreateOrderStep extends SagaStep<
       // Determine if trial license
       const isTrialLicense = input.action === ORDER_ACTION.TRIAL;
 
-      // Create order entity
-      const repository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const orderData: Partial<MktOrderWorkspaceEntity> = {
-        name: input.name ?? `Đơn hàng ${orderCode}`,
-        orderCode,
-        status: initialStatus,
-        mktCustomerId: input.customerId,
-        currency: input.currency ?? 'VND',
-        note: input.note,
-        requireContract: input.requireContract ?? false,
-        trialLicense: isTrialLicense,
-        // Initialize amounts (will be updated in CreateOrderItemsStep)
-        subtotal: 0,
-        tax: 0,
-        discount: 0,
-        totalAmount: 0,
-      };
-
-      const order = repository.create(orderData);
-
-      // Save using queryRunner for transaction support
-      const savedOrder = await queryRunner.manager.save(order);
+      // Create order using repository
+      const savedOrder = await this.orderRepository.create(
+        context.workspaceId,
+        {
+          name: input.name ?? `Đơn hàng ${orderCode}`,
+          orderCode,
+          status: initialStatus,
+          mktCustomerId: input.customerId,
+          currency: input.currency ?? 'VND',
+          note: input.note,
+          requireContract: input.requireContract ?? false,
+          trialLicense: isTrialLicense,
+          // Initialize amounts (will be updated in CreateOrderItemsStep)
+          subtotal: 0,
+          tax: 0,
+          discount: 0,
+          totalAmount: 0,
+        },
+      );
 
       this.logger.log(
         `Created order: ${savedOrder.id} with code: ${orderCode}`,
@@ -129,7 +119,7 @@ export class CreateOrderStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       orderId: string;
@@ -144,9 +134,8 @@ export class CreateOrderStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting order: ${data.orderId}`);
 
-      await queryRunner.manager.delete(MktOrderWorkspaceEntity, {
-        id: data.orderId,
-      });
+      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
+      await this.orderRepository.hardDelete(context.workspaceId, data.orderId);
 
       this.logger.log(`Order ${data.orderId} deleted successfully`);
     } catch (error) {
@@ -163,12 +152,7 @@ export class CreateOrderStep extends SagaStep<
    * Generate unique order code: MKT + YYYYMMDD + 3-digit number
    */
   private async generateOrderCode(workspaceId: string): Promise<string> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktOrderWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    const repository = await this.orderRepository.getRepository(workspaceId);
 
     const now = DateTimeUtils.now();
     const year = now.year;
@@ -203,9 +187,10 @@ export class CreateOrderStep extends SagaStep<
     const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(ORDER_CODE_NUMBER_LENGTH, '0')}`;
 
     // Double-check uniqueness
-    const existingOrder = await repository.findOne({
-      where: { orderCode },
-    });
+    const existingOrder = await this.orderRepository.findByOrderCode(
+      workspaceId,
+      orderCode,
+    );
 
     if (existingOrder) {
       // If somehow duplicate, add timestamp

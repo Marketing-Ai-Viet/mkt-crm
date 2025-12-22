@@ -8,9 +8,7 @@ import {
   ORDER_METADATA,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
-import { safeJsonStringify } from 'src/mkt-core/utils';
 import {
   DATE_TIME_FORMATS,
   DateTimeUtils,
@@ -250,118 +248,6 @@ export class OrderConfirmService {
 
       return null;
     }
-  }
-
-  async confirmOrder(
-    action: ORDER_ACTION,
-    createdOrder: MktOrderWorkspaceEntity,
-    workspaceId: string,
-    variantsMeta: ORDER_METADATA['variants'] | null,
-    customerMeta: ORDER_METADATA['customer'] | null,
-    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
-    licenseId?: string,
-  ): Promise<callFireBaseType | void> {
-    // const mktCustomerId = customerMeta?.mktCustomerId || null; // Unused
-
-    if (
-      action !== ORDER_ACTION.WAIT &&
-      action !== ORDER_ACTION.TRIAL &&
-      action !== ORDER_ACTION.LICENSE_RENEWING
-    )
-      throw new Error('Action must be WAIT or TRIAL to confirm order renewal');
-
-    if (!Array.isArray(variantsMeta) || variantsMeta.length <= 0)
-      throw new Error('Variants metadata is required');
-    // repositories
-    const orderRepository = await this.getOrderRepo(workspaceId);
-
-    this.logger.log(
-      `Creating order items for order ID: ${createdOrder.id} from variants metadata`,
-    );
-    await this.orderService.createOrderItemsFromVariants(
-      variantsMeta,
-      createdOrder,
-      workspaceId,
-    );
-
-    const order = await orderRepository.findOne({
-      where: { id: createdOrder.id },
-      relations: ['orderItems', 'mktCustomer', 'accountOwner'],
-    });
-
-    this.logger.log(`Fetched order with items: ${safeJsonStringify(order)}`);
-
-    if (order && order.orderItems?.length > 0) {
-      // TODO: Implement license creation using new license module
-      // The old MktLicenseService has been removed with the license module
-      this.logger.warn(
-        'License creation/linking is not implemented - license module removed',
-      );
-
-      if (action === ORDER_ACTION.LICENSE_RENEWING) {
-        if (!licenseId)
-          throw new Error('License ID is required for license renewal');
-        throw new Error(
-          'License module has been removed. License renewal is not available.',
-        );
-      }
-    }
-
-    // 2) Update Order information
-    const generatedOrderCode = await this.generateOrderCode(workspaceId);
-    const generatedOrderName = await this.generateOrderName(order);
-    const calculatedValues: CalculateOrderResult =
-      await this.calculateOrderValues(order);
-
-    const mktContractId = await this.createContractIfRequired(
-      order,
-      workspaceId,
-      customerMeta?.mktCustomerId || null,
-      generatedOrderCode ?? '',
-    );
-
-    const updateOrderInfo = {
-      id: createdOrder.id,
-      mktCustomerId: customerMeta?.mktCustomerId || null,
-      orderCode: generatedOrderCode ?? '',
-      subtotal: calculatedValues.subtotal,
-      tax: calculatedValues.tax,
-      discount: calculatedValues.discount,
-      totalAmount: calculatedValues.totalAmount,
-      name: generatedOrderName ?? '',
-      mktContractId,
-    };
-
-    await this.orderService.updateOrderInformation(
-      createdOrder.id,
-      updateOrderInfo,
-      orderRepository,
-    );
-
-    if (action === ORDER_ACTION.TRIAL) return;
-    const paymentName =
-      generatedOrderCode && generatedOrderName
-        ? `${generatedOrderCode}-${generatedOrderName}`
-        : generatedOrderCode || generatedOrderName || 'Payment';
-
-    const paymentData = {
-      paymentName,
-      totalAmount: calculatedValues.totalAmount || 0,
-      currency: createdOrder?.currency || 'VND',
-      generatedOrderCode,
-      orderId: createdOrder.id,
-      workspaceId,
-      discount: calculatedValues.discount || 0,
-    };
-
-    this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
-
-    this.mktPaymentService.mktRepo.workspaceId = workspaceId;
-
-    return await this.mktPaymentService.createPaymentFromOrder(
-      paymentData,
-      paymentMethodsMeta,
-    );
   }
 
   async trialToPaidOrder(

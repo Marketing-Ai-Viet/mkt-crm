@@ -5,7 +5,6 @@ import { OAuth2HttpService } from 'src/mkt-core/oauth2-client/services/oauth2-ht
 import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import {
   MKT_LICENSE_ENDPOINTS,
-  MKT_LICENSE_LOG_CONTEXT,
   MKT_LICENSE_ERROR_BUILDER,
 } from 'src/mkt-core/mkt-license-integration/constants';
 import { MKT_LICENSE_MESSAGES } from 'src/mkt-core/mkt-license-integration/message';
@@ -39,7 +38,7 @@ import { buildFullUrl } from 'src/mkt-core/utils/url-builder.util';
  */
 @Injectable()
 export class MktLicenseRepository {
-  private readonly logger = new Logger(MKT_LICENSE_LOG_CONTEXT);
+  private readonly logger = new Logger(MktLicenseRepository.name);
   private readonly apiBaseUrl: string;
 
   constructor(

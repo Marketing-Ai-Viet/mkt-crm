@@ -11,7 +11,6 @@ import {
   ORDER_CODE_PREFIX,
   ORDER_METADATA,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
@@ -228,95 +227,6 @@ export class MktOrderCommonConfirmService {
     }
   }
 
-  async confirmOrder(
-    action: ORDER_ACTION,
-    createdOrder: MktOrderWorkspaceEntity,
-    workspaceId: string,
-    variantsMeta: ORDER_METADATA['variants'] | null,
-    customerMeta: ORDER_METADATA['customer'] | null,
-    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
-    licenseId?: string,
-    oldOrderId?: string | null,
-  ): Promise<callFireBaseType | void> {
-    if (
-      action !== ORDER_ACTION.WAIT &&
-      action !== ORDER_ACTION.TRIAL &&
-      action !== ORDER_ACTION.LICENSE_RENEWING
-    )
-      throw new Error('Action must be WAIT or TRIAL to confirm order renewal');
-
-    if (!Array.isArray(variantsMeta) || variantsMeta.length <= 0)
-      throw new Error('Variants metadata is required (common)');
-    // repositories
-    const orderRepository = await this.mktRepo.getOrderRepository();
-
-    this.logger.log(
-      `Creating order items for order ID: ${createdOrder.id} from variants metadata`,
-    );
-    await this.createOrderItemsFromVariants(
-      variantsMeta,
-      createdOrder,
-      workspaceId,
-    );
-
-    const order = await orderRepository.findOne({
-      where: { id: createdOrder.id },
-      relations: ['orderItems'],
-    });
-
-    this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);
-
-    // TODO: Implement license handling with product integration services
-    if (order && order.orderItems?.length > 0) {
-      this.logger.warn(
-        'License handling needs to be reimplemented with product integration services',
-      );
-    }
-
-    // 2) Update Order information
-    const generatedOrderCode = await this.generateOrderCode();
-    const generatedOrderName = await this.generateOrderName(order);
-    const calculatedValues: CalculateOrderResult =
-      await this.calculateOrderValues(order);
-
-    const updateOrderInfo = {
-      id: createdOrder.id,
-      mktCustomerId: customerMeta?.mktCustomerId || null,
-      orderCode: generatedOrderCode ?? '',
-      subtotal: calculatedValues.subtotal,
-      tax: calculatedValues.tax,
-      discount: calculatedValues.discount,
-      totalAmount: calculatedValues.totalAmount,
-      name: generatedOrderName ?? '',
-    };
-
-    await this.updateOrderInformation(
-      createdOrder.id,
-      updateOrderInfo,
-      orderRepository,
-      oldOrderId,
-    );
-
-    if (action === ORDER_ACTION.TRIAL) return;
-    const paymentName =
-      generatedOrderCode && generatedOrderName
-        ? `${generatedOrderCode}-${generatedOrderName}`
-        : generatedOrderCode || generatedOrderName || 'Payment';
-
-    const paymentData = {
-      paymentName,
-      totalAmount: calculatedValues.totalAmount || 0,
-      currency: createdOrder?.currency || 'VND',
-      generatedOrderCode,
-      orderId: createdOrder.id,
-      workspaceId,
-    };
-
-    this.logger.log(`Creating payment for order ID: ${createdOrder.id}`);
-
-    return await this.createPaymentFromOrder(paymentData, paymentMethodsMeta);
-  }
-
   async refundOrder(
     action: ORDER_ACTION,
     licenseId: string,
@@ -393,66 +303,6 @@ export class MktOrderCommonConfirmService {
     this.logger.log(
       `Refund confirmed for order ${orderId}. Details: ${refundDetails || 'No additional details'}`,
     );
-  }
-
-  private async createOrderItemsFromVariants(
-    variantsMeta: ORDER_METADATA['variants'] | null,
-    createdOrder: MktOrderWorkspaceEntity,
-    _workspaceId: string,
-  ) {
-    if (!variantsMeta || variantsMeta.length === 0) return [];
-    const ids = variantsMeta.map((v) => v.mktVariantId).filter(Boolean);
-    const variants = await this.getVariantValueById(ids);
-    const variantById = new Map(variants.map((v) => [v.id, v]));
-    const orderItemRepository = await this.mktRepo.getOrderItemRepository();
-    const itemsFromVariants = await Promise.all(
-      variantsMeta.map(async (v, _index) => {
-        const variant = variantById.get(v.mktVariantId);
-
-        this.changeVariantData.newVariantName = variant?.name || '';
-
-        if (!variant) return [];
-
-        const unitPrice = variant?.price ?? 0;
-        const quantity = v.quantity ?? 1;
-        const totalPrice = unitPrice * quantity;
-
-        return orderItemRepository.create({
-          mktOrderId: createdOrder.id,
-          mktVariantId: variant.id,
-          name: variant.name ?? 'Item',
-          snapshotProductName: variant.name ?? 'Item',
-          unitName: 'unit',
-          unitPrice,
-          quantity,
-          totalPrice,
-          taxPercentage: 0,
-          taxAmount: 0,
-          totalAmountWithTax: totalPrice,
-        } as Partial<MktOrderItemWorkspaceEntity>);
-      }),
-    );
-
-    const toCreate = itemsFromVariants.filter(
-      Boolean,
-    ) as MktOrderItemWorkspaceEntity[];
-
-    if (toCreate.length > 0) {
-      await orderItemRepository.save(toCreate);
-    } else {
-      throw new Error('No order items to create');
-    }
-  }
-
-  async getVariantValueById(
-    _ids: string[],
-  ): Promise<Array<{ id: string; name: string | null; price: number | null }>> {
-    // TODO: Implement variant fetching using product integration services
-    this.logger.warn(
-      'Variant fetching needs to be reimplemented with product integration services',
-    );
-
-    return [];
   }
 
   private async createPaymentFromOrder(

@@ -11,7 +11,6 @@ export type RefundItem = {
 };
 
 export type ORDER_METADATA = {
-  variants?: Array<{ mktVariantId: string; quantity?: number }>;
   paymentMethods?: Array<{
     mktPaymentMethodId: string;
     name?: string;
@@ -25,7 +24,6 @@ export type ORDER_METADATA = {
   note?: string;
   oldOrderId?: string;
   oldLicenseId?: string;
-  oldVariantId?: string;
   refund?: RefundItem[]; // Danh sách các mục hoàn tiền
   licenseHistory?: Record<string, unknown> | null; // Thông tin lịch sử license liên quan đến đơn hàng
   licenseRefundIds?: string[]; // Danh sách ID của các license đã được hoàn tiền

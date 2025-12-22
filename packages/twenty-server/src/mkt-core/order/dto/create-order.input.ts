@@ -24,22 +24,6 @@ registerEnumType(ORDER_ACTION, {
 });
 
 /**
- * Input for internal CRM product variant
- */
-@InputType()
-export class OrderVariantInputDto {
-  @Field(() => String)
-  @IsUUID()
-  variantId: string;
-
-  @Field(() => Int, { nullable: true, defaultValue: 1 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  quantity?: number;
-}
-
-/**
  * Input for external MKT Server product
  */
 @InputType()
@@ -92,11 +76,7 @@ export class OrderPaymentMethodInputDto {
 /**
  * Input DTO for creating order with items
  *
- * Supports 2 types of products:
- * - variants: Internal CRM products from mktVariant table
- * - externalProducts: Products from MKT Server via OAuth2 API
- *
- * At least one of variants or externalProducts must be provided.
+ * Uses external products from MKT Server via OAuth2 API
  */
 @InputType()
 export class CreateOrderWithItemsInputDto {
@@ -129,27 +109,13 @@ export class CreateOrderWithItemsInputDto {
   @IsNumber()
   discountPercent?: number;
 
-  @Field(() => [OrderVariantInputDto], {
-    nullable: true,
-    description:
-      'List of internal CRM variants (optional if using externalProducts)',
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => OrderVariantInputDto)
-  variants?: OrderVariantInputDto[];
-
   @Field(() => [ExternalMktProductInputDto], {
-    nullable: true,
-    description:
-      'List of external MKT Server products (optional if using variants)',
+    description: 'List of external MKT Server products (required)',
   })
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ExternalMktProductInputDto)
-  externalProducts?: ExternalMktProductInputDto[];
+  externalProducts: ExternalMktProductInputDto[];
 
   @Field(() => String, {
     nullable: true,

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import {
   ORDER_ACTION,
@@ -14,6 +13,7 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import {
   CreateOrderWithItemsInput,
   FinalizeOrderStepOutput,
@@ -48,7 +48,7 @@ export class FinalizeOrderStep extends SagaStep<
   private readonly logger = new Logger(FinalizeOrderStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderRepository: MktOrderRepository,
     private readonly mktContractService: MktContractService,
   ) {
     super();
@@ -57,7 +57,7 @@ export class FinalizeOrderStep extends SagaStep<
   async execute(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<FinalizeOrderStepOutput>> {
     try {
       if (!context.orderId) {
@@ -70,17 +70,11 @@ export class FinalizeOrderStep extends SagaStep<
       this.logger.log(`Finalizing order: ${context.orderId}`);
 
       // Get order for contract creation
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await orderRepository.findOne({
-        where: { id: context.orderId },
-        relations: ['orderItems'],
-      });
+      const order = await this.orderRepository.findById(
+        context.workspaceId,
+        context.orderId,
+        { relations: { orderItems: true } },
+      );
 
       if (!order) {
         return {
@@ -98,20 +92,17 @@ export class FinalizeOrderStep extends SagaStep<
 
       // Update trial order status if TRIAL_TO_PAID
       if (input.action === ORDER_ACTION.TRIAL_TO_PAID && input.trialOrderId) {
-        await this.completeTrialOrder(context, input.trialOrderId, queryRunner);
+        await this.completeTrialOrder(context, input.trialOrderId);
       }
 
       // Update order with contract and generate name if needed
       const orderName = this.generateOrderName(order);
 
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: context.orderId },
-        {
-          name: orderName,
-          mktContractId: contractId ?? undefined,
-        },
-      );
+      // Use repository for update
+      await this.orderRepository.update(context.workspaceId, context.orderId, {
+        name: orderName,
+        mktContractId: contractId ?? undefined,
+      });
 
       const finalStatus = context.metadata.get('orderStatus') as ORDER_STATUS;
 
@@ -144,7 +135,7 @@ export class FinalizeOrderStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       contractId?: string;
@@ -168,9 +159,9 @@ export class FinalizeOrderStep extends SagaStep<
 
       // Revert trial order status if it was updated
       if (data.trialOrderId) {
-        await queryRunner.manager.update(
-          MktOrderWorkspaceEntity,
-          { id: data.trialOrderId },
+        await this.orderRepository.update(
+          context.workspaceId,
+          data.trialOrderId,
           {
             status: ORDER_STATUS.TRIAL,
             note: '',
@@ -229,16 +220,11 @@ export class FinalizeOrderStep extends SagaStep<
   private async completeTrialOrder(
     context: SagaContext,
     trialOrderId: string,
-    queryRunner: QueryRunner,
   ): Promise<void> {
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: trialOrderId },
-      {
-        status: ORDER_STATUS.COMPLETED,
-        note: `Converted to paid order: ${context.orderId}`,
-      },
-    );
+    await this.orderRepository.update(context.workspaceId, trialOrderId, {
+      status: ORDER_STATUS.COMPLETED,
+      note: `Converted to paid order: ${context.orderId}`,
+    });
 
     this.logger.log(`Trial order ${trialOrderId} marked as COMPLETED`);
   }

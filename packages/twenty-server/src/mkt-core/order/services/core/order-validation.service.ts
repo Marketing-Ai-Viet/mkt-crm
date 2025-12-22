@@ -24,7 +24,7 @@ import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt
  * Service để validate order data trước khi xử lý
  * Tách biệt với business logic
  *
- * Supports validation for external MKT Server products via OAuth2 API
+ * Validates external MKT Server products via OAuth2 API
  */
 @Injectable()
 export class OrderValidationService {
@@ -40,10 +40,7 @@ export class OrderValidationService {
   /**
    * Validate input để tạo order mới
    *
-   * Supports:
-   * - Internal variants (CRM products)
-   * - External MKT Server products
-   * - Mixed orders with both types
+   * Validates external MKT Server products (required)
    */
   async validateCreateOrderInput(
     workspaceId: string,

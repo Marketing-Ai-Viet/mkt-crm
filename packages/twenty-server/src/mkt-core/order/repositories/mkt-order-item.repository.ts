@@ -209,11 +209,12 @@ export class MktOrderItemRepository {
 
   /**
    * Create new order item
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async create(
     workspaceId: string,
     data: CreateOrderItemData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<MktOrderItemWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_START());
 
@@ -221,13 +222,8 @@ export class MktOrderItemRepository {
 
     const orderItem = repository.create(data);
 
-    let savedItem: MktOrderItemWorkspaceEntity;
-
-    if (queryRunner) {
-      savedItem = await queryRunner.manager.save(orderItem);
-    } else {
-      savedItem = await repository.save(orderItem);
-    }
+    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
+    const savedItem = await repository.save(orderItem);
 
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_SUCCESS(savedItem.id));
 
@@ -236,11 +232,12 @@ export class MktOrderItemRepository {
 
   /**
    * Create multiple order items
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async createMany(
     workspaceId: string,
     items: CreateOrderItemData[],
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
     if (items.length === 0) {
       return [];
@@ -254,13 +251,8 @@ export class MktOrderItemRepository {
 
     const orderItems = items.map((item) => repository.create(item));
 
-    let savedItems: MktOrderItemWorkspaceEntity[];
-
-    if (queryRunner) {
-      savedItems = await queryRunner.manager.save(orderItems);
-    } else {
-      savedItems = await repository.save(orderItems);
-    }
+    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
+    const savedItems = await repository.save(orderItems);
 
     this.logger.debug(
       MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_BULK_SUCCESS(savedItems.length),
@@ -275,26 +267,20 @@ export class MktOrderItemRepository {
 
   /**
    * Update order item by ID
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async update(
     workspaceId: string,
     itemId: string,
     data: UpdateOrderItemData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.UPDATE_START(itemId));
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.update(
-        MktOrderItemWorkspaceEntity,
-        { id: itemId },
-        data,
-      );
-    } else {
-      await repository.update(itemId, data);
-    }
+    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.update(itemId, data);
 
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.UPDATE_SUCCESS(itemId));
   }
@@ -315,12 +301,13 @@ export class MktOrderItemRepository {
 
   /**
    * Update multiple order items by IDs
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async updateMany(
     workspaceId: string,
     itemIds: string[],
     data: UpdateOrderItemData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     if (itemIds.length === 0) {
       return;
@@ -328,18 +315,9 @@ export class MktOrderItemRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      for (const itemId of itemIds) {
-        await queryRunner.manager.update(
-          MktOrderItemWorkspaceEntity,
-          { id: itemId },
-          data,
-        );
-      }
-    } else {
-      for (const itemId of itemIds) {
-        await repository.update(itemId, data);
-      }
+    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
+    for (const itemId of itemIds) {
+      await repository.update(itemId, data);
     }
   }
 
@@ -349,34 +327,31 @@ export class MktOrderItemRepository {
 
   /**
    * Hard delete order item (use with caution)
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async hardDelete(
     workspaceId: string,
     itemId: string,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.warn(MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_START(itemId));
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.delete(MktOrderItemWorkspaceEntity, {
-        id: itemId,
-      });
-    } else {
-      await repository.delete(itemId);
-    }
+    // Always use repository.delete() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.delete(itemId);
 
     this.logger.warn(MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_SUCCESS(itemId));
   }
 
   /**
    * Hard delete multiple order items by IDs
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async hardDeleteMany(
     workspaceId: string,
     itemIds: string[],
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     if (itemIds.length === 0) {
       return;
@@ -388,11 +363,8 @@ export class MktOrderItemRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.delete(MktOrderItemWorkspaceEntity, itemIds);
-    } else {
-      await repository.delete(itemIds);
-    }
+    // Always use repository.delete() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.delete(itemIds);
 
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BULK_SUCCESS(itemIds.length),
@@ -401,11 +373,12 @@ export class MktOrderItemRepository {
 
   /**
    * Hard delete all order items for an order
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async hardDeleteByOrderId(
     workspaceId: string,
     orderId: string,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BY_ORDER_START(orderId),
@@ -413,13 +386,8 @@ export class MktOrderItemRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.delete(MktOrderItemWorkspaceEntity, {
-        mktOrderId: orderId,
-      });
-    } else {
-      await repository.delete({ mktOrderId: orderId });
-    }
+    // Always use repository.delete() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.delete({ mktOrderId: orderId });
 
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BY_ORDER_SUCCESS(orderId),

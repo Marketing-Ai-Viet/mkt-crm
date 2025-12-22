@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { QueryRunner } from 'typeorm';
@@ -10,6 +10,15 @@ import {
   CreateOrderResponse,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import {
+  CreateOrderStep,
+  CreateSnapshotsStep,
+  CreateOrderItemsStep,
+  CalculatePromotionStep,
+  CreateLicensesStep,
+  CreatePaymentStep,
+  FinalizeOrderStep,
+} from 'src/mkt-core/order/orchestration/steps';
 
 import { SagaContext, SagaStep, SagaStepResult } from './order-saga.interface';
 
@@ -18,31 +27,97 @@ import { SagaContext, SagaStep, SagaStepResult } from './order-saga.interface';
  *
  * Quản lý việc tạo order với các steps theo thứ tự:
  * 1. CreateOrderStep - Tạo order entity
- * 2. CreateOrderItemsStep - Tạo order items từ variants
- * 3. CreateLicensesStep - Tạo licenses cho order items
- * 4. CreatePaymentStep - Tạo payment (nếu không phải TRIAL)
- * 5. FinalizeOrderStep - Finalize order status
+ * 2. CreateSnapshotsStep - Validate & create product/package snapshots
+ * 3. CreateOrderItemsStep - Tạo order items từ external products
+ * 4. CalculatePromotionStep - Calculate and apply promotions
+ * 5. CreateLicensesStep - Tạo licenses cho order items
+ * 6. CreatePaymentStep - Tạo payment (nếu không phải TRIAL)
+ * 7. FinalizeOrderStep - Finalize order status
  *
  * Nếu bất kỳ step nào fail, saga sẽ rollback tất cả steps đã thực thi
  * theo thứ tự ngược lại (compensate pattern)
  */
 @Injectable()
-export class CreateOrderSaga {
+export class CreateOrderSaga implements OnModuleInit {
   private readonly logger = new Logger(CreateOrderSaga.name);
   private steps: SagaStep<CreateOrderWithItemsInput, unknown>[] = [];
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+    // Inject steps directly
+    private readonly createOrderStep: CreateOrderStep,
+    private readonly createSnapshotsStep: CreateSnapshotsStep,
+    private readonly createOrderItemsStep: CreateOrderItemsStep,
+    private readonly calculatePromotionStep: CalculatePromotionStep,
+    private readonly createLicensesStep: CreateLicensesStep,
+    private readonly createPaymentStep: CreatePaymentStep,
+    private readonly finalizeOrderStep: FinalizeOrderStep,
+  ) {
+    // Register steps immediately in constructor
+    // (onModuleInit may not be called for lazy-loaded providers)
+    this.initializeSteps();
+  }
 
   /**
-   * Đăng ký các steps cho saga
-   * Được gọi từ module để inject các steps
+   * Initialize and register steps
+   *
+   * Step order:
+   * 1. CreateOrderStep - Create order entity
+   * 2. CreateSnapshotsStep - Validate & create product/package snapshots
+   * 3. CreateOrderItemsStep - Create order items with snapshots
+   * 4. CalculatePromotionStep - Calculate and apply promotions
+   * 5. CreateLicensesStep - Create licenses for order items
+   * 6. CreatePaymentStep - Create payment (if not TRIAL)
+   * 7. FinalizeOrderStep - Finalize order status
    */
-  registerSteps(steps: SagaStep<CreateOrderWithItemsInput, unknown>[]): void {
-    this.steps = steps;
-    this.logger.log(`Registered ${steps.length} saga steps`);
+  private initializeSteps(): void {
+    // Validate all steps are injected
+    const injectedSteps = [
+      { name: 'createOrderStep', instance: this.createOrderStep },
+      { name: 'createSnapshotsStep', instance: this.createSnapshotsStep },
+      { name: 'createOrderItemsStep', instance: this.createOrderItemsStep },
+      { name: 'calculatePromotionStep', instance: this.calculatePromotionStep },
+      { name: 'createLicensesStep', instance: this.createLicensesStep },
+      { name: 'createPaymentStep', instance: this.createPaymentStep },
+      { name: 'finalizeOrderStep', instance: this.finalizeOrderStep },
+    ];
+
+    const missingSteps = injectedSteps
+      .filter((s) => !s.instance)
+      .map((s) => s.name);
+
+    if (missingSteps.length > 0) {
+      this.logger.error(
+        `[CreateOrderSaga] Failed to inject steps: ${missingSteps.join(', ')}`,
+      );
+      throw new Error(
+        `CreateOrderSaga initialization failed: Missing steps: ${missingSteps.join(', ')}`,
+      );
+    }
+
+    this.steps = [
+      this.createOrderStep,
+      this.createSnapshotsStep,
+      this.createOrderItemsStep,
+      this.calculatePromotionStep,
+      this.createLicensesStep,
+      this.createPaymentStep,
+      this.finalizeOrderStep,
+    ];
+
+    this.logger.log(
+      `[CreateOrderSaga] Registered ${this.steps.length} saga steps: ${this.steps.map((s) => s.name).join(', ')}`,
+    );
+  }
+
+  /**
+   * OnModuleInit - fallback if constructor initialization didn't run
+   */
+  onModuleInit(): void {
+    if (this.steps.length === 0) {
+      this.initializeSteps();
+    }
   }
 
   /**
@@ -73,6 +148,25 @@ export class CreateOrderSaga {
 
     const executedSteps: SagaStep<CreateOrderWithItemsInput, unknown>[] = [];
     let lastResult: SagaStepResult = { success: true };
+
+    // Check if steps are registered
+    if (this.steps.length === 0) {
+      this.logger.error(
+        '[CreateOrderSaga] No steps registered! onModuleInit may not have been called.',
+      );
+      await queryRunner.rollbackTransaction();
+      await queryRunner.release();
+
+      return {
+        success: false,
+        error:
+          'CreateOrderSaga not initialized: No steps registered. Please restart the server.',
+      };
+    }
+
+    this.logger.debug(
+      `[CreateOrderSaga] Executing with ${this.steps.length} steps for workspace: ${workspaceId}`,
+    );
 
     try {
       for (const step of this.steps) {

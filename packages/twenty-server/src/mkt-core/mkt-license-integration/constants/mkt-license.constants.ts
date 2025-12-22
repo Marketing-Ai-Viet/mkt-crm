@@ -64,12 +64,6 @@ export const MKT_LICENSE_MAX_DEVICES_LIMITS = {
 } as const;
 
 // ============================================
-// LOG CONTEXT
-// ============================================
-
-export const MKT_LICENSE_LOG_CONTEXT = 'MktLicenseIntegration' as const;
-
-// ============================================
 // ERROR BUILDER
 // ============================================
 

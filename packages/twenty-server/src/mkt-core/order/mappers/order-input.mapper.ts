@@ -42,11 +42,7 @@ export const OrderInputMapper = {
       note: dto.note,
       requireContract: dto.requireContract,
       discountPercent: dto.discountPercent,
-      variants: dto.variants?.map((v) => ({
-        variantId: v.variantId,
-        quantity: v.quantity,
-      })),
-      externalProducts: dto.externalProducts?.map((p) => ({
+      externalProducts: dto.externalProducts.map((p) => ({
         productId: p.productId,
         packageId: p.packageId,
         quantity: p.quantity,

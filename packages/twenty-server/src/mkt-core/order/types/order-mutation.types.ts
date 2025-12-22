@@ -10,14 +10,6 @@ import { PaymentCurrency } from 'src/mkt-core/payment/types';
 // ============================================
 
 /**
- * Variant item trong order (internal CRM product)
- */
-export type OrderVariantInput = {
-  variantId: string;
-  quantity?: number;
-};
-
-/**
  * External MKT product trong order (từ MKT Server)
  */
 export type ExternalMktProductInput = {
@@ -51,9 +43,7 @@ export type OrderCustomerInput = {
  * Input để tạo Order với đầy đủ items, licenses, payment
  * Thay thế việc sử dụng createMktOrder + post-hook
  *
- * Supports 2 types of products:
- * - Internal variants: CRM products từ mktVariant table
- * - External products: Products từ MKT Server via OAuth2 API
+ * Sử dụng external products từ MKT Server via OAuth2 API
  */
 export type CreateOrderWithItemsInput = {
   // Customer
@@ -66,11 +56,8 @@ export type CreateOrderWithItemsInput = {
   requireContract?: boolean;
   discountPercent?: number;
 
-  // Items - Internal CRM products (optional if using externalProducts)
-  variants?: OrderVariantInput[];
-
-  // Items - External MKT Server products (optional if using variants)
-  externalProducts?: ExternalMktProductInput[];
+  // Items - External MKT Server products (required)
+  externalProducts: ExternalMktProductInput[];
 
   // Order language for display names from MKT Server (default: 'vi')
   orderLanguage?: MktSupportedLanguage;

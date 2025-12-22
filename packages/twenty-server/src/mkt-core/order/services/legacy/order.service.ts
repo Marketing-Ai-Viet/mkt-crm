@@ -3,10 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import {
-  ORDER_METADATA,
-  ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { FirebaseAuthResponse } from 'src/mkt-core/payment/integration/firebase-integration.service';
@@ -19,24 +16,6 @@ export class OrderService {
     private readonly recordPositionService: RecordPositionService,
     private mktRepo: MktRepositoryService,
   ) {}
-
-  async createOrderItemsFromVariants(
-    variantsMeta: ORDER_METADATA['variants'] | null,
-    _createdOrder: MktOrderWorkspaceEntity,
-    _workspaceId: string,
-  ) {
-    // TODO: Implement variant lookup using mkt-product-integration module
-    // The old VariantService has been removed with the product module
-    this.logger.warn(
-      'createOrderItemsFromVariants is not fully implemented - product module removed',
-    );
-
-    if (!variantsMeta || variantsMeta.length === 0) return [];
-
-    throw new Error(
-      'Product module has been removed. Use mkt-product-integration module instead.',
-    );
-  }
 
   async cloneOrderItems(
     trialOrder: MktOrderWorkspaceEntity,

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import {
   IDEMPOTENCY_ACTION,
@@ -10,21 +10,6 @@ import {
   UpdateOrderSaga,
   RefundOrderSaga,
 } from 'src/mkt-core/order/orchestration/saga';
-import {
-  CreateOrderStep,
-  CreateOrderItemsStep,
-  CreateLicensesStep,
-  CreatePaymentStep,
-  FinalizeOrderStep,
-  CreateSnapshotsStep,
-  CalculatePromotionStep,
-  RecordPromotionUsageStep,
-} from 'src/mkt-core/order/orchestration/steps';
-import {
-  ValidateOrderStep,
-  ValidateTransitionStep,
-  UpdateStatusStep,
-} from 'src/mkt-core/order/orchestration/steps/confirm-order';
 import { OrderValidationService } from 'src/mkt-core/order/services/core';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
@@ -47,9 +32,11 @@ import {
  * - Validating inputs before processing
  * - Orchestrating saga execution
  * - Handling errors gracefully
+ *
+ * Note: Saga steps are registered in each saga's onModuleInit()
  */
 @Injectable()
-export class OrderOrchestrationService implements OnModuleInit {
+export class OrderOrchestrationService {
   private readonly logger = new Logger(OrderOrchestrationService.name);
 
   constructor(
@@ -60,56 +47,7 @@ export class OrderOrchestrationService implements OnModuleInit {
     private readonly validationService: OrderValidationService,
     private readonly orderItemService: OrderItemService,
     private readonly idempotencyService: IdempotencyService,
-    // Core Steps
-    private readonly createOrderStep: CreateOrderStep,
-    private readonly createOrderItemsStep: CreateOrderItemsStep,
-    private readonly createLicensesStep: CreateLicensesStep,
-    private readonly createPaymentStep: CreatePaymentStep,
-    private readonly finalizeOrderStep: FinalizeOrderStep,
-    // Snapshot & Promotion Steps
-    private readonly createSnapshotsStep: CreateSnapshotsStep,
-    private readonly calculatePromotionStep: CalculatePromotionStep,
-    private readonly recordPromotionUsageStep: RecordPromotionUsageStep,
-    // ConfirmOrder Steps
-    private readonly validateOrderStep: ValidateOrderStep,
-    private readonly validateTransitionStep: ValidateTransitionStep,
-    private readonly updateStatusStep: UpdateStatusStep,
   ) {}
-
-  /**
-   * Register saga steps on module initialization
-   *
-   * Step order for CreateOrderSaga:
-   * 1. CreateOrderStep - Create order entity
-   * 2. CreateSnapshotsStep - Validate & create product/package snapshots
-   * 3. CreateOrderItemsStep - Create order items with snapshots
-   * 4. CalculatePromotionStep - Calculate and apply promotions
-   * 5. CreateLicensesStep - Create licenses for order items
-   * 6. CreatePaymentStep - Create payment (if not TRIAL)
-   * 7. FinalizeOrderStep - Finalize order status
-   *
-   * Note: RecordPromotionUsageStep should be registered in ConfirmOrderSaga
-   * since usage should only be recorded after order confirmation
-   */
-  onModuleInit(): void {
-    this.createOrderSaga.registerSteps([
-      this.createOrderStep,
-      this.createSnapshotsStep,
-      this.createOrderItemsStep,
-      this.calculatePromotionStep,
-      this.createLicensesStep,
-      this.createPaymentStep,
-      this.finalizeOrderStep,
-    ]);
-
-    this.confirmOrderSaga.registerSteps([
-      this.validateOrderStep,
-      this.validateTransitionStep,
-      this.updateStatusStep,
-    ]);
-
-    this.logger.log('Order saga steps registered successfully');
-  }
 
   /**
    * Create order with items using saga pattern
@@ -149,9 +87,12 @@ export class OrderOrchestrationService implements OnModuleInit {
       };
     }
 
+    this.logger.debug(`Lock acquired for: ${idempotencyKey}`);
+
     try {
       // Store pending status
       await this.idempotencyService.storePending(idempotencyKey, input);
+      this.logger.debug('Pending status stored');
 
       // Execute order creation
       const result = await this.executeCreateOrder(
@@ -246,6 +187,8 @@ export class OrderOrchestrationService implements OnModuleInit {
     // Validate input
     const validationResult =
       await this.validationService.validateCreateOrderInput(workspaceId, input);
+
+    this.logger.debug(`Validation result: valid=${validationResult.valid}`);
 
     if (!validationResult.valid) {
       const errorMessages = validationResult.errors

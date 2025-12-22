@@ -1,16 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
+import { In, QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
-import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
 import {
   CreateLicensesStepOutput,
   CreateOrderWithItemsInput,
@@ -50,7 +49,7 @@ export class CreateLicensesStep extends SagaStep<
   private readonly logger = new Logger(CreateLicensesStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderItemRepository: MktOrderItemRepository,
     private readonly mktLicenseProxy: MktLicenseProxyService,
     private readonly mktProductProxy: MktProductProxyService,
   ) {
@@ -75,7 +74,7 @@ export class CreateLicensesStep extends SagaStep<
   async execute(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateLicensesStepOutput>> {
     try {
       if (!context.orderItemIds || context.orderItemIds.length === 0) {
@@ -91,17 +90,11 @@ export class CreateLicensesStep extends SagaStep<
         `Creating licenses for ${context.orderItemIds.length} order items`,
       );
 
-      // Get order items from context
-      const orderItemRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderItemWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const orderItems = await orderItemRepository.find({
-        where: context.orderItemIds.map((id) => ({ id })),
-      });
+      // Get order items from repository
+      const orderItems = await this.orderItemRepository.findMany(
+        context.workspaceId,
+        { id: In(context.orderItemIds) },
+      );
 
       const createdLicenses: CreateLicensesStepOutput['licenses'] = [];
       const licenseIdsForRollback: string[] = [];
@@ -134,16 +127,12 @@ export class CreateLicensesStep extends SagaStep<
           const licenseSnapshot: MktLicenseSnapshot =
             this.mktProductProxy.createLicenseSnapshot(mktLicense);
 
-          // Update order item with license info
-          await queryRunner.manager.update(
-            MktOrderItemWorkspaceEntity,
-            { id: item.id },
-            {
-              externalMktLicenseId: mktLicense.id,
-              externalMktLicenseKey: mktLicense.licenseKey,
-              licenseSnapshot,
-            },
-          );
+          // Update order item with license info using repository
+          await this.orderItemRepository.update(context.workspaceId, item.id, {
+            externalMktLicenseId: mktLicense.id,
+            externalMktLicenseKey: mktLicense.licenseKey,
+            licenseSnapshot,
+          });
 
           createdLicenses.push({
             id: mktLicense.id,

@@ -201,11 +201,12 @@ export class MktOrderRepository {
 
   /**
    * Create new order
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async create(
     workspaceId: string,
     data: CreateOrderData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_START());
 
@@ -217,13 +218,8 @@ export class MktOrderRepository {
       currency: data.currency ?? 'VND',
     });
 
-    let savedOrder: MktOrderWorkspaceEntity;
-
-    if (queryRunner) {
-      savedOrder = await queryRunner.manager.save(order);
-    } else {
-      savedOrder = await repository.save(order);
-    }
+    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
+    const savedOrder = await repository.save(order);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_SUCCESS(savedOrder.id));
 
@@ -236,26 +232,20 @@ export class MktOrderRepository {
 
   /**
    * Update order by ID
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async update(
     workspaceId: string,
     orderId: string,
     data: UpdateOrderData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_START(orderId));
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: orderId },
-        data,
-      );
-    } else {
-      await repository.update(orderId, data);
-    }
+    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.update(orderId, data);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_SUCCESS(orderId));
   }
@@ -300,23 +290,19 @@ export class MktOrderRepository {
 
   /**
    * Hard delete order (use with caution)
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async hardDelete(
     workspaceId: string,
     orderId: string,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_START(orderId));
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.delete(MktOrderWorkspaceEntity, {
-        id: orderId,
-      });
-    } else {
-      await repository.delete(orderId);
-    }
+    // Always use repository.delete() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.delete(orderId);
 
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_SUCCESS(orderId));
   }

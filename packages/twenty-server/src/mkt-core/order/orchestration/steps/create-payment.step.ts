@@ -59,7 +59,7 @@ export class CreatePaymentStep extends SagaStep<
   async execute(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreatePaymentStepOutput>> {
     try {
       if (!context.orderId) {
@@ -167,9 +167,10 @@ export class CreatePaymentStep extends SagaStep<
 
         const payment = paymentRepository.create(paymentData);
 
-        const savedPayment = await queryRunner.manager.save(payment);
+        // Use repository.save() - workspace repository handles transactions properly
+        const savedPayment = await paymentRepository.save(payment);
 
-        payments.push(savedPayment as MktPaymentWorkspaceEntity);
+        payments.push(savedPayment);
       }
 
       this.logger.log(`Created ${payments.length} payment records`);
@@ -200,7 +201,7 @@ export class CreatePaymentStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       paymentIds: string[];
@@ -215,10 +216,15 @@ export class CreatePaymentStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
 
-      await queryRunner.manager.delete(
-        MktPaymentWorkspaceEntity,
-        data.paymentIds,
-      );
+      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
+      const paymentRepository =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+          context.workspaceId,
+          MktPaymentWorkspaceEntity,
+          { shouldBypassPermissionChecks: true },
+        );
+
+      await paymentRepository.delete(data.paymentIds);
 
       this.logger.log('Payments deleted successfully');
     } catch (error) {

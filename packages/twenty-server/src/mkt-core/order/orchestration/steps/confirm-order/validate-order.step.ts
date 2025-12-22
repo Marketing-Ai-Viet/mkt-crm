@@ -2,16 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { ConfirmOrderInput } from 'src/mkt-core/order/types';
 import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import { ConfirmOrderInput } from 'src/mkt-core/order/types';
 
 /**
  * ValidateOrderStep - Step 1: Validate order exists and load current state
@@ -34,7 +34,7 @@ export class ValidateOrderStep extends SagaStep<
 
   private readonly logger = new Logger(ValidateOrderStep.name);
 
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {
+  constructor(private readonly orderRepository: MktOrderRepository) {
     super();
   }
 
@@ -48,17 +48,12 @@ export class ValidateOrderStep extends SagaStep<
     try {
       this.logger.log(`Validating order: ${input.orderId}`);
 
-      const repository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await repository.findOne({
-        where: { id: input.orderId },
-        relations: ['orderItems', 'mktLicense'],
-      });
+      // Use repository to find order with relations
+      const order = await this.orderRepository.findById(
+        context.workspaceId,
+        input.orderId,
+        { relations: { orderItems: true } },
+      );
 
       if (!order) {
         return {
