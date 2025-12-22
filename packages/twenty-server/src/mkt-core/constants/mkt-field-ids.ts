@@ -120,6 +120,8 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   idNumberValidated: '3afb4d6f-2e95-42f9-9297-6dbc70242e82', // boolean
   taxCodeValidated: 'e3ea4d21-09a0-4f2a-872e-4f00cd7a621c', // boolean
   mergeSuggestion: 'ee1d2375-75fc-4575-8374-18120e31d740', // JSON: suggested duplicate customers
+  promotionUsages: '660e8400-e29b-41d4-a716-446655440604',
+  assignedCoupons: '660e8400-e29b-41d4-a716-446655440605',
 };
 
 export const MKT_TAG_FIELD_IDS = {
@@ -188,6 +190,7 @@ export const MKT_PRODUCT_FIELD_IDS = {
   accountOwner: 'f836dd4e-1a6e-40ec-b8ce-4bcee5125fe0',
   timelineActivities: 'e4ecfb53-2ad5-4a78-ae3f-a293a8478405',
   searchVector: 'dc61cde2-4483-4418-91e4-bb7bc8ded759',
+  genericComboItems: 'b2c3d4e5-f6a7-8901-2345-678901234567',
 };
 
 export const MKT_ATTRIBUTE_FIELD_IDS = {
@@ -242,6 +245,7 @@ export const MKT_VARIANT_FIELD_IDS = {
   accountOwner: '60914403-db18-454f-a11c-7b8387539edf',
   timelineActivities: 'af6607e3-b106-44e9-9c3a-483a7ee342f3',
   searchVector: '1b50d19d-459d-466f-8560-c1ec12470936',
+  genericComboItems: 'c3d4e5f6-a7b8-9012-3456-789012345678',
 };
 
 export const MKT_VARIANT_ATTRIBUTE_FIELD_IDS = {
@@ -339,6 +343,11 @@ export const MKT_ORDER_FIELD_IDS = {
   timelineActivities: '5ddc8d4c-e8f3-4b36-a367-3b812d9f7d02',
   searchVector: '68623375-43f6-49ed-b29f-291f4cd34921',
   orderItems: '1a2b3c4d-5e6f-7890-1234-567890abcdef',
+  promotionUsages: '660e8400-e29b-41d4-a716-446655440603',
+  // Promotion fields
+  couponCode: '631e7f75-b806-447b-81d2-18cc42fb2042',
+  promotionDiscount: '4be6781b-b704-406f-9f24-dc9d5607fcf8',
+  appliedPromotions: '0165b922-6861-42c4-a905-12699c9e526f',
 };
 
 export const MKT_ORDER_ITEM_FIELD_IDS = {
@@ -363,11 +372,19 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   snapshotPackageName: 'db2c5492-eb14-477e-a9e1-94d009d7da7b',
   orderLanguage: '35d900f3-d659-42f1-91c1-dfca25a8733d',
 
+  // External MKT License fields (from MKT Server)
+  externalMktLicenseId: 'd13bf167-c4ee-4991-b5fd-2fc9422fd2e1',
+  externalMktLicenseKey: '501d54b3-848d-443c-96c1-57fd13f5b126',
+  licenseSnapshot: '282984d2-0d56-4c73-bed3-adc1b96369df',
+
   // relations
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',
   mktProduct: '81a3b4c5-d6e7-f890-9012-345678901234',
   mktVariant: '63c0be01-54b2-4b5e-b24c-7879c881b479',
   mktCombo: '45c7d839-e7f7-44db-9d86-37dc84415dd5',
+  // Promotion discount for item
+  itemDiscount: '684661fb-6376-473b-a16e-f0315a24816f',
+
   // common relations or fields
   position: '5e6f7081-9293-b4c5-6789-012345678901',
   createdBy: '6f708192-a3b4-c5d6-7890-123456789012',
@@ -935,9 +952,11 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktComboVariants: '35abe762-d4e7-4c16-b4c6-e22c990dc0b5',
   //orders
   accountOwnerForMktOrders: '797601a1-d5f0-4c33-a4af-0232f02f7c68',
+  createdMktOrders: 'c8f4a9e1-7d2b-4c5a-9f3e-8b1d6a2c4e7f',
   accountOwnerForMktLicenses: 'a343e640-2214-4896-a0e2-830ee854a778',
   accountOwnerForMktLicenseHistories: '1acbefb0-f166-488b-96eb-f8a14829f7a2',
   accountOwnerForMktContracts: '87d29139-844b-44b9-a3e7-3f9e5a3e4165',
+  createdMktContracts: 'd9e5b2a1-8c3f-4d6e-a7b9-1c2d3e4f5a6b',
   accountOwnerForMktOrderItems: '5f4e3d2c-1b0a-9876-5432-109876543210',
   accountOwnerForMktPayments: 'df8a9b92-6d5e-4f42-9c32-8b7f6e5d4c52',
   accountOwnerForMktPaymentMethods: 'ef8a9b93-6d5e-4f43-9c33-8b7f6e5d4c53',

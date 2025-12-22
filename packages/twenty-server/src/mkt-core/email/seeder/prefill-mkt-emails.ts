@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_EMAIL_DATA_SEED_COLUMNS,
   MKT_EMAIL_DATA_SEEDS,
-} from 'src/mkt-core/dev-seeder/constants/mkt-email-data-seeds.constants';
+} from 'src/mkt-core/seeder/constants/mkt-email-data-seeds.constants';
 
 export const prefillMktEmails = async (
   entityManager: WorkspaceEntityManager,

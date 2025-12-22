@@ -1,16 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
+  MktCustomEventName,
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
 import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
-import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
-import { MktLicenseEventService } from 'src/mkt-core/license/services/mkt-license.event.service';
 import {
   ORDER_HISTORY_ACTION,
   ORDER_STATUS,
@@ -18,38 +16,16 @@ import {
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { safeJsonStringify } from 'src/mkt-core/utils';
-
-export interface MktOrderCustomEventData {
-  eventType?: CustomEventName;
-  orderId?: string;
-  workspaceId: string;
-  orderData: {
-    id: string;
-    status: string;
-    note?: string;
-    licenseHistory?: {
-      action: string;
-      note?: string;
-    };
-    trialLicense?: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-  timestamp: string;
-}
-
-export interface MktOrderCustomEventPayload {
-  name: CustomEventName;
-  workspaceId: string;
-  events: MktOrderCustomEventData[];
-}
+import {
+  MktOrderCustomEventData,
+  MktOrderCustomEventPayload,
+} from 'src/mkt-core/order/types';
 
 @Injectable()
 export class MktOrderCustomEventListener {
   private readonly logger = new Logger(MktOrderCustomEventListener.name);
   constructor(
     private mktRepo: MktRepositoryService,
-    public mktLicenseEventService: MktLicenseEventService,
     private customerQueueService: MktCustomerQueueService,
     private readonly mktEmailService: MktEmailService,
   ) {}
@@ -66,34 +42,30 @@ export class MktOrderCustomEventListener {
 
         const orderType = event.eventType as MKT_ORDER_EVENT_TYPES;
 
-        if (orderType === MKT_ORDER_EVENT_TYPES.ORDER_CREATED) {
-          await this.pushLicenseHistory(updateOrder);
-        }
-
         if (updateOrder) await this.mktEmailService.sendOrderEmail(updateOrder);
+
+        // NOTE: License event handling has been removed.
+        // License operations should be handled via MktLicenseIntegration service separately.
+        if (orderType === MKT_ORDER_EVENT_TYPES.ORDER_CREATED) {
+          this.logger.log('ORDER_CREATED event - license handling removed');
+        }
 
         if (
           updateOrder?.status === ORDER_STATUS.OVERDUE ||
           updateOrder?.status === ORDER_STATUS.BLOCKED
         ) {
-          this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
-          await this.mktLicenseEventService.lockLicensesFromOrder(updateOrder);
+          this.logger.log(
+            'Order OVERDUE/BLOCKED - license locking removed, handle separately',
+          );
         }
 
-        this.logger.log(`Order type 82: ${orderType}`);
         if (orderType === MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED) {
-          await this.mktLicenseEventService.refundLicensesFromOrder(
-            updateOrder,
-          );
+          this.logger.log('ORDER_REFUNDED event - license handling removed');
         }
 
         if (updateOrder?.status === ORDER_STATUS.COMPLETED) {
           this.logger.log(
-            `Order ${updateOrder.id} has moved to COMPLETED status.`,
-          );
-          this.mktLicenseEventService.mktRepo.workspaceId = event.workspaceId;
-          await this.mktLicenseEventService.activateLicensesFromOrder(
-            updateOrder,
+            `Order ${updateOrder.id} has moved to COMPLETED status - license activation removed`,
           );
         }
         this.logger.log(
@@ -108,39 +80,11 @@ export class MktOrderCustomEventListener {
     }
   }
 
-  private async pushLicenseHistory(
-    updateOrder: MktOrderWorkspaceEntity | void,
-  ): Promise<void> {
-    if (!updateOrder?.mktLicense) {
-      this.logger.warn(`Order has no license information`);
-
-      return;
-    }
-
-    const licenseRepo = await this.mktRepo.getRepository(
-      MktLicenseHistoryWorkspaceEntity,
-    );
-
-    if (!updateOrder?.mktLicense) return;
-
-    for (const license of updateOrder.mktLicense) {
-      //const licenses = updateOrder?.mktLicense?.[0] as MktLicenseWorkspaceEntity;
-
-      if (!license) {
-        this.logger.warn(`No license associated with the order`);
-      }
-      const newLicenseHistory = licenseRepo.create({
-        name: 'Bản quyền được kích hoạt',
-        action: license.status as ORDER_HISTORY_ACTION,
-        note: 'Khách hàng đã kích hoạt thành công bản quyền',
-        mktLicenseId: license.id,
-      });
-
-      newLicenseHistory.createdBy = updateOrder.createdBy;
-      await licenseRepo.save(newLicenseHistory);
-      // Push license history logic here
-    }
-  }
+  /**
+   * REMOVED: License history tracking
+   * License module has been removed. License history should be handled
+   * via MktLicenseIntegration service separately.
+   */
 
   private async processOrderCustomEvent(
     event: MktOrderCustomEventData,
@@ -154,13 +98,7 @@ export class MktOrderCustomEventListener {
 
     const updatedOrder = await orderRepo.findOne({
       where: { id: event.orderId },
-      relations: [
-        'mktLicense',
-        'mktPayments',
-        'mktCustomer',
-        'orderItems',
-        'accountOwner',
-      ],
+      relations: ['mktPayments', 'mktCustomer', 'orderItems', 'accountOwner'],
     });
 
     if (!updatedOrder) {
@@ -188,8 +126,7 @@ export class MktOrderCustomEventListener {
       note: orderHistoryData.note ?? '',
     });
 
-    orderHistory.createdBy = updatedOrder.createdBy;
-
+    // TODO: Update OrderHistory entity to use relation instead of ActorMetadata for createdBy
     await orderHistoryRepo.save(orderHistory);
 
     this.logger.log(
@@ -206,7 +143,7 @@ export class MktOrderCustomEventListener {
   }
 
   private async makeOrderHistoryData(
-    eventType?: CustomEventName,
+    eventType?: MktCustomEventName,
     updatedOrder?: MktOrderWorkspaceEntity,
   ) {
     let name = 'Cập nhật trạng thái';

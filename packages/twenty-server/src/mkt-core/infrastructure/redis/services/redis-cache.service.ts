@@ -194,9 +194,24 @@ export class RedisCacheService<T = unknown>
       return;
     }
 
+    // Skip health checks when running in command mode (e.g., database:reset)
+    if (this.isCommandMode()) {
+      this.logger.debug('Redis health check skipped (running in command mode)');
+      this.redisConnected = false;
+
+      return;
+    }
+
     this.validateHealthCheckConfig();
     await this.performHealthCheck();
     this.startHealthCheckLoop();
+  }
+
+  /**
+   * Detect if running in command mode (e.g., database:reset, workspace:seed)
+   */
+  private isCommandMode(): boolean {
+    return process.argv.some((arg) => arg.includes('command.js'));
   }
 
   async onModuleDestroy(): Promise<void> {

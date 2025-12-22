@@ -12,6 +12,8 @@ import {
   MktSupportedLanguage,
   MktValidationResult,
 } from 'src/mkt-core/mkt-product-integration/types';
+import { MktLicenseResponse } from 'src/mkt-core/mkt-license-integration/types';
+import { MktLicenseSnapshot } from 'src/mkt-core/order/types';
 import {
   MKT_DEFAULT_LANGUAGE,
   MKT_PRODUCT_LOG_CONTEXT,
@@ -21,6 +23,7 @@ import {
   MktPackageRepository,
   MktProductRepository,
 } from 'src/mkt-core/mkt-product-integration/repositories';
+import { getErrorMessage } from 'src/mkt-core/utils';
 
 import { MktProductCacheService } from './mkt-product-cache.service';
 import { MktSnapshotService } from './mkt-snapshot.service';
@@ -59,6 +62,7 @@ export class MktProductProxyService {
 
   /**
    * Get product by ID with caching
+   * Gracefully handles OAuth2 server unavailability by returning cached data or null
    */
   async getProduct(
     productId: string,
@@ -73,24 +77,35 @@ export class MktProductProxyService {
       return this.attachPackagesToProduct(cached);
     }
 
-    // Fetch from repository
-    const product = await this.productRepository.findById(
-      productId,
-      userContext,
-    );
+    // Fetch from repository with graceful error handling
+    try {
+      const product = await this.productRepository.findById(
+        productId,
+        userContext,
+      );
 
-    if (!product) {
+      if (!product) {
+        return null;
+      }
+
+      // Cache result
+      await this.cacheService.setProduct(productId, product);
+
+      return this.attachPackagesToProduct(product);
+    } catch (error) {
+      // OAuth2 server unavailable - return null instead of crashing
+      this.logger.warn(
+        `Failed to fetch product from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        { productId },
+      );
+
       return null;
     }
-
-    // Cache result
-    await this.cacheService.setProduct(productId, product);
-
-    return this.attachPackagesToProduct(product);
   }
 
   /**
    * Get product by code with caching
+   * Gracefully handles OAuth2 server unavailability by returning cached data or null
    */
   async getProductByCode(
     code: string,
@@ -105,35 +120,65 @@ export class MktProductProxyService {
       return this.attachPackagesToProduct(cached);
     }
 
-    // Fetch from repository
-    const product = await this.productRepository.findByCode(code, userContext);
+    // Fetch from repository with graceful error handling
+    try {
+      const product = await this.productRepository.findByCode(
+        code,
+        userContext,
+      );
 
-    if (!product) {
+      if (!product) {
+        return null;
+      }
+
+      // Cache result
+      await this.cacheService.setProduct(product.id, product);
+      await this.cacheService.setProductCodeMapping(code, product.id);
+
+      return this.attachPackagesToProduct(product);
+    } catch (error) {
+      // OAuth2 server unavailable - return null instead of crashing
+      this.logger.warn(
+        `Failed to fetch product by code from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        { code },
+      );
+
       return null;
     }
-
-    // Cache result
-    await this.cacheService.setProduct(product.id, product);
-    await this.cacheService.setProductCodeMapping(code, product.id);
-
-    return this.attachPackagesToProduct(product);
   }
 
   /**
    * Get products list with pagination
+   * Gracefully handles OAuth2 server unavailability by returning empty result
    */
   async getProducts(
     params: MktProductQueryParams = {},
     userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProduct>> {
-    const result = await this.productRepository.findAll(params, userContext);
+    try {
+      const result = await this.productRepository.findAll(params, userContext);
 
-    // Cache products and attach packages
-    if (result.data.length > 0) {
-      await this.cacheAndAttachPackages(result.data);
+      // Cache products and attach packages
+      if (result.data.length > 0) {
+        await this.cacheAndAttachPackages(result.data);
+      }
+
+      return result;
+    } catch (error) {
+      // OAuth2 server unavailable - return empty result instead of crashing
+      this.logger.warn(
+        `Failed to fetch products list from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        { params },
+      );
+
+      return {
+        data: [],
+        total: 0,
+        page: params.page ?? 1,
+        limit: params.limit ?? 50,
+        totalPages: 0,
+      };
     }
-
-    return result;
   }
 
   /**
@@ -165,6 +210,7 @@ export class MktProductProxyService {
 
   /**
    * Get package by ID with caching
+   * Gracefully handles OAuth2 server unavailability by returning cached data or null
    */
   async getPackage(
     packageId: string,
@@ -185,34 +231,62 @@ export class MktProductProxyService {
       }
     }
 
-    // Fetch from repository
-    const pkg = await this.packageRepository.findById(packageId, userContext);
+    // Fetch from repository with graceful error handling
+    try {
+      const pkg = await this.packageRepository.findById(packageId, userContext);
 
-    if (!pkg) {
+      if (!pkg) {
+        return null;
+      }
+
+      // Update cache if package has productId
+      if (pkg.productId) {
+        await this.updatePackageInCache(pkg);
+      }
+
+      return pkg;
+    } catch (error) {
+      // OAuth2 server unavailable - return null instead of crashing
+      this.logger.warn(
+        `Failed to fetch package from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        { packageId, productId },
+      );
+
       return null;
     }
-
-    // Update cache if package has productId
-    if (pkg.productId) {
-      await this.updatePackageInCache(pkg);
-    }
-
-    return pkg;
   }
 
   /**
    * Get packages list with pagination
    * Used by sync service for bulk operations
+   * Gracefully handles OAuth2 server unavailability by returning empty result
    */
   async getPackages(
     params: { page?: number; limit?: number } = {},
     userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProductPackage>> {
-    return this.packageRepository.findAll(params, userContext);
+    try {
+      return await this.packageRepository.findAll(params, userContext);
+    } catch (error) {
+      // OAuth2 server unavailable - return empty result instead of crashing
+      this.logger.warn(
+        `Failed to fetch packages list from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        { params },
+      );
+
+      return {
+        data: [],
+        total: 0,
+        page: params.page ?? 1,
+        limit: params.limit ?? 50,
+        totalPages: 0,
+      };
+    }
   }
 
   /**
    * Get packages by product ID with caching
+   * Gracefully handles OAuth2 server unavailability by returning cached data or empty array
    */
   async getPackagesByProductId(
     productId: string,
@@ -230,18 +304,28 @@ export class MktProductProxyService {
       return cached;
     }
 
-    // Fetch from repository
-    const packages = await this.packageRepository.findByProductId(
-      productId,
-      userContext,
-    );
+    // Fetch from repository with graceful error handling
+    try {
+      const packages = await this.packageRepository.findByProductId(
+        productId,
+        userContext,
+      );
 
-    // Cache result
-    if (packages.length > 0) {
-      await this.cacheService.setPackagesByProductId(productId, packages);
+      // Cache result
+      if (packages.length > 0) {
+        await this.cacheService.setPackagesByProductId(productId, packages);
+      }
+
+      return packages;
+    } catch (error) {
+      // OAuth2 server unavailable - return empty array instead of crashing
+      this.logger.warn(
+        `Failed to fetch packages by product from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        { productId },
+      );
+
+      return [];
     }
-
-    return packages;
   }
 
   // ============================================
@@ -270,6 +354,13 @@ export class MktProductProxyService {
    */
   verifyProductSnapshot(snapshot: MktProductSnapshot): boolean {
     return this.snapshotService.verifyChecksum(snapshot);
+  }
+
+  /**
+   * Create license snapshot for order
+   */
+  createLicenseSnapshot(license: MktLicenseResponse): MktLicenseSnapshot {
+    return this.snapshotService.createLicenseSnapshot(license);
   }
 
   // ============================================

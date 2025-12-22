@@ -9,6 +9,7 @@ import {
   CreateOrderWithItemsInput,
   CreateOrderResponse,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 import { SagaContext, SagaStep, SagaStepResult } from './order-saga.interface';
 
@@ -84,7 +85,7 @@ export class CreateOrderSaga {
         this.logger.log(`Executing step: ${step.name}`);
 
         // Tạo savepoint trước mỗi step
-        const savepointName = `sp_${step.name}_${Date.now()}`;
+        const savepointName = `sp_${step.name}_${DateTimeUtils.toMillis(DateTimeUtils.now())}`;
 
         await queryRunner.query(`SAVEPOINT "${savepointName}"`);
 
@@ -174,6 +175,9 @@ export class CreateOrderSaga {
   private emitOrderCreatedEvent(context: SagaContext): void {
     if (!context.orderId) return;
 
+    const now = DateTimeUtils.now();
+    const nowDate = DateTimeUtils.toDate(now);
+
     this.eventEmitter.emit(MKT_ORDER_EVENT_TYPES.ORDER_CREATED, {
       name: MKT_ORDER_EVENT_TYPES.ORDER_CREATED,
       workspaceId: context.workspaceId,
@@ -186,10 +190,10 @@ export class CreateOrderSaga {
             id: context.orderId,
             status: context.metadata.get('orderStatus') as string,
             trialLicense: context.metadata.get('trialLicense') as boolean,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: nowDate,
+            updatedAt: nowDate,
           },
-          timestamp: new Date().toISOString(),
+          timestamp: DateTimeUtils.toISO(now),
         },
       ],
     });

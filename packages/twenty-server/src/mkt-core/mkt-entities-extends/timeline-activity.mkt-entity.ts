@@ -21,8 +21,6 @@ import { MktSInvoiceMetadataWorkspaceEntity } from 'src/mkt-core/invoice/objects
 import { MktSInvoicePaymentWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-payment.workspace-entity';
 import { MktSInvoiceTaxBreakdownWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-tax-breakdown.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
@@ -30,14 +28,6 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
-import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
-import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
-import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
-import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
-import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
-import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 
@@ -119,102 +109,6 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
   mktCustomerTagId: string | null;
 
   @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktProduct,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Product`,
-    description: msg`Event product`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktProductWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktProduct: Relation<MktProductWorkspaceEntity> | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktCategory,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Category`,
-    description: msg`Event category`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktCategoryWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktCategory: Relation<MktCategoryWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktCategory')
-  mktCategoryId: string | null;
-
-  @WorkspaceJoinColumn('mktProduct')
-  mktProductId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktAttribute,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Attribute`,
-    description: msg`Event attribute`,
-    icon: 'IconTag',
-    inverseSideTarget: () => MktAttributeWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktAttribute: Relation<MktAttributeWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktAttribute')
-  mktAttributeId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Variant`,
-    description: msg`Event variant`,
-    icon: 'IconBoxMultiple',
-    inverseSideTarget: () => MktVariantWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktVariant: Relation<MktVariantWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktVariant')
-  mktVariantId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktValue,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Value`,
-    description: msg`Event value`,
-    icon: 'IconListDetails',
-    inverseSideTarget: () => MktValueWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktValue: Relation<MktValueWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktValue')
-  mktValueId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktVariantValue,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Variant Attribute Value`,
-    description: msg`Event variant attribute value`,
-    icon: 'IconListDetails',
-    inverseSideTarget: () => MktVariantValueWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktVariantValue: Relation<MktVariantValueWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktVariantValue')
-  mktVariantValueId: string | null;
-
-  @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktOrder,
     type: RelationType.MANY_TO_ONE,
     label: msg`Order`,
@@ -291,37 +185,6 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktOrderHistory')
   mktOrderHistoryId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktLicense,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`License`,
-    description: msg`Event license`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktLicense: Relation<MktLicenseWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktLicense')
-  mktLicenseId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktLicenseHistory,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`License History`,
-    description: msg`Event license history`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktLicenseHistoryWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-  })
-  @WorkspaceIsNullable()
-  mktLicenseHistory: Relation<MktLicenseHistoryWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktLicenseHistory')
-  mktLicenseHistoryId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktSInvoiceAuth,
@@ -436,38 +299,6 @@ export class TimelineActivityMktEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktTemplate')
   mktTemplateId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktCombo,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Combo`,
-    description: msg`Event combo`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktCombo: Relation<MktComboWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktCombo')
-  mktComboId: string | null;
-
-  @WorkspaceRelation({
-    standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktComboVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Combo Variant`,
-    description: msg`Event combo variant`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
-    inverseSideFieldKey: 'timelineActivities',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktComboVariant: Relation<MktComboVariantWorkspaceEntity> | null;
-
-  @WorkspaceJoinColumn('mktComboVariant')
-  mktComboVariantId: string | null;
 
   @WorkspaceRelation({
     standardId: TIMELINE_ACTIVITY_MKT_FIELD_IDS.mktReport,

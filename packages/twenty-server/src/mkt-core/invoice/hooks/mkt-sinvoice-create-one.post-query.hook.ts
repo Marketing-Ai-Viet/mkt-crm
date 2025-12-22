@@ -15,6 +15,7 @@ import { MktSInvoiceTaxBreakdownWorkspaceEntity } from 'src/mkt-core/invoice/obj
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 @Injectable()
 @WorkspaceQueryHook({
@@ -101,13 +102,23 @@ export class MktSInvoiceCreateOnePostQueryHook
           return;
         }
 
+        // Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
         const computed = orderItems.map((orderItem, index) => {
           const quantity = orderItem.quantity ?? 1;
           const unitPrice = orderItem.unitPrice ?? 0;
-          const amountWithoutTax = unitPrice * quantity;
+          const amountWithoutTax = MoneyUtils.multiply(
+            unitPrice,
+            quantity,
+          ).toNumber();
           const taxPercent = (orderItem.taxPercentage ?? 0) as number;
-          const taxAmount = Math.round((amountWithoutTax * taxPercent) / 100);
-          const withTax = amountWithoutTax + taxAmount;
+          const taxAmount = MoneyUtils.percentage(
+            amountWithoutTax,
+            taxPercent,
+          ).toNumber();
+          const withTax = MoneyUtils.add(
+            amountWithoutTax,
+            taxAmount,
+          ).toNumber();
 
           return {
             name:
@@ -116,8 +127,8 @@ export class MktSInvoiceCreateOnePostQueryHook
               `Item ${index + 1}`,
             lineNumber: index + 1,
             selection: 1,
-            itemCode: orderItem.mktProductId
-              ? `MKT_${orderItem.mktProductId}`
+            itemCode: orderItem.externalMktProductId
+              ? `MKT_${orderItem.externalMktProductId}`
               : null,
             itemName:
               orderItem.name ||
@@ -401,21 +412,31 @@ export class MktSInvoiceCreateOnePostQueryHook
           { taxableAmount: number; taxAmount: number }
         >();
 
-        orderItemsForTax.forEach((oi) => {
+        // Sử dụng MoneyUtils và for...of thay vì forEach
+        for (const oi of orderItemsForTax) {
           const quantity = oi.quantity ?? 1;
           const unitPrice = oi.unitPrice ?? 0;
-          const amountWithoutTax = unitPrice * quantity;
+          const amountWithoutTax = MoneyUtils.multiply(
+            unitPrice,
+            quantity,
+          ).toNumber();
           const taxPercent = (oi.taxPercentage ?? 0) as number;
-          const taxAmount = Math.round((amountWithoutTax * taxPercent) / 100);
+          const taxAmount = MoneyUtils.percentage(
+            amountWithoutTax,
+            taxPercent,
+          ).toNumber();
           const g = groups.get(taxPercent) || {
             taxableAmount: 0,
             taxAmount: 0,
           };
 
-          g.taxableAmount += amountWithoutTax;
-          g.taxAmount += taxAmount;
+          g.taxableAmount = MoneyUtils.add(
+            g.taxableAmount,
+            amountWithoutTax,
+          ).toNumber();
+          g.taxAmount = MoneyUtils.add(g.taxAmount, taxAmount).toNumber();
           groups.set(taxPercent, g);
-        });
+        }
         const taxesToCreate = await Promise.all(
           Array.from(groups.entries()).map(
             async ([taxPercentage, agg], _idx) => {

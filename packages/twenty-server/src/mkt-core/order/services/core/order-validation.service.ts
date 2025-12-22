@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
@@ -6,68 +6,28 @@ import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-cu
 import {
   ORDER_ACTION,
   ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
+  VALID_ACTIONS_BY_STATUS,
+  VALID_CREATE_ACTIONS,
+} from 'src/mkt-core/order/constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   CreateOrderWithItemsInput,
   ConfirmOrderInput,
   ExternalMktProductInput,
+  ValidationError,
+  ValidationResult,
+  ORDER_VALIDATION_ERROR_CODES,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
-
-// ============================================
-// VALIDATION RESULT TYPES
-// ============================================
-
-export type ValidationError = {
-  field: string;
-  message: string;
-  code: string;
-};
-
-export type ValidationResult = {
-  valid: boolean;
-  errors: ValidationError[];
-};
-
-// ============================================
-// ERROR CODES
-// ============================================
-
-export const ORDER_VALIDATION_ERROR_CODES = {
-  CUSTOMER_REQUIRED: 'CUSTOMER_REQUIRED',
-  CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
-  ITEMS_REQUIRED: 'ITEMS_REQUIRED',
-  VARIANTS_REQUIRED: 'VARIANTS_REQUIRED',
-  VARIANT_NOT_FOUND: 'VARIANT_NOT_FOUND',
-  VARIANT_INACTIVE: 'VARIANT_INACTIVE',
-  EXTERNAL_PRODUCT_NOT_FOUND: 'EXTERNAL_PRODUCT_NOT_FOUND',
-  EXTERNAL_PRODUCT_INACTIVE: 'EXTERNAL_PRODUCT_INACTIVE',
-  EXTERNAL_PACKAGE_NOT_FOUND: 'EXTERNAL_PACKAGE_NOT_FOUND',
-  EXTERNAL_PACKAGE_INACTIVE: 'EXTERNAL_PACKAGE_INACTIVE',
-  EXTERNAL_PACKAGE_MISMATCH: 'EXTERNAL_PACKAGE_MISMATCH',
-  PAYMENT_METHOD_REQUIRED: 'PAYMENT_METHOD_REQUIRED',
-  PAYMENT_METHOD_NOT_FOUND: 'PAYMENT_METHOD_NOT_FOUND',
-  ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
-  INVALID_ORDER_STATUS: 'INVALID_ORDER_STATUS',
-  INVALID_ACTION: 'INVALID_ACTION',
-  TRIAL_ORDER_REQUIRED: 'TRIAL_ORDER_REQUIRED',
-  TRIAL_ORDER_NOT_FOUND: 'TRIAL_ORDER_NOT_FOUND',
-} as const;
 
 /**
  * Service để validate order data trước khi xử lý
  * Tách biệt với business logic
  *
- * Supports validation for:
- * - Internal variants (CRM products)
- * - External MKT Server products via OAuth2 API
+ * Supports validation for external MKT Server products via OAuth2 API
  */
 @Injectable()
 export class OrderValidationService {
-  private readonly logger = new Logger(OrderValidationService.name);
-
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktProductProxy: MktProductProxyService,
@@ -89,98 +49,131 @@ export class OrderValidationService {
     workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationResult> {
-    const errors: ValidationError[] = [];
-
-    // Skip validation cho TRIAL_TO_PAID action
+    // Early return cho TRIAL_TO_PAID action
     if (input.action === ORDER_ACTION.TRIAL_TO_PAID) {
       return this.validateTrialToPaidInput(workspaceId, input);
     }
 
-    // Validate customer
-    if (!input.customerId) {
-      errors.push({
-        field: 'customerId',
-        message: 'Customer ID is required',
-        code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_REQUIRED,
-      });
-    } else {
-      const customerExists = await this.customerExists(
-        workspaceId,
-        input.customerId,
-      );
+    // Run all validations in parallel where possible
+    const [customerErrors, itemErrors, paymentErrors, actionErrors] =
+      await Promise.all([
+        this.validateCustomer(workspaceId, input.customerId),
+        this.validateOrderItems(workspaceId, input),
+        this.validatePaymentMethodsForAction(workspaceId, input),
+        Promise.resolve(this.validateAction(input.action)),
+      ]);
 
-      if (!customerExists) {
-        errors.push({
-          field: 'customerId',
-          message: `Customer with ID ${input.customerId} not found`,
-          code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_NOT_FOUND,
-        });
-      }
-    }
-
-    // Check if we have any items (variants OR externalProducts)
-    const hasVariants = input.variants && input.variants.length > 0;
-    const hasExternalProducts =
-      input.externalProducts && input.externalProducts.length > 0;
-
-    if (!hasVariants && !hasExternalProducts) {
-      errors.push({
-        field: 'items',
-        message: 'At least one variant or external product is required',
-        code: ORDER_VALIDATION_ERROR_CODES.ITEMS_REQUIRED,
-      });
-    }
-
-    // Validate internal variants
-    if (hasVariants && input.variants) {
-      const variantErrors = await this.validateVariants(
-        workspaceId,
-        input.variants.map((v) => v.variantId),
-      );
-
-      errors.push(...variantErrors);
-    }
-
-    // Validate external MKT products
-    if (hasExternalProducts && input.externalProducts) {
-      const externalErrors = await this.validateExternalProducts(
-        input.externalProducts,
-      );
-
-      errors.push(...externalErrors);
-    }
-
-    // Validate payment methods (not required for TRIAL)
-    if (input.action !== ORDER_ACTION.TRIAL) {
-      if (!input.paymentMethods || input.paymentMethods.length === 0) {
-        errors.push({
-          field: 'paymentMethods',
-          message: 'At least one payment method is required',
-          code: ORDER_VALIDATION_ERROR_CODES.PAYMENT_METHOD_REQUIRED,
-        });
-      } else {
-        const paymentErrors = await this.validatePaymentMethods(
-          workspaceId,
-          input.paymentMethods.map((p) => p.paymentMethodId),
-        );
-
-        errors.push(...paymentErrors);
-      }
-    }
-
-    // Validate action
-    if (!this.isValidCreateAction(input.action)) {
-      errors.push({
-        field: 'action',
-        message: `Invalid action: ${input.action}`,
-        code: ORDER_VALIDATION_ERROR_CODES.INVALID_ACTION,
-      });
-    }
+    const errors = [
+      ...customerErrors,
+      ...itemErrors,
+      ...paymentErrors,
+      ...actionErrors,
+    ];
 
     return {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * Validate customer exists
+   */
+  private async validateCustomer(
+    workspaceId: string,
+    customerId: string | undefined,
+  ): Promise<ValidationError[]> {
+    if (!customerId) {
+      return [
+        {
+          field: 'customerId',
+          message: 'Customer ID is required',
+          code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_REQUIRED,
+        },
+      ];
+    }
+
+    const exists = await this.customerExists(workspaceId, customerId);
+
+    if (!exists) {
+      return [
+        {
+          field: 'customerId',
+          message: `Customer with ID ${customerId} not found`,
+          code: ORDER_VALIDATION_ERROR_CODES.CUSTOMER_NOT_FOUND,
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  /**
+   * Validate order items (external MKT products only)
+   */
+  private async validateOrderItems(
+    _workspaceId: string,
+    input: CreateOrderWithItemsInput,
+  ): Promise<ValidationError[]> {
+    const hasExternalProducts =
+      input.externalProducts && input.externalProducts.length > 0;
+
+    if (!hasExternalProducts || !input.externalProducts) {
+      return [
+        {
+          field: 'externalProducts',
+          message: 'At least one external product is required',
+          code: ORDER_VALIDATION_ERROR_CODES.ITEMS_REQUIRED,
+        },
+      ];
+    }
+
+    return this.validateExternalProducts(input.externalProducts);
+  }
+
+  /**
+   * Validate payment methods based on action type
+   */
+  private async validatePaymentMethodsForAction(
+    workspaceId: string,
+    input: CreateOrderWithItemsInput,
+  ): Promise<ValidationError[]> {
+    // Payment not required for TRIAL
+    if (input.action === ORDER_ACTION.TRIAL) {
+      return [];
+    }
+
+    if (!input.paymentMethods || input.paymentMethods.length === 0) {
+      return [
+        {
+          field: 'paymentMethods',
+          message: 'At least one payment method is required',
+          code: ORDER_VALIDATION_ERROR_CODES.PAYMENT_METHOD_REQUIRED,
+        },
+      ];
+    }
+
+    return this.validatePaymentMethods(
+      workspaceId,
+      input.paymentMethods.map((p) => p.paymentMethodId),
+    );
+  }
+
+  /**
+   * Validate action is valid for create order
+   */
+  private validateAction(action: ORDER_ACTION): ValidationError[] {
+    if (!this.isValidCreateAction(action)) {
+      return [
+        {
+          field: 'action',
+          message: `Invalid action: ${action}`,
+          code: ORDER_VALIDATION_ERROR_CODES.INVALID_ACTION,
+        },
+      ];
+    }
+
+    return [];
   }
 
   /**
@@ -308,42 +301,6 @@ export class OrderValidationService {
   }
 
   /**
-   * Validate danh sách variants (internal CRM products)
-   */
-  private async validateVariants(
-    workspaceId: string,
-    variantIds: string[],
-  ): Promise<ValidationError[]> {
-    const errors: ValidationError[] = [];
-
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktVariantWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const variants = await repository.find({
-      where: variantIds.map((id) => ({ id })),
-      select: ['id', 'name'],
-    });
-
-    const foundIds = new Set(variants.map((v) => v.id));
-
-    for (const variantId of variantIds) {
-      if (!foundIds.has(variantId)) {
-        errors.push({
-          field: 'variants',
-          message: `Variant with ID ${variantId} not found`,
-          code: ORDER_VALIDATION_ERROR_CODES.VARIANT_NOT_FOUND,
-        });
-      }
-    }
-
-    return errors;
-  }
-
-  /**
    * Validate danh sách external MKT products
    * Uses MktProductProxyService to validate against MKT Server
    */
@@ -465,14 +422,7 @@ export class OrderValidationService {
    * Kiểm tra action hợp lệ cho tạo order
    */
   private isValidCreateAction(action: ORDER_ACTION): boolean {
-    const validActions = [
-      ORDER_ACTION.WAIT,
-      ORDER_ACTION.TRIAL,
-      ORDER_ACTION.TRIAL_TO_PAID,
-      ORDER_ACTION.LICENSE_RENEWING,
-    ];
-
-    return validActions.includes(action);
+    return VALID_CREATE_ACTIONS.includes(action);
   }
 
   /**
@@ -482,35 +432,7 @@ export class OrderValidationService {
     currentStatus: ORDER_STATUS,
     action: ORDER_ACTION,
   ): boolean {
-    const validTransitions: Record<ORDER_STATUS, ORDER_ACTION[]> = {
-      [ORDER_STATUS.DRAFT]: [ORDER_ACTION.WAIT, ORDER_ACTION.TRIAL],
-      [ORDER_STATUS.WAIT]: [
-        ORDER_ACTION.CONFIRMED,
-        ORDER_ACTION.REFUSE,
-        ORDER_ACTION.OVERDUE,
-      ],
-      [ORDER_STATUS.TRIAL]: [
-        ORDER_ACTION.TRIAL_TO_PAID,
-        ORDER_ACTION.COMPLETED,
-        ORDER_ACTION.REFUSE,
-      ],
-      [ORDER_STATUS.CONFIRMED]: [
-        ORDER_ACTION.COMPLETED,
-        ORDER_ACTION.REFUND,
-        ORDER_ACTION.REFUND_PARTIAL,
-      ],
-      [ORDER_STATUS.OVERDUE]: [ORDER_ACTION.CONFIRMED, ORDER_ACTION.REFUSE],
-      [ORDER_STATUS.COMPLETED]: [
-        ORDER_ACTION.REFUND,
-        ORDER_ACTION.REFUND_PARTIAL,
-      ],
-      [ORDER_STATUS.REFUSE]: [],
-      [ORDER_STATUS.REFUND]: [],
-      [ORDER_STATUS.BLOCKED]: [],
-      [ORDER_STATUS.REFUND_PARTIAL]: [ORDER_ACTION.REFUND],
-    };
-
-    const allowedActions = validTransitions[currentStatus] || [];
+    const allowedActions = VALID_ACTIONS_BY_STATUS[currentStatus] ?? [];
 
     return allowedActions.includes(action);
   }

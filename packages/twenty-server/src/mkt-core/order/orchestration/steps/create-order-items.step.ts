@@ -16,32 +16,18 @@ import {
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
 import { OrderCalculationService } from 'src/mkt-core/order/services/core';
 import {
+  CreateOrderItemsStepOutput,
   CreateOrderWithItemsInput,
   ExternalMktProductInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreateOrderItemsStepOutput = {
-  orderItems: MktOrderItemWorkspaceEntity[];
-  totals: {
-    subtotal: number;
-    tax: number;
-    discount: number;
-    totalAmount: number;
-  };
-};
 
 /**
- * CreateOrderItemsStep - Step 2: Tạo order items từ variants
+ * CreateOrderItemsStep - Step 2: Tạo order items từ external products
  *
  * Thực hiện:
- * - Lấy thông tin variants từ database
- * - Tạo order items với calculated values
+ * - Lấy thông tin products từ MKT Server
+ * - Tạo order items với calculated values và snapshots
  * - Tính toán tổng order (subtotal, tax, discount, totalAmount)
  * - Update order với các giá trị đã tính
  *
@@ -88,22 +74,23 @@ export class CreateOrderItemsStep extends SagaStep<
         return this.cloneOrderItemsFromTrial(context, input, queryRunner);
       }
 
-      // Check if we have both types of products
-      const hasInternalVariants = input.variants && input.variants.length > 0;
+      // Check if we have external products
       const hasExternalProducts =
         input.externalProducts && input.externalProducts.length > 0;
 
-      if (!hasInternalVariants && !hasExternalProducts) {
+      if (!hasExternalProducts) {
         return {
           success: false,
-          error: new Error(
-            'At least one variant or external product is required',
-          ),
+          error: new Error('At least one external product is required'),
         };
       }
 
-      // Create order items from both sources
-      return this.createOrderItemsFromAllSources(context, input, queryRunner);
+      // Create order items from external products
+      return this.createOrderItemsFromExternalProducts(
+        context,
+        input,
+        queryRunner,
+      );
     } catch (error) {
       this.logger.error('Failed to create order items', error);
 
@@ -148,9 +135,9 @@ export class CreateOrderItemsStep extends SagaStep<
   // ============================================
 
   /**
-   * Create order items from both internal variants and external MKT products
+   * Create order items from external MKT products
    */
-  private async createOrderItemsFromAllSources(
+  private async createOrderItemsFromExternalProducts(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
     queryRunner: QueryRunner,
@@ -162,32 +149,17 @@ export class CreateOrderItemsStep extends SagaStep<
         { shouldBypassPermissionChecks: true },
       );
 
-    const allOrderItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
     const orderLanguage = (input.orderLanguage ??
       MKT_DEFAULT_LANGUAGE) as MktSupportedLanguage;
 
-    // 1. Create order items from internal variants
-    if (input.variants && input.variants.length > 0) {
-      const variantItems = await this.buildOrderItemsFromVariants(
-        context,
-        input.variants,
-      );
+    // Build order items from external products
+    const orderItemsData = await this.buildOrderItemsFromExternalProducts(
+      context,
+      input.externalProducts ?? [],
+      orderLanguage,
+    );
 
-      allOrderItemsData.push(...variantItems);
-    }
-
-    // 2. Create order items from external MKT products
-    if (input.externalProducts && input.externalProducts.length > 0) {
-      const externalItems = await this.buildOrderItemsFromExternalProducts(
-        context,
-        input.externalProducts,
-        orderLanguage,
-      );
-
-      allOrderItemsData.push(...externalItems);
-    }
-
-    if (allOrderItemsData.length === 0) {
+    if (orderItemsData.length === 0) {
       return {
         success: false,
         error: new Error('No order items could be created'),
@@ -195,7 +167,7 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Save order items
-    const orderItems = allOrderItemsData.map((data) =>
+    const orderItems = orderItemsData.map((data) =>
       orderItemRepository.create(data),
     );
 
@@ -205,7 +177,7 @@ export class CreateOrderItemsStep extends SagaStep<
 
     // Calculate order totals
     const calculatedItems = savedOrderItems.map((item) => ({
-      variantId: item.mktVariantId ?? item.externalMktProductId ?? '',
+      variantId: item.externalMktProductId ?? '',
       name: item.name,
       unitPrice: item.unitPrice ?? 0,
       quantity: item.quantity ?? 1,
@@ -241,74 +213,6 @@ export class CreateOrderItemsStep extends SagaStep<
         },
       },
     };
-  }
-
-  /**
-   * Build order item data from internal variants
-   */
-  private async buildOrderItemsFromVariants(
-    context: SagaContext,
-    variants: Array<{ variantId: string; quantity?: number }>,
-  ): Promise<Partial<MktOrderItemWorkspaceEntity>[]> {
-    const variantIds = variants.map((v) => v.variantId);
-    const variantsFromDb = await this.getVariants(
-      context.workspaceId,
-      variantIds,
-    );
-
-    if (variantsFromDb.length === 0) {
-      return [];
-    }
-
-    const variantById = new Map(variantsFromDb.map((v) => [v.id, v]));
-    const orderItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
-
-    for (const variantInput of variants) {
-      const variant = variantById.get(variantInput.variantId);
-
-      if (!variant) {
-        this.logger.warn(
-          `Variant ${variantInput.variantId} not found, skipping`,
-        );
-        continue;
-      }
-
-      const quantity = variantInput.quantity ?? 1;
-      const calculatedItem = this.calculationService.calculateOrderItem(
-        {
-          id: variant.id,
-          name: variant.name ?? 'Item',
-          price: variant.price ?? 0,
-        },
-        quantity,
-      );
-
-      const position = await this.recordPositionService.buildRecordPosition({
-        value: 'last',
-        objectMetadata: {
-          isCustom: false,
-          nameSingular: 'mktOrderItem',
-        },
-        workspaceId: context.workspaceId,
-      });
-
-      orderItemsData.push({
-        mktOrderId: context.orderId,
-        mktVariantId: variant.id,
-        name: variant.name ?? 'Item',
-        snapshotProductName: variant.name ?? 'Item',
-        unitName: 'unit',
-        unitPrice: calculatedItem.unitPrice,
-        quantity: calculatedItem.quantity,
-        totalPrice: calculatedItem.totalPrice,
-        taxPercentage: calculatedItem.taxPercentage,
-        taxAmount: calculatedItem.taxAmount,
-        totalAmountWithTax: calculatedItem.totalAmountWithTax,
-        position,
-      });
-    }
-
-    return orderItemsData;
   }
 
   /**
@@ -409,145 +313,6 @@ export class CreateOrderItemsStep extends SagaStep<
   }
 
   /**
-   * Tạo order items từ variants (normal flow)
-   * @deprecated Use createOrderItemsFromAllSources instead
-   */
-  private async createOrderItemsFromVariants(
-    context: SagaContext,
-    input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
-  ): Promise<SagaStepResult<CreateOrderItemsStepOutput>> {
-    if (!input.variants || input.variants.length === 0) {
-      return {
-        success: false,
-        error: new Error('At least one variant is required'),
-      };
-    }
-
-    // Get variants from database
-    const variantIds = input.variants.map((v) => v.variantId);
-    const variants = await this.getVariants(context.workspaceId, variantIds);
-
-    if (variants.length === 0) {
-      return {
-        success: false,
-        error: new Error('No valid variants found'),
-      };
-    }
-
-    const variantById = new Map(variants.map((v) => [v.id, v]));
-
-    // Create order items
-    const orderItemRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderItemWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const orderItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
-
-    for (const variantInput of input.variants) {
-      const variant = variantById.get(variantInput.variantId);
-
-      if (!variant) {
-        this.logger.warn(
-          `Variant ${variantInput.variantId} not found, skipping`,
-        );
-        continue;
-      }
-
-      const quantity = variantInput.quantity ?? 1;
-      const calculatedItem = this.calculationService.calculateOrderItem(
-        {
-          id: variant.id,
-          name: variant.name ?? 'Item',
-          price: variant.price ?? 0,
-        },
-        quantity,
-      );
-
-      const position = await this.recordPositionService.buildRecordPosition({
-        value: 'last',
-        objectMetadata: {
-          isCustom: false,
-          nameSingular: 'mktOrderItem',
-        },
-        workspaceId: context.workspaceId,
-      });
-
-      orderItemsData.push({
-        mktOrderId: context.orderId,
-        mktVariantId: variant.id,
-        name: variant.name ?? 'Item',
-        snapshotProductName: variant.name ?? 'Item',
-        unitName: 'unit',
-        unitPrice: calculatedItem.unitPrice,
-        quantity: calculatedItem.quantity,
-        totalPrice: calculatedItem.totalPrice,
-        taxPercentage: calculatedItem.taxPercentage,
-        taxAmount: calculatedItem.taxAmount,
-        totalAmountWithTax: calculatedItem.totalAmountWithTax,
-        position,
-      });
-    }
-
-    if (orderItemsData.length === 0) {
-      return {
-        success: false,
-        error: new Error('No order items could be created'),
-      };
-    }
-
-    const orderItems = orderItemsData.map((data) =>
-      orderItemRepository.create(data),
-    );
-
-    const savedOrderItems = await queryRunner.manager.save(orderItems);
-
-    this.logger.log(`Created ${savedOrderItems.length} order items`);
-
-    // Calculate order totals
-    const calculatedItems = savedOrderItems.map((item) => ({
-      variantId: item.mktVariantId ?? '',
-      name: item.name,
-      unitPrice: item.unitPrice ?? 0,
-      quantity: item.quantity ?? 1,
-      totalPrice: item.totalPrice ?? 0,
-      taxPercentage: item.taxPercentage ?? 0,
-      taxAmount: item.taxAmount ?? 0,
-      totalAmountWithTax: item.totalAmountWithTax ?? 0,
-    }));
-
-    const totals = this.calculationService.calculateOrderTotals(
-      calculatedItems,
-      input.discountPercent,
-    );
-
-    // Update order with totals
-    await this.updateOrderTotals(context, totals, queryRunner);
-
-    // Store rollback data
-    context.orderItemIds = savedOrderItems.map((item) => item.id);
-    context.rollbackData.set(this.name, {
-      orderItemIds: context.orderItemIds,
-    });
-
-    return {
-      success: true,
-      data: {
-        orderItems: savedOrderItems,
-        totals: {
-          subtotal: totals.subtotal,
-          tax: totals.tax,
-          discount: totals.discount,
-          totalAmount: totals.totalAmount,
-        },
-      },
-    };
-  }
-
-  /**
    * Clone order items từ trial order (TRIAL_TO_PAID flow)
    */
   private async cloneOrderItemsFromTrial(
@@ -611,10 +376,22 @@ export class CreateOrderItemsStep extends SagaStep<
 
       clonedItemsData.push({
         mktOrderId: context.orderId,
-        mktVariantId: item.mktVariantId,
+        // External product references
+        externalMktProductId: item.externalMktProductId,
+        externalMktProductCode: item.externalMktProductCode,
+        externalMktPackageId: item.externalMktPackageId,
+        externalMktPackageCode: item.externalMktPackageCode,
+        // Snapshots
+        snapshotMktProduct: item.snapshotMktProduct,
+        snapshotMktPackage: item.snapshotMktPackage,
+        licenseSnapshot: item.licenseSnapshot,
+        // Display fields
         name: item.name,
         snapshotProductName: item.snapshotProductName,
+        snapshotPackageName: item.snapshotPackageName,
+        orderLanguage: item.orderLanguage,
         unitName: item.unitName,
+        // Values
         unitPrice: item.unitPrice,
         quantity: item.quantity,
         totalPrice: item.totalPrice,
@@ -669,25 +446,6 @@ export class CreateOrderItemsStep extends SagaStep<
         totals,
       },
     };
-  }
-
-  /**
-   * Get variants từ database
-   */
-  private async getVariants(
-    workspaceId: string,
-    variantIds: string[],
-  ): Promise<MktVariantWorkspaceEntity[]> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktVariantWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    return repository.find({
-      where: variantIds.map((id) => ({ id })),
-    });
   }
 
   /**

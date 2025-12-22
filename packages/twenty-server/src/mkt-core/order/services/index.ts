@@ -5,6 +5,7 @@
  * - core/: Stateless business logic (status, calculation, validation, events)
  * - domain/: Domain operations (CRUD, order items)
  * - application/: Orchestration/Facade
+ * - integration/: Bridge services to other MKT modules
  * - legacy/: Deprecated services (for backward compatibility)
  */
 
@@ -16,6 +17,9 @@ export * from './domain';
 
 // Application Services
 export * from './application';
+
+// Integration Services
+export * from './integration';
 
 // Legacy Services (deprecated - use new services instead)
 export * from './legacy';

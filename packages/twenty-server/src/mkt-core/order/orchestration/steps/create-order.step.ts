@@ -13,16 +13,11 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreateOrderStepOutput = {
-  order: MktOrderWorkspaceEntity;
-  orderCode: string;
-};
+import {
+  CreateOrderStepOutput,
+  CreateOrderWithItemsInput,
+} from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 // ============================================
 // ORDER CODE CONSTANTS
@@ -175,10 +170,10 @@ export class CreateOrderStep extends SagaStep<
         { shouldBypassPermissionChecks: true },
       );
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+    const now = DateTimeUtils.now();
+    const year = now.year;
+    const month = String(now.month).padStart(2, '0');
+    const day = String(now.day).padStart(2, '0');
     const datePrefix = `${year}${month}${day}`;
 
     // Find the highest order number for today
@@ -214,7 +209,9 @@ export class CreateOrderStep extends SagaStep<
 
     if (existingOrder) {
       // If somehow duplicate, add timestamp
-      const timestamp = Date.now().toString().slice(-6);
+      const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+        .toString()
+        .slice(-6);
 
       return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
     }

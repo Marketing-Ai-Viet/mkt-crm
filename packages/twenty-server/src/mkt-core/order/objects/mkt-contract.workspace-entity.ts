@@ -6,7 +6,6 @@ import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfa
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
-import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
@@ -157,14 +156,21 @@ export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   position: number;
 
-  @WorkspaceField({
+  @WorkspaceRelation({
     standardId: MKT_CONTRACT_FIELD_IDS.createdBy,
-    type: FieldMetadataType.ACTOR,
-    label: msg`Created by`,
-    icon: 'IconCreativeCommonsSa',
-    description: msg`The creator of the record`,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Created By`,
+    description: msg`The workspace member who created this contract`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'createdMktContracts',
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  createdBy: ActorMetadata;
+  @WorkspaceIsNullable()
+  createdBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('createdBy')
+  createdById: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_CONTRACT_FIELD_IDS.mktOrder,

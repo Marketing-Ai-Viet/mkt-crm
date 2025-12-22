@@ -24,13 +24,11 @@ import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
+  MktLicenseSnapshot,
   MktPackageSnapshot,
   MktProductSnapshot,
   MktSupportedLanguage,
 } from 'src/mkt-core/order/types';
-import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -148,6 +146,17 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   totalPrice?: number;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Item Discount`,
+    description: msg`Discount amount from promotions for this item`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  itemDiscount?: number;
+
   // ============================================
   // EXTERNAL MKT PRODUCT REFERENCE FIELDS
   // ============================================
@@ -217,6 +226,40 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   snapshotMktPackage: MktPackageSnapshot | null;
 
   // ============================================
+  // EXTERNAL MKT LICENSE REFERENCE FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktLicenseId,
+    type: FieldMetadataType.TEXT,
+    label: msg`External License ID`,
+    description: msg`ID of license from MKT Server`,
+    icon: 'IconKey',
+  })
+  @WorkspaceIsNullable()
+  externalMktLicenseId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktLicenseKey,
+    type: FieldMetadataType.TEXT,
+    label: msg`License Key`,
+    description: msg`License key from MKT Server`,
+    icon: 'IconLicense',
+  })
+  @WorkspaceIsNullable()
+  externalMktLicenseKey: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.licenseSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`License Snapshot`,
+    description: msg`Immutable snapshot of MKT license at order time`,
+    icon: 'IconCamera',
+  })
+  @WorkspaceIsNullable()
+  licenseSnapshot: MktLicenseSnapshot | null;
+
+  // ============================================
   // DISPLAY FIELDS (denormalized for quick access)
   // ============================================
 
@@ -258,54 +301,6 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktProduct,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Product`,
-    description: msg`Product for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktProductWorkspaceEntity,
-    inverseSideFieldKey: 'orderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktProduct?: Relation<MktProductWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('mktProduct')
-  mktProductId?: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Variant`,
-    description: msg`Variant for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktVariantWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktVariant?: Relation<MktVariantWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('mktVariant')
-  mktVariantId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktCombo,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Combo`,
-    description: msg`Combo for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktCombo?: Relation<MktComboWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('mktCombo')
-  mktComboId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.timelineActivities,

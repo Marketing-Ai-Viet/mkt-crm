@@ -21,7 +21,7 @@ import { Response } from 'express';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/dev-seeder/constants/mkt-payment-data-seeds.constants';
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
 import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
 import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';

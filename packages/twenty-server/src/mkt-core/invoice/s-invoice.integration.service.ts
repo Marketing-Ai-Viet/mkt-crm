@@ -9,6 +9,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MKT_INVOICE_STATUS } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 type CreateInvoiceResponse = {
   transactionUuid?: string;
@@ -113,13 +114,20 @@ export class SInvoiceIntegrationService {
     const transactionUuid = randomUUID();
 
     // Build item lines
+    // Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
     const itemInfo = items.map((it, idx) => {
       const quantity = it.quantity ?? 1;
       const unitPrice = it.unitPrice ?? 0;
-      const amountWithoutTax = unitPrice * quantity;
+      const amountWithoutTax = MoneyUtils.multiply(
+        unitPrice,
+        quantity,
+      ).toNumber();
       const taxPercent = (it.taxPercentage ?? 0) as number;
-      const taxAmount = Math.round((amountWithoutTax * taxPercent) / 100);
-      const withTax = amountWithoutTax + taxAmount;
+      const taxAmount = MoneyUtils.percentage(
+        amountWithoutTax,
+        taxPercent,
+      ).toNumber();
+      const withTax = MoneyUtils.add(amountWithoutTax, taxAmount).toNumber();
 
       return {
         lineNumber: idx + 1,

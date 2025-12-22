@@ -38,7 +38,7 @@ export class MktCustomerUpdateService {
 
     this.logChanges(customer, updateData, person.emails?.primaryEmail);
 
-    await repo.update({ id: customer.id }, updateData);
+    await repo.update({ id: customer.id }, updateData as never);
 
     this.logger.log(
       `Successfully updated customer for: ${person.emails?.primaryEmail}`,

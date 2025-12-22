@@ -11,9 +11,6 @@ import { MktCronRegisterCommand } from 'src/mkt-core/commands/mkt-cron-register.
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
-import { MktLicenseDashboardStatsCronJob } from 'src/mkt-core/license/commands/mkt-license-dashboard-stats.cron.job';
-import { MktLicenseDashboardStatsRegistrationService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats-registration.service';
-import { MktLicenseDashboardStatsService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats.service';
 import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/legacy';
 import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 
@@ -30,18 +27,12 @@ import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/s
   ],
   providers: [
     MktCronRegisterCommand,
-    MktLicenseDashboardStatsCronJob,
-    MktLicenseDashboardStatsService,
-    MktLicenseDashboardStatsRegistrationService,
     MktOrderOverdueRegistrationService,
     MktPeopleSyncRegistrationService,
     MktCustomerTierRegistrationService,
   ],
   exports: [
     MktCronRegisterCommand,
-    MktLicenseDashboardStatsCronJob,
-    MktLicenseDashboardStatsService,
-    MktLicenseDashboardStatsRegistrationService,
     MktOrderOverdueRegistrationService,
     MktPeopleSyncRegistrationService,
     MktCustomerTierRegistrationService,

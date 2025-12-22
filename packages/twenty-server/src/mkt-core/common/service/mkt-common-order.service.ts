@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { In } from 'typeorm';
-
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
@@ -12,23 +10,17 @@ import {
   PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import {
   ORDER_METADATA,
   ORDER_STATUS,
   RefundItem,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 @Injectable()
 export class MktCommonOrderService {
   private readonly logger = new Logger(MktCommonOrderService.name);
   private orderMetadata: ORDER_METADATA | null = null;
-  public licenseHistory: MktLicenseHistoryWorkspaceEntity | null | undefined =
-    null;
 
   constructor(
     private readonly mktRepo: MktRepositoryService,
@@ -65,11 +57,7 @@ export class MktCommonOrderService {
       `Updating order ${orderId} with data: ${JSON.stringify(updateData)}`,
     );
 
-    if (this.licenseHistory?.createdBy) {
-      updateData.createdBy = this.licenseHistory.createdBy;
-    }
-
-    await orderRepository.update(orderId, updateData);
+    await orderRepository.update(orderId, updateData as never);
   }
 
   async updateOrderForRefund(
@@ -83,11 +71,7 @@ export class MktCommonOrderService {
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
     };
 
-    if (this.licenseHistory?.createdBy) {
-      updateData.createdBy = this.licenseHistory.createdBy;
-    }
-
-    await orderRepository.update(updateOrder?.id, updateData);
+    await orderRepository.update(updateOrder?.id, updateData as never);
   }
 
   async updateFirstMetadata(
@@ -202,90 +186,16 @@ export class MktCommonOrderService {
   }
 
   async handleRefund(
-    currentOrder: Partial<MktOrderWorkspaceEntity> | null,
-    payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
+    _currentOrder: Partial<MktOrderWorkspaceEntity> | null,
+    _payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
   ): Promise<number> {
     this.logger.log('Handling refund process in MktCommonOrderService');
-    const licenseRefundIds = await this.getLicenseIdsRefund(
-      currentOrder,
-      payload,
+
+    // TODO: Implement refund logic using product integration services
+    this.logger.warn(
+      'Refund logic needs to be reimplemented with product integration services',
     );
 
-    this.logger.log(
-      `License IDs to refund: ${JSON.stringify(licenseRefundIds)}`,
-    );
-
-    await this.updateLicenseStatusForRefund(licenseRefundIds);
-
-    return await this.calculateRefundAmount(licenseRefundIds);
-  }
-
-  private async updateLicenseStatusForRefund(licenseRefundIds: string[]) {
-    if (licenseRefundIds.length === 0) return;
-
-    const licenseRepo = await this.mktRepo.getRepository(
-      MktLicenseWorkspaceEntity,
-    );
-
-    await licenseRepo.update(licenseRefundIds, {
-      status: MKT_LICENSE_STATUS.REFUND,
-    });
-  }
-
-  private async calculateRefundAmount(licenseRefundIds: string[]) {
-    const licenseRepo = await this.mktRepo.getRepository(
-      MktLicenseWorkspaceEntity,
-    );
-    const licenses = await licenseRepo.find({
-      where: {
-        id: In(licenseRefundIds),
-      },
-      relations: ['mktVariant'],
-    });
-
-    let totalRefundAmount = 0;
-
-    for (const license of licenses) {
-      const variant = license.mktVariant as MktVariantWorkspaceEntity;
-
-      this.logger.log(`Calculating refund for license `);
-
-      if (variant) {
-        totalRefundAmount += variant.price || 0;
-      }
-    }
-
-    return totalRefundAmount;
-  }
-
-  private async getLicenseIdsRefund(
-    currentOrder: Partial<MktOrderWorkspaceEntity> | null,
-    payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
-  ) {
-    const licenses = currentOrder?.mktLicense;
-
-    const licenseIds = licenses?.map((license) => license.id) || [];
-    let updateRefundLicenseIds: string[] = [];
-    let refundMetadata: ORDER_METADATA;
-    let licenseRefundIds: string[] = [];
-
-    try {
-      refundMetadata = JSON.parse(
-        payload.data?.metadata as unknown as string,
-      ) as ORDER_METADATA;
-      licenseRefundIds = refundMetadata.licenseRefundIds || [];
-    } catch (e) {
-      this.logger.log('No refund metadata found or failed to parse');
-    }
-
-    if (licenseRefundIds.length) {
-      updateRefundLicenseIds = licenseIds.filter((id) =>
-        licenseRefundIds.includes(id),
-      );
-    } else {
-      return licenseIds;
-    }
-
-    return updateRefundLicenseIds;
+    return 0;
   }
 }

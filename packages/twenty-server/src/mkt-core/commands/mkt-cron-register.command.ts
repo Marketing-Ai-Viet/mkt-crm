@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import { Command, CommandRunner } from 'nest-commander';
 
 import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
-import { MktLicenseDashboardStatsRegistrationService } from 'src/mkt-core/license/services/mkt-license-dashboard-stats-registration.service';
 import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/legacy';
 import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 
@@ -15,7 +14,6 @@ export class MktCronRegisterCommand extends CommandRunner {
   private readonly logger = new Logger(MktCronRegisterCommand.name);
 
   constructor(
-    private readonly mktLicenseDashboardStatsRegistrationService: MktLicenseDashboardStatsRegistrationService,
     private readonly mktOrderOverdueRegistrationService: MktOrderOverdueRegistrationService,
     private readonly mktPeopleSyncRegistrationService: MktPeopleSyncRegistrationService,
     private readonly mktCustomerTierRegistrationService: MktCustomerTierRegistrationService,
@@ -27,10 +25,6 @@ export class MktCronRegisterCommand extends CommandRunner {
     this.logger.log('Registering all background sync cron jobs...');
 
     const commands = [
-      {
-        name: 'CronLicenseStats',
-        command: this.mktLicenseDashboardStatsRegistrationService,
-      },
       {
         name: 'CronOrderOverdue',
         command: this.mktOrderOverdueRegistrationService,

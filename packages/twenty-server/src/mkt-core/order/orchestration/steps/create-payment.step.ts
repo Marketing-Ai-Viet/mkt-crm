@@ -11,18 +11,12 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
-import { CreateOrderWithItemsInput } from 'src/mkt-core/order/types';
+import {
+  CreateOrderWithItemsInput,
+  CreatePaymentStepOutput,
+} from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
-
-// ============================================
-// STEP OUTPUT TYPE
-// ============================================
-
-export type CreatePaymentStepOutput = {
-  payments: MktPaymentWorkspaceEntity[];
-  qrCodeUrl?: string;
-};
 
 // ============================================
 // DEFAULT CONSTANTS

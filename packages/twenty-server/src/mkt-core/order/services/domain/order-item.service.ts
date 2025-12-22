@@ -1,79 +1,45 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  ORDER_ITEM_DEFAULTS,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants';
+import { MKT_ORDER_ITEM_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
-
-/**
- * Input for updating order item
- */
-export type UpdateOrderItemInput = {
-  orderItemId: string;
-  variantId?: string;
-  quantity?: number;
-  unitPrice?: number;
-  note?: string;
-  updatedAt?: string; // For optimistic locking
-};
-
-/**
- * Calculated values for order item
- */
-export type OrderItemCalculatedValues = {
-  name: string;
-  snapshotProductName: string;
-  mktProductId: string | null;
-  unitName: string;
-  unitPrice: number;
-  quantity: number;
-  taxPercentage: number;
-  taxAmount: number;
-  totalPrice: number;
-  totalAmountWithTax: number;
-};
-
-/**
- * Validation result
- */
-export type OrderItemValidationResult = {
-  valid: boolean;
-  error?: string;
-  orderItem?: MktOrderItemWorkspaceEntity;
-};
-
-/**
- * Update result
- */
-export type UpdateOrderItemResult = {
-  success: boolean;
-  orderItem?: MktOrderItemWorkspaceEntity;
-  error?: string;
-};
-
-const DEFAULT_TAX_PERCENTAGE = 0;
-const DEFAULT_UNIT_NAME = 'pcs';
-const DEFAULT_QUANTITY = 1;
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
+import {
+  BulkRecalculateResult,
+  OrderItemCalculatedValues,
+  OrderItemValidationResult,
+  UpdateOrderItemInput,
+  UpdateOrderItemResult,
+} from 'src/mkt-core/order/types';
+import {
+  MktPackageSnapshot,
+  MktProductSnapshot,
+} from 'src/mkt-core/mkt-product-integration/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 /**
  * OrderItemService - Centralized service for order item operations
  *
  * Responsibilities:
  * - Validate order items for update
- * - Calculate order item values from variant
+ * - Calculate order item values from external product snapshots
  * - Update order items with recalculation
  * - Handle optimistic locking
  *
- * Replaces logic from:
- * - MktOrderItemUpdateOnePreQueryHook
+ * Note: MktVariantWorkspaceEntity has been removed.
+ * Order items now use external MKT Server products via snapshots.
  */
 @Injectable()
 export class OrderItemService {
-  private readonly logger = new Logger(OrderItemService.name);
+  private readonly logger = new Logger(MKT_ORDER_ITEM_LOG_CONTEXT);
   private readonly optimisticLockingEnabled: boolean;
 
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {
+  constructor(private readonly orderItemRepository: MktOrderItemRepository) {
     this.optimisticLockingEnabled =
       process.env.ORDER_OPTIMISTIC_LOCKING_ENABLED !== 'false';
   }
@@ -87,9 +53,9 @@ export class OrderItemService {
     input: UpdateOrderItemInput,
   ): Promise<OrderItemValidationResult> {
     try {
-      const orderItem = await this.getOrderItemWithRelations(
-        orderItemId,
+      const orderItem = await this.orderItemRepository.findByIdWithRelations(
         workspaceId,
+        orderItemId,
       );
 
       if (!orderItem) {
@@ -109,10 +75,10 @@ export class OrderItemService {
       // Check if order status allows modification
       const orderStatus = orderItem.mktOrder.status;
 
-      if (this.optimisticLockingEnabled && orderStatus) {
+      if (!this.canModifyOrderItems(orderItem.mktOrder)) {
         return {
           valid: false,
-          error: 'Order item cannot be updated because order is locked',
+          error: `Order item cannot be updated - order status: ${orderStatus}`,
         };
       }
 
@@ -150,29 +116,65 @@ export class OrderItemService {
   }
 
   /**
-   * Calculate order item values from variant
+   * Calculate order item values from package snapshot
+   * Uses MoneyUtils for precise financial calculations
    */
-  calculateValuesFromVariant(
-    variant: MktVariantWorkspaceEntity,
-    quantity: number = DEFAULT_QUANTITY,
-    taxPercentage: number = DEFAULT_TAX_PERCENTAGE,
+  calculateValuesFromSnapshot(
+    productSnapshot: MktProductSnapshot,
+    packageSnapshot: MktPackageSnapshot,
+    quantity: number = ORDER_ITEM_DEFAULTS.QUANTITY,
+    taxPercentage: number = ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE,
   ): OrderItemCalculatedValues {
-    const safeQuantity = quantity > 0 ? quantity : DEFAULT_QUANTITY;
-    const unitPrice = variant.price ?? 0;
-    const totalPrice = this.roundToTwoDecimals(safeQuantity * unitPrice);
-    const taxAmount = this.roundToTwoDecimals(
-      (totalPrice * taxPercentage) / 100,
-    );
-    const totalAmountWithTax = this.roundToTwoDecimals(totalPrice + taxAmount);
+    const safeQuantity = quantity > 0 ? quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
+    const unitPrice = packageSnapshot.price ?? 0;
+    const totalPrice = MoneyUtils.multiply(safeQuantity, unitPrice).toNumber();
+    const taxAmount = MoneyUtils.percentage(
+      totalPrice,
+      taxPercentage,
+    ).toNumber();
+    const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
 
     return {
-      name: `${variant.name} (x${safeQuantity})`,
-      snapshotProductName: variant.name,
-      mktProductId: variant.mktProductId ?? null,
-      unitName: DEFAULT_UNIT_NAME,
+      name: `${packageSnapshot.displayName} (x${safeQuantity})`,
+      snapshotProductName: productSnapshot.displayName,
+      mktProductId: null, // No internal product relation
+      unitName: ORDER_ITEM_DEFAULTS.UNIT_NAME,
       unitPrice,
       quantity: safeQuantity,
       taxPercentage,
+      taxAmount,
+      totalPrice,
+      totalAmountWithTax,
+    };
+  }
+
+  /**
+   * Calculate order item values from existing order item snapshots
+   * Used for recalculation when quantity changes
+   */
+  calculateValuesFromOrderItem(
+    orderItem: MktOrderItemWorkspaceEntity,
+    quantity?: number,
+    taxPercentage?: number,
+  ): Partial<OrderItemCalculatedValues> {
+    const safeQuantity =
+      quantity ?? orderItem.quantity ?? ORDER_ITEM_DEFAULTS.QUANTITY;
+    const unitPrice = orderItem.unitPrice ?? 0;
+    const safeTaxPercentage =
+      taxPercentage ??
+      orderItem.taxPercentage ??
+      ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE;
+
+    const totalPrice = MoneyUtils.multiply(safeQuantity, unitPrice).toNumber();
+    const taxAmount = MoneyUtils.percentage(
+      totalPrice,
+      safeTaxPercentage,
+    ).toNumber();
+    const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
+
+    return {
+      quantity: safeQuantity,
+      taxPercentage: safeTaxPercentage,
       taxAmount,
       totalPrice,
       totalAmountWithTax,
@@ -203,84 +205,75 @@ export class OrderItemService {
       }
 
       const { orderItem } = validation;
-      const orderItemRepository =
-        await this.getOrderItemRepository(workspaceId);
 
       // Build update data
       const updateData: Partial<MktOrderItemWorkspaceEntity> = {};
 
-      // Get variant for calculation
-      let variant: MktVariantWorkspaceEntity | null = null;
-
-      if (input.variantId) {
-        variant = await this.getVariant(input.variantId, workspaceId);
-
-        if (!variant) {
-          return {
-            success: false,
-            error: `Variant not found: ${input.variantId}`,
-          };
-        }
-
-        updateData.mktVariantId = input.variantId;
-      } else if (orderItem.mktVariant) {
-        variant = orderItem.mktVariant as MktVariantWorkspaceEntity;
+      // Handle quantity update
+      if (input.quantity !== undefined) {
+        updateData.quantity =
+          input.quantity > 0 ? input.quantity : ORDER_ITEM_DEFAULTS.QUANTITY;
       }
 
-      // Calculate values if we have a variant
-      if (variant) {
-        const quantity =
-          input.quantity ?? orderItem.quantity ?? DEFAULT_QUANTITY;
-        const calculatedValues = this.calculateValuesFromVariant(
-          variant,
-          quantity,
-          orderItem.taxPercentage ?? DEFAULT_TAX_PERCENTAGE,
+      // Handle unit price update
+      if (input.unitPrice !== undefined) {
+        updateData.unitPrice = input.unitPrice;
+      }
+
+      // Recalculate totals if quantity or price changed
+      if (
+        updateData.quantity !== undefined ||
+        updateData.unitPrice !== undefined
+      ) {
+        const calculatedValues = this.calculateValuesFromOrderItem(
+          orderItem,
+          updateData.quantity,
         );
 
-        Object.assign(updateData, calculatedValues);
-      } else {
-        // Manual update without variant recalculation
-        if (input.quantity !== undefined) {
-          updateData.quantity =
-            input.quantity > 0 ? input.quantity : DEFAULT_QUANTITY;
-        }
-
-        if (input.unitPrice !== undefined) {
-          updateData.unitPrice = input.unitPrice;
-        }
-
-        // Recalculate totals if quantity or price changed
-        if (
-          updateData.quantity !== undefined ||
-          updateData.unitPrice !== undefined
-        ) {
+        // Override with new unit price if provided
+        if (updateData.unitPrice !== undefined) {
           const quantity =
-            updateData.quantity ?? orderItem.quantity ?? DEFAULT_QUANTITY;
-          const unitPrice = updateData.unitPrice ?? orderItem.unitPrice ?? 0;
+            updateData.quantity ??
+            orderItem.quantity ??
+            ORDER_ITEM_DEFAULTS.QUANTITY;
+          const unitPrice = updateData.unitPrice;
           const taxPercentage =
-            orderItem.taxPercentage ?? DEFAULT_TAX_PERCENTAGE;
+            orderItem.taxPercentage ?? ORDER_ITEM_DEFAULTS.TAX_PERCENTAGE;
 
-          const totalPrice = this.roundToTwoDecimals(quantity * unitPrice);
-          const taxAmount = this.roundToTwoDecimals(
-            (totalPrice * taxPercentage) / 100,
-          );
+          const totalPrice = MoneyUtils.multiply(
+            quantity,
+            unitPrice,
+          ).toNumber();
+          const taxAmount = MoneyUtils.percentage(
+            totalPrice,
+            taxPercentage,
+          ).toNumber();
 
           updateData.totalPrice = totalPrice;
           updateData.taxAmount = taxAmount;
-          updateData.totalAmountWithTax = this.roundToTwoDecimals(
-            totalPrice + taxAmount,
-          );
+          updateData.totalAmountWithTax = MoneyUtils.add(
+            totalPrice,
+            taxAmount,
+          ).toNumber();
+        } else {
+          // Use calculated values from existing order item
+          Object.assign(updateData, calculatedValues);
         }
       }
 
       // Update the order item
-      await orderItemRepository.update(orderItemId, updateData);
+      await this.orderItemRepository.update(
+        workspaceId,
+        orderItemId,
+        updateData,
+      );
 
       // Fetch updated order item
-      const updatedOrderItem = await orderItemRepository.findOne({
-        where: { id: orderItemId },
-        relations: ['mktOrder', 'mktVariant', 'mktProduct'],
-      });
+      const updatedOrderItem =
+        await this.orderItemRepository.findByIdWithRelations(
+          workspaceId,
+          orderItemId,
+        );
 
       this.logger.log(`Order item ${orderItemId} updated successfully`);
 
@@ -299,16 +292,16 @@ export class OrderItemService {
   }
 
   /**
-   * Recalculate order item from its variant
+   * Recalculate order item from its stored snapshots/values
    */
   async recalculateOrderItem(
     orderItemId: string,
     workspaceId: string,
   ): Promise<UpdateOrderItemResult> {
     try {
-      const orderItem = await this.getOrderItemWithRelations(
-        orderItemId,
+      const orderItem = await this.orderItemRepository.findByIdWithRelations(
         workspaceId,
+        orderItemId,
       );
 
       if (!orderItem) {
@@ -318,32 +311,21 @@ export class OrderItemService {
         };
       }
 
-      const variant = orderItem.mktVariant as
-        | MktVariantWorkspaceEntity
-        | undefined;
+      // Recalculate from existing values
+      const calculatedValues = this.calculateValuesFromOrderItem(orderItem);
 
-      if (!variant) {
-        return {
-          success: false,
-          error: 'Order item has no associated variant for recalculation',
-        };
-      }
-
-      const calculatedValues = this.calculateValuesFromVariant(
-        variant,
-        orderItem.quantity ?? DEFAULT_QUANTITY,
-        orderItem.taxPercentage ?? DEFAULT_TAX_PERCENTAGE,
+      // Update the order item
+      await this.orderItemRepository.update(
+        workspaceId,
+        orderItemId,
+        calculatedValues as Partial<MktOrderItemWorkspaceEntity>,
       );
 
-      const orderItemRepository =
-        await this.getOrderItemRepository(workspaceId);
-
-      await orderItemRepository.update(orderItemId, calculatedValues);
-
-      const updatedOrderItem = await orderItemRepository.findOne({
-        where: { id: orderItemId },
-        relations: ['mktOrder', 'mktVariant', 'mktProduct'],
-      });
+      const updatedOrderItem =
+        await this.orderItemRepository.findByIdWithRelations(
+          workspaceId,
+          orderItemId,
+        );
 
       this.logger.log(`Order item ${orderItemId} recalculated successfully`);
 
@@ -368,12 +350,10 @@ export class OrderItemService {
     orderItemId: string,
     workspaceId: string,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    const orderItemRepository = await this.getOrderItemRepository(workspaceId);
-
-    return orderItemRepository.findOne({
-      where: { id: orderItemId },
-      relations: ['mktOrder', 'mktVariant', 'mktProduct'],
-    });
+    return this.orderItemRepository.findByIdWithRelations(
+      workspaceId,
+      orderItemId,
+    );
   }
 
   /**
@@ -385,11 +365,7 @@ export class OrderItemService {
     const status = order.status as ORDER_STATUS | null;
 
     // Only DRAFT orders can have items modified
-    if (!status || status === ORDER_STATUS.DRAFT) {
-      return true;
-    }
-
-    return false;
+    return !status || status === ORDER_STATUS.DRAFT;
   }
 
   /**
@@ -398,18 +374,13 @@ export class OrderItemService {
   async recalculateAllOrderItems(
     orderId: string,
     workspaceId: string,
-  ): Promise<{
-    success: boolean;
-    updatedCount: number;
-    errors: string[];
-  }> {
+  ): Promise<BulkRecalculateResult> {
     try {
-      const orderItemRepository =
-        await this.getOrderItemRepository(workspaceId);
-      const orderItems = await orderItemRepository.find({
-        where: { mktOrderId: orderId },
-        relations: ['mktVariant'],
-      });
+      const orderItems = await this.orderItemRepository.findByOrderId(
+        workspaceId,
+        orderId,
+        { relations: { mktOrder: true } },
+      );
 
       let updatedCount = 0;
       const errors: string[] = [];
@@ -442,42 +413,15 @@ export class OrderItemService {
   // PRIVATE HELPERS
   // ============================================
 
-  private async getOrderItemRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderItemWorkspaceEntity>(
-      workspaceId,
-      'mktOrderItem',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
-
-  private async getVariant(
-    variantId: string,
-    workspaceId: string,
-  ): Promise<MktVariantWorkspaceEntity | null> {
-    const variantRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktVariantWorkspaceEntity>(
-        workspaceId,
-        'mktVariant',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    return variantRepository.findOne({
-      where: { id: variantId },
-      relations: ['mktProduct'],
-    });
-  }
-
-  private roundToTwoDecimals(value: number): number {
-    return Math.round(value * 100) / 100;
-  }
-
   private validateUpdatedAt(
     orderUpdatedAt: string,
     inputUpdatedAt: string,
   ): boolean {
-    const orderDate = new Date(orderUpdatedAt);
-    const inputDate = new Date(inputUpdatedAt);
+    const orderDate = DateTimeUtils.fromISO(orderUpdatedAt);
+    const inputDate = DateTimeUtils.fromISO(inputUpdatedAt);
 
-    return orderDate.getTime() === inputDate.getTime();
+    return (
+      DateTimeUtils.toMillis(orderDate) === DateTimeUtils.toMillis(inputDate)
+    );
   }
 }

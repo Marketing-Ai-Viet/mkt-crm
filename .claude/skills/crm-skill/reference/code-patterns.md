@@ -514,6 +514,86 @@ export const MKT_FIELD_IDS = {
 
 ---
 
+## 8. Required Utilities Pattern
+
+### DateTimeUtils - Date/Time Operations
+
+```typescript
+import { DateTimeUtils, DATE_TIME_FORMATS } from 'src/mkt-core/utils/date-time.utils';
+
+// In services/sagas
+const now = DateTimeUtils.now();
+const nowISO = DateTimeUtils.toISO(now);
+const nowDate = DateTimeUtils.toDate(now);
+const millis = DateTimeUtils.toMillis(now);
+
+// Date arithmetic
+const future = DateTimeUtils.add(now, { days: 30, hours: 2 });
+const past = DateTimeUtils.subtract(now, { hours: 24 });
+
+// Formatting
+const formatted = DateTimeUtils.format(now, DATE_TIME_FORMATS.DISPLAY_DATE);
+
+// Parsing
+const fromISO = DateTimeUtils.fromISO('2024-01-01T00:00:00Z');
+```
+
+### MoneyUtils - Financial Calculations
+
+```typescript
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+
+// In order/invoice calculations
+const unitPrice = item.unitPrice ?? 0;
+const quantity = item.quantity ?? 1;
+const taxPercent = item.taxPercentage ?? 0;
+
+// Calculate item totals
+const totalPrice = MoneyUtils.multiply(unitPrice, quantity).toNumber();
+const taxAmount = MoneyUtils.percentage(totalPrice, taxPercent).toNumber();
+const totalWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
+
+// Calculate order totals
+const subtotal = MoneyUtils.sumBy(items, 'totalPrice').toNumber();
+const totalTax = MoneyUtils.sumBy(items, 'taxAmount').toNumber();
+const discount = MoneyUtils.percentage(subtotal, discountPercent).toNumber();
+const grandTotal = MoneyUtils.subtract(
+  MoneyUtils.add(subtotal, totalTax),
+  discount,
+).toNumber();
+
+// Safe rounding
+const rounded = MoneyUtils.round(value, 2).toNumber();
+
+// Safe division (handles zero divisor)
+const dailyRate = MoneyUtils.divideSafe(amount, days);
+```
+
+### JSON Utilities - Safe JSON Operations
+
+```typescript
+import { safeJsonStringify, safeJsonParse, parseJsonOrDefault } from 'src/mkt-core/utils/json.util';
+
+// In sagas/services - storing metadata
+const metadata = safeJsonStringify({
+  orderAction: action,
+  confirmedAt: nowISO,
+}) as unknown as JSON;
+
+// Parsing with type safety
+const result = safeJsonParse<MetadataType>(jsonString);
+if (result.success) {
+  console.log(result.data);
+} else {
+  console.error(result.error);
+}
+
+// Parsing with default value
+const config = parseJsonOrDefault<ConfigType>(jsonString, defaultConfig);
+```
+
+---
+
 ## Best Practices
 
 ### DO
@@ -524,6 +604,9 @@ export const MKT_FIELD_IDS = {
 - Use `omitBy` for update methods
 - Handle errors gracefully in post-hooks
 - Use `@Injectable()` with hook decorators
+- Use `DateTimeUtils` for all date/time operations
+- Use `MoneyUtils` for all financial calculations
+- Use `safeJsonStringify`/`safeJsonParse` for JSON operations
 
 ### DON'T
 
@@ -532,6 +615,9 @@ export const MKT_FIELD_IDS = {
 - Use `any` type
 - Use `forEach` loops
 - Create default exports
+- Use `new Date()` or `Date.now()` directly
+- Use manual arithmetic for money calculations
+- Use `JSON.stringify()` or `JSON.parse()` directly
 
 ---
 
@@ -543,5 +629,5 @@ export const MKT_FIELD_IDS = {
 
 ---
 
-**Version**: 1.0
-**Last Updated**: 2025-12-13
+**Version**: 1.1
+**Last Updated**: 2025-12-20

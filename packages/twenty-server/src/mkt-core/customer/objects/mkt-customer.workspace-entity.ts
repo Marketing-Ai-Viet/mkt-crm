@@ -25,8 +25,9 @@ import {
 import { MKT_CUSTOMER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
+import { MktCouponWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-coupon.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
@@ -374,19 +375,6 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   createdBy: ActorMetadata;
 
   @WorkspaceRelation({
-    standardId: MKT_CUSTOMER_FIELD_IDS.mktLicenses,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Licenses`,
-    description: msg`Licenses of the customer`,
-    icon: 'IconLicense',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'mktCustomer',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktLicenses: Relation<MktLicenseWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
     standardId: MKT_CUSTOMER_FIELD_IDS.mktCustomerTags,
     type: RelationType.ONE_TO_MANY,
     label: msg`Customer Tags`,
@@ -614,4 +602,30 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mergeSuggestion: JSON;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.promotionUsages,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Promotion Usages`,
+    description: msg`Promotion usages linked to this customer`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktPromotionUsageWorkspaceEntity,
+    inverseSideFieldKey: 'customer',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  promotionUsages: Relation<MktPromotionUsageWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.assignedCoupons,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Assigned Coupons`,
+    description: msg`Coupons assigned to this customer`,
+    icon: 'IconTicket',
+    inverseSideTarget: () => MktCouponWorkspaceEntity,
+    inverseSideFieldKey: 'assignedCustomer',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  assignedCoupons: Relation<MktCouponWorkspaceEntity[]>;
 }

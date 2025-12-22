@@ -1,5 +1,11 @@
 import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 
+/**
+ * Alias for CustomEventName to avoid confusion with Vite's CustomEventName
+ * Use this type in mkt-core module
+ */
+export type MktCustomEventName = CustomEventName;
+
 export interface FIREBASE_AUTH_RESPONSE {
   idToken: string;
   refreshToken: string;
@@ -22,8 +28,8 @@ export interface LICENSE_API_RESPONSE {
 
 // Use a const object instead of enum for computed/template literal string types
 export const MKT_EVENT_TYPE = {
-  MKT_PAYMENT: 'MKT_PAYMENT' as CustomEventName,
-  MKT_ORDER: 'MKT_ORDER' as CustomEventName,
+  MKT_PAYMENT: 'MKT_PAYMENT' as MktCustomEventName,
+  MKT_ORDER: 'MKT_ORDER' as MktCustomEventName,
 };
 
 export enum MKT_ORDER_EVENT_TYPES {

@@ -10,6 +10,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 @Injectable()
 @WorkspaceQueryHook('mktSInvoice.createOne')
@@ -84,13 +85,20 @@ export class MktSInvoiceCreateOnePreQueryHook
       }
 
       // calculate information from orderItems
+      // Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
       const itemInfo = orderItems.map((item, idx) => {
         const quantity = item.quantity ?? 1;
         const unitPrice = item.unitPrice ?? 0;
-        const amountWithoutTax = unitPrice * quantity;
+        const amountWithoutTax = MoneyUtils.multiply(
+          unitPrice,
+          quantity,
+        ).toNumber();
         const taxPercent = (item.taxPercentage ?? 0) as number;
-        const taxAmount = Math.round((amountWithoutTax * taxPercent) / 100);
-        const withTax = amountWithoutTax + taxAmount;
+        const taxAmount = MoneyUtils.percentage(
+          amountWithoutTax,
+          taxPercent,
+        ).toNumber();
+        const withTax = MoneyUtils.add(amountWithoutTax, taxAmount).toNumber();
 
         return {
           lineNumber: idx + 1,
@@ -105,18 +113,18 @@ export class MktSInvoiceCreateOnePreQueryHook
         };
       });
 
-      // sum up
-      const totalAmountWithoutTax = itemInfo.reduce(
-        (sum, item) => sum + item.itemTotalAmountWithoutTax,
-        0,
-      );
+      // sum up using MoneyUtils
+      const totalAmountWithoutTax = MoneyUtils.sumBy(
+        itemInfo,
+        'itemTotalAmountWithoutTax',
+      ).toNumber();
 
-      const totalTaxAmount = itemInfo.reduce(
-        (sum, item) => sum + item.taxAmount,
-        0,
-      );
+      const totalTaxAmount = MoneyUtils.sumBy(itemInfo, 'taxAmount').toNumber();
 
-      const totalAmountWithTax = totalAmountWithoutTax + totalTaxAmount;
+      const totalAmountWithTax = MoneyUtils.add(
+        totalAmountWithoutTax,
+        totalTaxAmount,
+      ).toNumber();
 
       // create name for SInvoice if not exists
       const sInvoiceName =
@@ -269,8 +277,8 @@ export class MktSInvoiceCreateOnePreQueryHook
           `Item ${index + 1}`,
         lineNumber: item.lineNumber,
         selection: item.selection || 1,
-        itemCode: orderItem.mktProductId
-          ? `MKT_${orderItem.mktProductId}`
+        itemCode: orderItem.externalMktProductId
+          ? `MKT_${orderItem.externalMktProductId}`
           : null,
         itemName:
           orderItem.name ||

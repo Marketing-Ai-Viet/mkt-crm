@@ -162,15 +162,47 @@ mkt-core/
 │   └── services/
 │       └── mkt-license.service.ts
 │
-├── order/
-│   ├── objects/
+├── order/                     # Order Processing Module (Clean Architecture)
+│   ├── mkt-order.module.ts    # Module definition
+│   ├── constants/             # Constants & Configuration
+│   │   ├── order-status.constants.ts   # ORDER_STATUS, ORDER_ACTION enums
+│   │   └── order-service.constants.ts  # Service-level constants
+│   ├── types/                 # TypeScript Type Definitions
+│   │   ├── order-mutation.types.ts     # Input/Output types (CreateOrderWithItemsInput, etc.)
+│   │   ├── order-repository.types.ts   # Repository types (CreateOrderData, etc.)
+│   │   ├── order-service.types.ts      # Service types (ValidationResult, etc.)
+│   │   └── mkt-product-proxy.types.ts  # External product types
+│   ├── messages/              # Centralized Messages
+│   │   └── index.ts           # Log messages, error messages
+│   ├── objects/               # WorkspaceEntity Definitions
 │   │   ├── mkt-order.workspace-entity.ts
 │   │   └── mkt-order-item.workspace-entity.ts
-│   ├── mkt-order.module.ts
-│   ├── hooks/
-│   ├── services/
-│   └── constants/
-│       └── order-status.constants.ts
+│   ├── repositories/          # Data Access Layer
+│   │   ├── mkt-order.repository.ts
+│   │   └── mkt-order-item.repository.ts
+│   ├── services/              # Business Logic (Layered)
+│   │   ├── core/              # Core services (stateless)
+│   │   │   ├── order-status.service.ts      # Status transitions
+│   │   │   ├── order-calculation.service.ts # Price calculations
+│   │   │   ├── order-event.service.ts       # Event emission
+│   │   │   └── order-validation.service.ts  # Input validation
+│   │   ├── domain/            # Domain services
+│   │   │   ├── order-crud.service.ts        # CRUD operations
+│   │   │   └── order-item.service.ts        # Order item operations
+│   │   ├── application/       # Application services
+│   │   │   └── order-orchestration.service.ts
+│   │   └── legacy/            # Legacy services (to be refactored)
+│   ├── resolvers/             # GraphQL Resolvers
+│   ├── hooks/                 # Query Hooks (Pre/Post)
+│   ├── listeners/             # Event Listeners
+│   ├── events/                # Event Definitions
+│   ├── dto/                   # Data Transfer Objects
+│   ├── commands/              # CLI Commands
+│   ├── orchestration/         # Order Orchestration
+│   │   ├── saga/              # Saga pattern implementation
+│   │   └── steps/             # Orchestration steps
+│   └── states/                # State Machine Pattern
+│       └── order-state-machine.ts
 │
 ├── payment/
 │   ├── integration/

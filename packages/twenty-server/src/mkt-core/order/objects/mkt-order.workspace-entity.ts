@@ -6,7 +6,6 @@ import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfa
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
-import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
@@ -25,12 +24,13 @@ import { MKT_ORDER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
+import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -216,6 +216,41 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   accountingConfirmed?: boolean;
 
+  // ============================================
+  // PROMOTION FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.couponCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`Coupon Code`,
+    description: msg`Applied coupon code for this order`,
+    icon: 'IconTicket',
+  })
+  @WorkspaceIsNullable()
+  couponCode?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.promotionDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Promotion Discount`,
+    description: msg`Total discount from promotions`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  promotionDiscount?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.appliedPromotions,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Applied Promotions`,
+    description: msg`Immutable snapshot of applied promotions at order time`,
+    icon: 'IconGift',
+  })
+  @WorkspaceIsNullable()
+  appliedPromotions?: PromotionSnapshot[] | null;
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,
     type: RelationType.ONE_TO_MANY,
@@ -228,19 +263,6 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   orderItems: Relation<MktOrderItemWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_FIELD_IDS.mktLicense,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Licenses`,
-    description: msg`Licenses linked to the order`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrder',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktLicense: Relation<MktLicenseWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktContracts,
@@ -317,13 +339,12 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconUserCircle',
     inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
     inverseSideFieldKey: 'accountOwnerForMktOrders',
-    onDelete: RelationOnDeleteAction.SET_NULL,
+    onDelete: RelationOnDeleteAction.CASCADE,
   })
-  @WorkspaceIsNullable()
-  accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
+  accountOwner: Relation<WorkspaceMemberWorkspaceEntity>;
 
   @WorkspaceJoinColumn('accountOwner')
-  accountOwnerId: string | null;
+  accountOwnerId: string;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.timelineActivities,
@@ -356,14 +377,21 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceFieldIndex({ indexType: IndexType.GIN })
   searchVector: string;
 
-  @WorkspaceField({
+  @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.createdBy,
-    type: FieldMetadataType.ACTOR,
-    label: msg`Created by`,
-    icon: 'IconCreativeCommonsSa',
-    description: msg`The creator of the record`,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Created By`,
+    description: msg`The workspace member who created this order`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'createdMktOrders',
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  createdBy: ActorMetadata;
+  @WorkspaceIsNullable()
+  createdBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('createdBy')
+  createdById: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.mktCustomer,
@@ -380,4 +408,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktCustomer')
   mktCustomerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_ORDER_FIELD_IDS.promotionUsages,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Promotion Usages`,
+    description: msg`Promotion usages linked to this order`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktPromotionUsageWorkspaceEntity,
+    inverseSideFieldKey: 'order',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  promotionUsages: Relation<MktPromotionUsageWorkspaceEntity[]>;
 }

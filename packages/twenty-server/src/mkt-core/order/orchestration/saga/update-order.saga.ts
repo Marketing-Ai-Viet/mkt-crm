@@ -16,6 +16,8 @@ import {
   UpdateOrderStatusInput,
   UpdateOrderStatusResponse,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 import { SagaContext, SagaStepResult } from './order-saga.interface';
 
@@ -46,6 +48,7 @@ export class UpdateOrderSaga {
    */
   async execute(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
     const dataSource =
@@ -60,6 +63,7 @@ export class UpdateOrderSaga {
 
     const context: SagaContext = {
       workspaceId,
+      workspaceMemberId,
       rollbackData: new Map(),
       metadata: new Map(),
     };
@@ -241,9 +245,10 @@ export class UpdateOrderSaga {
     queryRunner: QueryRunner,
   ): Promise<SagaStepResult> {
     try {
+      const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
       const updateData: Partial<MktOrderWorkspaceEntity> = {
         status: newStatus,
-        updatedAt: new Date().toISOString(),
+        updatedAt: nowISO,
       };
 
       // Handle note
@@ -252,9 +257,9 @@ export class UpdateOrderSaga {
       }
 
       // Update metadata with action
-      updateData.metadata = JSON.stringify({
+      updateData.metadata = safeJsonStringify({
         orderAction: action,
-        updatedAt: new Date().toISOString(),
+        updatedAt: nowISO,
       }) as unknown as JSON;
 
       await queryRunner.manager.update(
@@ -300,7 +305,7 @@ export class UpdateOrderSaga {
             action,
             note: input.note,
           },
-          timestamp: new Date().toISOString(),
+          timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         },
       ],
     });

@@ -7,14 +7,17 @@ import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
-import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
+import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
+import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-overdue.cron.job';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
-import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
+import {
+  MktOrderRepository,
+  MktOrderItemRepository,
+} from 'src/mkt-core/order/repositories';
 
-// Clean Architecture Services
 import {
   // Core Services
   OrderCalculationService,
@@ -24,6 +27,7 @@ import {
   // Domain Services
   OrderCrudService,
   OrderItemService,
+  OrderLicenseQueryService,
   // Application Services
   OrderOrchestrationService,
   // Legacy Services
@@ -36,8 +40,11 @@ import {
   MktOrderOverdueRegistrationService,
 } from './services';
 import { OrderMutationResolver, OrderItemMutationResolver } from './resolvers';
+import {
+  MktOrderCustomEventListener,
+  LicenseLifecycleListener,
+} from './listeners';
 
-import { MktOrderCustomEventListener } from './listeners/mkt-order-custom-event.listener';
 import {
   CreateOrderSaga,
   ConfirmOrderSaga,
@@ -50,7 +57,16 @@ import {
   CreateOrderStep,
   CreatePaymentStep,
   FinalizeOrderStep,
+  // New steps for snapshots and promotions
+  CreateSnapshotsStep,
+  CalculatePromotionStep,
+  RecordPromotionUsageStep,
 } from './orchestration/steps';
+import {
+  OrderProductIntegrationService,
+  OrderLicenseIntegrationService,
+  OrderPromotionIntegrationService,
+} from './services/integration';
 
 @Module({
   imports: [
@@ -59,10 +75,10 @@ import {
     MessageQueueModule,
     RecordPositionModule,
     MktPaymentModule,
-    MktLicenseModule,
     MktInvoiceModule,
-    MktProductModule,
     MktProductIntegrationModule, // External MKT Server product integration
+    MktLicenseIntegrationModule, // External MKT Server license integration
+    MktPromotionModule, // Promotion and coupon management
     MktCommonModule,
     MktContractModule,
     CustomerModule,
@@ -70,6 +86,11 @@ import {
   providers: [
     // Event Listeners
     MktOrderCustomEventListener,
+    LicenseLifecycleListener,
+
+    // Repositories (Data Access Layer)
+    MktOrderRepository,
+    MktOrderItemRepository,
 
     // Core Services (stateless business logic)
     OrderStatusService,
@@ -80,6 +101,7 @@ import {
     // Domain Services (domain operations)
     OrderCrudService,
     OrderItemService,
+    OrderLicenseQueryService,
 
     // Application Services (orchestration)
     OrderOrchestrationService,
@@ -96,6 +118,15 @@ import {
     CreateLicensesStep,
     CreatePaymentStep,
     FinalizeOrderStep,
+    // New steps for snapshots and promotions
+    CreateSnapshotsStep,
+    CalculatePromotionStep,
+    RecordPromotionUsageStep,
+
+    // Integration Services (bridge to other MKT modules)
+    OrderProductIntegrationService,
+    OrderLicenseIntegrationService,
+    OrderPromotionIntegrationService,
 
     // Legacy Services (backward compatibility)
     OrderService,
@@ -112,11 +143,20 @@ import {
     OrderItemMutationResolver,
   ],
   exports: [
+    // Repositories
+    MktOrderRepository,
+    MktOrderItemRepository,
     // Services
     OrderStatusService,
     OrderEventService,
     OrderItemService,
+    OrderCrudService,
+    OrderLicenseQueryService,
     OrderOrchestrationService,
+    // Integration Services
+    OrderProductIntegrationService,
+    OrderLicenseIntegrationService,
+    OrderPromotionIntegrationService,
     // Sagas
     ConfirmOrderSaga,
     UpdateOrderSaga,

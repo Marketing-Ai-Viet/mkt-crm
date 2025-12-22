@@ -2,17 +2,12 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { firstValueFrom } from 'rxjs';
-import { v4 } from 'uuid';
 
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { LICENSE_API_RESPONSE } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
-  MKT_ORDER_LICENSE_STATUS,
   ORDER_CODE_PREFIX,
   ORDER_METADATA,
 } from 'src/mkt-core/order/constants/order-status.constants';
@@ -25,7 +20,6 @@ import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 export type CalculateOrderResult = {
   subtotal: number;
@@ -199,13 +193,6 @@ export class MktOrderCommonConfirmService {
         if (item.snapshotProductName) {
           return item.snapshotProductName;
         }
-        if (item.mktProduct?.name) {
-          const variantName = item.mktVariant?.name;
-
-          return variantName
-            ? `${item.mktProduct.name} - ${variantName}`
-            : item.mktProduct.name;
-        }
 
         return 'Sản phẩm';
       });
@@ -249,7 +236,7 @@ export class MktOrderCommonConfirmService {
     customerMeta: ORDER_METADATA['customer'] | null,
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
     licenseId?: string,
-    license?: MktLicenseWorkspaceEntity | null,
+    oldOrderId?: string | null,
   ): Promise<callFireBaseType | void> {
     if (
       action !== ORDER_ACTION.WAIT &&
@@ -279,26 +266,11 @@ export class MktOrderCommonConfirmService {
 
     this.logger.log(`Fetched order with items: ${JSON.stringify(order)}`);
 
+    // TODO: Implement license handling with product integration services
     if (order && order.orderItems?.length > 0) {
-      try {
-        if (action !== ORDER_ACTION.LICENSE_RENEWING)
-          await this.createLicensesForOrderItems(order, workspaceId);
-
-        if (action === ORDER_ACTION.LICENSE_RENEWING) {
-          if (!licenseId)
-            throw new Error('License ID is required for license renewal');
-          await this.linkLicensesForOrderItems(
-            licenseId,
-            order,
-            workspaceId,
-            license?.mktOrder,
-          );
-        }
-
-        this.logger.log(`Successfully licenses for order: ${order.id}`);
-      } catch (licenseError) {
-        throw new Error('Failed to licenses for order');
-      }
+      this.logger.warn(
+        'License handling needs to be reimplemented with product integration services',
+      );
     }
 
     // 2) Update Order information
@@ -322,7 +294,7 @@ export class MktOrderCommonConfirmService {
       createdOrder.id,
       updateOrderInfo,
       orderRepository,
-      license?.mktOrder,
+      oldOrderId,
     );
 
     if (action === ORDER_ACTION.TRIAL) return;
@@ -473,222 +445,14 @@ export class MktOrderCommonConfirmService {
   }
 
   async getVariantValueById(
-    ids: string[],
-  ): Promise<MktVariantWorkspaceEntity[]> {
-    const variantRepo = await this.mktRepo.getVariantRepository();
-    const variants = await variantRepo.find({
-      where: ids.map((id) => ({ id })) as unknown as { id: string },
-    });
-
-    return variants;
-  }
-
-  private async createLicensesForOrderItems(
-    order: MktOrderWorkspaceEntity,
-    _workspaceId: string,
-  ): Promise<MktLicenseWorkspaceEntity[]> {
-    this.logger.log(`Creating licenses for order items ${order.id}`);
-
-    const licenseRepository = await this.mktRepo.getLicenseRepository();
-
-    const licensePromises = order.orderItems.flatMap(
-      async (orderItem, _index) => {
-        try {
-          // generate license name based on order item
-          const productName =
-            orderItem.snapshotProductName ||
-            orderItem.mktProduct?.name ||
-            'Sản phẩm';
-          const variantName = orderItem.mktVariant?.name;
-          const licenseName = variantName
-            ? `License cho ${productName} - ${variantName}`
-            : `License cho ${productName}`;
-
-          const quantity = orderItem.quantity || 1;
-          const licensePromises = [];
-
-          // Create licenses based on quantity
-          for (let i = 1; i <= quantity; i++) {
-            // call API to get license for this specific order item
-            const licenseApiResponse = await this.fetchLicenseFromApi(
-              order.id,
-              licenseName,
-              orderItem.id,
-            );
-            const newLicense = licenseRepository.create({
-              name: licenseName,
-              //licenseKey: licenseApiResponse.licenseKey,
-              status: MKT_LICENSE_STATUS.ACTIVE,
-              activatedAt: new Date().toISOString(),
-              expiresAt: licenseApiResponse.expiresAt,
-              licenseUuid: licenseApiResponse.licenseUuid as string,
-              mktOrderId: order.id,
-              mktVariantId: orderItem.mktVariantId,
-              notes: `License được tạo cho order item: ${orderItem.name} (${i}/${quantity}) ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
-            });
-
-            newLicense.createdBy = order.createdBy;
-            // save license
-            const savedLicense = await licenseRepository.save(newLicense);
-
-            licensePromises.push(savedLicense);
-          }
-
-          return licensePromises;
-        } catch (error) {
-          this.logger.error(
-            `Failed to create license for order item ${orderItem.id}:`,
-            error,
-          );
-          throw error;
-        }
-      },
+    _ids: string[],
+  ): Promise<Array<{ id: string; name: string | null; price: number | null }>> {
+    // TODO: Implement variant fetching using product integration services
+    this.logger.warn(
+      'Variant fetching needs to be reimplemented with product integration services',
     );
 
-    const nestedLicenses = await Promise.all(licensePromises);
-    const createdLicenses =
-      nestedLicenses.flat() as MktLicenseWorkspaceEntity[];
-
-    this.logger.log(
-      `Successfully created ${createdLicenses.length} licenses for order: ${order.id}`,
-    );
-
-    return createdLicenses;
-  }
-
-  private async fetchLicenseFromApi(
-    orderId: string,
-    orderName: string,
-    orderItemId?: string,
-    licenseUuid?: string | null | undefined,
-  ): Promise<LICENSE_API_RESPONSE> {
-    try {
-      this.logger.log(`Fetching license from API for order: ${orderId}`);
-
-      // replace with actual API URL
-      const apiUrl =
-        process.env.LICENSE_API_URL ||
-        'https://api.license-provider.com/licenses';
-
-      const requestBody = {
-        orderId,
-        orderName,
-        ...(orderItemId && { orderItemId }), // include orderItemId if provided
-        ...(licenseUuid && { licenseUuid }), // include licenseUuid if provided
-        // add other necessary information
-      };
-
-      this.logger.log(`Request body:`, requestBody);
-
-      const response = await firstValueFrom(
-        this.httpService.post<LICENSE_API_RESPONSE>(apiUrl, requestBody),
-      );
-
-      this.logger.log(`Successfully fetched license for order: ${orderId}`);
-
-      return response.data;
-    } catch (error) {
-      this.logger.error(
-        `Failed to fetch license from API for order: ${orderId}`,
-        error,
-      );
-      // generate unique mock license key based on orderId and orderItemId
-      const uniqueSuffix = orderItemId
-        ? `_ITEM_${orderItemId.slice(-8)}`
-        : `_ORDER_${orderId.slice(-8)}`;
-
-      const mockResponse: LICENSE_API_RESPONSE = {
-        licenseKey: `MOCK_LICENSE${uniqueSuffix}_${Date.now()}`,
-        status: MKT_LICENSE_STATUS.ACTIVE,
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0], // 1 year from now
-        licenseUuid: licenseUuid ? licenseUuid : v4(),
-      };
-
-      this.logger.log(`Mock response:`, mockResponse);
-
-      return mockResponse;
-      //throw error;
-    }
-  }
-
-  private async linkLicensesForOrderItems(
-    licenseId: string,
-    order: MktOrderWorkspaceEntity,
-    workspaceId: string,
-    oldOrder?: MktOrderWorkspaceEntity | null,
-  ): Promise<MktLicenseWorkspaceEntity | null> {
-    this.logger.log(`Linking license ${licenseId} for order ${order.id}`);
-    this.mktRepo.workspaceId = workspaceId;
-    const licenseRepository = await this.mktRepo.getLicenseRepository();
-
-    if (oldOrder) {
-      this.updateOldOrderInformation(oldOrder, licenseId);
-    }
-
-    // Lấy thông tin license hiện tại
-    const licenseRecord = await licenseRepository.findOne({
-      where: { id: licenseId },
-      select: ['licenseUuid'],
-    });
-
-    if (!licenseRecord) {
-      this.logger.error(`License ${licenseId} not found`);
-
-      return null;
-    }
-
-    // Lấy thông tin từ order item đầu tiên
-    const firstOrderItem = order.orderItems[0];
-
-    if (!firstOrderItem) {
-      this.logger.error(`No order items found for order ${order.id}`);
-
-      return null;
-    }
-
-    // Tạo tên license
-    const productName =
-      firstOrderItem.snapshotProductName ||
-      firstOrderItem.mktProduct?.name ||
-      'Sản phẩm';
-    const variantName = firstOrderItem.mktVariant?.name;
-    const licenseName = variantName
-      ? `License cho ${productName} - ${variantName}`
-      : `License cho ${productName}`;
-
-    try {
-      const licenseApiResponse = await this.fetchLicenseFromApi(
-        order.id,
-        licenseName,
-        firstOrderItem.id,
-        licenseRecord.licenseUuid,
-      );
-
-      await licenseRepository.update(licenseId, {
-        name: licenseName,
-        //licenseKey: licenseApiResponse.licenseKey,
-        status: MKT_LICENSE_STATUS.ACTIVE,
-        activatedAt: new Date().toISOString(),
-        expiresAt: licenseApiResponse.expiresAt,
-        licenseUuid: licenseApiResponse.licenseUuid as string,
-        mktOrderId: order.id,
-        mktVariantId: firstOrderItem.mktVariantId,
-        notes: `License được update cho order: ${order.id} ${MKT_ORDER_LICENSE_STATUS.SUCCESS}`,
-      });
-
-      const updatedLicense = await licenseRepository.findOne({
-        where: { id: licenseId },
-      });
-
-      this.logger.log(`Successfully updated license: ${licenseId}`);
-
-      return updatedLicense;
-    } catch (error) {
-      this.logger.error(`Failed to update license ${licenseId}:`, error);
-      throw error;
-    }
+    return [];
   }
 
   private async createPaymentFromOrder(
@@ -829,25 +593,11 @@ export class MktOrderCommonConfirmService {
     orderId: string,
     updateOrderInfo: Partial<MktOrderWorkspaceEntity>,
     orderRepository: WorkspaceRepository<MktOrderWorkspaceEntity>,
-    oldOrder: MktOrderWorkspaceEntity | null | undefined,
+    oldOrderId: string | null | undefined,
   ) {
-    let metadata: ORDER_METADATA = {};
-
-    if (oldOrder?.metadata) {
-      try {
-        const parsed =
-          typeof oldOrder.metadata === 'string'
-            ? JSON.parse(oldOrder.metadata)
-            : oldOrder.metadata;
-
-        metadata = { ...parsed };
-      } catch (error) {
-        this.logger.warn('Failed to parse existing metadata:', error);
-        metadata = {};
-      }
+    if (oldOrderId) {
+      this.orderMetadata = { ...this.orderMetadata, oldOrderId };
     }
-
-    this.orderMetadata = { ...metadata, oldOrderId: orderId };
     let note = '';
 
     if (
@@ -871,19 +621,7 @@ Thời gian: ${new Date().toISOString()}
       name: updateOrderInfo.name ?? '',
       note,
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
-      accountOwnerId: oldOrder?.accountOwnerId || null,
     });
-  }
-
-  async updateOldOrderInformation(
-    oldOrder: MktOrderWorkspaceEntity,
-    licenseId: string,
-  ) {
-    const orderRepo = await this.mktRepo.getOrderRepository();
-    let metadata = oldOrder?.metadata ? { ...oldOrder.metadata } : {};
-
-    metadata = { ...metadata, oldLicenseId: licenseId };
-    orderRepo.update(oldOrder.id, { metadata });
   }
 
   private async generateBidvSepayQr(

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
-import { MktLicenseService } from 'src/mkt-core/license/mkt-license.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import {
   ORDER_CODE_PREFIX,
@@ -12,6 +11,11 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { safeJsonStringify } from 'src/mkt-core/utils';
+import {
+  DATE_TIME_FORMATS,
+  DateTimeUtils,
+} from 'src/mkt-core/utils/date-time.utils';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 import { OrderService } from './order.service';
 
@@ -27,7 +31,6 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    public mktLicenseService: MktLicenseService,
     private mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
     private mktRepo: MktRepositoryService,
@@ -36,6 +39,7 @@ export class OrderConfirmService {
 
   /**
    * calculate order values from order items
+   * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
    */
   async calculateOrderValues(
     currentOrder: MktOrderWorkspaceEntity | null,
@@ -55,29 +59,32 @@ export class OrderConfirmService {
         };
       }
 
-      let subtotal = 0;
-      let totalTax = 0;
+      let subtotal = MoneyUtils.from(0);
+      let totalTax = MoneyUtils.from(0);
 
       for (const item of orderItems) {
         const quantity = item.quantity || 0;
         const unitPrice = item.unitPrice || 0;
         const taxPercentage = item.taxPercentage || 0;
 
-        const itemSubtotal = quantity * unitPrice;
+        const itemSubtotal = MoneyUtils.multiply(quantity, unitPrice);
 
-        subtotal += itemSubtotal;
+        subtotal = MoneyUtils.add(subtotal, itemSubtotal);
 
-        const itemTax = (itemSubtotal * taxPercentage) / 100;
+        const itemTax = MoneyUtils.percentage(itemSubtotal, taxPercentage);
 
-        totalTax += itemTax;
+        totalTax = MoneyUtils.add(totalTax, itemTax);
 
         this.logger.debug(
-          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal}, tax=${itemTax}`,
+          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal.toNumber()}, tax=${itemTax.toNumber()}`,
         );
       }
 
       if (currentOrder?.discountPercent) {
-        const discountAmount = (subtotal * currentOrder.discountPercent) / 100;
+        const discountAmount = MoneyUtils.percentage(
+          subtotal,
+          currentOrder.discountPercent,
+        ).toNumber();
 
         this.logger.log(
           `Applying discountPercent ${currentOrder.discountPercent}%: discountAmount=${discountAmount}`,
@@ -86,19 +93,22 @@ export class OrderConfirmService {
         currentOrder.discount = discountAmount;
       }
 
-      const discount = currentOrder?.discount || 0;
+      const discount = MoneyUtils.from(currentOrder?.discount || 0);
 
-      const totalAmount = subtotal + totalTax - discount;
+      const totalAmount = MoneyUtils.subtract(
+        MoneyUtils.add(subtotal, totalTax),
+        discount,
+      );
 
       this.logger.log(
-        `Calculated order values: subtotal=${subtotal}, tax=${totalTax}, discount=${discount}, totalAmount=${totalAmount}`,
+        `Calculated order values: subtotal=${subtotal.toNumber()}, tax=${totalTax.toNumber()}, discount=${discount.toNumber()}, totalAmount=${totalAmount.toNumber()}`,
       );
 
       return {
-        subtotal: Math.round(subtotal * 100) / 100, // Round to 2 decimal places
-        tax: Math.round(totalTax * 100) / 100,
-        discount: Math.round(discount * 100) / 100,
-        totalAmount: Math.round(totalAmount * 100) / 100,
+        subtotal: MoneyUtils.round(subtotal, 2).toNumber(),
+        tax: MoneyUtils.round(totalTax, 2).toNumber(),
+        discount: MoneyUtils.round(discount, 2).toNumber(),
+        totalAmount: MoneyUtils.round(totalAmount, 2).toNumber(),
       };
     } catch (error) {
       this.logger.error(
@@ -122,10 +132,10 @@ export class OrderConfirmService {
     try {
       const orderRepository = await this.getOrderRepo(workspaceId);
 
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const now = DateTimeUtils.now();
+      const year = now.year;
+      const month = String(now.month).padStart(2, '0');
+      const day = String(now.day).padStart(2, '0');
       const datePrefix = `${year}${month}${day}`;
 
       // Find the highest order number for today
@@ -161,7 +171,9 @@ export class OrderConfirmService {
 
       if (existingOrder) {
         // If somehow duplicate, try with timestamp
-        const timestamp = Date.now().toString().slice(-6);
+        const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+          .toString()
+          .slice(-6);
 
         return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
       }
@@ -184,8 +196,10 @@ export class OrderConfirmService {
   ): Promise<string | null> {
     try {
       if (!currentOrder?.orderItems || currentOrder.orderItems.length === 0) {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('vi-VN');
+        const dateStr = DateTimeUtils.format(
+          DateTimeUtils.now(),
+          DATE_TIME_FORMATS.DISPLAY_DATE,
+        );
 
         return `Đơn hàng ${dateStr}`;
       }
@@ -195,12 +209,13 @@ export class OrderConfirmService {
         if (item.snapshotProductName) {
           return item.snapshotProductName;
         }
-        if (item.mktProduct?.name) {
-          const variantName = item.mktVariant?.name;
+        // Use snapshot data if available
+        if (item.snapshotMktProduct) {
+          const packageName = item.snapshotMktPackage?.displayName;
 
-          return variantName
-            ? `${item.mktProduct.name} - ${variantName}`
-            : item.mktProduct.name;
+          return packageName
+            ? `${item.snapshotMktProduct.displayName} - ${packageName}`
+            : item.snapshotMktProduct.displayName;
         }
 
         return 'Sản phẩm';
@@ -246,7 +261,7 @@ export class OrderConfirmService {
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
     licenseId?: string,
   ): Promise<callFireBaseType | void> {
-    const mktCustomerId = customerMeta?.mktCustomerId || null;
+    // const mktCustomerId = customerMeta?.mktCustomerId || null; // Unused
 
     if (
       action !== ORDER_ACTION.WAIT &&
@@ -277,27 +292,18 @@ export class OrderConfirmService {
     this.logger.log(`Fetched order with items: ${safeJsonStringify(order)}`);
 
     if (order && order.orderItems?.length > 0) {
-      try {
-        if (action !== ORDER_ACTION.LICENSE_RENEWING)
-          await this.mktLicenseService.createLicensesForOrderItems(
-            order,
-            mktCustomerId,
-            workspaceId,
-          );
+      // TODO: Implement license creation using new license module
+      // The old MktLicenseService has been removed with the license module
+      this.logger.warn(
+        'License creation/linking is not implemented - license module removed',
+      );
 
-        if (action === ORDER_ACTION.LICENSE_RENEWING) {
-          if (!licenseId)
-            throw new Error('License ID is required for license renewal');
-          await this.mktLicenseService.linkLicensesForOrderItems(
-            licenseId,
-            order,
-            workspaceId,
-          );
-        }
-
-        this.logger.log(`Successfully licenses for order: ${order.id}`);
-      } catch (licenseError) {
-        throw new Error('Failed to licenses for order');
+      if (action === ORDER_ACTION.LICENSE_RENEWING) {
+        if (!licenseId)
+          throw new Error('License ID is required for license renewal');
+        throw new Error(
+          'License module has been removed. License renewal is not available.',
+        );
       }
     }
 
@@ -345,7 +351,6 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
-      createdBy: order?.createdBy,
       discount: calculatedValues.discount || 0,
     };
 
@@ -414,9 +419,10 @@ export class OrderConfirmService {
       workspaceId,
     );
 
-    await this.mktLicenseService.updateReferenceLicenseOrder(
-      trialOrderId,
-      createdOrder.id,
+    // TODO: Implement license order reference update using new license module
+    // The old MktLicenseService has been removed with the license module
+    this.logger.warn(
+      'License order reference update is not implemented - license module removed',
     );
 
     const generatedOrderCode = await this.generateOrderCode(workspaceId);
@@ -433,7 +439,6 @@ export class OrderConfirmService {
       generatedOrderCode,
       orderId: createdOrder.id,
       workspaceId,
-      createdBy: createdOrder?.createdBy,
     };
 
     await this.mktPaymentService.createPaymentFromOrder(

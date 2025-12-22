@@ -6,11 +6,16 @@ import {
   UpdateOrderSaga,
   RefundOrderSaga,
 } from 'src/mkt-core/order/orchestration/saga';
-import { CreateOrderStep } from 'src/mkt-core/order/orchestration/steps/create-order.step';
-import { CreateOrderItemsStep } from 'src/mkt-core/order/orchestration/steps/create-order-items.step';
-import { CreateLicensesStep } from 'src/mkt-core/order/orchestration/steps/create-licenses.step';
-import { CreatePaymentStep } from 'src/mkt-core/order/orchestration/steps/create-payment.step';
-import { FinalizeOrderStep } from 'src/mkt-core/order/orchestration/steps/finalize-order.step';
+import {
+  CreateOrderStep,
+  CreateOrderItemsStep,
+  CreateLicensesStep,
+  CreatePaymentStep,
+  FinalizeOrderStep,
+  CreateSnapshotsStep,
+  CalculatePromotionStep,
+  RecordPromotionUsageStep,
+} from 'src/mkt-core/order/orchestration/steps';
 import { OrderValidationService } from 'src/mkt-core/order/services/core';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
@@ -45,21 +50,39 @@ export class OrderOrchestrationService implements OnModuleInit {
     private readonly refundOrderSaga: RefundOrderSaga,
     private readonly validationService: OrderValidationService,
     private readonly orderItemService: OrderItemService,
-    // Steps
+    // Core Steps
     private readonly createOrderStep: CreateOrderStep,
     private readonly createOrderItemsStep: CreateOrderItemsStep,
     private readonly createLicensesStep: CreateLicensesStep,
     private readonly createPaymentStep: CreatePaymentStep,
     private readonly finalizeOrderStep: FinalizeOrderStep,
+    // Snapshot & Promotion Steps
+    private readonly createSnapshotsStep: CreateSnapshotsStep,
+    private readonly calculatePromotionStep: CalculatePromotionStep,
+    private readonly recordPromotionUsageStep: RecordPromotionUsageStep,
   ) {}
 
   /**
    * Register saga steps on module initialization
+   *
+   * Step order for CreateOrderSaga:
+   * 1. CreateOrderStep - Create order entity
+   * 2. CreateSnapshotsStep - Validate & create product/package snapshots
+   * 3. CreateOrderItemsStep - Create order items with snapshots
+   * 4. CalculatePromotionStep - Calculate and apply promotions
+   * 5. CreateLicensesStep - Create licenses for order items
+   * 6. CreatePaymentStep - Create payment (if not TRIAL)
+   * 7. FinalizeOrderStep - Finalize order status
+   *
+   * Note: RecordPromotionUsageStep should be registered in ConfirmOrderSaga
+   * since usage should only be recorded after order confirmation
    */
   onModuleInit(): void {
     this.createOrderSaga.registerSteps([
       this.createOrderStep,
+      this.createSnapshotsStep,
       this.createOrderItemsStep,
+      this.calculatePromotionStep,
       this.createLicensesStep,
       this.createPaymentStep,
       this.finalizeOrderStep,
@@ -129,10 +152,11 @@ export class OrderOrchestrationService implements OnModuleInit {
    */
   async confirmOrder(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: ConfirmOrderInput,
   ): Promise<ConfirmOrderResponse> {
     this.logger.log(
-      `Confirming order: ${input.orderId}, action: ${input.action}`,
+      `Confirming order: ${input.orderId}, action: ${input.action}, by: ${workspaceMemberId ?? 'system'}`,
     );
 
     // Validate input
@@ -155,7 +179,11 @@ export class OrderOrchestrationService implements OnModuleInit {
 
     // Execute saga
     try {
-      const result = await this.confirmOrderSaga.execute(workspaceId, input);
+      const result = await this.confirmOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
 
       if (result.success) {
         this.logger.log(
@@ -181,14 +209,19 @@ export class OrderOrchestrationService implements OnModuleInit {
    */
   async updateOrderStatus(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
     this.logger.log(
-      `Updating order status: ${input.orderId}, target: ${input.status}`,
+      `Updating order status: ${input.orderId}, target: ${input.status}, by: ${workspaceMemberId ?? 'system'}`,
     );
 
     try {
-      const result = await this.updateOrderSaga.execute(workspaceId, input);
+      const result = await this.updateOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
 
       if (result.success) {
         this.logger.log(
@@ -214,14 +247,19 @@ export class OrderOrchestrationService implements OnModuleInit {
    */
   async refundOrder(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
     this.logger.log(
-      `Refunding order: ${input.orderId}, partial: ${input.isPartial ?? false}`,
+      `Refunding order: ${input.orderId}, partial: ${input.isPartial ?? false}, by: ${workspaceMemberId ?? 'system'}`,
     );
 
     try {
-      const result = await this.refundOrderSaga.execute(workspaceId, input);
+      const result = await this.refundOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
 
       if (result.success) {
         this.logger.log(

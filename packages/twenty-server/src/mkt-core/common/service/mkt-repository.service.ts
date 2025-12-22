@@ -6,15 +6,12 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -96,31 +93,12 @@ export class MktRepositoryService {
     return await this.getRepository(MktPaymentWorkspaceEntity);
   }
 
-  async getVariantRepository() {
-    return await this.getRepository(MktVariantWorkspaceEntity);
-  }
-
-  async getLicenseHistoryRepository() {
-    return await this.getRepository(MktLicenseHistoryWorkspaceEntity);
-  }
-
   async getPaymentMethodRepository() {
     return await this.getRepository(MktPaymentMethodWorkspaceEntity);
   }
 
   async getOrderRepository() {
     return await this.getRepository(MktOrderWorkspaceEntity);
-  }
-
-  async getLicenseRepository() {
-    return await this.getRepository(MktLicenseWorkspaceEntity);
-  }
-
-  async getLicenseRepositoryByWorkspaceId(workspaceId: string) {
-    return await this.getRepositoryByWorkspaceId(
-      MktLicenseWorkspaceEntity,
-      workspaceId,
-    );
   }
 
   async getOrderItemRepository() {

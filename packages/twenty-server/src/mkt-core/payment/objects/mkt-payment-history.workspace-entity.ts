@@ -23,14 +23,12 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_PAYMENT_HISTORY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   PAYMENT_HISTORY_OPTIONS,
   PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -113,21 +111,6 @@ export class MktPaymentHistoryWorkspaceEntity extends BaseWorkspaceEntity {
   createdBy: ActorMetadata;
 
   @WorkspaceRelation({
-    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.mktLicense,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`License`,
-    description: msg`The license associated with this payment history`,
-    icon: 'IconCertificate',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'mktPaymentHistories',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktLicense: Relation<MktLicenseWorkspaceEntity> | null;
-  @WorkspaceJoinColumn('mktLicense')
-  mktLicenseId: string | null;
-
-  @WorkspaceRelation({
     standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.mktOrder,
     type: RelationType.MANY_TO_ONE,
     label: msg`Order`,
@@ -141,21 +124,6 @@ export class MktPaymentHistoryWorkspaceEntity extends BaseWorkspaceEntity {
   mktOrder: Relation<MktOrderWorkspaceEntity> | null;
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.mktVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Variant`,
-    description: msg`The variant associated with this payment history`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktVariantWorkspaceEntity,
-    inverseSideFieldKey: 'mktPaymentHistories',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsNullable()
-  mktVariant: Relation<MktVariantWorkspaceEntity> | null;
-  @WorkspaceJoinColumn('mktVariant')
-  mktVariantId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.mktPayment,

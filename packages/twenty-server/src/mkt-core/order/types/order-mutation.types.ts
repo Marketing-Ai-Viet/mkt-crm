@@ -85,6 +85,12 @@ export type CreateOrderWithItemsInput = {
 
   // For trial to paid conversion
   trialOrderId?: string;
+
+  // Promotion fields
+  /** Coupon code to apply for discount */
+  couponCode?: string;
+  /** Whether to automatically apply eligible promotions (default: true) */
+  applyAutoPromotions?: boolean;
 };
 
 /**

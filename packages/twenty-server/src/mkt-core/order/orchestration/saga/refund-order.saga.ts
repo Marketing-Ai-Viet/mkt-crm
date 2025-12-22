@@ -1,12 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { In, QueryRunner } from 'typeorm';
+import { QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
-import { MKT_LICENSE_STATUS } from 'src/mkt-core/license/license.constants';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
@@ -17,7 +15,8 @@ import {
   RefundOrderInput,
   RefundOrderResponse,
 } from 'src/mkt-core/order/types';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 import { SagaContext, SagaStepResult } from './order-saga.interface';
 
@@ -25,16 +24,17 @@ import { SagaContext, SagaStepResult } from './order-saga.interface';
  * RefundOrderSaga - Saga for refunding orders
  *
  * Handles order refunds with:
- * - Full refund: All licenses refunded, order status -> REFUND
- * - Partial refund: Selected licenses refunded, order status -> REFUND_PARTIAL
+ * - Full refund: Order status -> REFUND
+ * - Partial refund: Order status -> REFUND_PARTIAL
  *
  * Steps:
  * 1. Validate order can be refunded
- * 2. Get licenses to refund
- * 3. Calculate refund amount
- * 4. Update license statuses
- * 5. Update order status and refund amount
- * 6. Emit events
+ * 2. Calculate refund amount
+ * 3. Update order status and refund amount
+ * 4. Emit events
+ *
+ * NOTE: License management has been removed from this saga.
+ * License refunds should be handled separately via license integration service.
  */
 @Injectable()
 export class RefundOrderSaga {
@@ -51,6 +51,7 @@ export class RefundOrderSaga {
    */
   async execute(
     workspaceId: string,
+    workspaceMemberId: string | undefined,
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
     const dataSource =
@@ -65,6 +66,7 @@ export class RefundOrderSaga {
 
     const context: SagaContext = {
       workspaceId,
+      workspaceMemberId,
       rollbackData: new Map(),
       metadata: new Map(),
     };
@@ -121,52 +123,28 @@ export class RefundOrderSaga {
         };
       }
 
-      // Step 2: Get licenses to refund
-      const licensesToRefund = await this.getLicensesToRefund(
-        context,
-        input,
-        currentOrder,
-      );
+      // Step 2: Calculate refund amount
+      // NOTE: License-based refund calculation has been removed.
+      // Use explicit refundAmount from input or default to 0
+      const refundAmount = input.refundAmount ?? 0;
 
-      if (licensesToRefund.length === 0) {
+      if (refundAmount === 0 && !input.refundAmount) {
         await queryRunner.rollbackTransaction();
 
         return {
           success: false,
-          error: 'No licenses found to refund',
+          error: 'Refund amount must be specified',
         };
       }
 
-      // Step 3: Calculate refund amount
-      const refundAmount =
-        input.refundAmount ??
-        (await this.calculateRefundAmount(context, licensesToRefund));
-
-      // Step 4: Update license statuses
-      const updateLicensesResult = await this.updateLicenseStatuses(
-        context,
-        licensesToRefund,
-        queryRunner,
-      );
-
-      if (!updateLicensesResult.success) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error:
-            updateLicensesResult.error?.message ?? 'Failed to update licenses',
-        };
-      }
-
-      // Step 5: Update order status and refund amount
+      // Step 3: Update order status and refund amount
       const updateOrderResult = await this.updateOrderForRefund(
         context,
         input,
         action,
         newStatus,
         refundAmount,
-        licensesToRefund.map((l) => l.id),
+        input.licenseIds ?? [],
         queryRunner,
       );
 
@@ -225,7 +203,7 @@ export class RefundOrderSaga {
 
       const order = await orderRepository.findOne({
         where: { id: input.orderId },
-        relations: ['orderItems', 'mktLicense'],
+        relations: ['orderItems'],
       });
 
       if (!order) {
@@ -271,100 +249,14 @@ export class RefundOrderSaga {
   }
 
   /**
-   * Get licenses to refund
+   * REMOVED: License management methods
+   * License refunds should be handled separately via MktLicenseIntegration service
+   *
+   * Removed methods:
+   * - getLicensesToRefund
+   * - calculateRefundAmount
+   * - updateLicenseStatuses
    */
-  private async getLicensesToRefund(
-    _context: SagaContext,
-    input: RefundOrderInput,
-    order: MktOrderWorkspaceEntity,
-  ): Promise<MktLicenseWorkspaceEntity[]> {
-    const allLicenses = order.mktLicense ?? [];
-    const { licenseIds } = input;
-
-    // If specific license IDs provided, filter to those
-    if (licenseIds && licenseIds.length > 0) {
-      return allLicenses.filter((license) => licenseIds.includes(license.id));
-    }
-
-    // Otherwise, return all non-refunded licenses
-    return allLicenses.filter(
-      (license) => license.status !== MKT_LICENSE_STATUS.REFUND,
-    );
-  }
-
-  /**
-   * Calculate refund amount from licenses
-   */
-  private async calculateRefundAmount(
-    context: SagaContext,
-    licenses: MktLicenseWorkspaceEntity[],
-  ): Promise<number> {
-    const licenseRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktLicenseWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    // Fetch licenses with variant relation
-    const licensesWithVariants = await licenseRepository.find({
-      where: { id: In(licenses.map((l) => l.id)) },
-      relations: ['mktVariant'],
-    });
-
-    let totalRefundAmount = 0;
-
-    for (const license of licensesWithVariants) {
-      const variant = license.mktVariant as MktVariantWorkspaceEntity;
-
-      if (variant) {
-        totalRefundAmount += variant.price ?? 0;
-      }
-    }
-
-    return totalRefundAmount;
-  }
-
-  /**
-   * Update license statuses to REFUND
-   */
-  private async updateLicenseStatuses(
-    context: SagaContext,
-    licenses: MktLicenseWorkspaceEntity[],
-    queryRunner: QueryRunner,
-  ): Promise<SagaStepResult> {
-    try {
-      if (licenses.length === 0) {
-        return { success: true };
-      }
-
-      const licenseIds = licenses.map((l) => l.id);
-
-      // Store for rollback
-      context.rollbackData.set('refundedLicenseIds', licenseIds);
-      context.rollbackData.set(
-        'previousLicenseStatuses',
-        licenses.map((l) => ({ id: l.id, status: l.status })),
-      );
-
-      // Update all license statuses
-      await queryRunner.manager.update(
-        MktLicenseWorkspaceEntity,
-        { id: In(licenseIds) },
-        { status: MKT_LICENSE_STATUS.REFUND },
-      );
-
-      this.logger.log(`Updated ${licenseIds.length} licenses to REFUND status`);
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error:
-          error instanceof Error ? error : new Error('License update failed'),
-      };
-    }
-  }
 
   /**
    * Update order for refund
@@ -380,9 +272,10 @@ export class RefundOrderSaga {
   ): Promise<SagaStepResult> {
     try {
       // Build refund metadata
+      const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
       const refundMetadata = {
         orderAction: action,
-        refundedAt: new Date().toISOString(),
+        refundedAt: nowISO,
         refundedLicenseIds,
         refundAmount,
         reason: input.reason,
@@ -391,8 +284,8 @@ export class RefundOrderSaga {
       const updateData: Partial<MktOrderWorkspaceEntity> = {
         status: newStatus,
         refundAmount,
-        updatedAt: new Date().toISOString(),
-        metadata: JSON.stringify(refundMetadata) as unknown as JSON,
+        updatedAt: nowISO,
+        metadata: safeJsonStringify(refundMetadata) as unknown as JSON,
       };
 
       await queryRunner.manager.update(
@@ -440,7 +333,7 @@ export class RefundOrderSaga {
             reason: input.reason,
             isPartial: input.isPartial,
           },
-          timestamp: new Date().toISOString(),
+          timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         },
       ],
     });

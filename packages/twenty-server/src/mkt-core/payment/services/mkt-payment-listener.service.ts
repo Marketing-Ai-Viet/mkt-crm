@@ -1,18 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { CustomEventName } from 'src/engine/workspace-event-emitter/types/custom-event-name.type';
 import {
   MKT_EVENT_TYPE,
+  MktCustomEventName,
   PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/common/common.type';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
 
 export interface MktPaymentCustomEventData {
-  eventType: CustomEventName;
+  eventType: MktCustomEventName;
   orderId: string;
   workspaceId: string;
   orderData: {
@@ -23,7 +22,7 @@ export interface MktPaymentCustomEventData {
 }
 
 export interface MktPaymentCustomEventPayload {
-  name: CustomEventName;
+  name: MktCustomEventName;
   workspaceId: string;
   events: MktPaymentCustomEventData[];
 }
@@ -44,7 +43,7 @@ export class MktPaymentListenerService {
         );
         const updatedOrder = await orderRepo.findOne({
           where: { id: event.orderId },
-          relations: ['mktLicense', 'mktPayments', 'mktLicense.mktVariant'],
+          relations: ['mktPayments'],
         });
 
         const paymentType = event.eventType as PAYMENT_HISTORY_TYPE;
@@ -66,15 +65,12 @@ export class MktPaymentListenerService {
     order: MktOrderWorkspaceEntity | null,
     paymentType: PAYMENT_HISTORY_TYPE,
   ): Promise<void> {
-    if (!order || !order?.mktLicense) {
-      this.logger.error(
-        'Order, license not found, skipping license history update.',
-      );
+    if (!order) {
+      this.logger.error('Order not found, skipping payment history update.');
 
       return;
     }
-    const paymentHistoryRepo = await this.mktRepo.getPaymentHistoryRepository();
-    const licenses = order.mktLicense;
+
     const payment = order?.mktPayments?.[0] as MktPaymentWorkspaceEntity;
 
     if (!payment) {
@@ -84,47 +80,31 @@ export class MktPaymentListenerService {
 
       return;
     }
-    for (const license of licenses) {
-      const variant = license.mktVariant as MktVariantWorkspaceEntity;
 
-      if (!variant) {
-        this.logger.error(
-          `License ${license.id} has no associated variant, skipping payment history entry.`,
-        );
-        continue;
-      }
-      let note = '';
+    const paymentHistoryRepo = await this.mktRepo.getPaymentHistoryRepository();
 
-      if (payment.description) {
-        note += `Ghi chú thanh toán: ${payment.description}; `;
-      }
-      if (order.note) {
-        note += `Ghi chú đơn hàng: ${order.note}`;
-      }
-      // Tạo entry trong payment history
-      const paymentHistory = paymentHistoryRepo.create({
-        name: `Payment ${paymentType} recorded for order ${order.orderCode}`,
-        paymentType,
-        amount: variant.price,
-        note,
-        mktLicenseId: license.id,
-        mktOrderId: order.id,
-        mktVariantId: variant.id,
-        mktPaymentId: payment.id,
-      });
+    let note = '';
 
-      paymentHistory.createdBy = order.createdBy;
-      await paymentHistoryRepo.save(paymentHistory);
-      this.logger.log(
-        `Created payment history entry for license ${license.id} and order ${order.id}.`,
-      );
+    if (payment.description) {
+      note += `Ghi chú thanh toán: ${payment.description}; `;
+    }
+    if (order.note) {
+      note += `Ghi chú đơn hàng: ${order.note}`;
     }
 
-    // Implement your custom business logic here
-    // For example:
-    // - Send notifications
-    // - Update related records
-    // - Trigger external integrations
-    // - Log analytics events
+    // Tạo entry trong payment history
+    const paymentHistory = paymentHistoryRepo.create({
+      name: `Payment ${paymentType} recorded for order ${order.orderCode}`,
+      paymentType,
+      amount: payment.amount ?? order.totalAmount ?? 0,
+      note,
+      mktOrderId: order.id,
+      mktPaymentId: payment.id,
+    });
+
+    // TODO: Update PaymentHistory entity to use relation instead of ActorMetadata for createdBy
+    await paymentHistoryRepo.save(paymentHistory);
+
+    this.logger.log(`Created payment history entry for order ${order.id}.`);
   }
 }
