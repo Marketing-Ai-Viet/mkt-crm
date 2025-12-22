@@ -16,6 +16,11 @@ import {
   CalculatePromotionStep,
   RecordPromotionUsageStep,
 } from 'src/mkt-core/order/orchestration/steps';
+import {
+  ValidateOrderStep,
+  ValidateTransitionStep,
+  UpdateStatusStep,
+} from 'src/mkt-core/order/orchestration/steps/confirm-order';
 import { OrderValidationService } from 'src/mkt-core/order/services/core';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
@@ -60,6 +65,10 @@ export class OrderOrchestrationService implements OnModuleInit {
     private readonly createSnapshotsStep: CreateSnapshotsStep,
     private readonly calculatePromotionStep: CalculatePromotionStep,
     private readonly recordPromotionUsageStep: RecordPromotionUsageStep,
+    // ConfirmOrder Steps
+    private readonly validateOrderStep: ValidateOrderStep,
+    private readonly validateTransitionStep: ValidateTransitionStep,
+    private readonly updateStatusStep: UpdateStatusStep,
   ) {}
 
   /**
@@ -86,6 +95,12 @@ export class OrderOrchestrationService implements OnModuleInit {
       this.createLicensesStep,
       this.createPaymentStep,
       this.finalizeOrderStep,
+    ]);
+
+    this.confirmOrderSaga.registerSteps([
+      this.validateOrderStep,
+      this.validateTransitionStep,
+      this.updateStatusStep,
     ]);
 
     this.logger.log('Order saga steps registered successfully');
@@ -185,15 +200,20 @@ export class OrderOrchestrationService implements OnModuleInit {
         input,
       );
 
-      if (result.success) {
+      if (result.success && result.data) {
         this.logger.log(
-          `Order confirmed: ${result.orderId} -> ${result.newStatus}`,
+          `Order confirmed: ${result.data.orderId} -> ${result.data.newStatus}`,
         );
-      } else {
-        this.logger.error(`Order confirmation failed: ${result.error}`);
+
+        return result.data;
       }
 
-      return result;
+      this.logger.error(`Order confirmation failed: ${result.error}`);
+
+      return {
+        success: false,
+        error: result.error ?? 'Order confirmation failed',
+      };
     } catch (error) {
       this.logger.error('Unexpected error during order confirmation', error);
 

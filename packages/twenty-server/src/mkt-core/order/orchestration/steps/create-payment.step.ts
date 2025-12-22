@@ -16,13 +16,8 @@ import {
   CreatePaymentStepOutput,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
-
-// ============================================
-// DEFAULT CONSTANTS
-// ============================================
-
-const DEFAULT_CURRENCY = 'VND';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
+import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';
 
 /**
  * CreatePaymentStep - Step 4: Tạo payment records
@@ -162,7 +157,7 @@ export class CreatePaymentStep extends SagaStep<
           mktPaymentMethodId: paymentMethodInput.paymentMethodId,
           name: paymentName,
           amount,
-          currency: input.currency ?? DEFAULT_CURRENCY,
+          currency: input.currency ?? DEFAULT_PAYMENT_CURRENCY,
           qrCodeUrl: qrCodeUrl ?? undefined,
           duration: paymentMethodInput.duration ?? undefined,
           expiredAt: expiredAt ?? undefined,

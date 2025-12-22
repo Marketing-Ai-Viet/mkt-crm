@@ -9,11 +9,12 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 
 @Injectable()
 export class MktPaymentPrepareService {
@@ -79,7 +80,10 @@ export class MktPaymentPrepareService {
 
       // currency
       if (!input.currency && order?.currency) {
-        payload.data = { ...payload.data, currency: order.currency };
+        payload.data = {
+          ...payload.data,
+          currency: order.currency as PaymentCurrency,
+        };
         this.logger.log(
           `Copied currency ${order.currency} from order ${order.id}`,
         );

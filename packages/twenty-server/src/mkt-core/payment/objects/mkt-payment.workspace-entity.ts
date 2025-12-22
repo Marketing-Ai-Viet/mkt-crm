@@ -27,9 +27,11 @@ import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
-
-import { PAYMENT_STATUS_OPTIONS } from './constants';
-import { PaymentStatus } from './types';
+import {
+  PAYMENT_CURRENCY_OPTIONS,
+  PAYMENT_STATUS_OPTIONS,
+} from 'src/mkt-core/payment/constants';
+import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
 
 const SEARCH_FIELDS_FOR_PAYMENT: FieldTypeAndNameMetadata[] = [
   { name: 'name', type: FieldMetadataType.TEXT },
@@ -89,12 +91,14 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.currency,
-    type: FieldMetadataType.TEXT,
+    type: FieldMetadataType.SELECT,
     label: msg`Currency`,
     description: msg`Payment currency`,
+    icon: 'IconCurrencyDollar',
+    options: PAYMENT_CURRENCY_OPTIONS,
     defaultValue: "'VND'",
   })
-  currency: string;
+  currency: PaymentCurrency;
 
   //QR Code URL
   @WorkspaceField({

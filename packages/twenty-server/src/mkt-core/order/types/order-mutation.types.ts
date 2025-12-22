@@ -3,6 +3,7 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 
 // ============================================
 // INPUT TYPES
@@ -60,7 +61,7 @@ export type CreateOrderWithItemsInput = {
 
   // Order metadata
   name?: string;
-  currency?: string;
+  currency?: PaymentCurrency;
   note?: string;
   requireContract?: boolean;
   discountPercent?: number;

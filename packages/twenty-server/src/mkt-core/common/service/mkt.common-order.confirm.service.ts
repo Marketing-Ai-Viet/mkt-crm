@@ -15,7 +15,7 @@ import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-orde
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,

@@ -14,6 +14,7 @@ import {
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 
 /**
@@ -37,7 +38,7 @@ export const OrderInputMapper = {
     return {
       customerId: dto.customerId,
       name: dto.name,
-      currency: dto.currency,
+      currency: dto.currency as PaymentCurrency | undefined,
       note: dto.note,
       requireContract: dto.requireContract,
       discountPercent: dto.discountPercent,

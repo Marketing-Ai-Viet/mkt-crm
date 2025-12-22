@@ -1,31 +1,35 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { QueryRunner } from 'typeorm';
-
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
-import {
-  ORDER_ACTION,
-  ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import {
   ConfirmOrderInput,
   ConfirmOrderResponse,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+import {
+  ConfirmOrderSagaContext,
+  createConfirmOrderContext,
+} from 'src/mkt-core/order/orchestration/context';
 
-import { SagaContext, SagaStepResult } from './order-saga.interface';
+import { SagaContext } from './order-saga.interface';
+
+import { BaseSaga } from './base/base-saga';
 
 /**
  * ConfirmOrderSaga - Saga for confirming/updating order status
  *
+ * Extends BaseSaga for unified step execution pattern.
+ *
+ * Registered Steps:
+ * 1. ValidateOrderStep - Validate order exists and load state
+ * 2. ValidateTransitionStep - Validate status transition is allowed
+ * 3. UpdateStatusStep - Update order status in database
+ *
  * Handles order status transitions with validation:
  * - Validates order exists
- * - Validates status transition is allowed
+ * - Validates status transition is allowed per state machine
  * - Updates order status
  * - Emits appropriate events
  *
@@ -36,254 +40,55 @@ import { SagaContext, SagaStepResult } from './order-saga.interface';
  * - And other status transitions
  */
 @Injectable()
-export class ConfirmOrderSaga {
-  private readonly logger = new Logger(ConfirmOrderSaga.name);
+export class ConfirmOrderSaga extends BaseSaga<
+  ConfirmOrderInput,
+  ConfirmOrderResponse
+> {
+  protected readonly logger = new Logger(ConfirmOrderSaga.name);
+  protected readonly sagaName = 'ConfirmOrderSaga';
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly eventEmitter: EventEmitter2,
-    private readonly orderStatusService: OrderStatusService,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    eventEmitter: EventEmitter2,
+  ) {
+    super(twentyORMGlobalManager, eventEmitter);
+  }
 
   /**
-   * Execute the confirm order saga
+   * Create typed context for ConfirmOrderSaga
    */
-  async execute(
+  protected createContext(
     workspaceId: string,
-    workspaceMemberId: string | undefined,
-    input: ConfirmOrderInput,
-  ): Promise<ConfirmOrderResponse> {
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
+    workspaceMemberId?: string,
+  ): ConfirmOrderSagaContext {
+    return createConfirmOrderContext(workspaceId, workspaceMemberId);
+  }
 
-    const queryRunner = dataSource.createQueryRunner();
+  /**
+   * Build success response from context
+   */
+  protected buildSuccessResponse(context: SagaContext): ConfirmOrderResponse {
+    const typedContext = context as ConfirmOrderSagaContext;
 
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    const context: SagaContext = {
-      workspaceId,
-      workspaceMemberId,
-      rollbackData: new Map(),
-      metadata: new Map(),
+    return {
+      success: true,
+      orderId: typedContext.orderId,
+      newStatus: typedContext.targetStatus,
     };
-
-    try {
-      // Step 1: Validate order exists
-      const validateResult = await this.validateOrder(
-        context,
-        input,
-        queryRunner,
-      );
-
-      if (!validateResult.success) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: validateResult.error?.message ?? 'Order validation failed',
-        };
-      }
-
-      const currentOrder = validateResult.data;
-
-      if (!currentOrder) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: 'Order validation failed: no data returned',
-        };
-      }
-
-      const previousStatus = currentOrder.status as ORDER_STATUS;
-
-      // Step 2: Determine action and validate transition
-      const transitionResult = this.orderStatusService.determineAction(
-        currentOrder,
-        {
-          status: this.getTargetStatusFromAction(input.action),
-          accountingConfirmed: input.accountingConfirmed,
-        },
-      );
-
-      if (
-        !transitionResult.valid ||
-        !transitionResult.action ||
-        !transitionResult.newStatus
-      ) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: transitionResult.error ?? 'Invalid status transition',
-        };
-      }
-
-      const { action, newStatus } = transitionResult;
-
-      // Step 3: Update order status
-      const updateResult = await this.updateOrderStatus(
-        context,
-        input,
-        action,
-        newStatus,
-        queryRunner,
-      );
-
-      if (!updateResult.success) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: updateResult.error?.message ?? 'Failed to update order status',
-        };
-      }
-
-      await queryRunner.commitTransaction();
-
-      // Emit event after successful commit
-      this.emitOrderConfirmedEvent(context, input, newStatus);
-
-      this.logger.log(
-        `Order ${input.orderId} confirmed: ${previousStatus} -> ${newStatus}`,
-      );
-
-      return {
-        success: true,
-        orderId: input.orderId,
-        newStatus,
-      };
-    } catch (error) {
-      this.logger.error('ConfirmOrderSaga execution error', error);
-      await queryRunner.rollbackTransaction();
-
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   /**
-   * Step 1: Validate order exists and can be updated
+   * Emit success event after saga completion
    */
-  private async validateOrder(
+  protected emitSuccessEvent(
     context: SagaContext,
     input: ConfirmOrderInput,
-    _queryRunner: QueryRunner,
-  ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
-    try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await orderRepository.findOne({
-        where: { id: input.orderId },
-        relations: ['orderItems', 'mktLicense'],
-      });
-
-      if (!order) {
-        return {
-          success: false,
-          error: new Error(`Order ${input.orderId} not found`),
-        };
-      }
-
-      // Store for rollback
-      context.orderId = order.id;
-      context.orderCode = order.orderCode;
-      context.rollbackData.set('previousOrder', {
-        status: order.status,
-        accountingConfirmed: order.accountingConfirmed,
-      });
-
-      return {
-        success: true,
-        data: order,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error : new Error('Validation failed'),
-      };
-    }
-  }
-
-  /**
-   * Step 2: Update order status
-   */
-  private async updateOrderStatus(
-    context: SagaContext,
-    input: ConfirmOrderInput,
-    action: ORDER_ACTION,
-    newStatus: ORDER_STATUS,
-    queryRunner: QueryRunner,
-  ): Promise<SagaStepResult> {
-    try {
-      const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
-      const updateData: Partial<MktOrderWorkspaceEntity> = {
-        status: newStatus,
-        updatedAt: nowISO,
-      };
-
-      // Handle accounting confirmation
-      if (input.accountingConfirmed !== undefined) {
-        updateData.accountingConfirmed = input.accountingConfirmed;
-      }
-
-      // Handle note
-      if (input.note) {
-        updateData.note = input.note;
-      }
-
-      // Update metadata with action
-      updateData.metadata = safeJsonStringify({
-        orderAction: action,
-        confirmedAt: nowISO,
-      }) as unknown as JSON;
-
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: input.orderId },
-        updateData,
-      );
-
-      context.metadata.set('newStatus', newStatus);
-      context.metadata.set('action', action);
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error : new Error('Update failed'),
-      };
-    }
-  }
-
-  /**
-   * Get target status from action
-   */
-  private getTargetStatusFromAction(action: ORDER_ACTION): ORDER_STATUS {
-    return this.orderStatusService.getStatusFromAction(action);
-  }
-
-  /**
-   * Emit event after order confirmation
-   */
-  private emitOrderConfirmedEvent(
-    context: SagaContext,
-    input: ConfirmOrderInput,
-    newStatus: ORDER_STATUS,
   ): void {
-    if (!context.orderId) return;
+    const typedContext = context as ConfirmOrderSagaContext;
+
+    if (!typedContext.orderId) {
+      return;
+    }
 
     const eventType = input.accountingConfirmed
       ? MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED
@@ -291,16 +96,18 @@ export class ConfirmOrderSaga {
 
     this.eventEmitter.emit(eventType, {
       name: eventType,
-      workspaceId: context.workspaceId,
+      workspaceId: typedContext.workspaceId,
       events: [
         {
           eventType,
-          orderId: context.orderId,
-          workspaceId: context.workspaceId,
+          orderId: typedContext.orderId,
+          workspaceId: typedContext.workspaceId,
           orderData: {
-            id: context.orderId,
-            status: newStatus,
-            action: input.action,
+            id: typedContext.orderId,
+            orderCode: typedContext.orderCode,
+            previousStatus: typedContext.previousStatus,
+            newStatus: typedContext.targetStatus,
+            action: typedContext.action,
             accountingConfirmed: input.accountingConfirmed,
           },
           timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
@@ -308,6 +115,6 @@ export class ConfirmOrderSaga {
       ],
     });
 
-    this.logger.log(`Emitted ${eventType} event for order: ${context.orderId}`);
+    this.logger.log(`Emitted ${eventType} for order: ${typedContext.orderId}`);
   }
 }

@@ -7,7 +7,7 @@ import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runne
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 
 @WorkspaceQueryHook('mktPayment.createOne')

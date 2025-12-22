@@ -63,6 +63,11 @@ import {
   RecordPromotionUsageStep,
 } from './orchestration/steps';
 import {
+  ValidateOrderStep,
+  ValidateTransitionStep,
+  UpdateStatusStep,
+} from './orchestration/steps/confirm-order';
+import {
   OrderProductIntegrationService,
   OrderLicenseIntegrationService,
   OrderPromotionIntegrationService,
@@ -112,16 +117,19 @@ import {
     UpdateOrderSaga,
     RefundOrderSaga,
 
-    // Saga Steps
+    // Saga Steps - CreateOrder
     CreateOrderStep,
     CreateOrderItemsStep,
     CreateLicensesStep,
     CreatePaymentStep,
     FinalizeOrderStep,
-    // New steps for snapshots and promotions
     CreateSnapshotsStep,
     CalculatePromotionStep,
     RecordPromotionUsageStep,
+    // Saga Steps - ConfirmOrder
+    ValidateOrderStep,
+    ValidateTransitionStep,
+    UpdateStatusStep,
 
     // Integration Services (bridge to other MKT modules)
     OrderProductIntegrationService,

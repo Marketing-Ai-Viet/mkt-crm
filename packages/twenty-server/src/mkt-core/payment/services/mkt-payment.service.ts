@@ -14,7 +14,7 @@ import {
   RequestSepayJWT,
   callFireBaseType,
 } from 'src/mkt-core/payment/constants/payment.type';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
