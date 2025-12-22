@@ -8,18 +8,15 @@ import { MKT_ORDER_OVERDUE_CRON_PATTERN } from 'src/mkt-core/order/constants/mkt
 import { MktOrderOverdueService } from 'src/mkt-core/order/services/legacy';
 
 @Processor(MessageQueue.cronQueue)
-export class MktOrderOverdueCronJob {
-  private readonly logger = new Logger(MktOrderOverdueCronJob.name);
+export class MktOrderOverdueJob {
+  private readonly logger = new Logger(MktOrderOverdueJob.name);
 
   constructor(
     private readonly mktOrderOverdueService: MktOrderOverdueService,
   ) {}
 
-  @Process(MktOrderOverdueCronJob.name)
-  @SentryCronMonitor(
-    MktOrderOverdueCronJob.name,
-    MKT_ORDER_OVERDUE_CRON_PATTERN,
-  )
+  @Process(MktOrderOverdueJob.name)
+  @SentryCronMonitor(MktOrderOverdueJob.name, MKT_ORDER_OVERDUE_CRON_PATTERN)
   async handle(data: { workspaceId: string }): Promise<void> {
     this.logger.log('🔥 Processing order overdue updates');
     const { workspaceId } = data;

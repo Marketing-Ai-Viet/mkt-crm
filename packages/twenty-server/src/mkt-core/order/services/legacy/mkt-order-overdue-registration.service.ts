@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-overdue.cron.job';
+import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs/mkt-order-overdue.job';
 import { MKT_ORDER_OVERDUE_CRON_PATTERN } from 'src/mkt-core/order/constants/mkt-order-overdue.constants';
 
 @Injectable()
@@ -34,7 +34,7 @@ export class MktOrderOverdueRegistrationService {
 
     // Register cron job to process all workspaces
     await this.messageQueueService.addCron({
-      jobName: MktOrderOverdueCronJob.name,
+      jobName: MktOrderOverdueJob.name,
       data: { workspaceId }, // Pass workspaceId to process specific workspace
       options: {
         repeat: {
