@@ -6,10 +6,13 @@
 2. [Kiến trúc Module](#2-kiến-trúc-module)
 3. [Order Lifecycle](#3-order-lifecycle)
 4. [Saga Pattern](#4-saga-pattern)
-5. [State Machine](#5-state-machine)
-6. [Integration Services](#6-integration-services)
-7. [GraphQL API](#7-graphql-api)
-8. [Data Flow](#8-data-flow)
+5. [BaseSaga Pattern](#5-basesaga-pattern)
+6. [ConfirmOrderSaga](#6-confirmordersaga)
+7. [Idempotency](#7-idempotency)
+8. [State Machine](#8-state-machine)
+9. [Integration Services](#9-integration-services)
+10. [GraphQL API](#10-graphql-api)
+11. [Data Flow](#11-data-flow)
 
 ---
 
@@ -57,19 +60,32 @@ mkt-core/order/
 │   └── mkt-contract.workspace-entity.ts
 ├── orchestration/
 │   ├── saga/                  # Saga executors
+│   │   ├── base/
+│   │   │   └── base-saga.ts   # Abstract base saga class
+│   │   ├── order-saga.interface.ts
 │   │   ├── create-order.saga.ts
 │   │   ├── confirm-order.saga.ts
 │   │   ├── update-order.saga.ts
 │   │   └── refund-order.saga.ts
-│   └── steps/                 # Saga step implementations
-│       ├── create-order.step.ts
-│       ├── create-snapshots.step.ts
-│       ├── create-order-items.step.ts
-│       ├── calculate-promotion.step.ts
-│       ├── create-licenses.step.ts
-│       ├── create-payment.step.ts
-│       ├── finalize-order.step.ts
-│       └── record-promotion-usage.step.ts
+│   ├── steps/                 # Saga step implementations
+│   │   ├── create-order/
+│   │   │   ├── create-order.step.ts
+│   │   │   ├── create-snapshots.step.ts
+│   │   │   ├── create-order-items.step.ts
+│   │   │   ├── calculate-promotion.step.ts
+│   │   │   ├── create-licenses.step.ts
+│   │   │   ├── create-payment.step.ts
+│   │   │   ├── finalize-order.step.ts
+│   │   │   └── record-promotion-usage.step.ts
+│   │   └── confirm-order/     # ConfirmOrder steps (NEW)
+│   │       ├── validate-order.step.ts
+│   │       ├── validate-transition.step.ts
+│   │       └── update-status.step.ts
+│   ├── context/               # Typed contexts (NEW)
+│   │   └── confirm-order.context.ts
+│   └── idempotency/           # Idempotency service (NEW)
+│       ├── idempotency.types.ts
+│       └── idempotency.service.ts
 ├── repositories/              # Data access layer
 │   ├── mkt-order.repository.ts
 │   └── mkt-order-item.repository.ts
@@ -345,9 +361,222 @@ Mỗi step lưu rollback data trong `context.rollbackData.set(stepName, data)`:
 
 ---
 
-## 5. State Machine
+## 5. BaseSaga Pattern
 
-### 5.1 Implementation
+### 5.1 Abstract Base Class
+
+Tất cả sagas đều extend từ `BaseSaga<TInput, TOutput>`:
+
+```typescript
+abstract class BaseSaga<TInput, TOutput> {
+  protected abstract readonly logger: Logger;
+  protected abstract readonly sagaName: string;
+  protected steps: SagaStep<TInput, unknown>[] = [];
+
+  // Register steps từ module init
+  registerSteps(steps: SagaStep<TInput, unknown>[]): void;
+
+  // Execute saga với transaction
+  execute(workspaceId, workspaceMemberId, input): Promise<SagaExecutionResult<TOutput>>;
+
+  // Build response từ context (abstract)
+  protected abstract buildSuccessResponse(context: SagaContext): unknown;
+
+  // Emit event sau commit (abstract)
+  protected abstract emitSuccessEvent(context: SagaContext, input: TInput): void;
+}
+```
+
+### 5.2 Unified Execution Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    BaseSaga.execute()                        │
+├─────────────────────────────────────────────────────────────┤
+│  1. Create QueryRunner & Start Transaction                   │
+│  2. Create typed context                                     │
+│  3. For each step:                                          │
+│     ├─ Check shouldSkip()                                   │
+│     ├─ Create SAVEPOINT                                     │
+│     ├─ Execute step with timeout (30s)                      │
+│     ├─ On success: add to executedSteps                     │
+│     └─ On failure: ROLLBACK TO SAVEPOINT                    │
+│  4. If all success:                                         │
+│     ├─ COMMIT transaction                                   │
+│     ├─ emitSuccessEvent()                                   │
+│     └─ Return buildSuccessResponse()                        │
+│  5. If failure:                                             │
+│     ├─ Compensate with retry (max 3, exponential backoff)   │
+│     └─ ROLLBACK transaction                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 5.3 Step Configuration
+
+```typescript
+const SAGA_CONFIG = {
+  STEP_TIMEOUT_MS: 30000,           // 30 seconds per step
+  MAX_COMPENSATE_RETRIES: 3,        // Retry compensation 3 times
+  COMPENSATE_RETRY_DELAY_MS: 1000,  // 1 second base delay (exponential)
+} as const;
+```
+
+---
+
+## 6. ConfirmOrderSaga
+
+### 6.1 Typed Context
+
+```typescript
+type ConfirmOrderSagaContext = SagaContext & {
+  currentOrder?: MktOrderWorkspaceEntity;
+  previousStatus?: ORDER_STATUS;
+  targetStatus?: ORDER_STATUS;
+  action?: ORDER_ACTION;
+  rollbackOrder?: {
+    status: ORDER_STATUS;
+    accountingConfirmed?: boolean;
+    note?: string;
+  };
+};
+```
+
+### 6.2 Steps Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  ConfirmOrderSaga                            │
+├─────────────────────────────────────────────────────────────┤
+│  Step 1: ValidateOrderStep                                   │
+│  ├─ Load order from database                                 │
+│  ├─ Validate order exists                                    │
+│  ├─ Store currentOrder in context                            │
+│  └─ Store rollbackOrder for compensation                     │
+├─────────────────────────────────────────────────────────────┤
+│  Step 2: ValidateTransitionStep                              │
+│  ├─ Get target status from action                            │
+│  ├─ Validate transition via OrderStatusService               │
+│  └─ Store action & targetStatus in context                   │
+├─────────────────────────────────────────────────────────────┤
+│  Step 3: UpdateStatusStep                                    │
+│  ├─ Update order status                                      │
+│  ├─ Update accountingConfirmed if provided                   │
+│  ├─ Update note if provided                                  │
+│  └─ Store metadata with action details                       │
+│  Compensate:                                                 │
+│  └─ Restore previous order state from rollbackOrder          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Registration
+
+```typescript
+// OrderOrchestrationService.onModuleInit()
+this.confirmOrderSaga.registerSteps([
+  this.validateOrderStep,
+  this.validateTransitionStep,
+  this.updateStatusStep,
+]);
+```
+
+---
+
+## 7. Idempotency
+
+### 7.1 Purpose
+
+Ngăn chặn duplicate orders khi client retry request:
+
+```
+Request #1 (key=abc123)     Request #2 (key=abc123, duplicate)
+        │                              │
+        ▼                              ▼
+   Check Redis ──────────────────► Check Redis
+   (not found)                     (found: PENDING)
+        │                              │
+        ▼                              ▼
+   Create record                   Wait for completion
+   status=PENDING                  (max 30s)
+        │                              │
+        ▼                              ▼
+   Execute saga                    Lock released
+        │                              │
+        ▼                              ▼
+   Update record ◄───────────────► Return cached response
+   status=COMPLETED
+```
+
+### 7.2 Types
+
+```typescript
+type IdempotencyRecord<T = unknown> = {
+  key: IdempotencyKey;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  createdAt: string;
+  completedAt?: string;
+  response?: T;
+  error?: string;
+  requestHash: string;  // SHA-256 hash (16 chars)
+};
+
+const IDEMPOTENCY_CONFIG = {
+  TTL_SECONDS: 86400,         // 24 hours
+  LOCK_TIMEOUT_MS: 300000,    // 5 minutes
+  KEY_PREFIX: 'idempotency',
+  LOCK_PREFIX: 'idempotency_lock',
+} as const;
+```
+
+### 7.3 IdempotencyService Methods
+
+| Method | Description |
+|--------|-------------|
+| `generateKey(workspaceId, action, body)` | Tạo key từ hash request |
+| `checkDuplicate(key)` | Kiểm tra request trùng lặp |
+| `acquireLock(key)` | Acquire distributed lock |
+| `releaseLock(key)` | Release lock |
+| `storePending(key, body)` | Lưu status PENDING |
+| `storeSuccess(key, response)` | Lưu status COMPLETED |
+| `storeFailed(key, error)` | Lưu status FAILED |
+| `waitForCompletion(key)` | Chờ request khác hoàn thành |
+
+### 7.4 Usage Pattern
+
+```typescript
+// In OrderOrchestrationService
+const key = this.idempotencyService.generateKey(workspaceId, 'createOrder', input);
+const { isDuplicate, record } = await this.idempotencyService.checkDuplicate(key);
+
+if (isDuplicate && record?.status === 'COMPLETED') {
+  return record.response;  // Return cached response
+}
+
+if (isDuplicate && record?.status === 'PENDING') {
+  const completed = await this.idempotencyService.waitForCompletion(key);
+  return completed?.response ?? { success: false, error: 'Timeout' };
+}
+
+// Acquire lock and execute
+await this.idempotencyService.acquireLock(key);
+await this.idempotencyService.storePending(key, input);
+
+try {
+  const result = await this.createOrderSaga.execute(workspaceId, memberId, input);
+  await this.idempotencyService.storeSuccess(key, result);
+  return result;
+} catch (error) {
+  await this.idempotencyService.storeFailed(key, error.message);
+  throw error;
+} finally {
+  await this.idempotencyService.releaseLock(key);
+}
+```
+
+---
+
+## 8. State Machine
+
+### 8.1 Implementation
 
 ```typescript
 class OrderStateMachine implements OrderStateContext {
@@ -368,7 +597,7 @@ class OrderStateMachine implements OrderStateContext {
 }
 ```
 
-### 5.2 State Interface
+### 8.2 State Interface
 
 ```typescript
 interface OrderState {
@@ -394,9 +623,9 @@ interface OrderState {
 
 ---
 
-## 6. Integration Services
+## 9. Integration Services
 
-### 6.1 OrderProductIntegrationService
+### 9.1 OrderProductIntegrationService
 
 Bridge to `MktProductIntegrationModule`:
 
@@ -419,7 +648,7 @@ class OrderProductIntegrationService {
 }
 ```
 
-### 6.2 OrderLicenseIntegrationService
+### 9.2 OrderLicenseIntegrationService
 
 Bridge to `MktLicenseIntegrationModule`:
 
@@ -436,7 +665,7 @@ class OrderLicenseIntegrationService {
 }
 ```
 
-### 6.3 OrderPromotionIntegrationService
+### 9.3 OrderPromotionIntegrationService
 
 Bridge to `MktPromotionModule`:
 
@@ -461,9 +690,9 @@ class OrderPromotionIntegrationService {
 
 ---
 
-## 7. GraphQL API
+## 10. GraphQL API
 
-### 7.1 Mutations
+### 10.1 Mutations
 
 #### createOrderWithItems
 

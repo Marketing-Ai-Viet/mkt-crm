@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
@@ -72,6 +73,7 @@ import {
   OrderLicenseIntegrationService,
   OrderPromotionIntegrationService,
 } from './services/integration';
+import { IdempotencyService } from './orchestration/idempotency';
 
 @Module({
   imports: [
@@ -79,6 +81,7 @@ import {
     MktEmailModule,
     MessageQueueModule,
     RecordPositionModule,
+    WorkspaceCacheStorageModule, // Redis caching for idempotency
     MktPaymentModule,
     MktInvoiceModule,
     MktProductIntegrationModule, // External MKT Server product integration
@@ -136,6 +139,9 @@ import {
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
 
+    // Idempotency (duplicate request prevention)
+    IdempotencyService,
+
     // Legacy Services (backward compatibility)
     OrderService,
     OrderActionService,
@@ -169,6 +175,8 @@ import {
     ConfirmOrderSaga,
     UpdateOrderSaga,
     RefundOrderSaga,
+    // Idempotency
+    IdempotencyService,
   ],
 })
 export class MktOrderModule {}
