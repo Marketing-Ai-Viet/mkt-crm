@@ -10,7 +10,7 @@ import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
-import { MktOrderOverdueCronJob } from 'src/mkt-core/order/commands/mkt-order-overdue.cron.job';
+import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 import {
@@ -136,7 +136,7 @@ import {
     OrderLicenseRenewService,
     MktOrderOverdueService,
     MktOrderOverdueRegistrationService,
-    MktOrderOverdueCronJob,
+    MktOrderOverdueJob,
 
     // GraphQL Resolvers
     OrderMutationResolver,

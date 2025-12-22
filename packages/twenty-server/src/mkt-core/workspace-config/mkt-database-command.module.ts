@@ -28,7 +28,6 @@ import { SeedSInvoiceMetadataModuleCommand } from 'src/mkt-core/seeder/invoice-s
 import { SeedSInvoicePaymentModuleCommand } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-payment-data-seed-dev-workspace.command';
 import { SeedSInvoiceTaxBreakdownModuleCommand } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-data-seed-dev-workspace.command';
 import { SeedMktEmailModuleCommand } from 'src/mkt-core/email/seeder/mkt-email-data-seed-dev-workspace.command';
-import { EnsureOrderUpdatedAtTriggerCommand } from 'src/mkt-core/order/commands/mkt-order-optimistic-locking.command';
 import { SeedMktReportModuleCommand } from 'src/mkt-core/report/seeder/mkt-report-data-seed-dev-workspace.command';
 import { SeedMktOptionModuleCommand } from 'src/mkt-core/setting/seeder/mkt-option-data-seed-dev-workspace.command';
 // Promotion seeder commands
@@ -58,7 +57,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedOrderModuleCommand,
   SeedOrderItemModuleCommand,
   SeedMktOrderHistoryModuleCommand,
-  EnsureOrderUpdatedAtTriggerCommand,
   // template commands
   SeedTemplateModuleCommand,
   // contract commands
