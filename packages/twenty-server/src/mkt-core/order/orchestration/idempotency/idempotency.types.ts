@@ -6,6 +6,16 @@
  */
 
 /**
+ * Actions that support idempotency
+ */
+export enum IDEMPOTENCY_ACTION {
+  CREATE_ORDER = 'createOrder',
+  CONFIRM_ORDER = 'confirmOrder',
+  UPDATE_ORDER_STATUS = 'updateOrderStatus',
+  REFUND_ORDER = 'refundOrder',
+}
+
+/**
  * Idempotency key format:
  * - Client-provided: Use X-Idempotency-Key header
  * - Auto-generated: Hash of (workspaceId + action + requestBody)

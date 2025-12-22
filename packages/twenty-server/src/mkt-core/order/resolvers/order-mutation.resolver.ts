@@ -54,6 +54,7 @@ export class OrderMutationResolver {
    * - Single transaction for all operations
    * - Automatic rollback on failure
    * - Better error handling
+   * - Idempotency support to prevent duplicate orders
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => CreateOrderResponseDto, {

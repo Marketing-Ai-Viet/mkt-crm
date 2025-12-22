@@ -10,6 +10,7 @@ import { safeJsonParse, safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 import {
   DuplicateCheckResult,
+  IDEMPOTENCY_ACTION,
   IDEMPOTENCY_CONFIG,
   IdempotencyKey,
   IdempotencyRecord,
@@ -46,13 +47,13 @@ export class IdempotencyService {
    * Generate idempotency key from request data
    *
    * @param workspaceId - Workspace identifier
-   * @param action - Action type (e.g., 'createOrder', 'confirmOrder')
+   * @param action - Action type from IDEMPOTENCY_ACTION enum
    * @param requestBody - Request payload to hash
    * @returns Generated idempotency key
    */
   generateKey(
     workspaceId: string,
-    action: string,
+    action: IDEMPOTENCY_ACTION,
     requestBody: unknown,
   ): IdempotencyKey {
     const requestHash = this.hashRequest(requestBody);

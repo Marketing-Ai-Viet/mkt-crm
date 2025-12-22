@@ -1,6 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import {
+  IDEMPOTENCY_ACTION,
+  IdempotencyService,
+} from 'src/mkt-core/order/orchestration/idempotency';
+import {
   CreateOrderSaga,
   ConfirmOrderSaga,
   UpdateOrderSaga,
@@ -55,6 +59,7 @@ export class OrderOrchestrationService implements OnModuleInit {
     private readonly refundOrderSaga: RefundOrderSaga,
     private readonly validationService: OrderValidationService,
     private readonly orderItemService: OrderItemService,
+    private readonly idempotencyService: IdempotencyService,
     // Core Steps
     private readonly createOrderStep: CreateOrderStep,
     private readonly createOrderItemsStep: CreateOrderItemsStep,
@@ -108,6 +113,7 @@ export class OrderOrchestrationService implements OnModuleInit {
 
   /**
    * Create order with items using saga pattern
+   * Includes idempotency support to prevent duplicate orders
    */
   async createOrderWithItems(
     workspaceId: string,
@@ -118,6 +124,125 @@ export class OrderOrchestrationService implements OnModuleInit {
       `Creating order for customer: ${input.customerId}, action: ${input.action}`,
     );
 
+    // Generate idempotency key
+    const idempotencyKey = this.idempotencyService.generateKey(
+      workspaceId,
+      IDEMPOTENCY_ACTION.CREATE_ORDER,
+      input,
+    );
+
+    // Check for duplicate request
+    const duplicateResult = await this.handleDuplicateCheck(idempotencyKey);
+
+    if (duplicateResult) {
+      return duplicateResult;
+    }
+
+    // Acquire lock for processing
+    const lockAcquired =
+      await this.idempotencyService.acquireLock(idempotencyKey);
+
+    if (!lockAcquired) {
+      return {
+        success: false,
+        error: 'Another request is being processed. Please try again.',
+      };
+    }
+
+    try {
+      // Store pending status
+      await this.idempotencyService.storePending(idempotencyKey, input);
+
+      // Execute order creation
+      const result = await this.executeCreateOrder(
+        workspaceId,
+        workspaceMemberId,
+        input,
+      );
+
+      // Store result
+      if (result.success) {
+        await this.idempotencyService.storeSuccess(idempotencyKey, result);
+      } else {
+        await this.idempotencyService.storeFailed(
+          idempotencyKey,
+          result.error ?? 'Order creation failed',
+        );
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      await this.idempotencyService.storeFailed(idempotencyKey, errorMessage);
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } finally {
+      await this.idempotencyService.releaseLock(idempotencyKey);
+    }
+  }
+
+  /**
+   * Handle duplicate request check
+   * Returns cached response if duplicate, null if should proceed
+   */
+  private async handleDuplicateCheck(
+    idempotencyKey: string,
+  ): Promise<CreateOrderResponse | null> {
+    const { isDuplicate, record } =
+      await this.idempotencyService.checkDuplicate<CreateOrderResponse>(
+        idempotencyKey,
+      );
+
+    if (!isDuplicate || !record) {
+      return null;
+    }
+
+    // Return cached response for completed requests
+    if (record.status === 'COMPLETED' && record.response) {
+      this.logger.log(`Returning cached response for: ${idempotencyKey}`);
+
+      return record.response;
+    }
+
+    // Wait for pending request to complete
+    if (record.status === 'PENDING') {
+      this.logger.log(`Waiting for pending request: ${idempotencyKey}`);
+      const completed =
+        await this.idempotencyService.waitForCompletion<CreateOrderResponse>(
+          idempotencyKey,
+        );
+
+      if (completed?.response) {
+        return completed.response;
+      }
+
+      return {
+        success: false,
+        error: 'Request timeout while waiting for duplicate request',
+      };
+    }
+
+    // For failed requests, allow retry (return null to proceed)
+    if (record.status === 'FAILED') {
+      this.logger.log(`Retrying failed request: ${idempotencyKey}`);
+    }
+
+    return null;
+  }
+
+  /**
+   * Execute order creation (validation + saga)
+   */
+  private async executeCreateOrder(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: CreateOrderWithItemsInput,
+  ): Promise<CreateOrderResponse> {
     // Validate input
     const validationResult =
       await this.validationService.validateCreateOrderInput(workspaceId, input);
