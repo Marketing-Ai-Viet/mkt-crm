@@ -776,7 +776,7 @@ mutation RefundOrder($input: RefundOrderInputDto!) {
 }
 ```
 
-### 7.2 Queries
+### 10.2 Queries
 
 #### validateOrderInput
 
@@ -795,9 +795,9 @@ query ValidateOrderInput($input: CreateOrderWithItemsInputDto!) {
 
 ---
 
-## 8. Data Flow
+## 11. Data Flow
 
-### 8.1 Create Order Flow
+### 11.1 Create Order Flow
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -858,7 +858,7 @@ query ValidateOrderInput($input: CreateOrderWithItemsInputDto!) {
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### 8.2 Promotion Flow
+### 11.2 Promotion Flow
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -918,7 +918,15 @@ query ValidateOrderInput($input: CreateOrderWithItemsInputDto!) {
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Created:** 2025-12-20
+**Updated:** 2025-12-22
 **Author:** Claude Code
 **Status:** Active
+
+### Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0 | 2025-12-22 | Added BaseSaga pattern, ConfirmOrderSaga steps, Idempotency |
+| 1.0 | 2025-12-20 | Initial document |

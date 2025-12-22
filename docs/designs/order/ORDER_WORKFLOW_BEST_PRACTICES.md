@@ -12,6 +12,8 @@
 8. [Dependency Matrix](#8-dependency-matrix)
 9. [Saga Failure Handling & Rollback](#9-saga-failure-handling--rollback)
 10. [Implementation Checklist](#10-implementation-checklist)
+    - Phase 8: Saga Unification ✅
+    - Phase 9: Idempotency ✅
 
 ---
 
@@ -2197,6 +2199,59 @@ type DeadLetterEntry = {
 - [ ] **7.1** Update API documentation
 - [ ] **7.2** Update CLAUDE.md với module changes
 - [ ] **7.3** Create migration guide for existing code
+
+### Phase 8: Saga Unification (Priority: High) ✅ COMPLETED
+
+- [x] **8.1** Tạo `BaseSaga` abstract class
+  - [x] Implement unified step execution pattern
+  - [x] Implement savepoint strategy
+  - [x] Implement compensation with retry (exponential backoff)
+  - [x] Implement step timeout (30s)
+
+- [x] **8.2** Tạo typed context cho `ConfirmOrderSaga`
+  - [x] Implement `ConfirmOrderSagaContext` type
+  - [x] Implement `createConfirmOrderContext()` factory
+
+- [x] **8.3** Tạo steps cho `ConfirmOrderSaga`
+  - [x] Implement `ValidateOrderStep`
+  - [x] Implement `ValidateTransitionStep`
+  - [x] Implement `UpdateStatusStep`
+
+- [x] **8.4** Refactor `ConfirmOrderSaga`
+  - [x] Extend từ `BaseSaga`
+  - [x] Implement `buildSuccessResponse()`
+  - [x] Implement `emitSuccessEvent()`
+
+- [x] **8.5** Update `OrderOrchestrationService`
+  - [x] Register ConfirmOrder steps trong `onModuleInit()`
+  - [x] Update `confirmOrder()` để sử dụng saga result properly
+
+- [x] **8.6** Update `mkt-order.module.ts`
+  - [x] Import ConfirmOrder steps
+  - [x] Register step providers
+
+### Phase 9: Idempotency (Priority: High) ✅ COMPLETED
+
+- [x] **9.1** Tạo `CacheStorageNamespace.MktOrder`
+  - [x] Add to `cache-storage-namespace.enum.ts`
+
+- [x] **9.2** Tạo Idempotency types
+  - [x] Implement `IdempotencyKey` type
+  - [x] Implement `IdempotencyRecord` type
+  - [x] Implement `IdempotencyStatus` type
+  - [x] Define `IDEMPOTENCY_CONFIG` constants
+
+- [x] **9.3** Tạo `IdempotencyService`
+  - [x] Implement `generateKey()`
+  - [x] Implement `checkDuplicate()`
+  - [x] Implement `acquireLock()` / `releaseLock()`
+  - [x] Implement `storePending()` / `storeSuccess()` / `storeFailed()`
+  - [x] Implement `waitForCompletion()`
+
+- [x] **9.4** Update `mkt-order.module.ts`
+  - [x] Import `WorkspaceCacheStorageModule`
+  - [x] Register `IdempotencyService`
+  - [x] Export `IdempotencyService`
 
 ---
 
