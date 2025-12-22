@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { IsNull } from 'typeorm';
+import keyBy from 'lodash.keyby';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { MKT_CUSTOMER_TIER } from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
+import { CustomerTierStatistics } from 'src/mkt-core/customer/types';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 import {
   CustomerTierResult,
@@ -18,7 +22,9 @@ export class MktCustomerTierService {
 
   constructor(
     private readonly mktCustomerTierCalculationService: MktCustomerTierCalculationService,
-    private readonly mktRepo: MktRepositoryService,
+    private readonly customerRepository: MktCustomerRepository,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   async updateCustomerTier(customerId: string): Promise<CustomerTierResult> {
@@ -27,11 +33,7 @@ export class MktCustomerTierService {
         customerId,
       );
 
-    const cusRepo = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
-    );
-
-    await cusRepo.update(customerId, {
+    await this.customerRepository.update(customerId, {
       tier: tierResult.customerTier,
       totalOrderValue: tierResult.totalOrderValue,
     });
@@ -40,17 +42,12 @@ export class MktCustomerTierService {
   }
 
   async updateAllCustomerTiers(batchSize = 100): Promise<CustomerTierResult[]> {
-    const cusRepo = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
-    );
-
     const results: CustomerTierResult[] = [];
     let offset = 0;
     let hasMore = true;
 
     while (hasMore) {
-      const customers = await cusRepo.find({
-        where: { deletedAt: IsNull() },
+      const customers = await this.customerRepository.findAll(undefined, {
         take: batchSize,
         skip: offset,
         order: { createdAt: 'ASC' },
@@ -62,7 +59,10 @@ export class MktCustomerTierService {
       }
 
       this.logger.log(
-        `Processing batch ${offset / batchSize + 1}: ${customers.length} customers`,
+        CUSTOMER_MESSAGES.LOG.BATCH_PROCESS_START(
+          offset / batchSize + 1,
+          customers.length,
+        ),
       );
 
       for (const customer of customers) {
@@ -72,7 +72,7 @@ export class MktCustomerTierService {
               customer.id,
             );
 
-          await cusRepo.update(customer.id, {
+          await this.customerRepository.update(customer.id, {
             tier: tierResult.customerTier,
             totalOrderValue: tierResult.totalOrderValue,
           });
@@ -80,9 +80,9 @@ export class MktCustomerTierService {
           results.push(tierResult);
         } catch (error) {
           this.logger.error(
-            `Error updating tier for customer ${customer.id}: ${error.message}`,
+            CUSTOMER_MESSAGES.ERROR.TIER_UPDATE_FAILED(customer.id),
+            error instanceof Error ? error.stack : String(error),
           );
-          // Continue with next customer
         }
       }
 
@@ -93,65 +93,93 @@ export class MktCustomerTierService {
       }
     }
 
-    this.logger.log(`Completed updating ${results.length} customer tiers`);
+    this.logger.log(
+      CUSTOMER_MESSAGES.LOG.BATCH_PROCESS_COMPLETE(results.length),
+    );
 
     return results;
   }
 
-  async getCustomerTierStatistics(_workspaceId: string): Promise<{
-    tierDistribution: Record<MKT_CUSTOMER_TIER, number>;
-    totalCustomers: number;
-    averageOrderValue: number;
-    averageOrderCount: number;
-  }> {
-    const cusRepo = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
+  /**
+   * Get customer tier statistics - FIXED N+1 QUERY
+   * Uses single aggregation query instead of loop
+   */
+  async getCustomerTierStatistics(
+    workspaceId: string,
+  ): Promise<CustomerTierStatistics> {
+    this.logger.log(CUSTOMER_MESSAGES.LOG.TIER_STATS_START(workspaceId));
+
+    // Single query to get all customers
+    const customers = await this.customerRepository.findAll(workspaceId);
+
+    if (customers.length === 0) {
+      return {
+        tierDistribution: this.initTierDistribution(),
+        totalCustomers: 0,
+        averageOrderValue: 0,
+        averageOrderCount: 0,
+      };
+    }
+
+    // Single aggregation query for all order stats - FIXES N+1
+    const customerIds = customers.map((c) => c.id);
+    const orderStats = await this.orderRepository.getOrderStatsByCustomers(
+      workspaceId,
+      customerIds,
     );
 
-    const customers = await cusRepo.find();
+    // Create lookup map for O(1) access
+    const orderStatsMap = keyBy(orderStats, 'customerId');
 
-    const tierDistribution: Record<MKT_CUSTOMER_TIER, number> = {
+    // Calculate tier distribution and totals
+    const tierDistribution = this.initTierDistribution();
+    let totalOrderValue = 0;
+    let totalOrderCount = 0;
+
+    for (const customer of customers) {
+      // Update tier distribution
+      const tier = customer.tier as MKT_CUSTOMER_TIER;
+
+      if (tier && tierDistribution[tier] !== undefined) {
+        tierDistribution[tier]++;
+      }
+
+      // Get order stats from map (no additional query)
+      const stats = orderStatsMap[customer.id];
+
+      if (stats) {
+        totalOrderValue = MoneyUtils.add(
+          totalOrderValue,
+          stats.totalValue,
+        ).toNumber();
+        totalOrderCount += stats.orderCount;
+      }
+    }
+
+    const customerCount = customers.length;
+
+    return {
+      tierDistribution,
+      totalCustomers: customerCount,
+      averageOrderValue: MoneyUtils.divideSafe(
+        totalOrderValue,
+        customerCount,
+      ).toNumber(),
+      averageOrderCount: MoneyUtils.divideSafe(
+        totalOrderCount,
+        customerCount,
+      ).toNumber(),
+    };
+  }
+
+  private initTierDistribution(): Record<MKT_CUSTOMER_TIER, number> {
+    return {
       [MKT_CUSTOMER_TIER.BRONZE]: 0,
       [MKT_CUSTOMER_TIER.SILVER]: 0,
       [MKT_CUSTOMER_TIER.GOLD]: 0,
       [MKT_CUSTOMER_TIER.DIAMOND]: 0,
       [MKT_CUSTOMER_TIER.DORMANT]: 0,
       [MKT_CUSTOMER_TIER.CHURNED]: 0,
-    };
-
-    let totalOrderValue = 0;
-    let totalOrderCount = 0;
-
-    for (const customer of customers) {
-      if (
-        customer.tier &&
-        Object.values(MKT_CUSTOMER_TIER).includes(
-          customer.tier as MKT_CUSTOMER_TIER,
-        )
-      ) {
-        tierDistribution[customer.tier as MKT_CUSTOMER_TIER]++;
-      }
-
-      totalOrderValue += customer.totalOrderValue || 0;
-
-      const orderRepo = await this.mktRepo.getRepository(
-        MktOrderWorkspaceEntity,
-      );
-
-      const orderCount = await orderRepo.count({
-        where: { mktCustomerId: customer.id },
-      });
-
-      totalOrderCount += orderCount;
-    }
-
-    return {
-      tierDistribution,
-      totalCustomers: customers.length,
-      averageOrderValue:
-        customers.length > 0 ? totalOrderValue / customers.length : 0,
-      averageOrderCount:
-        customers.length > 0 ? totalOrderCount / customers.length : 0,
     };
   }
 
@@ -160,24 +188,10 @@ export class MktCustomerTierService {
     limit?: number,
     offset?: number,
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const cusRepo = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
-    );
-
-    const queryBuilder = cusRepo
-      .createQueryBuilder('customer')
-      .where('customer.tier = :tier', { tier })
-      .orderBy('customer.totalOrderValue', 'DESC');
-
-    if (limit) {
-      queryBuilder.limit(limit);
-    }
-
-    if (offset) {
-      queryBuilder.offset(offset);
-    }
-
-    return queryBuilder.getMany();
+    return this.customerRepository.findByTier(tier, undefined, {
+      limit,
+      offset,
+    });
   }
 
   async checkCustomerUpgradeEligibility(customerId: string): Promise<{

@@ -308,6 +308,102 @@ export class MktOrderRepository {
   }
 
   // ============================================
+  // AGGREGATION OPERATIONS
+  // ============================================
+
+  /**
+   * Get order statistics aggregated by customer IDs
+   * Single query with GROUP BY to avoid N+1 problem
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerIds - Array of customer IDs to aggregate
+   * @returns Array of { customerId, orderCount, totalValue }
+   */
+  async getOrderStatsByCustomers(
+    workspaceId: string,
+    customerIds: string[],
+  ): Promise<
+    Array<{ customerId: string; orderCount: number; totalValue: number }>
+  > {
+    if (customerIds.length === 0) {
+      return [];
+    }
+
+    this.logger.debug(
+      `Fetching order stats for ${customerIds.length} customers`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const stats = await repository
+      .createQueryBuilder('order')
+      .select('order.mktCustomerId', 'customerId')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .where('order.mktCustomerId IN (:...customerIds)', { customerIds })
+      .groupBy('order.mktCustomerId')
+      .getRawMany();
+
+    return stats.map((s) => ({
+      customerId: s.customerId,
+      orderCount: parseInt(s.orderCount, 10) || 0,
+      totalValue: parseFloat(s.totalValue) || 0,
+    }));
+  }
+
+  /**
+   * Get order statistics for a single customer
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerId - Customer ID
+   * @returns Order statistics including counts, totals, and dates
+   */
+  async getCustomerOrderStats(
+    workspaceId: string,
+    customerId: string,
+  ): Promise<{
+    orderCount: number;
+    totalValue: number;
+    firstOrderDate: string | null;
+    lastOrderDate: string | null;
+    averageOrderInterval: number;
+  }> {
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository
+      .createQueryBuilder('order')
+      .select('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .addSelect('MIN(order.createdAt)', 'firstOrderDate')
+      .addSelect('MAX(order.createdAt)', 'lastOrderDate')
+      .where('order.mktCustomerId = :customerId', { customerId })
+      .getRawOne();
+
+    const orderCount = parseInt(result?.orderCount, 10) || 0;
+
+    // Calculate average order interval in days
+    let averageOrderInterval = 0;
+
+    if (orderCount > 1 && result?.firstOrderDate && result?.lastOrderDate) {
+      const firstDate = new Date(result.firstOrderDate);
+      const lastDate = new Date(result.lastOrderDate);
+      const totalDays = Math.ceil(
+        (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+    }
+
+    return {
+      orderCount,
+      totalValue: parseFloat(result?.totalValue) || 0,
+      firstOrderDate: result?.firstOrderDate ?? null,
+      lastOrderDate: result?.lastOrderDate ?? null,
+      averageOrderInterval,
+    };
+  }
+
+  // ============================================
   // REPOSITORY ACCESS
   // ============================================
 

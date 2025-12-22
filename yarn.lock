@@ -23884,6 +23884,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/lodash.keyby@npm:^4.6.9":
+  version: 4.6.9
+  resolution: "@types/lodash.keyby@npm:4.6.9"
+  dependencies:
+    "@types/lodash": "npm:*"
+  checksum: 10c0/a730cd1d69128ef5e949a36215406c061570c078d5d15f491d21e35064d1e53fa61b1faa66223a9b4c9b733af4761c5bbc0bf10fa24c074bdb5acc426af26e78
+  languageName: node
+  linkType: hard
+
 "@types/lodash.mapvalues@npm:^4.6.9":
   version: 4.6.9
   resolution: "@types/lodash.mapvalues@npm:4.6.9"
@@ -43521,6 +43530,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash.keyby@npm:^4.6.0":
+  version: 4.6.0
+  resolution: "lodash.keyby@npm:4.6.0"
+  checksum: 10c0/02108298e060ed2734d539d2544c0137f63a8551f3cf7634fc348ac02978598d965b34061014d6289de15fd9dd7f7b0b472a4fb13447a9b75109f5ae29414cc8
+  languageName: node
+  linkType: hard
+
 "lodash.keys@npm:^4.0.8":
   version: 4.2.0
   resolution: "lodash.keys@npm:4.2.0"
@@ -57700,6 +57716,7 @@ __metadata:
     "@types/lodash.isequal": "npm:^4.5.7"
     "@types/lodash.isobject": "npm:^3.0.7"
     "@types/lodash.kebabcase": "npm:^4.1.7"
+    "@types/lodash.keyby": "npm:^4.6.9"
     "@types/lodash.mapvalues": "npm:^4.6.9"
     "@types/lodash.merge": "npm:^4.6.7"
     "@types/lodash.omit": "npm:^4.5.9"
@@ -57831,6 +57848,7 @@ __metadata:
     lodash.isequal: "npm:^4.5.0"
     lodash.isobject: "npm:^3.0.2"
     lodash.kebabcase: "npm:^4.1.1"
+    lodash.keyby: "npm:^4.6.0"
     lodash.mapvalues: "npm:^4.6.0"
     lodash.merge: "npm:^4.6.2"
     lodash.omit: "npm:^4.5.0"
