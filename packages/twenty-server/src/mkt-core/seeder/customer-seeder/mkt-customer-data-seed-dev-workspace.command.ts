@@ -12,8 +12,10 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
+import { mktCustomerTierHistoriesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-history-all.view';
+import { prefillMktCustomerTierHistories } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tier-histories';
+import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
 
 interface SeedModuleOptions {
   workspaceId?: string;
@@ -192,6 +194,9 @@ export class SeedCustomerModuleCommand extends CommandRunner {
         // Seed mkt customers
         await prefillMktCustomers(entityManager, schemaName);
 
+        // Seed mkt customer tier histories
+        await prefillMktCustomerTierHistories(entityManager, schemaName);
+
         if (!customerViewDefinition) {
           this.logger.log(
             `Could not create customer view definition for workspace ${workspaceId}`,
@@ -314,6 +319,106 @@ export class SeedCustomerModuleCommand extends CommandRunner {
         this.logger.log(
           `✅ Customer view created for workspace ${workspaceId}`,
         );
+
+        // Create tier history view
+        const tierHistoryViewDefinition =
+          mktCustomerTierHistoriesAllView(objectMetadataItems);
+
+        if (tierHistoryViewDefinition) {
+          // Check if tier history view already exists
+          const existingTierHistoryView = await entityManager
+            .createQueryBuilder(undefined, undefined, undefined, {
+              shouldBypassPermissionChecks: true,
+            })
+            .select('*')
+            .from(`${schemaName}.view`, 'view')
+            .where('view.name = :name', { name: 'All Tier Histories' })
+            .andWhere('view.key = :key', { key: 'INDEX' })
+            .getRawOne();
+
+          if (existingTierHistoryView) {
+            await entityManager
+              .createQueryBuilder(undefined, undefined, undefined, {
+                shouldBypassPermissionChecks: true,
+              })
+              .delete()
+              .from(`${schemaName}.view`)
+              .where('name = :name', { name: 'All Tier Histories' })
+              .andWhere('key = :key', { key: 'INDEX' })
+              .execute();
+          }
+
+          const tierHistoryViewWithId = {
+            ...tierHistoryViewDefinition,
+            id: uuidv4(),
+          };
+
+          // Insert tier history view
+          await entityManager
+            .createQueryBuilder(undefined, undefined, undefined, {
+              shouldBypassPermissionChecks: true,
+            })
+            .insert()
+            .into(`${schemaName}.view`, [
+              'id',
+              'name',
+              'objectMetadataId',
+              'type',
+              'key',
+              'position',
+              'icon',
+              'openRecordIn',
+              'kanbanFieldMetadataId',
+            ])
+            .values({
+              id: tierHistoryViewWithId.id,
+              name: tierHistoryViewWithId.name,
+              objectMetadataId: tierHistoryViewWithId.objectMetadataId,
+              type: tierHistoryViewWithId.type,
+              key: tierHistoryViewWithId.key,
+              position: tierHistoryViewWithId.position,
+              icon: tierHistoryViewWithId.icon,
+              openRecordIn: tierHistoryViewWithId.openRecordIn,
+              kanbanFieldMetadataId:
+                tierHistoryViewWithId.kanbanFieldMetadataId,
+            })
+            .execute();
+
+          // Insert tier history view fields
+          if (
+            tierHistoryViewWithId.fields &&
+            tierHistoryViewWithId.fields.length > 0
+          ) {
+            await entityManager
+              .createQueryBuilder(undefined, undefined, undefined, {
+                shouldBypassPermissionChecks: true,
+              })
+              .insert()
+              .into(`${schemaName}.viewField`, [
+                'id',
+                'fieldMetadataId',
+                'position',
+                'isVisible',
+                'size',
+                'viewId',
+              ])
+              .values(
+                tierHistoryViewWithId.fields.map((field) => ({
+                  id: uuidv4(),
+                  fieldMetadataId: field.fieldMetadataId,
+                  position: field.position,
+                  isVisible: field.isVisible,
+                  size: field.size,
+                  viewId: tierHistoryViewWithId.id,
+                })),
+              )
+              .execute();
+          }
+
+          this.logger.log(
+            `✅ Tier History view created for workspace ${workspaceId}`,
+          );
+        }
       },
     );
   }
