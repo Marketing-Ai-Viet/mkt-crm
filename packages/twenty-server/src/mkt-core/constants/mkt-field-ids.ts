@@ -125,6 +125,8 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   // external account integration (multiple providers: MKT, Google, Zalo, etc.)
   // primary account tracked via isPrimary field in linkedAccounts JSONB
   linkedAccounts: 'a8b9c0d1-e2f3-4a5b-6c7d-8e9f0a1b2c3d',
+  // tier history relation
+  tierHistories: 'ae500603-0b5b-48fa-91e4-551567375edd',
 };
 
 export const MKT_TAG_FIELD_IDS = {
@@ -1430,4 +1432,16 @@ export const MKT_USER_FIELD_IDS = {
 
   searchVector: 'f0e92f95-084f-4530-8511-632007b07515',
   createdBy: '60f61f82-7c33-419f-93f8-5eeb4d43b30c',
+};
+
+export const MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS = {
+  // core fields
+  customerId: 'f42abfed-871b-4b56-b334-25a7eccc9b03',
+  previousTier: 'd88a1494-1ff3-40c1-b987-3a992d3a7d91',
+  newTier: '958eeee5-1f66-49d1-8c92-16c8ce0281f3',
+  reason: '4b167bae-d056-430b-b513-6861afde4fc4',
+  orderValueAtChange: '2a2f8d86-6924-4e65-b946-11392e466361',
+  orderCountAtChange: 'f7f8b36b-ebd8-44f6-8222-221271ec87a1',
+  // relation
+  customer: 'c95e0199-3547-409a-ab8c-e96d7511be4e',
 };

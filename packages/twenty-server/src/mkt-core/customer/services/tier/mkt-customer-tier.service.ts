@@ -11,6 +11,7 @@ import {
   COMPLETED_ORDER_STATUSES,
   TIER_BULK_PROCESSING_CONFIG,
 } from 'src/mkt-core/customer/constants/mkt-customer-tier.constants';
+import { TIER_CHANGE_REASON } from 'src/mkt-core/customer/constants/mkt-customer-tier-history.constants';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
@@ -22,6 +23,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 import { MktCustomerTierCalculationService } from './mkt-customer-tier-calculation.service';
+import { MktCustomerTierHistoryService } from './mkt-customer-tier-history.service';
 
 @Injectable()
 export class MktCustomerTierService {
@@ -31,6 +33,7 @@ export class MktCustomerTierService {
     private readonly mktCustomerTierCalculationService: MktCustomerTierCalculationService,
     private readonly customerRepository: MktCustomerRepository,
     private readonly orderRepository: MktOrderRepository,
+    private readonly tierHistoryService: MktCustomerTierHistoryService,
   ) {}
 
   async updateCustomerTier(customerId: string): Promise<CustomerTierResult> {
@@ -205,11 +208,24 @@ export class MktCustomerTierService {
           customerIds,
         );
 
+      // Create customer tier map for change detection
+      const customerTierMap = new Map(
+        customers.map((c) => [c.id, c.tier as MKT_CUSTOMER_TIER | null]),
+      );
+
       // Calculate tiers and prepare updates
       const updates: Array<{
         customerId: string;
         tier: string;
         totalOrderValue: number;
+      }> = [];
+
+      // Track tier changes for history logging
+      const tierChanges: Array<{
+        customerId: string;
+        previousTier: MKT_CUSTOMER_TIER | null;
+        newTier: MKT_CUSTOMER_TIER;
+        metadata: { orderValue: number; orderCount: number };
       }> = [];
 
       for (const customerId of customerIds) {
@@ -219,6 +235,7 @@ export class MktCustomerTierService {
 
         const tier = this.determineTier(totalOrderValue, totalOrderCount);
         const customerName = customerNameMap.get(customerId) ?? '';
+        const previousTier = customerTierMap.get(customerId);
 
         updates.push({
           customerId,
@@ -233,6 +250,19 @@ export class MktCustomerTierService {
           totalOrderValue,
           totalOrderCount,
         });
+
+        // Track tier change if different
+        if (previousTier !== tier) {
+          tierChanges.push({
+            customerId,
+            previousTier: previousTier ?? null,
+            newTier: tier,
+            metadata: {
+              orderValue: totalOrderValue,
+              orderCount: totalOrderCount,
+            },
+          });
+        }
       }
 
       // Parallel batch updates using repository
@@ -243,6 +273,24 @@ export class MktCustomerTierService {
 
       for (const updateBatch of updateChunks) {
         await this.customerRepository.bulkUpdateTiers(workspaceId, updateBatch);
+      }
+
+      // Log tier changes to history
+      if (tierChanges.length > 0) {
+        await this.tierHistoryService.bulkLogTierChanges(
+          workspaceId,
+          tierChanges.map((change) => ({
+            customerId: change.customerId,
+            previousTier: change.previousTier,
+            newTier: change.newTier,
+            reason: TIER_CHANGE_REASON.CRON_RECALCULATION,
+            metadata: change.metadata,
+          })),
+        );
+
+        this.logger.log(
+          `Logged ${tierChanges.length} tier changes for batch ${batchNumber}`,
+        );
       }
 
       offset += batchSize;

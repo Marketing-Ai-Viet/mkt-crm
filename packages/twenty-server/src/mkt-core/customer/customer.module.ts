@@ -13,6 +13,7 @@ import { MktCustomerUpdateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mk
 import { MktCustomerTierUpdateJob } from 'src/mkt-core/customer/jobs/mkt-customer-tier-update.job';
 import { MktCustomerEventListener } from 'src/mkt-core/customer/listeners/mkt-customer-event.listener';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
+import { MktCustomerTierHistoryRepository } from 'src/mkt-core/customer/repositories/mkt-customer-tier-history.repository';
 import { MktCustomerExportResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-export.resolver';
 import { MktCustomerLicenseResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-license.resolver';
 import { MktCustomerTierResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier.resolver';
@@ -25,6 +26,7 @@ import {
   // Tier
   MktCustomerQueueService,
   MktCustomerTierCalculationService,
+  MktCustomerTierHistoryService,
   MktCustomerTierRegistrationService,
   MktCustomerTierService,
   // Lifecycle
@@ -54,12 +56,14 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
   providers: [
     // Repositories
     MktCustomerRepository,
+    MktCustomerTierHistoryRepository,
     MktOrderRepository,
 
     // Services
     MktCustomerCreationService,
     MktCustomerAccountService,
     MktCustomerTierCalculationService,
+    MktCustomerTierHistoryService,
     MktCustomerTierService,
     MktCustomerQueueService,
     MktCustomerUpdateService,
@@ -91,11 +95,13 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
   exports: [
     // Repositories
     MktCustomerRepository,
+    MktCustomerTierHistoryRepository,
 
     // Services
     MktCustomerCreationService,
     MktCustomerAccountService,
     MktCustomerQueueService,
+    MktCustomerTierHistoryService,
     MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,

@@ -34,6 +34,7 @@ import {
 } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
+import { MktCustomerTierHistoryWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tier-history.workspace-entity';
 import { MktCouponWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-coupon.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -433,6 +434,22 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   @WorkspaceIsSystem()
   assignedCoupons: Relation<MktCouponWorkspaceEntity[]>;
+
+  // ============ TIER HISTORY (System) ============
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.tierHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Tier Histories`,
+    description: msg`Customer tier change history`,
+    icon: 'IconHistory',
+    inverseSideTarget: () => MktCustomerTierHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'customer',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  tierHistories: Relation<MktCustomerTierHistoryWorkspaceEntity[]>;
 
   // ============ SYSTEM FIELDS (1 field) ============
 
