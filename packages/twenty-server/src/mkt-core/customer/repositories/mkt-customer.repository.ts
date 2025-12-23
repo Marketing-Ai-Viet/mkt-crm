@@ -402,7 +402,7 @@ export class MktCustomerRepository {
    * Uses single update statement per customer for safety
    *
    * @param workspaceId - Workspace ID
-   * @param updates - Array of tier updates { customerId, tier, totalOrderValue }
+   * @param updates - Array of tier updates { customerId, tier, totalOrderValue, totalOrderCount }
    * @returns Number of successfully updated customers
    */
   async bulkUpdateTiers(
@@ -411,6 +411,7 @@ export class MktCustomerRepository {
       customerId: string;
       tier: string;
       totalOrderValue: number;
+      totalOrderCount: number;
     }>,
   ): Promise<number> {
     if (updates.length === 0) {
@@ -431,6 +432,7 @@ export class MktCustomerRepository {
         await repository.update(update.customerId, {
           tier: update.tier,
           totalOrderValue: update.totalOrderValue,
+          totalOrderCount: update.totalOrderCount,
         });
 
         successCount++;

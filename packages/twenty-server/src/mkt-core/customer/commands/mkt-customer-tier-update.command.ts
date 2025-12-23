@@ -6,6 +6,7 @@ import { MktCustomerQueueService } from 'src/mkt-core/customer/services/tier/mkt
 
 type MktCustomerTierUpdateCommandOptions = {
   customerId: string;
+  workspaceId: string;
 };
 
 /**
@@ -27,23 +28,31 @@ export class MktCustomerTierUpdateCommand extends CommandRunner {
     _passedParam: string[],
     options: MktCustomerTierUpdateCommandOptions,
   ): Promise<void> {
-    const { customerId } = options;
+    const { customerId, workspaceId } = options;
 
     this.logger.log('==========================================');
     this.logger.log('Customer Tier Update via Message Queue');
     this.logger.log('==========================================');
     this.logger.log(`Customer ID: ${customerId}`);
+    this.logger.log(`Workspace ID: ${workspaceId}`);
     this.logger.log('------------------------------------------');
 
     try {
-      await this.customerQueueService.updateCustomerTier(customerId);
+      await this.customerQueueService.updateCustomerTier(
+        customerId,
+        workspaceId,
+        { reason: 'manual' },
+      );
 
       this.logger.log('✅ Job successfully enqueued!');
       this.logger.log(
         'The customer tier will be updated asynchronously by the worker.',
       );
     } catch (error) {
-      this.logger.error('❌ Failed to enqueue job:', error.message);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.logger.error('❌ Failed to enqueue job:', errorMessage);
       throw error;
     }
 

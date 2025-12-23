@@ -109,7 +109,7 @@ export class MktOrderCustomEventListener {
 
     this.logger.log(`start tier update for customer`);
 
-    await this.tierForCustomer(updatedOrder);
+    await this.tierForCustomer(updatedOrder, event.workspaceId);
 
     const orderHistoryData = await this.makeOrderHistoryData(
       event.eventType,
@@ -182,7 +182,10 @@ export class MktOrderCustomEventListener {
     return { name, action, fieldName, newValue, oldValue, note };
   }
 
-  private async tierForCustomer(order: MktOrderWorkspaceEntity) {
+  private async tierForCustomer(
+    order: MktOrderWorkspaceEntity,
+    workspaceId: string,
+  ) {
     // Trigger customer tier update via queue when order is updated
     if (order.mktCustomerId) {
       try {
@@ -190,7 +193,11 @@ export class MktOrderCustomEventListener {
           `Enqueuing customer tier update for customer ${order.mktCustomerId}`,
         );
 
-        await this.customerQueueService.updateCustomerTier(order.mktCustomerId);
+        await this.customerQueueService.updateCustomerTier(
+          order.mktCustomerId,
+          workspaceId,
+          { reason: 'order_completed' },
+        );
 
         this.logger.log(
           `Successfully enqueued customer tier update for customer ${order.mktCustomerId}`,

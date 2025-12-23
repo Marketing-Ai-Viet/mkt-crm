@@ -17,6 +17,7 @@ import { MktCustomerTierHistoryRepository } from 'src/mkt-core/customer/reposito
 import { MktCustomerExportResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-export.resolver';
 import { MktCustomerLicenseResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-license.resolver';
 import { MktCustomerTierResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier.resolver';
+import { MktCustomerTierHistoryResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier-history.resolver';
 // Services - organized by domain
 import {
   // Core
@@ -80,6 +81,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
     MktCustomerLicenseResolver,
     MktCustomerExportResolver,
     MktCustomerTierResolver,
+    MktCustomerTierHistoryResolver,
 
     // Pre-Query Hooks (Validation)
     MktCustomerCreateOnePreQueryHook,

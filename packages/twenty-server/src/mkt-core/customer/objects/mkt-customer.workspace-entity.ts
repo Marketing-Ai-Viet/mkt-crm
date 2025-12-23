@@ -225,6 +225,18 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   totalOrderValue: number;
 
   @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.totalOrderCount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Total Order Count`,
+    description: msg`Số lượng đơn hàng hoàn thành`,
+    icon: 'IconShoppingCart',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  totalOrderCount: number;
+
+  @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.licensesCount,
     type: FieldMetadataType.NUMBER,
     label: msg`Licenses Count`,

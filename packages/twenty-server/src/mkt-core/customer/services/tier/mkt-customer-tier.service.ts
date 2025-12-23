@@ -49,6 +49,7 @@ export class MktCustomerTierService {
     await this.customerRepository.update(customerId, {
       tier: tierResult.customerTier,
       totalOrderValue: tierResult.totalOrderValue,
+      totalOrderCount: tierResult.totalOrderCount,
     });
 
     return tierResult;
@@ -116,6 +117,7 @@ export class MktCustomerTierService {
             await this.customerRepository.update(customerId, {
               tier: tierResult.customerTier,
               totalOrderValue: tierResult.totalOrderValue,
+              totalOrderCount: tierResult.totalOrderCount,
             });
 
             return tierResult;
@@ -235,6 +237,7 @@ export class MktCustomerTierService {
         customerId: string;
         tier: string;
         totalOrderValue: number;
+        totalOrderCount: number;
       }> = [];
 
       // Track tier changes for history logging
@@ -291,6 +294,7 @@ export class MktCustomerTierService {
           customerId,
           tier: finalTier,
           totalOrderValue,
+          totalOrderCount,
         });
 
         results.push({

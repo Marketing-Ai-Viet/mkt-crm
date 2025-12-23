@@ -127,6 +127,7 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   linkedAccounts: 'a8b9c0d1-e2f3-4a5b-6c7d-8e9f0a1b2c3d',
   // tier tracking
   lastTierUpgradeAt: '6c5d17a0-d4a6-4bba-8066-55e331009bac',
+  totalOrderCount: 'f7a8b9c0-d1e2-4f3a-5b6c-7d8e9f0a1b2c',
   // tier history relation
   tierHistories: 'ae500603-0b5b-48fa-91e4-551567375edd',
 };
