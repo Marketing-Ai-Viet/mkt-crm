@@ -1,6 +1,6 @@
 import { SeedContractModuleCommand } from 'src/mkt-core/seeder/commands/mkt-contract-data-seed-dev-workspace.command';
-import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/commands/mkt-customer-data-seed-dev-workspace.command';
-import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/commands/mkt-customer-tag-data-seed-dev-workspace.command';
+import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-data-seed-dev-workspace.command';
+import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seed-dev-workspace.command';
 import { SeedMktDataAccessPolicyCommand } from 'src/mkt-core/seeder/commands/mkt-data-access-policy-data-seed-dev-workspace.command';
 import { SeedDepartmentModuleCommand } from 'src/mkt-core/seeder/commands/mkt-department-data-seed-dev-workspace.command';
 import { MktGenericComboDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-generic-combo-data-seed-dev-workspace.command';

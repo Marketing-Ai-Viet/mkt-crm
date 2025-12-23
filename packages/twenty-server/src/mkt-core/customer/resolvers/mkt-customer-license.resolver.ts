@@ -11,7 +11,7 @@ import {
   UserLicenseDto,
   UserLicensesResponseDto,
 } from 'src/mkt-core/customer/dto/get-user-licenses.dto';
-import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/mkt-customer-license.service';
+import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/license/mkt-customer-license.service';
 
 @Resolver()
 export class MktCustomerLicenseResolver {

@@ -4,39 +4,36 @@ import {
   UserLicenseDto,
   UserLicensesResponseDto,
 } from 'src/mkt-core/customer/dto/get-user-licenses.dto';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { ACCOUNT_PROVIDER } from 'src/mkt-core/customer/constants';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 
 @Injectable()
 export class MktCustomerLicenseService {
   constructor(
-    private readonly mktRepo: MktRepositoryService,
+    private readonly customerRepository: MktCustomerRepository,
     private readonly licenseProxyService: MktLicenseProxyService,
   ) {}
 
   async getLicensesForUser(
-    userId: string,
+    mktAccountId: string,
     _workspaceId: string,
   ): Promise<UserLicensesResponseDto> {
-    const customerRepository = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
+    // Find customer by linked MKT Server account in linkedAccounts JSONB array
+    const customer = await this.customerRepository.findByLinkedAccount(
+      ACCOUNT_PROVIDER.MKT_SERVER,
+      mktAccountId,
     );
 
-    // Find customer by userId
-    const customer = await customerRepository.findOne({
-      where: {
-        userId: userId,
-      },
-    });
-
     if (!customer) {
-      throw new NotFoundException(`Customer not found for user ID: ${userId}`);
+      throw new NotFoundException(
+        `Customer not found for MKT Account ID: ${mktAccountId}`,
+      );
     }
 
     // Get licenses from external MKT Server using integration module
     const licenseResponse = await this.licenseProxyService.findAll({
-      userId: userId,
+      userId: mktAccountId,
       page: 1,
       limit: 1000,
     });
@@ -84,16 +81,11 @@ export class MktCustomerLicenseService {
         return null;
       }
 
-      const customerRepository = await this.mktRepo.getRepository(
-        MktCustomerWorkspaceEntity,
+      // Try to find customer by linked MKT Server account from license
+      const customer = await this.customerRepository.findByLinkedAccount(
+        ACCOUNT_PROVIDER.MKT_SERVER,
+        license.userId,
       );
-
-      // Try to find customer by userId from license
-      const customer = await customerRepository.findOne({
-        where: {
-          userId: license.userId,
-        },
-      });
 
       return {
         id: license.id,

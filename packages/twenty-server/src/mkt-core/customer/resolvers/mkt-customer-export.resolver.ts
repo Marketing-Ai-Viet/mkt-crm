@@ -14,10 +14,8 @@ import {
   CustomerExportStatisticsOutput,
 } from 'src/mkt-core/customer/dto/customer-export.output';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
-import {
-  CustomerExportFilter,
-  MktCustomerExportService,
-} from 'src/mkt-core/customer/services/mkt-customer-export.service';
+import { MktCustomerExportService } from 'src/mkt-core/customer/services/export/mkt-customer-export.service';
+import { CustomerExportFilter } from 'src/mkt-core/customer/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**

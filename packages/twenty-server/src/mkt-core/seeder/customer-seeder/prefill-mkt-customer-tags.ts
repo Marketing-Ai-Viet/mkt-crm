@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_TAG_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-customer-tag-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seeds.constants';
 
 export const prefillMktCustomerTags = async (
   entityManager: WorkspaceEntityManager,

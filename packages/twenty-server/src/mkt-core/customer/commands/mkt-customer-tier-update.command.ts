@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
 
-import { MktCustomerQueueService } from 'src/mkt-core/customer/services/mkt-customer-queue.service';
+import { MktCustomerQueueService } from 'src/mkt-core/customer/services/tier/mkt-customer-queue.service';
 
 type MktCustomerTierUpdateCommandOptions = {
   customerId: string;

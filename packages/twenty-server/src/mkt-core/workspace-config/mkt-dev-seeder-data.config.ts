@@ -6,11 +6,11 @@ import {
 import {
   MKT_CUSTOMER_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-customer-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-data-seeds.constants';
 import {
   MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_TAG_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-customer-tag-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seeds.constants';
 import {
   MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
   MKT_DATA_ACCESS_POLICY_DATA_SEEDS,

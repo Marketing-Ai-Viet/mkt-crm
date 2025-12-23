@@ -5,7 +5,7 @@ import { Process } from 'src/engine/core-modules/message-queue/decorators/proces
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MKT_CUSTOMER_TIER_UPDATE_CRON_PATTERN } from 'src/mkt-core/customer/constants/mkt-customer-tier.constants';
-import { MktCustomerTierService } from 'src/mkt-core/customer/services/mkt-customer-tier.service';
+import { MktCustomerTierService } from 'src/mkt-core/customer/services/tier/mkt-customer-tier.service';
 
 @Processor(MessageQueue.cronQueue)
 export class MktCustomerTierCronJob {

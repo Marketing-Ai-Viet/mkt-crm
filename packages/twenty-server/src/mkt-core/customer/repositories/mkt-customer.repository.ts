@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { IsNull } from 'typeorm';
+import { IsNull, QueryRunner } from 'typeorm';
 
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -11,6 +11,7 @@ import {
 } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { FindCustomerOptions } from 'src/mkt-core/customer/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktCustomerRepository - Data access layer for Customer entity
@@ -180,21 +181,55 @@ export class MktCustomerRepository {
     return queryBuilder.getMany();
   }
 
+  /**
+   * Find customer by linked account (searches JSONB array)
+   * @param provider - Account provider (MKT_SERVER, GOOGLE, etc.)
+   * @param externalId - External account ID on the provider
+   */
+  async findByLinkedAccount(
+    provider: string,
+    externalId: string,
+    workspaceId?: string,
+  ): Promise<MktCustomerWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    // Use JSONB query to find customer with matching linked account
+    const customer = await repository
+      .createQueryBuilder('customer')
+      .where('customer.deletedAt IS NULL')
+      .andWhere(`customer."linkedAccounts" @> :accountFilter::jsonb`, {
+        accountFilter: JSON.stringify([{ provider, externalId }]),
+      })
+      .getOne();
+
+    return customer;
+  }
+
   // ============================================
   // UPDATE OPERATIONS
   // ============================================
 
   /**
    * Update customer by ID
+   * Pattern: Follow mkt-promotion repository pattern with manager.update()
    */
   async update(
     id: string,
     data: Partial<MktCustomerWorkspaceEntity>,
     workspaceId?: string,
+    queryRunner?: QueryRunner,
   ): Promise<void> {
     const repository = await this.getRepository(workspaceId);
+    const manager = queryRunner?.manager ?? repository.manager;
 
-    await repository.update(id, data);
+    await manager.update(
+      'MktCustomerWorkspaceEntity',
+      { id },
+      {
+        ...data,
+        updatedAt: DateTimeUtils.now().toJSDate(),
+      },
+    );
   }
 
   /**
@@ -208,6 +243,22 @@ export class MktCustomerRepository {
     await this.update(id, data, workspaceId);
 
     return this.findById(id, workspaceId);
+  }
+
+  /**
+   * Soft delete customer
+   */
+  async softDelete(
+    id: string,
+    workspaceId?: string,
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
+    const manager = queryRunner?.manager ?? repository.manager;
+
+    await manager.softDelete('MktCustomerWorkspaceEntity', id);
+
+    this.logger.log(`Soft deleted customer ${id}`);
   }
 
   // ============================================

@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { MktCustomerTierService } from 'src/mkt-core/customer/services/mkt-customer-tier.service';
+import { MktCustomerTierService } from 'src/mkt-core/customer/services/tier/mkt-customer-tier.service';
 
 export type MktCustomerTierUpdateJobData = {
   customerId: string;

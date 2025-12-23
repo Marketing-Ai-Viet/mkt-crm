@@ -4,22 +4,14 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-
-export interface CustomerExportFilter {
-  status?: string;
-  tier?: string;
-  type?: string;
-  fromDate?: Date;
-  toDate?: Date;
-}
-
-export interface CustomerExportData {
-  data: string;
-  fileName: string;
-  generatedAt: string;
-  totalRecords: number;
-  workspaceId?: string;
-}
+import {
+  DATE_TIME_FORMATS,
+  DateTimeUtils,
+} from 'src/mkt-core/utils/date-time.utils';
+import {
+  CustomerExportData,
+  CustomerExportFilter,
+} from 'src/mkt-core/customer/types';
 
 @Injectable()
 export class MktCustomerExportService {
@@ -178,12 +170,13 @@ export class MktCustomerExportService {
 
       const csvContent = this.convertToCSV(csvData, fields);
 
-      const fileName = `customers-${new Date().toISOString().split('T')[0]}.csv`;
+      const now = DateTimeUtils.now();
+      const fileName = `customers-${DateTimeUtils.format(now, DATE_TIME_FORMATS.DATE_ONLY)}.csv`;
 
       return {
         data: csvContent,
         fileName,
-        generatedAt: new Date().toISOString(),
+        generatedAt: DateTimeUtils.toISO(now),
         totalRecords: customers.length,
         workspaceId,
       };

@@ -1,17 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MKT_CUSTOMER_TIER } from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import {
+  MKT_CUSTOMER_TIER,
+  MKT_CUSTOMER_TIER_THRESHOLDS,
+} from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { CustomerTierResult } from 'src/mkt-core/customer/types';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-
-export interface CustomerTierResult {
-  customerTier: MKT_CUSTOMER_TIER;
-  totalOrderValue: number;
-  totalOrderCount: number;
-  customerId: string;
-  customerName: string;
-}
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 @Injectable()
 export class MktCustomerTierCalculationService {
@@ -36,7 +34,7 @@ export class MktCustomerTierCalculationService {
     });
 
     if (!customer) {
-      throw new Error(`Customer with ID ${customerId} not found`);
+      throw new Error(CUSTOMER_MESSAGES.ERROR.CUSTOMER_NOT_FOUND(customerId));
     }
 
     const {
@@ -119,31 +117,40 @@ export class MktCustomerTierCalculationService {
   private calculateTotalOrderValue(
     mktOrders: MktOrderWorkspaceEntity[],
   ): number {
-    return mktOrders.reduce((total, order) => {
-      // Sử dụng totalAmount nếu có, nếu không sử dụng 0
-      const orderValue = order.totalAmount ?? 0;
-
-      return total + orderValue;
-    }, 0);
+    return MoneyUtils.sumBy(mktOrders, 'totalAmount').toNumber();
   }
 
   private determineTier(
     totalOrderValue: number,
     totalOrderCount: number,
   ): MKT_CUSTOMER_TIER {
-    if (totalOrderValue >= 10_000_000 && totalOrderCount >= 20) {
+    const { DIAMOND, GOLD, SILVER, BRONZE } = MKT_CUSTOMER_TIER_THRESHOLDS;
+
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, DIAMOND.minSpending) &&
+      totalOrderCount >= DIAMOND.minOrders
+    ) {
       return MKT_CUSTOMER_TIER.DIAMOND;
     }
 
-    if (totalOrderValue >= 5_000_000 && totalOrderCount >= 10) {
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, GOLD.minSpending) &&
+      totalOrderCount >= GOLD.minOrders
+    ) {
       return MKT_CUSTOMER_TIER.GOLD;
     }
 
-    if (totalOrderValue >= 2_000_000 && totalOrderCount >= 5) {
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, SILVER.minSpending) &&
+      totalOrderCount >= SILVER.minOrders
+    ) {
       return MKT_CUSTOMER_TIER.SILVER;
     }
 
-    if (totalOrderValue >= 500_000 && totalOrderCount >= 1) {
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, BRONZE.minSpending) &&
+      totalOrderCount >= BRONZE.minOrders
+    ) {
       return MKT_CUSTOMER_TIER.BRONZE;
     }
 
@@ -197,52 +204,88 @@ export class MktCustomerTierCalculationService {
     nextTier?: MKT_CUSTOMER_TIER;
     requirements?: string;
   } {
-    const _criteria = this.getTierCriteria();
+    const { SILVER, GOLD, DIAMOND } = MKT_CUSTOMER_TIER_THRESHOLDS;
 
     switch (currentTier) {
-      case MKT_CUSTOMER_TIER.BRONZE:
-        if (totalOrderValue >= 2_000_000 && totalOrderCount >= 5) {
-          return {
-            canUpgrade: true,
-            nextTier: MKT_CUSTOMER_TIER.SILVER,
-          };
+      case MKT_CUSTOMER_TIER.BRONZE: {
+        if (
+          MoneyUtils.greaterThanOrEqual(totalOrderValue, SILVER.minSpending) &&
+          totalOrderCount >= SILVER.minOrders
+        ) {
+          return { canUpgrade: true, nextTier: MKT_CUSTOMER_TIER.SILVER };
         }
+
+        const remainingSpending = MoneyUtils.subtract(
+          SILVER.minSpending,
+          totalOrderValue,
+        ).toNumber();
+        const remainingOrders = Math.max(0, SILVER.minOrders - totalOrderCount);
 
         return {
           canUpgrade: false,
-          requirements: `Cần thêm ${Math.max(0, 2_000_000 - totalOrderValue).toLocaleString()} VND và ${Math.max(0, 5 - totalOrderCount)} đơn hàng để lên hạng Bạc`,
+          requirements: CUSTOMER_MESSAGES.INFO.UPGRADE_REQUIREMENTS(
+            Math.max(0, remainingSpending),
+            remainingOrders,
+            'Bạc',
+          ),
         };
+      }
 
-      case MKT_CUSTOMER_TIER.SILVER:
-        if (totalOrderValue >= 5_000_000 && totalOrderCount >= 10) {
-          return {
-            canUpgrade: true,
-            nextTier: MKT_CUSTOMER_TIER.GOLD,
-          };
+      case MKT_CUSTOMER_TIER.SILVER: {
+        if (
+          MoneyUtils.greaterThanOrEqual(totalOrderValue, GOLD.minSpending) &&
+          totalOrderCount >= GOLD.minOrders
+        ) {
+          return { canUpgrade: true, nextTier: MKT_CUSTOMER_TIER.GOLD };
         }
+
+        const remainingSpending = MoneyUtils.subtract(
+          GOLD.minSpending,
+          totalOrderValue,
+        ).toNumber();
+        const remainingOrders = Math.max(0, GOLD.minOrders - totalOrderCount);
 
         return {
           canUpgrade: false,
-          requirements: `Cần thêm ${Math.max(0, 5_000_000 - totalOrderValue).toLocaleString()} VND và ${Math.max(0, 10 - totalOrderCount)} đơn hàng để lên hạng Vàng`,
+          requirements: CUSTOMER_MESSAGES.INFO.UPGRADE_REQUIREMENTS(
+            Math.max(0, remainingSpending),
+            remainingOrders,
+            'Vàng',
+          ),
         };
+      }
 
-      case MKT_CUSTOMER_TIER.GOLD:
-        if (totalOrderValue >= 10_000_000 && totalOrderCount >= 20) {
-          return {
-            canUpgrade: true,
-            nextTier: MKT_CUSTOMER_TIER.DIAMOND,
-          };
+      case MKT_CUSTOMER_TIER.GOLD: {
+        if (
+          MoneyUtils.greaterThanOrEqual(totalOrderValue, DIAMOND.minSpending) &&
+          totalOrderCount >= DIAMOND.minOrders
+        ) {
+          return { canUpgrade: true, nextTier: MKT_CUSTOMER_TIER.DIAMOND };
         }
+
+        const remainingSpending = MoneyUtils.subtract(
+          DIAMOND.minSpending,
+          totalOrderValue,
+        ).toNumber();
+        const remainingOrders = Math.max(
+          0,
+          DIAMOND.minOrders - totalOrderCount,
+        );
 
         return {
           canUpgrade: false,
-          requirements: `Cần thêm ${Math.max(0, 10_000_000 - totalOrderValue).toLocaleString()} VND và ${Math.max(0, 20 - totalOrderCount)} đơn hàng để lên hạng Kim Cương`,
+          requirements: CUSTOMER_MESSAGES.INFO.UPGRADE_REQUIREMENTS(
+            Math.max(0, remainingSpending),
+            remainingOrders,
+            'Kim Cương',
+          ),
         };
+      }
 
       case MKT_CUSTOMER_TIER.DIAMOND:
         return {
           canUpgrade: false,
-          requirements: 'Đã đạt hạng cao nhất',
+          requirements: CUSTOMER_MESSAGES.INFO.MAX_TIER_REACHED,
         };
 
       default:

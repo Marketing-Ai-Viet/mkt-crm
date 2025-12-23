@@ -122,6 +122,9 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   mergeSuggestion: 'ee1d2375-75fc-4575-8374-18120e31d740', // JSON: suggested duplicate customers
   promotionUsages: '660e8400-e29b-41d4-a716-446655440604',
   assignedCoupons: '660e8400-e29b-41d4-a716-446655440605',
+  // external account integration (multiple providers: MKT, Google, Zalo, etc.)
+  // primary account tracked via isPrimary field in linkedAccounts JSONB
+  linkedAccounts: 'a8b9c0d1-e2f3-4a5b-6c7d-8e9f0a1b2c3d',
 };
 
 export const MKT_TAG_FIELD_IDS = {

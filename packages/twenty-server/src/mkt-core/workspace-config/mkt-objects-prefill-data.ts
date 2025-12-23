@@ -5,8 +5,8 @@ import { prefillMktSInvoicePayments } from 'src/mkt-core/seeder/invoice-seeder/p
 import { prefillMktSInvoiceTaxBreakdowns } from 'src/mkt-core/seeder/invoice-seeder/prefill-mkt-sinvoice-tax-breakdowns';
 import { prefillMktSInvoices } from 'src/mkt-core/seeder/invoice-seeder/prefill-mkt-sinvoices';
 import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
-import { prefillMktCustomerTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-customer-tags';
-import { prefillMktCustomers } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-customers';
+import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
+import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-department-hierarchies';
 import { prefillMktDepartments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-departments';

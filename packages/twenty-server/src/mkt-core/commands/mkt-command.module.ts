@@ -10,7 +10,7 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { MktCronRegisterCommand } from 'src/mkt-core/commands/mkt-cron-register.command';
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
-import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
+import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services';
 import { MktOrderOverdueRegistrationService } from 'src/mkt-core/order/services/legacy';
 import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 

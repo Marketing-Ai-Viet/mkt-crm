@@ -6,28 +6,33 @@ export const MKT_CUSTOMER_TYPE = {
   ORGANIZATION: 'ORGANIZATION',
 };
 
+/** SELECT field options for Customer Type - use in WorkspaceEntity decorator */
+export const MKT_CUSTOMER_TYPE_SELECT_OPTIONS: FieldMetadataComplexOption[] = [
+  {
+    value: MKT_CUSTOMER_TYPE.INDIVIDUAL,
+    label: 'Cá nhân',
+    color: 'green',
+    position: 0,
+  },
+  {
+    value: MKT_CUSTOMER_TYPE.BUSINESS,
+    label: 'Doanh nghiệp',
+    color: 'blue',
+    position: 1,
+  },
+  {
+    value: MKT_CUSTOMER_TYPE.ORGANIZATION,
+    label: 'Tổ chức',
+    color: 'purple',
+    position: 2,
+  },
+];
+
+export const MKT_CUSTOMER_TYPE_DEFAULT = `'${MKT_CUSTOMER_TYPE.INDIVIDUAL}'`;
+
 export const MKT_CUSTOMER_TYPE_OPTIONS = {
   types: MKT_CUSTOMER_TYPE,
-  options: [
-    {
-      value: MKT_CUSTOMER_TYPE.INDIVIDUAL,
-      color: 'green',
-      label: 'Cá nhân',
-      position: 1,
-    },
-    {
-      value: MKT_CUSTOMER_TYPE.BUSINESS,
-      color: 'blue',
-      label: 'Doanh nghiệp',
-      position: 2,
-    },
-    {
-      value: MKT_CUSTOMER_TYPE.ORGANIZATION,
-      color: 'purple',
-      label: 'Tổ chức',
-      position: 3,
-    },
-  ],
+  options: MKT_CUSTOMER_TYPE_SELECT_OPTIONS,
   labels: {
     EN: {
       INDIVIDUAL: 'Individual',
@@ -49,34 +54,40 @@ export const MKT_CUSTOMER_STATUS = {
   PROSPECTIVE: 'PROSPECTIVE',
 };
 
-export const MKT_CUSTOMER_STATUS_OPTIONS = {
-  status: MKT_CUSTOMER_STATUS,
-  options: [
+/** SELECT field options for Customer Status - use in WorkspaceEntity decorator */
+export const MKT_CUSTOMER_STATUS_SELECT_OPTIONS: FieldMetadataComplexOption[] =
+  [
     {
       value: MKT_CUSTOMER_STATUS.ACTIVE,
-      color: 'green',
       label: 'Hoạt động',
-      position: 1,
+      color: 'green',
+      position: 0,
     },
     {
       value: MKT_CUSTOMER_STATUS.INACTIVE,
-      color: 'gray',
       label: 'Không hoạt động',
-      position: 2,
+      color: 'gray',
+      position: 1,
     },
     {
       value: MKT_CUSTOMER_STATUS.BLOCKED,
-      color: 'red',
       label: 'Bị chặn',
-      position: 3,
+      color: 'red',
+      position: 2,
     },
     {
       value: MKT_CUSTOMER_STATUS.PROSPECTIVE,
-      color: 'yellow',
       label: 'Tiềm năng',
-      position: 4,
+      color: 'yellow',
+      position: 3,
     },
-  ],
+  ];
+
+export const MKT_CUSTOMER_STATUS_DEFAULT = `'${MKT_CUSTOMER_STATUS.ACTIVE}'`;
+
+export const MKT_CUSTOMER_STATUS_OPTIONS = {
+  status: MKT_CUSTOMER_STATUS,
+  options: MKT_CUSTOMER_STATUS_SELECT_OPTIONS,
   labels: {
     EN: {
       ACTIVE: 'Active',
@@ -102,6 +113,66 @@ export enum MKT_CUSTOMER_TIER {
   CHURNED = 'CHURNED', // ❌ Rời bỏ
 }
 
+/** SELECT field options for Customer Tier - use in WorkspaceEntity decorator */
+export const MKT_CUSTOMER_TIER_SELECT_OPTIONS: FieldMetadataComplexOption[] = [
+  {
+    value: MKT_CUSTOMER_TIER.BRONZE,
+    label: 'Đồng',
+    color: 'orange',
+    position: 0,
+  },
+  { value: MKT_CUSTOMER_TIER.SILVER, label: 'Bạc', color: 'gray', position: 1 },
+  {
+    value: MKT_CUSTOMER_TIER.GOLD,
+    label: 'Vàng',
+    color: 'yellow',
+    position: 2,
+  },
+  {
+    value: MKT_CUSTOMER_TIER.DIAMOND,
+    label: 'Kim Cương',
+    color: 'blue',
+    position: 3,
+  },
+  {
+    value: MKT_CUSTOMER_TIER.DORMANT,
+    label: 'Không hoạt động',
+    color: 'gray',
+    position: 4,
+  },
+  {
+    value: MKT_CUSTOMER_TIER.CHURNED,
+    label: 'Đã rời bỏ',
+    color: 'red',
+    position: 5,
+  },
+];
+
+export const MKT_CUSTOMER_TIER_DEFAULT = `'${MKT_CUSTOMER_TIER.BRONZE}'`;
+
+/**
+ * Tier threshold configuration
+ * Centralized thresholds for tier calculation
+ */
+export const MKT_CUSTOMER_TIER_THRESHOLDS = {
+  [MKT_CUSTOMER_TIER.DIAMOND]: {
+    minSpending: 10_000_000,
+    minOrders: 20,
+  },
+  [MKT_CUSTOMER_TIER.GOLD]: {
+    minSpending: 5_000_000,
+    minOrders: 10,
+  },
+  [MKT_CUSTOMER_TIER.SILVER]: {
+    minSpending: 2_000_000,
+    minOrders: 5,
+  },
+  [MKT_CUSTOMER_TIER.BRONZE]: {
+    minSpending: 500_000,
+    minOrders: 1,
+  },
+} as const;
+
 export const MKT_CUSTOMER_DATA_SEEDS_IDS = {
   DIAMOND_CUSTOMER: '49868053-4758-457f-9332-6ebd48af7ca6',
   GOLD_CUSTOMER: '1e75547f-3d1c-4da8-99a9-b716f3b17ab9',
@@ -120,66 +191,54 @@ export const MKT_CUSTOMER_LIFECYCLE_STAGE = {
   UPSELL: 'UPSELL',
   CROSS_SELL: 'CROSS_SELL',
   REACTIVATION: 'REACTIVATION',
-};
+} as const;
 
-export const MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS = {
-  lifecycleStages: MKT_CUSTOMER_LIFECYCLE_STAGE,
-  options: [
+/** SELECT field options for Lifecycle Stage - use in WorkspaceEntity decorator */
+export const MKT_CUSTOMER_LIFECYCLE_STAGE_SELECT_OPTIONS: FieldMetadataComplexOption[] =
+  [
     {
       value: MKT_CUSTOMER_LIFECYCLE_STAGE.PROSPECTIVE,
-      color: 'yellow',
       label: 'Tiềm năng',
-      position: 1,
+      color: 'yellow',
+      position: 0,
     },
     {
       value: MKT_CUSTOMER_LIFECYCLE_STAGE.TRIAL,
-      color: 'blue',
       label: 'Dùng thử',
-      position: 2,
+      color: 'blue',
+      position: 1,
     },
     {
       value: MKT_CUSTOMER_LIFECYCLE_STAGE.CUSTOMER,
-      color: 'green',
       label: 'Khách hàng',
-      position: 3,
+      color: 'green',
+      position: 2,
     },
     {
       value: MKT_CUSTOMER_LIFECYCLE_STAGE.LOYAL,
-      color: 'purple',
       label: 'Trung thành',
-      position: 4,
+      color: 'purple',
+      position: 3,
     },
     {
       value: MKT_CUSTOMER_LIFECYCLE_STAGE.CHURNED,
-      color: 'red',
       label: 'Rời bỏ',
-      position: 5,
+      color: 'red',
+      position: 4,
     },
     {
       value: MKT_CUSTOMER_LIFECYCLE_STAGE.RETENTION,
-      color: 'orange',
       label: 'Giữ chân',
-      position: 6,
+      color: 'orange',
+      position: 5,
     },
-    {
-      value: MKT_CUSTOMER_LIFECYCLE_STAGE.UPSELL,
-      color: 'pink',
-      label: 'Bán thêm',
-      position: 7,
-    },
-    {
-      value: MKT_CUSTOMER_LIFECYCLE_STAGE.CROSS_SELL,
-      color: 'teal',
-      label: 'Bán chéo',
-      position: 8,
-    },
-    {
-      value: MKT_CUSTOMER_LIFECYCLE_STAGE.REACTIVATION,
-      color: 'brown',
-      label: 'Tái kích hoạt',
-      position: 9,
-    },
-  ],
+  ];
+
+export const MKT_CUSTOMER_LIFECYCLE_STAGE_DEFAULT = `'${MKT_CUSTOMER_LIFECYCLE_STAGE.PROSPECTIVE}'`;
+
+export const MKT_CUSTOMER_LIFECYCLE_STAGE_OPTIONS = {
+  lifecycleStages: MKT_CUSTOMER_LIFECYCLE_STAGE,
+  options: MKT_CUSTOMER_LIFECYCLE_STAGE_SELECT_OPTIONS,
   labels: {
     EN: {
       PROSPECTIVE: 'Prospective',
@@ -410,3 +469,32 @@ export const MKT_CUSTOMER_INDUSTRY_OPTIONS = {
     },
   },
 };
+
+/**
+ * Categorization thresholds for customer lifecycle stage
+ * Used by MktCustomerCategorizationService
+ */
+export const MKT_CUSTOMER_CATEGORIZATION_THRESHOLDS = {
+  /** Days since last order to consider customer as churned */
+  CHURNED_DAYS: 180,
+  /** Days since last order to consider customer at risk (retention target) */
+  RETENTION_DAYS: 90,
+  /** Minimum orders to be considered loyal */
+  LOYAL_MIN_ORDERS: 5,
+  /** Minimum total value to be considered loyal (VND) */
+  LOYAL_MIN_VALUE: 5_000_000,
+  /** Days since first order to be considered trial */
+  TRIAL_MAX_DAYS: 30,
+} as const;
+
+/**
+ * Auto-assign configuration
+ */
+export const MKT_CUSTOMER_AUTO_ASSIGN_CONFIG = {
+  /** Enable auto-assign for new customers */
+  ENABLED: true,
+  /** Assignment strategy: 'round_robin' | 'least_customers' | 'random' */
+  STRATEGY: 'round_robin' as const,
+  /** Role IDs eligible for auto-assignment */
+  ELIGIBLE_ROLES: ['sales', 'account_manager'],
+} as const;

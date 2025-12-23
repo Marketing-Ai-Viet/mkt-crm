@@ -9,7 +9,7 @@ import {
   CustomerTierStatisticsOutput,
   CustomerUpgradeEligibilityOutput,
 } from 'src/mkt-core/customer/dto/customer-tier.output';
-import { MktCustomerTierService } from 'src/mkt-core/customer/services/mkt-customer-tier.service';
+import { MktCustomerTierService } from 'src/mkt-core/customer/services/tier/mkt-customer-tier.service';
 
 /**
  * MktCustomerTierResolver - GraphQL resolver for customer tier operations

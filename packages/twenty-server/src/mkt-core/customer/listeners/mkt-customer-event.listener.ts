@@ -5,10 +5,13 @@ import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { ObjectRecordCreateEvent } from 'src/engine/core-modules/event-emitter/types/object-record-create.event';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event.type';
+import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { MktCustomerAutoAssignService } from 'src/mkt-core/customer/services/lifecycle/mkt-customer-auto-assign.service';
 import { MKT_EMAIL_STATUS } from 'src/mkt-core/email/constants/mkt-email.constant';
 import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
 import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/order/constants/mkt-template.constant';
@@ -29,6 +32,9 @@ export class MktCustomerEventListener {
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly mktEmailService: MktEmailService,
+    private readonly autoAssignService: MktCustomerAutoAssignService,
+    private readonly mktRepo: MktRepositoryService,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   @OnDatabaseBatchEvent('mktCustomer', DatabaseEventAction.CREATED)
@@ -65,7 +71,13 @@ export class MktCustomerEventListener {
       }
 
       try {
+        // Auto-assign customer to sales member
+        // Pass workspaceId directly to avoid race condition
+        await this.autoAssignService.assignCustomer(customer, workspaceId);
+
+        // Send welcome email
         await this.sendWelcomeEmail(workspaceId, customer);
+
         this.logger.log(
           CUSTOMER_MESSAGES.LOG.CUSTOMER_CREATED_PROCESSED(customer.id),
         );

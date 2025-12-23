@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
-import { MktCustomerUpdateService } from 'src/mkt-core/customer/services/mkt-customer-update.service';
+import { MktCustomerUpdateService } from 'src/mkt-core/customer/services';
 
 import { MktCoreUserUpdateService } from './mkt-core-user-update.service';
 import { MktRoleCacheService } from './mkt-role-cache.service';

@@ -7,14 +7,14 @@ import { MKT_CUSTOMER_TIER } from 'src/mkt-core/customer/constants/mkt-customer.
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
-import { CustomerTierStatistics } from 'src/mkt-core/customer/types';
+import {
+  CustomerTierResult,
+  CustomerTierStatistics,
+} from 'src/mkt-core/customer/types';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
-import {
-  CustomerTierResult,
-  MktCustomerTierCalculationService,
-} from './mkt-customer-tier-calculation.service';
+import { MktCustomerTierCalculationService } from './mkt-customer-tier-calculation.service';
 
 @Injectable()
 export class MktCustomerTierService {

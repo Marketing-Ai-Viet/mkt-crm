@@ -23866,6 +23866,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/lodash.isnil@npm:^4.0.9":
+  version: 4.0.9
+  resolution: "@types/lodash.isnil@npm:4.0.9"
+  dependencies:
+    "@types/lodash": "npm:*"
+  checksum: 10c0/9666b8d28d8367d86eb231bd8e87946df4e9be30827d3a38384b16bfd006cfd024a2202f3d53931eb77da8b1e9ff2111b6e796913d8a73972202010439d1f3ba
+  languageName: node
+  linkType: hard
+
 "@types/lodash.isobject@npm:^3.0.7":
   version: 3.0.9
   resolution: "@types/lodash.isobject@npm:3.0.9"
@@ -43488,6 +43497,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash.isnil@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "lodash.isnil@npm:4.0.0"
+  checksum: 10c0/1a410a62eb2e797f077d038c11cbf1ea18ab36f713982849f086f86e050234d69988c76fa18d00278c0947daec67e9ecbc666326b8a06b43e36d3ece813a8120
+  languageName: node
+  linkType: hard
+
 "lodash.isnumber@npm:^3.0.3":
   version: 3.0.3
   resolution: "lodash.isnumber@npm:3.0.3"
@@ -57447,6 +57463,7 @@ __metadata:
     "@types/lodash.differencewith": "npm:^4.5.9"
     "@types/lodash.isempty": "npm:^4.4.7"
     "@types/lodash.isequal": "npm:^4.5.8"
+    "@types/lodash.isnil": "npm:^4.0.9"
     "@types/lodash.isobject": "npm:^3.0.7"
     "@types/lodash.merge": "npm:^4.6.9"
     "@types/lodash.omit": "npm:^4.5.9"
@@ -57472,6 +57489,7 @@ __metadata:
     jsdom: "npm:~22.1.0"
     jwt-decode: "npm:^4.0.0"
     lodash.differencewith: "npm:^4.5.0"
+    lodash.isnil: "npm:^4.0.0"
     lodash.merge: "npm:^4.6.2"
     lodash.omitby: "npm:^4.6.0"
     lodash.uniq: "npm:^4.5.0"

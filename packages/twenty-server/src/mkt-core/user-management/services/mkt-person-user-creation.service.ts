@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { MktCustomerCreationService } from 'src/mkt-core/customer/services/mkt-customer-creation.service';
+import { MktCustomerCreationService } from 'src/mkt-core/customer/services';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 
 import { MktCoreUserCreationService } from './mkt-core-user-creation.service';

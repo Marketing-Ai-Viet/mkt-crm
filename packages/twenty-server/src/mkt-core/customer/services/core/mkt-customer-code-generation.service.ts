@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * Service để tạo mã customer code tự động
- * Pattern: CUSTYYYYNNN (VD: CUST2025001, CUST2025002, ...)
+ * Pattern: CUS-YYYY-NNNNNN (VD: CUS-2025-000001)
  * hoặc đơn giản: CUST001, CUST002, ...
  */
 @Injectable()
@@ -13,13 +14,14 @@ export class MktCustomerCodeGenerationService {
 
   /**
    * Tạo customer code tự động dựa trên năm hiện tại và số thứ tự
-   * Format: CUSTYYYYNNN (VD: CUST2025001)
+   * Format: CUS-YYYY-NNNNNN (VD: CUS-2025-000001)
    */
   async generateCustomerCodeWithYear(): Promise<string> {
     const repository = await this.mktRepo.getCustomerRepository();
 
-    const currentYear = new Date().getFullYear();
-    const prefix = `CUST${currentYear}`;
+    const now = DateTimeUtils.now();
+    const currentYear = now.year;
+    const prefix = `CUS-${currentYear}-`;
 
     // Tìm customer code lớn nhất có prefix này
     const lastCustomer = await repository
@@ -44,8 +46,8 @@ export class MktCustomerCodeGenerationService {
       }
     }
 
-    // Format: CUSTYYYYNNN (pad 3 digits)
-    return `${prefix}${nextSequence.toString().padStart(3, '0')}`;
+    // Format: CUS-YYYY-NNNNNN (pad 6 digits)
+    return `${prefix}${nextSequence.toString().padStart(6, '0')}`;
   }
 
   /**
