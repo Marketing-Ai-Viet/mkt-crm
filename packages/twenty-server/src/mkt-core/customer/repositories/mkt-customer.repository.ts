@@ -476,4 +476,102 @@ export class MktCustomerRepository {
 
     return new Map(customers.map((c) => [c.id, c.name ?? '']));
   }
+
+  // ============================================
+  // BULK UPDATE OPERATIONS (DOWNGRADE POLICY)
+  // ============================================
+
+  /**
+   * Bulk update customers by IDs with same data
+   * Used for batch operations like updating lastTierUpgradeAt
+   */
+  async bulkUpdate(
+    workspaceId: string,
+    customerIds: string[],
+    data: Partial<MktCustomerWorkspaceEntity>,
+  ): Promise<number> {
+    if (customerIds.length === 0) {
+      return 0;
+    }
+
+    const repository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+        workspaceId,
+        MktCustomerWorkspaceEntity,
+        { shouldBypassPermissionChecks: true },
+      );
+
+    let successCount = 0;
+
+    for (const customerId of customerIds) {
+      try {
+        // Convert Date fields to ISO strings for TypeORM compatibility
+        const updateData: Record<string, unknown> = { ...data };
+
+        for (const [key, value] of Object.entries(updateData)) {
+          if (value instanceof Date) {
+            updateData[key] = value.toISOString();
+          }
+        }
+
+        await repository.update(customerId, updateData);
+        successCount++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to bulk update customer ${customerId}:`,
+          error,
+        );
+      }
+    }
+
+    this.logger.debug(
+      `Bulk updated ${successCount}/${customerIds.length} customers`,
+    );
+
+    return successCount;
+  }
+
+  /**
+   * Get customers with tier and lastTierUpgradeAt for downgrade policy check
+   */
+  async getCustomersForDowngradeCheck(
+    workspaceId: string,
+    customerIds: string[],
+  ): Promise<
+    Array<{
+      id: string;
+      tier: string | null;
+      lastTierUpgradeAt: Date | null;
+      lastPurchase: Date | null;
+    }>
+  > {
+    if (customerIds.length === 0) {
+      return [];
+    }
+
+    const repository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+        workspaceId,
+        MktCustomerWorkspaceEntity,
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const customers = await repository
+      .createQueryBuilder('customer')
+      .select([
+        'customer.id',
+        'customer.tier',
+        'customer.lastTierUpgradeAt',
+        'customer.lastPurchase',
+      ])
+      .where('customer.id IN (:...ids)', { ids: customerIds })
+      .getMany();
+
+    return customers.map((c) => ({
+      id: c.id,
+      tier: c.tier,
+      lastTierUpgradeAt: c.lastTierUpgradeAt ?? null,
+      lastPurchase: c.lastPurchase ?? null,
+    }));
+  }
 }

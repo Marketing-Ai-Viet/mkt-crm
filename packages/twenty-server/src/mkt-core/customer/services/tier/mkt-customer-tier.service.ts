@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import chunk from 'lodash.chunk';
 import keyBy from 'lodash.keyby';
 
+import { DOWNGRADE_POLICY_CONFIG } from 'src/mkt-core/customer/constants/mkt-customer-downgrade-policy.constants';
 import {
   MKT_CUSTOMER_TIER,
   MKT_CUSTOMER_TIER_THRESHOLDS,
@@ -16,6 +17,7 @@ import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import {
+  CustomerDowngradeContext,
   CustomerTierResult,
   CustomerTierStatistics,
 } from 'src/mkt-core/customer/types';
@@ -23,6 +25,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 import { MktCustomerTierCalculationService } from './mkt-customer-tier-calculation.service';
+import { MktCustomerDowngradePolicyService } from './mkt-customer-downgrade-policy.service';
 import { MktCustomerTierHistoryService } from './mkt-customer-tier-history.service';
 
 @Injectable()
@@ -34,6 +37,7 @@ export class MktCustomerTierService {
     private readonly customerRepository: MktCustomerRepository,
     private readonly orderRepository: MktOrderRepository,
     private readonly tierHistoryService: MktCustomerTierHistoryService,
+    private readonly downgradePolicyService: MktCustomerDowngradePolicyService,
   ) {}
 
   async updateCustomerTier(customerId: string): Promise<CustomerTierResult> {
@@ -152,6 +156,7 @@ export class MktCustomerTierService {
    * Update all customer tiers for a specific workspace
    * Thread-safe: Uses workspace-specific repositories
    * Optimized: Bulk aggregation query + parallel updates
+   * Includes downgrade protection policy
    *
    * @param workspaceId - Target workspace ID
    * @param batchSize - Number of customers per batch
@@ -161,12 +166,17 @@ export class MktCustomerTierService {
     workspaceId: string,
     batchSize = TIER_BULK_PROCESSING_CONFIG.BATCH_SIZE,
   ): Promise<CustomerTierResult[]> {
-    this.logger.log(`🚀 Starting tier update for workspace ${workspaceId}`);
+    this.logger.log(`Starting tier update for workspace ${workspaceId}`);
+    this.logger.log(
+      `Downgrade protection: ${DOWNGRADE_POLICY_CONFIG.PROTECTION_ENABLED ? 'ENABLED' : 'DISABLED'}`,
+    );
 
     const results: CustomerTierResult[] = [];
     let offset = 0;
     let hasMore = true;
     let batchNumber = 0;
+    let totalProtectedCount = 0;
+    let totalUpgradeCount = 0;
 
     while (hasMore) {
       // Get customers using repository with explicit workspaceId
@@ -208,9 +218,16 @@ export class MktCustomerTierService {
           customerIds,
         );
 
-      // Create customer tier map for change detection
-      const customerTierMap = new Map(
-        customers.map((c) => [c.id, c.tier as MKT_CUSTOMER_TIER | null]),
+      // Get customer data for downgrade policy check
+      const customerDataMap = new Map(
+        customers.map((c) => [
+          c.id,
+          {
+            tier: c.tier as MKT_CUSTOMER_TIER | null,
+            lastTierUpgradeAt: c.lastTierUpgradeAt ?? null,
+            lastPurchase: c.lastPurchase ?? null,
+          },
+        ]),
       );
 
       // Calculate tiers and prepare updates
@@ -228,35 +245,68 @@ export class MktCustomerTierService {
         metadata: { orderValue: number; orderCount: number };
       }> = [];
 
+      // Track upgraded customers for lastTierUpgradeAt update
+      const upgradedCustomerIds: string[] = [];
+
       for (const customerId of customerIds) {
         const stats = orderStatsMap[customerId];
         const totalOrderValue = stats?.totalValue ?? 0;
         const totalOrderCount = stats?.orderCount ?? 0;
-
-        const tier = this.determineTier(totalOrderValue, totalOrderCount);
+        const customerData = customerDataMap.get(customerId);
         const customerName = customerNameMap.get(customerId) ?? '';
-        const previousTier = customerTierMap.get(customerId);
+        const currentTier = customerData?.tier ?? null;
+
+        // Calculate raw tier based on order metrics
+        const calculatedTier = this.determineTier(
+          totalOrderValue,
+          totalOrderCount,
+        );
+
+        // Apply downgrade policy
+        const downgradeContext: CustomerDowngradeContext = {
+          customerId,
+          currentTier: currentTier ?? MKT_CUSTOMER_TIER.BRONZE,
+          calculatedTier,
+          lastTierUpgradeAt: customerData?.lastTierUpgradeAt ?? null,
+          lastOrderDate: customerData?.lastPurchase ?? null,
+        };
+
+        const policyResult =
+          this.downgradePolicyService.determineFinalTier(downgradeContext);
+
+        const finalTier = policyResult.finalTier;
+
+        // Track protected customers
+        if (policyResult.wasProtected) {
+          totalProtectedCount++;
+        }
+
+        // Track upgrades
+        if (this.downgradePolicyService.isUpgrade(currentTier, finalTier)) {
+          upgradedCustomerIds.push(customerId);
+          totalUpgradeCount++;
+        }
 
         updates.push({
           customerId,
-          tier,
+          tier: finalTier,
           totalOrderValue,
         });
 
         results.push({
           customerId,
           customerName,
-          customerTier: tier,
+          customerTier: finalTier,
           totalOrderValue,
           totalOrderCount,
         });
 
         // Track tier change if different
-        if (previousTier !== tier) {
+        if (currentTier !== finalTier) {
           tierChanges.push({
             customerId,
-            previousTier: previousTier ?? null,
-            newTier: tier,
+            previousTier: currentTier,
+            newTier: finalTier,
             metadata: {
               orderValue: totalOrderValue,
               orderCount: totalOrderCount,
@@ -273,6 +323,18 @@ export class MktCustomerTierService {
 
       for (const updateBatch of updateChunks) {
         await this.customerRepository.bulkUpdateTiers(workspaceId, updateBatch);
+      }
+
+      // Update lastTierUpgradeAt for upgraded customers
+      if (upgradedCustomerIds.length > 0) {
+        await this.downgradePolicyService.bulkUpdateLastTierUpgrade(
+          workspaceId,
+          upgradedCustomerIds,
+        );
+
+        this.logger.log(
+          `Updated lastTierUpgradeAt for ${upgradedCustomerIds.length} upgraded customers`,
+        );
       }
 
       // Log tier changes to history
@@ -301,7 +363,7 @@ export class MktCustomerTierService {
     }
 
     this.logger.log(
-      `✅ Completed tier update for workspace ${workspaceId}: ${results.length} customers processed`,
+      `Completed tier update for workspace ${workspaceId}: ${results.length} customers processed, ${totalUpgradeCount} upgrades, ${totalProtectedCount} protected from downgrade`,
     );
 
     return results;

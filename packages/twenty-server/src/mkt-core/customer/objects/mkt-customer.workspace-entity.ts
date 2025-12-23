@@ -189,6 +189,17 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   tier: string;
 
   @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.lastTierUpgradeAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Last Tier Upgrade`,
+    description: msg`Date when customer was last upgraded to a higher tier`,
+    icon: 'IconArrowUp',
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  lastTierUpgradeAt: Date | null;
+
+  @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.lifecycleStage,
     type: FieldMetadataType.SELECT,
     label: msg`Lifecycle Stage`,

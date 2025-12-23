@@ -24,6 +24,7 @@ import {
   MktCustomerCreationService,
   MktCustomerUpdateService,
   // Tier
+  MktCustomerDowngradePolicyService,
   MktCustomerQueueService,
   MktCustomerTierCalculationService,
   MktCustomerTierHistoryService,
@@ -73,6 +74,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
     MktCustomerCodeGenerationService,
     MktCustomerCategorizationService,
     MktCustomerAutoAssignService,
+    MktCustomerDowngradePolicyService,
 
     // Resolvers (GraphQL)
     MktCustomerLicenseResolver,
@@ -110,6 +112,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
     MktCustomerCategorizationService,
     MktCustomerAutoAssignService,
     MktCustomerCodeGenerationService,
+    MktCustomerDowngradePolicyService,
   ],
 })
 export class CustomerModule {}
