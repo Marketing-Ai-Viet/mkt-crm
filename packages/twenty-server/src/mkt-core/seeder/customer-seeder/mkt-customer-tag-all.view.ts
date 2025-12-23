@@ -20,7 +20,7 @@ export const mktCustomerTagsAllView = (
     type: 'table',
     key: 'INDEX',
     position: 10,
-    icon: 'IconBox',
+    icon: 'IconTag',
     kanbanFieldMetadataId: '',
     openRecordIn: ViewOpenRecordInType.SIDE_PANEL,
     filters: [],
@@ -32,7 +32,7 @@ export const mktCustomerTagsAllView = (
           )?.id ?? '',
         position: 0,
         isVisible: true,
-        size: 180,
+        size: 200,
       },
       {
         fieldMetadataId:
@@ -42,7 +42,7 @@ export const mktCustomerTagsAllView = (
           )?.id ?? '',
         position: 1,
         isVisible: true,
-        size: 150,
+        size: 180,
       },
       {
         fieldMetadataId:
@@ -56,12 +56,21 @@ export const mktCustomerTagsAllView = (
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
-            (field) =>
-              field.standardId === MKT_CUSTOMER_TAG_FIELD_IDS.createdBy,
+            (field) => field.standardId === MKT_CUSTOMER_TAG_FIELD_IDS.position,
           )?.id ?? '',
         position: 3,
         isVisible: true,
-        size: 120,
+        size: 100,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_CUSTOMER_TAG_FIELD_IDS.createdBy,
+          )?.id ?? '',
+        position: 4,
+        isVisible: true,
+        size: 130,
       },
       {
         fieldMetadataId:
@@ -69,9 +78,9 @@ export const mktCustomerTagsAllView = (
             (field) =>
               field.standardId === MKT_CUSTOMER_TAG_FIELD_IDS.accountOwner,
           )?.id ?? '',
-        position: 4,
+        position: 5,
         isVisible: true,
-        size: 120,
+        size: 150,
       },
     ],
   };

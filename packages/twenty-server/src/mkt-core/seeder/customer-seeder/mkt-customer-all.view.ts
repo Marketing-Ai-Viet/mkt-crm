@@ -20,7 +20,7 @@ export const mktCustomersAllView = (
     type: 'table',
     key: 'INDEX',
     position: 10,
-    icon: 'IconBox',
+    icon: 'IconUser',
     kanbanFieldMetadataId: '',
     openRecordIn: ViewOpenRecordInType.SIDE_PANEL,
     filters: [],
@@ -37,34 +37,35 @@ export const mktCustomersAllView = (
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.email,
+            (field) =>
+              field.standardId === MKT_CUSTOMER_FIELD_IDS.mktCustomerCode,
           )?.id ?? '',
         position: 1,
         isVisible: true,
-        size: 150,
+        size: 140,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.email,
+          )?.id ?? '',
+        position: 2,
+        isVisible: true,
+        size: 180,
       },
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
             (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.phone,
           )?.id ?? '',
-        position: 2,
-        isVisible: true,
-        size: 150,
-      },
-      {
-        fieldMetadataId:
-          itemObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.taxCode,
-          )?.id ?? '',
         position: 3,
         isVisible: true,
-        size: 120,
+        size: 130,
       },
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.address,
+            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.type,
           )?.id ?? '',
         position: 4,
         isVisible: true,
@@ -73,9 +74,56 @@ export const mktCustomersAllView = (
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.companyName,
+            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.status,
           )?.id ?? '',
         position: 5,
+        isVisible: true,
+        size: 120,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.tier,
+          )?.id ?? '',
+        position: 6,
+        isVisible: true,
+        size: 110,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_CUSTOMER_FIELD_IDS.lifecycleStage,
+          )?.id ?? '',
+        position: 7,
+        isVisible: true,
+        size: 130,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_CUSTOMER_FIELD_IDS.totalOrderValue,
+          )?.id ?? '',
+        position: 8,
+        isVisible: true,
+        size: 140,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.companyName,
+          )?.id ?? '',
+        position: 9,
+        isVisible: true,
+        size: 180,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) => field.standardId === MKT_CUSTOMER_FIELD_IDS.accountOwner,
+          )?.id ?? '',
+        position: 10,
         isVisible: true,
         size: 150,
       },

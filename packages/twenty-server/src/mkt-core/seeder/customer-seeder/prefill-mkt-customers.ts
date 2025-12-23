@@ -14,6 +14,7 @@ export const prefillMktCustomers = async (
     })
     .insert()
     .into(`${schemaName}.mktCustomer`, MKT_CUSTOMER_DATA_SEED_COLUMNS)
+    .orIgnore()
     .values(MKT_CUSTOMER_DATA_SEEDS)
     .execute();
 };

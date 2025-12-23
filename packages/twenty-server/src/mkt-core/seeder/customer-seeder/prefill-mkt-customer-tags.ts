@@ -8,12 +8,17 @@ export const prefillMktCustomerTags = async (
   entityManager: WorkspaceEntityManager,
   schemaName: string,
 ) => {
+  if (MKT_CUSTOMER_TAG_DATA_SEEDS.length === 0) {
+    return;
+  }
+
   await entityManager
     .createQueryBuilder(undefined, undefined, undefined, {
       shouldBypassPermissionChecks: true,
     })
     .insert()
     .into(`${schemaName}.mktCustomerTag`, MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS)
+    .orIgnore()
     .values(MKT_CUSTOMER_TAG_DATA_SEEDS)
     .execute();
 };
