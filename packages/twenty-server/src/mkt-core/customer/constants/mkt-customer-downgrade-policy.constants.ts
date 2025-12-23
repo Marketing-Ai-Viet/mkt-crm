@@ -67,7 +67,7 @@ export const TIER_RANK: Record<MKT_CUSTOMER_TIER, number> = {
   [MKT_CUSTOMER_TIER.BRONZE]: 3,
   [MKT_CUSTOMER_TIER.DORMANT]: 2,
   [MKT_CUSTOMER_TIER.CHURNED]: 1,
-} as const;
+};
 
 /**
  * Active tiers (not dormant/churned)

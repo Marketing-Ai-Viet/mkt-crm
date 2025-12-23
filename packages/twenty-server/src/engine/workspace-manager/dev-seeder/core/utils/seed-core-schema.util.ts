@@ -7,6 +7,10 @@ import { seedFeatureFlags } from 'src/engine/workspace-manager/dev-seeder/core/u
 import { seedUserWorkspaces } from 'src/engine/workspace-manager/dev-seeder/core/utils/seed-user-workspaces.util';
 import { seedUsers } from 'src/engine/workspace-manager/dev-seeder/core/utils/seed-users.util';
 import { seedWorkspaces } from 'src/engine/workspace-manager/dev-seeder/core/utils/seed-workspaces.util';
+import {
+  SeedUserConfig,
+  SeedWorkspaceConfig,
+} from 'src/mkt-core/seeder/services/seed-config.service';
 
 type SeedCoreSchemaArgs = {
   dataSource: DataSource;
@@ -14,6 +18,12 @@ type SeedCoreSchemaArgs = {
   appVersion: string | undefined;
   seedBilling?: boolean;
   seedFeatureFlags?: boolean;
+  /** Optional workspace config from environment variables */
+  workspaceConfig?: SeedWorkspaceConfig;
+  /** Optional user config from environment variables */
+  userConfig?: SeedUserConfig;
+  /** Whether to include legacy demo users (default: false for production) */
+  includeLegacyUsers?: boolean;
 };
 
 export const seedCoreSchema = async ({
@@ -22,6 +32,9 @@ export const seedCoreSchema = async ({
   workspaceId,
   seedBilling = true,
   seedFeatureFlags: shouldSeedFeatureFlags = true,
+  workspaceConfig,
+  userConfig,
+  includeLegacyUsers = false,
 }: SeedCoreSchemaArgs) => {
   const schemaName = 'core';
 
@@ -30,8 +43,16 @@ export const seedCoreSchema = async ({
     schemaName,
     workspaceId,
     appVersion,
+    workspaceConfig,
   });
-  await seedUsers(dataSource, schemaName);
+
+  await seedUsers({
+    dataSource,
+    schemaName,
+    userConfig,
+    includeLegacyUsers,
+  });
+
   await seedUserWorkspaces(dataSource, schemaName, workspaceId);
 
   await seedAgents(dataSource, schemaName, workspaceId);

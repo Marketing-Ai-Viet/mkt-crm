@@ -17,10 +17,10 @@ import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import {
-  CustomerDowngradeContext,
   CustomerTierResult,
   CustomerTierStatistics,
 } from 'src/mkt-core/customer/types';
+import { CustomerDowngradeContext } from 'src/mkt-core/customer/types/customer-tier.types';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 

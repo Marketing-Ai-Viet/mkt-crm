@@ -16,7 +16,7 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   BulkDowngradeResult,
   CustomerDowngradeContext,
-} from 'src/mkt-core/customer/types';
+} from 'src/mkt-core/customer/types/customer-tier.types';
 
 /**
  * MktCustomerDowngradePolicyService
