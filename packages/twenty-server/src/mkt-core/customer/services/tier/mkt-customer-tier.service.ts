@@ -1,9 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import chunk from 'lodash.chunk';
 import keyBy from 'lodash.keyby';
 
-import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { MKT_CUSTOMER_TIER } from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import {
+  MKT_CUSTOMER_TIER,
+  MKT_CUSTOMER_TIER_THRESHOLDS,
+} from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import {
+  COMPLETED_ORDER_STATUSES,
+  TIER_BULK_PROCESSING_CONFIG,
+} from 'src/mkt-core/customer/constants/mkt-customer-tier.constants';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
@@ -24,7 +31,6 @@ export class MktCustomerTierService {
     private readonly mktCustomerTierCalculationService: MktCustomerTierCalculationService,
     private readonly customerRepository: MktCustomerRepository,
     private readonly orderRepository: MktOrderRepository,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   async updateCustomerTier(customerId: string): Promise<CustomerTierResult> {
@@ -41,10 +47,17 @@ export class MktCustomerTierService {
     return tierResult;
   }
 
-  async updateAllCustomerTiers(batchSize = 100): Promise<CustomerTierResult[]> {
+  /**
+   * Update all customer tiers using bulk aggregation and parallel updates
+   * Optimized: 1 query per batch instead of N queries
+   */
+  async updateAllCustomerTiers(
+    batchSize = TIER_BULK_PROCESSING_CONFIG.BATCH_SIZE,
+  ): Promise<CustomerTierResult[]> {
     const results: CustomerTierResult[] = [];
     let offset = 0;
     let hasMore = true;
+    let batchNumber = 0;
 
     while (hasMore) {
       const customers = await this.customerRepository.findAll(undefined, {
@@ -58,31 +71,63 @@ export class MktCustomerTierService {
         break;
       }
 
+      batchNumber++;
       this.logger.log(
         CUSTOMER_MESSAGES.LOG.BATCH_PROCESS_START(
-          offset / batchSize + 1,
+          batchNumber,
           customers.length,
         ),
       );
 
-      for (const customer of customers) {
-        try {
-          const tierResult =
-            await this.mktCustomerTierCalculationService.calculateCustomerTier(
-              customer.id,
+      const customerIds = customers.map((c) => c.id);
+
+      // Bulk aggregation query - 1 query for all customers in batch
+      const tierResults =
+        await this.mktCustomerTierCalculationService.calculateBulkCustomerTiers(
+          customerIds,
+        );
+
+      // Parallel updates with concurrency control
+      const updateChunks = chunk(
+        customerIds,
+        TIER_BULK_PROCESSING_CONFIG.CONCURRENCY,
+      );
+
+      for (const updateBatch of updateChunks) {
+        const updatePromises = updateBatch.map(async (customerId) => {
+          const tierResult = tierResults.get(customerId);
+
+          if (!tierResult) {
+            this.logger.warn(
+              `No tier result found for customer ${customerId}, skipping`,
             );
 
-          await this.customerRepository.update(customer.id, {
-            tier: tierResult.customerTier,
-            totalOrderValue: tierResult.totalOrderValue,
-          });
+            return null;
+          }
 
-          results.push(tierResult);
-        } catch (error) {
-          this.logger.error(
-            CUSTOMER_MESSAGES.ERROR.TIER_UPDATE_FAILED(customer.id),
-            error instanceof Error ? error.stack : String(error),
-          );
+          try {
+            await this.customerRepository.update(customerId, {
+              tier: tierResult.customerTier,
+              totalOrderValue: tierResult.totalOrderValue,
+            });
+
+            return tierResult;
+          } catch (error) {
+            this.logger.error(
+              CUSTOMER_MESSAGES.ERROR.TIER_UPDATE_FAILED(customerId),
+              error instanceof Error ? error.stack : String(error),
+            );
+
+            return null;
+          }
+        });
+
+        const batchResults = await Promise.all(updatePromises);
+
+        for (const result of batchResults) {
+          if (result) {
+            results.push(result);
+          }
         }
       }
 
@@ -98,6 +143,161 @@ export class MktCustomerTierService {
     );
 
     return results;
+  }
+
+  /**
+   * Update all customer tiers for a specific workspace
+   * Thread-safe: Uses workspace-specific repositories
+   * Optimized: Bulk aggregation query + parallel updates
+   *
+   * @param workspaceId - Target workspace ID
+   * @param batchSize - Number of customers per batch
+   * @returns Array of tier update results
+   */
+  async updateAllCustomerTiersForWorkspace(
+    workspaceId: string,
+    batchSize = TIER_BULK_PROCESSING_CONFIG.BATCH_SIZE,
+  ): Promise<CustomerTierResult[]> {
+    this.logger.log(`🚀 Starting tier update for workspace ${workspaceId}`);
+
+    const results: CustomerTierResult[] = [];
+    let offset = 0;
+    let hasMore = true;
+    let batchNumber = 0;
+
+    while (hasMore) {
+      // Get customers using repository with explicit workspaceId
+      const customers = await this.customerRepository.findAllWithPagination(
+        workspaceId,
+        { take: batchSize, skip: offset },
+      );
+
+      if (customers.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      batchNumber++;
+      this.logger.log(
+        CUSTOMER_MESSAGES.LOG.BATCH_PROCESS_START(
+          batchNumber,
+          customers.length,
+        ),
+      );
+
+      const customerIds = customers.map((c) => c.id);
+
+      // Bulk aggregation query using repository
+      const orderStats =
+        await this.orderRepository.getCompletedOrderStatsByCustomers(
+          workspaceId,
+          customerIds,
+          COMPLETED_ORDER_STATUSES,
+        );
+
+      // Create lookup map for O(1) access
+      const orderStatsMap = keyBy(orderStats, 'customerId');
+
+      // Get customer names
+      const customerNameMap =
+        await this.customerRepository.getCustomerNamesByIds(
+          workspaceId,
+          customerIds,
+        );
+
+      // Calculate tiers and prepare updates
+      const updates: Array<{
+        customerId: string;
+        tier: string;
+        totalOrderValue: number;
+      }> = [];
+
+      for (const customerId of customerIds) {
+        const stats = orderStatsMap[customerId];
+        const totalOrderValue = stats?.totalValue ?? 0;
+        const totalOrderCount = stats?.orderCount ?? 0;
+
+        const tier = this.determineTier(totalOrderValue, totalOrderCount);
+        const customerName = customerNameMap.get(customerId) ?? '';
+
+        updates.push({
+          customerId,
+          tier,
+          totalOrderValue,
+        });
+
+        results.push({
+          customerId,
+          customerName,
+          customerTier: tier,
+          totalOrderValue,
+          totalOrderCount,
+        });
+      }
+
+      // Parallel batch updates using repository
+      const updateChunks = chunk(
+        updates,
+        TIER_BULK_PROCESSING_CONFIG.CONCURRENCY,
+      );
+
+      for (const updateBatch of updateChunks) {
+        await this.customerRepository.bulkUpdateTiers(workspaceId, updateBatch);
+      }
+
+      offset += batchSize;
+
+      if (customers.length < batchSize) {
+        hasMore = false;
+      }
+    }
+
+    this.logger.log(
+      `✅ Completed tier update for workspace ${workspaceId}: ${results.length} customers processed`,
+    );
+
+    return results;
+  }
+
+  /**
+   * Determine tier based on order value and count
+   * Uses centralized thresholds from constants
+   */
+  private determineTier(
+    totalOrderValue: number,
+    totalOrderCount: number,
+  ): MKT_CUSTOMER_TIER {
+    const { DIAMOND, GOLD, SILVER, BRONZE } = MKT_CUSTOMER_TIER_THRESHOLDS;
+
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, DIAMOND.minSpending) &&
+      totalOrderCount >= DIAMOND.minOrders
+    ) {
+      return MKT_CUSTOMER_TIER.DIAMOND;
+    }
+
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, GOLD.minSpending) &&
+      totalOrderCount >= GOLD.minOrders
+    ) {
+      return MKT_CUSTOMER_TIER.GOLD;
+    }
+
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, SILVER.minSpending) &&
+      totalOrderCount >= SILVER.minOrders
+    ) {
+      return MKT_CUSTOMER_TIER.SILVER;
+    }
+
+    if (
+      MoneyUtils.greaterThanOrEqual(totalOrderValue, BRONZE.minSpending) &&
+      totalOrderCount >= BRONZE.minOrders
+    ) {
+      return MKT_CUSTOMER_TIER.BRONZE;
+    }
+
+    return MKT_CUSTOMER_TIER.BRONZE;
   }
 
   /**

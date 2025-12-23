@@ -408,6 +408,52 @@ export class MktOrderRepository {
   // ============================================
 
   /**
+   * Get completed order statistics aggregated by customer IDs
+   * Single query with GROUP BY to avoid N+1 problem
+   * Only counts orders with COMPLETED status for tier calculation
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerIds - Array of customer IDs to aggregate
+   * @param completedStatuses - Array of order statuses to count (default: ['COMPLETED'])
+   * @returns Array of { customerId, orderCount, totalValue }
+   */
+  async getCompletedOrderStatsByCustomers(
+    workspaceId: string,
+    customerIds: string[],
+    completedStatuses: ORDER_STATUS[] = [ORDER_STATUS.COMPLETED],
+  ): Promise<
+    Array<{ customerId: string; orderCount: number; totalValue: number }>
+  > {
+    if (customerIds.length === 0) {
+      return [];
+    }
+
+    this.logger.debug(
+      `Fetching completed order stats for ${customerIds.length} customers with statuses: ${completedStatuses.join(', ')}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const stats = await repository
+      .createQueryBuilder('order')
+      .select('order.mktCustomerId', 'customerId')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .where('order.mktCustomerId IN (:...customerIds)', { customerIds })
+      .andWhere('order.status IN (:...statuses)', {
+        statuses: completedStatuses,
+      })
+      .groupBy('order.mktCustomerId')
+      .getRawMany();
+
+    return stats.map((s) => ({
+      customerId: s.customerId,
+      orderCount: parseInt(s.orderCount, 10) || 0,
+      totalValue: parseFloat(s.totalValue) || 0,
+    }));
+  }
+
+  /**
    * Get the underlying TypeORM repository
    * Useful for complex queries not covered by this repository
    */

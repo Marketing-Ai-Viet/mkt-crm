@@ -1,13 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import chunk from 'lodash.chunk';
+
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import {
   MKT_CUSTOMER_TIER,
   MKT_CUSTOMER_TIER_THRESHOLDS,
 } from 'src/mkt-core/customer/constants/mkt-customer.constant';
+import {
+  COMPLETED_ORDER_STATUSES,
+  TIER_BULK_PROCESSING_CONFIG,
+} from 'src/mkt-core/customer/constants/mkt-customer-tier.constants';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { CustomerTierResult } from 'src/mkt-core/customer/types';
+import {
+  BulkCustomerTierResult,
+  CustomerOrderAggregation,
+  CustomerTierResult,
+} from 'src/mkt-core/customer/types';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
@@ -93,6 +103,93 @@ export class MktCustomerTierCalculationService {
     return this.calculateCustomerTier(customerId, {
       includeOnlyCompletedOrders: false,
     });
+  }
+
+  /**
+   * Calculate tiers for multiple customers in a single bulk query
+   * Optimized: 1 query for N customers instead of N queries
+   *
+   * @param customerIds - Array of customer IDs to calculate tiers for
+   * @returns Map of customerId -> CustomerTierResult
+   */
+  async calculateBulkCustomerTiers(
+    customerIds: string[],
+  ): Promise<BulkCustomerTierResult> {
+    if (customerIds.length === 0) {
+      return new Map();
+    }
+
+    const cusRepo = await this.mktRepo.getRepository(
+      MktCustomerWorkspaceEntity,
+    );
+    const orderRepo = await this.mktRepo.getRepository(MktOrderWorkspaceEntity);
+
+    const results: BulkCustomerTierResult = new Map();
+    const batches = chunk(customerIds, TIER_BULK_PROCESSING_CONFIG.BATCH_SIZE);
+
+    for (const batchIds of batches) {
+      // Get customer names for this batch
+      const customers = await cusRepo.find({
+        where: batchIds.map((id) => ({ id })),
+        select: ['id', 'name'],
+      });
+
+      const customerNameMap = new Map(
+        customers.map((c) => [c.id, c.name ?? '']),
+      );
+
+      // Bulk aggregation query - 1 query for all customers in batch
+      const aggregations = await orderRepo
+        .createQueryBuilder('order')
+        .select('order.mktCustomerId', 'customerId')
+        .addSelect('COUNT(order.id)', 'totalOrderCount')
+        .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalOrderValue')
+        .where('order.mktCustomerId IN (:...customerIds)', {
+          customerIds: batchIds,
+        })
+        .andWhere('order.status IN (:...statuses)', {
+          statuses: COMPLETED_ORDER_STATUSES,
+        })
+        .groupBy('order.mktCustomerId')
+        .getRawMany<CustomerOrderAggregation>();
+
+      // Create a map for quick lookup
+      const aggregationMap = new Map(
+        aggregations.map((agg) => [agg.customerId, agg]),
+      );
+
+      // Process each customer in batch
+      for (const customerId of batchIds) {
+        const aggregation = aggregationMap.get(customerId);
+        const customerName = customerNameMap.get(customerId) ?? '';
+
+        const totalOrderCount = aggregation
+          ? parseInt(aggregation.totalOrderCount, 10) || 0
+          : 0;
+        const totalOrderValue = aggregation
+          ? parseFloat(aggregation.totalOrderValue) || 0
+          : 0;
+
+        const customerTier = this.determineTier(
+          totalOrderValue,
+          totalOrderCount,
+        );
+
+        results.set(customerId, {
+          customerId,
+          customerName,
+          customerTier,
+          totalOrderCount,
+          totalOrderValue,
+        });
+      }
+
+      this.logger.debug(
+        `Processed batch of ${batchIds.length} customers, total aggregations: ${aggregations.length}`,
+      );
+    }
+
+    return results;
   }
 
   calculateCustomerTierFromData(

@@ -265,10 +265,26 @@ export type AssignmentResult = {
   reason?: string;
 };
 
-export interface CustomerTierResult {
+export type CustomerTierResult = {
   customerTier: MKT_CUSTOMER_TIER;
   totalOrderValue: number;
   totalOrderCount: number;
   customerId: string;
   customerName: string;
-}
+};
+
+/**
+ * Bulk tier calculation result
+ * Map of customerId -> CustomerTierResult
+ */
+export type BulkCustomerTierResult = Map<string, CustomerTierResult>;
+
+/**
+ * Raw aggregation result from database query
+ */
+export type CustomerOrderAggregation = {
+  customerId: string;
+  customerName: string;
+  totalOrderCount: string; // comes as string from raw query
+  totalOrderValue: string; // comes as string from raw query
+};

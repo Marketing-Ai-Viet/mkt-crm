@@ -368,4 +368,112 @@ export class MktCustomerRepository {
 
     return parseFloat(result?.total ?? '0') || 0;
   }
+
+  // ============================================
+  // BULK TIER UPDATE OPERATIONS
+  // ============================================
+
+  /**
+   * Find customers with pagination for batch processing
+   * Returns customers ordered by createdAt for consistent batch processing
+   */
+  async findAllWithPagination(
+    workspaceId: string,
+    options: { take: number; skip: number },
+  ): Promise<MktCustomerWorkspaceEntity[]> {
+    const repository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+        workspaceId,
+        MktCustomerWorkspaceEntity,
+        { shouldBypassPermissionChecks: true },
+      );
+
+    return repository
+      .createQueryBuilder('customer')
+      .where('customer.deletedAt IS NULL')
+      .orderBy('customer.createdAt', 'ASC')
+      .skip(options.skip)
+      .take(options.take)
+      .getMany();
+  }
+
+  /**
+   * Bulk update customer tier data
+   * Uses single update statement per customer for safety
+   *
+   * @param workspaceId - Workspace ID
+   * @param updates - Array of tier updates { customerId, tier, totalOrderValue }
+   * @returns Number of successfully updated customers
+   */
+  async bulkUpdateTiers(
+    workspaceId: string,
+    updates: Array<{
+      customerId: string;
+      tier: string;
+      totalOrderValue: number;
+    }>,
+  ): Promise<number> {
+    if (updates.length === 0) {
+      return 0;
+    }
+
+    const repository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+        workspaceId,
+        MktCustomerWorkspaceEntity,
+        { shouldBypassPermissionChecks: true },
+      );
+
+    let successCount = 0;
+
+    for (const update of updates) {
+      try {
+        await repository.update(update.customerId, {
+          tier: update.tier,
+          totalOrderValue: update.totalOrderValue,
+        });
+
+        successCount++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to update tier for customer ${update.customerId}:`,
+          error,
+        );
+      }
+    }
+
+    this.logger.debug(
+      `Bulk updated ${successCount}/${updates.length} customer tiers`,
+    );
+
+    return successCount;
+  }
+
+  /**
+   * Get customer names by IDs
+   * Lightweight operation for bulk tier calculation
+   */
+  async getCustomerNamesByIds(
+    workspaceId: string,
+    customerIds: string[],
+  ): Promise<Map<string, string>> {
+    if (customerIds.length === 0) {
+      return new Map();
+    }
+
+    const repository =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+        workspaceId,
+        MktCustomerWorkspaceEntity,
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const customers = await repository
+      .createQueryBuilder('customer')
+      .select(['customer.id', 'customer.name'])
+      .where('customer.id IN (:...ids)', { ids: customerIds })
+      .getMany();
+
+    return new Map(customers.map((c) => [c.id, c.name ?? '']));
+  }
 }
