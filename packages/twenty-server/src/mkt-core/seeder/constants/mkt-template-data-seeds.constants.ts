@@ -1,4 +1,4 @@
-import { CUSTOMER_EMAIL_TEMPLATE } from 'src/mkt-core/customer/commands/mkt-customer.email-template';
+import { CUSTOMER_EMAIL_TEMPLATE } from 'src/mkt-core/seeder/constants/mkt-customer.email-template';
 import { ORDER_EMAIL_TEMPLATE } from 'src/mkt-core/order/constants/mkt-order.email-template';
 import { MKT_TEMPLATE_EXAMPLES } from 'src/mkt-core/order/constants/mkt-template.example';
 

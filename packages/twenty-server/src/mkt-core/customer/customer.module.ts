@@ -5,12 +5,8 @@ import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
-import { MktCustomerCategorizationCronJob } from 'src/mkt-core/customer/commands/mkt-customer-categorization.cron.job';
-import { MktCustomerTierUpdateCommand } from 'src/mkt-core/customer/commands/mkt-customer-tier-update.command';
-import { MktCustomerTierCronJob } from 'src/mkt-core/customer/commands/mkt-customer-tier.cron.job';
 import { MktCustomerCreateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-create-one.pre-query.hook';
 import { MktCustomerUpdateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-update-one.pre-query.hook';
-import { MktCustomerTierUpdateJob } from 'src/mkt-core/customer/jobs/mkt-customer-tier-update.job';
 import { MktCustomerEventListener } from 'src/mkt-core/customer/listeners/mkt-customer-event.listener';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktCustomerTierHistoryRepository } from 'src/mkt-core/customer/repositories/mkt-customer-tier-history.repository';
@@ -44,6 +40,11 @@ import {
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
+import {
+  MktCustomerCategorizationCronJob,
+  MktCustomerTierCronJob,
+  MktCustomerTierUpdateJob,
+} from 'src/mkt-core/customer/jobs';
 
 @Module({
   imports: [
@@ -92,7 +93,6 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
 
     // Jobs & Commands
     MktCustomerTierUpdateJob,
-    MktCustomerTierUpdateCommand,
     MktCustomerTierCronJob,
     MktCustomerCategorizationCronJob,
   ],
