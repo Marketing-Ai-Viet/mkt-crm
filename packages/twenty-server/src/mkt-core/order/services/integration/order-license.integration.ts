@@ -63,7 +63,7 @@ export class OrderLicenseIntegrationService {
         const payload: MktCreateLicensePayload = {
           productId: item.productId,
           productPackageId: item.packageId,
-          userId: item.customerId,
+          email: item.email,
           maxDevices: item.maxDevices,
         };
 

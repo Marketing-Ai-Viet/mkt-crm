@@ -61,7 +61,6 @@ export class OrderProductIntegrationService {
     const validationItems = items.map((item) => ({
       productId: item.productId,
       packageId: item.packageId,
-      quantity: item.quantity ?? 1,
     }));
 
     const result = await this.validationService.validateForOrder(
@@ -135,7 +134,7 @@ export class OrderProductIntegrationService {
         package: pkg,
         productSnapshot,
         packageSnapshot,
-        quantity: item.quantity ?? 1,
+        maxDevices: item.maxDevices ?? 1,
       });
     }
 

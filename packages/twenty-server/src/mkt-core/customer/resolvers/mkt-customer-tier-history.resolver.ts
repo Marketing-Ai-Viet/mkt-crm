@@ -20,7 +20,7 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * MktCustomerTierHistoryResolver - GraphQL resolver for tier history queries
  *
  * Provides queries:
- * - mktCustomerTierHistory: Get tier history for a specific customer
+ * - mktCustomerTierHistoryList: Get tier history for a specific customer
  * - mktCustomerLatestTierChange: Get the most recent tier change for a customer
  * - mktTierHistoryByDateRange: Get tier changes within a date range
  * - mktTierChangeStatistics: Get overall tier change statistics
@@ -60,7 +60,7 @@ export class MktCustomerTierHistoryResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Query(() => CustomerTierHistoryListOutput, {
-    name: 'mktCustomerTierHistory',
+    name: 'mktCustomerTierHistoryList',
     description: 'Get tier change history for a specific customer',
   })
   async getCustomerTierHistory(

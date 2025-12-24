@@ -17,8 +17,10 @@ export type ExternalMktProductInput = {
   productId: string;
   /** ID của package từ MKT Server */
   packageId?: string;
-  /** Số lượng */
-  quantity?: number;
+  /** Số thiết bị tối đa cho license (default: 1) */
+  maxDevices?: number;
+  /** Tách thành nhiều license (vd: maxDevices=3 với splitLicenses=true sẽ tạo 3 license với 1 device mỗi cái) */
+  splitLicenses?: boolean;
 };
 
 /**

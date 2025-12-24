@@ -231,7 +231,7 @@ export type MktQueryLicensesParams = {
 export type MktCreateLicensePayload = {
   productPackageId: string;
   productId: string;
-  userId: string;
+  email: string;
   maxDevices?: number;
 };
 

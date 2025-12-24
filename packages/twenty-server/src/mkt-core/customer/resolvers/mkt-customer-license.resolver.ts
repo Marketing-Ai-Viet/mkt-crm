@@ -13,6 +13,13 @@ import {
 } from 'src/mkt-core/customer/dto/get-user-licenses.dto';
 import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/license/mkt-customer-license.service';
 
+/**
+ * MktCustomerLicenseResolver - GraphQL resolver for customer license operations
+ *
+ * Provides queries:
+ * - mktGetMyLicenses: Get all licenses for the currently logged-in user
+ * - mktGetLicenseByKey: Get license information by license key
+ */
 @Resolver()
 export class MktCustomerLicenseResolver {
   constructor(
@@ -21,6 +28,7 @@ export class MktCustomerLicenseResolver {
 
   @UseGuards(UserAuthGuard)
   @Query(() => UserLicensesResponseDto, {
+    name: 'mktGetMyLicenses',
     description: 'Get all licenses for the currently logged-in user',
   })
   async getMyLicenses(
@@ -35,6 +43,7 @@ export class MktCustomerLicenseResolver {
 
   @UseGuards(WorkspaceAuthGuard)
   @Query(() => UserLicenseDto, {
+    name: 'mktGetLicenseByKey',
     nullable: true,
     description: 'Get license information by license key',
   })

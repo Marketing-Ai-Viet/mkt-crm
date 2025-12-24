@@ -45,7 +45,8 @@ export const OrderInputMapper = {
       externalProducts: dto.externalProducts.map((p) => ({
         productId: p.productId,
         packageId: p.packageId,
-        quantity: p.quantity,
+        maxDevices: p.maxDevices,
+        splitLicenses: p.splitLicenses,
       })),
       orderLanguage: dto.orderLanguage as MktSupportedLanguage | undefined,
       paymentMethods: dto.paymentMethods?.map((p) => ({

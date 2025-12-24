@@ -134,7 +134,7 @@ export class MktLicenseResolver {
     const payload = {
       productPackageId: input.productPackageId,
       productId: input.productId,
-      userId: input.userId,
+      email: input.email,
       ...omitUndefined({ maxDevices: input.maxDevices }),
     };
 
@@ -229,7 +229,7 @@ export class MktLicenseResolver {
       items: input.items.map((item) => ({
         productPackageId: item.productPackageId,
         productId: item.productId,
-        userId: item.userId,
+        email: item.email,
         ...omitUndefined({ maxDevices: item.maxDevices }),
       })),
     });

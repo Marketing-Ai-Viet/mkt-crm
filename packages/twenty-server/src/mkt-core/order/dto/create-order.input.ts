@@ -38,17 +38,27 @@ export class ExternalMktProductInputDto {
   })
   @IsOptional()
   @IsString()
-  packageId?: string;
+  packageId: string;
 
   @Field(() => Int, {
     nullable: true,
     defaultValue: 1,
-    description: 'Quantity',
+    description: 'Maximum devices allowed for license',
   })
   @IsOptional()
   @IsNumber()
   @Min(1)
-  quantity?: number;
+  maxDevices?: number;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: false,
+    description:
+      'Split into multiple licenses (e.g., maxDevices=3 with splitLicenses=true creates 3 licenses with 1 device each)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  splitLicenses?: boolean;
 }
 
 @InputType()

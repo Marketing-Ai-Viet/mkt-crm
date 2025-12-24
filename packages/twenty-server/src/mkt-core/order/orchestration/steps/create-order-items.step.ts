@@ -259,7 +259,9 @@ export class CreateOrderItemsStep extends SagaStep<
         }
       }
 
-      const quantity = productInput.quantity ?? 1;
+      // For digital products, quantity is always 1 (each license is 1 unit)
+      // maxDevices is used for license creation, not for order item quantity
+      const quantity = 1;
       const calculatedItem = this.calculationService.calculateOrderItem(
         {
           id: product.id,

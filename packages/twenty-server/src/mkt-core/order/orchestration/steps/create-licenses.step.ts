@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { In, QueryRunner } from 'typeorm';
 
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
+import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import {
@@ -52,6 +54,7 @@ export class CreateLicensesStep extends SagaStep<
     private readonly orderItemRepository: MktOrderItemRepository,
     private readonly mktLicenseProxy: MktLicenseProxyService,
     private readonly mktProductProxy: MktProductProxyService,
+    private readonly customerRepository: MktCustomerRepository,
   ) {
     super();
   }
@@ -59,7 +62,7 @@ export class CreateLicensesStep extends SagaStep<
   /**
    * Skip this step if no external packages in order items
    */
-  shouldSkip(context: SagaContext, input: CreateOrderWithItemsInput): boolean {
+  shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
     // Skip if no external products
     if (!input.externalProducts || input.externalProducts.length === 0) {
       return true;
@@ -90,6 +93,29 @@ export class CreateLicensesStep extends SagaStep<
         `Creating licenses for ${context.orderItemIds.length} order items`,
       );
 
+      // Get customer info with linkedAccounts
+      const customerId =
+        input.customerId ??
+        (context.metadata.get('customerId') as string) ??
+        '';
+
+      const customer = customerId
+        ? await this.customerRepository.findByIdOrNull(
+            customerId,
+            context.workspaceId,
+          )
+        : null;
+
+      // Extract email from MKT_SERVER linkedAccount or fallback to customer email
+      const customerEmail = this.customerRepository.extractMktServerEmail(
+        customer?.linkedAccounts as LinkedAccount[] | null,
+        customer?.email ?? null,
+      );
+
+      this.logger.debug(
+        `Customer ${customerId}: using email "${customerEmail}" for license creation`,
+      );
+
       // Get order items from repository
       const orderItems = await this.orderItemRepository.findMany(
         context.workspaceId,
@@ -109,42 +135,61 @@ export class CreateLicensesStep extends SagaStep<
         }
 
         try {
-          // Get customerId from input or metadata
-          const customerId =
-            input.customerId ??
-            (context.metadata.get('customerId') as string) ??
-            '';
-
-          // Create license on MKT Server
-          const mktLicense = await this.mktLicenseProxy.create({
-            productPackageId: item.externalMktPackageId,
-            productId: item.externalMktProductId,
-            userId: customerId,
-            maxDevices: DEFAULT_MAX_DEVICES,
-          });
-
-          // Create license snapshot
-          const licenseSnapshot: MktLicenseSnapshot =
-            this.mktProductProxy.createLicenseSnapshot(mktLicense);
-
-          // Update order item with license info using repository
-          await this.orderItemRepository.update(context.workspaceId, item.id, {
-            externalMktLicenseId: mktLicense.id,
-            externalMktLicenseKey: mktLicense.licenseKey,
-            licenseSnapshot,
-          });
-
-          createdLicenses.push({
-            id: mktLicense.id,
-            licenseKey: mktLicense.licenseKey,
-            orderItemId: item.id,
-          });
-
-          licenseIdsForRollback.push(mktLicense.id);
-
-          this.logger.debug(
-            `Created license ${mktLicense.id} for order item ${item.id}`,
+          // Find matching external product input to get maxDevices and splitLicenses
+          const externalProduct = input.externalProducts?.find(
+            (p) =>
+              p.productId === item.externalMktProductId &&
+              p.packageId === item.externalMktPackageId,
           );
+
+          const maxDevices = externalProduct?.maxDevices ?? DEFAULT_MAX_DEVICES;
+          const splitLicenses = externalProduct?.splitLicenses ?? false;
+
+          // Determine number of licenses to create and devices per license
+          const licenseCount = splitLicenses ? maxDevices : 1;
+          const devicesPerLicense = splitLicenses
+            ? DEFAULT_MAX_DEVICES
+            : maxDevices;
+
+          const itemLicenseIds: string[] = [];
+          const itemLicenseKeys: string[] = [];
+          const itemLicenseSnapshots: MktLicenseSnapshot[] = [];
+
+          // Create license(s) on MKT Server
+          for (let i = 0; i < licenseCount; i++) {
+            const mktLicense = await this.mktLicenseProxy.create({
+              productPackageId: item.externalMktPackageId,
+              productId: item.externalMktProductId,
+              email: customerEmail,
+              maxDevices: devicesPerLicense,
+            });
+
+            itemLicenseIds.push(mktLicense.id);
+            itemLicenseKeys.push(mktLicense.licenseKey);
+            itemLicenseSnapshots.push(
+              this.mktProductProxy.createLicenseSnapshot(mktLicense),
+            );
+
+            createdLicenses.push({
+              id: mktLicense.id,
+              licenseKey: mktLicense.licenseKey,
+              orderItemId: item.id,
+            });
+
+            licenseIdsForRollback.push(mktLicense.id);
+
+            this.logger.debug(
+              `Created license ${mktLicense.id} (${i + 1}/${licenseCount}) for order item ${item.id}`,
+            );
+          }
+
+          // Update order item with license info (store first license for backward compatibility)
+          // Multiple licenses are stored in licenseSnapshot array
+          await this.orderItemRepository.update(context.workspaceId, item.id, {
+            externalMktLicenseId: itemLicenseIds[0],
+            externalMktLicenseKey: itemLicenseKeys.join(', '),
+            licenseSnapshot: itemLicenseSnapshots[0],
+          });
         } catch (error) {
           this.logger.error(
             `Failed to create license for order item ${item.id}`,

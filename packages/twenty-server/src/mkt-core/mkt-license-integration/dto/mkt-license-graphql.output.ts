@@ -380,8 +380,8 @@ export class MktCreateLicenseInput {
   @Field()
   productId: string;
 
-  @Field()
-  userId: string;
+  @Field({ description: 'Email address for the license owner' })
+  email: string;
 
   @Field(() => Int, { nullable: true, defaultValue: 1 })
   maxDevices?: number;
