@@ -10,10 +10,6 @@ import {
   ORDER_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
-import {
-  IS_PAYMENT_COMPLETE,
-  PAYMENT_STATUS,
-} from 'src/mkt-core/order/constants/payment-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
@@ -29,7 +25,7 @@ import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.t
 // CONSTANTS
 // ============================================
 
-const DEFAULT_MAX_DEVICES = 1;
+const DEFAULT_MAX_DEVICES = 1; // Fallback if orderItem.maxDevices is null
 
 // ============================================
 // TYPES
@@ -83,11 +79,14 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
    * Skip this step if:
    * - Action is NOT ACCOUNTING_CONFIRMED
    * - Order is TRIAL (trial creates license immediately in CreateOrderSaga)
-   * - Payment is not complete (PAID or OVERPAID)
+   *
+   * Note: We don't check paymentStatus here because:
+   * - UpdateStatusStep runs BEFORE this step
+   * - UpdateStatusStep sets paymentStatus = PAID when ACCOUNTING_CONFIRMED
+   * - The order in context is from ValidateOrderStep (before update)
    */
   shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
     const typedContext = context as ConfirmOrderSagaContext;
-    const order = typedContext.currentOrder;
 
     // Only create licenses when accounting confirms
     if (input.action !== ORDER_ACTION.ACCOUNTING_CONFIRMED) {
@@ -105,18 +104,11 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       return true;
     }
 
-    // Check payment status - only create licenses when payment is complete
-    const paymentStatus =
-      (order?.paymentStatus as PAYMENT_STATUS) ?? PAYMENT_STATUS.PENDING;
-
-    if (!IS_PAYMENT_COMPLETE(paymentStatus)) {
-      this.logger.debug(
-        `Skipping: Payment status "${paymentStatus}" is not eligible for license creation. ` +
-          `Require PAID or OVERPAID status.`,
-      );
-
-      return true;
-    }
+    // When ACCOUNTING_CONFIRMED, UpdateStatusStep has already set paymentStatus = PAID
+    // So we can proceed with license creation
+    this.logger.debug(
+      'Proceeding with license creation for ACCOUNTING_CONFIRMED action',
+    );
 
     return false;
   }
@@ -267,12 +259,19 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
     email: string,
   ): Promise<CreatedLicenseInfo | null> {
     try {
+      // Use maxDevices from orderItem, fallback to default
+      const maxDevices = item.maxDevices ?? DEFAULT_MAX_DEVICES;
+
+      this.logger.debug(
+        `Creating license for item ${item.id} with maxDevices=${maxDevices}`,
+      );
+
       // Create license on MKT Server
       const license = await this.mktLicenseProxy.create({
         productPackageId: item.externalMktPackageId ?? '',
         productId: item.externalMktProductId ?? '',
         email,
-        maxDevices: DEFAULT_MAX_DEVICES,
+        maxDevices,
       });
 
       // Create snapshot

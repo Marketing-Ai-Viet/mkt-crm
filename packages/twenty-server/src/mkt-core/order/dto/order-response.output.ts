@@ -28,6 +28,24 @@ export class CreateOrderResponseDto {
   @Field(() => String, { nullable: true })
   paymentQrCode?: string;
 
+  @Field(() => Number, { nullable: true, description: 'Total order amount' })
+  totalAmount?: number;
+
+  @Field(() => Number, { nullable: true, description: 'Amount already paid' })
+  paidAmount?: number;
+
+  @Field(() => Number, {
+    nullable: true,
+    description: 'Remaining amount to pay',
+  })
+  remainingAmount?: number;
+
+  @Field(() => PAYMENT_STATUS, {
+    nullable: true,
+    description: 'Payment status',
+  })
+  paymentStatus?: PAYMENT_STATUS;
+
   @Field(() => String, { nullable: true })
   error?: string;
 }
@@ -42,6 +60,24 @@ export class ConfirmOrderResponseDto {
 
   @Field(() => ORDER_STATUS, { nullable: true })
   newStatus?: ORDER_STATUS;
+
+  @Field(() => Number, { nullable: true, description: 'Total order amount' })
+  totalAmount?: number;
+
+  @Field(() => Number, { nullable: true, description: 'Amount already paid' })
+  paidAmount?: number;
+
+  @Field(() => Number, {
+    nullable: true,
+    description: 'Remaining amount to pay',
+  })
+  remainingAmount?: number;
+
+  @Field(() => PAYMENT_STATUS, {
+    nullable: true,
+    description: 'Payment status',
+  })
+  paymentStatus?: PAYMENT_STATUS;
 
   @Field(() => String, { nullable: true })
   error?: string;
@@ -60,6 +96,24 @@ export class RefundOrderResponseDto {
 
   @Field(() => ORDER_STATUS, { nullable: true })
   newStatus?: ORDER_STATUS;
+
+  @Field(() => Number, { nullable: true, description: 'Total order amount' })
+  totalAmount?: number;
+
+  @Field(() => Number, { nullable: true, description: 'Amount already paid' })
+  paidAmount?: number;
+
+  @Field(() => Number, {
+    nullable: true,
+    description: 'Remaining amount to pay',
+  })
+  remainingAmount?: number;
+
+  @Field(() => PAYMENT_STATUS, {
+    nullable: true,
+    description: 'Payment status',
+  })
+  paymentStatus?: PAYMENT_STATUS;
 
   @Field(() => String, { nullable: true })
   error?: string;
@@ -99,6 +153,24 @@ export class UpdateOrderStatusResponseDto {
 
   @Field(() => ORDER_STATUS, { nullable: true })
   newStatus?: ORDER_STATUS;
+
+  @Field(() => Number, { nullable: true, description: 'Total order amount' })
+  totalAmount?: number;
+
+  @Field(() => Number, { nullable: true, description: 'Amount already paid' })
+  paidAmount?: number;
+
+  @Field(() => Number, {
+    nullable: true,
+    description: 'Remaining amount to pay',
+  })
+  remainingAmount?: number;
+
+  @Field(() => PAYMENT_STATUS, {
+    nullable: true,
+    description: 'Payment status',
+  })
+  paymentStatus?: PAYMENT_STATUS;
 
   @Field(() => String, { nullable: true })
   error?: string;

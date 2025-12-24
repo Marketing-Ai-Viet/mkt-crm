@@ -34,6 +34,7 @@ import {
  * 6. Store success/failure
  * 7. Release lock
  */
+// TODO : Xử lý trường hợp cache storage bị lỗi (vd: redis down) và khi muốn tạo 2 đơn hàng giống nhau liên tiếp cho 1 khách hàng
 @Injectable()
 export class IdempotencyService {
   private readonly logger = new Logger(IdempotencyService.name);

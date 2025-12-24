@@ -15,6 +15,8 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
+import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
+import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
 import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,
@@ -387,7 +389,11 @@ export class MktOrderCommonConfirmService {
     };
 
     this.logger.log('Generating SEPay QR code URL...');
-    if (mktPaymentMethod?.name !== 'SEPay QR') return result;
+
+    // Check if payment method is QR Code type using helper function
+    if (!isSepayPaymentMethod(mktPaymentMethod?.type, mktPaymentMethod?.name)) {
+      return result;
+    }
 
     // Check if BIDV business mode is enabled
     const isBidvBusiness = process.env.IS_BIDV_BUSINESS === 'true';
@@ -513,7 +519,7 @@ Thời gian: ${new Date().toISOString()}
       const requestData: BidvSepayOrderRequest = {
         amount: customAmount,
         order_code: orderCode,
-        duration: 300, // 5 minutes expiry
+        duration: SEPAY_DEFAULT_DURATION,
         with_qrcode: true,
       };
 

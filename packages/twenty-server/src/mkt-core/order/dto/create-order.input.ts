@@ -164,7 +164,8 @@ export class CreateOrderWithItemsInputDto {
 
   @Field(() => [OrderPaymentMethodInputDto], {
     nullable: true,
-    description: 'Payment methods (not required for TRIAL)',
+    description:
+      'Payment methods (optional). Order starts with paymentStatus = PENDING if not provided.',
   })
   @IsOptional()
   @IsArray()
@@ -228,11 +229,6 @@ export class ConfirmOrderInputDto {
   })
   @IsEnum(CONFIRM_ORDER_ACTION)
   action: CONFIRM_ORDER_ACTION;
-
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  @IsBoolean()
-  accountingConfirmed?: boolean;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

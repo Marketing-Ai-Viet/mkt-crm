@@ -259,6 +259,17 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   licenseSnapshot: MktLicenseSnapshot | null;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.maxDevices,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Max Devices`,
+    description: msg`Maximum devices allowed for the license`,
+    icon: 'IconDevices',
+    defaultValue: 1,
+  })
+  @WorkspaceIsNullable()
+  maxDevices: number | null;
+
   // ============================================
   // DISPLAY FIELDS (denormalized for quick access)
   // ============================================

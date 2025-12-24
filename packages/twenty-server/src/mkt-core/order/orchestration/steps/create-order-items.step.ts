@@ -302,6 +302,8 @@ export class CreateOrderItemsStep extends SagaStep<
         taxPercentage: calculatedItem.taxPercentage,
         taxAmount: calculatedItem.taxAmount,
         totalAmountWithTax: calculatedItem.totalAmountWithTax,
+        // License configuration
+        maxDevices: productInput.maxDevices ?? 1,
         position,
       });
     }
@@ -382,6 +384,8 @@ export class CreateOrderItemsStep extends SagaStep<
         taxPercentage: item.taxPercentage,
         taxAmount: item.taxAmount,
         totalAmountWithTax: item.totalAmountWithTax,
+        // License configuration
+        maxDevices: item.maxDevices ?? 1,
         position,
       });
     }

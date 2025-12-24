@@ -130,26 +130,21 @@ export class OrderValidationService {
 
   /**
    * Validate payment methods based on action type
+   *
+   * With multi-payment support, payment methods are OPTIONAL for all actions.
+   * Orders can be created without payments (paymentStatus = PENDING)
+   * and payments can be recorded later.
    */
   private async validatePaymentMethodsForAction(
     workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationError[]> {
-    // Payment not required for TRIAL
-    if (input.action === ORDER_ACTION.TRIAL) {
+    // Payment methods are optional - order starts with paymentStatus = PENDING
+    if (!input.paymentMethods || input.paymentMethods.length === 0) {
       return [];
     }
 
-    if (!input.paymentMethods || input.paymentMethods.length === 0) {
-      return [
-        {
-          field: 'paymentMethods',
-          message: 'At least one payment method is required',
-          code: ORDER_VALIDATION_ERROR_CODES.PAYMENT_METHOD_REQUIRED,
-        },
-      ];
-    }
-
+    // If payment methods provided, validate they exist
     return this.validatePaymentMethods(
       workspaceId,
       input.paymentMethods.map((p) => p.paymentMethodId),
@@ -175,6 +170,9 @@ export class OrderValidationService {
 
   /**
    * Validate input cho TRIAL_TO_PAID conversion
+   *
+   * With multi-payment support, payment methods are optional.
+   * The converted order starts with paymentStatus = PENDING.
    */
   async validateTrialToPaidInput(
     workspaceId: string,
@@ -206,14 +204,9 @@ export class OrderValidationService {
       }
     }
 
-    // Validate payment methods
-    if (!input.paymentMethods || input.paymentMethods.length === 0) {
-      errors.push({
-        field: 'paymentMethods',
-        message: 'At least one payment method is required',
-        code: ORDER_VALIDATION_ERROR_CODES.PAYMENT_METHOD_REQUIRED,
-      });
-    } else {
+    // Payment methods are optional with multi-payment support
+    // If provided, validate they exist
+    if (input.paymentMethods && input.paymentMethods.length > 0) {
       const paymentErrors = await this.validatePaymentMethods(
         workspaceId,
         input.paymentMethods.map((p) => p.paymentMethodId),

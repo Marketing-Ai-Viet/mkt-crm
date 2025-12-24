@@ -73,6 +73,7 @@ import {
   ValidateTransitionStep,
   UpdateStatusStep,
   CreateLicensesOnConfirmStep,
+  CompleteOrderAfterLicenseStep,
 } from './orchestration/steps/confirm-order';
 import {
   OrderProductIntegrationService,
@@ -141,6 +142,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     ValidateTransitionStep,
     UpdateStatusStep,
     CreateLicensesOnConfirmStep,
+    CompleteOrderAfterLicenseStep,
 
     // Integration Services (bridge to other MKT modules)
     OrderProductIntegrationService,

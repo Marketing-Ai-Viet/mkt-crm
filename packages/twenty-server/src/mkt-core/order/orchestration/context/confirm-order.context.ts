@@ -23,6 +23,10 @@ export type ConfirmOrderSagaContext = SagaContext & {
     status: ORDER_STATUS;
     accountingConfirmed?: boolean;
     note?: string;
+    // Payment fields for rollback
+    paymentStatus?: string;
+    paidAmount?: number;
+    remainingAmount?: number;
   };
 };
 

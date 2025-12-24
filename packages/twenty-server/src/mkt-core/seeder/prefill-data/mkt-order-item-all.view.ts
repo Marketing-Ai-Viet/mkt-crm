@@ -83,6 +83,15 @@ export const mktOrderItemsAllView = (
         isVisible: true,
         size: 150,
       },
+      {
+        fieldMetadataId:
+          orderItemObjectMetadata.fields.find(
+            (field) => field.standardId === MKT_ORDER_ITEM_FIELD_IDS.maxDevices,
+          )?.id ?? '',
+        position: 6,
+        isVisible: true,
+        size: 100,
+      },
     ],
   };
 };

@@ -68,11 +68,15 @@ export class ValidateOrderStep extends SagaStep<
       typedContext.currentOrder = order;
       typedContext.previousStatus = order.status as ORDER_STATUS;
 
-      // Store rollback data
+      // Store rollback data (including payment fields for compensation)
       typedContext.rollbackOrder = {
         status: order.status as ORDER_STATUS,
         accountingConfirmed: order.accountingConfirmed,
         note: order.note,
+        // Payment fields for rollback
+        paymentStatus: order.paymentStatus as string | undefined,
+        paidAmount: order.paidAmount ?? undefined,
+        remainingAmount: order.remainingAmount ?? undefined,
       };
 
       this.logger.log(

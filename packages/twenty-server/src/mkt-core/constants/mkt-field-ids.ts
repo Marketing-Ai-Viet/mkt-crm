@@ -388,6 +388,8 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   externalMktLicenseId: 'd13bf167-c4ee-4991-b5fd-2fc9422fd2e1',
   externalMktLicenseKey: '501d54b3-848d-443c-96c1-57fd13f5b126',
   licenseSnapshot: '282984d2-0d56-4c73-bed3-adc1b96369df',
+  // License configuration
+  maxDevices: '4aa5bb85-50f3-45b0-bc7e-df41930b6350',
 
   // relations
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',

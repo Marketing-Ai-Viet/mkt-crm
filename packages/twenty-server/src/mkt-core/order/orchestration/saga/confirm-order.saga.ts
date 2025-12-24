@@ -12,6 +12,7 @@ import {
   ValidateTransitionStep,
   UpdateStatusStep,
   CreateLicensesOnConfirmStep,
+  CompleteOrderAfterLicenseStep,
 } from 'src/mkt-core/order/orchestration/steps/confirm-order';
 import {
   ConfirmOrderInput,
@@ -31,18 +32,20 @@ import { BaseSaga } from './base/base-saga';
  * Registered Steps:
  * 1. ValidateOrderStep - Validate order exists and load state
  * 2. ValidateTransitionStep - Validate status transition is allowed
- * 3. UpdateStatusStep - Update order status in database
+ * 3. UpdateStatusStep - Update order status and payment fields
  * 4. CreateLicensesOnConfirmStep - Create licenses when accounting confirms
+ * 5. CompleteOrderAfterLicenseStep - Auto-complete order after licenses created
  *
- * Handles order status transitions with validation:
- * - Validates order exists
- * - Validates status transition is allowed per state machine
- * - Updates order status
- * - Creates licenses (when ACCOUNTING_CONFIRMED action)
- * - Emits appropriate events
+ * ACCOUNTING_CONFIRMED Flow:
+ * 1. Validate order exists
+ * 2. Validate status transition is allowed
+ * 3. Update: status = CONFIRMED, paymentStatus = PAID, paidAmount = totalAmount
+ * 4. Create licenses on MKT Server
+ * 5. Auto-update: status = COMPLETED (if licenses created)
+ * 6. Emit success events
  *
  * Supports actions:
- * - ACCOUNTING_CONFIRMED: Accounting confirms payment, create licenses
+ * - ACCOUNTING_CONFIRMED: Confirm payment, create licenses, auto-complete
  * - COMPLETE: Complete the order
  * - CANCEL: Cancel the order
  * - BLOCK: Block the order
@@ -64,6 +67,7 @@ export class ConfirmOrderSaga
     private readonly validateTransitionStep: ValidateTransitionStep,
     private readonly updateStatusStep: UpdateStatusStep,
     private readonly createLicensesOnConfirmStep: CreateLicensesOnConfirmStep,
+    private readonly completeOrderAfterLicenseStep: CompleteOrderAfterLicenseStep,
   ) {
     super(twentyORMGlobalManager, eventEmitter);
     // Register steps immediately in constructor
@@ -80,6 +84,7 @@ export class ConfirmOrderSaga
       this.validateTransitionStep,
       this.updateStatusStep,
       this.createLicensesOnConfirmStep,
+      this.completeOrderAfterLicenseStep,
     ]);
   }
 

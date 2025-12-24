@@ -34,6 +34,8 @@ type MktOrderItemDataSeed = {
   externalMktLicenseId: string | null;
   externalMktLicenseKey: string | null;
   licenseSnapshot: MktLicenseSnapshot | null;
+  // License configuration
+  maxDevices: number;
 };
 
 // prettier-ignore
@@ -62,6 +64,7 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] = 
   'externalMktLicenseId',
   'externalMktLicenseKey',
   'licenseSnapshot',
+  'maxDevices',
 ];
 
 //prettier-ignore
@@ -105,6 +108,8 @@ const DEFAULT_EXTERNAL_FIELDS = {
   externalMktLicenseId: null,
   externalMktLicenseKey: null,
   licenseSnapshot: null,
+  // License configuration
+  maxDevices: 1,
 };
 
 // prettier-ignore

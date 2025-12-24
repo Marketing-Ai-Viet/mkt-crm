@@ -6,6 +6,19 @@ export type callFireBaseType = {
   QRCodeUrl: string | null;
 };
 
+export enum MKT_PAYMENT_METHOD_TYPE {
+  CREDIT_CARD = 'CREDIT_CARD',
+  DEBIT_CARD = 'DEBIT_CARD',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  PAYPAL = 'PAYPAL',
+  STRIPE = 'STRIPE',
+  CASH = 'CASH',
+  CHECK = 'CHECK',
+  CRYPTOCURRENCY = 'CRYPTOCURRENCY',
+  QR_CODE = 'QR_CODE',
+  OTHER = 'OTHER',
+}
+
 export type CALL_FIREBASE_DATA = {
   orderCode: string | null;
   QRCodeUrl: string | null;
