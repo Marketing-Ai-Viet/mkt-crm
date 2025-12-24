@@ -52,12 +52,10 @@ export type CreateOrderWithItemsInput = {
   // Customer
   customerId: string;
 
-  // Order metadata
-  name?: string;
+  // Order metadata (name is auto-generated)
   currency?: PaymentCurrency;
   note?: string;
   requireContract?: boolean;
-  discountPercent?: number;
 
   // Items - External MKT Server products (required)
   externalProducts: ExternalMktProductInput[];

@@ -129,11 +129,6 @@ export class CreateOrderWithItemsInputDto {
   @IsUUID()
   customerId: string;
 
-  @Field(() => String, { nullable: true, description: 'Order name' })
-  @IsOptional()
-  @IsString()
-  name?: string;
-
   @Field(() => String, { nullable: true, defaultValue: 'VND' })
   @IsOptional()
   @IsString()
@@ -148,11 +143,6 @@ export class CreateOrderWithItemsInputDto {
   @IsOptional()
   @IsBoolean()
   requireContract?: boolean;
-
-  @Field(() => Number, { nullable: true, defaultValue: 0 })
-  @IsOptional()
-  @IsNumber()
-  discountPercent?: number;
 
   @Field(() => [ExternalMktProductInputDto], {
     description: 'List of external MKT Server products (required)',

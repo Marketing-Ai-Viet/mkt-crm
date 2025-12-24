@@ -71,7 +71,7 @@ export class CreateOrderStep extends SagaStep<
       const savedOrder = await this.orderRepository.create(
         context.workspaceId,
         {
-          name: input.name ?? `Đơn hàng ${orderCode}`,
+          name: `Đơn hàng ${orderCode}`,
           orderCode,
           status: initialStatus,
           mktCustomerId: input.customerId,

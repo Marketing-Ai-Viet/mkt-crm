@@ -183,10 +183,9 @@ export class CreateOrderItemsStep extends SagaStep<
       totalAmountWithTax: item.totalAmountWithTax ?? 0,
     }));
 
-    const totals = this.calculationService.calculateOrderTotals(
-      calculatedItems,
-      input.discountPercent,
-    );
+    // discountPercent removed - discount is now handled by promotion system
+    const totals =
+      this.calculationService.calculateOrderTotals(calculatedItems);
 
     // Update order with totals
     await this.updateOrderTotals(context, totals);

@@ -41,11 +41,9 @@ export const OrderInputMapper = {
   ): CreateOrderWithItemsInput {
     return {
       customerId: dto.customerId,
-      name: dto.name,
       currency: dto.currency as PaymentCurrency | undefined,
       note: dto.note,
       requireContract: dto.requireContract,
-      discountPercent: dto.discountPercent,
       externalProducts: dto.externalProducts.map((p) => ({
         productId: p.productId,
         packageId: p.packageId,
