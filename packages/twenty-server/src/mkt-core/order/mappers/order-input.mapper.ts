@@ -13,7 +13,11 @@ import {
   UpdateOrderStatusInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants';
+import {
+  ORDER_STATUS,
+  CreateOrderAction,
+  ConfirmOrderAction,
+} from 'src/mkt-core/order/constants';
 import { PaymentCurrency } from 'src/mkt-core/payment/types';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 
@@ -55,7 +59,8 @@ export const OrderInputMapper = {
         duration: p.duration,
         amount: p.amount,
       })),
-      action: dto.action,
+      // DTO uses CREATE_ORDER_ACTION enum, cast to domain type CreateOrderAction
+      action: dto.action as unknown as CreateOrderAction,
       licenseId: dto.licenseId,
       trialOrderId: dto.trialOrderId,
       // Promotion fields
@@ -70,7 +75,8 @@ export const OrderInputMapper = {
   toConfirmOrderInput(dto: ConfirmOrderInputDto): ConfirmOrderInput {
     return {
       orderId: dto.orderId,
-      action: dto.action,
+      // DTO uses CONFIRM_ORDER_ACTION enum, cast to domain type ConfirmOrderAction
+      action: dto.action as unknown as ConfirmOrderAction,
       accountingConfirmed: dto.accountingConfirmed,
       note: dto.note,
     };

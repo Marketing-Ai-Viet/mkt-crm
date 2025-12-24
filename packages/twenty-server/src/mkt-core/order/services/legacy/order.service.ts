@@ -123,7 +123,7 @@ export class OrderService {
       discount: trialOrder.discount,
       totalAmount: trialOrder.totalAmount,
       name: trialOrder.name ?? '',
-      status: ORDER_STATUS.WAIT,
+      status: ORDER_STATUS.PENDING_PAYMENT,
       trialLicense: false,
       // Use note field to store the reference information
       note: `Converted from trial order: ${trialOrder.id}`,

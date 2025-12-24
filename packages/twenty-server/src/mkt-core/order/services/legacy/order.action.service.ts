@@ -51,7 +51,7 @@ export class OrderActionService {
       return orderAction;
     }
 
-    return ORDER_ACTION.WAIT;
+    return ORDER_ACTION.NEW_ORDER;
   }
 
   async getOrderAction(metadata: unknown): Promise<ORDER_ACTION | null> {
@@ -78,7 +78,7 @@ export class OrderActionService {
       return ORDER_STATUS.TRIAL;
     }
 
-    return ORDER_STATUS.WAIT;
+    return ORDER_STATUS.PENDING_PAYMENT;
   }
 
   async isTrialAction(action: ORDER_ACTION): Promise<boolean> {

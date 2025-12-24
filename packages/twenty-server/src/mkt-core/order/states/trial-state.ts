@@ -12,6 +12,14 @@ import {
   OrderStateInput,
 } from './order-state.interface';
 
+/**
+ * TrialState - State for trial orders
+ *
+ * Transitions:
+ * - TRIAL → PENDING_PAYMENT (chuyển sang trả phí)
+ * - TRIAL → TRIAL_EXPIRED (trial hết hạn)
+ * - TRIAL → CANCELED (hủy đơn trial)
+ */
 export class TrialState extends OrderState {
   constructor() {
     super(ORDER_STATUS.TRIAL);
@@ -23,9 +31,9 @@ export class TrialState extends OrderState {
     _input: OrderStateInput,
   ): boolean {
     return [
-      ORDER_STATUS.COMPLETED,
-      ORDER_STATUS.REFUSE,
-      ORDER_STATUS.OVERDUE,
+      ORDER_STATUS.PENDING_PAYMENT,
+      ORDER_STATUS.TRIAL_EXPIRED,
+      ORDER_STATUS.CANCELED,
     ].includes(newStatus);
   }
 
@@ -33,19 +41,19 @@ export class TrialState extends OrderState {
     _context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // Trial -> Completed
-    if (input.status === ORDER_STATUS.COMPLETED) {
-      return ORDER_ACTION.COMPLETED;
+    // TRIAL → PENDING_PAYMENT (chuyển sang trả phí)
+    if (input.status === ORDER_STATUS.PENDING_PAYMENT) {
+      return ORDER_ACTION.TRIAL_TO_PAID;
     }
 
-    // Trial -> REFUSE
-    if (input.status === ORDER_STATUS.REFUSE) {
-      return ORDER_ACTION.REFUSE;
+    // TRIAL → TRIAL_EXPIRED
+    if (input.status === ORDER_STATUS.TRIAL_EXPIRED) {
+      return ORDER_ACTION.TRIAL;
     }
 
-    // Trial -> OVERDUE
-    if (input.status === ORDER_STATUS.OVERDUE) {
-      return ORDER_ACTION.OVERDUE;
+    // TRIAL → CANCELED
+    if (input.status === ORDER_STATUS.CANCELED) {
+      return ORDER_ACTION.CANCEL;
     }
 
     return null;
@@ -56,28 +64,31 @@ export class TrialState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
-      case ORDER_ACTION.COMPLETED:
+      case ORDER_ACTION.TRIAL_TO_PAID:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.COMPLETED,
+            ...payload.data,
+            status: ORDER_STATUS.PENDING_PAYMENT,
             trialLicense: false,
           },
         };
 
-      case ORDER_ACTION.REFUSE:
+      case ORDER_ACTION.TRIAL:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.REFUSE,
+            ...payload.data,
+            status: ORDER_STATUS.TRIAL_EXPIRED,
           },
         };
 
-      case ORDER_ACTION.OVERDUE:
+      case ORDER_ACTION.CANCEL:
         return {
           ...payload,
           data: {
-            status: ORDER_STATUS.OVERDUE,
+            ...payload.data,
+            status: ORDER_STATUS.CANCELED,
           },
         };
 

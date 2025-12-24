@@ -12,6 +12,14 @@ import {
   OrderStateInput,
 } from './order-state.interface';
 
+/**
+ * DraftState - Initial state for new orders
+ *
+ * Transitions:
+ * - DRAFT → PENDING_PAYMENT (submit đơn hàng mới)
+ * - DRAFT → TRIAL (tạo đơn trial)
+ * - DRAFT → CANCELED (hủy đơn nháp)
+ */
 export class DraftState extends OrderState {
   constructor() {
     super(ORDER_STATUS.DRAFT);
@@ -22,35 +30,40 @@ export class DraftState extends OrderState {
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    // Draft can convert to Confirmed
-    if (newStatus === ORDER_STATUS.WAIT) {
-      return true;
-    }
-
-    // Draft can convert to Draft (keep the same)
-    if (newStatus === ORDER_STATUS.DRAFT) {
-      return true;
-    }
-
-    return false;
+    return [
+      ORDER_STATUS.PENDING_PAYMENT,
+      ORDER_STATUS.TRIAL,
+      ORDER_STATUS.CANCELED,
+      ORDER_STATUS.DRAFT, // Allow keeping same status
+    ].includes(newStatus);
   }
 
   getAction(
     _context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // FREE action when there is no change
+    // Keep draft status (no change)
     if (
       input.status === null ||
       input.status === ORDER_STATUS.DRAFT ||
       input.status === undefined
     ) {
-      return ORDER_ACTION.FREE;
+      return ORDER_ACTION.NEW_ORDER;
     }
 
-    // Wait action when converting from Draft to Wait
-    if (input.status === ORDER_STATUS.WAIT) {
-      return ORDER_ACTION.WAIT;
+    // DRAFT → PENDING_PAYMENT (submit đơn hàng)
+    if (input.status === ORDER_STATUS.PENDING_PAYMENT) {
+      return ORDER_ACTION.NEW_ORDER;
+    }
+
+    // DRAFT → TRIAL (tạo đơn trial)
+    if (input.status === ORDER_STATUS.TRIAL) {
+      return ORDER_ACTION.TRIAL;
+    }
+
+    // DRAFT → CANCELED
+    if (input.status === ORDER_STATUS.CANCELED) {
+      return ORDER_ACTION.CANCEL;
     }
 
     return null;
@@ -61,22 +74,32 @@ export class DraftState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
-      case ORDER_ACTION.FREE:
+      case ORDER_ACTION.NEW_ORDER:
         return {
           ...payload,
           data: {
             ...payload.data,
+            status: ORDER_STATUS.PENDING_PAYMENT,
             trialLicense: false,
           },
         };
 
-      case ORDER_ACTION.WAIT:
+      case ORDER_ACTION.TRIAL:
         return {
           ...payload,
           data: {
             ...payload.data,
-            status: ORDER_STATUS.WAIT,
-            trialLicense: false,
+            status: ORDER_STATUS.TRIAL,
+            trialLicense: true,
+          },
+        };
+
+      case ORDER_ACTION.CANCEL:
+        return {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: ORDER_STATUS.CANCELED,
           },
         };
 

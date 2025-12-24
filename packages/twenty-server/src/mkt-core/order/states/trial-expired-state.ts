@@ -13,16 +13,15 @@ import {
 } from './order-state.interface';
 
 /**
- * OverdueState - State for overdue orders (past payment deadline)
+ * TrialExpiredState - State for orders with expired trial
  *
  * Transitions:
- * - OVERDUE → PENDING_PAYMENT (gia hạn thời gian thanh toán)
- * - OVERDUE → CANCELED (hủy đơn)
- * - OVERDUE → BLOCKED (khóa đơn)
+ * - TRIAL_EXPIRED → PENDING_PAYMENT (chuyển sang trả phí)
+ * - TRIAL_EXPIRED → CANCELED (hủy đơn)
  */
-export class OverdueState extends OrderState {
+export class TrialExpiredState extends OrderState {
   constructor() {
-    super(ORDER_STATUS.OVERDUE);
+    super(ORDER_STATUS.TRIAL_EXPIRED);
   }
 
   canTransitionTo(
@@ -30,30 +29,23 @@ export class OverdueState extends OrderState {
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    return [
-      ORDER_STATUS.PENDING_PAYMENT,
-      ORDER_STATUS.CANCELED,
-      ORDER_STATUS.BLOCKED,
-    ].includes(newStatus);
+    return [ORDER_STATUS.PENDING_PAYMENT, ORDER_STATUS.CANCELED].includes(
+      newStatus,
+    );
   }
 
   getAction(
     _context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // OVERDUE → PENDING_PAYMENT (gia hạn)
+    // TRIAL_EXPIRED → PENDING_PAYMENT (chuyển sang trả phí)
     if (input.status === ORDER_STATUS.PENDING_PAYMENT) {
-      return ORDER_ACTION.NEW_ORDER;
+      return ORDER_ACTION.TRIAL_TO_PAID;
     }
 
-    // OVERDUE → CANCELED
+    // TRIAL_EXPIRED → CANCELED
     if (input.status === ORDER_STATUS.CANCELED) {
       return ORDER_ACTION.CANCEL;
-    }
-
-    // OVERDUE → BLOCKED
-    if (input.status === ORDER_STATUS.BLOCKED) {
-      return ORDER_ACTION.BLOCK;
     }
 
     return null;
@@ -64,12 +56,13 @@ export class OverdueState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
-      case ORDER_ACTION.NEW_ORDER:
+      case ORDER_ACTION.TRIAL_TO_PAID:
         return {
           ...payload,
           data: {
             ...payload.data,
             status: ORDER_STATUS.PENDING_PAYMENT,
+            trialLicense: false,
           },
         };
 
@@ -82,17 +75,8 @@ export class OverdueState extends OrderState {
           },
         };
 
-      case ORDER_ACTION.BLOCK:
-        return {
-          ...payload,
-          data: {
-            ...payload.data,
-            status: ORDER_STATUS.BLOCKED,
-          },
-        };
-
       default:
-        throw new Error(`Invalid action ${action} for OverdueState`);
+        throw new Error(`Invalid action ${action} for TrialExpiredState`);
     }
   }
 }

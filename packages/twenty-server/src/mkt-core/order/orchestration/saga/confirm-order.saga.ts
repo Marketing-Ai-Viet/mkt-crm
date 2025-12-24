@@ -11,6 +11,7 @@ import {
   ValidateOrderStep,
   ValidateTransitionStep,
   UpdateStatusStep,
+  CreateLicensesOnConfirmStep,
 } from 'src/mkt-core/order/orchestration/steps/confirm-order';
 import {
   ConfirmOrderInput,
@@ -31,17 +32,20 @@ import { BaseSaga } from './base/base-saga';
  * 1. ValidateOrderStep - Validate order exists and load state
  * 2. ValidateTransitionStep - Validate status transition is allowed
  * 3. UpdateStatusStep - Update order status in database
+ * 4. CreateLicensesOnConfirmStep - Create licenses when accounting confirms
  *
  * Handles order status transitions with validation:
  * - Validates order exists
  * - Validates status transition is allowed per state machine
  * - Updates order status
+ * - Creates licenses (when ACCOUNTING_CONFIRMED action)
  * - Emits appropriate events
  *
  * Supports actions:
- * - COMPLETED: Complete the order
- * - CONFIRMED: Confirm payment received
- * - SINVOICE: Sync S-Invoice
+ * - ACCOUNTING_CONFIRMED: Accounting confirms payment, create licenses
+ * - COMPLETE: Complete the order
+ * - CANCEL: Cancel the order
+ * - BLOCK: Block the order
  * - And other status transitions
  */
 @Injectable()
@@ -59,6 +63,7 @@ export class ConfirmOrderSaga
     private readonly validateOrderStep: ValidateOrderStep,
     private readonly validateTransitionStep: ValidateTransitionStep,
     private readonly updateStatusStep: UpdateStatusStep,
+    private readonly createLicensesOnConfirmStep: CreateLicensesOnConfirmStep,
   ) {
     super(twentyORMGlobalManager, eventEmitter);
     // Register steps immediately in constructor
@@ -74,6 +79,7 @@ export class ConfirmOrderSaga
       this.validateOrderStep,
       this.validateTransitionStep,
       this.updateStatusStep,
+      this.createLicensesOnConfirmStep,
     ]);
   }
 

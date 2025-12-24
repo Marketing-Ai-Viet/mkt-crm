@@ -208,16 +208,20 @@ export class CreateOrderStep extends SagaStep<
 
   /**
    * Get initial order status based on action
+   *
+   * Flow chính:
+   * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+   * - TRIAL: TRIAL → (TRIAL_EXPIRED | PENDING_PAYMENT)
    */
   private getInitialStatus(action: ORDER_ACTION): ORDER_STATUS {
     switch (action) {
       case ORDER_ACTION.TRIAL:
         return ORDER_STATUS.TRIAL;
-      case ORDER_ACTION.WAIT:
+      case ORDER_ACTION.NEW_ORDER:
       case ORDER_ACTION.LICENSE_RENEWING:
-        return ORDER_STATUS.WAIT;
       case ORDER_ACTION.TRIAL_TO_PAID:
-        return ORDER_STATUS.WAIT;
+      case ORDER_ACTION.CHANGE_VARIANT:
+        return ORDER_STATUS.PENDING_PAYMENT;
       default:
         return ORDER_STATUS.DRAFT;
     }

@@ -17,10 +17,45 @@ import { Type } from 'class-transformer';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MKT_SUPPORTED_LANGUAGES } from 'src/mkt-core/mkt-product-integration/constants';
 
-// Register enum for GraphQL
+// ============================================
+// GRAPHQL ENUMS - Restricted action sets
+// ============================================
+
+/**
+ * Actions cho phép khi TẠO đơn hàng
+ */
+export enum CREATE_ORDER_ACTION {
+  NEW_ORDER = 'NEW_ORDER',
+  TRIAL = 'TRIAL',
+  LICENSE_RENEWING = 'LICENSE_RENEWING',
+  TRIAL_TO_PAID = 'TRIAL_TO_PAID',
+  CHANGE_VARIANT = 'CHANGE_VARIANT',
+}
+
+/**
+ * Actions cho phép khi XÁC NHẬN đơn hàng
+ */
+export enum CONFIRM_ORDER_ACTION {
+  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
+  COMPLETE = 'COMPLETE',
+  CANCEL = 'CANCEL',
+  BLOCK = 'BLOCK',
+}
+
+// Register enums for GraphQL
 registerEnumType(ORDER_ACTION, {
   name: 'OrderAction',
-  description: 'Action to perform when creating/confirming order',
+  description: 'All order actions (for backward compatibility)',
+});
+
+registerEnumType(CREATE_ORDER_ACTION, {
+  name: 'CreateOrderAction',
+  description: 'Actions allowed when creating an order',
+});
+
+registerEnumType(CONFIRM_ORDER_ACTION, {
+  name: 'ConfirmOrderAction',
+  description: 'Actions allowed when confirming an order',
 });
 
 /**
@@ -147,9 +182,12 @@ export class CreateOrderWithItemsInputDto {
   @Type(() => OrderPaymentMethodInputDto)
   paymentMethods?: OrderPaymentMethodInputDto[];
 
-  @Field(() => ORDER_ACTION, { description: 'Action type' })
-  @IsEnum(ORDER_ACTION)
-  action: ORDER_ACTION;
+  @Field(() => CREATE_ORDER_ACTION, {
+    description:
+      'Action type (NEW_ORDER, TRIAL, LICENSE_RENEWING, TRIAL_TO_PAID, CHANGE_VARIANT)',
+  })
+  @IsEnum(CREATE_ORDER_ACTION)
+  action: CREATE_ORDER_ACTION;
 
   @Field(() => String, {
     nullable: true,
@@ -195,9 +233,11 @@ export class ConfirmOrderInputDto {
   @IsUUID()
   orderId: string;
 
-  @Field(() => ORDER_ACTION)
-  @IsEnum(ORDER_ACTION)
-  action: ORDER_ACTION;
+  @Field(() => CONFIRM_ORDER_ACTION, {
+    description: 'Action type (ACCOUNTING_CONFIRMED, COMPLETE, CANCEL, BLOCK)',
+  })
+  @IsEnum(CONFIRM_ORDER_ACTION)
+  action: CONFIRM_ORDER_ACTION;
 
   @Field(() => Boolean, { nullable: true })
   @IsOptional()

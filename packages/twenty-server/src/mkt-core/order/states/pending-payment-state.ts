@@ -13,16 +13,16 @@ import {
 } from './order-state.interface';
 
 /**
- * OverdueState - State for overdue orders (past payment deadline)
+ * PendingPaymentState - State for orders waiting for payment confirmation
  *
  * Transitions:
- * - OVERDUE → PENDING_PAYMENT (gia hạn thời gian thanh toán)
- * - OVERDUE → CANCELED (hủy đơn)
- * - OVERDUE → BLOCKED (khóa đơn)
+ * - PENDING_PAYMENT → CONFIRMED (kế toán xác nhận thanh toán)
+ * - PENDING_PAYMENT → CANCELED (hủy đơn)
+ * - PENDING_PAYMENT → OVERDUE (quá hạn thanh toán)
  */
-export class OverdueState extends OrderState {
+export class PendingPaymentState extends OrderState {
   constructor() {
-    super(ORDER_STATUS.OVERDUE);
+    super(ORDER_STATUS.PENDING_PAYMENT);
   }
 
   canTransitionTo(
@@ -31,29 +31,32 @@ export class OverdueState extends OrderState {
     _input: OrderStateInput,
   ): boolean {
     return [
-      ORDER_STATUS.PENDING_PAYMENT,
+      ORDER_STATUS.CONFIRMED,
       ORDER_STATUS.CANCELED,
-      ORDER_STATUS.BLOCKED,
+      ORDER_STATUS.OVERDUE,
     ].includes(newStatus);
   }
 
   getAction(
-    _context: OrderStateContext,
+    context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // OVERDUE → PENDING_PAYMENT (gia hạn)
-    if (input.status === ORDER_STATUS.PENDING_PAYMENT) {
-      return ORDER_ACTION.NEW_ORDER;
+    // PENDING_PAYMENT → CONFIRMED (kế toán xác nhận)
+    if (
+      input.status === ORDER_STATUS.CONFIRMED ||
+      input.accountingConfirmed === true
+    ) {
+      return ORDER_ACTION.ACCOUNTING_CONFIRMED;
     }
 
-    // OVERDUE → CANCELED
+    // PENDING_PAYMENT → CANCELED
     if (input.status === ORDER_STATUS.CANCELED) {
       return ORDER_ACTION.CANCEL;
     }
 
-    // OVERDUE → BLOCKED
-    if (input.status === ORDER_STATUS.BLOCKED) {
-      return ORDER_ACTION.BLOCK;
+    // PENDING_PAYMENT → OVERDUE
+    if (input.status === ORDER_STATUS.OVERDUE) {
+      return ORDER_ACTION.CANCEL;
     }
 
     return null;
@@ -64,12 +67,13 @@ export class OverdueState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
-      case ORDER_ACTION.NEW_ORDER:
+      case ORDER_ACTION.ACCOUNTING_CONFIRMED:
         return {
           ...payload,
           data: {
             ...payload.data,
-            status: ORDER_STATUS.PENDING_PAYMENT,
+            status: ORDER_STATUS.CONFIRMED,
+            accountingConfirmed: true,
           },
         };
 
@@ -82,17 +86,8 @@ export class OverdueState extends OrderState {
           },
         };
 
-      case ORDER_ACTION.BLOCK:
-        return {
-          ...payload,
-          data: {
-            ...payload.data,
-            status: ORDER_STATUS.BLOCKED,
-          },
-        };
-
       default:
-        throw new Error(`Invalid action ${action} for OverdueState`);
+        throw new Error(`Invalid action ${action} for PendingPaymentState`);
     }
   }
 }

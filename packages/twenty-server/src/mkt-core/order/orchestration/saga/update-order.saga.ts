@@ -121,12 +121,7 @@ export class UpdateOrderSaga {
 
       const { action, newStatus } = transitionResult;
 
-      // Step 3: Handle special actions
-      if (this.orderStatusService.requiresSInvoiceSync(action)) {
-        await this.handleSInvoiceSync(input.orderId);
-      }
-
-      // Step 4: Update order status
+      // Step 3: Update order status
       const updateResult = await this.updateOrderStatus(
         context,
         input,

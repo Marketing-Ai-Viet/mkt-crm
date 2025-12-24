@@ -1,6 +1,7 @@
 import {
-  ORDER_ACTION,
   ORDER_STATUS,
+  CreateOrderAction,
+  ConfirmOrderAction,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
 import { PaymentCurrency } from 'src/mkt-core/payment/types';
@@ -67,8 +68,8 @@ export type CreateOrderWithItemsInput = {
   // Payment
   paymentMethods?: OrderPaymentMethodInput[];
 
-  // Action
-  action: ORDER_ACTION;
+  // Action - chỉ cho phép các actions tạo đơn hàng
+  action: CreateOrderAction;
 
   // For license renewal
   licenseId?: string;
@@ -88,7 +89,7 @@ export type CreateOrderWithItemsInput = {
  */
 export type ConfirmOrderInput = {
   orderId: string;
-  action: ORDER_ACTION;
+  action: ConfirmOrderAction;
   accountingConfirmed?: boolean;
   note?: string;
 };

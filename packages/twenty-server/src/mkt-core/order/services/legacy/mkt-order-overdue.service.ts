@@ -31,7 +31,7 @@ export class MktOrderOverdueService {
 
       const waitOrders = await orderRepository.find({
         where: {
-          status: ORDER_STATUS.WAIT,
+          status: ORDER_STATUS.PENDING_PAYMENT,
           createdAt: LessThan(twentyFourHoursAgoISO),
         },
       });
@@ -87,17 +87,19 @@ export class MktOrderOverdueService {
     this.logger.log('Starting overdue orders processing for all workspaces');
 
     try {
-      // Lấy danh sách tất cả workspaces có orders với status WAIT
+      // Lấy danh sách tất cả workspaces có orders với status PENDING_PAYMENT
       const orderRepository = await this.mktRepo.getOrderRepository();
 
       const distinctWorkspaces = await orderRepository
         .createQueryBuilder('order')
         .select('DISTINCT order.workspaceId', 'workspaceId')
-        .where('order.status = :status', { status: ORDER_STATUS.WAIT })
+        .where('order.status = :status', {
+          status: ORDER_STATUS.PENDING_PAYMENT,
+        })
         .getRawMany();
 
       if (distinctWorkspaces.length === 0) {
-        this.logger.log('No workspaces found with WAIT orders');
+        this.logger.log('No workspaces found with PENDING_PAYMENT orders');
 
         return;
       }

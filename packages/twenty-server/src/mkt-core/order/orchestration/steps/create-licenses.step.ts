@@ -6,6 +6,7 @@ import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-cu
 import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
+import { IS_IMMEDIATE_LICENSE_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import {
   SagaContext,
@@ -89,16 +90,45 @@ export class CreateLicensesStep extends SagaStep<
   // ============================================
 
   /**
-   * Skip this step if no external packages in order items
+   * Skip license creation based on action type
+   *
+   * License creation rules:
+   * - TRIAL: License được tạo ngay khi tạo đơn
+   * - NEW_ORDER, LICENSE_RENEWING, TRIAL_TO_PAID, CHANGE_VARIANT:
+   *   License được tạo sau khi ACCOUNTING_CONFIRMED (trong ConfirmOrderSaga)
+   *
+   * Skip if:
+   * - No external products/packages
+   * - Action is NOT immediate license action (only TRIAL creates immediately)
    */
   shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
+    // Skip if no external products
     if (!input.externalProducts || input.externalProducts.length === 0) {
+      this.logger.debug('Skipping: No external products');
+
       return true;
     }
 
+    // Skip if no packages
     const hasPackages = input.externalProducts.some((p) => p.packageId);
 
-    return !hasPackages;
+    if (!hasPackages) {
+      this.logger.debug('Skipping: No packages in external products');
+
+      return true;
+    }
+
+    // Skip if action is NOT immediate (only TRIAL creates license immediately)
+    // Other actions wait for accounting confirmation
+    if (input.action && !IS_IMMEDIATE_LICENSE_ACTION(input.action)) {
+      this.logger.debug(
+        `Skipping: Action "${input.action}" requires accounting confirmation before license creation`,
+      );
+
+      return true;
+    }
+
+    return false;
   }
 
   async execute(

@@ -41,7 +41,7 @@ export class MktEmailService {
     try {
       let templateKey = null;
 
-      if (fullOrder?.status === ORDER_STATUS.WAIT) {
+      if (fullOrder?.status === ORDER_STATUS.PENDING_PAYMENT) {
         templateKey = 'new_order_notification';
       }
 
