@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MKT_CONTRACT_STATUS } from 'src/mkt-core/order/constants/mkt-contract.constant';
-import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 
 export type CreateContractData = {
@@ -178,7 +178,7 @@ export class MktContractService {
    * Generate contract name based on order
    */
   private async generateContractName(
-    order: MktOrderWorkspaceEntity,
+    _order: MktOrderWorkspaceEntity,
     mktCustomerId: string | null,
     orderCode: string | null,
   ): Promise<string> {
