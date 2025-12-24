@@ -31,6 +31,7 @@ import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-paym
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
+import { PAYMENT_STATUS_OPTIONS } from 'src/mkt-core/order/constants/payment-status.constants';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -215,6 +216,44 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   accountingConfirmed?: boolean;
+
+  // ============================================
+  // MULTI-PAYMENT FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.paidAmount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Paid Amount`,
+    description: msg`Total confirmed payment amount`,
+    icon: 'IconCash',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  paidAmount?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.remainingAmount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Remaining Amount`,
+    description: msg`Remaining amount to be paid (totalAmount - paidAmount)`,
+    icon: 'IconCashBanknote',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  remainingAmount?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.paymentStatus,
+    type: FieldMetadataType.SELECT,
+    label: msg`Payment Status`,
+    description: msg`Payment status of the order`,
+    icon: 'IconCreditCard',
+    options: PAYMENT_STATUS_OPTIONS.options,
+    defaultValue: "'PENDING'",
+  })
+  @WorkspaceIsNullable()
+  paymentStatus?: string;
 
   // ============================================
   // PROMOTION FIELDS

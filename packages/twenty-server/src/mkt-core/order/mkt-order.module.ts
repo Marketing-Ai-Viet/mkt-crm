@@ -25,6 +25,7 @@ import {
   OrderValidationService,
   OrderStatusService,
   OrderEventService,
+  OrderPaymentCalculationService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -40,7 +41,11 @@ import {
   MktOrderOverdueService,
   MktOrderOverdueRegistrationService,
 } from './services';
-import { OrderMutationResolver, OrderItemMutationResolver } from './resolvers';
+import {
+  OrderMutationResolver,
+  OrderQueryResolver,
+  OrderItemMutationResolver,
+} from './resolvers';
 import {
   MktOrderCustomEventListener,
   LicenseLifecycleListener,
@@ -106,6 +111,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     OrderCalculationService,
     OrderValidationService,
     OrderEventService,
+    OrderPaymentCalculationService,
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -156,6 +162,7 @@ import { IdempotencyService } from './orchestration/idempotency';
 
     // GraphQL Resolvers
     OrderMutationResolver,
+    OrderQueryResolver,
     OrderItemMutationResolver,
   ],
   exports: [
@@ -169,6 +176,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     OrderCrudService,
     OrderLicenseQueryService,
     OrderOrchestrationService,
+    OrderPaymentCalculationService,
     // Integration Services
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,

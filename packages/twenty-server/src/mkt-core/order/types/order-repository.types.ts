@@ -18,6 +18,15 @@ export type CreateOrderData = Partial<MktOrderWorkspaceEntity>;
 export type UpdateOrderData = Partial<MktOrderWorkspaceEntity>;
 
 /**
+ * Data for updating payment amounts on order
+ */
+export type UpdatePaymentAmountsData = {
+  paidAmount: number;
+  remainingAmount: number;
+  paymentStatus: string;
+};
+
+/**
  * Options for order find operations
  */
 export type FindOrderOptions = {
@@ -34,6 +43,14 @@ export const DEFAULT_ORDER_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEnti
     mktCustomer: true,
     mktPayments: true,
     mktContract: true,
+  };
+
+/**
+ * Relations for payment summary queries
+ */
+export const PAYMENT_SUMMARY_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEntity> =
+  {
+    mktPayments: true,
   };
 
 // ============================================

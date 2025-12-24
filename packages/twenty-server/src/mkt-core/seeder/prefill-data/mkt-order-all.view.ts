@@ -66,7 +66,7 @@ export const mktOrdersAllView = (
       {
         fieldMetadataId:
           orderObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_ORDER_FIELD_IDS.currency,
+            (field) => field.standardId === MKT_ORDER_FIELD_IDS.paymentStatus,
           )?.id ?? '',
         position: 4,
         isVisible: true,
@@ -75,7 +75,7 @@ export const mktOrdersAllView = (
       {
         fieldMetadataId:
           orderObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_ORDER_FIELD_IDS.note,
+            (field) => field.standardId === MKT_ORDER_FIELD_IDS.currency,
           )?.id ?? '',
         position: 5,
         isVisible: true,
@@ -84,9 +84,18 @@ export const mktOrdersAllView = (
       {
         fieldMetadataId:
           orderObjectMetadata.fields.find(
-            (field) => field.standardId === MKT_ORDER_FIELD_IDS.requireContract,
+            (field) => field.standardId === MKT_ORDER_FIELD_IDS.note,
           )?.id ?? '',
         position: 6,
+        isVisible: true,
+        size: 120,
+      },
+      {
+        fieldMetadataId:
+          orderObjectMetadata.fields.find(
+            (field) => field.standardId === MKT_ORDER_FIELD_IDS.requireContract,
+          )?.id ?? '',
+        position: 7,
         isVisible: true,
         size: 150,
       },

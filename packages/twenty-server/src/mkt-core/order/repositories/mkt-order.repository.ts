@@ -14,8 +14,11 @@ import {
   CreateOrderData,
   DEFAULT_ORDER_RELATIONS,
   FindOrderOptions,
+  PAYMENT_SUMMARY_RELATIONS,
   UpdateOrderData,
+  UpdatePaymentAmountsData,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktOrderRepository - Data access layer for Order entity
@@ -78,6 +81,23 @@ export class MktOrderRepository {
   ): Promise<MktOrderWorkspaceEntity | null> {
     return this.findById(workspaceId, orderId, {
       relations: DEFAULT_ORDER_RELATIONS,
+    });
+  }
+
+  /**
+   * Find order by ID with payment relations
+   * Used for payment summary calculations
+   */
+  async findByIdWithPaymentSummary(
+    workspaceId: string,
+    orderId: string,
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    this.logger.debug(
+      `Finding order ${orderId} with payment summary relations`,
+    );
+
+    return this.findById(workspaceId, orderId, {
+      relations: PAYMENT_SUMMARY_RELATIONS,
     });
   }
 
@@ -282,6 +302,36 @@ export class MktOrderRepository {
     await this.update(workspaceId, orderId, data, queryRunner);
 
     return this.findById(workspaceId, orderId);
+  }
+
+  /**
+   * Update payment amounts for an order
+   * Used when payment status changes (new payment, refund, etc.)
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderId - Order ID
+   * @param data - Payment amounts data (paidAmount, remainingAmount, paymentStatus)
+   */
+  async updatePaymentAmounts(
+    workspaceId: string,
+    orderId: string,
+    data: UpdatePaymentAmountsData,
+  ): Promise<void> {
+    this.logger.debug(
+      `Updating payment amounts for order ${orderId}: ` +
+        `paid=${data.paidAmount}, remaining=${data.remainingAmount}, status=${data.paymentStatus}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(orderId, {
+      paidAmount: data.paidAmount,
+      remainingAmount: data.remainingAmount,
+      paymentStatus: data.paymentStatus,
+      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
+
+    this.logger.debug(`Payment amounts updated for order ${orderId}`);
   }
 
   // ============================================

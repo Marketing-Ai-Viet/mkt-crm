@@ -6,6 +6,7 @@ import {
   ORDER_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
+import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 import {
   SagaContext,
   SagaStep,
@@ -84,6 +85,10 @@ export class CreateOrderStep extends SagaStep<
           tax: 0,
           discount: 0,
           totalAmount: 0,
+          // Initialize payment fields (remainingAmount will be set = totalAmount in CreateOrderItemsStep)
+          paidAmount: 0,
+          remainingAmount: 0,
+          paymentStatus: PAYMENT_STATUS.PENDING,
         },
       );
 

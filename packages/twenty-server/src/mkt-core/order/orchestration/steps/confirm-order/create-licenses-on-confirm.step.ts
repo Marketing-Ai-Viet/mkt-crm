@@ -10,6 +10,10 @@ import {
   ORDER_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  IS_PAYMENT_COMPLETE,
+  PAYMENT_STATUS,
+} from 'src/mkt-core/order/constants/payment-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
@@ -79,9 +83,11 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
    * Skip this step if:
    * - Action is NOT ACCOUNTING_CONFIRMED
    * - Order is TRIAL (trial creates license immediately in CreateOrderSaga)
+   * - Payment is not complete (PAID or OVERPAID)
    */
   shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
     const typedContext = context as ConfirmOrderSagaContext;
+    const order = typedContext.currentOrder;
 
     // Only create licenses when accounting confirms
     if (input.action !== ORDER_ACTION.ACCOUNTING_CONFIRMED) {
@@ -95,6 +101,19 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
     // Skip for TRIAL orders (license already created)
     if (typedContext.previousStatus === ORDER_STATUS.TRIAL) {
       this.logger.debug('Skipping: Trial orders already have licenses');
+
+      return true;
+    }
+
+    // Check payment status - only create licenses when payment is complete
+    const paymentStatus =
+      (order?.paymentStatus as PAYMENT_STATUS) ?? PAYMENT_STATUS.PENDING;
+
+    if (!IS_PAYMENT_COMPLETE(paymentStatus)) {
+      this.logger.debug(
+        `Skipping: Payment status "${paymentStatus}" is not eligible for license creation. ` +
+          `Require PAID or OVERPAID status.`,
+      );
 
       return true;
     }

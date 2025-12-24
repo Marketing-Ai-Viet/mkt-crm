@@ -1,11 +1,17 @@
 import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 
-// Register enum for GraphQL
+// Register enums for GraphQL
 registerEnumType(ORDER_STATUS, {
   name: 'OrderStatus',
   description: 'Order status values',
+});
+
+registerEnumType(PAYMENT_STATUS, {
+  name: 'PaymentStatus',
+  description: 'Payment status values for multi-payment orders',
 });
 
 @ObjectType()
@@ -111,4 +117,30 @@ export class UpdateOrderItemResponseDto {
 
   @Field(() => String, { nullable: true })
   error?: string;
+}
+
+/**
+ * Payment summary for an order
+ * Calculated from confirmed payments
+ */
+@ObjectType()
+export class OrderPaymentSummaryOutput {
+  @Field(() => Number, { description: 'Total order amount' })
+  totalAmount: number;
+
+  @Field(() => Number, {
+    description: 'Total paid amount (confirmed payments only)',
+  })
+  paidAmount: number;
+
+  @Field(() => Number, { description: 'Remaining amount to be paid' })
+  remainingAmount: number;
+
+  @Field(() => PAYMENT_STATUS, { description: 'Payment status' })
+  paymentStatus: PAYMENT_STATUS;
+
+  @Field(() => Number, {
+    description: 'Percentage of total amount paid (0-100)',
+  })
+  paidPercent: number;
 }

@@ -455,6 +455,8 @@ export class CreateOrderItemsStep extends SagaStep<
       tax: totals.tax,
       discount: totals.discount,
       totalAmount: totals.totalAmount,
+      // Set remainingAmount = totalAmount (no payment yet)
+      remainingAmount: totals.totalAmount,
     });
 
     // Store in context for subsequent steps

@@ -332,6 +332,10 @@ export const MKT_ORDER_FIELD_IDS = {
   trialLicense: '3449bef1-e719-42d9-8cf6-df3f5d47983c',
   metadata: '82d2986b-ab3c-4563-9d24-e04d42caea0b',
   accountingConfirmed: '7fdf7924-7a90-4ee6-ac9e-523b7dccb920',
+  // Multi-payment fields
+  paidAmount: 'a6943c80-069a-438b-b505-e8446cd332fc',
+  remainingAmount: 'a66a7b25-1ebf-4441-aa7a-8e9d43e38334',
+  paymentStatus: 'b218125d-23a4-4627-853d-c9f836646895',
   // relations
   mktContracts: '66277a67-41c6-4709-820f-dda8df091ae9', // ONE_TO_MANY relation with contracts
   mktLicense: '837f7353-df5d-449a-961c-fef566d663b9',
