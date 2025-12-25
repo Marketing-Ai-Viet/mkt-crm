@@ -12,8 +12,8 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { mktEmailAllView as mktAllView } from 'src/mkt-core/email/seeder/mkt-email-all.view';
-import { prefillMktEmails as prefillMktData } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
+import { mktEmailAllView as mktAllView } from 'src/mkt-core/seeder/email-seeder/mkt-email-all.view';
+import { prefillMktEmails as prefillMktData } from 'src/mkt-core/seeder/email-seeder/prefill-mkt-emails';
 
 interface SeedModuleOptions {
   workspaceId?: string;

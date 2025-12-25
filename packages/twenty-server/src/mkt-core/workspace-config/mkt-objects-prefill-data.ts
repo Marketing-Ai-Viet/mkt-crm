@@ -28,7 +28,7 @@ import { prefillMktStaffStatusHistories } from 'src/mkt-core/seeder/prefill-data
 import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-templates';
 import { prefillMktTemporaryPermissions } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-temporary-permissions';
-import { prefillMktEmails } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
+import { prefillMktEmails } from 'src/mkt-core/seeder/email-seeder/prefill-mkt-emails';
 import { prefillMktReports } from 'src/mkt-core/seeder/mkt-report-seeder/prefill-mkt-reports';
 import { prefillMktCoupons } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-coupons';
 import { prefillMktPromotionAudits } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-audits';
