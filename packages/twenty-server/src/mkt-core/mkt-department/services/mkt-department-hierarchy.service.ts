@@ -1,20 +1,40 @@
 import { Injectable } from '@nestjs/common';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 
 @Injectable()
 export class MktDepartmentHierarchyService {
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+  constructor(
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {}
+
+  private getWorkspaceId(): string {
+    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!workspaceId) {
+      throw new Error('Workspace ID not found in context');
+    }
+
+    return workspaceId;
+  }
+
+  private async getHierarchyRepository() {
+    const workspaceId = this.getWorkspaceId();
+
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      workspaceId,
+      MktDepartmentHierarchyWorkspaceEntity,
+      { shouldBypassPermissionChecks: true },
+    );
+  }
 
   async createTeamDepartmentHierarchy(
     hierarchyData: MktDepartmentHierarchyWorkspaceEntity,
   ): Promise<void> {
-    // Implementation for creating team department hierarchy
-
-    const hierarchyRepo = await this.mktRepo.getRepository(
-      MktDepartmentHierarchyWorkspaceEntity,
-    );
+    const hierarchyRepo = await this.getHierarchyRepository();
     const hierarchy = hierarchyRepo.create(hierarchyData);
 
     await hierarchyRepo.save(hierarchy);
@@ -23,15 +43,13 @@ export class MktDepartmentHierarchyService {
   async updateTeamDepartmentHierarchy(
     hierarchyData: MktDepartmentHierarchyWorkspaceEntity,
   ): Promise<void> {
-    const hierarchyRepo = await this.mktRepo.getRepository(
-      MktDepartmentHierarchyWorkspaceEntity,
-    );
+    const hierarchyRepo = await this.getHierarchyRepository();
     const hierarchy = await hierarchyRepo.findOneBy({
       childDepartmentId: hierarchyData.childDepartmentId,
     });
 
     if (hierarchy) {
-      hierarchyRepo.update(hierarchy.id, hierarchyData);
+      await hierarchyRepo.update(hierarchy.id, hierarchyData);
     }
   }
 }

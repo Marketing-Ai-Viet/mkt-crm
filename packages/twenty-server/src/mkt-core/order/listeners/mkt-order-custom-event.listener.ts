@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
   MktCustomEventName,
 } from 'src/mkt-core/common/common.type';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
 import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
 import {
@@ -15,18 +15,20 @@ import {
 } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { safeJsonStringify } from 'src/mkt-core/utils';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import {
   MktOrderCustomEventData,
   MktOrderCustomEventPayload,
 } from 'src/mkt-core/order/types';
+import { safeJsonStringify } from 'src/mkt-core/utils';
 
 @Injectable()
 export class MktOrderCustomEventListener {
   private readonly logger = new Logger(MktOrderCustomEventListener.name);
   constructor(
-    private mktRepo: MktRepositoryService,
-    private customerQueueService: MktCustomerQueueService,
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly customerQueueService: MktCustomerQueueService,
     private readonly mktEmailService: MktEmailService,
   ) {}
 
@@ -89,17 +91,33 @@ export class MktOrderCustomEventListener {
   private async processOrderCustomEvent(
     event: MktOrderCustomEventData,
   ): Promise<MktOrderWorkspaceEntity | void> {
-    this.mktRepo.workspaceId = event.workspaceId;
-    const orderHistoryRepo = await this.mktRepo.getRepository(
-      MktOrderHistoryWorkspaceEntity,
+    if (!event.orderId) {
+      this.logger.warn(
+        'Event missing orderId, skipping order event processing',
+      );
+
+      return;
+    }
+
+    const orderHistoryRepo =
+      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+        event.workspaceId,
+        MktOrderHistoryWorkspaceEntity,
+        { shouldBypassPermissionChecks: true },
+      );
+
+    const updatedOrder = await this.orderRepository.findById(
+      event.workspaceId,
+      event.orderId,
+      {
+        relations: {
+          mktPayments: true,
+          mktCustomer: true,
+          orderItems: true,
+          accountOwner: true,
+        },
+      },
     );
-
-    const orderRepo = await this.mktRepo.getRepository(MktOrderWorkspaceEntity);
-
-    const updatedOrder = await orderRepo.findOne({
-      where: { id: event.orderId },
-      relations: ['mktPayments', 'mktCustomer', 'orderItems', 'accountOwner'],
-    });
 
     if (!updatedOrder) {
       this.logger.warn(`Order not found: ${event.orderId}`);

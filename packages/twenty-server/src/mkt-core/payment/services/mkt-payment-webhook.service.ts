@@ -7,9 +7,9 @@ import {
   FieldActorSource,
 } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
 import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import { WebhookLogStatus } from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
@@ -25,7 +25,7 @@ import {
 import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
 /**
  * MktPaymentWebhookService - Handles webhook payment processing
@@ -43,7 +43,8 @@ export class MktPaymentWebhookService {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktWebhookLogRepository: MktWebhookLogRepository,
-    private readonly mktRepo: MktRepositoryService,
+    private readonly mktOrderRepository: MktOrderRepository,
+    private readonly mktWorkspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
   /**
@@ -364,12 +365,7 @@ export class MktPaymentWebhookService {
     workspaceId: string,
     orderCode: string,
   ): Promise<{ id: string; orderCode: string; totalAmount?: number } | null> {
-    const orderRepo =
-      await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
-
-    return orderRepo.findOne({
-      where: { orderCode },
-    });
+    return this.mktOrderRepository.findByOrderCode(workspaceId, orderCode);
   }
 
   /**
@@ -396,18 +392,13 @@ export class MktPaymentWebhookService {
     updateData: Partial<MktPaymentWorkspaceEntity>,
     authContext: RequestSepayJWT,
   ): Promise<void> {
-    const workspaceMemberRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
-        workspaceId,
-        'workspaceMember',
-      );
-
     let createdByName = 'system';
 
     if (authContext.workspaceMemberId) {
-      const workspaceMember = await workspaceMemberRepository.findOne({
-        where: { id: authContext.workspaceMemberId },
-      });
+      const workspaceMember = await this.mktWorkspaceMemberRepository.findById(
+        workspaceId,
+        authContext.workspaceMemberId,
+      );
 
       if (workspaceMember) {
         createdByName = `${workspaceMember.name.firstName} ${workspaceMember.name.lastName}`;

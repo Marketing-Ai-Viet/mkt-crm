@@ -2,32 +2,49 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_EMAIL_STATUS } from 'src/mkt-core/email/constants/mkt-email.constant';
 import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 import {
   ORDER_STATUS,
   ORDER_STATUS_OPTIONS,
 } from 'src/mkt-core/order/constants';
 import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 
 @Injectable()
 export class MktEmailService {
   private readonly logger = new Logger(MktEmailService.name);
 
   constructor(
-    private readonly mktRepo: MktRepositoryService,
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly emailService: EmailService,
   ) {}
 
+  private getWorkspaceId(): string {
+    const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!workspaceId) {
+      throw new Error('Workspace ID not found in context');
+    }
+
+    return workspaceId;
+  }
+
   async save(emailData: Partial<MktEmailWorkspaceEntity>) {
     try {
-      const emailRepo = await this.mktRepo.getRepository(
-        MktEmailWorkspaceEntity,
-      );
+      const workspaceId = this.getWorkspaceId();
+      const emailRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+          workspaceId,
+          MktEmailWorkspaceEntity,
+          { shouldBypassPermissionChecks: true },
+        );
 
       const email = emailRepo.create(emailData);
 
@@ -58,9 +75,13 @@ export class MktEmailService {
 
       if (!templateKey) return;
 
-      const templateRepo = await this.mktRepo.getRepository(
-        MktTemplateWorkspaceEntity,
-      );
+      const workspaceId = this.getWorkspaceId();
+      const templateRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+          workspaceId,
+          MktTemplateWorkspaceEntity,
+          { shouldBypassPermissionChecks: true },
+        );
 
       if (!fullOrder) {
         this.logger.warn(`Order not found, skipping email`);
@@ -100,7 +121,12 @@ export class MktEmailService {
           fullOrder?.status as ORDER_STATUS
         ] || 'Đang chờ xử lý';
 
-      const mktOptionRepo = await this.mktRepo.getOptionRepository();
+      const mktOptionRepo =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+          workspaceId,
+          MktOptionWorkspaceEntity,
+          { shouldBypassPermissionChecks: true },
+        );
       const option = await mktOptionRepo.findOne({
         where: { key: 'default_trial_period_days' },
       });

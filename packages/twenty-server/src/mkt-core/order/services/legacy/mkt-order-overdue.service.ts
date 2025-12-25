@@ -2,9 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { In, LessThan } from 'typeorm';
 
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 @Injectable()
@@ -12,8 +14,9 @@ export class MktOrderOverdueService {
   private readonly logger = new Logger(MktOrderOverdueService.name);
 
   constructor(
-    private readonly mktRepo: MktRepositoryService,
+    private readonly mktOrderRepository: MktOrderRepository,
     private readonly mktCommonOrderService: MktCommonOrderService,
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
   async updateOverdueOrders(workspaceId: string): Promise<void> {
@@ -21,7 +24,7 @@ export class MktOrderOverdueService {
 
     try {
       const orderRepository =
-        await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
+        await this.mktOrderRepository.getRepository(workspaceId);
 
       // Tìm tất cả orders có status WAIT và được tạo từ 24h trước
       const twentyFourHoursAgo = DateTimeUtils.subtract(DateTimeUtils.now(), {
@@ -88,7 +91,13 @@ export class MktOrderOverdueService {
 
     try {
       // Lấy danh sách tất cả workspaces có orders với status PENDING_PAYMENT
-      const orderRepository = await this.mktRepo.getOrderRepository();
+      // Using TwentyORMGlobalManager for cross-workspace queries
+      const orderRepository =
+        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+          'system',
+          MktOrderWorkspaceEntity,
+          { shouldBypassPermissionChecks: true },
+        );
 
       const distinctWorkspaces = await orderRepository
         .createQueryBuilder('order')

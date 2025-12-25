@@ -6,4 +6,5 @@
  */
 
 export * from './mkt-payment.repository';
+export * from './mkt-payment-history.repository';
 export * from './mkt-webhook-log.repository';

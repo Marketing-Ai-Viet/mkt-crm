@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import {
@@ -8,6 +7,7 @@ import {
   ORDER_METADATA,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import {
   DATE_TIME_FORMATS,
@@ -29,9 +29,9 @@ export class OrderConfirmService {
   private readonly logger = new Logger(OrderConfirmService.name);
 
   constructor(
-    private mktPaymentService: MktPaymentService,
+    private readonly mktPaymentService: MktPaymentService,
     private readonly orderService: OrderService,
-    private mktRepo: MktRepositoryService,
+    private readonly mktOrderRepository: MktOrderRepository,
     private readonly mktContractService: MktContractService,
   ) {}
 
@@ -128,7 +128,8 @@ export class OrderConfirmService {
    */
   async generateOrderCode(workspaceId: string): Promise<string | null> {
     try {
-      const orderRepository = await this.getOrderRepo(workspaceId);
+      const orderRepository =
+        await this.mktOrderRepository.getRepository(workspaceId);
 
       const now = DateTimeUtils.now();
       const year = now.year;
@@ -163,9 +164,10 @@ export class OrderConfirmService {
       const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(3, '0')}`;
 
       // Double-check uniqueness
-      const existingOrder = await orderRepository.findOne({
-        where: { orderCode },
-      });
+      const existingOrder = await this.mktOrderRepository.findByOrderCode(
+        workspaceId,
+        orderCode,
+      );
 
       if (existingOrder) {
         // If somehow duplicate, try with timestamp
@@ -257,33 +259,26 @@ export class OrderConfirmService {
     trialOrderId: string | null,
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
   ): Promise<void> {
-    if (action !== ORDER_ACTION.TRIAL_TO_PAID)
+    if (action !== ORDER_ACTION.TRIAL_TO_PAID) {
       throw new Error(
         'Action must be TRIAL_TO_PAID to convert trial to paid order',
       );
+    }
 
-    if (!trialOrderId)
+    if (!trialOrderId) {
       throw new Error('Trial order ID is required to convert to paid order');
+    }
 
     this.logger.log(
       `Processing TRIAL_TO_PAID order conversion for order ID: ${createdOrder.id}`,
     );
 
-    // Get the trial order ID from metadata (should be passed in from frontend)
-
-    if (!trialOrderId) {
-      throw new Error(
-        'Trial order ID is required for TRIAL_TO_PAID conversion',
-      );
-    }
-
-    const orderRepository = await this.mktRepo.getOrderRepository();
-
     // 1. Find the trial order and its items
-    const trialOrder = await orderRepository.findOne({
-      where: { id: trialOrderId },
-      relations: ['orderItems'],
-    });
+    const trialOrder = await this.mktOrderRepository.findById(
+      workspaceId,
+      trialOrderId,
+      { relations: { orderItems: true } },
+    );
 
     if (!trialOrder) {
       throw new Error(`Trial order with ID ${trialOrderId} not found`);
@@ -334,16 +329,11 @@ export class OrderConfirmService {
 
     // 4. Update the new order with customer and calculated values from trial order
     await this.orderService.cloneOrder(
+      workspaceId,
       createdOrder.id,
       generatedOrderCode,
       trialOrder,
     );
-  }
-
-  private async getOrderRepo(workspaceId: string) {
-    if (!workspaceId) return this.mktRepo.getOrderRepository();
-
-    return this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
   }
 
   private async createContractIfRequired(

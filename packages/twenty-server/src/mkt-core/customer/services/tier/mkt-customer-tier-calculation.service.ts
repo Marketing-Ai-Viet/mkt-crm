@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import chunk from 'lodash.chunk';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import {
   MKT_CUSTOMER_TIER,
   MKT_CUSTOMER_TIER_THRESHOLDS,
@@ -13,19 +12,24 @@ import {
 } from 'src/mkt-core/customer/constants/mkt-customer-tier.constants';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import {
   BulkCustomerTierResult,
   CustomerOrderAggregation,
   CustomerTierResult,
 } from 'src/mkt-core/customer/types';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 @Injectable()
 export class MktCustomerTierCalculationService {
   private readonly logger = new Logger(MktCustomerTierCalculationService.name);
 
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+  constructor(
+    private readonly customerRepository: MktCustomerRepository,
+    private readonly orderRepository: MktOrderRepository,
+  ) {}
 
   async calculateCustomerTier(
     customerId: string,
@@ -34,10 +38,8 @@ export class MktCustomerTierCalculationService {
       completedStatuses?: string[] | null;
     } = {},
   ): Promise<CustomerTierResult> {
-    const cusRepo = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
-    );
-    const orderRepo = await this.mktRepo.getRepository(MktOrderWorkspaceEntity);
+    const cusRepo = await this.customerRepository.getRepository();
+    const orderRepo = await this.orderRepository.getRepository('system');
 
     const customer = await cusRepo.findOne({
       where: { id: customerId },
@@ -119,10 +121,8 @@ export class MktCustomerTierCalculationService {
       return new Map();
     }
 
-    const cusRepo = await this.mktRepo.getRepository(
-      MktCustomerWorkspaceEntity,
-    );
-    const orderRepo = await this.mktRepo.getRepository(MktOrderWorkspaceEntity);
+    const cusRepo = await this.customerRepository.getRepository();
+    const orderRepo = await this.orderRepository.getRepository('system');
 
     const results: BulkCustomerTierResult = new Map();
     const batches = chunk(customerIds, TIER_BULK_PROCESSING_CONFIG.BATCH_SIZE);

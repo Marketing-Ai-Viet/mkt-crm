@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MKT_CONTRACT_STATUS } from 'src/mkt-core/order/constants/mkt-contract.constant';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
+import { MKT_CONTRACT_STATUS } from 'src/mkt-core/order/constants/mkt-contract.constant';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 
 export type CreateContractData = {
   name: string;
@@ -20,7 +21,11 @@ export type CreateContractData = {
 export class MktContractService {
   private readonly logger = new Logger(MktContractService.name);
 
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+  constructor(
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly customerRepository: MktCustomerRepository,
+  ) {}
 
   /**
    * Generate unique contract number
@@ -99,6 +104,7 @@ export class MktContractService {
       const contractNumber = await this.generateContractNumber(workspaceId);
 
       const contractName = await this.generateContractName(
+        workspaceId,
         order,
         mktCustomerId,
         generatedOrderCode,
@@ -154,10 +160,7 @@ export class MktContractService {
     try {
       this.logger.log(`Linking contract ${contractId} to order ${orderId}`);
 
-      const orderRepository =
-        await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
-
-      await orderRepository.update(orderId, {
+      await this.orderRepository.update(workspaceId, orderId, {
         mktContractId: contractId,
       });
 
@@ -178,20 +181,19 @@ export class MktContractService {
    * Generate contract name based on order
    */
   private async generateContractName(
+    workspaceId: string,
     _order: MktOrderWorkspaceEntity,
     mktCustomerId: string | null,
     orderCode: string | null,
   ): Promise<string> {
     try {
-      const mktCustomerRepo = await this.mktRepo.getRepository(
-        MktCustomerWorkspaceEntity,
-      );
       let customerName = 'Unknown Customer';
 
       if (mktCustomerId) {
-        const customer = await mktCustomerRepo.findOne({
-          where: { id: mktCustomerId },
-        });
+        const customer = await this.customerRepository.findByIdOrNull(
+          mktCustomerId,
+          workspaceId,
+        );
 
         if (customer?.name) customerName = customer.name;
       }
@@ -252,8 +254,10 @@ export class MktContractService {
    * Get contract repository with workspace context
    */
   private async getContractRepo(workspaceId: string) {
-    if (!workspaceId) return this.mktRepo.getContractRepository();
-
-    return this.mktRepo.getContractRepositoryByWorkspaceId(workspaceId);
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      workspaceId,
+      MktContractWorkspaceEntity,
+      { shouldBypassPermissionChecks: true },
+    );
   }
 }

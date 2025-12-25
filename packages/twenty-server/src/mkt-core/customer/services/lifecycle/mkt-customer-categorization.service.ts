@@ -1,14 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import {
   MKT_CUSTOMER_CATEGORIZATION_THRESHOLDS,
   MKT_CUSTOMER_LIFECYCLE_STAGE,
 } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
@@ -47,7 +48,8 @@ export class MktCustomerCategorizationService {
   private readonly logger = new Logger(MktCustomerCategorizationService.name);
 
   constructor(
-    private readonly mktRepo: MktRepositoryService,
+    private readonly customerRepository: MktCustomerRepository,
+    private readonly orderRepository: MktOrderRepository,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
@@ -55,7 +57,7 @@ export class MktCustomerCategorizationService {
    * Get order statistics for a customer
    */
   async getCustomerOrderStats(customerId: string): Promise<CustomerOrderStats> {
-    const orderRepo = await this.mktRepo.getOrderRepository();
+    const orderRepo = await this.orderRepository.getRepository('system');
 
     const stats = await orderRepo
       .createQueryBuilder('order')
@@ -149,7 +151,7 @@ export class MktCustomerCategorizationService {
     }
 
     // Update customer's lifecycle stage
-    const customerRepo = await this.mktRepo.getCustomerRepository();
+    const customerRepo = await this.customerRepository.getRepository();
 
     await customerRepo.update(customer.id, {
       lifecycleStage: newStage,
@@ -302,7 +304,7 @@ export class MktCustomerCategorizationService {
     stage: string,
     limit = 100,
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const customerRepo = await this.mktRepo.getCustomerRepository();
+    const customerRepo = await this.customerRepository.getRepository();
 
     return customerRepo
       .createQueryBuilder('customer')
@@ -339,7 +341,7 @@ export class MktCustomerCategorizationService {
    * Get stage distribution statistics
    */
   async getStageDistribution(): Promise<Record<string, number>> {
-    const customerRepo = await this.mktRepo.getCustomerRepository();
+    const customerRepo = await this.customerRepository.getRepository();
 
     const stats = await customerRepo
       .createQueryBuilder('customer')

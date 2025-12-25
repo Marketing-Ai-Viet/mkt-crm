@@ -7,13 +7,13 @@ import {
   ActorMetadata,
   FieldActorSource,
 } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import {
   RequestSepayJWT,
   callFireBaseType,
@@ -31,7 +31,7 @@ import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-paym
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
 const SEPAY_QR_METHOD_NAME = 'SEPay QR';
 const DEFAULT_CURRENCY = 'VND';
@@ -75,11 +75,12 @@ export class MktPaymentService {
   constructor(
     @Inject(paymentConfig.KEY)
     private readonly config: ConfigType<typeof paymentConfig>,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
     private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
     private readonly mktPaymentRepository: MktPaymentRepository,
-    public mktRepo: MktRepositoryService,
+    private readonly mktPaymentMethodRepository: MktPaymentMethodRepository,
+    private readonly mktOrderRepository: MktOrderRepository,
+    private readonly mktWorkspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
   // ============================================
@@ -101,7 +102,10 @@ export class MktPaymentService {
       return result;
     }
 
-    const pmById = await this.fetchPaymentMethodsMap(validMethods);
+    const pmById = await this.fetchPaymentMethodsMap(
+      validMethods,
+      paymentData.workspaceId,
+    );
     const payments = await this.buildPaymentsFromMeta(
       paymentData,
       paymentMethodsMeta ?? [],
@@ -109,8 +113,10 @@ export class MktPaymentService {
       result,
     );
 
-    if (payments.length > 0) {
-      const paymentRepository = await this.getPaymentRepository();
+    if (payments.length > 0 && paymentData.workspaceId) {
+      const paymentRepository = await this.getPaymentRepository(
+        paymentData.workspaceId,
+      );
 
       await paymentRepository.save(payments as MktPaymentWorkspaceEntity[]);
     }
@@ -136,13 +142,21 @@ export class MktPaymentService {
    */
   private async fetchPaymentMethodsMap(
     pmIds: string[],
+    workspaceId: string | null,
   ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
-    const paymentMethodRepository = await this.getPaymentMethodRepository();
+    if (!workspaceId) {
+      return new Map();
+    }
+
+    const paymentMethodRepository =
+      await this.getPaymentMethodRepository(workspaceId);
     const methods = await paymentMethodRepository.find({
       where: pmIds.map((id) => ({ id })) as unknown as { id: string },
     });
 
-    return new Map(methods.map((m) => [m.id, m]));
+    return new Map(
+      methods.map((m: MktPaymentMethodWorkspaceEntity) => [m.id, m]),
+    );
   }
 
   /**
@@ -154,7 +168,13 @@ export class MktPaymentService {
     pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
     result: callFireBaseType,
   ): Promise<Partial<MktPaymentWorkspaceEntity>[]> {
-    const paymentRepository = await this.getPaymentRepository();
+    if (!paymentData.workspaceId) {
+      return [];
+    }
+
+    const paymentRepository = await this.getPaymentRepository(
+      paymentData.workspaceId,
+    );
 
     const paymentPromises = paymentMethodsMeta.map((meta) =>
       this.buildSinglePayment(
@@ -257,12 +277,7 @@ export class MktPaymentService {
   // ============================================
 
   async findOneByOrderCode(workspaceId: string, orderCode: string) {
-    const orderRepo =
-      await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
-
-    return orderRepo.findOne({
-      where: { orderCode },
-    });
+    return this.mktOrderRepository.findByOrderCode(workspaceId, orderCode);
   }
 
   /**
@@ -295,22 +310,23 @@ export class MktPaymentService {
     updateData: Partial<MktPaymentWorkspaceEntity>,
     authContext: RequestSepayJWT,
   ): Promise<void> {
-    const workspaceMemberRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
+    let createdByName = 'system';
+
+    if (authContext.workspaceMemberId) {
+      const workspaceMember = await this.mktWorkspaceMemberRepository.findById(
         workspaceId,
-        'workspaceMember',
+        authContext.workspaceMemberId,
       );
 
-    const workspaceMember = await workspaceMemberRepository.findOneOrFail({
-      where: { id: authContext.workspaceMemberId },
-    });
+      if (workspaceMember) {
+        createdByName = `${workspaceMember.name.firstName} ${workspaceMember.name.lastName}`;
+      }
+    }
 
     const createdBy: ActorMetadata = {
       source: FieldActorSource.MANUAL,
       workspaceMemberId: authContext.workspaceMemberId || null,
-      name: authContext.workspaceMemberId
-        ? `${workspaceMember.name.firstName} ${workspaceMember.name.lastName}`
-        : 'system',
+      name: createdByName,
       context: {},
     };
 
@@ -324,12 +340,12 @@ export class MktPaymentService {
   // REPOSITORY ACCESSORS
   // ============================================
 
-  async getPaymentRepository() {
-    return this.mktRepo.getPaymentRepository();
+  async getPaymentRepository(workspaceId: string) {
+    return this.mktPaymentRepository.getRepository(workspaceId);
   }
 
-  async getPaymentMethodRepository() {
-    return this.mktRepo.getPaymentMethodRepository();
+  async getPaymentMethodRepository(workspaceId: string) {
+    return this.mktPaymentMethodRepository.getRepository(workspaceId);
   }
 
   // ============================================
@@ -493,16 +509,10 @@ export class MktPaymentService {
 
       // Case 1: Payment method is being changed
       if (newPaymentMethodId && newPaymentMethodId !== currentPaymentMethodId) {
-        const paymentMethodRepository =
-          await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPaymentMethodWorkspaceEntity>(
-            workspaceId,
-            'mktPaymentMethod',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const newPaymentMethod = await paymentMethodRepository.findOne({
-          where: { id: newPaymentMethodId },
-        });
+        const newPaymentMethod = await this.mktPaymentMethodRepository.findById(
+          workspaceId,
+          newPaymentMethodId,
+        );
 
         if (newPaymentMethod) {
           if (newPaymentMethod.name === SEPAY_QR_METHOD_NAME) {

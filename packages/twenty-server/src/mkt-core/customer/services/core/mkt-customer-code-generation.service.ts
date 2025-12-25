@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
@@ -10,14 +10,14 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  */
 @Injectable()
 export class MktCustomerCodeGenerationService {
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+  constructor(private readonly customerRepository: MktCustomerRepository) {}
 
   /**
    * Tạo customer code tự động dựa trên năm hiện tại và số thứ tự
    * Format: CUS-YYYY-NNNNNN (VD: CUS-2025-000001)
    */
   async generateCustomerCodeWithYear(): Promise<string> {
-    const repository = await this.mktRepo.getCustomerRepository();
+    const repository = await this.customerRepository.getRepository();
 
     const now = DateTimeUtils.now();
     const currentYear = now.year;
@@ -55,7 +55,7 @@ export class MktCustomerCodeGenerationService {
    * Format: CUSTNNN (VD: CUST001, CUST002)
    */
   async generateSimpleCustomerCode(): Promise<string> {
-    const repository = await this.mktRepo.getCustomerRepository();
+    const repository = await this.customerRepository.getRepository();
 
     const prefix = 'CUST';
 
@@ -94,7 +94,7 @@ export class MktCustomerCodeGenerationService {
     customPrefix: string,
     sequenceLength = 3,
   ): Promise<string> {
-    const repository = await this.mktRepo.getCustomerRepository();
+    const repository = await this.customerRepository.getRepository();
 
     // Tìm customer code lớn nhất với prefix này
     const lastCustomer = await repository
@@ -126,14 +126,7 @@ export class MktCustomerCodeGenerationService {
    * Kiểm tra xem customer code đã tồn tại chưa
    */
   async isCustomerCodeExists(customerCode: string): Promise<boolean> {
-    const repository = await this.mktRepo.getCustomerRepository();
-
-    const count = await repository
-      .createQueryBuilder('customer')
-      .where('customer.mktCustomerCode = :customerCode', { customerCode })
-      .getCount();
-
-    return count > 0;
+    return this.customerRepository.isCodeExists(customerCode);
   }
 
   /**

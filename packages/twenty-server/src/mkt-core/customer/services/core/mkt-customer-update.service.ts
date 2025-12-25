@@ -5,28 +5,24 @@ import isNil from 'lodash.isnil';
 import omitBy from 'lodash.omitby';
 import pickBy from 'lodash.pickby';
 
-import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ACCOUNT_PROVIDER } from 'src/mkt-core/customer/constants';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { CustomerUpdateFields } from 'src/mkt-core/customer/types';
+import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 
 @Injectable()
 export class MktCustomerUpdateService {
   private readonly logger = new Logger(MktCustomerUpdateService.name);
 
-  constructor(
-    private readonly mktRepo: MktRepositoryService,
-    private readonly customerRepository: MktCustomerRepository,
-  ) {}
+  constructor(private readonly customerRepository: MktCustomerRepository) {}
 
   async updateFromPerson(
     mktAccountId: string,
     person: PersonWorkspaceEntity,
   ): Promise<void> {
-    const repo = await this.mktRepo.getCustomerRepository();
+    const repo = await this.customerRepository.getRepository();
     // Find customer by linked MKT Server account in linkedAccounts JSONB array
     const customer = await this.customerRepository.findByLinkedAccount(
       ACCOUNT_PROVIDER.MKT_SERVER,

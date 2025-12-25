@@ -4,10 +4,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
+import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 
 @Injectable()
 export class MktPersonDeletionService {
@@ -17,7 +19,9 @@ export class MktPersonDeletionService {
     @InjectRepository(User, 'core')
     private readonly userRepository: Repository<User>,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly mktRepo: MktRepositoryService,
+    private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
+    private readonly customerRepository: MktCustomerRepository,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   async softDeleteByPerson(
@@ -44,7 +48,8 @@ export class MktPersonDeletionService {
     }
 
     // CASE 2: Soft delete all workspace members with this email
-    const memberRepo = await this.mktRepo.getWorkspaceMemberRepository();
+    const memberRepo =
+      await this.workspaceMemberRepository.getRepository(workspaceId);
     const members = await memberRepo.find({
       where: { userEmail: email },
     });
@@ -56,7 +61,7 @@ export class MktPersonDeletionService {
     }
 
     // CASE 3: Soft delete all customers with this email
-    const cusRepo = await this.mktRepo.getCustomerRepository();
+    const cusRepo = await this.customerRepository.getRepository(workspaceId);
     const customers = await cusRepo.find({
       where: { email },
     });
@@ -66,7 +71,7 @@ export class MktPersonDeletionService {
     }
 
     this.logger.log(
-      `[DELETE BY EMAIL] ✅ Deleted ${users.length} user(s), ${members.length} member(s), ${customers.length} customer(s) for: ${email}`,
+      `[DELETE BY EMAIL] Deleted ${users.length} user(s), ${members.length} member(s), ${customers.length} customer(s) for: ${email}`,
     );
   }
 }

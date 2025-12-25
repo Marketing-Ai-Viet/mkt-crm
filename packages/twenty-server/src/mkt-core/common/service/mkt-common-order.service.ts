@@ -9,13 +9,13 @@ import {
   MKT_ORDER_EVENT_TYPES,
   PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/common/common.type';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import {
   ORDER_METADATA,
   ORDER_STATUS,
   RefundItem,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 
 @Injectable()
 export class MktCommonOrderService {
@@ -23,7 +23,7 @@ export class MktCommonOrderService {
   private orderMetadata: ORDER_METADATA | null = null;
 
   constructor(
-    private readonly mktRepo: MktRepositoryService,
+    private readonly mktOrderRepository: MktOrderRepository,
     private readonly workspaceEventEmitter: WorkspaceEventEmitter,
   ) {}
 
@@ -34,8 +34,6 @@ export class MktCommonOrderService {
     trialLicense?: boolean,
     authFirebase?: void | FIREBASE_AUTH_RESPONSE,
   ) {
-    const orderRepository = await this.mktRepo.getOrderRepository();
-
     this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
 
     const updateData: Partial<MktOrderWorkspaceEntity> = {
@@ -57,21 +55,28 @@ export class MktCommonOrderService {
       `Updating order ${orderId} with data: ${JSON.stringify(updateData)}`,
     );
 
-    await orderRepository.update(orderId, updateData as never);
+    await this.mktOrderRepository.update(workspaceId, orderId, updateData);
   }
 
   async updateOrderForRefund(
     status: ORDER_STATUS,
     updateOrder: MktOrderWorkspaceEntity | null,
+    workspaceId: string,
   ) {
-    if (!updateOrder?.id) return;
-    const orderRepository = await this.mktRepo.getOrderRepository();
+    if (!updateOrder?.id) {
+      return;
+    }
+
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
       metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
     };
 
-    await orderRepository.update(updateOrder?.id, updateData as never);
+    await this.mktOrderRepository.update(
+      workspaceId,
+      updateOrder.id,
+      updateData,
+    );
   }
 
   async updateFirstMetadata(

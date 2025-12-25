@@ -3,8 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { firstValueFrom } from 'rxjs';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
@@ -12,15 +10,18 @@ import {
   ORDER_METADATA,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
+import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
 import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
-import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
-import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
+import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
+import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
 
 export type CalculateOrderResult = {
   subtotal: number;
@@ -39,8 +40,10 @@ export class MktOrderCommonConfirmService {
   public orderMetadata: ORDER_METADATA | null = null;
 
   constructor(
-    private readonly mktRepo: MktRepositoryService,
     private readonly httpService: HttpService,
+    private readonly mktOrderRepository: MktOrderRepository,
+    private readonly mktPaymentRepository: MktPaymentRepository,
+    private readonly mktPaymentMethodRepository: MktPaymentMethodRepository,
   ) {}
 
   /**
@@ -117,9 +120,10 @@ export class MktOrderCommonConfirmService {
   /**
    * Generate unique order code
    */
-  async generateOrderCode(): Promise<string | null> {
+  async generateOrderCode(workspaceId: string): Promise<string | null> {
     try {
-      const orderRepository = await this.mktRepo.getOrderRepository();
+      const orderRepository =
+        await this.mktOrderRepository.getRepository(workspaceId);
 
       const now = new Date();
       const year = now.getFullYear();
@@ -154,9 +158,10 @@ export class MktOrderCommonConfirmService {
       const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(3, '0')}`;
 
       // Double-check uniqueness
-      const existingOrder = await orderRepository.findOne({
-        where: { orderCode },
-      });
+      const existingOrder = await this.mktOrderRepository.findByOrderCode(
+        workspaceId,
+        orderCode,
+      );
 
       if (existingOrder) {
         // If somehow duplicate, try with timestamp
@@ -233,13 +238,16 @@ export class MktOrderCommonConfirmService {
     action: ORDER_ACTION,
     licenseId: string,
     refundOrder: MktOrderWorkspaceEntity | null,
+    workspaceId: string,
     note?: string,
   ) {
-    if (!refundOrder?.id) return;
-    if (action !== ORDER_ACTION.REFUND)
-      throw new Error('Action must be REFUND to refund order');
+    if (!refundOrder?.id) {
+      return;
+    }
 
-    const orderRepository = await this.mktRepo.getOrderRepository();
+    if (action !== ORDER_ACTION.REFUND) {
+      throw new Error('Action must be REFUND to refund order');
+    }
 
     // Create refund note
     const refundNote = `[REFUND - ${new Date().toISOString()}] Cần hoàn tiền cho khách hàng. Vui lòng xác nhận sau khi đã hoàn tiền. Status: PENDING_REFUND. License ID: ${licenseId}`;
@@ -255,7 +263,7 @@ export class MktOrderCommonConfirmService {
     }
 
     // Update order with all costs set to 0 and refund note
-    await orderRepository.update(refundOrder.id, {
+    await this.mktOrderRepository.update(workspaceId, refundOrder.id, {
       subtotal: 0,
       tax: 0,
       discount: 0,
@@ -272,14 +280,11 @@ export class MktOrderCommonConfirmService {
    * Confirm refund completion for an order
    */
   async confirmRefundCompleted(
+    workspaceId: string,
     orderId: string,
     refundDetails?: string,
   ): Promise<void> {
-    const orderRepository = await this.mktRepo.getOrderRepository();
-
-    const order = await orderRepository.findOne({
-      where: { id: orderId },
-    });
+    const order = await this.mktOrderRepository.findById(workspaceId, orderId);
 
     if (!order) {
       throw new Error(`Order with ID ${orderId} not found`);
@@ -298,7 +303,7 @@ export class MktOrderCommonConfirmService {
       ? `${existingNote}\n\n${fullConfirmationNote}`
       : fullConfirmationNote;
 
-    await orderRepository.update(orderId, {
+    await this.mktOrderRepository.update(workspaceId, orderId, {
       note: updatedNote,
     });
 
@@ -318,9 +323,17 @@ export class MktOrderCommonConfirmService {
     },
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
   ): Promise<callFireBaseType | void> {
-    const paymentRepository = await this.mktRepo.getPaymentRepository();
+    if (!paymentData.workspaceId) {
+      return;
+    }
+
+    const paymentRepository = await this.mktPaymentRepository.getRepository(
+      paymentData.workspaceId,
+    );
     const paymentMethodRepository =
-      await this.mktRepo.getPaymentMethodRepository();
+      await this.mktPaymentMethodRepository.getRepository(
+        paymentData.workspaceId,
+      );
 
     const result: callFireBaseType = {
       orderCode: paymentData.generatedOrderCode,
@@ -333,10 +346,12 @@ export class MktOrderCommonConfirmService {
         .filter(Boolean);
 
       if (pmIds.length > 0) {
-        const _methods = await paymentMethodRepository.find({
+        const methods = await paymentMethodRepository.find({
           where: pmIds.map((id) => ({ id })) as unknown as { id: string },
         });
-        const pmById = new Map(_methods.map((m) => [m.id, m]));
+        const pmById = new Map(
+          methods.map((m: MktPaymentMethodWorkspaceEntity) => [m.id, m]),
+        );
 
         const paymentsFromMeta = await Promise.all(
           paymentMethodsMeta.map(async (p) => {
@@ -344,7 +359,10 @@ export class MktOrderCommonConfirmService {
               p.mktPaymentMethodId,
             );
 
-            if (!pm) return null;
+            if (!pm) {
+              return null;
+            }
+
             // generate position
             const { qrCodeUrl, expiredAt } = await this.generateSepayQrCodeUrl(
               pm,
@@ -352,7 +370,9 @@ export class MktOrderCommonConfirmService {
               paymentData.generatedOrderCode,
             );
 
-            if (!result.QRCodeUrl) result.QRCodeUrl = qrCodeUrl;
+            if (!result.QRCodeUrl) {
+              result.QRCodeUrl = qrCodeUrl;
+            }
 
             return paymentRepository.create({
               mktOrderId: paymentData.orderId,
@@ -446,9 +466,9 @@ export class MktOrderCommonConfirmService {
   }
 
   private async updateOrderInformation(
+    workspaceId: string,
     orderId: string,
     updateOrderInfo: Partial<MktOrderWorkspaceEntity>,
-    orderRepository: WorkspaceRepository<MktOrderWorkspaceEntity>,
     oldOrderId: string | null | undefined,
   ) {
     if (oldOrderId) {
@@ -467,7 +487,7 @@ Sản phẩm mới: -> ${this.changeVariantData.newVariantName}.\n
 Thời gian: ${new Date().toISOString()}
 `;
     }
-    await orderRepository.update(orderId, {
+    await this.mktOrderRepository.update(workspaceId, orderId, {
       mktCustomerId: updateOrderInfo.mktCustomerId || null,
       orderCode: updateOrderInfo.orderCode ?? '',
       subtotal: updateOrderInfo.subtotal,
