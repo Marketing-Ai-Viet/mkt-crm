@@ -1,11 +1,13 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 
 import { firstValueFrom } from 'rxjs';
 
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
 import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { paymentConfig } from 'src/mkt-core/payment/config';
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
 
 export interface FirebaseAuthResponse {
   idToken: string;
@@ -16,20 +18,17 @@ export interface FirebaseAuthResponse {
 @Injectable()
 export class FireBaseIntegrationService {
   private readonly logger = new Logger(FireBaseIntegrationService.name);
-  private readonly firebaseKey: string;
-  private readonly firebaseDbUrl: string;
-  private readonly firebaseAuthUrl: string;
 
-  constructor(private readonly httpService: HttpService) {
-    this.firebaseKey = process.env.FIREBASE_KEY || '';
-    this.firebaseDbUrl = process.env.FIREBASE_DB_URL || '';
-    this.firebaseAuthUrl = process.env.FIREBASE_AUTH_URL || '';
-  }
+  constructor(
+    @Inject(paymentConfig.KEY)
+    private readonly config: ConfigType<typeof paymentConfig>,
+    private readonly httpService: HttpService,
+  ) {}
 
   async getUser(orderCode: string) {
     if (!orderCode) return;
     try {
-      const firebaseUrl = `${this.firebaseAuthUrl}${this.firebaseKey}`;
+      const firebaseUrl = `${this.config.firebase.authUrl}${this.config.firebase.apiKey}`;
 
       this.logger.log('Firebase URL: ' + firebaseUrl);
       this.logger.log('Order Code: ' + orderCode);
@@ -46,7 +45,7 @@ export class FireBaseIntegrationService {
 
   async authenticateWithFirebase(): Promise<FirebaseAuthResponse | void> {
     try {
-      const signUpUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${this.firebaseKey}`;
+      const signUpUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${this.config.firebase.apiKey}`;
 
       const response = await firstValueFrom(
         this.httpService.post<FirebaseAuthResponse>(signUpUrl),
@@ -139,7 +138,7 @@ export class FireBaseIntegrationService {
       //const authData = await this.authenticateWithFirebase();
 
       // Step 2: Send order info to Firebase
-      const firebaseUrl = `${this.firebaseDbUrl}/${orderCode}.json?auth=${authData.idToken}`;
+      const firebaseUrl = `${this.config.firebase.databaseUrl}/${orderCode}.json?auth=${authData.idToken}`;
 
       const orderData = {
         ownerId: authData.localId,

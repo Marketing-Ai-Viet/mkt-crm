@@ -16,6 +16,7 @@ import { SeedOrderItemModuleCommand } from 'src/mkt-core/seeder/commands/mkt-ord
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
 import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-payment-data-seed-dev-workspace.command';
 import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/seeder/commands/mkt-payment-history-data-seed-dev-workspace.command';
+import { MktWebhookLogDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-webhook-log-data-seed-dev-workspace.command';
 import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-payment-method-data-seed-dev-workspace.command';
 import { SeedMktPermissionAuditCommand } from 'src/mkt-core/seeder/commands/mkt-permission-audit-data-seed-dev-workspace.command';
 import { SeedTagModuleCommand } from 'src/mkt-core/seeder/commands/mkt-tag-data-seed-dev-workspace.command';
@@ -75,6 +76,7 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   MktPaymentMethodDataSeedDevWorkspaceCommand,
   MktPaymentDataSeedDevWorkspaceCommand,
   SeedMktPaymentHistoryModuleCommand,
+  MktWebhookLogDataSeedDevWorkspaceCommand,
   // organization level commands
   SeedOrganizationLevelModuleCommand,
   SeedEmploymentStatusModuleCommand,

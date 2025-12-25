@@ -5,6 +5,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -17,10 +18,10 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 
 import { Response } from 'express';
 
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
@@ -29,13 +30,14 @@ import {
   RequestSepayJWT,
   SepayWebhookRequest,
 } from 'src/mkt-core/payment/constants/payment.type';
+import { paymentConfig } from 'src/mkt-core/payment/config';
 import {
   SEPAY_TEMPLATE_DEFAULTS,
   VIETNAM_TIMEZONE,
 } from 'src/mkt-core/payment/constants/sepay.constants';
 import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
-import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
+import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { SepayWebhookResponse } from 'src/mkt-core/payment/types';
 import {
@@ -52,10 +54,11 @@ export class SepayPaymentController {
   private readonly logger = new Logger(SepayPaymentController.name);
 
   constructor(
-    private readonly accessTokenService: AccessTokenService,
+    @Inject(paymentConfig.KEY)
+    private readonly config: ConfigType<typeof paymentConfig>,
     private readonly mktPaymentService: MktPaymentService,
+    private readonly mktPaymentWebhookService: MktPaymentWebhookService,
     private readonly fireBaseIntegrationService: FireBaseIntegrationService,
-    private readonly mktPaymentPrepareService: MktPaymentPrepareService,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
@@ -65,11 +68,10 @@ export class SepayPaymentController {
    * @returns boolean indicating if the API key is valid
    */
   private isValidApiKey(apiKey: string): boolean {
-    // Get the valid API key from environment variable
-    const validApiKey = process.env.SEPAY_WEBHOOK_API_KEY;
+    const validApiKey = this.config.sepay.webhookApiKey;
 
     if (!validApiKey) {
-      this.logger.warn('SEPAY_WEBHOOK_API_KEY environment variable not set');
+      this.logger.warn('SEPAY_WEBHOOK_API_KEY not configured');
 
       return false;
     }
@@ -139,10 +141,10 @@ export class SepayPaymentController {
       throw error;
     }
 
-    const workspaceId = process.env.SEPAY_WORKSPACE_ID;
+    const workspaceId = this.config.sepay.workspaceId;
 
     if (!workspaceId) {
-      this.logger.error('Workspace ID is not available');
+      this.logger.error('SEPAY_WORKSPACE_ID is not configured');
 
       return { success: true };
     }
@@ -161,8 +163,8 @@ export class SepayPaymentController {
       request.ip ||
       undefined;
 
-    // Delegate all logic to service with DB transaction
-    const result = await this.mktPaymentService.processWebhookPayment(
+    // Delegate all logic to webhook service with DB transaction
+    const result = await this.mktPaymentWebhookService.processWebhookPayment(
       workspaceId,
       payload,
       authContext,
@@ -194,10 +196,10 @@ export class SepayPaymentController {
     this.logger.log(`Fetching payment QR for order: ${orderCode}`);
 
     try {
-      const workspaceId = process.env.MKT_WORKSPACE_ID;
+      const workspaceId = this.config.workspace.mktWorkspaceId;
 
       if (!workspaceId) {
-        this.logger.error('Workspace ID is not available');
+        this.logger.error('MKT_WORKSPACE_ID is not configured');
         throw new NotFoundException('Workspace not configured');
       }
 

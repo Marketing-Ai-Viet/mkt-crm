@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 
-import { QueryRunner } from 'typeorm';
+import compact from 'lodash.compact';
 
 import {
   ActorMetadata,
@@ -11,172 +12,289 @@ import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository
 import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
+import { paymentConfig } from 'src/mkt-core/payment/config';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import {
   RequestSepayJWT,
   callFireBaseType,
 } from 'src/mkt-core/payment/constants/payment.type';
-import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import {
-  MktWebhookLogWorkspaceEntity,
-  WebhookLogStatus,
-} from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
+  CreatePaymentInputDto,
+  UpdatePaymentInputDto,
+} from 'src/mkt-core/payment/dto/payment.input';
+import {
+  CreatePaymentResponseDto,
+  PaymentResponseDto,
+  UpdatePaymentResponseDto,
+} from 'src/mkt-core/payment/dto/payment.output';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
+import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
-import {
-  SepayWebhookPayload,
-  SepayWebhookResponse,
-} from 'src/mkt-core/payment/types';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+const SEPAY_QR_METHOD_NAME = 'SEPay QR';
+const DEFAULT_CURRENCY = 'VND';
+const PAYMENT_NAME_DISCOUNT = 'discount';
+
+type PaymentMethodMeta = NonNullable<ORDER_METADATA['paymentMethods']>[number];
+
+type PaymentCreatedBy = {
+  source: string | null;
+  workspaceMemberId: string | null;
+  name: string | null;
+  context?: Record<string, unknown>;
+};
+
+type CreatePaymentData = {
+  paymentName: string;
+  totalAmount: number;
+  currency: string;
+  generatedOrderCode: string | null;
+  orderId: string;
+  workspaceId: string | null;
+  createdBy?: PaymentCreatedBy;
+  discount?: number | null;
+};
+
+/**
+ * MktPaymentService - Core payment operations
+ *
+ * This service handles:
+ * - Payment CRUD operations
+ * - Payment creation from orders
+ * - QR code generation logic
+ *
+ * For webhook processing, see MktPaymentWebhookService
+ */
 @Injectable()
 export class MktPaymentService {
   private readonly logger = new Logger(MktPaymentService.name);
   public discount = 0;
 
   constructor(
+    @Inject(paymentConfig.KEY)
+    private readonly config: ConfigType<typeof paymentConfig>,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
     private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
+    private readonly mktPaymentRepository: MktPaymentRepository,
     public mktRepo: MktRepositoryService,
   ) {}
 
-  async createPaymentFromOrder(
-    paymentData: {
-      paymentName: string;
-      totalAmount: number;
-      currency: string;
-      generatedOrderCode: string | null;
-      orderId: string;
-      workspaceId: string | null;
-      createdBy?: {
-        source: string | null;
-        workspaceMemberId: string | null;
-        name: string | null;
-      };
-      discount?: number | null;
-    },
-    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
-  ): Promise<callFireBaseType | void> {
-    const paymentRepository = await this.getPaymentRepository();
-    const paymentMethodRepository = await this.getPaymentMethodRepository();
+  // ============================================
+  // ORDER PAYMENT CREATION
+  // ============================================
 
+  async createPaymentFromOrder(
+    paymentData: CreatePaymentData,
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
+  ): Promise<callFireBaseType> {
     const result: callFireBaseType = {
       orderCode: paymentData.generatedOrderCode,
       QRCodeUrl: null,
     };
 
-    if (Array.isArray(paymentMethodsMeta) && paymentMethodsMeta.length > 0) {
-      const pmIds = paymentMethodsMeta
-        .map((p) => p.mktPaymentMethodId)
-        .filter(Boolean);
+    const validMethods = this.extractValidPaymentMethods(paymentMethodsMeta);
 
-      if (pmIds.length > 0) {
-        const _methods = await paymentMethodRepository.find({
-          where: pmIds.map((id) => ({ id })) as unknown as { id: string },
-        });
-        const pmById = new Map(_methods.map((m) => [m.id, m]));
+    if (validMethods.length === 0) {
+      return result;
+    }
 
-        const paymentsFromMeta = await Promise.all(
-          paymentMethodsMeta.map(async (p) => {
-            const pm: MktPaymentMethodWorkspaceEntity | undefined = pmById.get(
-              p.mktPaymentMethodId,
-            );
+    const pmById = await this.fetchPaymentMethodsMap(validMethods);
+    const payments = await this.buildPaymentsFromMeta(
+      paymentData,
+      paymentMethodsMeta ?? [],
+      pmById,
+      result,
+    );
 
-            let totalAmount = paymentData.totalAmount;
-            let name = `Thanh toán - ${pm?.name} - ${paymentData.paymentName}`;
+    if (payments.length > 0) {
+      const paymentRepository = await this.getPaymentRepository();
 
-            if (p.name === 'discount' && paymentData.discount) {
-              totalAmount = paymentData.discount;
-              name = `Thanh toán trước - ${pm?.name} - ${paymentData.paymentName}`;
-            }
-            if (!pm) return null;
-            // generate position
-            const { qrCodeUrl, expiredAt } =
-              await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
-                pm,
-                totalAmount || 0,
-                paymentData.generatedOrderCode,
-              );
-
-            if (!result.QRCodeUrl) result.QRCodeUrl = qrCodeUrl;
-
-            return paymentRepository.create({
-              mktOrderId: paymentData.orderId,
-              mktPaymentMethodId: p.mktPaymentMethodId,
-              name,
-              amount: totalAmount || 0,
-              currency: paymentData.currency || 'VND',
-              qrCodeUrl: qrCodeUrl || undefined,
-              duration: p.duration || null,
-              expiredAt: expiredAt || null,
-              paymentPageUrl: `${process.env.SERVER_URL}/payment/${paymentData.generatedOrderCode}`,
-              mktTemplateId: MKT_TEMPLATE.SEPAY,
-            } as Partial<MktPaymentWorkspaceEntity>);
-          }),
-        );
-
-        const newPayments = paymentsFromMeta.map((item) => {
-          if (!paymentData.createdBy) return item;
-
-          return { ...item, createdBy: paymentData.createdBy };
-        });
-
-        await paymentRepository.save(
-          newPayments as MktPaymentWorkspaceEntity[],
-        );
-      }
+      await paymentRepository.save(payments as MktPaymentWorkspaceEntity[]);
     }
 
     return result;
   }
 
+  /**
+   * Extract valid payment method IDs from meta
+   */
+  private extractValidPaymentMethods(
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
+  ): string[] {
+    if (!Array.isArray(paymentMethodsMeta) || paymentMethodsMeta.length === 0) {
+      return [];
+    }
+
+    return compact(paymentMethodsMeta.map((p) => p.mktPaymentMethodId));
+  }
+
+  /**
+   * Fetch payment methods and create ID->Entity map
+   */
+  private async fetchPaymentMethodsMap(
+    pmIds: string[],
+  ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
+    const paymentMethodRepository = await this.getPaymentMethodRepository();
+    const methods = await paymentMethodRepository.find({
+      where: pmIds.map((id) => ({ id })) as unknown as { id: string },
+    });
+
+    return new Map(methods.map((m) => [m.id, m]));
+  }
+
+  /**
+   * Build payment entities from metadata
+   */
+  private async buildPaymentsFromMeta(
+    paymentData: CreatePaymentData,
+    paymentMethodsMeta: PaymentMethodMeta[],
+    pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
+    result: callFireBaseType,
+  ): Promise<Partial<MktPaymentWorkspaceEntity>[]> {
+    const paymentRepository = await this.getPaymentRepository();
+
+    const paymentPromises = paymentMethodsMeta.map((meta) =>
+      this.buildSinglePayment(
+        paymentData,
+        meta,
+        pmById,
+        paymentRepository,
+        result,
+      ),
+    );
+
+    const payments = await Promise.all(paymentPromises);
+
+    return compact(payments);
+  }
+
+  /**
+   * Build a single payment entity from metadata
+   */
+  private async buildSinglePayment(
+    paymentData: CreatePaymentData,
+    meta: PaymentMethodMeta,
+    pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
+    paymentRepository: Awaited<ReturnType<typeof this.getPaymentRepository>>,
+    result: callFireBaseType,
+  ): Promise<Partial<MktPaymentWorkspaceEntity> | null> {
+    const paymentMethod = pmById.get(meta.mktPaymentMethodId);
+
+    if (!paymentMethod) {
+      return null;
+    }
+
+    const { amount, name } = this.calculatePaymentAmountAndName(
+      paymentData,
+      meta,
+      paymentMethod,
+    );
+
+    const { qrCodeUrl, expiredAt } =
+      await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
+        paymentMethod,
+        amount,
+        paymentData.generatedOrderCode,
+      );
+
+    // Set first QR code URL as primary
+    if (!result.QRCodeUrl) {
+      result.QRCodeUrl = qrCodeUrl;
+    }
+
+    const payment = paymentRepository.create({
+      mktOrderId: paymentData.orderId,
+      mktPaymentMethodId: meta.mktPaymentMethodId,
+      name,
+      amount,
+      currency: paymentData.currency || DEFAULT_CURRENCY,
+      qrCodeUrl: qrCodeUrl || undefined,
+      duration: meta.duration || null,
+      expiredAt: expiredAt || null,
+      paymentPageUrl: `${this.config.urls.serverUrl}${this.config.urls.paymentPagePath}/${paymentData.generatedOrderCode}`,
+      mktTemplateId: MKT_TEMPLATE.SEPAY,
+    } as Partial<MktPaymentWorkspaceEntity>);
+
+    if (paymentData.createdBy) {
+      return {
+        ...payment,
+        createdBy: paymentData.createdBy as unknown as ActorMetadata,
+      };
+    }
+
+    return payment;
+  }
+
+  /**
+   * Calculate payment amount and name based on discount flag
+   */
+  private calculatePaymentAmountAndName(
+    paymentData: CreatePaymentData,
+    meta: PaymentMethodMeta,
+    paymentMethod: MktPaymentMethodWorkspaceEntity,
+  ): { amount: number; name: string } {
+    const isDiscount =
+      meta.name === PAYMENT_NAME_DISCOUNT && paymentData.discount;
+
+    if (isDiscount) {
+      return {
+        amount: paymentData.discount ?? 0,
+        name: `Thanh toán trước - ${paymentMethod.name} - ${paymentData.paymentName}`,
+      };
+    }
+
+    return {
+      amount: paymentData.totalAmount || 0,
+      name: `Thanh toán - ${paymentMethod.name} - ${paymentData.paymentName}`,
+    };
+  }
+
+  // ============================================
+  // QUERY METHODS
+  // ============================================
+
   async findOneByOrderCode(workspaceId: string, orderCode: string) {
     const orderRepo =
       await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
 
-    return await orderRepo.findOne({
-      where: { orderCode: orderCode },
+    return orderRepo.findOne({
+      where: { orderCode },
     });
   }
 
   /**
-   * Tìm payment theo SePay transaction ID để kiểm tra idempotency
-   * Dùng để chống xử lý webhook trùng lặp
+   * Find payment by SePay transaction ID
    */
   async findBySepayTransactionId(
     workspaceId: string,
     sepayTransactionId: number,
   ): Promise<MktPaymentWorkspaceEntity | null> {
-    const paymentRepo =
-      await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
-
-    return paymentRepo.findOne({
-      where: { sepayTransactionId: String(sepayTransactionId) },
-    });
+    return this.mktPaymentRepository.findBySepayTransactionId(
+      workspaceId,
+      String(sepayTransactionId),
+    );
   }
 
-  async findPaymentsByOrderId(workspaceId: string, orderId: string) {
-    const paymentRepo =
-      await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
-
-    return await paymentRepo.find({
-      where: { mktOrderId: orderId },
-    });
+  async findPaymentsByOrderId(
+    workspaceId: string,
+    orderId: string,
+  ): Promise<MktPaymentWorkspaceEntity[]> {
+    return this.mktPaymentRepository.findByOrderId(workspaceId, orderId);
   }
+
+  // ============================================
+  // UPDATE METHODS
+  // ============================================
 
   async updatePaymentById(
     workspaceId: string,
     paymentId: string,
     updateData: Partial<MktPaymentWorkspaceEntity>,
     authContext: RequestSepayJWT,
-  ) {
-    const paymentRepo =
-      await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
-
+  ): Promise<void> {
     const workspaceMemberRepository =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
         workspaceId,
@@ -196,8 +314,15 @@ export class MktPaymentService {
       context: {},
     };
 
-    return await paymentRepo.update(paymentId, { ...updateData, createdBy });
+    await this.mktPaymentRepository.update(workspaceId, paymentId, {
+      ...updateData,
+      createdBy,
+    });
   }
+
+  // ============================================
+  // REPOSITORY ACCESSORS
+  // ============================================
 
   async getPaymentRepository() {
     return this.mktRepo.getPaymentRepository();
@@ -207,401 +332,251 @@ export class MktPaymentService {
     return this.mktRepo.getPaymentMethodRepository();
   }
 
+  // ============================================
+  // MUTATION METHODS (GraphQL)
+  // ============================================
+
   /**
-   * Process SePay webhook payment with database transaction
-   *
-   * This method wraps all payment processing operations in a single transaction:
-   * 1. Log webhook to WebhookLog entity
-   * 2. Find order and payment
-   * 3. Validate amount
-   * 4. Update payment status
-   * 5. Commit or rollback
-   *
-   * @param workspaceId - Workspace ID
-   * @param payload - SePay webhook payload
-   * @param authContext - Authentication context
-   * @param ipAddress - Optional IP address for logging
-   * @returns SepayWebhookResponse
+   * Create a new payment via GraphQL mutation
    */
-  async processWebhookPayment(
+  async createPaymentMutation(
     workspaceId: string,
-    payload: SepayWebhookPayload,
-    authContext: RequestSepayJWT,
-    ipAddress?: string,
-  ): Promise<SepayWebhookResponse> {
-    const startTime = DateTimeUtils.now();
-
-    // Get DataSource and create QueryRunner for transaction
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    const queryRunner: QueryRunner = dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    // Create initial webhook log
-    let webhookLogId: string | null = null;
-
+    input: CreatePaymentInputDto,
+  ): Promise<CreatePaymentResponseDto> {
     try {
-      // Step 1: Create webhook log entry
-      webhookLogId = await this.createWebhookLog(queryRunner, workspaceId, {
-        sepayTransactionId: payload.id,
-        gateway: payload.gateway,
-        requestBody: payload as unknown as object,
-        ipAddress,
-        status: 'PROCESSING',
+      // Prepare payment data from order
+      const preparedData =
+        await this.mktPaymentPrepareService.prepareCreatePayment({
+          mktOrderId: input.mktOrderId,
+          mktPaymentMethodId: input.mktPaymentMethodId,
+          name: input.name,
+          amount: input.amount,
+          currency: input.currency as PaymentCurrency | undefined,
+          description: input.description,
+          invoiceId: input.invoiceId,
+          mktTemplateId: input.mktTemplateId,
+        });
+
+      // Create payment using repository
+      const payment = await this.mktPaymentRepository.create(workspaceId, {
+        name: preparedData.name ?? 'Payment',
+        amount: preparedData.amount ?? 0,
+        currency: preparedData.currency,
+        mktOrderId: preparedData.mktOrderId,
+        mktPaymentMethodId: preparedData.mktPaymentMethodId,
+        description: preparedData.description,
+        invoiceId: preparedData.invoiceId,
+        mktTemplateId: preparedData.mktTemplateId,
       });
-
-      // Step 2: Idempotency check
-      const existingPayment = await this.findBySepayTransactionIdWithRunner(
-        queryRunner,
-        workspaceId,
-        payload.id,
-      );
-
-      if (existingPayment) {
-        this.logger.log(
-          `Transaction ${payload.id} already processed, skipping`,
-        );
-        await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'ALREADY_PROCESSED' },
-            matchedOrderCode: existingPayment.mktOrderId,
-          },
-        );
-        await queryRunner.commitTransaction();
-
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.ALREADY_PROCESSED,
-          data: { transactionId: payload.id, status: 'ALREADY_PROCESSED' },
-        };
-      }
-
-      // Step 3: Validate code
-      if (!payload.code) {
-        this.logger.warn('Webhook payload has no code');
-        await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'UNMATCHED' },
-          },
-        );
-        await queryRunner.commitTransaction();
-
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
-          data: { transactionId: payload.id, status: 'UNMATCHED' },
-        };
-      }
-
-      // Step 4: Find order
-      const order = await this.findOneByOrderCodeWithRunner(
-        queryRunner,
-        workspaceId,
-        payload.code,
-      );
-
-      if (!order) {
-        this.logger.error(`Order not found for code: ${payload.code}`);
-        await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'UNMATCHED' },
-          },
-        );
-        await queryRunner.commitTransaction();
-
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
-          data: { transactionId: payload.id, status: 'UNMATCHED' },
-        };
-      }
-
-      // Step 5: Amount validation
-      const expectedAmount = order.totalAmount || 0;
-      const receivedAmount = payload.transferAmount || 0;
-
-      if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
-        this.logger.warn(
-          `Amount mismatch for order ${payload.code}: expected ${expectedAmount}, received ${receivedAmount}`,
-        );
-      }
-
-      // Step 6: Find payments
-      const payments = await this.findPaymentsByOrderIdWithRunner(
-        queryRunner,
-        workspaceId,
-        order.id,
-      );
-
-      if (payments.length === 0) {
-        this.logger.warn(`No payments found for order ${order.id}`);
-        await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'NO_PAYMENT' },
-            matchedOrderCode: order.orderCode,
-          },
-        );
-        await queryRunner.commitTransaction();
-
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.NO_PAYMENT,
-          data: {
-            transactionId: payload.id,
-            matchedOrder: order.orderCode,
-            status: 'NO_PAYMENT',
-          },
-        };
-      }
-
-      // Step 7: Update payment with transaction
-      const [primaryPayment] = payments;
-
-      await this.updatePaymentByIdWithRunner(
-        queryRunner,
-        workspaceId,
-        primaryPayment.id,
-        {
-          status: MKT_PAYMENT_STATUS.COMPLETED,
-          paymentDate: payload.transactionDate,
-          amount: payload.transferAmount,
-          description: payload.content || payload.description,
-          sepayTransactionId: String(payload.id),
-        },
-        authContext,
-      );
-
-      // Step 8: Update webhook log as success
-      const processingTimeMs = DateTimeUtils.diffInMillis(
-        startTime,
-        DateTimeUtils.now(),
-      );
-
-      await this.updateWebhookLogStatus(queryRunner, webhookLogId, 'SUCCESS', {
-        responseStatus: 200,
-        responseBody: { status: 'MATCHED' },
-        matchedOrderCode: order.orderCode,
-        processingTimeMs,
-      });
-
-      // Commit transaction
-      await queryRunner.commitTransaction();
 
       this.logger.log(
-        `Payment ${primaryPayment.id} completed for order ${order.orderCode}`,
+        `Created payment ${payment.id} for order ${input.mktOrderId}`,
       );
 
       return {
         success: true,
-        message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
-        data: {
-          transactionId: payload.id,
-          matchedOrder: order.orderCode,
-          status: 'MATCHED',
-        },
+        message: 'Payment created successfully',
+        payment: this.mapToPaymentResponse(payment),
       };
     } catch (error) {
-      // Rollback transaction on error
-      await queryRunner.rollbackTransaction();
-      this.logger.error('Error processing webhook payment:', error);
+      this.logger.error('Error creating payment:', error);
 
-      // Try to update webhook log status to failed
-      if (webhookLogId) {
-        try {
-          const errorQueryRunner = dataSource.createQueryRunner();
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Failed to create payment',
+      };
+    }
+  }
 
-          await errorQueryRunner.connect();
-          await this.updateWebhookLogStatus(
-            errorQueryRunner,
-            webhookLogId,
-            'FAILED',
-            {
-              responseStatus: 500,
-              errorMessage:
-                error instanceof Error ? error.message : 'Unknown error',
-            },
+  /**
+   * Update a payment via GraphQL mutation
+   */
+  async updatePaymentMutation(
+    workspaceId: string,
+    input: UpdatePaymentInputDto,
+  ): Promise<UpdatePaymentResponseDto> {
+    try {
+      // Get current payment
+      const currentPayment =
+        await this.mktPaymentRepository.findByIdWithRelations(
+          workspaceId,
+          input.paymentId,
+        );
+
+      if (!currentPayment) {
+        return {
+          success: false,
+          message: `Payment not found with id: ${input.paymentId}`,
+        };
+      }
+
+      // Build update data
+      const updateData: Partial<MktPaymentWorkspaceEntity> = {};
+
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.amount !== undefined) updateData.amount = input.amount;
+      if (input.currency !== undefined) {
+        updateData.currency = input.currency as PaymentCurrency;
+      }
+      if (input.description !== undefined)
+        updateData.description = input.description;
+      if (input.status !== undefined)
+        updateData.status = input.status as PaymentStatus;
+      if (input.paymentDate !== undefined)
+        updateData.paymentDate = input.paymentDate;
+      if (input.mktPaymentMethodId !== undefined) {
+        updateData.mktPaymentMethodId = input.mktPaymentMethodId;
+      }
+
+      // Handle QR code logic
+      const qrCodeResult = await this.handleQrCodeLogic(
+        workspaceId,
+        currentPayment,
+        input,
+      );
+
+      if (qrCodeResult.qrCodeUrl !== undefined) {
+        updateData.qrCodeUrl = qrCodeResult.qrCodeUrl;
+      }
+
+      // Update payment
+      await this.mktPaymentRepository.update(
+        workspaceId,
+        input.paymentId,
+        updateData,
+      );
+
+      // Fetch updated payment
+      const updatedPayment = await this.mktPaymentRepository.findById(
+        workspaceId,
+        input.paymentId,
+      );
+
+      this.logger.log(`Updated payment ${input.paymentId}`);
+
+      return {
+        success: true,
+        message: 'Payment updated successfully',
+        payment: updatedPayment
+          ? this.mapToPaymentResponse(updatedPayment)
+          : undefined,
+      };
+    } catch (error) {
+      this.logger.error('Error updating payment:', error);
+
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Failed to update payment',
+      };
+    }
+  }
+
+  // ============================================
+  // PRIVATE HELPER METHODS
+  // ============================================
+
+  /**
+   * Handle QR code generation logic for payment updates
+   */
+  private async handleQrCodeLogic(
+    workspaceId: string,
+    currentPayment: MktPaymentWorkspaceEntity,
+    input: UpdatePaymentInputDto,
+  ): Promise<{ qrCodeUrl?: string }> {
+    const result: { qrCodeUrl?: string } = {};
+
+    try {
+      const newPaymentMethodId = input.mktPaymentMethodId;
+      const currentPaymentMethodId = currentPayment.mktPaymentMethodId;
+
+      // Case 1: Payment method is being changed
+      if (newPaymentMethodId && newPaymentMethodId !== currentPaymentMethodId) {
+        const paymentMethodRepository =
+          await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPaymentMethodWorkspaceEntity>(
+            workspaceId,
+            'mktPaymentMethod',
+            { shouldBypassPermissionChecks: true },
           );
-          await errorQueryRunner.release();
-        } catch (logError) {
-          this.logger.error('Failed to update webhook log status:', logError);
+
+        const newPaymentMethod = await paymentMethodRepository.findOne({
+          where: { id: newPaymentMethodId },
+        });
+
+        if (newPaymentMethod) {
+          if (newPaymentMethod.name === SEPAY_QR_METHOD_NAME) {
+            // Switching to SEPay QR - generate QR code
+            const qrResult =
+              await this.mktPaymentPrepareService._draftSepayQrCodeUrl(
+                newPaymentMethod,
+                input.amount ?? currentPayment.amount,
+                currentPayment.mktOrder?.orderCode,
+              );
+
+            if (qrResult.qrCodeUrl) {
+              result.qrCodeUrl = qrResult.qrCodeUrl;
+              this.logger.log(
+                `Generated SEPay QR code URL for payment method change`,
+              );
+            }
+          } else {
+            // Switching from SEPay QR - clear QR code
+            result.qrCodeUrl = '';
+            this.logger.log(
+              'Cleared QR code URL for non-SEPay QR payment method',
+            );
+          }
+        }
+
+        return result;
+      }
+
+      // Case 2: Amount is being changed for existing SEPay QR payment
+      const currentPaymentMethod = currentPayment.mktPaymentMethod;
+
+      if (
+        currentPaymentMethod?.name === SEPAY_QR_METHOD_NAME &&
+        input.amount !== undefined &&
+        input.amount !== currentPayment.amount
+      ) {
+        const qrResult =
+          await this.mktPaymentPrepareService._draftSepayQrCodeUrl(
+            currentPaymentMethod,
+            input.amount,
+            currentPayment.mktOrder?.orderCode,
+          );
+
+        if (qrResult.qrCodeUrl) {
+          result.qrCodeUrl = qrResult.qrCodeUrl;
+          this.logger.log(`Regenerated SEPay QR code URL for amount change`);
         }
       }
-
-      throw error;
-    } finally {
-      await queryRunner.release();
+    } catch (error) {
+      this.logger.error('Error handling QR code logic:', error);
+      // Don't throw - QR code generation failure shouldn't block payment update
     }
-  }
-
-  /**
-   * Create webhook log entry
-   */
-  private async createWebhookLog(
-    queryRunner: QueryRunner,
-    workspaceId: string,
-    data: {
-      sepayTransactionId: number;
-      gateway: string;
-      requestBody: object;
-      ipAddress?: string;
-      status: WebhookLogStatus;
-    },
-  ): Promise<string> {
-    const webhookLogRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktWebhookLogWorkspaceEntity>(
-        workspaceId,
-        'webhookLogs',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const webhookLog = webhookLogRepo.create({
-      sepayTransactionId: data.sepayTransactionId,
-      gateway: data.gateway,
-      requestBody: data.requestBody,
-      ipAddress: data.ipAddress || null,
-      status: data.status,
-    } as Partial<MktWebhookLogWorkspaceEntity>);
-
-    const saved = await queryRunner.manager.save(webhookLog);
-
-    return saved.id;
-  }
-
-  /**
-   * Update webhook log status
-   */
-  private async updateWebhookLogStatus(
-    queryRunner: QueryRunner,
-    webhookLogId: string,
-    status: WebhookLogStatus,
-    data?: {
-      responseStatus?: number;
-      responseBody?: object;
-      matchedOrderCode?: string;
-      processingTimeMs?: number;
-      errorMessage?: string;
-    },
-  ): Promise<void> {
-    await queryRunner.manager.update(
-      'mktWebhookLog',
-      { id: webhookLogId },
-      {
-        status,
-        ...data,
-      },
-    );
-  }
-
-  /**
-   * Find payment by SePay transaction ID using QueryRunner
-   */
-  private async findBySepayTransactionIdWithRunner(
-    queryRunner: QueryRunner,
-    workspaceId: string,
-    sepayTransactionId: number,
-  ): Promise<MktPaymentWorkspaceEntity | null> {
-    const result = await queryRunner.manager.findOne(
-      MktPaymentWorkspaceEntity,
-      {
-        where: { sepayTransactionId: String(sepayTransactionId) },
-      },
-    );
 
     return result;
   }
 
   /**
-   * Find order by code using QueryRunner
+   * Map payment entity to response DTO
    */
-  private async findOneByOrderCodeWithRunner(
-    queryRunner: QueryRunner,
-    workspaceId: string,
-    orderCode: string,
-  ): Promise<{ id: string; orderCode: string; totalAmount?: number } | null> {
-    const orderRepo =
-      await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
-
-    // Use the existing repository but the result is still within the transaction context
-    return await orderRepo.findOne({
-      where: { orderCode },
-    });
-  }
-
-  /**
-   * Find payments by order ID using QueryRunner
-   */
-  private async findPaymentsByOrderIdWithRunner(
-    queryRunner: QueryRunner,
-    workspaceId: string,
-    orderId: string,
-  ): Promise<MktPaymentWorkspaceEntity[]> {
-    const result = await queryRunner.manager.find(MktPaymentWorkspaceEntity, {
-      where: { mktOrderId: orderId },
-    });
-
-    return result;
-  }
-
-  /**
-   * Update payment by ID using QueryRunner (within transaction)
-   */
-  private async updatePaymentByIdWithRunner(
-    queryRunner: QueryRunner,
-    workspaceId: string,
-    paymentId: string,
-    updateData: Partial<MktPaymentWorkspaceEntity>,
-    authContext: RequestSepayJWT,
-  ): Promise<void> {
-    const workspaceMemberRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
-        workspaceId,
-        'workspaceMember',
-      );
-
-    let createdByName = 'system';
-
-    if (authContext.workspaceMemberId) {
-      const workspaceMember = await workspaceMemberRepository.findOne({
-        where: { id: authContext.workspaceMemberId },
-      });
-
-      if (workspaceMember) {
-        createdByName = `${workspaceMember.name.firstName} ${workspaceMember.name.lastName}`;
-      }
-    }
-
-    const createdBy: ActorMetadata = {
-      source: FieldActorSource.MANUAL,
-      workspaceMemberId: authContext.workspaceMemberId || null,
-      name: createdByName,
-      context: {},
+  private mapToPaymentResponse(
+    payment: MktPaymentWorkspaceEntity,
+  ): PaymentResponseDto {
+    return {
+      id: payment.id,
+      name: payment.name,
+      amount: payment.amount ?? 0,
+      currency: payment.currency ?? 'VND',
+      status: payment.status ?? 'PENDING',
+      qrCodeUrl: payment.qrCodeUrl ?? undefined,
+      paymentPageUrl: payment.paymentPageUrl ?? undefined,
+      expiredAt: payment.expiredAt ?? undefined,
+      mktOrderId: payment.mktOrderId ?? undefined,
+      mktPaymentMethodId: payment.mktPaymentMethodId ?? undefined,
     };
-
-    await queryRunner.manager.update(
-      MktPaymentWorkspaceEntity,
-      { id: paymentId },
-      { ...updateData, createdBy },
-    );
   }
 }
