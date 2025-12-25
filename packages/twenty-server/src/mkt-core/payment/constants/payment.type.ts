@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
@@ -24,12 +26,21 @@ export type CALL_FIREBASE_DATA = {
   QRCodeUrl: string | null;
 };
 
+/**
+ * Auth context từ JWT token cho SePay webhook
+ */
 export type RequestSepayJWT = {
   user: User;
   workspaceId: string;
   workspaceMemberId: string;
   userWorkspaceId: string;
 };
+
+/**
+ * Extended Express Request với auth context từ JWT
+ * Dùng cho controller khi cần truy cập cả request info (headers, ip) và auth context
+ */
+export type SepayWebhookRequest = Request & RequestSepayJWT;
 
 export enum PAYMENT_HISTORY_TYPE {
   PAYMENT = 'PAYMENT',

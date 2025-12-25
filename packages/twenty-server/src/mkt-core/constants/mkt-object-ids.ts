@@ -79,4 +79,6 @@ export const MKT_OBJECT_IDS = {
   mktCoupon: '550e8400-e29b-41d4-a716-446655440103',
   mktPromotionUsage: '550e8400-e29b-41d4-a716-446655440104',
   mktPromotionAudit: '550e8400-e29b-41d4-a716-446655440105',
+  // webhook logs
+  mktWebhookLog: 'a3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e',
 };

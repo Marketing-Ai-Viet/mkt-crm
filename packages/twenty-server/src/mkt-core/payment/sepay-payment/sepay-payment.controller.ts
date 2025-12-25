@@ -14,6 +14,8 @@ import {
   Res,
   UnauthorizedException,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 
 import { Response } from 'express';
@@ -21,30 +23,25 @@ import { Response } from 'express';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
-import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
-import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
-import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
+import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
+import {
+  RequestSepayJWT,
+  SepayWebhookRequest,
+} from 'src/mkt-core/payment/constants/payment.type';
+import {
+  SEPAY_TEMPLATE_DEFAULTS,
+  VIETNAM_TIMEZONE,
+} from 'src/mkt-core/payment/constants/sepay.constants';
+import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
-import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
-
-type SepayWebhookPayload = {
-  gateway: string; // "sepay",
-  transactionDate: string; // "2025-09-24 10:45:51",
-  accountNumber: string; // "0971304083",
-  subAccount: string | null; // null,
-  code: string; // "MKT20250924001",
-  content: string; // "MKT20250924001",
-  transferType: string; // "in",
-  description: string; // "Payment for order MKT20250924001",
-  transferAmount: number; // 55000,
-  referenceCode: string; // "",
-  accumulated: number; // 33648579,
-  id: number; // 237046
-};
+import { SepayWebhookResponse } from 'src/mkt-core/payment/types';
+import {
+  DATE_TIME_FORMATS,
+  DateTimeUtils,
+} from 'src/mkt-core/utils/date-time.utils';
 
 // Choose guards based on environment flag
 // Removed unused sepayGuards variable
@@ -122,11 +119,12 @@ export class SepayPaymentController {
   @UseGuards(PublicEndpointGuard)
   @Post('hooks/sepay-payment')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async handleSepayPayment(
-    @Body() payload: SepayWebhookPayload,
-    @Req() request: RequestSepayJWT,
+    @Body() payload: SepayWebhookDto,
+    @Req() request: SepayWebhookRequest,
     @Headers('authorization') authorization?: string,
-  ) {
+  ): Promise<SepayWebhookResponse> {
     this.logger.log('Received sepay-payment webhook', {
       id: payload.id,
       code: payload.code,
@@ -149,77 +147,7 @@ export class SepayPaymentController {
       return { success: true };
     }
 
-    // Step 2: Idempotency check - kiểm tra giao dịch đã xử lý chưa
-    const existingPayment =
-      await this.mktPaymentService.findBySepayTransactionId(
-        workspaceId,
-        payload.id,
-      );
-
-    if (existingPayment) {
-      this.logger.log(`Transaction ${payload.id} already processed, skipping`);
-
-      return {
-        success: true,
-        message: SEPAY_WEBHOOK_MESSAGES.ALREADY_PROCESSED,
-        data: { transactionId: payload.id, status: 'ALREADY_PROCESSED' },
-      };
-    }
-
-    // Step 3: Find order by code
-    const order = await this.mktPaymentService.findOneByOrderCode(
-      workspaceId,
-      payload.code,
-    );
-
-    if (!order) {
-      this.logger.error(`Order not found for code: ${payload.code}`);
-
-      return {
-        success: true,
-        message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
-        data: { transactionId: payload.id, status: 'UNMATCHED' },
-      };
-    }
-
-    // Step 4: Amount validation - kiểm tra số tiền thanh toán
-    const expectedAmount = order.totalAmount || 0;
-    const receivedAmount = payload.transferAmount || 0;
-
-    if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
-      this.logger.warn(
-        `Amount mismatch for order ${payload.code}: expected ${expectedAmount}, received ${receivedAmount}`,
-      );
-
-      // Nếu số tiền ít hơn - ghi nhận partial payment
-      if (MoneyUtils.lessThan(receivedAmount, expectedAmount)) {
-        this.logger.warn(`Partial payment detected for order ${payload.code}`);
-        // TODO: Xử lý partial payment nếu cần
-      }
-      // Nếu số tiền nhiều hơn - vẫn xử lý nhưng log warning
-    }
-
-    // Step 5: Find payments for order
-    const payments = await this.mktPaymentService.findPaymentsByOrderId(
-      workspaceId,
-      order.id,
-    );
-
-    if (payments.length === 0) {
-      this.logger.warn(`No payments found for order ${order.id}`);
-
-      return {
-        success: true,
-        message: SEPAY_WEBHOOK_MESSAGES.NO_PAYMENT,
-        data: {
-          transactionId: payload.id,
-          matchedOrder: order.orderCode,
-          status: 'NO_PAYMENT',
-        },
-      };
-    }
-
-    // Step 6: Update payment với sepayTransactionId
+    // Step 2: Process payment with transaction (includes logging, validation, update)
     const authContext: RequestSepayJWT = {
       user: request.user,
       workspaceId: request.workspaceId,
@@ -227,38 +155,33 @@ export class SepayPaymentController {
       userWorkspaceId: request.userWorkspaceId,
     };
 
-    // Chỉ xử lý payment đầu tiên
-    const [primaryPayment] = payments;
+    // Get client IP address for logging
+    const ipAddress =
+      (request.headers?.['x-forwarded-for'] as string)?.split(',')[0] ||
+      request.ip ||
+      undefined;
 
-    await this.mktPaymentService.updatePaymentById(
+    // Delegate all logic to service with DB transaction
+    const result = await this.mktPaymentService.processWebhookPayment(
       workspaceId,
-      primaryPayment.id,
-      {
-        status: MKT_PAYMENT_STATUS.COMPLETED,
-        paymentDate: payload.transactionDate,
-        amount: payload.transferAmount,
-        description: payload.content || payload.description,
-        sepayTransactionId: String(payload.id), // Lưu transaction ID cho idempotency
-      },
+      payload,
       authContext,
+      ipAddress,
     );
 
-    this.logger.log(
-      `Payment ${primaryPayment.id} completed for order ${order.orderCode}`,
-    );
+    // Notify Firebase if payment was matched
+    if (result.data?.status === 'MATCHED' && result.data.matchedOrder) {
+      const order = await this.mktPaymentService.findOneByOrderCode(
+        workspaceId,
+        result.data.matchedOrder,
+      );
 
-    // Notify Firebase
-    await this.fireBaseIntegrationService.completedOrderToFirebase(order);
+      if (order) {
+        await this.fireBaseIntegrationService.completedOrderToFirebase(order);
+      }
+    }
 
-    return {
-      success: true,
-      message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
-      data: {
-        transactionId: payload.id,
-        matchedOrder: order.orderCode,
-        status: 'MATCHED',
-      },
-    };
+    return result;
   }
 
   @UseGuards(PublicEndpointGuard)
@@ -322,35 +245,32 @@ export class SepayPaymentController {
       // Replace template variables
       let htmlContent = template.content || '';
 
-      // Format expired_at if available
+      // Format expired_at if available using DateTimeUtils
       let formattedExpiredAt = payment.expiredAt;
 
       if (formattedExpiredAt) {
         try {
-          const expiredDate = new Date(formattedExpiredAt);
+          const expiredDateTime = DateTimeUtils.fromISO(formattedExpiredAt);
 
-          formattedExpiredAt = expiredDate.toLocaleString('vi-VN', {
-            timeZone: 'Asia/Ho_Chi_Minh',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
+          // Convert to Vietnam timezone and format
+          formattedExpiredAt = expiredDateTime
+            .setZone(VIETNAM_TIMEZONE)
+            .toFormat(DATE_TIME_FORMATS.DISPLAY_DATE_TIME);
         } catch (error) {
           this.logger.warn('Error formatting expired_at:', error);
         }
       }
 
       const templateVariables = {
-        customer_name: order.name || 'Khách hàng',
+        customer_name:
+          order.name || SEPAY_TEMPLATE_DEFAULTS.DEFAULT_CUSTOMER_NAME,
         order_code: orderCode,
         amount: payment.amount?.toLocaleString('vi-VN') || '0',
-        currency: payment.currency || 'VND',
+        currency: payment.currency || SEPAY_TEMPLATE_DEFAULTS.DEFAULT_CURRENCY,
         qr_code_url: payment.qrCodeUrl || '',
-        expired_at: formattedExpiredAt || '" - trong vòng 24h"',
-        company_name: 'MKT CRM',
+        expired_at:
+          formattedExpiredAt || SEPAY_TEMPLATE_DEFAULTS.DEFAULT_EXPIRY_TEXT,
+        company_name: SEPAY_TEMPLATE_DEFAULTS.COMPANY_NAME,
       };
 
       // Replace all template variables - sử dụng for...of thay vì forEach

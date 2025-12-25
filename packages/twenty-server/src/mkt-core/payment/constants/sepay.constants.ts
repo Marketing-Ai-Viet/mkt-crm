@@ -45,3 +45,14 @@ export type SepayWebhookStatus =
   | 'PARTIAL'
   | 'ALREADY_PROCESSED'
   | 'NO_PAYMENT';
+
+// Payment page template defaults
+export const SEPAY_TEMPLATE_DEFAULTS = {
+  COMPANY_NAME: 'MKT CRM',
+  DEFAULT_CUSTOMER_NAME: 'Khách hàng',
+  DEFAULT_EXPIRY_TEXT: '" - trong vòng 24h"',
+  DEFAULT_CURRENCY: 'VND',
+} as const;
+
+// Vietnam timezone for date formatting
+export const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh';

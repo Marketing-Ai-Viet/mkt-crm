@@ -1457,3 +1457,21 @@ export const MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS = {
   // relation
   customer: 'c95e0199-3547-409a-ab8c-e96d7511be4e',
 };
+
+// Webhook Log entity for auditing webhook requests
+export const MKT_WEBHOOK_LOG_FIELD_IDS = {
+  // core fields
+  sepayTransactionId: 'b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9e',
+  gateway: 'c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0f',
+  requestBody: 'd6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1a',
+  responseStatus: 'e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b',
+  responseBody: 'f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c',
+  processingTimeMs: 'a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d',
+  ipAddress: 'b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e',
+  status: 'c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f',
+  errorMessage: 'd2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7a',
+  matchedOrderCode: 'e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8b',
+  // standard fields
+  position: 'f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c',
+  createdBy: 'a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d',
+};
