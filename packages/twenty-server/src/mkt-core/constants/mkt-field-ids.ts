@@ -816,6 +816,9 @@ export const MKT_PAYMENT_FIELD_IDS = {
   mktPaymentHistories: 'd911020f-6776-4dd7-9e3a-21f478aa65cf',
   mktTemplate: 'be4400ab-ce40-42aa-a72d-271c2caf806c',
 
+  // SePay integration fields
+  sepayTransactionId: 'b637c9af-f198-4d24-9f7a-b0c8cede17b8',
+
   //common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',
   createdBy: 'ce9a8b84-6d5f-4e3a-9c23-8b7f6e5d4c44',

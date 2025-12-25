@@ -16,7 +16,7 @@ import {
   OrderState,
   OrderStateContext,
   OrderStateInput,
-} from 'src/mkt-core/order/states/order-state.interface';
+} from 'src/mkt-core/order/types/order-state.interface';
 import { OverdueState } from 'src/mkt-core/order/states/overdue-state';
 import { PendingPaymentState } from 'src/mkt-core/order/states/pending-payment-state';
 import { RefundPartialState } from 'src/mkt-core/order/states/refund-partial-state';

@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import keyBy from 'lodash.keyby';
 import { QueryRunner } from 'typeorm';
 
+import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
@@ -14,10 +16,13 @@ import {
 import {
   CreateOrderWithItemsInput,
   CreatePaymentStepOutput,
+  OrderPaymentMethodInput,
+  PaymentCreationParams,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 
 /**
  * CreatePaymentStep - Step 4: Tạo payment records
@@ -62,132 +67,46 @@ export class CreatePaymentStep extends SagaStep<
     _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreatePaymentStepOutput>> {
     try {
-      if (!context.orderId) {
-        return {
-          success: false,
-          error: new Error('Order ID is required from previous step'),
-        };
-      }
+      const validationResult = this.validateInput(context, input);
 
-      if (!input.paymentMethods || input.paymentMethods.length === 0) {
-        this.logger.warn(
-          'No payment methods provided, skipping payment creation',
-        );
-
-        return {
-          success: true,
-          data: { payments: [] },
-        };
-      }
+      if (validationResult) return validationResult;
 
       this.logger.log(`Creating payments for order: ${context.orderId}`);
 
-      // Get payment methods from database
-      const paymentMethodIds = input.paymentMethods.map(
-        (p) => p.paymentMethodId,
-      );
-      const paymentMethods = await this.getPaymentMethods(
+      const paymentMethods = input.paymentMethods ?? [];
+      const paymentMethodMap = await this.getPaymentMethodMap(
         context.workspaceId,
-        paymentMethodIds,
+        paymentMethods,
       );
 
-      if (paymentMethods.length === 0) {
+      if (paymentMethodMap.size === 0) {
         return {
           success: false,
           error: new Error('No valid payment methods found'),
         };
       }
 
-      // Get total amount from context
+      const paymentRepository = await this.getPaymentRepository(
+        context.workspaceId,
+      );
       const totalAmount = (context.metadata.get('totalAmount') as number) ?? 0;
+      const currency = (input.currency ??
+        DEFAULT_PAYMENT_CURRENCY) as PaymentCurrency;
 
-      // Create payment repository
-      const paymentRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktPaymentWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
+      const { payments, primaryQrCodeUrl } = await this.createPayments(
+        paymentMethods,
+        paymentMethodMap,
+        totalAmount,
+        context,
+        currency,
+        paymentRepository,
+      );
 
-      const payments: MktPaymentWorkspaceEntity[] = [];
-      let primaryQrCodeUrl: string | undefined;
-
-      // Create payments for each payment method
-      for (const paymentMethodInput of input.paymentMethods) {
-        const paymentMethod = paymentMethods.find(
-          (pm) => pm.id === paymentMethodInput.paymentMethodId,
-        );
-
-        if (!paymentMethod) {
-          this.logger.warn(
-            `Payment method ${paymentMethodInput.paymentMethodId} not found, skipping`,
-          );
-          continue;
-        }
-
-        // Calculate amount for this payment
-        let amount = totalAmount;
-        let paymentName = `Thanh toán - ${paymentMethod.name} - ${context.orderCode}`;
-
-        // Handle discount payment (pre-payment)
-        if (
-          paymentMethodInput.name === 'discount' &&
-          paymentMethodInput.amount
-        ) {
-          amount = paymentMethodInput.amount;
-          paymentName = `Thanh toán trước - ${paymentMethod.name} - ${context.orderCode}`;
-        }
-
-        // Generate QR code for SEPay
-        const { qrCodeUrl, expiredAt } =
-          await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
-            paymentMethod,
-            amount,
-            context.orderCode ?? null,
-          );
-
-        // Store primary QR code URL
-        if (!primaryQrCodeUrl && qrCodeUrl) {
-          primaryQrCodeUrl = qrCodeUrl;
-        }
-
-        // Create payment record
-        const paymentData: Partial<MktPaymentWorkspaceEntity> = {
-          mktOrderId: context.orderId,
-          mktPaymentMethodId: paymentMethodInput.paymentMethodId,
-          name: paymentName,
-          amount,
-          currency: input.currency ?? DEFAULT_PAYMENT_CURRENCY,
-          qrCodeUrl: qrCodeUrl ?? undefined,
-          duration: paymentMethodInput.duration ?? undefined,
-          expiredAt: expiredAt ?? undefined,
-          paymentPageUrl: `${process.env.SERVER_URL}/payment/${context.orderCode}`,
-          mktTemplateId: MKT_TEMPLATE.SEPAY,
-        };
-
-        const payment = paymentRepository.create(paymentData);
-
-        // Use repository.save() - workspace repository handles transactions properly
-        const savedPayment = await paymentRepository.save(payment);
-
-        payments.push(savedPayment);
-      }
-
-      this.logger.log(`Created ${payments.length} payment records`);
-
-      // Store in context
-      context.paymentId = payments[0]?.id;
-      context.metadata.set('paymentQrCode', primaryQrCodeUrl);
-      context.rollbackData.set(this.name, {
-        paymentIds: payments.map((p) => p.id),
-      });
+      this.storeInContext(context, payments, primaryQrCodeUrl);
 
       return {
         success: true,
-        data: {
-          payments,
-          qrCodeUrl: primaryQrCodeUrl,
-        },
+        data: { payments, qrCodeUrl: primaryQrCodeUrl },
       };
     } catch (error) {
       this.logger.error('Failed to create payments', error);
@@ -216,13 +135,9 @@ export class CreatePaymentStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
 
-      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
-      const paymentRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktPaymentWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
+      const paymentRepository = await this.getPaymentRepository(
+        context.workspaceId,
+      );
 
       await paymentRepository.delete(data.paymentIds);
 
@@ -237,13 +152,34 @@ export class CreatePaymentStep extends SagaStep<
   // PRIVATE METHODS
   // ============================================
 
-  /**
-   * Get payment methods from database
-   */
-  private async getPaymentMethods(
+  private validateInput(
+    context: SagaContext,
+    input: CreateOrderWithItemsInput,
+  ): SagaStepResult<CreatePaymentStepOutput> | null {
+    if (!context.orderId) {
+      return {
+        success: false,
+        error: new Error('Order ID is required from previous step'),
+      };
+    }
+
+    if (!input.paymentMethods?.length) {
+      this.logger.warn(
+        'No payment methods provided, skipping payment creation',
+      );
+
+      return { success: true, data: { payments: [] } };
+    }
+
+    return null;
+  }
+
+  private async getPaymentMethodMap(
     workspaceId: string,
-    paymentMethodIds: string[],
-  ): Promise<MktPaymentMethodWorkspaceEntity[]> {
+    paymentMethodInputs: OrderPaymentMethodInput[],
+  ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
+    const paymentMethodIds = paymentMethodInputs.map((p) => p.paymentMethodId);
+
     const repository =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace(
         workspaceId,
@@ -251,8 +187,163 @@ export class CreatePaymentStep extends SagaStep<
         { shouldBypassPermissionChecks: true },
       );
 
-    return repository.find({
+    const paymentMethods = await repository.find({
       where: paymentMethodIds.map((id) => ({ id })),
+    });
+
+    return new Map(Object.entries(keyBy(paymentMethods, 'id')));
+  }
+
+  private async getPaymentRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<MktPaymentWorkspaceEntity>> {
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      workspaceId,
+      MktPaymentWorkspaceEntity,
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  private async createPayments(
+    paymentMethodInputs: OrderPaymentMethodInput[],
+    paymentMethodMap: Map<string, MktPaymentMethodWorkspaceEntity>,
+    totalAmount: number,
+    context: SagaContext,
+    currency: PaymentCurrency,
+    paymentRepository: WorkspaceRepository<MktPaymentWorkspaceEntity>,
+  ): Promise<{
+    payments: MktPaymentWorkspaceEntity[];
+    primaryQrCodeUrl?: string;
+  }> {
+    const payments: MktPaymentWorkspaceEntity[] = [];
+    let primaryQrCodeUrl: string | undefined;
+
+    for (const paymentMethodInput of paymentMethodInputs) {
+      const paymentMethod = paymentMethodMap.get(
+        paymentMethodInput.paymentMethodId,
+      );
+
+      if (!paymentMethod) {
+        this.logger.warn(
+          `Payment method ${paymentMethodInput.paymentMethodId} not found, skipping`,
+        );
+        continue;
+      }
+
+      const savedPayment = await this.createSinglePayment(
+        { paymentMethodInput, paymentMethod, totalAmount, context, currency },
+        paymentRepository,
+      );
+
+      payments.push(savedPayment);
+
+      if (!primaryQrCodeUrl && savedPayment.qrCodeUrl) {
+        primaryQrCodeUrl = savedPayment.qrCodeUrl;
+      }
+    }
+
+    this.logger.log(`Created ${payments.length} payment records`);
+
+    return { payments, primaryQrCodeUrl };
+  }
+
+  private async createSinglePayment(
+    params: PaymentCreationParams,
+    paymentRepository: WorkspaceRepository<MktPaymentWorkspaceEntity>,
+  ): Promise<MktPaymentWorkspaceEntity> {
+    const {
+      paymentMethodInput,
+      paymentMethod,
+      totalAmount,
+      context,
+      currency,
+    } = params;
+
+    const { amount, paymentName } = this.calculatePaymentDetails(
+      paymentMethodInput,
+      paymentMethod,
+      totalAmount,
+      context.orderCode,
+    );
+
+    const { qrCodeUrl, expiredAt } =
+      await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
+        paymentMethod,
+        amount,
+        context.orderCode ?? null,
+      );
+
+    const orderId = context.orderId ?? '';
+    const paymentData = this.buildPaymentData({
+      orderId,
+      paymentMethodId: paymentMethodInput.paymentMethodId,
+      paymentName,
+      amount,
+      currency,
+      qrCodeUrl,
+      expiredAt,
+      duration: paymentMethodInput.duration,
+      orderCode: context.orderCode,
+    });
+
+    const payment = paymentRepository.create(paymentData);
+
+    return paymentRepository.save(payment);
+  }
+
+  private calculatePaymentDetails(
+    paymentMethodInput: OrderPaymentMethodInput,
+    paymentMethod: MktPaymentMethodWorkspaceEntity,
+    totalAmount: number,
+    orderCode?: string,
+  ): { amount: number; paymentName: string } {
+    const isDiscountPayment =
+      paymentMethodInput.name === 'discount' && paymentMethodInput.amount;
+
+    const amount = isDiscountPayment
+      ? (paymentMethodInput.amount ?? totalAmount)
+      : totalAmount;
+
+    const prefix = isDiscountPayment ? 'Thanh toán trước' : 'Thanh toán';
+    const paymentName = `${prefix} - ${paymentMethod.name} - ${orderCode}`;
+
+    return { amount, paymentName };
+  }
+
+  private buildPaymentData(params: {
+    orderId: string;
+    paymentMethodId: string;
+    paymentName: string;
+    amount: number;
+    currency: PaymentCurrency;
+    qrCodeUrl?: string;
+    expiredAt?: string | null;
+    duration?: number;
+    orderCode?: string;
+  }): Partial<MktPaymentWorkspaceEntity> {
+    return {
+      mktOrderId: params.orderId,
+      mktPaymentMethodId: params.paymentMethodId,
+      name: params.paymentName,
+      amount: params.amount,
+      currency: params.currency,
+      qrCodeUrl: params.qrCodeUrl ?? undefined,
+      duration: params.duration ?? undefined,
+      expiredAt: params.expiredAt ?? undefined,
+      paymentPageUrl: `${process.env.SERVER_URL}/payment/${params.orderCode}`,
+      mktTemplateId: MKT_TEMPLATE.SEPAY,
+    };
+  }
+
+  private storeInContext(
+    context: SagaContext,
+    payments: MktPaymentWorkspaceEntity[],
+    primaryQrCodeUrl?: string,
+  ): void {
+    context.paymentId = payments[0]?.id;
+    context.metadata.set('paymentQrCode', primaryQrCodeUrl);
+    context.rollbackData.set(this.name, {
+      paymentIds: payments.map((p) => p.id),
     });
   }
 }

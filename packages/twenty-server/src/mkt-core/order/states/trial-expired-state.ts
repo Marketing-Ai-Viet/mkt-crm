@@ -5,12 +5,11 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-
 import {
   OrderState,
   OrderStateContext,
   OrderStateInput,
-} from './order-state.interface';
+} from 'src/mkt-core/order/types/order-state.interface';
 
 /**
  * TrialExpiredState - State for orders with expired trial

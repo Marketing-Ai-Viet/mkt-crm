@@ -160,6 +160,18 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   invoiceId?: string;
 
+  // SePay integration - unique transaction ID for idempotency check
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.sepayTransactionId,
+    type: FieldMetadataType.TEXT,
+    label: msg`SePay Transaction ID`,
+    description: msg`Unique transaction ID from SePay webhook for idempotency`,
+    icon: 'IconId',
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceFieldIndex()
+  sepayTransactionId?: string;
+
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.position,
     type: FieldMetadataType.POSITION,

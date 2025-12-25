@@ -11,6 +11,10 @@ import {
   MktProductSnapshot,
 } from 'src/mkt-core/mkt-product-integration';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants';
+import { OrderPaymentMethodInput } from 'src/mkt-core/order/types/order-mutation.types';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { SagaContext } from 'src/mkt-core/order/orchestration';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 
 export type CalculatePromotionStepOutput = {
   promotionResult: OrderPromotionResult;
@@ -66,4 +70,12 @@ export type FinalizeOrderStepOutput = {
 export type RecordPromotionUsageStepOutput = {
   recordedCount: number;
   errors: string[];
+};
+
+export type PaymentCreationParams = {
+  paymentMethodInput: OrderPaymentMethodInput;
+  paymentMethod: MktPaymentMethodWorkspaceEntity;
+  totalAmount: number;
+  context: SagaContext;
+  currency: PaymentCurrency;
 };

@@ -129,6 +129,22 @@ export class MktPaymentService {
     });
   }
 
+  /**
+   * Tìm payment theo SePay transaction ID để kiểm tra idempotency
+   * Dùng để chống xử lý webhook trùng lặp
+   */
+  async findBySepayTransactionId(
+    workspaceId: string,
+    sepayTransactionId: number,
+  ): Promise<MktPaymentWorkspaceEntity | null> {
+    const paymentRepo =
+      await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);
+
+    return paymentRepo.findOne({
+      where: { sepayTransactionId: String(sepayTransactionId) },
+    });
+  }
+
   async findPaymentsByOrderId(workspaceId: string, orderId: string) {
     const paymentRepo =
       await this.mktRepo.getPaymentRepositoryByWorkspaceId(workspaceId);

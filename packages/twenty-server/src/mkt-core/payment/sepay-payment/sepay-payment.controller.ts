@@ -25,9 +25,11 @@ import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-da
 import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
+import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 type SepayWebhookPayload = {
   gateway: string; // "sepay",
@@ -125,23 +127,20 @@ export class SepayPaymentController {
     @Req() request: RequestSepayJWT,
     @Headers('authorization') authorization?: string,
   ) {
-    this.logger.log('Received sepay-payment webhook', payload);
+    this.logger.log('Received sepay-payment webhook', {
+      id: payload.id,
+      code: payload.code,
+    });
 
-    // Validate authorization header with API key from .env
+    // Step 1: Validate authorization header with API key from .env
     try {
       this.validateAuthorizationHeader(authorization);
       this.logger.log('API key validation successful');
     } catch (error) {
       this.logger.error('Authorization validation failed:', error.message);
-      throw error; // Always throw error for invalid API key
+      throw error;
     }
 
-    this.logger.log('Request user info', {
-      user: request.user,
-      workspaceId: request.workspaceId,
-      workspaceMemberId: request.workspaceMemberId,
-      userWorkspaceId: request.userWorkspaceId,
-    });
     const workspaceId = process.env.SEPAY_WORKSPACE_ID;
 
     if (!workspaceId) {
@@ -150,6 +149,24 @@ export class SepayPaymentController {
       return { success: true };
     }
 
+    // Step 2: Idempotency check - kiểm tra giao dịch đã xử lý chưa
+    const existingPayment =
+      await this.mktPaymentService.findBySepayTransactionId(
+        workspaceId,
+        payload.id,
+      );
+
+    if (existingPayment) {
+      this.logger.log(`Transaction ${payload.id} already processed, skipping`);
+
+      return {
+        success: true,
+        message: SEPAY_WEBHOOK_MESSAGES.ALREADY_PROCESSED,
+        data: { transactionId: payload.id, status: 'ALREADY_PROCESSED' },
+      };
+    }
+
+    // Step 3: Find order by code
     const order = await this.mktPaymentService.findOneByOrderCode(
       workspaceId,
       payload.code,
@@ -158,9 +175,31 @@ export class SepayPaymentController {
     if (!order) {
       this.logger.error(`Order not found for code: ${payload.code}`);
 
-      return { success: true };
+      return {
+        success: true,
+        message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
+        data: { transactionId: payload.id, status: 'UNMATCHED' },
+      };
     }
 
+    // Step 4: Amount validation - kiểm tra số tiền thanh toán
+    const expectedAmount = order.totalAmount || 0;
+    const receivedAmount = payload.transferAmount || 0;
+
+    if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
+      this.logger.warn(
+        `Amount mismatch for order ${payload.code}: expected ${expectedAmount}, received ${receivedAmount}`,
+      );
+
+      // Nếu số tiền ít hơn - ghi nhận partial payment
+      if (MoneyUtils.lessThan(receivedAmount, expectedAmount)) {
+        this.logger.warn(`Partial payment detected for order ${payload.code}`);
+        // TODO: Xử lý partial payment nếu cần
+      }
+      // Nếu số tiền nhiều hơn - vẫn xử lý nhưng log warning
+    }
+
+    // Step 5: Find payments for order
     const payments = await this.mktPaymentService.findPaymentsByOrderId(
       workspaceId,
       order.id,
@@ -168,7 +207,19 @@ export class SepayPaymentController {
 
     if (payments.length === 0) {
       this.logger.warn(`No payments found for order ${order.id}`);
+
+      return {
+        success: true,
+        message: SEPAY_WEBHOOK_MESSAGES.NO_PAYMENT,
+        data: {
+          transactionId: payload.id,
+          matchedOrder: order.orderCode,
+          status: 'NO_PAYMENT',
+        },
+      };
     }
+
+    // Step 6: Update payment với sepayTransactionId
     const authContext: RequestSepayJWT = {
       user: request.user,
       workspaceId: request.workspaceId,
@@ -176,24 +227,38 @@ export class SepayPaymentController {
       userWorkspaceId: request.userWorkspaceId,
     };
 
-    for (const payment of payments) {
-      await this.mktPaymentService.updatePaymentById(
-        workspaceId,
-        payment.id,
-        {
-          status: MKT_PAYMENT_STATUS.COMPLETED,
-          paymentDate: payload.transactionDate,
-          amount: payload.transferAmount,
-          description: payload.content || payload.description,
-        },
-        authContext,
-      );
-      this.logger.log(`Updated payment ${payment.id} for order ${order.id}`);
-      this.fireBaseIntegrationService.completedOrderToFirebase(order);
-      break; // Assuming only one payment needs to be updated
-    }
+    // Chỉ xử lý payment đầu tiên
+    const [primaryPayment] = payments;
 
-    return { success: true };
+    await this.mktPaymentService.updatePaymentById(
+      workspaceId,
+      primaryPayment.id,
+      {
+        status: MKT_PAYMENT_STATUS.COMPLETED,
+        paymentDate: payload.transactionDate,
+        amount: payload.transferAmount,
+        description: payload.content || payload.description,
+        sepayTransactionId: String(payload.id), // Lưu transaction ID cho idempotency
+      },
+      authContext,
+    );
+
+    this.logger.log(
+      `Payment ${primaryPayment.id} completed for order ${order.orderCode}`,
+    );
+
+    // Notify Firebase
+    await this.fireBaseIntegrationService.completedOrderToFirebase(order);
+
+    return {
+      success: true,
+      message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
+      data: {
+        transactionId: payload.id,
+        matchedOrder: order.orderCode,
+        status: 'MATCHED',
+      },
+    };
   }
 
   @UseGuards(PublicEndpointGuard)
@@ -288,12 +353,12 @@ export class SepayPaymentController {
         company_name: 'MKT CRM',
       };
 
-      // Replace all template variables
-      Object.entries(templateVariables).forEach(([key, value]) => {
+      // Replace all template variables - sử dụng for...of thay vì forEach
+      for (const [key, value] of Object.entries(templateVariables)) {
         const regex = new RegExp(`{{${key}}}`, 'g');
 
-        htmlContent = htmlContent.replace(regex, value || '');
-      });
+        htmlContent = htmlContent.replace(regex, String(value ?? ''));
+      }
 
       this.logger.log(`Generated payment page for order ${orderCode}`);
 

@@ -4,7 +4,7 @@ export * from './completed-state';
 export * from './confirm-state';
 export * from './draft-state';
 export * from './order-state-machine';
-export * from './order-state.interface';
+export * from 'src/mkt-core/order/types/order-state.interface';
 export * from './overdue-state';
 export * from './pending-payment-state';
 export * from './refund-partial-state';
