@@ -32,13 +32,13 @@ import { mktTagsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-tag-all.vie
 import { mktTemplatesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-template-all.view';
 import { mktTemporaryPermissionsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-temporary-permission-all.view';
 import { mktEmailAllView } from 'src/mkt-core/email/seeder/mkt-email-all.view';
-import { mktReportsAllView } from 'src/mkt-core/report/seeder/mkt-report-all.view';
+import { mktReportsAllView } from 'src/mkt-core/seeder/mkt-report-seeder/mkt-report-all.view';
 import { mktCouponsAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-coupon-all.view';
 import { mktPromotionAuditsAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-audit-all.view';
 import { mktPromotionRulesAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-rule-all.view';
 import { mktPromotionUsagesAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-usage-all.view';
 import { mktPromotionsAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-all.view';
-import { mktOptionsAllView } from 'src/mkt-core/setting/seeder/mkt-option-all.view';
+import { mktOptionsAllView } from 'src/mkt-core/seeder/mkt-option-seeder/mkt-option-all.view';
 
 export const MKT_ALL_VIEWS = [
   // core views

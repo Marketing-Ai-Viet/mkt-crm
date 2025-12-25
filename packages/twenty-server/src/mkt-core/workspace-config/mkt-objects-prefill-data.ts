@@ -29,13 +29,13 @@ import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tag
 import { prefillMktTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-templates';
 import { prefillMktTemporaryPermissions } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-temporary-permissions';
 import { prefillMktEmails } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
-import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
+import { prefillMktReports } from 'src/mkt-core/seeder/mkt-report-seeder/prefill-mkt-reports';
 import { prefillMktCoupons } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-coupons';
 import { prefillMktPromotionAudits } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-audits';
 import { prefillMktPromotionRules } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-rules';
 import { prefillMktPromotionUsages } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-usages';
 import { prefillMktPromotions } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotions';
-import { prefillMktOptions } from 'src/mkt-core/setting/seeder/prefill-mkt-options';
+import { prefillMktOptions } from 'src/mkt-core/seeder/mkt-option-seeder/prefill-mkt-options';
 
 export const MKT_PREFILLS = [
   // core prefills
