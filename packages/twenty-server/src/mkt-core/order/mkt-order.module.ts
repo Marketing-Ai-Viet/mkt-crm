@@ -19,6 +19,7 @@ import {
   MktOrderItemRepository,
   MktOrderHistoryRepository,
 } from 'src/mkt-core/order/repositories';
+import { IdempotencyModule } from 'src/mkt-core/common/idempotency';
 
 import {
   // Core Services
@@ -81,7 +82,6 @@ import {
   OrderLicenseIntegrationService,
   OrderPromotionIntegrationService,
 } from './services/integration';
-import { IdempotencyService } from './orchestration/idempotency';
 
 @Module({
   imports: [
@@ -98,6 +98,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     MktCommonModule,
     MktContractModule,
     CustomerModule,
+    IdempotencyModule.register(), // Idempotency protection for order operations
   ],
   providers: [
     // Event Listeners
@@ -151,9 +152,6 @@ import { IdempotencyService } from './orchestration/idempotency';
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
 
-    // Idempotency (duplicate request prevention)
-    IdempotencyService,
-
     // Legacy Services (backward compatibility)
     OrderService,
     OrderActionService,
@@ -190,8 +188,6 @@ import { IdempotencyService } from './orchestration/idempotency';
     ConfirmOrderSaga,
     UpdateOrderSaga,
     RefundOrderSaga,
-    // Idempotency
-    IdempotencyService,
   ],
 })
 export class MktOrderModule {}

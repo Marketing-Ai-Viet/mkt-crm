@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import {
   RedisCacheService,
   RedisCircuitBreakerService,
+  RedisInvalidationService,
+  RedisLockService,
   RedisRateLimiterService,
 } from './services';
 
@@ -13,6 +15,8 @@ import {
  * - RedisCacheService: Two-tier caching with LRU fallback
  * - RedisCircuitBreakerService: Distributed circuit breaker
  * - RedisRateLimiterService: Distributed rate limiter
+ * - RedisInvalidationService: Tag-based cache invalidation
+ * - RedisLockService: Distributed locking
  *
  * All services support graceful degradation when Redis is unavailable.
  */
@@ -20,11 +24,15 @@ import {
   providers: [
     RedisCacheService,
     RedisCircuitBreakerService,
+    RedisInvalidationService,
+    RedisLockService,
     RedisRateLimiterService,
   ],
   exports: [
     RedisCacheService,
     RedisCircuitBreakerService,
+    RedisInvalidationService,
+    RedisLockService,
     RedisRateLimiterService,
   ],
 })

@@ -102,7 +102,33 @@ export class CacheStorageService {
       throw new Error('flushByPattern is only supported with Redis cache');
     }
 
+    const keys = await this.scanByPattern(scanPattern);
+
+    if (keys.length > 0) {
+      const redisClient = (this.cache as RedisCache).store.client;
+
+      await redisClient.del(keys);
+    }
+  }
+
+  /**
+   * Scan Redis keys matching pattern using SCAN command (non-blocking)
+   *
+   * @param scanPattern - Pattern to match keys (e.g., "idempotency:*")
+   * @param options.maxKeys - Maximum number of keys to return (default: 10000)
+   * @returns Array of matching keys
+   */
+  async scanByPattern(
+    scanPattern: string,
+    options?: { maxKeys?: number },
+  ): Promise<string[]> {
+    if (!this.isRedisCache()) {
+      return [];
+    }
+
     const redisClient = (this.cache as RedisCache).store.client;
+    const maxKeys = options?.maxKeys ?? 10000;
+    const keys: string[] = [];
     let cursor = 0;
 
     do {
@@ -111,15 +137,16 @@ export class CacheStorageService {
         COUNT: 100,
       });
 
-      const nextCursor = result.cursor;
-      const keys = result.keys;
+      cursor = result.cursor;
+      keys.push(...result.keys);
 
-      if (keys.length > 0) {
-        await redisClient.del(keys);
+      // Prevent infinite loops or excessive memory usage
+      if (keys.length >= maxKeys) {
+        break;
       }
-
-      cursor = nextCursor;
     } while (cursor !== 0);
+
+    return keys;
   }
 
   async acquireLock(key: string, ttl = 1000): Promise<boolean> {

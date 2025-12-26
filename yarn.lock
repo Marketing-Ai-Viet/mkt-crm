@@ -23974,6 +23974,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/lodash.sortby@npm:^4.7.9":
+  version: 4.7.9
+  resolution: "@types/lodash.sortby@npm:4.7.9"
+  dependencies:
+    "@types/lodash": "npm:*"
+  checksum: 10c0/682547c7bb210db87ebc172a95c71c3d35d89e87f4eb959c28772b8d80c767bd8cb95ac48390302ac649b3e6450e26c1512818d2d0f0749393c49b5dcbf437c3
+  languageName: node
+  linkType: hard
+
 "@types/lodash.sumby@npm:^4.6.9":
   version: 4.6.9
   resolution: "@types/lodash.sumby@npm:4.6.9"
@@ -57742,6 +57751,7 @@ __metadata:
     "@types/lodash.pickby": "npm:^4.6.9"
     "@types/lodash.round": "npm:^4.0.9"
     "@types/lodash.snakecase": "npm:^4.1.7"
+    "@types/lodash.sortby": "npm:^4.7.9"
     "@types/lodash.sumby": "npm:^4.6.9"
     "@types/lodash.upperfirst": "npm:^4.3.7"
     "@types/luxon": "npm:^3.3.0"
