@@ -14,10 +14,10 @@ import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.typ
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
-  GetInvoiceFileResponse,
   SINVOICE_FILE_STATUS,
   SINVOICE_FILE_TYPE,
-} from 'src/mkt-core/invoice/invoice.constants';
+} from 'src/mkt-core/invoice/constants';
+import { GetInvoiceFileResponse } from 'src/mkt-core/invoice/types';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
 
 @Injectable()

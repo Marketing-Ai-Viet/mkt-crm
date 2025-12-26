@@ -1,17 +1,54 @@
-import {
-  FieldMetadataComplexOption,
-  TagColor,
-} from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+/**
+ * Invoice Module Types
+ * Centralized type definitions for Invoice module
+ */
 
+// Re-export enums and options from constants for convenience
+export {
+  SINVOICE_FILE_STATUS,
+  SINVOICE_FILE_STATUS_OPTIONS,
+  SINVOICE_FILE_TYPE,
+  SINVOICE_FILE_TYPE_OPTIONS,
+} from 'src/mkt-core/invoice/constants';
+
+// ============================================
+// REPOSITORY TYPES
+// ============================================
+
+// Options for finding invoices
+export type FindInvoiceOptions = {
+  take?: number;
+  skip?: number;
+  order?: Record<string, 'ASC' | 'DESC'>;
+};
+
+// Options for finding with limit/offset
+export type FindWithPaginationOptions = {
+  limit?: number;
+  offset?: number;
+};
+
+// Status distribution statistics
+export type StatusDistributionItem = {
+  status: string;
+  count: number;
+};
+
+// ============================================
+// S-INVOICE API TYPES
+// ============================================
+
+// Response from create invoice API
 export type CreateInvoiceResponse = {
   transactionUuid?: string;
   invoiceNo?: string;
   message?: string;
-  [key: string]: unknown;
   result: unknown;
+  [key: string]: unknown;
 };
 
-export type sInvoiceType = {
+// S-Invoice entity type (used for GraphQL input/output)
+export type SInvoiceType = {
   id?: string;
   name?: string;
   amount?: string;
@@ -34,7 +71,8 @@ export type sInvoiceType = {
   mktOrderId?: string;
 };
 
-export type sInvoiceUpdate = {
+// S-Invoice update data
+export type SInvoiceUpdate = {
   errorCode?: string | null;
   description?: string | null;
   supplierTaxCode?: string | null;
@@ -47,7 +85,8 @@ export type sInvoiceUpdate = {
   orderSInvoiceStatus?: string | null;
 };
 
-export type sInvoicePayload = {
+// S-Invoice payload for API request
+export type SInvoicePayload = {
   generalInvoiceInfo: {
     invoiceType: string;
     templateCode: string;
@@ -114,14 +153,20 @@ export type sInvoicePayload = {
   }[];
 };
 
+// ============================================
+// S-INVOICE FILE TYPES
+// ============================================
+
+// Response from get invoice file API
 export type GetInvoiceFileResponse = {
   errorCode: number;
   description: string | null;
   fileToBytes: string; // Base64 encoded PDF content
-  fileName?: string; // File name from API response
-  paymentStatus?: boolean; // Payment status from API response
+  fileName?: string;
+  paymentStatus?: boolean;
 };
 
+// Request for get invoice file API
 export type GetInvoiceFileRequest = {
   supplierTaxCode: string;
   invoiceNo: string;
@@ -129,63 +174,16 @@ export type GetInvoiceFileRequest = {
   fileType: string; // "PDF"
 };
 
-export enum SINVOICE_FILE_STATUS {
-  GETTING = 'GETTING', // Hệ thống đang lấy / tải file hóa đơn từ nguồn ngoài
-  PENDING = 'PENDING', // File đã được yêu cầu nhưng đang chờ xử lý (chưa bắt đầu tải hoặc xử lý)
-  SUCCESS = 'SUCCESS', // File đã được lấy thành công, sẵn sàng sử dụng
-  FAILED = 'FAILED', // Quá trình lấy file thất bại (nguyên nhân có thể do kết nối, không tìm thấy file, v.v.)
-  ERROR = 'ERROR', // Lỗi hệ thống hoặc ngoại lệ không mong muốn trong quá trình xử lý file
-}
+// ============================================
+// BACKWARD COMPATIBILITY ALIASES (lowercase)
+// ============================================
+// Note: Giữ lại để tương thích với code cũ, nên sử dụng PascalCase version
 
-export const SINVOICE_FILE_STATUS_OPTIONS: FieldMetadataComplexOption[] = [
-  {
-    value: SINVOICE_FILE_STATUS.GETTING,
-    label: 'GETTING',
-    color: 'orange' as TagColor,
-    position: 0,
-  },
-  {
-    value: SINVOICE_FILE_STATUS.PENDING,
-    label: 'PENDING',
-    color: 'blue' as TagColor,
-    position: 1,
-  },
-  {
-    value: SINVOICE_FILE_STATUS.SUCCESS,
-    label: 'SUCCESS',
-    color: 'green' as TagColor,
-    position: 2,
-  },
-  {
-    value: SINVOICE_FILE_STATUS.FAILED,
-    label: 'FAILED',
-    color: 'red' as TagColor,
-    position: 3,
-  },
-  {
-    value: SINVOICE_FILE_STATUS.ERROR,
-    label: 'ERROR',
-    color: 'gray' as TagColor,
-    position: 4,
-  },
-];
+/** @deprecated Use SInvoiceType instead */
+export type sInvoiceType = SInvoiceType;
 
-export enum SINVOICE_FILE_TYPE {
-  PDF = 'PDF',
-  ZIP = 'ZIP',
-}
+/** @deprecated Use SInvoiceUpdate instead */
+export type sInvoiceUpdate = SInvoiceUpdate;
 
-export const SINVOICE_FILE_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
-  {
-    value: SINVOICE_FILE_TYPE.PDF,
-    label: 'PDF',
-    color: 'blue' as TagColor,
-    position: 0,
-  },
-  {
-    value: SINVOICE_FILE_TYPE.ZIP,
-    label: 'ZIP',
-    color: 'green' as TagColor,
-    position: 1,
-  },
-];
+/** @deprecated Use SInvoicePayload instead */
+export type sInvoicePayload = SInvoicePayload;

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
@@ -90,7 +90,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     RecordPositionModule,
     WorkspaceCacheStorageModule, // Redis caching for idempotency
     MktPaymentModule,
-    MktInvoiceModule,
+    forwardRef(() => MktInvoiceModule),
     MktProductIntegrationModule, // External MKT Server product integration
     MktLicenseIntegrationModule, // External MKT Server license integration
     MktPromotionModule, // Promotion and coupon management

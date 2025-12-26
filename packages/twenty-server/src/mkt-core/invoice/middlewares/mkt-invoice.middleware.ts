@@ -2,7 +2,7 @@ import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
 
 import { NextFunction, Request, Response } from 'express';
 
-import { MktInvoiceService } from 'src/mkt-core/invoice/mkt-invoice.service';
+import { MktInvoiceService } from 'src/mkt-core/invoice/services/mkt-invoice.service';
 
 @Injectable()
 export class MktInvoiceMiddleware implements NestMiddleware {

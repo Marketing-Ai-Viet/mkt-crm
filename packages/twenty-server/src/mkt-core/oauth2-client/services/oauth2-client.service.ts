@@ -327,9 +327,6 @@ export class OAuth2ClientService
       this.logger.log(`[OAuth2 Debug] Server URL: ${this.serverUrl}`);
       this.logger.log(`[OAuth2 Debug] Client ID: ${this.clientId}`);
       this.logger.log(`[OAuth2 Debug] requestBody `, requestBody);
-      this.logger.log(
-        `[OAuth2 Debug] Client Secret: ${this.clientSecret ? '***' + this.clientSecret.slice(-4) : 'NOT SET'}`,
-      );
       this.logger.log(`[OAuth2 Debug] Scopes: ${JSON.stringify(this.scopes)}`);
       this.logger.log(
         `[OAuth2 Debug] Request Body: ${JSON.stringify(requestBody)}`,
@@ -347,10 +344,6 @@ export class OAuth2ClientService
         );
 
         this.logger.log(`[OAuth2 Debug] Response Status: ${response.status}`);
-        this.logger.log(
-          `[OAuth2 Debug] Response Data: ${JSON.stringify(response.data)}`,
-        );
-
         const tokenResponse = response.data;
         const token = this.parseTokenResponse(tokenResponse);
 

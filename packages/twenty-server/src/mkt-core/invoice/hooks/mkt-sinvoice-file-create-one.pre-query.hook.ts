@@ -10,7 +10,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import {
   SINVOICE_FILE_STATUS,
   SINVOICE_FILE_TYPE,
-} from 'src/mkt-core/invoice/invoice.constants';
+} from 'src/mkt-core/invoice/constants';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 
