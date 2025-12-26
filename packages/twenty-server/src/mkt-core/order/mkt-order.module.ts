@@ -93,7 +93,7 @@ import {
     MessageQueueModule,
     RecordPositionModule,
     WorkspaceCacheStorageModule, // Redis caching for idempotency
-    MktPaymentModule,
+    forwardRef(() => MktPaymentModule), // Circular dependency with MktPaymentModule
     forwardRef(() => MktInvoiceModule),
     MktProductIntegrationModule, // External MKT Server product integration
     MktLicenseIntegrationModule, // External MKT Server license integration

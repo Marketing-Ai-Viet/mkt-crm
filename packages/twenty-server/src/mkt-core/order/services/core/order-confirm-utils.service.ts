@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { firstValueFrom } from 'rxjs';
 
+import { IdempotencyCacheRepository } from 'src/mkt-core/common/idempotency';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
@@ -25,6 +26,11 @@ import {
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
 import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
+
+/** Constants for order code generation lock */
+const ORDER_CODE_LOCK_KEY_PREFIX = 'order:code-gen';
+const ORDER_CODE_LOCK_TIMEOUT_MS = 5000; // 5 seconds
+const ORDER_CODE_MAX_RETRIES = 3;
 
 /**
  * Result type for order value calculations
@@ -62,6 +68,7 @@ export class OrderConfirmUtilsService {
     private readonly mktOrderRepository: MktOrderRepository,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktPaymentMethodRepository: MktPaymentMethodRepository,
+    private readonly idempotencyCacheRepository: IdempotencyCacheRepository,
   ) {}
 
   /**
@@ -142,68 +149,150 @@ export class OrderConfirmUtilsService {
   }
 
   /**
-   * Generate unique order code
+   * Generate unique order code with distributed locking
+   *
+   * Uses Redis distributed lock to prevent race conditions when multiple
+   * requests try to generate order codes concurrently.
+   *
+   * Lock key format: order:code-gen:{workspaceId}:{datePrefix}
    */
   async generateOrderCode(workspaceId: string): Promise<string | null> {
-    try {
-      const orderRepository =
-        await this.mktOrderRepository.getRepository(workspaceId);
+    const now = DateTimeUtils.now();
+    const jsDate = now.toJSDate();
+    const year = jsDate.getFullYear();
+    const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getDate()).padStart(2, '0');
+    const datePrefix = `${year}${month}${day}`;
 
-      const now = DateTimeUtils.now();
-      const jsDate = now.toJSDate();
-      const year = jsDate.getFullYear();
-      const month = String(jsDate.getMonth() + 1).padStart(2, '0');
-      const day = String(jsDate.getDate()).padStart(2, '0');
-      const datePrefix = `${year}${month}${day}`;
+    // Lock key unique per workspace and date
+    const lockKey = `${ORDER_CODE_LOCK_KEY_PREFIX}:${workspaceId}:${datePrefix}`;
 
-      // Find the highest order number for today
-      const todayOrders = await orderRepository
-        .createQueryBuilder('order')
-        .where('order.orderCode LIKE :pattern', {
-          pattern: `${ORDER_CODE_PREFIX}${datePrefix}%`,
-        })
-        .orderBy('order.orderCode', 'DESC')
-        .limit(1)
-        .getOne();
+    for (let attempt = 1; attempt <= ORDER_CODE_MAX_RETRIES; attempt++) {
+      try {
+        // Acquire distributed lock
+        const lockResult = await this.idempotencyCacheRepository.acquireLock(
+          lockKey,
+          ORDER_CODE_LOCK_TIMEOUT_MS,
+        );
 
-      let nextNumber = 1;
+        if (!lockResult.success) {
+          this.logger.warn(
+            `Failed to acquire lock for order code generation (attempt ${attempt}): ${lockResult.error}`,
+          );
+          // Wait briefly before retry
+          await this.delay(100 * attempt);
+          continue;
+        }
 
-      if (todayOrders?.orderCode) {
-        // Extract number from existing order code (e.g., MKT20241201001 -> 1)
-        const pattern = new RegExp(`${ORDER_CODE_PREFIX}\\d{8}(\\d{3})$`);
-        const match = todayOrders.orderCode.match(pattern);
+        if (!lockResult.data) {
+          // Lock not acquired (held by another process)
+          this.logger.warn(
+            `Lock held by another process (attempt ${attempt}), waiting...`,
+          );
+          await this.delay(200 * attempt);
+          continue;
+        }
 
-        if (match) {
-          nextNumber = parseInt(match[1], 10) + 1;
+        try {
+          // Generate order code within lock
+          const orderCode = await this.generateOrderCodeWithinLock(
+            workspaceId,
+            datePrefix,
+          );
+
+          this.logger.log(
+            `Generated orderCode: ${orderCode} (attempt ${attempt})`,
+          );
+
+          return orderCode;
+        } finally {
+          // Always release lock
+          await this.idempotencyCacheRepository.releaseLock(lockKey);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to generate order code (attempt ${attempt}):`,
+          error,
+        );
+
+        if (attempt === ORDER_CODE_MAX_RETRIES) {
+          // Final fallback: use timestamp-based code
+          const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+            .toString()
+            .slice(-6);
+
+          return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
         }
       }
+    }
 
-      // Generate new order code: ORDER_CODE_PREFIX + YYYYMMDD + 3-digit number
-      const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+    return null;
+  }
 
-      // Double-check uniqueness
-      const existingOrder = await this.mktOrderRepository.findByOrderCode(
-        workspaceId,
-        orderCode,
+  /**
+   * Generate order code within the distributed lock
+   * @private
+   */
+  private async generateOrderCodeWithinLock(
+    workspaceId: string,
+    datePrefix: string,
+  ): Promise<string> {
+    const orderRepository =
+      await this.mktOrderRepository.getRepository(workspaceId);
+
+    // Find the highest order number for today
+    const todayOrders = await orderRepository
+      .createQueryBuilder('order')
+      .where('order.orderCode LIKE :pattern', {
+        pattern: `${ORDER_CODE_PREFIX}${datePrefix}%`,
+      })
+      .orderBy('order.orderCode', 'DESC')
+      .limit(1)
+      .getOne();
+
+    let nextNumber = 1;
+
+    if (todayOrders?.orderCode) {
+      // Extract number from existing order code (e.g., MKT20241201001 -> 1)
+      const pattern = new RegExp(`${ORDER_CODE_PREFIX}\\d{8}(\\d{3})$`);
+      const match = todayOrders.orderCode.match(pattern);
+
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    // Generate new order code: ORDER_CODE_PREFIX + YYYYMMDD + 3-digit number
+    const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+
+    // Double-check uniqueness (defensive)
+    const existingOrder = await this.mktOrderRepository.findByOrderCode(
+      workspaceId,
+      orderCode,
+    );
+
+    if (existingOrder) {
+      // If somehow duplicate (shouldn't happen with lock), use timestamp
+      const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+        .toString()
+        .slice(-6);
+
+      this.logger.warn(
+        `Order code ${orderCode} already exists, using timestamp fallback`,
       );
 
-      if (existingOrder) {
-        // If somehow duplicate, try with timestamp
-        const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
-          .toString()
-          .slice(-6);
-
-        return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
-      }
-
-      this.logger.log(`Generated orderCode: ${orderCode}`);
-
-      return orderCode;
-    } catch (error) {
-      this.logger.error(`Failed to generate order code:`, error);
-
-      return null;
+      return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
     }
+
+    return orderCode;
+  }
+
+  /**
+   * Delay helper for retry logic
+   * @private
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

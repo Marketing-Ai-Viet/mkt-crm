@@ -228,7 +228,9 @@ export abstract class BaseSaga<TInput, TOutput> {
         this.logger.error(
           `[${this.sagaName}] Compensate exhausted for: ${step.name}. Manual intervention may be required.`,
         );
-        // TODO: Send alert to monitoring system
+
+        // Emit critical error event for monitoring/alerting systems
+        this.emitCompensationFailureEvent(context, step.name);
       }
     }
   }
@@ -238,6 +240,38 @@ export abstract class BaseSaga<TInput, TOutput> {
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Emit compensation failure event for monitoring/alerting systems
+   *
+   * This event can be caught by:
+   * - Sentry/error tracking
+   * - Slack/PagerDuty webhooks
+   * - Custom monitoring listeners
+   */
+  private emitCompensationFailureEvent(
+    context: SagaContext,
+    stepName: string,
+  ): void {
+    const eventPayload = {
+      type: 'saga.compensation.failure',
+      sagaName: this.sagaName,
+      stepName,
+      workspaceId: context.workspaceId,
+      workspaceMemberId: context.workspaceMemberId,
+      timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
+      metadata: Object.fromEntries(context.metadata),
+      rollbackData: Object.fromEntries(context.rollbackData),
+    };
+
+    // Emit event for external monitoring systems
+    this.eventEmitter.emit('saga.critical.error', eventPayload);
+
+    this.logger.error(
+      `[${this.sagaName}] CRITICAL: Emitted compensation failure event for step: ${stepName}`,
+      eventPayload,
+    );
   }
 
   /**
