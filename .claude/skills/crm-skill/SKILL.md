@@ -15,8 +15,8 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 **Framework**: NestJS (Backend) + React (Frontend)
 **Architecture**: Twenty CRM + mkt-core Custom Module
 **Monorepo**: Nx Workspace
-**Version**: 1.0
-**Last Updated**: 2025-12-13
+**Version**: 1.1
+**Last Updated**: 2025-12-26
 
 ---
 
@@ -48,6 +48,7 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 
 ### **Code Patterns** (Load when coding)
 - [`reference/code-patterns.md`](./reference/code-patterns.md) - WorkspaceEntity, Hook, Service patterns
+- [`reference/module-structure.md`](./reference/module-structure.md) - **Module structure pattern (invoice as reference)**
 - [`templates/`](./templates/) - Ready-to-use code templates
 
 ### **Database** (Load when working with DB)
@@ -69,12 +70,32 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 
 ---
 
+### Task: Create a new mkt-core Module
+
+**Load**:
+1. `reference/module-structure.md` - Standard module structure (invoice as reference)
+2. `reference/architecture.md` - Module dependencies
+
+**Key Points**:
+- Follow invoice module structure
+- Use Hooks chỉ cho operations của chính module đó
+- Use Resolvers cho cross-module operations
+- Tạo index.ts export barrels cho repositories, services, types
+
+---
+
 ### Task: Create a Query Hook (Pre/Post)
 
 **Load**:
-1. `reference/code-patterns.md` - Hook patterns
-2. `templates/pre-query-hook.template.ts`
-3. `templates/post-query-hook.template.ts`
+1. `reference/module-structure.md` - Khi nào dùng Hook vs Resolver
+2. `reference/code-patterns.md` - Hook patterns
+3. `templates/pre-query-hook.template.ts`
+4. `templates/post-query-hook.template.ts`
+
+**⚠️ Important**: Chỉ dùng Hook khi:
+- Làm việc với entity của chính module đó
+- Logic đơn giản, không cần cross-module calls
+- Validate/transform data trước/sau save
 
 ---
 
@@ -268,9 +289,11 @@ npx nx command twenty-server -- mkt-customer-tag-data-seed-dev-workspace
 ### **I need to...**
 
 - **Understand the project** -> Load: `PROJECT-OVERVIEW.md`
+- **Create new mkt-core module** -> Load: `module-structure.md` (invoice as reference)
 - **Create WorkspaceEntity** -> Load: `code-patterns.md` + `workspace-entity.template.ts`
-- **Create Query Hook** -> Load: `code-patterns.md` + hook templates
+- **Create Query Hook** -> Load: `module-structure.md` (Hooks vs Resolvers) + `code-patterns.md`
 - **Create Resolver** -> Load: `code-patterns.md` + `resolver.template.ts`
+- **Decide Hook vs Resolver** -> Load: `module-structure.md` (When to use section)
 - **Fix TypeScript errors** -> Load: `typescript-rules.md`
 - **Database migration** -> Load: `database.md`
 - **Understand architecture** -> Load: `architecture.md`
@@ -282,11 +305,40 @@ npx nx command twenty-server -- mkt-customer-tag-data-seed-dev-workspace
 
 ## mkt-core Module Quick Reference
 
+### Standard Module Structure (invoice as reference)
+
+```
+mkt-core/{module}/
+├── {module}.module.ts       # Module definition
+├── config/                  # Configuration (optional)
+├── constants/               # Constants & Enums
+│   └── index.ts
+├── controllers/             # REST Controllers (optional)
+├── dto/                     # GraphQL input/output
+│   └── index.ts
+├── hooks/                   # Query Hooks (Pre/Post) - CHỈ cho module's entity
+├── integration/             # External integrations (optional)
+├── jobs/                    # Background jobs (optional)
+├── messages/                # Centralized LOG/WARN/ERROR messages
+│   └── index.ts
+├── objects/                 # WorkspaceEntity definitions
+├── repositories/            # Data Access Layer
+│   └── index.ts
+├── resolvers/               # GraphQL Resolvers - cho cross-module operations
+│   └── index.ts
+├── services/                # Business Logic
+│   └── index.ts
+└── types/                   # TypeScript types
+    └── index.ts
+```
+
+### Key Modules
+
 ```
 packages/twenty-server/src/mkt-core/
+├── invoice/           # 📚 Reference module - follow this structure
 ├── license/           # License management
 ├── order/             # Order processing
-├── invoice/           # Invoice system
 ├── payment/           # Payment integration
 ├── customer/          # Customer management
 ├── product/           # Product & variants
@@ -294,27 +346,27 @@ packages/twenty-server/src/mkt-core/
 ├── mkt-kpi/           # KPI tracking
 ├── mkt-reseller/      # Reseller management
 ├── mkt-product-integration/  # MKT Server product integration
-│   ├── configs/       # Zod-validated configuration
-│   ├── constants/     # API endpoints, cache keys
-│   ├── dto/           # GraphQL input/output types
-│   ├── services/      # Business logic services
-│   └── types/         # TypeScript type definitions
 ├── mkt-combo/         # Generic Combo (bán theo package)
-│   ├── constants/     # Object IDs, field IDs, pricing types
-│   ├── dto/           # GraphQL input/output types
-│   ├── objects/       # WorkspaceEntity definitions
-│   ├── repositories/  # Data access layer
-│   ├── resolvers/     # GraphQL resolvers
-│   ├── services/      # Calculation, Validation, Snapshot, Cache
-│   ├── types/         # TypeScript type definitions
-│   └── utils/         # Mapper utilities
 ├── utils/
 │   ├── money.utils.ts      # MoneyUtils - precise decimal calculations
-│   └── date-time.utils.ts  # DateTimeUtils - date/time operations
+│   ├── date-time.utils.ts  # DateTimeUtils - date/time operations
+│   └── json.util.ts        # Safe JSON parse/stringify
 └── constants/
     ├── mkt-object-ids.ts   # Entity IDs (IMMUTABLE)
     └── mkt-field-ids.ts    # Field IDs (IMMUTABLE)
 ```
+
+### Hooks vs Resolvers Decision
+
+| Use Case | Hook | Resolver |
+|----------|:----:|:--------:|
+| Validate data before save | ✅ | |
+| Set default values | ✅ | |
+| Side effects (same module) | ✅ | |
+| Cross-module operations | | ✅ |
+| Complex business logic | | ✅ |
+| External integrations | | ✅ |
+| Custom queries/mutations | | ✅ |
 
 ---
 
