@@ -21,9 +21,8 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktSendmailTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
 import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
-import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-sendmail-template.workpace-entity';
 import { MtkTwoFacetorAuthGetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthGetOtpSendMail.input';
 import { MtkTwoFacetorAuthSetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthSetOtpSendMail.input';
 
@@ -38,7 +37,7 @@ export class MktTwoFacetorAuthenticationService {
     private readonly loginTokenService: LoginTokenService,
     private readonly domainManagerService: DomainManagerService,
     private readonly twentyConfigService: TwentyConfigService,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly sendmailTemplateRepository: MktSendmailTemplateRepository,
     @Inject(CacheStorageNamespace.EngineHealth)
     private readonly cache: CacheStorageService,
   ) {}
@@ -116,20 +115,13 @@ export class MktTwoFacetorAuthenticationService {
     );
 
     // 🔹 Lấy template gửi mail phù hợp (theo ngôn ngữ)
-    const sendmailTemplateRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSendmailTemplateWorkspaceEntity>(
+    // Uses MktSendmailTemplateRepository for thread-safe access
+    const sendmailTemplate =
+      await this.sendmailTemplateRepository.findByTypeAndLanguage(
         workspace.id,
-        'mktSendmailTemplate',
-        { shouldBypassPermissionChecks: true },
+        MKT_SENDMAIL_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
+        mtkTwoFacetorAuthSetOtpSendMailInput.language as keyof typeof APP_LOCALES,
       );
-
-    const sendmailTemplate = await sendmailTemplateRepo.findOne({
-      where: {
-        type: MKT_SENDMAIL_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
-        language:
-          mtkTwoFacetorAuthSetOtpSendMailInput.language as keyof typeof APP_LOCALES,
-      },
-    });
 
     if (!sendmailTemplate) {
       this.logger.error(

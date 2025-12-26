@@ -283,6 +283,23 @@ export class MktWorkspaceMemberRepository {
   }
 
   /**
+   * Find all active workspace members (not soft-deleted)
+   * Used for auto-assignment and statistics
+   */
+  async findAllActive(
+    workspaceId: string,
+    _options?: FindWorkspaceMemberOptions,
+  ): Promise<WorkspaceMemberWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository
+      .createQueryBuilder('member')
+      .where('member.deletedAt IS NULL')
+      .orderBy('member.position', 'ASC')
+      .getMany();
+  }
+
+  /**
    * Find workspace members with custom where clause
    */
   async findMany(

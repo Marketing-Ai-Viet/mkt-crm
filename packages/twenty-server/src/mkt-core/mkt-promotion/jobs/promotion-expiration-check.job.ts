@@ -4,10 +4,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktPromotionWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion.workspace-entity';
 import { PROMOTION_STATUS } from 'src/mkt-core/mkt-promotion/constants/mkt-promotion.constants';
 import { PromotionExpiredEvent } from 'src/mkt-core/mkt-promotion/events/promotion.events';
+import { MktPromotionRepository } from 'src/mkt-core/mkt-promotion/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
@@ -27,6 +26,7 @@ export type PromotionExpirationCheckJobData = {
  * - Log số lượng promotion đã hết hạn
  *
  * Job được trigger với workspaceId cụ thể
+ * Uses MktPromotionRepository for thread-safe access
  */
 @Injectable()
 @Processor(MessageQueue.cronQueue)
@@ -34,7 +34,7 @@ export class PromotionExpirationCheckJob {
   private readonly logger = new Logger(PromotionExpirationCheckJob.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly promotionRepository: MktPromotionRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {
     this.logger.log('PromotionExpirationCheckJob initialized');
@@ -66,30 +66,19 @@ export class PromotionExpirationCheckJob {
 
   /**
    * Kiểm tra và cập nhật promotions hết hạn cho một workspace
+   * Uses MktPromotionRepository for thread-safe access
    */
   private async checkAndExpirePromotionsForWorkspace(
     workspaceId: string,
   ): Promise<number> {
-    const promotionRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPromotionWorkspaceEntity>(
-        workspaceId,
-        'mktPromotion',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const now = DateTimeUtils.now();
-    const currentDateString = DateTimeUtils.toISO(now);
+    const now = DateTimeUtils.now().toJSDate();
 
     // Tìm các promotion có endDate < NOW() và status = ACTIVE
-    const expiredPromotions = await promotionRepository
-      .createQueryBuilder('promotion')
-      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
-      .andWhere('promotion.endDate IS NOT NULL')
-      .andWhere('promotion.endDate < :currentDate', {
-        currentDate: currentDateString,
-      })
-      .andWhere('promotion.deletedAt IS NULL')
-      .getMany();
+    const expiredPromotions =
+      await this.promotionRepository.findExpiredActiveForWorkspace(
+        workspaceId,
+        now,
+      );
 
     if (expiredPromotions.length === 0) {
       this.logger.debug(
@@ -106,9 +95,11 @@ export class PromotionExpirationCheckJob {
     // Cập nhật status thành EXPIRED và emit event
     for (const promotion of expiredPromotions) {
       try {
-        await promotionRepository.update(promotion.id, {
-          status: PROMOTION_STATUS.EXPIRED,
-        });
+        await this.promotionRepository.updateStatus(
+          workspaceId,
+          promotion.id,
+          PROMOTION_STATUS.EXPIRED,
+        );
 
         // Emit event
         const event = new PromotionExpiredEvent(
@@ -132,25 +123,16 @@ export class PromotionExpirationCheckJob {
 
   /**
    * Kiểm tra và cập nhật promotions đạt usage limit
+   * Uses MktPromotionRepository for thread-safe access
    */
   async checkAndExpirePromotionsByUsageLimit(
     workspaceId: string,
   ): Promise<number> {
-    const promotionRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPromotionWorkspaceEntity>(
-        workspaceId,
-        'mktPromotion',
-        { shouldBypassPermissionChecks: true },
-      );
-
     // Tìm các promotion có currentUsageCount >= usageLimit và status = ACTIVE
-    const promotions = await promotionRepository
-      .createQueryBuilder('promotion')
-      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
-      .andWhere('promotion.usageLimit IS NOT NULL')
-      .andWhere('promotion.currentUsageCount >= promotion.usageLimit')
-      .andWhere('promotion.deletedAt IS NULL')
-      .getMany();
+    const promotions =
+      await this.promotionRepository.findUsageLimitReachedForWorkspace(
+        workspaceId,
+      );
 
     if (promotions.length === 0) {
       return 0;
@@ -163,9 +145,11 @@ export class PromotionExpirationCheckJob {
     // Cập nhật status và emit event
     for (const promotion of promotions) {
       try {
-        await promotionRepository.update(promotion.id, {
-          status: PROMOTION_STATUS.EXPIRED,
-        });
+        await this.promotionRepository.updateStatus(
+          workspaceId,
+          promotion.id,
+          PROMOTION_STATUS.EXPIRED,
+        );
 
         const event = new PromotionExpiredEvent(
           workspaceId,

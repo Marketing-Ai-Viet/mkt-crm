@@ -290,6 +290,38 @@ export class MktCustomerRepository {
     });
   }
 
+  /**
+   * Count customers by createdBy workspaceMemberId
+   * Used for auto-assign load balancing
+   */
+  async countByCreatedByMember(
+    workspaceMemberId: string,
+    workspaceId?: string,
+  ): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository
+      .createQueryBuilder('customer')
+      .where("customer.createdBy->>'workspaceMemberId' = :memberId", {
+        memberId: workspaceMemberId,
+      })
+      .andWhere('customer.deletedAt IS NULL')
+      .getCount();
+  }
+
+  /**
+   * Count assigned customers (customers with createdBy set)
+   */
+  async countAssigned(workspaceId?: string): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository
+      .createQueryBuilder('customer')
+      .where('customer.createdBy IS NOT NULL')
+      .andWhere('customer.deletedAt IS NULL')
+      .getCount();
+  }
+
   // ============================================
   // CODE GENERATION HELPERS
   // ============================================

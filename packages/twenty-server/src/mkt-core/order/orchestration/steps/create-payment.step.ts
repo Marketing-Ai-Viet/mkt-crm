@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import keyBy from 'lodash.keyby';
 import { QueryRunner } from 'typeorm';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
@@ -20,9 +17,12 @@ import {
   PaymentCreationParams,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';
+import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import { PaymentCurrency } from 'src/mkt-core/payment/types';
+import { CreatePaymentData } from 'src/mkt-core/payment/types/repository.types';
 
 /**
  * CreatePaymentStep - Step 4: Tạo payment records
@@ -48,7 +48,8 @@ export class CreatePaymentStep extends SagaStep<
   private readonly logger = new Logger(CreatePaymentStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly paymentMethodRepository: MktPaymentMethodRepository,
+    private readonly paymentRepository: MktPaymentRepository,
     private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
   ) {
     super();
@@ -86,9 +87,6 @@ export class CreatePaymentStep extends SagaStep<
         };
       }
 
-      const paymentRepository = await this.getPaymentRepository(
-        context.workspaceId,
-      );
       const totalAmount = (context.metadata.get('totalAmount') as number) ?? 0;
       const currency = (input.currency ??
         DEFAULT_PAYMENT_CURRENCY) as PaymentCurrency;
@@ -99,7 +97,6 @@ export class CreatePaymentStep extends SagaStep<
         totalAmount,
         context,
         currency,
-        paymentRepository,
       );
 
       this.storeInContext(context, payments, primaryQrCodeUrl);
@@ -135,11 +132,11 @@ export class CreatePaymentStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
 
-      const paymentRepository = await this.getPaymentRepository(
+      // Uses MktPaymentRepository for thread-safe access
+      await this.paymentRepository.deleteMany(
         context.workspaceId,
+        data.paymentIds,
       );
-
-      await paymentRepository.delete(data.paymentIds);
 
       this.logger.log('Payments deleted successfully');
     } catch (error) {
@@ -174,43 +171,32 @@ export class CreatePaymentStep extends SagaStep<
     return null;
   }
 
+  /**
+   * Get payment method map by IDs
+   * Uses MktPaymentMethodRepository for thread-safe access
+   */
   private async getPaymentMethodMap(
     workspaceId: string,
     paymentMethodInputs: OrderPaymentMethodInput[],
   ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
     const paymentMethodIds = paymentMethodInputs.map((p) => p.paymentMethodId);
 
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktPaymentMethodWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const paymentMethods = await repository.find({
-      where: paymentMethodIds.map((id) => ({ id })),
-    });
-
-    return new Map(Object.entries(keyBy(paymentMethods, 'id')));
-  }
-
-  private async getPaymentRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktPaymentWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
+    return this.paymentMethodRepository.findManyByIds(
       workspaceId,
-      MktPaymentWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      paymentMethodIds,
     );
   }
 
+  /**
+   * Create payments for all payment methods
+   * Uses MktPaymentRepository for thread-safe access
+   */
   private async createPayments(
     paymentMethodInputs: OrderPaymentMethodInput[],
     paymentMethodMap: Map<string, MktPaymentMethodWorkspaceEntity>,
     totalAmount: number,
     context: SagaContext,
     currency: PaymentCurrency,
-    paymentRepository: WorkspaceRepository<MktPaymentWorkspaceEntity>,
   ): Promise<{
     payments: MktPaymentWorkspaceEntity[];
     primaryQrCodeUrl?: string;
@@ -230,10 +216,13 @@ export class CreatePaymentStep extends SagaStep<
         continue;
       }
 
-      const savedPayment = await this.createSinglePayment(
-        { paymentMethodInput, paymentMethod, totalAmount, context, currency },
-        paymentRepository,
-      );
+      const savedPayment = await this.createSinglePayment({
+        paymentMethodInput,
+        paymentMethod,
+        totalAmount,
+        context,
+        currency,
+      });
 
       payments.push(savedPayment);
 
@@ -247,9 +236,12 @@ export class CreatePaymentStep extends SagaStep<
     return { payments, primaryQrCodeUrl };
   }
 
+  /**
+   * Create a single payment record
+   * Uses MktPaymentRepository for thread-safe access
+   */
   private async createSinglePayment(
     params: PaymentCreationParams,
-    paymentRepository: WorkspaceRepository<MktPaymentWorkspaceEntity>,
   ): Promise<MktPaymentWorkspaceEntity> {
     const {
       paymentMethodInput,
@@ -286,9 +278,8 @@ export class CreatePaymentStep extends SagaStep<
       orderCode: context.orderCode,
     });
 
-    const payment = paymentRepository.create(paymentData);
-
-    return paymentRepository.save(payment);
+    // Uses MktPaymentRepository for thread-safe access
+    return this.paymentRepository.create(context.workspaceId, paymentData);
   }
 
   private calculatePaymentDetails(
@@ -320,13 +311,13 @@ export class CreatePaymentStep extends SagaStep<
     expiredAt?: string | null;
     duration?: number;
     orderCode?: string;
-  }): Partial<MktPaymentWorkspaceEntity> {
+  }): CreatePaymentData {
     return {
-      mktOrderId: params.orderId,
-      mktPaymentMethodId: params.paymentMethodId,
       name: params.paymentName,
       amount: params.amount,
       currency: params.currency,
+      mktOrderId: params.orderId,
+      mktPaymentMethodId: params.paymentMethodId,
       qrCodeUrl: params.qrCodeUrl ?? undefined,
       duration: params.duration ?? undefined,
       expiredAt: params.expiredAt ?? undefined,

@@ -5,28 +5,26 @@ import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { ObjectRecordCreateEvent } from 'src/engine/core-modules/event-emitter/types/object-record-create.event';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event.type';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerAutoAssignService } from 'src/mkt-core/customer/services/lifecycle/mkt-customer-auto-assign.service';
 import { MKT_EMAIL_STATUS } from 'src/mkt-core/email/constants/mkt-email.constant';
 import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
 import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/order/constants/mkt-template.constant';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 
 /**
  * MktCustomerEventListener - Handles customer lifecycle events
  *
- * FIXED: Race condition by using TwentyORMGlobalManager directly
- * instead of setting shared mktRepo.workspaceId property
+ * Uses MktTemplateRepository for thread-safe template access
  */
 @Injectable()
 export class MktCustomerEventListener {
   private readonly logger = new Logger(MktCustomerEventListener.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly templateRepository: MktTemplateRepository,
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly mktEmailService: MktEmailService,
@@ -88,25 +86,16 @@ export class MktCustomerEventListener {
 
   /**
    * Send welcome email to new customer
-   * Thread-safe: Uses TwentyORMGlobalManager to get workspace-specific repository
+   * Uses MktTemplateRepository for thread-safe template access
    */
   private async sendWelcomeEmail(
     workspaceId: string,
     customer: MktCustomerWorkspaceEntity,
   ): Promise<void> {
-    // Thread-safe: Get repository for specific workspace directly
-    const templateRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktTemplateWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const template = await templateRepo.findOne({
-      where: {
-        templateKey: 'welcome_customers',
-      },
-    });
+    const template = await this.templateRepository.findByKey(
+      workspaceId,
+      'welcome_customers',
+    );
 
     if (!template) {
       this.logger.warn(CUSTOMER_MESSAGES.WARN.TEMPLATE_NOT_FOUND);

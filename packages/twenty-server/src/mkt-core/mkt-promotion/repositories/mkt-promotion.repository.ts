@@ -332,7 +332,60 @@ export class MktPromotionRepository {
   }
 
   /**
-   * Find expired active promotions (for background job)
+   * Find active promotions with rules (for cache warmup job)
+   */
+  async findActiveWithRules(
+    workspaceId: string,
+  ): Promise<MktPromotionWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository
+      .createQueryBuilder('promotion')
+      .leftJoinAndSelect('promotion.rules', 'rules')
+      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
+      .andWhere('promotion.deletedAt IS NULL')
+      .orderBy('promotion.priority', 'DESC')
+      .getMany();
+  }
+
+  /**
+   * Find expired active promotions for a specific workspace (for background job)
+   */
+  async findExpiredActiveForWorkspace(
+    workspaceId: string,
+    now: Date,
+  ): Promise<MktPromotionWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository
+      .createQueryBuilder('promotion')
+      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
+      .andWhere('promotion.endDate IS NOT NULL')
+      .andWhere('promotion.endDate < :now', { now })
+      .andWhere('promotion.deletedAt IS NULL')
+      .getMany();
+  }
+
+  /**
+   * Find active promotions that reached usage limit for a workspace (for background job)
+   */
+  async findUsageLimitReachedForWorkspace(
+    workspaceId: string,
+  ): Promise<MktPromotionWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository
+      .createQueryBuilder('promotion')
+      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
+      .andWhere('promotion.usageLimit IS NOT NULL')
+      .andWhere('promotion.currentUsageCount >= promotion.usageLimit')
+      .andWhere('promotion.deletedAt IS NULL')
+      .getMany();
+  }
+
+  /**
+   * Find expired active promotions (for background job - all workspaces)
+   * @deprecated Use findExpiredActiveForWorkspace instead
    */
   async findExpiredActive(now: Date): Promise<MktPromotionWorkspaceEntity[]> {
     const repository = await this.getRepository('*'); // All workspaces
@@ -347,7 +400,8 @@ export class MktPromotionRepository {
   }
 
   /**
-   * Find active promotions that reached usage limit (for background job)
+   * Find active promotions that reached usage limit (for background job - all workspaces)
+   * @deprecated Use findUsageLimitReachedForWorkspace instead
    */
   async findUsageLimitReached(): Promise<MktPromotionWorkspaceEntity[]> {
     const repository = await this.getRepository('*'); // All workspaces

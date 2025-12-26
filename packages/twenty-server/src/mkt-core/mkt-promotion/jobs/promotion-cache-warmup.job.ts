@@ -3,9 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktPromotionWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion.workspace-entity';
-import { PROMOTION_STATUS } from 'src/mkt-core/mkt-promotion/constants/mkt-promotion.constants';
+import { MktPromotionRepository } from 'src/mkt-core/mkt-promotion/repositories';
 
 /**
  * Job data interface cho promotion cache warmup
@@ -23,13 +21,14 @@ export type PromotionCacheWarmupJobData = {
  * - Chạy khi server khởi động hoặc sau khi cache bị clear
  *
  * Job được trigger với workspaceId cụ thể
+ * Uses MktPromotionRepository for thread-safe access
  */
 @Injectable()
 @Processor(MessageQueue.cronQueue)
 export class PromotionCacheWarmupJob {
   private readonly logger = new Logger(PromotionCacheWarmupJob.name);
 
-  constructor(private readonly twentyORMGlobalManager: TwentyORMGlobalManager) {
+  constructor(private readonly promotionRepository: MktPromotionRepository) {
     this.logger.log('PromotionCacheWarmupJob initialized');
   }
 
@@ -58,23 +57,12 @@ export class PromotionCacheWarmupJob {
 
   /**
    * Warm up cache cho một workspace cụ thể
+   * Uses MktPromotionRepository for thread-safe access
    */
   private async warmupCacheForWorkspace(workspaceId: string): Promise<number> {
-    const promotionRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPromotionWorkspaceEntity>(
-        workspaceId,
-        'mktPromotion',
-        { shouldBypassPermissionChecks: true },
-      );
-
     // Load tất cả active promotions với các relations cần thiết
-    const activePromotions = await promotionRepository
-      .createQueryBuilder('promotion')
-      .leftJoinAndSelect('promotion.rules', 'rules')
-      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
-      .andWhere('promotion.deletedAt IS NULL')
-      .orderBy('promotion.priority', 'DESC')
-      .getMany();
+    const activePromotions =
+      await this.promotionRepository.findActiveWithRules(workspaceId);
 
     if (activePromotions.length === 0) {
       this.logger.debug(

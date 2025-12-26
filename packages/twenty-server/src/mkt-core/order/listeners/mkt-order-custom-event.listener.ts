@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
@@ -13,9 +12,11 @@ import {
   ORDER_HISTORY_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants';
-import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import {
+  MktOrderRepository,
+  MktOrderHistoryRepository,
+} from 'src/mkt-core/order/repositories';
 import {
   MktOrderCustomEventData,
   MktOrderCustomEventPayload,
@@ -26,8 +27,8 @@ import { safeJsonStringify } from 'src/mkt-core/utils';
 export class MktOrderCustomEventListener {
   private readonly logger = new Logger(MktOrderCustomEventListener.name);
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly orderRepository: MktOrderRepository,
+    private readonly orderHistoryRepository: MktOrderHistoryRepository,
     private readonly customerQueueService: MktCustomerQueueService,
     private readonly mktEmailService: MktEmailService,
   ) {}
@@ -99,13 +100,6 @@ export class MktOrderCustomEventListener {
       return;
     }
 
-    const orderHistoryRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        event.workspaceId,
-        MktOrderHistoryWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     const updatedOrder = await this.orderRepository.findById(
       event.workspaceId,
       event.orderId,
@@ -129,23 +123,22 @@ export class MktOrderCustomEventListener {
 
     await this.tierForCustomer(updatedOrder, event.workspaceId);
 
-    const orderHistoryData = await this.makeOrderHistoryData(
+    const orderHistoryData = this.makeOrderHistoryData(
       event.eventType,
       updatedOrder,
     );
-    const orderHistory = orderHistoryRepo.create({
-      name: orderHistoryData.name,
-      mktOrderId: event.orderId,
-      action: orderHistoryData.action as ORDER_HISTORY_ACTION,
-      fieldName: orderHistoryData.fieldName ?? null,
-      newValue: orderHistoryData.newValue ?? null,
-      oldValue: orderHistoryData.oldValue ?? null,
-      metadata: updatedOrder as MktOrderWorkspaceEntity as unknown as JSON,
-      note: orderHistoryData.note ?? '',
-    });
 
-    // TODO: Update OrderHistory entity to use relation instead of ActorMetadata for createdBy
-    await orderHistoryRepo.save(orderHistory);
+    // Use repository to create order history
+    await this.orderHistoryRepository.create(event.workspaceId, {
+      orderId: event.orderId,
+      action: orderHistoryData.action,
+      name: orderHistoryData.name,
+      fieldName: orderHistoryData.fieldName,
+      newValue: orderHistoryData.newValue,
+      oldValue: orderHistoryData.oldValue,
+      note: orderHistoryData.note,
+      metadata: updatedOrder as unknown as Record<string, unknown>,
+    });
 
     this.logger.log(
       `Processing order ${event.orderId} in workspace ${event.workspaceId}`,
@@ -160,10 +153,17 @@ export class MktOrderCustomEventListener {
     return updatedOrder;
   }
 
-  private async makeOrderHistoryData(
+  private makeOrderHistoryData(
     eventType?: MktCustomEventName,
     updatedOrder?: MktOrderWorkspaceEntity,
-  ) {
+  ): {
+    name: string;
+    action: ORDER_HISTORY_ACTION;
+    fieldName: string;
+    newValue: string;
+    oldValue: string;
+    note: string;
+  } {
     let name = 'Cập nhật trạng thái';
     let action = ORDER_HISTORY_ACTION.UPDATED;
     let fieldName = 'status';

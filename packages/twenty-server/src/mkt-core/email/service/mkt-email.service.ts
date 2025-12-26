@@ -3,7 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   DEFAULT_COMPANY_NAME,
   DEFAULT_CUSTOMER_NAME,
@@ -19,7 +18,7 @@ import {
 import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktEmailRepository } from 'src/mkt-core/email/repositories';
 import { OrderEmailReplacements } from 'src/mkt-core/email/types';
-import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 import {
   ORDER_STATUS,
@@ -27,6 +26,7 @@ import {
 } from 'src/mkt-core/order/constants';
 import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOptionRepository } from 'src/mkt-core/setting/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
@@ -42,11 +42,12 @@ export class MktEmailService {
   private readonly logger = new Logger(`${MKT_EMAIL_LOG_CONTEXT}:Service`);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly emailService: EmailService,
     private readonly emailRepository: MktEmailRepository,
+    private readonly templateRepository: MktTemplateRepository,
+    private readonly optionRepository: MktOptionRepository,
   ) {}
 
   // ============================================
@@ -173,21 +174,14 @@ export class MktEmailService {
 
   /**
    * Tìm email template từ database
+   * Uses MktTemplateRepository for thread-safe access
    */
   private async findEmailTemplate(
     templateKey: string,
   ): Promise<MktTemplateWorkspaceEntity | null> {
     const workspaceId = this.getWorkspaceId();
-    const templateRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktTemplateWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
 
-    return templateRepo.findOne({
-      where: { templateKey },
-    });
+    return this.templateRepository.findByKey(workspaceId, templateKey);
   }
 
   /**
@@ -229,24 +223,17 @@ export class MktEmailService {
 
   /**
    * Lấy trial period days từ MktOption
+   * Uses MktOptionRepository for thread-safe access
    */
   private async getTrialPeriodDays(): Promise<number> {
     try {
       const workspaceId = this.getWorkspaceId();
-      const optionRepo =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          workspaceId,
-          MktOptionWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
 
-      const option = await optionRepo.findOne({
-        where: { key: 'default_trial_period_days' },
-      });
-
-      return option
-        ? parseInt(option.value, 10) || DEFAULT_TRIAL_PERIOD_DAYS
-        : DEFAULT_TRIAL_PERIOD_DAYS;
+      return this.optionRepository.getNumberValue(
+        workspaceId,
+        'default_trial_period_days',
+        DEFAULT_TRIAL_PERIOD_DAYS,
+      );
     } catch {
       return DEFAULT_TRIAL_PERIOD_DAYS;
     }

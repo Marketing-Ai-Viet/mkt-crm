@@ -208,6 +208,39 @@ export class MktPaymentMethodRepository {
   }
 
   /**
+   * Find payment methods by IDs (batch operation)
+   * Returns a Map for efficient lookup
+   */
+  async findManyByIds(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
+    if (ids.length === 0) {
+      return new Map();
+    }
+
+    this.logger.debug(`Finding ${ids.length} payment methods by IDs`);
+
+    const repository = await this.getRepository(workspaceId);
+
+    const paymentMethods = await repository.find({
+      where: ids.map((id) => ({ id })),
+    });
+
+    const result = new Map<string, MktPaymentMethodWorkspaceEntity>();
+
+    for (const pm of paymentMethods) {
+      result.set(pm.id, pm);
+    }
+
+    this.logger.debug(
+      `Found ${result.size} payment methods out of ${ids.length} requested`,
+    );
+
+    return result;
+  }
+
+  /**
    * Check if payment method exists
    */
   async exists(workspaceId: string, paymentMethodId: string): Promise<boolean> {

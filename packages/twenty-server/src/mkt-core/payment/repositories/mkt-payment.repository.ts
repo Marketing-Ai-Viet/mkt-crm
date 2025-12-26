@@ -322,6 +322,24 @@ export class MktPaymentRepository {
     this.logger.warn(MKT_PAYMENT_LOG_MESSAGES.DELETE_SUCCESS(paymentId));
   }
 
+  /**
+   * Hard delete multiple payments by IDs (use with caution)
+   * Used for saga compensation
+   */
+  async deleteMany(workspaceId: string, paymentIds: string[]): Promise<void> {
+    if (paymentIds.length === 0) {
+      return;
+    }
+
+    this.logger.warn(`Hard deleting ${paymentIds.length} payments`);
+
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.delete(paymentIds);
+
+    this.logger.warn(`Successfully deleted ${paymentIds.length} payments`);
+  }
+
   // ============================================
   // AGGREGATION OPERATIONS
   // ============================================

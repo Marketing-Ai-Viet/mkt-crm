@@ -15,6 +15,7 @@ import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-i
 import { SInvoiceIntegrationJob } from 'src/mkt-core/invoice/jobs/s-invoice-integration.job';
 import {
   MktInvoiceRepository,
+  MktSInvoiceFileRepository,
   MktSInvoiceRepository,
 } from 'src/mkt-core/invoice/repositories';
 import { MktInvoiceService } from 'src/mkt-core/invoice/services/mkt-invoice.service';
@@ -34,6 +35,7 @@ import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
     // Repositories
     MktInvoiceRepository,
     MktSInvoiceRepository,
+    MktSInvoiceFileRepository,
     // Services
     MktInvoiceService,
     SInvoiceIntegrationService,
@@ -47,6 +49,7 @@ import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
   exports: [
     MktInvoiceRepository,
     MktSInvoiceRepository,
+    MktSInvoiceFileRepository,
     MktInvoiceService,
     SInvoiceIntegrationService,
   ],

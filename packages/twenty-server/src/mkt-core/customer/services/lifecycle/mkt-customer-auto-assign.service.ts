@@ -1,21 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_CUSTOMER_AUTO_ASSIGN_CONFIG } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories';
 import {
   AssignmentResult,
   AssignmentStrategy,
 } from 'src/mkt-core/customer/types';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories/mkt-workspace-member.repository';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 /**
  * MktCustomerAutoAssignService - Auto-assign customers to sales members
  *
- * FIXED: Thread-safe by accepting workspaceId as parameter
- * instead of using shared mktRepo.workspaceId
+ * Uses MktCustomerRepository and MktWorkspaceMemberRepository for thread-safe access
  */
 @Injectable()
 export class MktCustomerAutoAssignService {
@@ -24,7 +24,8 @@ export class MktCustomerAutoAssignService {
   private roundRobinIndex = 0;
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly customerRepository: MktCustomerRepository,
+    private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
   /**
@@ -67,21 +68,18 @@ export class MktCustomerAutoAssignService {
     );
 
     // Update customer with assigned sales member
-    const customerRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    await customerRepo.update(customer.id, {
-      createdBy: {
-        source: FieldActorSource.SYSTEM,
-        workspaceMemberId: selectedMember.id,
-        name: selectedMember.name?.firstName ?? 'Unknown',
-        context: {},
-      },
-    } as never);
+    await this.customerRepository.update(
+      customer.id,
+      {
+        createdBy: {
+          source: FieldActorSource.SYSTEM,
+          workspaceMemberId: selectedMember.id,
+          name: selectedMember.name?.firstName ?? 'Unknown',
+          context: {},
+        },
+      } as Partial<MktCustomerWorkspaceEntity>,
+      workspaceId,
+    );
 
     this.logger.log(
       CUSTOMER_MESSAGES.LOG.AUTO_ASSIGN_SUCCESS(customer.id, selectedMember.id),
@@ -101,22 +99,9 @@ export class MktCustomerAutoAssignService {
   private async getEligibleSalesMembers(
     workspaceId: string,
   ): Promise<WorkspaceMemberWorkspaceEntity[]> {
-    const memberRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        WorkspaceMemberWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     // Get all active workspace members
     // In a full implementation, you would filter by role
-    const members = await memberRepo
-      .createQueryBuilder('member')
-      .where('member.deletedAt IS NULL')
-      .orderBy('member.createdAt', 'ASC')
-      .getMany();
-
-    return members;
+    return this.workspaceMemberRepository.findAllActive(workspaceId);
   }
 
   /**
@@ -157,29 +142,20 @@ export class MktCustomerAutoAssignService {
 
   /**
    * Select member with least assigned customers
+   * Uses MktCustomerRepository for thread-safe counting
    */
   private async selectLeastCustomers(
     members: WorkspaceMemberWorkspaceEntity[],
     workspaceId: string,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
-    const customerRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     let minCount = Infinity;
     let selectedMember = members[0];
 
     for (const member of members) {
-      const count = await customerRepo
-        .createQueryBuilder('customer')
-        .where("customer.createdBy->>'workspaceMemberId' = :memberId", {
-          memberId: member.id,
-        })
-        .andWhere('customer.deletedAt IS NULL')
-        .getCount();
+      const count = await this.customerRepository.countByCreatedByMember(
+        member.id,
+        workspaceId,
+      );
 
       if (count < minCount) {
         minCount = count;
@@ -218,6 +194,7 @@ export class MktCustomerAutoAssignService {
 
   /**
    * Get assignment statistics
+   * Uses injected repositories for thread-safe operations
    */
   async getAssignmentStats(workspaceId: string): Promise<{
     totalCustomers: number;
@@ -225,35 +202,11 @@ export class MktCustomerAutoAssignService {
     unassignedCustomers: number;
     byMember: Array<{ memberId: string; memberName: string; count: number }>;
   }> {
-    const customerRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const memberRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        WorkspaceMemberWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const totalCustomers = await customerRepo
-      .createQueryBuilder('customer')
-      .where('customer.deletedAt IS NULL')
-      .getCount();
-
-    const assignedCustomers = await customerRepo
-      .createQueryBuilder('customer')
-      .where('customer.createdBy IS NOT NULL')
-      .andWhere('customer.deletedAt IS NULL')
-      .getCount();
-
-    const members = await memberRepo
-      .createQueryBuilder('member')
-      .where('member.deletedAt IS NULL')
-      .getMany();
+    const totalCustomers = await this.customerRepository.count(workspaceId);
+    const assignedCustomers =
+      await this.customerRepository.countAssigned(workspaceId);
+    const members =
+      await this.workspaceMemberRepository.findAllActive(workspaceId);
 
     const byMember: Array<{
       memberId: string;
@@ -262,13 +215,10 @@ export class MktCustomerAutoAssignService {
     }> = [];
 
     for (const member of members) {
-      const count = await customerRepo
-        .createQueryBuilder('customer')
-        .where("customer.createdBy->>'workspaceMemberId' = :memberId", {
-          memberId: member.id,
-        })
-        .andWhere('customer.deletedAt IS NULL')
-        .getCount();
+      const count = await this.customerRepository.countByCreatedByMember(
+        member.id,
+        workspaceId,
+      );
 
       byMember.push({
         memberId: member.id,

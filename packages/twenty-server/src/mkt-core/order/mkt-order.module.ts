@@ -17,6 +17,7 @@ import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 import {
   MktOrderRepository,
   MktOrderItemRepository,
+  MktOrderHistoryRepository,
 } from 'src/mkt-core/order/repositories';
 
 import {
@@ -106,6 +107,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     // Repositories (Data Access Layer)
     MktOrderRepository,
     MktOrderItemRepository,
+    MktOrderHistoryRepository,
 
     // Core Services (stateless business logic)
     OrderStatusService,
@@ -171,6 +173,7 @@ import { IdempotencyService } from './orchestration/idempotency';
     // Repositories
     MktOrderRepository,
     MktOrderItemRepository,
+    MktOrderHistoryRepository,
     // Services
     OrderStatusService,
     OrderEventService,

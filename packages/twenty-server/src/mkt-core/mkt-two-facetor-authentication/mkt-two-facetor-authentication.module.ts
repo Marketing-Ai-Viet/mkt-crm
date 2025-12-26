@@ -8,6 +8,7 @@ import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty-config.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
+import { MktSendmailTemplateModule } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.module';
 import { MktTwoFacetorAuthenticationResolver } from 'src/mkt-core/mkt-two-facetor-authentication/mkt-two-facetor-authentication.resolver';
 import { MktTwoFacetorAuthenticationService } from 'src/mkt-core/mkt-two-facetor-authentication/mkt-two-facetor-authentication.service';
 
@@ -21,6 +22,7 @@ import { MktTwoFacetorAuthenticationService } from 'src/mkt-core/mkt-two-facetor
     EmailModule,
     TwentyConfigModule,
     TwentyORMModule,
+    MktSendmailTemplateModule,
   ],
   providers: [
     MktTwoFacetorAuthenticationService,
