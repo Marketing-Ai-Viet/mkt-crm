@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { In, LessThan } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktCommonOrderService } from 'src/mkt-core/common/service/mkt-common-order.service';
+import { OrderMetadataService } from 'src/mkt-core/order/services/core/order-metadata.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
@@ -15,7 +15,7 @@ export class MktOrderOverdueService {
 
   constructor(
     private readonly mktOrderRepository: MktOrderRepository,
-    private readonly mktCommonOrderService: MktCommonOrderService,
+    private readonly orderMetadataService: OrderMetadataService,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 

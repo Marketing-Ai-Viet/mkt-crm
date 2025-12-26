@@ -16,10 +16,21 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify, safeJsonParse } from 'src/mkt-core/utils/json.util';
 
+/**
+ * OrderMetadataService - Service for managing order metadata and events
+ *
+ * Handles:
+ * - Order metadata updates
+ * - Refund metadata tracking
+ * - Order status updates for renew/refund flows
+ * - Event emission for order and payment updates
+ */
 @Injectable()
-export class MktCommonOrderService {
-  private readonly logger = new Logger(MktCommonOrderService.name);
+export class OrderMetadataService {
+  private readonly logger = new Logger(OrderMetadataService.name);
   private orderMetadata: ORDER_METADATA | null = null;
 
   constructor(
@@ -34,7 +45,7 @@ export class MktCommonOrderService {
     trialLicense?: boolean,
     authFirebase?: void | FIREBASE_AUTH_RESPONSE,
   ) {
-    this.logger.log('authFirebase: ' + JSON.stringify(authFirebase));
+    this.logger.log('authFirebase: ' + safeJsonStringify(authFirebase));
 
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
@@ -49,10 +60,12 @@ export class MktCommonOrderService {
       );
     }
 
-    updateData.metadata = JSON.stringify(this.orderMetadata) as unknown as JSON;
+    updateData.metadata = safeJsonStringify(
+      this.orderMetadata,
+    ) as unknown as JSON;
 
     this.logger.log(
-      `Updating order ${orderId} with data: ${JSON.stringify(updateData)}`,
+      `Updating order ${orderId} with data: ${safeJsonStringify(updateData)}`,
     );
 
     await this.mktOrderRepository.update(workspaceId, orderId, updateData);
@@ -69,7 +82,7 @@ export class MktCommonOrderService {
 
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
-      metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
+      metadata: safeJsonStringify(this.orderMetadata) as unknown as JSON,
     };
 
     await this.mktOrderRepository.update(
@@ -86,16 +99,14 @@ export class MktCommonOrderService {
     let metadata: ORDER_METADATA = {};
 
     if (oldOrder?.metadata) {
-      try {
-        const parsed =
-          typeof oldOrder.metadata === 'string'
-            ? JSON.parse(oldOrder.metadata)
-            : oldOrder.metadata;
+      const parsed = safeJsonParse<ORDER_METADATA>(
+        typeof oldOrder.metadata === 'string'
+          ? oldOrder.metadata
+          : (safeJsonStringify(oldOrder.metadata) ?? ''),
+      );
 
-        metadata = { ...parsed };
-      } catch (error) {
-        this.logger.warn('Failed to parse existing metadata:', error);
-        metadata = {};
+      if (parsed.success && parsed.data) {
+        metadata = { ...parsed.data };
       }
     }
     this.orderMetadata = { ...metadata, ...updateMetadata };
@@ -137,7 +148,7 @@ export class MktCommonOrderService {
           id: orderId,
           note,
         },
-        timestamp: new Date().toISOString(),
+        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
       };
 
       this.workspaceEventEmitter.emitCustomBatchEvent(
@@ -174,7 +185,7 @@ export class MktCommonOrderService {
           id: orderId,
           note,
         },
-        timestamp: new Date().toISOString(),
+        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
       };
 
       this.workspaceEventEmitter.emitCustomBatchEvent(
@@ -194,7 +205,7 @@ export class MktCommonOrderService {
     _currentOrder: Partial<MktOrderWorkspaceEntity> | null,
     _payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
   ): Promise<number> {
-    this.logger.log('Handling refund process in MktCommonOrderService');
+    this.logger.log('Handling refund process in OrderMetadataService');
 
     // TODO: Implement refund logic using product integration services
     this.logger.warn(
@@ -204,3 +215,9 @@ export class MktCommonOrderService {
     return 0;
   }
 }
+
+/**
+ * @deprecated Use OrderMetadataService instead
+ * Alias for backward compatibility
+ */
+export const MktCommonOrderService = OrderMetadataService;

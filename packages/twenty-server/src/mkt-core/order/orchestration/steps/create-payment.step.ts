@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
+import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import {
@@ -50,7 +50,7 @@ export class CreatePaymentStep extends SagaStep<
   constructor(
     private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly paymentRepository: MktPaymentRepository,
-    private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
+    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
   ) {
     super();
   }
@@ -259,7 +259,7 @@ export class CreatePaymentStep extends SagaStep<
     );
 
     const { qrCodeUrl, expiredAt } =
-      await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
+      await this.orderConfirmUtilsService.generateSepayQrCodeUrl(
         paymentMethod,
         amount,
         context.orderCode ?? null,

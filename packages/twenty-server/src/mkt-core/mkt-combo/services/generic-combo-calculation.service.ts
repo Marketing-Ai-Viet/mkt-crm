@@ -6,6 +6,7 @@ import {
   MoneyUtils,
   MONEY_DECIMAL_PLACES,
 } from 'src/mkt-core/utils/money.utils';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services/mkt-product-proxy.service';
 import {
   MktSupportedLanguage,
@@ -57,7 +58,7 @@ export class GenericComboCalculationService {
         savingsPercent: 0,
         currency: combo.currency,
         itemDetails: [],
-        calculatedAt: new Date(),
+        calculatedAt: DateTimeUtils.now().toJSDate(),
       };
     }
 
@@ -109,7 +110,7 @@ export class GenericComboCalculationService {
       savingsPercent: savingsPercent.toNumber(),
       currency: combo.currency,
       itemDetails: adjustedItems,
-      calculatedAt: new Date(),
+      calculatedAt: DateTimeUtils.now().toJSDate(),
     };
   }
 

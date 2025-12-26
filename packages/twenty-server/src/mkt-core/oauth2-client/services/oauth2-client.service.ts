@@ -553,7 +553,7 @@ export class OAuth2ClientService
       scopes: token.scopes,
       expiresIn: token.expiresIn,
       isRefresh,
-      timestamp: new Date(),
+      timestamp: DateTime.now().toJSDate(),
     };
 
     this.eventEmitter.emit(OAUTH2_EVENTS.TOKEN_ACQUIRED, eventPayload);

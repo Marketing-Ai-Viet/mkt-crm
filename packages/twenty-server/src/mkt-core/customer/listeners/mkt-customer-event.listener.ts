@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { OnDatabaseBatchEvent } from 'src/engine/api/graphql/graphql-query-runner/decorators/on-database-batch-event.decorator';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { ObjectRecordCreateEvent } from 'src/engine/core-modules/event-emitter/types/object-record-create.event';
@@ -129,7 +130,7 @@ export class MktCustomerEventListener {
       body: html,
       status: MKT_EMAIL_STATUS.SENT,
       emailType: MKT_TEMPLATE_TYPE.WELCOME_EMAIL,
-      sentAt: new Date(),
+      sentAt: DateTimeUtils.now().toJSDate(),
     });
 
     this.logger.log(

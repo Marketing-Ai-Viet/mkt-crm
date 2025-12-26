@@ -4,6 +4,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   ORDER_CODE_PREFIX,
@@ -23,20 +26,35 @@ import {
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
 import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
 
-export type CalculateOrderResult = {
+/**
+ * Result type for order value calculations
+ * Note: CalculateOrderResult is exported from legacy/order.confirm.service.ts
+ * for backward compatibility
+ */
+type OrderCalculationResult = {
   subtotal: number;
   tax: number;
   discount: number;
   totalAmount: number;
 };
 
+/**
+ * OrderConfirmUtilsService - Utility service for order confirmation operations
+ *
+ * Provides:
+ * - Order value calculations using MoneyUtils
+ * - Order code generation
+ * - Order name generation
+ * - Refund operations
+ * - SEPay QR code generation
+ */
 @Injectable()
-export class MktOrderCommonConfirmService {
+export class OrderConfirmUtilsService {
   public changeVariantData = {
     oldVariantName: '',
     newVariantName: '',
   };
-  private readonly logger = new Logger(MktOrderCommonConfirmService.name);
+  private readonly logger = new Logger(OrderConfirmUtilsService.name);
   public orderMetadata: ORDER_METADATA | null = null;
 
   constructor(
@@ -51,7 +69,7 @@ export class MktOrderCommonConfirmService {
    */
   async calculateOrderValues(
     currentOrder: MktOrderWorkspaceEntity | null,
-  ): Promise<CalculateOrderResult> {
+  ): Promise<OrderCalculationResult> {
     this.logger.log('Calculating order values...');
     try {
       const orderItems = currentOrder?.orderItems;
@@ -67,40 +85,46 @@ export class MktOrderCommonConfirmService {
         };
       }
 
-      let subtotal = 0;
-      let totalTax = 0;
+      let subtotal = MoneyUtils.from(0);
+      let totalTax = MoneyUtils.from(0);
 
       for (const item of orderItems) {
         const quantity = item.quantity || 0;
         const unitPrice = item.unitPrice || 0;
         const taxPercentage = item.taxPercentage || 0;
 
-        const itemSubtotal = quantity * unitPrice;
+        const itemSubtotal = MoneyUtils.multiply(quantity, unitPrice);
 
-        subtotal += itemSubtotal;
+        subtotal = MoneyUtils.add(subtotal.toNumber(), itemSubtotal.toNumber());
 
-        const itemTax = (itemSubtotal * taxPercentage) / 100;
+        const itemTax = MoneyUtils.percentage(
+          itemSubtotal.toNumber(),
+          taxPercentage,
+        );
 
-        totalTax += itemTax;
+        totalTax = MoneyUtils.add(totalTax.toNumber(), itemTax.toNumber());
 
         this.logger.debug(
-          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal}, tax=${itemTax}`,
+          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal.toNumber()}, tax=${itemTax.toNumber()}`,
         );
       }
 
-      const discount = currentOrder?.discount || 0;
+      const discount = MoneyUtils.from(currentOrder?.discount || 0);
 
-      const totalAmount = subtotal + totalTax - discount;
+      const totalAmount = MoneyUtils.subtract(
+        MoneyUtils.add(subtotal.toNumber(), totalTax.toNumber()).toNumber(),
+        discount.toNumber(),
+      );
 
       this.logger.log(
-        `Calculated order values: subtotal=${subtotal}, tax=${totalTax}, discount=${discount}, totalAmount=${totalAmount}`,
+        `Calculated order values: subtotal=${subtotal.toNumber()}, tax=${totalTax.toNumber()}, discount=${discount.toNumber()}, totalAmount=${totalAmount.toNumber()}`,
       );
 
       return {
-        subtotal: Math.round(subtotal * 100) / 100, // Round to 2 decimal places
-        tax: Math.round(totalTax * 100) / 100,
-        discount: Math.round(discount * 100) / 100,
-        totalAmount: Math.round(totalAmount * 100) / 100,
+        subtotal: MoneyUtils.round(subtotal.toNumber(), 2).toNumber(),
+        tax: MoneyUtils.round(totalTax.toNumber(), 2).toNumber(),
+        discount: MoneyUtils.round(discount.toNumber(), 2).toNumber(),
+        totalAmount: MoneyUtils.round(totalAmount.toNumber(), 2).toNumber(),
       };
     } catch (error) {
       this.logger.error(
@@ -125,10 +149,11 @@ export class MktOrderCommonConfirmService {
       const orderRepository =
         await this.mktOrderRepository.getRepository(workspaceId);
 
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const now = DateTimeUtils.now();
+      const jsDate = now.toJSDate();
+      const year = jsDate.getFullYear();
+      const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+      const day = String(jsDate.getDate()).padStart(2, '0');
       const datePrefix = `${year}${month}${day}`;
 
       // Find the highest order number for today
@@ -145,9 +170,8 @@ export class MktOrderCommonConfirmService {
 
       if (todayOrders?.orderCode) {
         // Extract number from existing order code (e.g., MKT20241201001 -> 1)
-        const match = todayOrders.orderCode.match(
-          `/${ORDER_CODE_PREFIX}\\d{8}(\\d{3})$/`,
-        );
+        const pattern = new RegExp(`${ORDER_CODE_PREFIX}\\d{8}(\\d{3})$`);
+        const match = todayOrders.orderCode.match(pattern);
 
         if (match) {
           nextNumber = parseInt(match[1], 10) + 1;
@@ -165,7 +189,9 @@ export class MktOrderCommonConfirmService {
 
       if (existingOrder) {
         // If somehow duplicate, try with timestamp
-        const timestamp = Date.now().toString().slice(-6);
+        const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+          .toString()
+          .slice(-6);
 
         return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
       }
@@ -188,8 +214,8 @@ export class MktOrderCommonConfirmService {
   ): Promise<string | null> {
     try {
       if (!currentOrder?.orderItems || currentOrder.orderItems.length === 0) {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('vi-VN');
+        const now = DateTimeUtils.now();
+        const dateStr = now.toJSDate().toLocaleDateString('vi-VN');
 
         return `Đơn hàng ${dateStr}`;
       }
@@ -250,7 +276,7 @@ export class MktOrderCommonConfirmService {
     }
 
     // Create refund note
-    const refundNote = `[REFUND - ${new Date().toISOString()}] Cần hoàn tiền cho khách hàng. Vui lòng xác nhận sau khi đã hoàn tiền. Status: PENDING_REFUND. License ID: ${licenseId}`;
+    const refundNote = `[REFUND - ${DateTimeUtils.toISO(DateTimeUtils.now())}] Cần hoàn tiền cho khách hàng. Vui lòng xác nhận sau khi đã hoàn tiền. Status: PENDING_REFUND. License ID: ${licenseId}`;
 
     // Combine with existing note if any
     const existingNote = refundOrder.note || '';
@@ -291,7 +317,7 @@ export class MktOrderCommonConfirmService {
     }
 
     // Create confirmation note
-    const confirmationNote = `[REFUND CONFIRMED - ${new Date().toISOString()}] Đã hoàn tiền thành công cho khách hàng.`;
+    const confirmationNote = `[REFUND CONFIRMED - ${DateTimeUtils.toISO(DateTimeUtils.now())}] Đã hoàn tiền thành công cho khách hàng.`;
     const additionalDetails = refundDetails
       ? ` Chi tiết: ${refundDetails}`
       : '';
@@ -484,7 +510,7 @@ export class MktOrderCommonConfirmService {
 Đã thay đổi sản phẩm cho ${this.changeVariantData.oldVariantName}\n
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Sản phẩm mới: -> ${this.changeVariantData.newVariantName}.\n
-Thời gian: ${new Date().toISOString()}
+Thời gian: ${DateTimeUtils.toISO(DateTimeUtils.now())}
 `;
     }
     await this.mktOrderRepository.update(workspaceId, orderId, {
@@ -496,7 +522,7 @@ Thời gian: ${new Date().toISOString()}
       totalAmount: updateOrderInfo.totalAmount,
       name: updateOrderInfo.name ?? '',
       note,
-      metadata: JSON.stringify(this.orderMetadata) as unknown as JSON,
+      metadata: safeJsonStringify(this.orderMetadata) as unknown as JSON,
     });
   }
 
@@ -590,3 +616,9 @@ Thời gian: ${new Date().toISOString()}
     }
   }
 }
+
+/**
+ * @deprecated Use OrderConfirmUtilsService instead
+ * Alias for backward compatibility
+ */
+export const MktOrderCommonConfirmService = OrderConfirmUtilsService;

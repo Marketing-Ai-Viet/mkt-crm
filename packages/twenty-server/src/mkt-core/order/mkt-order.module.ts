@@ -1,10 +1,10 @@
+import { HttpModule } from '@nestjs/axios';
 import { forwardRef, Module } from '@nestjs/common';
 
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
@@ -28,6 +28,8 @@ import {
   OrderStatusService,
   OrderEventService,
   OrderPaymentCalculationService,
+  OrderConfirmUtilsService,
+  OrderMetadataService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -85,6 +87,7 @@ import {
 
 @Module({
   imports: [
+    HttpModule, // For OrderConfirmUtilsService (BIDV SEPay API)
     EmailModule,
     MktEmailModule,
     MessageQueueModule,
@@ -95,7 +98,6 @@ import {
     MktProductIntegrationModule, // External MKT Server product integration
     MktLicenseIntegrationModule, // External MKT Server license integration
     MktPromotionModule, // Promotion and coupon management
-    MktCommonModule,
     MktContractModule,
     CustomerModule,
     IdempotencyModule.register(), // Idempotency protection for order operations
@@ -116,6 +118,8 @@ import {
     OrderValidationService,
     OrderEventService,
     OrderPaymentCalculationService,
+    OrderConfirmUtilsService,
+    OrderMetadataService,
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -180,6 +184,8 @@ import {
     OrderLicenseQueryService,
     OrderOrchestrationService,
     OrderPaymentCalculationService,
+    OrderConfirmUtilsService,
+    OrderMetadataService,
     // Integration Services
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,

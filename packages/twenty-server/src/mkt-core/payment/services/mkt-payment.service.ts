@@ -7,7 +7,7 @@ import {
   ActorMetadata,
   FieldActorSource,
 } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
+import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
@@ -76,7 +76,7 @@ export class MktPaymentService {
     @Inject(paymentConfig.KEY)
     private readonly config: ConfigType<typeof paymentConfig>,
     private readonly mktPaymentPrepareService: MktPaymentPrepareService,
-    private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
+    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktPaymentMethodRepository: MktPaymentMethodRepository,
     private readonly mktOrderRepository: MktOrderRepository,
@@ -214,7 +214,7 @@ export class MktPaymentService {
     );
 
     const { qrCodeUrl, expiredAt } =
-      await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
+      await this.orderConfirmUtilsService.generateSepayQrCodeUrl(
         paymentMethod,
         amount,
         paymentData.generatedOrderCode,

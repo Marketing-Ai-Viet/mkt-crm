@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services/mkt-product-proxy.service';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MktSupportedLanguage } from 'src/mkt-core/mkt-product-integration/types';
 import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
 import { MktGenericComboItemWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo-item.workspace-entity';
@@ -41,7 +42,7 @@ export class GenericComboSnapshotService {
     calculationResult: GenericComboCalculationResult,
     _language: MktSupportedLanguage = 'vi',
   ): Promise<GenericComboSnapshot> {
-    const capturedAt = new Date().toISOString();
+    const capturedAt = DateTimeUtils.toISO(DateTimeUtils.now());
 
     // Tạo item snapshots
     const itemSnapshots = await this.createItemSnapshots(

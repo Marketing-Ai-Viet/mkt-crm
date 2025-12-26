@@ -1,3 +1,5 @@
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
 import {
   BASE_ERROR_MESSAGES,
   BASE_INFO_MESSAGES,
@@ -320,7 +322,7 @@ export const createSuccessResponse = <TData = unknown>(
   category: MESSAGE_CATEGORY.SUCCESS,
   data,
   statusCode: 200,
-  timestamp: new Date().toISOString(),
+  timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
 });
 
 /**
@@ -333,7 +335,7 @@ export const createErrorResponse = (
   message,
   category: MESSAGE_CATEGORY.ERROR,
   statusCode,
-  timestamp: new Date().toISOString(),
+  timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
 });
 
 /**
@@ -347,7 +349,7 @@ export const createWarningResponse = <TData = unknown>(
   category: MESSAGE_CATEGORY.WARNING,
   data,
   statusCode: 200,
-  timestamp: new Date().toISOString(),
+  timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
 });
 
 // =============================================================================

@@ -382,7 +382,7 @@ export class MktEmailService {
       body: html,
       status: MKT_EMAIL_STATUS.SENT,
       emailType: MKT_TEMPLATE_TYPE.ORDER_EMAIL,
-      sentAt: new Date(),
+      sentAt: DateTimeUtils.now().toJSDate(),
     });
 
     this.logger.log(
@@ -412,7 +412,7 @@ export class MktEmailService {
   }
 
   private formatOrderDate(createdAt: Date | string): string {
-    const fallbackDate = new Date();
+    const fallbackDate = DateTimeUtils.now().toJSDate();
 
     if (!createdAt) {
       return fallbackDate.toLocaleString('vi-VN');
@@ -423,9 +423,9 @@ export class MktEmailService {
         ? DateTimeUtils.fromISO(createdAt)
         : DateTimeUtils.fromDate(createdAt);
 
-    const jsDate = DateTimeUtils.toDate(dateTime);
+    const jsDate = dateTime.isValid ? dateTime.toJSDate() : fallbackDate;
 
-    return (jsDate ?? fallbackDate).toLocaleString('vi-VN');
+    return jsDate.toLocaleString('vi-VN');
   }
 
   private buildOrderUrl(orderId: string): string {

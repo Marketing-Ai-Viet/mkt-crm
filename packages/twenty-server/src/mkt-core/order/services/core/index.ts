@@ -7,9 +7,13 @@
  * - Payment calculation
  * - Validation rules
  * - Event emission
+ * - Order confirmation utilities
+ * - Order metadata management
  */
 export * from './order-status.service';
 export * from './order-calculation.service';
 export * from './order-payment-calculation.service';
 export * from './order-validation.service';
 export * from './order-event.service';
+export * from './order-confirm-utils.service';
+export * from './order-metadata.service';
