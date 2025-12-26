@@ -1,43 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import {
+  DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES,
+  MAX_DEPTH,
+} from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
+import { DEPARTMENT_MESSAGES } from 'src/mkt-core/mkt-department/messages';
+import {
+  MktDepartmentRepository,
+  MktDepartmentHierarchyRepository,
+} from 'src/mkt-core/mkt-department/repositories';
+import {
   DepartmentAncestor,
   DepartmentDescendant,
   DepartmentTreeNode,
   DepartmentTreeOptions,
   HierarchyStatistics,
-  HierarchyWhereCondition,
 } from 'src/mkt-core/mkt-department/types';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
-import {
-  DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES,
-  MAX_DEPTH,
-} from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
 
 @Injectable()
 export class DepartmentService {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly departmentRepository: MktDepartmentRepository,
+    private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
   ) {}
-
-  private async getRepositories(workspaceId: string) {
-    const hierarchyRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        'mktDepartmentHierarchy',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const departmentRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        'mktDepartment',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    return { hierarchyRepository, departmentRepository };
-  }
 
   /**
    * Get complete department tree from root
@@ -64,7 +50,7 @@ export class DepartmentService {
 
     if (!tree) {
       throw new NotFoundException(
-        `Could not build tree for department ${departmentId}`,
+        DEPARTMENT_MESSAGES.ERROR.BUILD_TREE_FAILED(departmentId),
       );
     }
 
@@ -90,7 +76,7 @@ export class DepartmentService {
 
     if (!tree) {
       throw new NotFoundException(
-        `Could not build subtree for department ${departmentId}`,
+        DEPARTMENT_MESSAGES.ERROR.BUILD_SUBTREE_FAILED(departmentId),
       );
     }
 
@@ -106,7 +92,6 @@ export class DepartmentService {
     relationshipTypes?: string[],
   ): Promise<DepartmentAncestor[]> {
     await this.validateDepartmentExists(workspaceId, departmentId);
-    const { hierarchyRepository } = await this.getRepositories(workspaceId);
 
     const ancestors: DepartmentAncestor[] = [];
     let currentDeptId = departmentId;
@@ -117,24 +102,12 @@ export class DepartmentService {
       visited.add(currentDeptId);
       distance++;
 
-      const whereCondition: HierarchyWhereCondition = {
-        childDepartmentId: currentDeptId,
-        isActive: true,
-      };
-
-      if (relationshipTypes && relationshipTypes.length > 0) {
-        whereCondition.relationshipType = relationshipTypes.includes('any')
-          ? undefined
-          : relationshipTypes;
-      } else {
-        whereCondition.relationshipType =
-          DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD;
-      }
-
-      const parentHierarchy = await hierarchyRepository.findOne({
-        where: whereCondition,
-        relations: ['parentDepartment'],
-      });
+      const parentHierarchy =
+        await this.hierarchyRepository.findParentHierarchy(
+          workspaceId,
+          currentDeptId,
+          relationshipTypes,
+        );
 
       if (!parentHierarchy) break;
 
@@ -142,8 +115,8 @@ export class DepartmentService {
         id: parentHierarchy.parentDepartment.id,
         departmentCode: parentHierarchy.parentDepartment.departmentCode,
         departmentName: parentHierarchy.parentDepartment.departmentName,
-        level: parentHierarchy.hierarchyLevel - 1,
-        relationshipType: parentHierarchy.relationshipType,
+        level: (parentHierarchy.hierarchyLevel ?? 1) - 1,
+        relationshipType: parentHierarchy.relationshipType ?? '',
         hierarchyId: parentHierarchy.id,
         distance,
       });
@@ -186,26 +159,18 @@ export class DepartmentService {
   async getHierarchyStatistics(
     workspaceId: string,
   ): Promise<HierarchyStatistics> {
-    const { hierarchyRepository } = await this.getRepositories(workspaceId);
-
     const [
       totalHierarchies,
       activeHierarchies,
-      maxDepthResult,
-      avgDepthResult,
+      maxDepth,
+      averageDepth,
       orphanedCount,
       circularCount,
     ] = await Promise.all([
-      hierarchyRepository.count(),
-      hierarchyRepository.count({ where: { isActive: true } }),
-      hierarchyRepository
-        .createQueryBuilder('h')
-        .select('MAX(h.hierarchyLevel)', 'maxDepth')
-        .getRawOne(),
-      hierarchyRepository
-        .createQueryBuilder('h')
-        .select('AVG(h.hierarchyLevel)', 'avgDepth')
-        .getRawOne(),
+      this.hierarchyRepository.count(workspaceId),
+      this.hierarchyRepository.count(workspaceId, { isActive: true }),
+      this.hierarchyRepository.getMaxLevel(workspaceId),
+      this.hierarchyRepository.getAverageLevel(workspaceId),
       this.countOrphanedDepartments(workspaceId),
       this.detectCircularReferences(workspaceId),
     ]);
@@ -213,8 +178,8 @@ export class DepartmentService {
     return {
       totalHierarchies,
       activeHierarchies,
-      maxDepth: parseInt(maxDepthResult?.maxDepth || '0'),
-      averageDepth: parseFloat(avgDepthResult?.avgDepth || '0'),
+      maxDepth,
+      averageDepth,
       orphanedDepartments: orphanedCount,
       circularReferences: circularCount,
     };
@@ -253,14 +218,15 @@ export class DepartmentService {
    * Rebuild hierarchy paths for all hierarchies
    */
   async rebuildAllHierarchyPaths(workspaceId: string): Promise<number> {
-    const { hierarchyRepository } = await this.getRepositories(workspaceId);
     let rebuilt = 0;
 
     // Process level by level to maintain dependencies
     for (let level = 0; level <= MAX_DEPTH; level++) {
-      const hierarchies = await hierarchyRepository.find({
-        where: { hierarchyLevel: level, isActive: true },
-      });
+      const hierarchies = await this.hierarchyRepository.findByLevel(
+        workspaceId,
+        level,
+        true,
+      );
 
       for (const hierarchy of hierarchies) {
         const path = await this.computeHierarchyPath(
@@ -268,7 +234,7 @@ export class DepartmentService {
           hierarchy.childDepartmentId,
         );
 
-        await hierarchyRepository.update(hierarchy.id, {
+        await this.hierarchyRepository.update(workspaceId, hierarchy.id, {
           hierarchyPath: path,
         });
         rebuilt++;
@@ -283,43 +249,30 @@ export class DepartmentService {
     workspaceId: string,
     options: DepartmentTreeOptions = {},
   ): Promise<MktDepartmentWorkspaceEntity[]> {
-    const { hierarchyRepository, departmentRepository } =
-      await this.getRepositories(workspaceId);
     const { relationshipTypes, includeInactive = false } = options;
 
     // Get all departments
-    const allDepartments =
-      (await departmentRepository.find()) as MktDepartmentWorkspaceEntity[];
+    const allDepartments = await this.departmentRepository.findAll(workspaceId);
 
-    // Get all child department IDs from hierarchies
-    const whereCondition: HierarchyWhereCondition = {};
-
-    if (!includeInactive) {
-      whereCondition.isActive = true;
-    }
-
-    if (relationshipTypes && relationshipTypes.length > 0) {
-      whereCondition.relationshipType = relationshipTypes;
-    } else {
-      whereCondition.relationshipType =
-        DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD;
-    }
-
-    const hierarchies = await hierarchyRepository.find({
-      where: whereCondition,
+    // Get all hierarchies based on filters
+    const hierarchies = await this.hierarchyRepository.findAll(workspaceId, {
+      isActive: !includeInactive ? true : undefined,
+      relationshipTypes:
+        relationshipTypes && relationshipTypes.length > 0
+          ? relationshipTypes
+          : [DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD],
     });
 
     // Collect all department IDs that are children (have parents)
     const childDepartmentIds = new Set<string>();
 
-    hierarchies.forEach((hierarchy) => {
+    for (const hierarchy of hierarchies) {
       if (hierarchy.childDepartmentId) {
         childDepartmentIds.add(hierarchy.childDepartmentId);
       }
-    });
+    }
 
     // Root departments are those that don't appear as children in any hierarchy
-
     return allDepartments.filter((dept) => !childDepartmentIds.has(dept.id));
   }
 
@@ -328,8 +281,6 @@ export class DepartmentService {
     departmentId: string,
     options: DepartmentTreeOptions = {},
   ): Promise<MktDepartmentWorkspaceEntity> {
-    const { hierarchyRepository, departmentRepository } =
-      await this.getRepositories(workspaceId);
     const { relationshipTypes } = options;
     let currentDeptId = departmentId;
     const visited = new Set<string>();
@@ -337,34 +288,27 @@ export class DepartmentService {
     while (currentDeptId && !visited.has(currentDeptId)) {
       visited.add(currentDeptId);
 
-      const whereCondition: HierarchyWhereCondition = {
-        childDepartmentId: currentDeptId,
-        isActive: true,
-      };
-
-      if (relationshipTypes && relationshipTypes.length > 0) {
-        whereCondition.relationshipType = relationshipTypes;
-      } else {
-        whereCondition.relationshipType =
-          DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD;
-      }
-
-      const parentHierarchy = await hierarchyRepository.findOne({
-        where: whereCondition,
-        relations: ['parentDepartment'],
-      });
+      const parentHierarchy =
+        await this.hierarchyRepository.findParentHierarchy(
+          workspaceId,
+          currentDeptId,
+          relationshipTypes && relationshipTypes.length > 0
+            ? relationshipTypes
+            : undefined,
+        );
 
       if (!parentHierarchy) break;
       currentDeptId = parentHierarchy.parentDepartmentId;
     }
 
-    const rootDepartment = (await departmentRepository.findOne({
-      where: { id: currentDeptId },
-    })) as MktDepartmentWorkspaceEntity;
+    const rootDepartment = await this.departmentRepository.findById(
+      workspaceId,
+      currentDeptId,
+    );
 
     if (!rootDepartment) {
       throw new NotFoundException(
-        `Root department not found for department ${departmentId}`,
+        DEPARTMENT_MESSAGES.ERROR.ROOT_DEPARTMENT_NOT_FOUND(departmentId),
       );
     }
 
@@ -396,16 +340,18 @@ export class DepartmentService {
     workspaceId: string,
     departmentId: string,
   ): Promise<MktDepartmentWorkspaceEntity> {
-    const { departmentRepository } = await this.getRepositories(workspaceId);
-    const department = await departmentRepository.findOne({
-      where: { id: departmentId },
-    });
+    const department = await this.departmentRepository.findById(
+      workspaceId,
+      departmentId,
+    );
 
     if (!department) {
-      throw new NotFoundException(`Department ${departmentId} not found`);
+      throw new NotFoundException(
+        DEPARTMENT_MESSAGES.ERROR.DEPARTMENT_NOT_FOUND(departmentId),
+      );
     }
 
-    return department as MktDepartmentWorkspaceEntity;
+    return department;
   }
 
   private async buildChildrenNodes(
@@ -414,17 +360,29 @@ export class DepartmentService {
     options: DepartmentTreeOptions,
     currentDepth: number,
   ): Promise<DepartmentTreeNode[]> {
-    const { maxDepth = MAX_DEPTH } = options;
+    const {
+      maxDepth = MAX_DEPTH,
+      includeInactive,
+      relationshipTypes,
+      sortBy,
+      sortDirection,
+    } = options;
 
     if (currentDepth >= maxDepth - 1) {
       return [];
     }
 
-    const childHierarchies = await this.findChildHierarchies(
-      workspaceId,
-      parentId,
-      options,
-    );
+    const childHierarchies =
+      await this.hierarchyRepository.findChildHierarchies(
+        workspaceId,
+        parentId,
+        {
+          includeInactive,
+          relationshipTypes,
+          sortBy,
+          sortDirection: sortDirection as 'ASC' | 'DESC',
+        },
+      );
 
     const childPromises = childHierarchies.map(async (hierarchy) => {
       const childTree = await this.buildTreeFromRoot(
@@ -435,7 +393,7 @@ export class DepartmentService {
       );
 
       if (childTree) {
-        childTree.relationshipType = hierarchy.relationshipType;
+        childTree.relationshipType = hierarchy.relationshipType ?? undefined;
         childTree.hierarchyId = hierarchy.id;
       }
 
@@ -445,66 +403,6 @@ export class DepartmentService {
     const children = await Promise.all(childPromises);
 
     return children.filter(Boolean) as DepartmentTreeNode[];
-  }
-
-  private async findChildHierarchies(
-    workspaceId: string,
-    parentId: string,
-    options: DepartmentTreeOptions,
-  ) {
-    const { hierarchyRepository } = await this.getRepositories(workspaceId);
-    const {
-      includeInactive = false,
-      relationshipTypes,
-      sortBy = 'displayOrder',
-      sortDirection = 'ASC',
-    } = options;
-
-    const whereCondition = this.buildHierarchyWhereCondition(
-      parentId,
-      includeInactive,
-      relationshipTypes,
-    );
-    const orderCondition = this.buildOrderCondition(sortBy, sortDirection);
-
-    return await hierarchyRepository.find({
-      where: whereCondition,
-      relations: ['childDepartment'],
-      order: orderCondition,
-    });
-  }
-
-  private buildHierarchyWhereCondition(
-    parentId: string,
-    includeInactive: boolean,
-    relationshipTypes?: string[],
-  ): HierarchyWhereCondition {
-    const whereCondition: HierarchyWhereCondition = {
-      parentDepartmentId: parentId,
-    };
-
-    if (!includeInactive) {
-      whereCondition.isActive = true;
-    }
-
-    if (relationshipTypes && relationshipTypes.length > 0) {
-      whereCondition.relationshipType = relationshipTypes;
-    }
-
-    return whereCondition;
-  }
-
-  private buildOrderCondition(
-    sortBy?: string,
-    sortDirection?: string,
-  ): Record<string, 'ASC' | 'DESC'> {
-    const orderCondition: Record<string, 'ASC' | 'DESC'> = {};
-
-    if (sortBy && sortDirection) {
-      orderCondition[sortBy] = sortDirection as 'ASC' | 'DESC';
-    }
-
-    return orderCondition;
   }
 
   private createDepartmentTreeNode(
@@ -534,22 +432,17 @@ export class DepartmentService {
   ): Promise<void> {
     if (currentDepth >= maxDepth) return;
 
-    const { hierarchyRepository } = await this.getRepositories(workspaceId);
-
-    const whereCondition: HierarchyWhereCondition = {
-      parentDepartmentId: parentId,
-      isActive: true,
-    };
-
-    if (relationshipTypes && relationshipTypes.length > 0) {
-      whereCondition.relationshipType = relationshipTypes;
-    }
-
-    const childHierarchies = await hierarchyRepository.find({
-      where: whereCondition,
-      relations: ['childDepartment'],
-      order: { displayOrder: 'ASC' },
-    });
+    const childHierarchies =
+      await this.hierarchyRepository.findChildHierarchies(
+        workspaceId,
+        parentId,
+        {
+          includeInactive: false,
+          relationshipTypes,
+          sortBy: 'displayOrder',
+          sortDirection: 'ASC',
+        },
+      );
 
     for (const hierarchy of childHierarchies) {
       const newPath = [
@@ -561,8 +454,8 @@ export class DepartmentService {
         id: hierarchy.childDepartment.id,
         departmentCode: hierarchy.childDepartment.departmentCode,
         departmentName: hierarchy.childDepartment.departmentName,
-        level: hierarchy.hierarchyLevel,
-        relationshipType: hierarchy.relationshipType,
+        level: hierarchy.hierarchyLevel ?? 0,
+        relationshipType: hierarchy.relationshipType ?? '',
         hierarchyId: hierarchy.id,
         distance: currentDepth + 1,
         path: newPath,
@@ -585,7 +478,6 @@ export class DepartmentService {
     workspaceId: string,
     departmentId: string,
   ): Promise<string[]> {
-    const { hierarchyRepository } = await this.getRepositories(workspaceId);
     const path: string[] = [];
     let currentDeptId = departmentId;
     const visited = new Set<string>();
@@ -593,14 +485,12 @@ export class DepartmentService {
     while (currentDeptId && !visited.has(currentDeptId)) {
       visited.add(currentDeptId);
 
-      const parentHierarchy = await hierarchyRepository.findOne({
-        where: {
-          childDepartmentId: currentDeptId,
-          isActive: true,
-          relationshipType:
-            DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD,
-        },
-      });
+      const parentHierarchy =
+        await this.hierarchyRepository.findParentHierarchy(
+          workspaceId,
+          currentDeptId,
+          [DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD],
+        );
 
       if (!parentHierarchy) break;
 
@@ -615,31 +505,29 @@ export class DepartmentService {
     workspaceId: string,
     departmentId: string,
   ): Promise<void> {
-    const { departmentRepository } = await this.getRepositories(workspaceId);
-    const exists = await departmentRepository.existsBy({
-      id: departmentId,
-    });
+    const exists = await this.departmentRepository.exists(
+      workspaceId,
+      departmentId,
+    );
 
     if (!exists) {
-      throw new NotFoundException(`Department ${departmentId} not found`);
+      throw new NotFoundException(
+        DEPARTMENT_MESSAGES.ERROR.DEPARTMENT_NOT_FOUND(departmentId),
+      );
     }
   }
 
   private async countOrphanedDepartments(workspaceId: string): Promise<number> {
-    // Since we're using twentyORM, we'll use a simpler approach
-    const { departmentRepository, hierarchyRepository } =
-      await this.getRepositories(workspaceId);
-
-    const allDepartments = await departmentRepository.find();
-    const hierarchies = await hierarchyRepository.find();
+    const allDepartments = await this.departmentRepository.findAll(workspaceId);
+    const hierarchies = await this.hierarchyRepository.findAll(workspaceId);
 
     const departmentsInHierarchy = new Set<string>();
 
-    hierarchies.forEach((h) => {
+    for (const h of hierarchies) {
       if (h.parentDepartmentId)
         departmentsInHierarchy.add(h.parentDepartmentId);
       if (h.childDepartmentId) departmentsInHierarchy.add(h.childDepartmentId);
-    });
+    }
 
     return allDepartments.filter((d) => !departmentsInHierarchy.has(d.id))
       .length;

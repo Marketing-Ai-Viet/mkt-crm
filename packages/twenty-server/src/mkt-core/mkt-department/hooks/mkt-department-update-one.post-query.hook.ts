@@ -6,22 +6,22 @@ import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runne
 import { WorkspaceQueryHookType } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/types/workspace-query-hook.type';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
 import { DEPARTMENT_TYPE } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
+import {
+  DEPARTMENT_MESSAGES,
+  MKT_DEPARTMENT_LOG_CONTEXT,
+} from 'src/mkt-core/mkt-department/messages';
 import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/services/mkt-department-hierarchy.service';
+import { DepartmentUpdateMetadata } from 'src/mkt-core/mkt-department/types';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
+import {
+  parseJsonOrNull,
+  safeJsonStringify,
+} from 'src/mkt-core/utils/json.util';
 
-export type Updated = MktDepartmentWorkspaceEntity & {
+type UpdatedDepartment = MktDepartmentWorkspaceEntity & {
   id: string;
-};
-
-export type Metadata = {
-  UpdateOneMktDepartmentHierarchy: {
-    name: string;
-    relationshipType: string;
-    parentDepartmentId: string;
-    childDepartmentId: string;
-  };
 };
 
 @Injectable()
@@ -33,7 +33,7 @@ export class MktDepartmentUpdateOnePostQueryHook
   implements WorkspacePostQueryHookInstance
 {
   private readonly logger = new Logger(
-    MktDepartmentUpdateOnePostQueryHook.name,
+    `${MKT_DEPARTMENT_LOG_CONTEXT}:UpdateHook`,
   );
 
   constructor(
@@ -49,18 +49,23 @@ export class MktDepartmentUpdateOnePostQueryHook
     const workspaceId = this.scopedWorkspaceContextFactory.create().workspaceId;
 
     if (!workspaceId) return;
-    const update: Updated = payload?.[0];
+    const updated: UpdatedDepartment = payload?.[0];
 
-    if (!update) return;
+    if (!updated) return;
     try {
-      let metadata = update.metadata as unknown as Metadata;
-      const { departmentType } = update;
+      const rawMetadata = updated.metadata as unknown;
+      const { departmentType } = updated;
 
-      if (typeof metadata === 'string') metadata = JSON.parse(metadata);
+      const metadata =
+        typeof rawMetadata === 'string'
+          ? parseJsonOrNull<DepartmentUpdateMetadata>(rawMetadata)
+          : (rawMetadata as DepartmentUpdateMetadata | null);
+
+      if (!metadata?.UpdateOneMktDepartmentHierarchy) return;
 
       const hierarchyData = {
         ...metadata.UpdateOneMktDepartmentHierarchy,
-        childDepartmentId: update.id,
+        childDepartmentId: updated.id,
       } as MktDepartmentHierarchyWorkspaceEntity;
 
       if (departmentType === DEPARTMENT_TYPE.TEAM) {
@@ -70,11 +75,13 @@ export class MktDepartmentUpdateOnePostQueryHook
       }
       // Perform any additional operations with the metadata if needed
       this.logger.log(
-        `Department updated with metadata: ${JSON.stringify(metadata)}`,
+        DEPARTMENT_MESSAGES.LOG.HOOK_UPDATE_SUCCESS(
+          safeJsonStringify(metadata) ?? '',
+        ),
       );
     } catch (error) {
       this.logger.error(
-        `Error processing metadata for updated department: ${error.message}`,
+        DEPARTMENT_MESSAGES.ERROR.HOOK_UPDATE_FAILED(error.message),
       );
     }
   }
