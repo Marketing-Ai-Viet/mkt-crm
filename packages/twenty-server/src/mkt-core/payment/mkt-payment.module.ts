@@ -13,6 +13,12 @@ import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-pro
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import {
+  bidvConfig,
+  BidvApiClient,
+  BidvProvider,
+  BIDV_PROVIDER_METADATA,
+} from 'src/mkt-core/payment/providers/bidv';
+import {
   sepayConfig,
   SepayProvider,
   SepayQrGenerator,
@@ -39,6 +45,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
   imports: [
     ConfigModule.forFeature(paymentConfig),
     ConfigModule.forFeature(sepayConfig),
+    ConfigModule.forFeature(bidvConfig),
     HttpModule,
     RecordPositionModule,
     MktCommonModule,
@@ -49,10 +56,13 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
   providers: [
     // Factory
     PaymentProviderFactory,
-    // Providers
+    // Providers - SePay
     SepayProvider,
     SepayQrGenerator,
     SepayWebhookHandler,
+    // Providers - BIDV
+    BidvProvider,
+    BidvApiClient,
     // Repositories
     MktPaymentRepository,
     MktPaymentHistoryRepository,
@@ -75,6 +85,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     PaymentProviderFactory,
     // Providers
     SepayProvider,
+    BidvProvider,
     // Repositories
     MktPaymentRepository,
     MktPaymentHistoryRepository,
@@ -94,6 +105,7 @@ export class MktPaymentModule implements OnModuleInit {
     private readonly providerFactory: PaymentProviderFactory,
     private readonly sepayProvider: SepayProvider,
     private readonly sepayWebhookHandler: SepayWebhookHandler,
+    private readonly bidvProvider: BidvProvider,
   ) {}
 
   onModuleInit() {
@@ -120,6 +132,23 @@ export class MktPaymentModule implements OnModuleInit {
       PAYMENT_PROVIDER_TYPE.SEPAY_QR,
       this.sepayWebhookHandler,
     );
+
+    // Register BIDV provider
+    this.providerFactory.registerProvider(
+      PAYMENT_PROVIDER_TYPE.BIDV_SEPAY,
+      this.bidvProvider,
+      {
+        type: PAYMENT_PROVIDER_TYPE.BIDV_SEPAY,
+        displayName: BIDV_PROVIDER_METADATA.displayName,
+        description: BIDV_PROVIDER_METADATA.description,
+        icon: BIDV_PROVIDER_METADATA.icon,
+        capabilities: this.bidvProvider.capabilities,
+        configuredFields: [...BIDV_PROVIDER_METADATA.configuredFields],
+      },
+    );
+
+    // Note: BIDV uses the same webhook handler as SePay
+    // The webhook controller routes BIDV webhooks to the SePay handler
 
     this.logger.log('Payment providers registered successfully');
   }
