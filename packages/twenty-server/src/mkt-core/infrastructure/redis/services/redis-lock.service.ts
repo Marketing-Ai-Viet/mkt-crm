@@ -4,7 +4,10 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { REDIS_LOG_CONTEXT } from 'src/mkt-core/infrastructure/redis/constants';
+import {
+  LOCK_CACHE_PREFIX,
+  REDIS_LOG_CONTEXT,
+} from 'src/mkt-core/infrastructure/redis/constants';
 
 // ============================================
 // TYPES
@@ -75,7 +78,7 @@ const DEFAULT_LOCK_OPTIONS: Required<LockOptions> = {
   ownerId: '', // Will be generated if not provided
 };
 
-const LOCK_KEY_PREFIX = 'mkt:lock';
+const LOCK_KEY_PREFIX = LOCK_CACHE_PREFIX.GENERAL;
 
 /**
  * Redis Distributed Lock Service

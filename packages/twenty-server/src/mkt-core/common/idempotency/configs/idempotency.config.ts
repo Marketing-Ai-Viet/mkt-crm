@@ -4,6 +4,7 @@ import {
 } from 'src/mkt-core/common/idempotency/types/idempotency.types';
 import {
   CACHE_TTL,
+  CACHE_TTL_MS,
   ORDER_CACHE_PREFIX,
 } from 'src/mkt-core/infrastructure/redis/constants';
 
@@ -26,14 +27,14 @@ export type IdempotencyActionConfig = {
 };
 
 /**
- * Default configuration values
+ * Default configuration values (using centralized TTL)
  */
 export const DEFAULT_ACTION_CONFIG: IdempotencyActionConfig = {
-  ttlSeconds: 86400, // 24 hours
-  lockTimeoutMs: 300000, // 5 minutes
+  ttlSeconds: CACHE_TTL.DAY, // 24 hours
+  lockTimeoutMs: CACHE_TTL_MS.LOCK_PROCESSING, // 5 minutes
   failureMode: 'FAIL_SAFE',
   maxResponseSizeBytes: 10240, // 10KB
-  stuckPendingGraceMs: 60000, // 1 minute grace after lock expires
+  stuckPendingGraceMs: CACHE_TTL.RATE_LIMIT_WINDOW * 1000, // 1 minute grace
 };
 
 /**
@@ -41,7 +42,7 @@ export const DEFAULT_ACTION_CONFIG: IdempotencyActionConfig = {
  */
 const FINANCIAL_CONFIG: Partial<IdempotencyActionConfig> = {
   failureMode: 'FAIL_STRICT',
-  ttlSeconds: 172800, // 48 hours
+  ttlSeconds: CACHE_TTL.DAY * 2, // 48 hours
   maxResponseSizeBytes: 5120, // 5KB - smaller for financial
 };
 
@@ -56,21 +57,21 @@ export const ACTION_CONFIGS: Record<
   // Order actions
   'order:createOrder': {
     ...FINANCIAL_CONFIG,
-    lockTimeoutMs: 600000, // 10 minutes for complex orders
+    lockTimeoutMs: CACHE_TTL_MS.LOCK_SYNC, // 10 minutes for complex orders
     responseAllowedFields: ['id', 'orderNumber', 'status', 'totalAmount'],
   },
   'order:confirmOrder': {
     ...FINANCIAL_CONFIG,
-    ttlSeconds: 7200, // 2 hours
+    ttlSeconds: CACHE_TTL.VERY_LONG * 2, // 2 hours
     responseAllowedFields: ['id', 'orderNumber', 'status', 'confirmedAt'],
   },
   'order:updateOrderStatus': {
-    ttlSeconds: 3600, // 1 hour
+    ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
     failureMode: 'FAIL_SAFE',
   },
   'order:refundOrder': {
     ...FINANCIAL_CONFIG,
-    lockTimeoutMs: 900000, // 15 minutes
+    lockTimeoutMs: CACHE_TTL.MEDIUM_LONG * 1000, // 15 minutes
     responseAllowedFields: ['id', 'refundId', 'status', 'refundAmount'],
   },
 
@@ -81,7 +82,7 @@ export const ACTION_CONFIGS: Record<
   },
   'payment:processPayment': {
     ...FINANCIAL_CONFIG,
-    lockTimeoutMs: 900000, // 15 minutes
+    lockTimeoutMs: CACHE_TTL.MEDIUM_LONG * 1000, // 15 minutes
   },
   'payment:refundPayment': {
     ...FINANCIAL_CONFIG,
@@ -89,7 +90,7 @@ export const ACTION_CONFIGS: Record<
 
   // License actions
   'license:createLicense': {
-    ttlSeconds: 86400,
+    ttlSeconds: CACHE_TTL.DAY, // 24 hours
     failureMode: 'FAIL_STRICT',
     responseAllowedFields: ['id', 'licenseKey', 'status', 'expiresAt'],
   },
@@ -98,7 +99,7 @@ export const ACTION_CONFIGS: Record<
     responseAllowedFields: ['id', 'licenseKey', 'status', 'newExpiresAt'],
   },
   'license:activateLicense': {
-    ttlSeconds: 3600,
+    ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
     failureMode: 'FAIL_SAFE',
   },
 
@@ -108,7 +109,7 @@ export const ACTION_CONFIGS: Record<
     responseAllowedFields: ['id', 'invoiceNumber', 'status', 'totalAmount'],
   },
   'invoice:sendInvoice': {
-    ttlSeconds: 3600,
+    ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
     failureMode: 'FAIL_SAFE',
   },
 };
@@ -159,7 +160,7 @@ export const IDEMPOTENCY_GLOBAL_CONFIG = {
   defaultPollIntervalMs: 500,
 
   /** Cleanup job interval (ms) - run every 5 minutes */
-  cleanupIntervalMs: 300000,
+  cleanupIntervalMs: CACHE_TTL.SHORT * 1000,
 
   /** Stuck pending timeout (from centralized CACHE_TTL) */
   stuckPendingTimeoutSeconds: CACHE_TTL.IDEMPOTENCY_PENDING,

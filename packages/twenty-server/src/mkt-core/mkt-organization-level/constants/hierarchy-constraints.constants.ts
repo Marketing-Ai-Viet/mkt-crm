@@ -3,6 +3,8 @@
  * Định nghĩa các giới hạn cho cấp độ phân cấp tổ chức
  */
 
+import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
+
 // Số cấp hierarchy tối đa cho Organization Level
 export const MAX_ORGANIZATION_HIERARCHY_DEPTH = 8;
 
@@ -72,6 +74,6 @@ export const HIERARCHY_PERFORMANCE_LIMITS = {
   // Depth tối đa cho recursive queries
   MAX_RECURSIVE_QUERY_DEPTH: MAX_ORGANIZATION_HIERARCHY_DEPTH,
 
-  // Cache TTL cho hierarchy data (seconds)
-  HIERARCHY_CACHE_TTL: 3600, // 1 hour
+  // Cache TTL cho hierarchy data (from centralized config)
+  HIERARCHY_CACHE_TTL: CACHE_TTL.VERY_LONG, // 1 hour
 } as const;

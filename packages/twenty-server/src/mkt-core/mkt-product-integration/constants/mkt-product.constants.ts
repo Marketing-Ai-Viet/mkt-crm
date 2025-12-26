@@ -2,6 +2,7 @@ import {
   MktCurrency,
   MktSupportedLanguage,
 } from 'src/mkt-core/mkt-product-integration/types';
+import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
 
 // ============================================
 // API ENDPOINTS
@@ -46,14 +47,16 @@ export type MktProductEndpointsType =
 export const MKT_CACHE_PREFIX = 'mkt' as const;
 
 /**
- * Cache TTL in seconds
+ * Cache TTL in seconds (from centralized config)
+ * Used for normal cache operations
  */
-export const MKT_CACHE_TTL = 3600 as const; // 1 hour
+export const MKT_CACHE_TTL = CACHE_TTL.DAY; // 24 hours
 
 /**
  * Fallback cache TTL in seconds (used when API is unavailable)
+ * Same as MKT_CACHE_TTL since product data is stable
  */
-export const MKT_FALLBACK_CACHE_TTL = 86400 as const; // 24 hours
+export const MKT_FALLBACK_CACHE_TTL = CACHE_TTL.DAY; // 24 hours
 
 // ============================================
 // PRODUCT TYPE

@@ -203,6 +203,102 @@ export const KPI_CACHE_PREFIX = {
 } as const;
 
 // ============================================
+// PROMOTION DOMAIN
+// ============================================
+
+export const PROMOTION_CACHE_PREFIX = {
+  /** Promotion data: mkt:promotion:data:{promotionId} */
+  DATA: 'mkt:promotion:data',
+
+  /** Active promotions: mkt:promotion:active:{workspaceId} */
+  ACTIVE: 'mkt:promotion:active',
+
+  /** Promotion by code: mkt:promotion:code:{code} */
+  BY_CODE: 'mkt:promotion:code',
+
+  /** Coupon data: mkt:promotion:coupon:{couponId} */
+  COUPON: 'mkt:promotion:coupon',
+} as const;
+
+// ============================================
+// COMBO DOMAIN
+// ============================================
+
+export const COMBO_CACHE_PREFIX = {
+  /** Combo data: mkt:combo:data:{comboId} */
+  DATA: 'mkt:combo:data',
+
+  /** Combo calculation: mkt:combo:calc:{comboId} */
+  CALCULATION: 'mkt:combo:calc',
+
+  /** Combo by code: mkt:combo:code:{code} */
+  BY_CODE: 'mkt:combo:code',
+} as const;
+
+// ============================================
+// EXTERNAL PRODUCT DOMAIN (MKT Server)
+// ============================================
+
+export const EXTERNAL_PRODUCT_CACHE_PREFIX = {
+  /** Digital product data: mkt:external:digital:{productId} */
+  DIGITAL: 'mkt:external:digital',
+
+  /** Digital product code mapping: mkt:external:digital:code:{code} */
+  DIGITAL_CODE: 'mkt:external:digital:code',
+
+  /** Digital packages by product: mkt:external:digital:pkgs:{productId} */
+  DIGITAL_PACKAGES: 'mkt:external:digital:pkgs',
+
+  /** Physical product data: mkt:external:physical:{productId} */
+  PHYSICAL: 'mkt:external:physical',
+
+  /** Service product data: mkt:external:service:{productId} */
+  SERVICE: 'mkt:external:service',
+} as const;
+
+// ============================================
+// TAG INDEX DOMAIN (for cache invalidation)
+// ============================================
+
+export const TAG_INDEX_CACHE_PREFIX = {
+  /** Tag to keys mapping: mkt:tag:index:{tag} */
+  INDEX: 'mkt:tag:index',
+
+  /** Key to tags mapping: mkt:tag:keys:{cacheKey} */
+  KEYS: 'mkt:tag:keys',
+} as const;
+
+// ============================================
+// SYNC LOCK DOMAIN
+// ============================================
+
+export const SYNC_LOCK_CACHE_PREFIX = {
+  /** Product sync lock: mkt:sync:lock:product */
+  PRODUCT: 'mkt:sync:lock:product',
+
+  /** General sync lock: mkt:sync:lock:{resource} */
+  GENERAL: 'mkt:sync:lock',
+} as const;
+
+// ============================================
+// LOCK DOMAIN
+// ============================================
+
+export const LOCK_CACHE_PREFIX = {
+  /** Generic lock: mkt:lock:{resource} */
+  GENERAL: 'mkt:lock',
+
+  /** Order processing lock: mkt:lock:order:{orderId} */
+  ORDER: 'mkt:lock:order',
+
+  /** Payment processing lock: mkt:lock:payment:{paymentId} */
+  PAYMENT: 'mkt:lock:payment',
+
+  /** License activation lock: mkt:lock:license:{licenseId} */
+  LICENSE: 'mkt:lock:license',
+} as const;
+
+// ============================================
 // COMBINED EXPORT
 // ============================================
 
@@ -221,6 +317,12 @@ export const MKT_CACHE_PREFIX = {
   RATE_LIMIT: RATE_LIMIT_CACHE_PREFIX,
   RESELLER: RESELLER_CACHE_PREFIX,
   KPI: KPI_CACHE_PREFIX,
+  PROMOTION: PROMOTION_CACHE_PREFIX,
+  COMBO: COMBO_CACHE_PREFIX,
+  EXTERNAL_PRODUCT: EXTERNAL_PRODUCT_CACHE_PREFIX,
+  TAG_INDEX: TAG_INDEX_CACHE_PREFIX,
+  SYNC_LOCK: SYNC_LOCK_CACHE_PREFIX,
+  LOCK: LOCK_CACHE_PREFIX,
 } as const;
 
 /**
@@ -237,4 +339,7 @@ export type MktCachePrefix =
   | (typeof OAUTH2_CACHE_PREFIX)[keyof typeof OAUTH2_CACHE_PREFIX]
   | (typeof RATE_LIMIT_CACHE_PREFIX)[keyof typeof RATE_LIMIT_CACHE_PREFIX]
   | (typeof RESELLER_CACHE_PREFIX)[keyof typeof RESELLER_CACHE_PREFIX]
-  | (typeof KPI_CACHE_PREFIX)[keyof typeof KPI_CACHE_PREFIX];
+  | (typeof KPI_CACHE_PREFIX)[keyof typeof KPI_CACHE_PREFIX]
+  | (typeof PROMOTION_CACHE_PREFIX)[keyof typeof PROMOTION_CACHE_PREFIX]
+  | (typeof COMBO_CACHE_PREFIX)[keyof typeof COMBO_CACHE_PREFIX]
+  | (typeof EXTERNAL_PRODUCT_CACHE_PREFIX)[keyof typeof EXTERNAL_PRODUCT_CACHE_PREFIX];

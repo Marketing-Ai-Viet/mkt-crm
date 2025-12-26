@@ -186,6 +186,132 @@ export const RESELLER_CACHE_TAGS = {
 } as const;
 
 // ============================================
+// PROMOTION TAGS
+// ============================================
+
+export const PROMOTION_CACHE_TAGS = {
+  /** All promotion caches */
+  ALL: 'promotion',
+
+  /** Active promotions */
+  ACTIVE: 'promotion:active',
+
+  /** Expired promotions */
+  EXPIRED: 'promotion:expired',
+
+  /** Prefix for specific promotion: promotion:id:{promotionId} */
+  ID_PREFIX: 'promotion:id',
+
+  /** Prefix for promotion code: promotion:code:{code} */
+  CODE_PREFIX: 'promotion:code',
+
+  /** Prefix for coupon: promotion:coupon:{couponId} */
+  COUPON_PREFIX: 'promotion:coupon',
+} as const;
+
+// ============================================
+// COMBO TAGS
+// ============================================
+
+export const COMBO_CACHE_TAGS = {
+  /** All combo caches */
+  ALL: 'combo',
+
+  /** Active combos */
+  ACTIVE: 'combo:active',
+
+  /** Prefix for specific combo: combo:id:{comboId} */
+  ID_PREFIX: 'combo:id',
+
+  /** Prefix for combo code: combo:code:{code} */
+  CODE_PREFIX: 'combo:code',
+
+  /** Prefix for combo calculation: combo:calc:{comboId} */
+  CALCULATION_PREFIX: 'combo:calc',
+} as const;
+
+// ============================================
+// OAUTH2 TAGS
+// ============================================
+
+export const OAUTH2_CACHE_TAGS = {
+  /** All OAuth2 caches */
+  ALL: 'oauth2',
+
+  /** Token caches */
+  TOKEN: 'oauth2:token',
+
+  /** Refresh token caches */
+  REFRESH: 'oauth2:refresh',
+
+  /** Prefix for client: oauth2:client:{clientId} */
+  CLIENT_PREFIX: 'oauth2:client',
+} as const;
+
+// ============================================
+// KPI TAGS
+// ============================================
+
+export const KPI_CACHE_TAGS = {
+  /** All KPI caches */
+  ALL: 'kpi',
+
+  /** Prefix for specific KPI: kpi:id:{kpiId} */
+  ID_PREFIX: 'kpi:id',
+
+  /** Prefix for user KPIs: kpi:user:{userId} */
+  USER_PREFIX: 'kpi:user',
+
+  /** Template caches */
+  TEMPLATE: 'kpi:template',
+} as const;
+
+// ============================================
+// RATE LIMIT TAGS
+// ============================================
+
+export const RATE_LIMIT_CACHE_TAGS = {
+  /** All rate limit caches */
+  ALL: 'ratelimit',
+
+  /** Counter caches */
+  COUNTER: 'ratelimit:counter',
+
+  /** Blocked entities */
+  BLOCKED: 'ratelimit:blocked',
+
+  /** Violation tracking */
+  VIOLATIONS: 'ratelimit:violations',
+} as const;
+
+// ============================================
+// EXTERNAL PRODUCT TAGS
+// ============================================
+
+export const EXTERNAL_PRODUCT_CACHE_TAGS = {
+  /** All external product caches */
+  ALL: 'external',
+
+  /** Digital products */
+  DIGITAL: 'external:digital',
+
+  /** Physical products */
+  PHYSICAL: 'external:physical',
+
+  /** Service products */
+  SERVICE: 'external:service',
+
+  /** Prefix for product: external:id:{productId} */
+  ID_PREFIX: 'external:id',
+
+  /** Prefix for code: external:code:{code} */
+  CODE_PREFIX: 'external:code',
+
+  /** Prefix for packages: external:packages:{productId} */
+  PACKAGES_PREFIX: 'external:packages',
+} as const;
+
+// ============================================
 // COMBINED EXPORT
 // ============================================
 
@@ -201,4 +327,10 @@ export const MKT_CACHE_TAGS = {
   PRODUCT: PRODUCT_CACHE_TAGS,
   DEPARTMENT: DEPARTMENT_CACHE_TAGS,
   RESELLER: RESELLER_CACHE_TAGS,
+  PROMOTION: PROMOTION_CACHE_TAGS,
+  COMBO: COMBO_CACHE_TAGS,
+  OAUTH2: OAUTH2_CACHE_TAGS,
+  KPI: KPI_CACHE_TAGS,
+  RATE_LIMIT: RATE_LIMIT_CACHE_TAGS,
+  EXTERNAL_PRODUCT: EXTERNAL_PRODUCT_CACHE_TAGS,
 } as const;

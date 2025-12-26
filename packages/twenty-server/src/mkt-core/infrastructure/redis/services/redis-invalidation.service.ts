@@ -3,7 +3,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-import { REDIS_LOG_CONTEXT } from 'src/mkt-core/infrastructure/redis/constants';
+import {
+  CACHE_TTL,
+  REDIS_LOG_CONTEXT,
+  TAG_INDEX_CACHE_PREFIX,
+} from 'src/mkt-core/infrastructure/redis/constants';
 
 // ============================================
 // TYPES
@@ -43,8 +47,8 @@ export type InvalidationConfig = {
 // ============================================
 
 const DEFAULT_CONFIG: Required<InvalidationConfig> = {
-  tagIndexPrefix: 'mkt:tag:index',
-  defaultTagTtlMs: 86400000, // 24 hours
+  tagIndexPrefix: TAG_INDEX_CACHE_PREFIX.INDEX,
+  defaultTagTtlMs: CACHE_TTL.DAY * 1000, // 24 hours
   batchSize: 100,
 };
 

@@ -13,8 +13,10 @@
  */
 
 import {
+  COMBO_CACHE_PREFIX,
   CUSTOMER_CACHE_PREFIX,
   DEPARTMENT_CACHE_PREFIX,
+  EXTERNAL_PRODUCT_CACHE_PREFIX,
   INVOICE_CACHE_PREFIX,
   KPI_CACHE_PREFIX,
   LICENSE_CACHE_PREFIX,
@@ -22,6 +24,7 @@ import {
   ORDER_CACHE_PREFIX,
   PAYMENT_CACHE_PREFIX,
   PRODUCT_CACHE_PREFIX,
+  PROMOTION_CACHE_PREFIX,
   RATE_LIMIT_CACHE_PREFIX,
   RESELLER_CACHE_PREFIX,
 } from './cache-keys.constant';
@@ -57,6 +60,30 @@ export const CACHE_TTL = {
 
   /** 30 seconds - Idempotency pending timeout */
   IDEMPOTENCY_PENDING: 30,
+
+  /** 30 seconds - Default lock timeout (auto-release) */
+  LOCK_DEFAULT: 30,
+
+  /** 10 minutes - Sync lock timeout (longer for batch operations) */
+  LOCK_SYNC: 600,
+
+  /** 5 minutes - Processing lock timeout */
+  LOCK_PROCESSING: 300,
+} as const;
+
+// ============================================
+// TTL PRESETS (in milliseconds for locks)
+// ============================================
+
+export const CACHE_TTL_MS = {
+  /** 30 seconds - Default lock timeout */
+  LOCK_DEFAULT: CACHE_TTL.LOCK_DEFAULT * 1000,
+
+  /** 10 minutes - Sync lock timeout */
+  LOCK_SYNC: CACHE_TTL.LOCK_SYNC * 1000,
+
+  /** 5 minutes - Processing lock timeout */
+  LOCK_PROCESSING: CACHE_TTL.LOCK_PROCESSING * 1000,
 } as const;
 
 // ============================================
@@ -151,4 +178,28 @@ export const MKT_CACHE_TTL_CONFIG: Record<string, number> = {
   [KPI_CACHE_PREFIX.DATA]: CACHE_TTL.MEDIUM, // 10 min - KPI data
   [KPI_CACHE_PREFIX.BY_USER]: CACHE_TTL.MEDIUM, // 10 min - User KPIs
   [KPI_CACHE_PREFIX.TEMPLATE]: CACHE_TTL.VERY_LONG, // 1 hour - Templates
+
+  // ============================================
+  // PROMOTION DOMAIN
+  // ============================================
+  [PROMOTION_CACHE_PREFIX.DATA]: CACHE_TTL.SHORT, // 5 min - Promotion data
+  [PROMOTION_CACHE_PREFIX.ACTIVE]: CACHE_TTL.SHORT, // 5 min - Active promotions
+  [PROMOTION_CACHE_PREFIX.BY_CODE]: CACHE_TTL.SHORT, // 5 min - Code lookup
+  [PROMOTION_CACHE_PREFIX.COUPON]: CACHE_TTL.SHORT, // 5 min - Coupon data
+
+  // ============================================
+  // COMBO DOMAIN
+  // ============================================
+  [COMBO_CACHE_PREFIX.DATA]: CACHE_TTL.SHORT, // 5 min - Combo data
+  [COMBO_CACHE_PREFIX.CALCULATION]: CACHE_TTL.RATE_LIMIT_WINDOW, // 1 min - Calc result
+  [COMBO_CACHE_PREFIX.BY_CODE]: CACHE_TTL.SHORT, // 5 min - Code lookup
+
+  // ============================================
+  // EXTERNAL PRODUCT DOMAIN (MKT Server)
+  // ============================================
+  [EXTERNAL_PRODUCT_CACHE_PREFIX.DIGITAL]: CACHE_TTL.DAY, // 24h - Product data
+  [EXTERNAL_PRODUCT_CACHE_PREFIX.DIGITAL_CODE]: CACHE_TTL.DAY, // 24h - Code mapping
+  [EXTERNAL_PRODUCT_CACHE_PREFIX.DIGITAL_PACKAGES]: CACHE_TTL.DAY, // 24h - Packages
+  [EXTERNAL_PRODUCT_CACHE_PREFIX.PHYSICAL]: CACHE_TTL.DAY, // 24h - Physical product
+  [EXTERNAL_PRODUCT_CACHE_PREFIX.SERVICE]: CACHE_TTL.DAY, // 24h - Service product
 };
