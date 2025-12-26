@@ -7,8 +7,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import { QrCodeResult } from 'src/mkt-core/payment/interfaces/payment-provider.interface';
-
+import { QrCodeResult } from 'src/mkt-core/payment/types/payment-provider.interface';
 import {
   SepayQrParams,
   SepayQrTemplate,

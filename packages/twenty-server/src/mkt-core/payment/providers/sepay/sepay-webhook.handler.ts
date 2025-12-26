@@ -17,8 +17,7 @@ import {
   WebhookProcessResult,
   WebhookValidationRequest,
   WebhookValidationResult,
-} from 'src/mkt-core/payment/interfaces/webhook-handler.interface';
-
+} from 'src/mkt-core/payment/types/webhook-handler.interface';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';

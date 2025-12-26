@@ -14,8 +14,7 @@ import {
   QrCodeRequest,
   QrCodeResult,
   ValidationResult,
-} from 'src/mkt-core/payment/interfaces/payment-provider.interface';
-
+} from 'src/mkt-core/payment/types/payment-provider.interface';
 import { BasePaymentProvider } from 'src/mkt-core/payment/providers/base/base-payment.provider';
 import { sepayConfig } from 'src/mkt-core/payment/providers/sepay/sepay.config';
 import { SepayQrGenerator } from 'src/mkt-core/payment/providers/sepay/sepay-qr.generator';

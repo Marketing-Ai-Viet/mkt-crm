@@ -11,8 +11,7 @@ import {
   RefundRequest,
   RefundResult,
   ValidationResult,
-} from 'src/mkt-core/payment/interfaces/payment-provider.interface';
-
+} from 'src/mkt-core/payment/types/payment-provider.interface';
 import {
   PaymentProviderType,
   ProviderCapabilities,

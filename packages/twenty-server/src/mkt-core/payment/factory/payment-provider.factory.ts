@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { IPaymentProvider } from 'src/mkt-core/payment/interfaces/payment-provider.interface';
-import { IWebhookHandler } from 'src/mkt-core/payment/interfaces/webhook-handler.interface';
-
+import { IPaymentProvider } from 'src/mkt-core/payment/types/payment-provider.interface';
+import { IWebhookHandler } from 'src/mkt-core/payment/types/webhook-handler.interface';
 import {
   PaymentProviderType,
   ProviderMetadata,

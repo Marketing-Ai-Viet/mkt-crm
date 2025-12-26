@@ -14,8 +14,7 @@ import {
   QrCodeRequest,
   QrCodeResult,
   ValidationResult,
-} from 'src/mkt-core/payment/interfaces/payment-provider.interface';
-
+} from 'src/mkt-core/payment/types/payment-provider.interface';
 import { BasePaymentProvider } from 'src/mkt-core/payment/providers/base/base-payment.provider';
 import { BidvApiClient } from 'src/mkt-core/payment/providers/bidv/bidv-api.client';
 import { bidvConfig } from 'src/mkt-core/payment/providers/bidv/bidv.config';

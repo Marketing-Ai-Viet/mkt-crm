@@ -18,13 +18,12 @@ import {
   PaymentStatusResult,
   RefundRequest,
   RefundResult,
-} from 'src/mkt-core/payment/interfaces/payment-provider.interface';
+} from 'src/mkt-core/payment/types/payment-provider.interface';
 import {
   WebhookContext,
   WebhookProcessResult,
   WebhookValidationRequest,
-} from 'src/mkt-core/payment/interfaces/webhook-handler.interface';
-
+} from 'src/mkt-core/payment/types/webhook-handler.interface';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories/mkt-payment.repository';
 import { MktWebhookLogRepository } from 'src/mkt-core/payment/repositories/mkt-webhook-log.repository';
