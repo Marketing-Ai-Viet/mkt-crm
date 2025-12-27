@@ -523,10 +523,12 @@ export const MKT_TEMPLATE_FIELD_IDS = {
   name: '9b5a19c7-fa6c-4a31-ab8f-7e0e83fb678b',
   type: '35760f3b-3bb8-48df-9eef-1ca4c05f12c7',
   templateKey: 'abca0b71-1c05-40e7-96c1-42ea8aa32573',
+  subject: '4328ed8f-1534-43c2-a7ae-08de53ae0963', // Email subject (for EMAIL templates)
   content: '3a3b49a8-6fed-4f99-a8c2-d3df9a4efa09',
   version: '2e6ade87-6f35-4dbc-8eb0-c3f4b25dc5c8',
   metadata: '23fd709e-e187-46d3-aafd-55d90f2c1424',
   locale: 'df08c10e-6508-4e21-a62a-f836b74f017d',
+  isActive: 'd1fca958-b67f-4892-8e2c-c5f67fedcc26', // Active status
 
   //relations
   mktContracts: '5ff3cd2e-32f0-48f8-8196-2c879e15e7b8',

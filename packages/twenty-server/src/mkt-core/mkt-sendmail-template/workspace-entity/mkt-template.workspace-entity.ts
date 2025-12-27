@@ -31,10 +31,38 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 
 const TABLE_TEMPLATE_NAME = 'mktTemplate';
 const NAME_FIELD_NAME = 'name';
+const SUBJECT_FIELD_NAME = 'subject';
 const CONTENT_FIELD_NAME = 'content';
+
+/**
+ * Unified template types for all templates (email, invoice, contract, etc.)
+ */
+export const MKT_TEMPLATE_TYPE = {
+  // Email Templates
+  EMAIL: 'EMAIL',
+  WELCOME_EMAIL: 'WELCOME_EMAIL',
+  TWO_FACTOR_AUTH: 'TWO_FACTOR_AUTH',
+  ACCOUNT_UPDATE_EMAIL: 'ACCOUNT_UPDATE_EMAIL',
+  PASSWORD_RESET: 'PASSWORD_RESET',
+
+  // Business Templates
+  INVOICE: 'INVOICE',
+  CONTRACT: 'CONTRACT',
+  ORDER: 'ORDER',
+  QUOTE: 'QUOTE',
+
+  // System Templates
+  NOTIFICATION: 'NOTIFICATION',
+  TICKET: 'TICKET',
+  CATALOG: 'CATALOG',
+} as const;
+
+export type MktTemplateType =
+  (typeof MKT_TEMPLATE_TYPE)[keyof typeof MKT_TEMPLATE_TYPE];
 
 export const SEARCH_FIELDS_FOR_MKT_TEMPLATE: FieldTypeAndNameMetadata[] = [
   { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
+  { name: SUBJECT_FIELD_NAME, type: FieldMetadataType.TEXT },
   { name: CONTENT_FIELD_NAME, type: FieldMetadataType.TEXT },
 ];
 
@@ -43,8 +71,8 @@ export const SEARCH_FIELDS_FOR_MKT_TEMPLATE: FieldTypeAndNameMetadata[] = [
   namePlural: `${TABLE_TEMPLATE_NAME}s`,
   labelSingular: msg`Template`,
   labelPlural: msg`Templates`,
-  description: msg`Template entity for catalog`,
-  icon: 'IconBox',
+  description: msg`Unified template entity for emails, invoices, contracts, and more`,
+  icon: 'IconTemplate',
   labelIdentifierStandardId: MKT_TEMPLATE_FIELD_IDS.name,
 })
 @WorkspaceDuplicateCriteria([['name']])
@@ -80,14 +108,24 @@ export class MktTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   templateKey: string | null;
 
   @WorkspaceField({
+    standardId: MKT_TEMPLATE_FIELD_IDS.subject,
+    type: FieldMetadataType.TEXT,
+    label: msg`Subject`,
+    description: msg`Email subject (for email templates)`,
+    icon: 'IconMail',
+  })
+  @WorkspaceIsNullable()
+  subject?: string | null;
+
+  @WorkspaceField({
     standardId: MKT_TEMPLATE_FIELD_IDS.content,
     type: FieldMetadataType.TEXT,
     label: msg`Template Content`,
-    description: msg`Template content`,
-    icon: 'IconBarcode',
+    description: msg`Template content/body`,
+    icon: 'IconFileText',
   })
   @WorkspaceIsNullable()
-  content?: string;
+  content?: string | null;
 
   @WorkspaceField({
     standardId: MKT_TEMPLATE_FIELD_IDS.version,
@@ -118,6 +156,16 @@ export class MktTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   metadata?: JSON | null;
+
+  @WorkspaceField({
+    standardId: MKT_TEMPLATE_FIELD_IDS.isActive,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Is Active`,
+    description: msg`Whether the template is active`,
+    icon: 'IconToggleRight',
+    defaultValue: true,
+  })
+  isActive: boolean;
 
   @WorkspaceField({
     standardId: MKT_TEMPLATE_FIELD_IDS.position,
