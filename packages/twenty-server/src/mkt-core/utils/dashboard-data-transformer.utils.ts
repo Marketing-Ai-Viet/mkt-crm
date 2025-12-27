@@ -1,3 +1,4 @@
+import { DateTimeUtils } from './date-time.utils';
 import { StatisticsUtils } from './statistics.utils';
 
 export interface LicenseStats {
@@ -225,8 +226,16 @@ export class DashboardDataTransformer {
   ): Record<string, T[]> {
     const grouped: Record<string, T[]> = {};
 
-    items.forEach((item) => {
-      const date = new Date(item.createdAt);
+    for (const item of items) {
+      const createdAtStr =
+        typeof item.createdAt === 'string'
+          ? item.createdAt
+          : item.createdAt.toISOString();
+      const dateTime = DateTimeUtils.fromISO(createdAtStr);
+      const date = DateTimeUtils.toDate(dateTime);
+
+      if (!date) continue;
+
       let key: string;
 
       switch (period) {
@@ -234,10 +243,10 @@ export class DashboardDataTransformer {
           key = date.toISOString().split('T')[0]; // YYYY-MM-DD
           break;
         case 'week': {
-          const weekStart = new Date(date);
+          const weekStart = DateTimeUtils.startOf(dateTime, 'week');
+          const weekStartDate = DateTimeUtils.toDate(weekStart);
 
-          weekStart.setDate(date.getDate() - date.getDay());
-          key = weekStart.toISOString().split('T')[0];
+          key = weekStartDate?.toISOString().split('T')[0] ?? '';
           break;
         }
         case 'month':
@@ -251,7 +260,7 @@ export class DashboardDataTransformer {
         grouped[key] = [];
       }
       grouped[key].push(item);
-    });
+    }
 
     return grouped;
   }
@@ -429,10 +438,11 @@ export class DashboardDataTransformer {
    * Calculate days until expiry for a given date
    */
   static calculateDaysUntilExpiry(expiryDate: Date): number {
-    const now = new Date();
-    const diffTime = expiryDate.getTime() - now.getTime();
+    const now = DateTimeUtils.now();
+    const expiryDateTime = DateTimeUtils.fromDate(expiryDate);
+    const diffDays = DateTimeUtils.diffInDays(now, expiryDateTime);
 
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.ceil(diffDays);
   }
 
   /**
@@ -469,7 +479,7 @@ export class DashboardDataTransformer {
     reportVersion = '1.0',
   ) {
     return {
-      generatedAt: new Date().toISOString(),
+      generatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       workspaceId,
       statistics,
       reportVersion,
@@ -490,12 +500,17 @@ export class DashboardDataTransformer {
       reportVersion,
     );
 
+    const now = DateTimeUtils.now();
+    const nowDate = DateTimeUtils.toDate(now);
+    const localDateString = nowDate?.toLocaleDateString() ?? '';
+    const isoString = DateTimeUtils.toISO(now);
+
     return {
-      name: `License Dashboard Statistics - ${new Date().toLocaleDateString()}`,
+      name: `License Dashboard Statistics - ${localDateString}`,
       reportType: 'license',
-      notes: `Automated license dashboard statistics report generated at ${new Date().toISOString()}`,
+      notes: `Automated license dashboard statistics report generated at ${isoString}`,
       metadata: metadata as unknown as JSON,
-      position: Date.now(),
+      position: DateTimeUtils.toMillis(now),
     };
   }
 

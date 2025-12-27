@@ -157,7 +157,10 @@ export class RedisLockService {
         const expiresAtDateTime = DateTimeUtils.add(DateTimeUtils.now(), {
           milliseconds: config.timeoutMs,
         });
-        const expiresAt = DateTimeUtils.toDate(expiresAtDateTime) ?? new Date();
+        const expiresAt =
+          DateTimeUtils.toDate(expiresAtDateTime) ??
+          DateTimeUtils.toDate(DateTimeUtils.now()) ??
+          new Date();
 
         this.logger.debug(
           `Lock acquired: ${resource} (owner: ${ownerId}, waited: ${waitedMs}ms)`,
@@ -474,7 +477,11 @@ export class RedisLockService {
       release: () => this.releaseLock(lockKey, ownerId),
       extend: (additionalMs: number) =>
         this.extendLock(lockKey, ownerId, additionalMs),
-      isExpired: () => new Date() > expiresAt,
+      isExpired: () => {
+        const now = DateTimeUtils.toDate(DateTimeUtils.now());
+
+        return now ? now > expiresAt : true;
+      },
     };
   }
 
@@ -483,7 +490,7 @@ export class RedisLockService {
   }
 
   private generateOwnerId(): string {
-    const timestamp = Date.now().toString(36);
+    const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now()).toString(36);
     const random = Math.random().toString(36).substring(2, 8);
 
     return `${timestamp}-${random}`;

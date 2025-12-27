@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { FindOptionsWhere, QueryRunner } from 'typeorm';
+import { FindOptionsWhere, In, QueryRunner } from 'typeorm';
 
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -301,7 +301,7 @@ export class MktOrderItemRepository {
   }
 
   /**
-   * Update multiple order items by IDs
+   * Update multiple order items by IDs (batch update)
    * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async updateMany(
@@ -316,10 +316,8 @@ export class MktOrderItemRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
-    for (const itemId of itemIds) {
-      await repository.update(itemId, data);
-    }
+    // Use batch update with In() operator to avoid N+1 queries
+    await repository.update({ id: In(itemIds) }, data);
   }
 
   // ============================================

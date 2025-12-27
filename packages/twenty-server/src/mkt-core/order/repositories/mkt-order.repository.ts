@@ -436,11 +436,9 @@ export class MktOrderRepository {
     let averageOrderInterval = 0;
 
     if (orderCount > 1 && result?.firstOrderDate && result?.lastOrderDate) {
-      const firstDate = new Date(result.firstOrderDate);
-      const lastDate = new Date(result.lastOrderDate);
-      const totalDays = Math.ceil(
-        (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const firstDateTime = DateTimeUtils.fromISO(result.firstOrderDate);
+      const lastDateTime = DateTimeUtils.fromISO(result.lastOrderDate);
+      const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
 
       averageOrderInterval = Math.round(totalDays / (orderCount - 1));
     }
