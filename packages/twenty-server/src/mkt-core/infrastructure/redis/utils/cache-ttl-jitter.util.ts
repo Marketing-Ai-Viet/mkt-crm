@@ -1,3 +1,5 @@
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
 /**
  * TTL Jitter Utilities
  *
@@ -167,22 +169,23 @@ export const staggerTtl = (
  *
  * @param baseTtl - Base TTL in seconds
  * @param lastModified - When data was last modified
- * @param now - Current timestamp (default: Date.now())
+ * @param now - Current timestamp (default: current time)
  * @returns Adjusted TTL based on data age
  *
  * @example
  * // Data modified 5 minutes ago - use shorter TTL
- * const ttl = adaptiveTtl(1800, Date.now() - 5 * 60 * 1000);
+ * const ttl = adaptiveTtl(1800, DateTimeUtils.toMillis(DateTimeUtils.now()) - 5 * 60 * 1000);
  *
  * // Data modified 1 hour ago - use longer TTL (more stable)
- * const ttl = adaptiveTtl(1800, Date.now() - 60 * 60 * 1000);
+ * const ttl = adaptiveTtl(1800, DateTimeUtils.toMillis(DateTimeUtils.now()) - 60 * 60 * 1000);
  */
 export const adaptiveTtl = (
   baseTtl: number,
   lastModified: number,
-  now = Date.now(),
+  now?: number,
 ): number => {
-  const ageMs = now - lastModified;
+  const currentTime = now ?? DateTimeUtils.toMillis(DateTimeUtils.now());
+  const ageMs = currentTime - lastModified;
   const ageSeconds = ageMs / 1000;
   const fiveMinutes = 5 * 60;
   const thirtyMinutes = 30 * 60;

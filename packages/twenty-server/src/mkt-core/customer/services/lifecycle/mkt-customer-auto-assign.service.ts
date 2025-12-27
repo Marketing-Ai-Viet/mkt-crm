@@ -142,20 +142,25 @@ export class MktCustomerAutoAssignService {
 
   /**
    * Select member with least assigned customers
-   * Uses MktCustomerRepository for thread-safe counting
+   * Uses batch query to avoid N+1 problem
    */
   private async selectLeastCustomers(
     members: WorkspaceMemberWorkspaceEntity[],
     workspaceId: string,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
+    const memberIds = members.map((m) => m.id);
+
+    // Batch query to get all counts at once (prevents N+1)
+    const countMap = await this.customerRepository.countByCreatedByMemberIds(
+      memberIds,
+      workspaceId,
+    );
+
     let minCount = Infinity;
     let selectedMember = members[0];
 
     for (const member of members) {
-      const count = await this.customerRepository.countByCreatedByMember(
-        member.id,
-        workspaceId,
-      );
+      const count = countMap.get(member.id) ?? 0;
 
       if (count < minCount) {
         minCount = count;
@@ -194,7 +199,7 @@ export class MktCustomerAutoAssignService {
 
   /**
    * Get assignment statistics
-   * Uses injected repositories for thread-safe operations
+   * Uses batch query to avoid N+1 problem
    */
   async getAssignmentStats(workspaceId: string): Promise<{
     totalCustomers: number;
@@ -208,24 +213,18 @@ export class MktCustomerAutoAssignService {
     const members =
       await this.workspaceMemberRepository.findAllActive(workspaceId);
 
-    const byMember: Array<{
-      memberId: string;
-      memberName: string;
-      count: number;
-    }> = [];
+    // Batch query to get all counts at once (prevents N+1)
+    const memberIds = members.map((m) => m.id);
+    const countMap = await this.customerRepository.countByCreatedByMemberIds(
+      memberIds,
+      workspaceId,
+    );
 
-    for (const member of members) {
-      const count = await this.customerRepository.countByCreatedByMember(
-        member.id,
-        workspaceId,
-      );
-
-      byMember.push({
-        memberId: member.id,
-        memberName: member.name?.firstName ?? 'Unknown',
-        count,
-      });
-    }
+    const byMember = members.map((member) => ({
+      memberId: member.id,
+      memberName: member.name?.firstName ?? 'Unknown',
+      count: countMap.get(member.id) ?? 0,
+    }));
 
     return {
       totalCustomers,

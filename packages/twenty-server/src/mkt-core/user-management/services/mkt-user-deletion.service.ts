@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -12,6 +12,8 @@ export class MktUserDeletionService {
   private readonly logger = new Logger(MktUserDeletionService.name);
 
   constructor(
+    @InjectDataSource('core')
+    private readonly coreDataSource: DataSource,
     @InjectRepository(User, 'core')
     private readonly userRepository: Repository<User>,
     @InjectRepository(UserWorkspace, 'core')
@@ -20,6 +22,10 @@ export class MktUserDeletionService {
     private readonly roleTargetsRepository: Repository<RoleTargetsEntity>,
   ) {}
 
+  /**
+   * Delete user workspace with transaction wrapper
+   * Ensures atomic operation - either all deletions succeed or all rollback
+   */
   async deleteUserWorkspace(
     userId: string,
     workspaceId: string,
@@ -36,30 +42,50 @@ export class MktUserDeletionService {
       return;
     }
 
-    // Delete role targets first (hard delete - RoleTargetsEntity doesn't support soft delete)
-    // This is a junction table, so hard delete is acceptable
-    await this.roleTargetsRepository.delete({
-      userWorkspaceId: userWorkspace.id,
-      workspaceId,
-    });
+    // Use transaction to ensure atomic deletion
+    await this.coreDataSource.transaction(
+      async (transactionalEntityManager) => {
+        // Delete role targets first (hard delete - RoleTargetsEntity doesn't support soft delete)
+        // This is a junction table, so hard delete is acceptable
+        await transactionalEntityManager.delete(RoleTargetsEntity, {
+          userWorkspaceId: userWorkspace.id,
+          workspaceId,
+        });
 
-    // Soft delete user workspace (has deletedAt column)
-    await this.userWorkspaceRepository.softDelete({ id: userWorkspace.id });
-    this.logger.log(`Soft deleted user workspace for user: ${userId}`);
+        // Soft delete user workspace (has deletedAt column)
+        await transactionalEntityManager.softDelete(UserWorkspace, {
+          id: userWorkspace.id,
+        });
+
+        this.logger.log(`Soft deleted user workspace for user: ${userId}`);
+      },
+    );
   }
 
+  /**
+   * Soft delete user if they have no remaining workspaces
+   * Uses transaction to ensure atomic check-and-delete operation
+   */
   async softDeleteUserIfNoWorkspaces(userId: string): Promise<void> {
-    const remainingUserWorkspaces = await this.userWorkspaceRepository.find({
-      where: { userId },
-    });
+    await this.coreDataSource.transaction(
+      async (transactionalEntityManager) => {
+        // Query within transaction to ensure consistency
+        const remainingUserWorkspaces = await transactionalEntityManager.find(
+          UserWorkspace,
+          {
+            where: { userId },
+          },
+        );
 
-    if (remainingUserWorkspaces.length === 0) {
-      await this.userRepository.softDelete({ id: userId });
-      this.logger.log(`Soft deleted user: ${userId}`);
-    } else {
-      this.logger.log(
-        `User ${userId} still has ${remainingUserWorkspaces.length} workspaces`,
-      );
-    }
+        if (remainingUserWorkspaces.length === 0) {
+          await transactionalEntityManager.softDelete(User, { id: userId });
+          this.logger.log(`Soft deleted user: ${userId}`);
+        } else {
+          this.logger.log(
+            `User ${userId} still has ${remainingUserWorkspaces.length} workspaces`,
+          );
+        }
+      },
+    );
   }
 }

@@ -39,6 +39,7 @@ export class OrderLicenseIntegrationService {
 
   /**
    * Create licenses for order items
+   * Uses bulk API to prevent N+1 sequential calls
    *
    * @param items - License creation inputs
    * @param userContext - OAuth2 user context for API calls
@@ -58,20 +59,27 @@ export class OrderLicenseIntegrationService {
       errors: [],
     };
 
-    for (const item of items) {
-      try {
-        const payload: MktCreateLicensePayload = {
-          productId: item.productId,
-          productPackageId: item.packageId,
-          email: item.email,
-          maxDevices: item.maxDevices,
-        };
+    if (items.length === 0) {
+      return result;
+    }
 
-        const license = await this.licenseProxyService.create(
-          payload,
-          userContext,
-        );
+    try {
+      // Build bulk payload
+      const bulkPayload: MktCreateLicensePayload[] = items.map((item) => ({
+        productId: item.productId,
+        productPackageId: item.packageId,
+        email: item.email,
+        maxDevices: item.maxDevices,
+      }));
 
+      // Use bulk API instead of N+1 individual calls
+      const licenses = await this.licenseProxyService.bulkCreate(
+        { items: bulkPayload },
+        userContext,
+      );
+
+      // Create snapshots for all licenses
+      for (const license of licenses) {
         const snapshot = this.snapshotService.createLicenseSnapshot(license);
 
         result.licenses.push({
@@ -83,20 +91,22 @@ export class OrderLicenseIntegrationService {
           licenseId: license.id,
           licenseKey: license.licenseKey,
         });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
 
+      // If bulk operation fails, add error for all items
+      for (const item of items) {
         result.errors.push({
           input: item,
           error: errorMessage,
         });
-
-        this.logger.warn('Failed to create license', {
-          productId: item.productId,
-          error: errorMessage,
-        });
       }
+
+      this.logger.warn('Bulk license creation failed', {
+        error: errorMessage,
+      });
     }
 
     result.success = result.errors.length === 0;
@@ -112,6 +122,7 @@ export class OrderLicenseIntegrationService {
 
   /**
    * Activate licenses
+   * Uses Promise.allSettled for parallel execution to prevent N+1 sequential calls
    *
    * @param licenseIds - License IDs to activate
    * @param userContext - OAuth2 user context for API calls
@@ -135,19 +146,35 @@ export class OrderLicenseIntegrationService {
       errors: [] as Array<{ licenseId: string; error: string }>,
     };
 
-    for (const licenseId of licenseIds) {
-      try {
-        const activated = await this.licenseProxyService.activate(
-          licenseId,
-          userContext,
-        );
+    if (licenseIds.length === 0) {
+      return result;
+    }
 
-        result.activated.push(activated);
+    // Execute all activations in parallel
+    const promises = licenseIds.map(async (licenseId) => {
+      const activated = await this.licenseProxyService.activate(
+        licenseId,
+        userContext,
+      );
 
+      return { licenseId, activated };
+    });
+
+    const settledResults = await Promise.allSettled(promises);
+
+    // Process results
+    for (let i = 0; i < settledResults.length; i++) {
+      const settledResult = settledResults[i];
+      const licenseId = licenseIds[i];
+
+      if (settledResult.status === 'fulfilled') {
+        result.activated.push(settledResult.value.activated);
         this.logger.debug('License activated', { licenseId });
-      } catch (error) {
+      } else {
         const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
+          settledResult.reason instanceof Error
+            ? settledResult.reason.message
+            : 'Unknown error';
 
         result.errors.push({
           licenseId,
@@ -168,6 +195,7 @@ export class OrderLicenseIntegrationService {
 
   /**
    * Revoke licenses (for refund/cancellation)
+   * Uses Promise.allSettled for parallel execution to prevent N+1 sequential calls
    *
    * @param licenseIds - License IDs to revoke
    * @param userContext - OAuth2 user context for API calls
@@ -191,19 +219,35 @@ export class OrderLicenseIntegrationService {
       errors: [] as Array<{ licenseId: string; error: string }>,
     };
 
-    for (const licenseId of licenseIds) {
-      try {
-        const revoked = await this.licenseProxyService.revoke(
-          licenseId,
-          userContext,
-        );
+    if (licenseIds.length === 0) {
+      return result;
+    }
 
-        result.revoked.push(revoked);
+    // Execute all revocations in parallel
+    const promises = licenseIds.map(async (licenseId) => {
+      const revoked = await this.licenseProxyService.revoke(
+        licenseId,
+        userContext,
+      );
 
+      return { licenseId, revoked };
+    });
+
+    const settledResults = await Promise.allSettled(promises);
+
+    // Process results
+    for (let i = 0; i < settledResults.length; i++) {
+      const settledResult = settledResults[i];
+      const licenseId = licenseIds[i];
+
+      if (settledResult.status === 'fulfilled') {
+        result.revoked.push(settledResult.value.revoked);
         this.logger.debug('License revoked', { licenseId });
-      } catch (error) {
+      } else {
         const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
+          settledResult.reason instanceof Error
+            ? settledResult.reason.message
+            : 'Unknown error';
 
         result.errors.push({
           licenseId,

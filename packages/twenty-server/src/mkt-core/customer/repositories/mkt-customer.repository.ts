@@ -310,6 +310,47 @@ export class MktCustomerRepository {
   }
 
   /**
+   * Batch count customers by multiple createdBy workspaceMemberIds
+   * Returns a Map of memberId -> count
+   * Used for auto-assign load balancing (prevents N+1 queries)
+   */
+  async countByCreatedByMemberIds(
+    workspaceMemberIds: string[],
+    workspaceId?: string,
+  ): Promise<Map<string, number>> {
+    if (workspaceMemberIds.length === 0) {
+      return new Map();
+    }
+
+    const repository = await this.getRepository(workspaceId);
+
+    const results = await repository
+      .createQueryBuilder('customer')
+      .select("customer.createdBy->>'workspaceMemberId'", 'memberId')
+      .addSelect('COUNT(*)', 'count')
+      .where("customer.createdBy->>'workspaceMemberId' IN (:...memberIds)", {
+        memberIds: workspaceMemberIds,
+      })
+      .andWhere('customer.deletedAt IS NULL')
+      .groupBy("customer.createdBy->>'workspaceMemberId'")
+      .getRawMany();
+
+    const countMap = new Map<string, number>();
+
+    // Initialize all member IDs with 0
+    for (const memberId of workspaceMemberIds) {
+      countMap.set(memberId, 0);
+    }
+
+    // Set actual counts from results
+    for (const result of results) {
+      countMap.set(result.memberId, parseInt(result.count, 10));
+    }
+
+    return countMap;
+  }
+
+  /**
    * Count assigned customers (customers with createdBy set)
    */
   async countAssigned(workspaceId?: string): Promise<number> {
