@@ -5,7 +5,8 @@ import { QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
-import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-invoice.integration.service';
+// DISABLED: SInvoiceIntegrationService - MktInvoiceModule temporarily disabled
+// import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-invoice.integration.service';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
@@ -40,7 +41,8 @@ export class UpdateOrderSaga {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly eventEmitter: EventEmitter2,
     private readonly orderStatusService: OrderStatusService,
-    private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
+    // DISABLED: SInvoiceIntegrationService - MktInvoiceModule temporarily disabled
+    // private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
   ) {}
 
   /**
@@ -215,19 +217,20 @@ export class UpdateOrderSaga {
     }
   }
 
-  /**
-   * Handle S-Invoice sync
-   */
-  private async handleSInvoiceSync(orderId: string): Promise<void> {
-    try {
-      this.logger.log(`Syncing S-Invoice for order: ${orderId}`);
-      await this.sInvoiceIntegrationService.syncSInvoice(orderId);
-      this.logger.log(`S-Invoice sync completed for order: ${orderId}`);
-    } catch (error) {
-      this.logger.error(`S-Invoice sync failed for order: ${orderId}`, error);
-      // Don't fail the saga, S-Invoice can be synced later
-    }
-  }
+  // DISABLED: handleSInvoiceSync - MktInvoiceModule temporarily disabled
+  // /**
+  //  * Handle S-Invoice sync
+  //  */
+  // private async handleSInvoiceSync(orderId: string): Promise<void> {
+  //   try {
+  //     this.logger.log(`Syncing S-Invoice for order: ${orderId}`);
+  //     await this.sInvoiceIntegrationService.syncSInvoice(orderId);
+  //     this.logger.log(`S-Invoice sync completed for order: ${orderId}`);
+  //   } catch (error) {
+  //     this.logger.error(`S-Invoice sync failed for order: ${orderId}`, error);
+  //     // Don't fail the saga, S-Invoice can be synced later
+  //   }
+  // }
 
   /**
    * Step 2: Update order status

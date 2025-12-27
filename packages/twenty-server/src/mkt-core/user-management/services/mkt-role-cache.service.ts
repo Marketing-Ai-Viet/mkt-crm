@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 
@@ -19,12 +19,11 @@ export class MktRoleCacheService {
   ) {}
 
   async initializeRoles(): Promise<void> {
-    const roleEntities = await this.roleRepository
-      .createQueryBuilder('role')
-      .where('role.label IN (:...labels)', {
-        labels: ['Sales', 'Support', 'Accountant', 'Customer'],
-      })
-      .getMany();
+    const roleEntities = await this.roleRepository.find({
+      where: {
+        label: In(['Sales', 'Support', 'Accountant', 'Customer']),
+      },
+    });
 
     for (const roleEntity of roleEntities) {
       if (roleEntity.label === 'Sales') {

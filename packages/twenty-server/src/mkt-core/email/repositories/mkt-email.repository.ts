@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { IsNull, QueryRunner } from 'typeorm';
+import { Between, IsNull, QueryRunner } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
@@ -152,21 +152,12 @@ export class MktEmailRepository {
   ): Promise<MktEmailWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
-    const queryBuilder = repository
-      .createQueryBuilder('email')
-      .where('email.to = :to', { to })
-      .andWhere('email.deletedAt IS NULL')
-      .orderBy('email.createdAt', 'DESC');
-
-    if (options?.limit) {
-      queryBuilder.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      queryBuilder.offset(options.offset);
-    }
-
-    return queryBuilder.getMany();
+    return repository.find({
+      where: { to, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+      take: options?.limit,
+      skip: options?.offset,
+    });
   }
 
   /**
@@ -179,21 +170,12 @@ export class MktEmailRepository {
   ): Promise<MktEmailWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
-    const queryBuilder = repository
-      .createQueryBuilder('email')
-      .where('email.status = :status', { status })
-      .andWhere('email.deletedAt IS NULL')
-      .orderBy('email.createdAt', 'DESC');
-
-    if (options?.limit) {
-      queryBuilder.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      queryBuilder.offset(options.offset);
-    }
-
-    return queryBuilder.getMany();
+    return repository.find({
+      where: { status, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+      take: options?.limit,
+      skip: options?.offset,
+    });
   }
 
   /**
@@ -206,21 +188,12 @@ export class MktEmailRepository {
   ): Promise<MktEmailWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
-    const queryBuilder = repository
-      .createQueryBuilder('email')
-      .where('email.emailType = :emailType', { emailType })
-      .andWhere('email.deletedAt IS NULL')
-      .orderBy('email.createdAt', 'DESC');
-
-    if (options?.limit) {
-      queryBuilder.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      queryBuilder.offset(options.offset);
-    }
-
-    return queryBuilder.getMany();
+    return repository.find({
+      where: { emailType, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+      take: options?.limit,
+      skip: options?.offset,
+    });
   }
 
   // ============================================
@@ -382,12 +355,12 @@ export class MktEmailRepository {
   ): Promise<MktEmailWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
-    return repository
-      .createQueryBuilder('email')
-      .where('email.sentAt >= :startDate', { startDate })
-      .andWhere('email.sentAt <= :endDate', { endDate })
-      .andWhere('email.deletedAt IS NULL')
-      .orderBy('email.sentAt', 'DESC')
-      .getMany();
+    return repository.find({
+      where: {
+        sentAt: Between(startDate, endDate),
+        deletedAt: IsNull(),
+      },
+      order: { sentAt: 'DESC' },
+    });
   }
 }

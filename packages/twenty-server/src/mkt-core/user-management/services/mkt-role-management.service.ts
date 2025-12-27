@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
@@ -101,10 +101,9 @@ export class MktRoleManagementService {
   }
 
   async getRolesByLabels(labels: string[]): Promise<Map<string, string>> {
-    const roles = await this.roleRepository
-      .createQueryBuilder('role')
-      .where('role.label IN (:...labels)', { labels })
-      .getMany();
+    const roles = await this.roleRepository.find({
+      where: { label: In(labels) },
+    });
 
     const roleMap = new Map<string, string>();
 

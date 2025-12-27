@@ -7,7 +7,8 @@ import { RecordPositionModule } from 'src/engine/core-modules/record-position/re
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
-import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
+// DISABLED: MktInvoiceModule - temporarily disabled
+// import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
@@ -94,7 +95,7 @@ import {
     RecordPositionModule,
     WorkspaceCacheStorageModule, // Redis caching for idempotency
     forwardRef(() => MktPaymentModule), // Circular dependency with MktPaymentModule
-    forwardRef(() => MktInvoiceModule),
+    // DISABLED: forwardRef(() => MktInvoiceModule),
     MktProductIntegrationModule, // External MKT Server product integration
     MktLicenseIntegrationModule, // External MKT Server license integration
     MktPromotionModule, // Promotion and coupon management

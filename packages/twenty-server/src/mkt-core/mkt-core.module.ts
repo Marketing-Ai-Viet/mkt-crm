@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
-import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
@@ -25,7 +24,6 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
 @Module({
   imports: [
     MktOrderModule,
-    MktInvoiceModule,
     MktPaymentModule,
     MktDepartmentModule,
     UserManagementModule,

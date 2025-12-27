@@ -145,10 +145,9 @@ export class MktMemberCodeGenerationService {
         'workspaceMember',
       );
 
-    const count = await repository
-      .createQueryBuilder('member')
-      .where('member.memberCode = :memberCode', { memberCode })
-      .getCount();
+    const count = await repository.count({
+      where: { memberCode },
+    });
 
     return count > 0;
   }

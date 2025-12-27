@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { FindOptionsWhere, QueryRunner } from 'typeorm';
+import { FindOptionsWhere, IsNull, QueryRunner } from 'typeorm';
 
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -289,15 +289,15 @@ export class MktWorkspaceMemberRepository {
    */
   async findAllActive(
     workspaceId: string,
-    _options?: FindWorkspaceMemberOptions,
+    options?: FindWorkspaceMemberOptions,
   ): Promise<WorkspaceMemberWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
-    return repository
-      .createQueryBuilder('member')
-      .where('member.deletedAt IS NULL')
-      .orderBy('member.position', 'ASC')
-      .getMany();
+    return repository.find({
+      where: { deletedAt: IsNull() },
+      relations: options?.relations,
+      order: { position: 'ASC' },
+    });
   }
 
   /**
