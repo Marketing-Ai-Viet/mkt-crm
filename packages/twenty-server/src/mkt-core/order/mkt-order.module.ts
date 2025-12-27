@@ -44,7 +44,8 @@ import {
   OrderPayloadService,
   OrderLicenseRenewService,
   MktOrderOverdueService,
-  MktOrderOverdueRegistrationService,
+  // DISABLED: MktOrderOverdueRegistrationService - cron registration disabled
+  // MktOrderOverdueRegistrationService,
 } from './services';
 import {
   OrderMutationResolver,
@@ -164,7 +165,8 @@ import {
     OrderPayloadService,
     OrderLicenseRenewService,
     MktOrderOverdueService,
-    MktOrderOverdueRegistrationService,
+    // DISABLED: MktOrderOverdueRegistrationService - cron registration disabled
+    // MktOrderOverdueRegistrationService,
     MktOrderOverdueJob,
 
     // GraphQL Resolvers

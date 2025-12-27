@@ -22,7 +22,8 @@ import { MktEmailNotificationService } from 'src/mkt-core/user-management/servic
 import { MktPasswordService } from 'src/mkt-core/user-management/services/mkt-password.service';
 import { MktPeopleQueryService } from 'src/mkt-core/user-management/services/mkt-people-query.service';
 import { MktPeopleSyncCoreService } from 'src/mkt-core/user-management/services/mkt-people-sync-core.service';
-import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
+// DISABLED: MktPeopleSyncRegistrationService - cron registration disabled
+// import { MktPeopleSyncRegistrationService } from 'src/mkt-core/user-management/services/mkt-people-sync-registration.service';
 import { MktPeopleSyncService } from 'src/mkt-core/user-management/services/mkt-people-sync.service';
 import { MktPeopleProcessorService } from 'src/mkt-core/user-management/services/mkt-people-processor.service';
 import { MktPersonUserCreationService } from 'src/mkt-core/user-management/services/mkt-person-user-creation.service';
@@ -70,7 +71,8 @@ import { UserManagementService } from 'src/mkt-core/user-management/user-managem
     MktPeopleSyncService,
     MktPeopleSyncCoreService,
     MktPeopleSyncCronJob,
-    MktPeopleSyncRegistrationService,
+    // DISABLED: MktPeopleSyncRegistrationService - cron registration disabled
+    // MktPeopleSyncRegistrationService,
     MktPeopleQueryService,
     MktPeopleProcessorService,
     MktPersonUserCreationService,

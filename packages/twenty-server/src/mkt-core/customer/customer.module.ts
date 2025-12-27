@@ -26,7 +26,8 @@ import {
   MktCustomerQueueService,
   MktCustomerTierCalculationService,
   MktCustomerTierHistoryService,
-  MktCustomerTierRegistrationService,
+  // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
+  // MktCustomerTierRegistrationService,
   MktCustomerTierService,
   // Lifecycle
   MktCustomerAutoAssignService,
@@ -74,7 +75,8 @@ import {
     MktCustomerTierService,
     MktCustomerQueueService,
     MktCustomerUpdateService,
-    MktCustomerTierRegistrationService,
+    // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
+    // MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
     MktCustomerCodeGenerationService,
@@ -110,7 +112,8 @@ import {
     MktCustomerAccountService,
     MktCustomerQueueService,
     MktCustomerTierHistoryService,
-    MktCustomerTierRegistrationService,
+    // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
+    // MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
     MktCustomerUpdateService,

@@ -13,4 +13,5 @@ export * from './order.confirm.service';
 export * from './order.payload.service';
 export * from './order.license-renew.service';
 export * from './mkt-order-overdue.service';
-export * from './mkt-order-overdue-registration.service';
+// DISABLED: cron registration disabled
+// export * from './mkt-order-overdue-registration.service';
