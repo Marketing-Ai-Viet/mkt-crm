@@ -339,10 +339,10 @@ export class MktOrderRepository {
   // ============================================
 
   /**
-   * Hard delete order (use with caution)
+   * Soft delete order by setting deletedAt timestamp
    * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async hardDelete(
+  async softDelete(
     workspaceId: string,
     orderId: string,
     _queryRunner?: QueryRunner,
@@ -351,8 +351,9 @@ export class MktOrderRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    // Always use repository.delete() - queryRunner.manager doesn't have workspace entity metadata
-    await repository.delete(orderId);
+    await repository.update(orderId, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_SUCCESS(orderId));
   }

@@ -140,7 +140,7 @@ export class CreateOrderStep extends SagaStep<
       this.logger.warn(`Hard deleting order: ${data.orderId}`);
 
       // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderRepository.hardDelete(context.workspaceId, data.orderId);
+      await this.orderRepository.softDelete(context.workspaceId, data.orderId);
 
       this.logger.log(`Order ${data.orderId} deleted successfully`);
     } catch (error) {

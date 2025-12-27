@@ -274,20 +274,20 @@ export class MktOrderHistoryRepository {
   // ============================================
 
   /**
-   * Delete all history for an order (used for cleanup)
+   * Soft delete all history for an order by setting deletedAt timestamp
    */
-  async deleteByOrderId(
+  async softDeleteByOrderId(
     workspaceId: string,
     orderId: string,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
-    this.logger.warn(`Deleting all history for order: ${orderId}`);
+    this.logger.warn(`Soft deleting all history for order: ${orderId}`);
 
     const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
 
-    await manager.delete('MktOrderHistoryWorkspaceEntity', {
-      mktOrderId: orderId,
-    });
+    await repository.update(
+      { mktOrderId: orderId },
+      { deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()) },
+    );
   }
 }

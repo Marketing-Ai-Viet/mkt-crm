@@ -6,6 +6,7 @@ import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/common/common.type';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 const MKT_PAYMENT_HISTORY_LOG_CONTEXT = 'MktPaymentHistory';
 
@@ -258,9 +259,9 @@ export class MktPaymentHistoryRepository {
   // ============================================
 
   /**
-   * Hard delete payment history (use with caution)
+   * Soft delete payment history by setting deletedAt timestamp
    */
-  async hardDelete(
+  async softDelete(
     workspaceId: string,
     historyId: string,
     _queryRunner?: QueryRunner,
@@ -269,7 +270,9 @@ export class MktPaymentHistoryRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    await repository.delete(historyId);
+    await repository.update(historyId, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
     this.logger.warn(
       MKT_PAYMENT_HISTORY_LOG_MESSAGES.DELETE_SUCCESS(historyId),

@@ -36,15 +36,16 @@ export class MktUserDeletionService {
       return;
     }
 
-    // Delete role targets first
+    // Delete role targets first (hard delete - RoleTargetsEntity doesn't support soft delete)
+    // This is a junction table, so hard delete is acceptable
     await this.roleTargetsRepository.delete({
       userWorkspaceId: userWorkspace.id,
       workspaceId,
     });
 
-    // Delete user workspace
-    await this.userWorkspaceRepository.delete({ id: userWorkspace.id });
-    this.logger.log(`Deleted user workspace for user: ${userId}`);
+    // Soft delete user workspace (has deletedAt column)
+    await this.userWorkspaceRepository.softDelete({ id: userWorkspace.id });
+    this.logger.log(`Soft deleted user workspace for user: ${userId}`);
   }
 
   async softDeleteUserIfNoWorkspaces(userId: string): Promise<void> {

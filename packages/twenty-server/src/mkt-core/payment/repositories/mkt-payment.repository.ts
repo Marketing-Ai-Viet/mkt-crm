@@ -16,6 +16,7 @@ import {
   UpdatePaymentData,
 } from 'src/mkt-core/payment/types/repository.types';
 import { PaymentStatus } from 'src/mkt-core/payment/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktPaymentRepository - Data access layer for Payment entity
@@ -306,9 +307,9 @@ export class MktPaymentRepository {
   // ============================================
 
   /**
-   * Hard delete payment (use with caution)
+   * Soft delete payment by setting deletedAt timestamp
    */
-  async hardDelete(
+  async softDelete(
     workspaceId: string,
     paymentId: string,
     _queryRunner?: QueryRunner,
@@ -317,27 +318,34 @@ export class MktPaymentRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    await repository.delete(paymentId);
+    await repository.update(paymentId, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
     this.logger.warn(MKT_PAYMENT_LOG_MESSAGES.DELETE_SUCCESS(paymentId));
   }
 
   /**
-   * Hard delete multiple payments by IDs (use with caution)
+   * Soft delete multiple payments by IDs
    * Used for saga compensation
    */
-  async deleteMany(workspaceId: string, paymentIds: string[]): Promise<void> {
+  async softDeleteMany(
+    workspaceId: string,
+    paymentIds: string[],
+  ): Promise<void> {
     if (paymentIds.length === 0) {
       return;
     }
 
-    this.logger.warn(`Hard deleting ${paymentIds.length} payments`);
+    this.logger.warn(`Soft deleting ${paymentIds.length} payments`);
 
     const repository = await this.getRepository(workspaceId);
 
-    await repository.delete(paymentIds);
+    await repository.update(paymentIds, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
-    this.logger.warn(`Successfully deleted ${paymentIds.length} payments`);
+    this.logger.warn(`Successfully soft deleted ${paymentIds.length} payments`);
   }
 
   // ============================================

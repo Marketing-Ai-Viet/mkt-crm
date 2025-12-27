@@ -133,7 +133,7 @@ export class CreatePaymentStep extends SagaStep<
       this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
 
       // Uses MktPaymentRepository for thread-safe access
-      await this.paymentRepository.deleteMany(
+      await this.paymentRepository.softDeleteMany(
         context.workspaceId,
         data.paymentIds,
       );

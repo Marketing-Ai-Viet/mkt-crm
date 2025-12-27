@@ -15,6 +15,7 @@ import {
   UpdateWorkspaceMemberData,
 } from 'src/mkt-core/workspace-member/types';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktWorkspaceMemberRepository - Data access layer for WorkspaceMember entity
@@ -486,9 +487,9 @@ export class MktWorkspaceMemberRepository {
   // ============================================
 
   /**
-   * Hard delete workspace member (use with caution)
+   * Soft delete workspace member by setting deletedAt timestamp
    */
-  async hardDelete(
+  async softDelete(
     workspaceId: string,
     memberId: string,
     _queryRunner?: QueryRunner,
@@ -497,7 +498,9 @@ export class MktWorkspaceMemberRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    await repository.delete(memberId);
+    await repository.update(memberId, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
     this.logger.warn(
       MKT_WORKSPACE_MEMBER_LOG_MESSAGES.DELETE_SUCCESS(memberId),
