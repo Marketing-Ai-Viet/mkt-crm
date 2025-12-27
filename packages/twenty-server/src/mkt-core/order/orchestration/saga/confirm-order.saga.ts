@@ -2,7 +2,11 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
+import {
+  MKT_ORDER_EVENT_TYPES,
+  ConfirmOrderInput,
+  ConfirmOrderResponse,
+} from 'src/mkt-core/order/types';
 import {
   ConfirmOrderSagaContext,
   createConfirmOrderContext,
@@ -14,10 +18,6 @@ import {
   CreateLicensesOnConfirmStep,
   CompleteOrderAfterLicenseStep,
 } from 'src/mkt-core/order/orchestration/steps/confirm-order';
-import {
-  ConfirmOrderInput,
-  ConfirmOrderResponse,
-} from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 import { SagaContext } from './order-saga.interface';

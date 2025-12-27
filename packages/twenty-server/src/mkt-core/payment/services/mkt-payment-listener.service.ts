@@ -1,11 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import {
-  MKT_EVENT_TYPE,
-  MktCustomEventName,
-  PAYMENT_HISTORY_TYPE,
-} from 'src/mkt-core/common/common.type';
+import { MKT_EVENT_TYPE, MktCustomEventName } from 'src/mkt-core/order/types';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/constants/payment.type';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';

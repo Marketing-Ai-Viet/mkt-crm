@@ -63,9 +63,6 @@ export type SagaContext = {
   promotionIds?: string[];
   couponId?: string;
 
-  // External integration
-  firebaseAuthData?: unknown;
-
   // Rollback data - lưu trữ data để compensate
   rollbackData: Map<string, unknown>;
 

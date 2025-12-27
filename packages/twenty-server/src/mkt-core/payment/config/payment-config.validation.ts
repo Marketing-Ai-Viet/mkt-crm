@@ -26,11 +26,6 @@ export const paymentEnvValidation = z.object({
   BIDV_SEPAY_AUTH_TOKEN: z.string().optional(),
   BIDV_SEPAY_COOKIE: z.string().optional(),
 
-  // Firebase configuration
-  FIREBASE_KEY: z.string().optional(),
-  FIREBASE_DB_URL: z.string().url().optional(),
-  FIREBASE_AUTH_URL: z.string().url().optional(),
-
   // Server URL
   SERVER_URL: z.string().url().optional(),
 

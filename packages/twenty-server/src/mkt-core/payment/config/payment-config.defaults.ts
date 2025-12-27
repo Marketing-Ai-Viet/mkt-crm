@@ -28,15 +28,6 @@ export const BIDV_DEFAULTS = {
 } as const;
 
 /**
- * Firebase configuration defaults
- */
-export const FIREBASE_DEFAULTS = {
-  API_KEY: '',
-  DATABASE_URL: '',
-  AUTH_URL: '',
-} as const;
-
-/**
  * Payment URL defaults
  */
 export const PAYMENT_URL_DEFAULTS = {

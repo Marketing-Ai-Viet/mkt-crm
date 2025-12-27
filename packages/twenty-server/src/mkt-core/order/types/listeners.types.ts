@@ -1,4 +1,4 @@
-import { MktCustomEventName } from 'src/mkt-core/common/common.type';
+import { MktCustomEventName } from 'src/mkt-core/order/types/order-event.types';
 
 export type LicenseOperationResult = {
   success: boolean;

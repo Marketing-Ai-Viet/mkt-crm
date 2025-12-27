@@ -4,11 +4,10 @@ import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import {
-  FIREBASE_AUTH_RESPONSE,
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
-  PAYMENT_HISTORY_TYPE,
-} from 'src/mkt-core/common/common.type';
+} from 'src/mkt-core/order/types';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/constants/payment.type';
 import {
   ORDER_METADATA,
   ORDER_STATUS,
@@ -43,22 +42,11 @@ export class OrderMetadataService {
     status: ORDER_STATUS,
     workspaceId: string,
     trialLicense?: boolean,
-    authFirebase?: void | FIREBASE_AUTH_RESPONSE,
   ) {
-    this.logger.log('authFirebase: ' + safeJsonStringify(authFirebase));
-
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
       trialLicense: trialLicense ?? false,
     };
-
-    // Nếu có authFirebase thì update vào metadata
-    if (authFirebase) {
-      await this.updateMetadata({ authFirebase } as unknown as ORDER_METADATA);
-      this.logger.log(
-        `Updated metadata with Firebase auth info for order: ${orderId}`,
-      );
-    }
 
     updateData.metadata = safeJsonStringify(
       this.orderMetadata,

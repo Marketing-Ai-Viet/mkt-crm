@@ -12,7 +12,6 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
-import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import {
   bidvConfig,
   BidvApiClient,
@@ -79,7 +78,6 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentPrepareService,
     MktPaymentService,
     MktPaymentWebhookService,
-    FireBaseIntegrationService,
     MktPaymentListenerService,
   ],
   exports: [
@@ -98,7 +96,6 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentPrepareService,
     MktPaymentService,
     MktPaymentWebhookService,
-    FireBaseIntegrationService,
   ],
 })
 export class MktPaymentModule implements OnModuleInit {

@@ -2,14 +2,12 @@ import { registerAs } from '@nestjs/config';
 
 import {
   BIDV_DEFAULTS,
-  FIREBASE_DEFAULTS,
   PAYMENT_URL_DEFAULTS,
   SEPAY_DEFAULTS,
   WORKSPACE_DEFAULTS,
 } from 'src/mkt-core/payment/config/payment-config.defaults';
 import {
   BidvConfig,
-  FirebaseConfig,
   PaymentConfig,
   PaymentUrlConfig,
   SepayConfig,
@@ -63,12 +61,6 @@ const buildBidvConfig = (): BidvConfig => ({
   ),
 });
 
-const buildFirebaseConfig = (): FirebaseConfig => ({
-  apiKey: getEnvString('FIREBASE_KEY', FIREBASE_DEFAULTS.API_KEY),
-  databaseUrl: getEnvString('FIREBASE_DB_URL', FIREBASE_DEFAULTS.DATABASE_URL),
-  authUrl: getEnvString('FIREBASE_AUTH_URL', FIREBASE_DEFAULTS.AUTH_URL),
-});
-
 const buildUrlConfig = (): PaymentUrlConfig => ({
   serverUrl: getEnvString('SERVER_URL', PAYMENT_URL_DEFAULTS.SERVER_URL),
   paymentPagePath: PAYMENT_URL_DEFAULTS.PAYMENT_PAGE_PATH,
@@ -106,7 +98,6 @@ export const paymentConfig = registerAs(
   (): PaymentConfig => ({
     sepay: buildSepayConfig(),
     bidv: buildBidvConfig(),
-    firebase: buildFirebaseConfig(),
     urls: buildUrlConfig(),
     workspace: buildWorkspaceConfig(),
   }),

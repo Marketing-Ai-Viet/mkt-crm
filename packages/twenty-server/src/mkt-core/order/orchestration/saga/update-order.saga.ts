@@ -4,7 +4,11 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
+import {
+  MKT_ORDER_EVENT_TYPES,
+  UpdateOrderStatusInput,
+  UpdateOrderStatusResponse,
+} from 'src/mkt-core/order/types';
 // DISABLED: SInvoiceIntegrationService - MktInvoiceModule temporarily disabled
 // import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-invoice.integration.service';
 import {
@@ -13,10 +17,6 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
-import {
-  UpdateOrderStatusInput,
-  UpdateOrderStatusResponse,
-} from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 

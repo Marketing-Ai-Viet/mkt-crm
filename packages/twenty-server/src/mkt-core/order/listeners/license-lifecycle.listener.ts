@@ -4,15 +4,13 @@ import { OnEvent } from '@nestjs/event-emitter';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
-} from 'src/mkt-core/common/common.type';
-import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants';
-import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
-import {
   LicenseOperationResult,
   MktOrderCustomEventData,
   MktOrderCustomEventPayload,
 } from 'src/mkt-core/order/types';
+import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants';
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
 import { LICENSE_LIFECYCLE_MESSAGES } from 'src/mkt-core/order/messages';
 
 // ============================================

@@ -39,18 +39,6 @@ export type BidvConfig = {
 };
 
 /**
- * Firebase integration configuration
- */
-export type FirebaseConfig = {
-  /** Firebase API key */
-  apiKey: string;
-  /** Firebase database URL */
-  databaseUrl: string;
-  /** Firebase auth URL */
-  authUrl: string;
-};
-
-/**
  * Payment URL configuration
  */
 export type PaymentUrlConfig = {
@@ -74,7 +62,6 @@ export type WorkspaceConfig = {
 export type PaymentConfig = {
   sepay: SepayConfig;
   bidv: BidvConfig;
-  firebase: FirebaseConfig;
   urls: PaymentUrlConfig;
   workspace: WorkspaceConfig;
 };

@@ -36,7 +36,6 @@ import {
   VIETNAM_TIMEZONE,
 } from 'src/mkt-core/payment/constants/sepay.constants';
 import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
-import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { SepayWebhookResponse } from 'src/mkt-core/payment/types';
@@ -58,7 +57,6 @@ export class SepayPaymentController {
     private readonly config: ConfigType<typeof paymentConfig>,
     private readonly mktPaymentService: MktPaymentService,
     private readonly mktPaymentWebhookService: MktPaymentWebhookService,
-    private readonly fireBaseIntegrationService: FireBaseIntegrationService,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
@@ -170,18 +168,6 @@ export class SepayPaymentController {
       authContext,
       ipAddress,
     );
-
-    // Notify Firebase if payment was matched
-    if (result.data?.status === 'MATCHED' && result.data.matchedOrder) {
-      const order = await this.mktPaymentService.findOneByOrderCode(
-        workspaceId,
-        result.data.matchedOrder,
-      );
-
-      if (order) {
-        await this.fireBaseIntegrationService.completedOrderToFirebase(order);
-      }
-    }
 
     return result;
   }

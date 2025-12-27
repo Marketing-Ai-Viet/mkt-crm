@@ -3,7 +3,11 @@ import { Request } from 'express';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
-export type callFireBaseType = {
+/**
+ * Result type for payment QR code generation
+ * Contains order code and QR code URL for payment
+ */
+export type PaymentQrResult = {
   orderCode: string | null;
   QRCodeUrl: string | null;
 };
@@ -20,11 +24,6 @@ export enum MKT_PAYMENT_METHOD_TYPE {
   QR_CODE = 'QR_CODE',
   OTHER = 'OTHER',
 }
-
-export type CALL_FIREBASE_DATA = {
-  orderCode: string | null;
-  QRCodeUrl: string | null;
-};
 
 /**
  * Auth context từ JWT token cho SePay webhook

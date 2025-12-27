@@ -18,7 +18,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
-import { callFireBaseType } from 'src/mkt-core/payment/constants/payment.type';
+import { PaymentQrResult } from 'src/mkt-core/payment/constants/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import {
@@ -437,7 +437,7 @@ export class OrderConfirmUtilsService {
       workspaceId: string | null;
     },
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
-  ): Promise<callFireBaseType | void> {
+  ): Promise<PaymentQrResult | void> {
     if (!paymentData.workspaceId) {
       return;
     }
@@ -450,7 +450,7 @@ export class OrderConfirmUtilsService {
         paymentData.workspaceId,
       );
 
-    const result: callFireBaseType = {
+    const result: PaymentQrResult = {
       orderCode: paymentData.generatedOrderCode,
       QRCodeUrl: null,
     };

@@ -8,7 +8,6 @@ import {
   MktOrderItemRepository,
   MktOrderRepository,
 } from 'src/mkt-core/order/repositories';
-import { FirebaseAuthResponse } from 'src/mkt-core/payment/integration/firebase-integration.service';
 import { safeJsonStringify } from 'src/mkt-core/utils';
 
 @Injectable()
@@ -89,24 +88,11 @@ export class OrderService {
     status: ORDER_STATUS,
     workspaceId: string,
     trialLicense?: boolean,
-    authFirebase?: void | FirebaseAuthResponse,
   ) {
-    this.logger.log('authFirebase: ' + safeJsonStringify(authFirebase));
-
     const updateData: Partial<MktOrderWorkspaceEntity> = {
       status,
       trialLicense: trialLicense ?? false,
     };
-
-    // Nếu có authFirebase thì update vào metadata
-    if (authFirebase) {
-      updateData.metadata = safeJsonStringify({
-        authFirebase,
-      }) as unknown as JSON;
-      this.logger.log(
-        `Updated metadata with Firebase auth info for order: ${orderId}`,
-      );
-    }
 
     this.logger.log(
       `Updating order ${orderId} with data: ${safeJsonStringify(updateData)}`,

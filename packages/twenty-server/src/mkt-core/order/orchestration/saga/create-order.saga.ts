@@ -4,8 +4,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
 import {
+  MKT_ORDER_EVENT_TYPES,
   CreateOrderWithItemsInput,
   CreateOrderResponse,
 } from 'src/mkt-core/order/types';

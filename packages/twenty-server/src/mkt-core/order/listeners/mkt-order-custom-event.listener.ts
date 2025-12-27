@@ -5,7 +5,9 @@ import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
   MktCustomEventName,
-} from 'src/mkt-core/common/common.type';
+  MktOrderCustomEventData,
+  MktOrderCustomEventPayload,
+} from 'src/mkt-core/order/types';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
 import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
 import {
@@ -17,10 +19,6 @@ import {
   MktOrderRepository,
   MktOrderHistoryRepository,
 } from 'src/mkt-core/order/repositories';
-import {
-  MktOrderCustomEventData,
-  MktOrderCustomEventPayload,
-} from 'src/mkt-core/order/types';
 import { safeJsonStringify } from 'src/mkt-core/utils';
 
 @Injectable()

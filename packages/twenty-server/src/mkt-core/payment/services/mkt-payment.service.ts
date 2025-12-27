@@ -15,8 +15,8 @@ import { paymentConfig } from 'src/mkt-core/payment/config';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import {
+  PaymentQrResult,
   RequestSepayJWT,
-  callFireBaseType,
 } from 'src/mkt-core/payment/constants/payment.type';
 import {
   CreatePaymentInputDto,
@@ -90,8 +90,8 @@ export class MktPaymentService {
   async createPaymentFromOrder(
     paymentData: CreatePaymentData,
     paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
-  ): Promise<callFireBaseType> {
-    const result: callFireBaseType = {
+  ): Promise<PaymentQrResult> {
+    const result: PaymentQrResult = {
       orderCode: paymentData.generatedOrderCode,
       QRCodeUrl: null,
     };
@@ -166,7 +166,7 @@ export class MktPaymentService {
     paymentData: CreatePaymentData,
     paymentMethodsMeta: PaymentMethodMeta[],
     pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
-    result: callFireBaseType,
+    result: PaymentQrResult,
   ): Promise<Partial<MktPaymentWorkspaceEntity>[]> {
     if (!paymentData.workspaceId) {
       return [];
@@ -199,7 +199,7 @@ export class MktPaymentService {
     meta: PaymentMethodMeta,
     pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
     paymentRepository: Awaited<ReturnType<typeof this.getPaymentRepository>>,
-    result: callFireBaseType,
+    result: PaymentQrResult,
   ): Promise<Partial<MktPaymentWorkspaceEntity> | null> {
     const paymentMethod = pmById.get(meta.mktPaymentMethodId);
 
