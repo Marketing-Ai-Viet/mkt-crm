@@ -1,12 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { APP_LOCALES } from 'twenty-shared/translations';
-
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { MktSendmailTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
-import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-sendmail-template.workpace-entity';
-import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
+import {
+  MKT_TEMPLATE_TYPE,
+  MktTemplateType,
+  MktTemplateWorkspaceEntity,
+} from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+
+const DEFAULT_LOCALE = 'en';
 
 @Injectable()
 export class EmailNotificationService {
@@ -15,17 +18,19 @@ export class EmailNotificationService {
   constructor(
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
-    private readonly sendmailTemplateRepository: MktSendmailTemplateRepository,
+    private readonly templateRepository: MktTemplateRepository,
   ) {}
 
   async sendWelcomeEmail(
     workspaceId: string,
     email: string,
     password: string,
+    locale: string = DEFAULT_LOCALE,
   ): Promise<void> {
     const template = await this.getEmailTemplate(
       workspaceId,
-      MKT_SENDMAIL_TEMPLATE_TYPE.WELCOME_EMAIL,
+      MKT_TEMPLATE_TYPE.WELCOME_EMAIL,
+      locale,
     );
 
     if (!template) {
@@ -34,11 +39,13 @@ export class EmailNotificationService {
       return;
     }
 
+    const htmlContent = template.content?.replace('{{password}}', password);
+
     await this.emailService.send({
       from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
       to: email,
-      subject: template.subject,
-      html: template.body.replace('{{password}}', password),
+      subject: template.subject ?? 'Welcome',
+      html: htmlContent ?? '',
     });
 
     this.logger.log(`Welcome email sent to: ${email}`);
@@ -47,10 +54,12 @@ export class EmailNotificationService {
   async sendAccountUpdateEmail(
     workspaceId: string,
     email: string,
+    locale: string = DEFAULT_LOCALE,
   ): Promise<void> {
     const template = await this.getEmailTemplate(
       workspaceId,
-      MKT_SENDMAIL_TEMPLATE_TYPE.ACCOUNT_UPDATE_EMAIL,
+      MKT_TEMPLATE_TYPE.ACCOUNT_UPDATE_EMAIL,
+      locale,
     );
 
     if (!template) {
@@ -62,8 +71,8 @@ export class EmailNotificationService {
     await this.emailService.send({
       from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
       to: email,
-      subject: template.subject,
-      html: template.body,
+      subject: template.subject ?? 'Account Updated',
+      html: template.content ?? '',
     });
 
     this.logger.log(`Account update email sent to: ${email}`);
@@ -71,12 +80,25 @@ export class EmailNotificationService {
 
   private async getEmailTemplate(
     workspaceId: string,
-    type: string,
-  ): Promise<MktSendmailTemplateWorkspaceEntity | null> {
-    return this.sendmailTemplateRepository.findByTypeAndLanguage(
+    type: MktTemplateType,
+    locale: string = DEFAULT_LOCALE,
+  ): Promise<MktTemplateWorkspaceEntity | null> {
+    // Try to find template with exact locale first
+    let template = await this.templateRepository.findEmailTemplate(
       workspaceId,
       type,
-      'en' as keyof typeof APP_LOCALES,
+      locale,
     );
+
+    // Fallback to default locale if not found
+    if (!template && locale !== DEFAULT_LOCALE) {
+      template = await this.templateRepository.findEmailTemplate(
+        workspaceId,
+        type,
+        DEFAULT_LOCALE,
+      );
+    }
+
+    return template;
   }
 }

@@ -5,8 +5,6 @@ import {
   Logger,
 } from '@nestjs/common';
 
-import { APP_LOCALES } from 'twenty-shared/translations';
-
 import {
   AuthException,
   AuthExceptionCode,
@@ -21,10 +19,12 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
-import { MktSendmailTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
-import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
+import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 import { MtkTwoFacetorAuthGetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthGetOtpSendMail.input';
 import { MtkTwoFacetorAuthSetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthSetOtpSendMail.input';
+
+const DEFAULT_LOCALE = 'en';
 
 @Injectable()
 export class MktTwoFacetorAuthenticationService {
@@ -37,7 +37,7 @@ export class MktTwoFacetorAuthenticationService {
     private readonly loginTokenService: LoginTokenService,
     private readonly domainManagerService: DomainManagerService,
     private readonly twentyConfigService: TwentyConfigService,
-    private readonly sendmailTemplateRepository: MktSendmailTemplateRepository,
+    private readonly templateRepository: MktTemplateRepository,
     @Inject(CacheStorageNamespace.EngineHealth)
     private readonly cache: CacheStorageService,
   ) {}
@@ -55,7 +55,7 @@ export class MktTwoFacetorAuthenticationService {
   ): Promise<boolean> {
     this.logger.log('[2FA] Start sending OTP via email...');
 
-    // 🔹 Xác thực loginToken và lấy email người dùng + workspaceId từ token
+    // Xác thực loginToken và lấy email người dùng + workspaceId từ token
     const { sub: userEmail, workspaceId: tokenWorkspaceId } =
       await this.loginTokenService.verifyLoginToken(
         mtkTwoFacetorAuthSetOtpSendMailInput.loginToken,
@@ -63,7 +63,7 @@ export class MktTwoFacetorAuthenticationService {
 
     this.logger.log(`[2FA] Token verified for user: ${userEmail}`);
 
-    // 🔹 Lấy workspace dựa trên origin hoặc workspace mặc định
+    // Lấy workspace dựa trên origin hoặc workspace mặc định
     const workspace =
       await this.domainManagerService.getWorkspaceByOriginOrDefaultWorkspace(
         mtkTwoFacetorAuthSetOtpSendMailInput.origin,
@@ -79,7 +79,7 @@ export class MktTwoFacetorAuthenticationService {
 
     this.logger.log(`[2FA] Workspace resolved: ${workspace.id}`);
 
-    // 🔹 Kiểm tra workspaceId trong token có khớp với workspace hiện tại không
+    // Kiểm tra workspaceId trong token có khớp với workspace hiện tại không
     if (tokenWorkspaceId !== workspace.id) {
       this.logger.warn(
         `[2FA] Token workspace mismatch: token=${tokenWorkspaceId}, current=${workspace.id}`,
@@ -90,7 +90,7 @@ export class MktTwoFacetorAuthenticationService {
       );
     }
 
-    // 🔹 Lấy thông tin người dùng theo email
+    // Lấy thông tin người dùng theo email
     const user = await this.userService.getUserByEmail(userEmail);
 
     if (!user) {
@@ -101,7 +101,7 @@ export class MktTwoFacetorAuthenticationService {
       );
     }
 
-    // 🔹 Lưu OTP vào Redis
+    // Lưu OTP vào Redis
     const otpKey = `twofa:otp:${user.id}:${workspace.id}`;
 
     await this.cache.set(
@@ -114,30 +114,42 @@ export class MktTwoFacetorAuthenticationService {
       `[2FA] OTP cached with key ${otpKey} (TTL=${mtkTwoFacetorAuthSetOtpSendMailInput.ttl}s)`,
     );
 
-    // 🔹 Lấy template gửi mail phù hợp (theo ngôn ngữ)
-    // Uses MktSendmailTemplateRepository for thread-safe access
-    const sendmailTemplate =
-      await this.sendmailTemplateRepository.findByTypeAndLanguage(
-        workspace.id,
-        MKT_SENDMAIL_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
-        mtkTwoFacetorAuthSetOtpSendMailInput.language as keyof typeof APP_LOCALES,
-      );
+    // Lấy template gửi mail phù hợp (theo ngôn ngữ)
+    const locale =
+      mtkTwoFacetorAuthSetOtpSendMailInput.language || DEFAULT_LOCALE;
+    let template = await this.templateRepository.findEmailTemplate(
+      workspace.id,
+      MKT_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
+      locale,
+    );
 
-    if (!sendmailTemplate) {
-      this.logger.error(
-        `[2FA] Sendmail template not found for lang=${mtkTwoFacetorAuthSetOtpSendMailInput.language}`,
+    // Fallback to default locale if not found
+    if (!template && locale !== DEFAULT_LOCALE) {
+      template = await this.templateRepository.findEmailTemplate(
+        workspace.id,
+        MKT_TEMPLATE_TYPE.TWO_FACTOR_AUTH,
+        DEFAULT_LOCALE,
       );
-      throw new InternalServerErrorException('Sendmail template not found');
     }
 
-    // 🔹 Gửi email chứa mã OTP cho người dùng
+    if (!template) {
+      this.logger.error(
+        `[2FA] Email template not found for type=${MKT_TEMPLATE_TYPE.TWO_FACTOR_AUTH}, locale=${locale}`,
+      );
+      throw new InternalServerErrorException('Email template not found');
+    }
+
+    // Gửi email chứa mã OTP cho người dùng
     try {
       this.logger.log(`[2FA] Sending OTP email to ${user.email}...`);
+      const htmlContent =
+        template.content?.replace('{{otp}}', otp.toString()) ?? '';
+
       await this.emailService.send({
         from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
         to: user.email,
-        subject: sendmailTemplate.subject,
-        html: sendmailTemplate.body.replace('{{otp}}', otp.toString()),
+        subject: template.subject ?? 'Two Factor Authentication',
+        html: htmlContent,
       });
       this.logger.log(`[2FA] OTP email sent successfully to ${user.email}`);
     } catch (error) {
@@ -151,7 +163,7 @@ export class MktTwoFacetorAuthenticationService {
       );
     }
 
-    // 🔹 Trả về true nếu gửi email thành công
+    // Trả về true nếu gửi email thành công
     return true;
   }
 
@@ -194,22 +206,17 @@ export class MktTwoFacetorAuthenticationService {
         AuthExceptionCode.USER_NOT_FOUND,
       );
     }
-    // luu otp vào redis
 
+    // Lấy OTP từ Redis
     const otpKey = `twofa:otp:${user.id}:${workspace.id}`;
-
     const otp = await this.cache.get<string>(otpKey);
 
     if (otp && +otp === mtkTwoFacetorAuthGetOtpSendMailInput.otp) {
       await this.cache.del(otpKey);
 
-      return await this.authService.verify(
-        userEmail,
-        workspace.id,
-        // authProvider,
-      );
-    } else {
-      throw new AuthException('Invalid OTP', AuthExceptionCode.INVALID_OTP);
+      return this.authService.verify(userEmail, workspace.id);
     }
+
+    throw new AuthException('Invalid OTP', AuthExceptionCode.INVALID_OTP);
   }
 }
