@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 
-import {
-  MktTemplateRepository,
-  MktSendmailTemplateRepository,
-} from 'src/mkt-core/mkt-sendmail-template/repositories';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
 
 /**
- * MktSendmailTemplateModule
+ * MktSendmailTemplateModule (MktTemplateModule)
  *
- * Module for managing email templates:
- * - MktTemplate: General templates for invoices, payments, etc.
- * - MktSendmailTemplate: Specific templates for sending emails (OTP, password reset, etc.)
+ * Unified module for managing all templates:
+ * - Email templates (Welcome, 2FA OTP, Account Update, Password Reset)
+ * - Business templates (Invoice, Contract, Order, Quote)
+ * - System templates (Notification, Ticket, Catalog)
+ *
+ * Uses single MktTemplateWorkspaceEntity for all template types.
  */
 @Module({
-  providers: [MktTemplateRepository, MktSendmailTemplateRepository],
-  exports: [MktTemplateRepository, MktSendmailTemplateRepository],
+  providers: [MktTemplateRepository],
+  exports: [MktTemplateRepository],
 })
 export class MktSendmailTemplateModule {}
