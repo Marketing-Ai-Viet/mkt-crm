@@ -6,7 +6,6 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { paymentConfig } from 'src/mkt-core/payment/config';
@@ -48,7 +47,6 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(bidvConfig),
     HttpModule,
     RecordPositionModule,
-    MktCommonModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
     JwtModule,
     AuthModule,

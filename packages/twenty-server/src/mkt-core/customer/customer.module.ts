@@ -4,7 +4,6 @@ import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { MktCustomerCreateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-create-one.pre-query.hook';
 import { MktCustomerUpdateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-update-one.pre-query.hook';
 import { MktCustomerEventListener } from 'src/mkt-core/customer/listeners/mkt-customer-event.listener';
@@ -51,7 +50,6 @@ import {
 
 @Module({
   imports: [
-    MktCommonModule,
     EmailModule,
     MktEmailModule,
     MktSendmailTemplateModule,

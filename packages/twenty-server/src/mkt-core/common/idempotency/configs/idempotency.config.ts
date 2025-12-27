@@ -58,12 +58,31 @@ export const ACTION_CONFIGS: Record<
   'order:createOrder': {
     ...FINANCIAL_CONFIG,
     lockTimeoutMs: CACHE_TTL_MS.LOCK_SYNC, // 10 minutes for complex orders
-    responseAllowedFields: ['id', 'orderNumber', 'status', 'totalAmount'],
+    responseAllowedFields: [
+      'success',
+      'orderId',
+      'orderCode',
+      'paymentQrCode',
+      'totalAmount',
+      'paidAmount',
+      'remainingAmount',
+      'paymentStatus',
+      'error',
+    ],
   },
   'order:confirmOrder': {
     ...FINANCIAL_CONFIG,
     ttlSeconds: CACHE_TTL.VERY_LONG * 2, // 2 hours
-    responseAllowedFields: ['id', 'orderNumber', 'status', 'confirmedAt'],
+    responseAllowedFields: [
+      'success',
+      'orderId',
+      'newStatus',
+      'totalAmount',
+      'paidAmount',
+      'remainingAmount',
+      'paymentStatus',
+      'error',
+    ],
   },
   'order:updateOrderStatus': {
     ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
@@ -72,7 +91,17 @@ export const ACTION_CONFIGS: Record<
   'order:refundOrder': {
     ...FINANCIAL_CONFIG,
     lockTimeoutMs: CACHE_TTL.MEDIUM_LONG * 1000, // 15 minutes
-    responseAllowedFields: ['id', 'refundId', 'status', 'refundAmount'],
+    responseAllowedFields: [
+      'success',
+      'orderId',
+      'refundedAmount',
+      'newStatus',
+      'totalAmount',
+      'paidAmount',
+      'remainingAmount',
+      'paymentStatus',
+      'error',
+    ],
   },
 
   // Payment actions

@@ -4,18 +4,18 @@ import { APP_LOCALES } from 'twenty-shared/translations';
 
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
+import { MktSendmailTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
 import { MktSendmailTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-sendmail-template.workpace-entity';
+import { MKT_SENDMAIL_TEMPLATE_TYPE } from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 
 @Injectable()
-export class MktEmailNotificationService {
-  private readonly logger = new Logger(MktEmailNotificationService.name);
+export class EmailNotificationService {
+  private readonly logger = new Logger(EmailNotificationService.name);
 
   constructor(
     private readonly emailService: EmailService,
     private readonly twentyConfigService: TwentyConfigService,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly sendmailTemplateRepository: MktSendmailTemplateRepository,
   ) {}
 
   async sendWelcomeEmail(
@@ -73,15 +73,10 @@ export class MktEmailNotificationService {
     workspaceId: string,
     type: string,
   ): Promise<MktSendmailTemplateWorkspaceEntity | null> {
-    const templateRepo =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSendmailTemplateWorkspaceEntity>(
-        workspaceId,
-        'mktSendmailTemplate',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    return await templateRepo.findOne({
-      where: { type, language: 'en' as keyof typeof APP_LOCALES },
-    });
+    return this.sendmailTemplateRepository.findByTypeAndLanguage(
+      workspaceId,
+      type,
+      'en' as keyof typeof APP_LOCALES,
+    );
   }
 }

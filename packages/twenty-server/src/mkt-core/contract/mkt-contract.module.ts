@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { MktContractRepository } from 'src/mkt-core/contract/repositories';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
@@ -15,12 +14,11 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.re
  * - Contract-order linking
  *
  * Dependencies:
- * - MktCommonModule: Common utilities
  * - MktCustomerRepository: Customer lookup
  * - MktOrderRepository: Order linking
  */
 @Module({
-  imports: [MktCommonModule],
+  imports: [],
   providers: [
     // Repositories
     MktContractRepository,

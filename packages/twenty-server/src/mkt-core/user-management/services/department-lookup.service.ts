@@ -1,15 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentHierarchyRepository } from 'src/mkt-core/mkt-department/repositories';
 
 @Injectable()
-export class MktDepartmentLookupService {
-  private readonly logger = new Logger(MktDepartmentLookupService.name);
+export class DepartmentLookupService {
+  private readonly logger = new Logger(DepartmentLookupService.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly departmentHierarchyRepository: MktDepartmentHierarchyRepository,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
@@ -30,22 +29,17 @@ export class MktDepartmentLookupService {
         return null;
       }
 
-      // Query hierarchy where team is child to get parent department
-      const hierarchyRepo =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      const hierarchy =
+        await this.departmentHierarchyRepository.findByChildDepartmentId(
           workspaceId,
-          MktDepartmentHierarchyWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
+          teamId,
         );
-      const hierarchy = await hierarchyRepo.findOne({
-        where: { childDepartmentId: teamId },
-      });
 
       this.logger.log(
         `Found departmentId ${hierarchy?.parentDepartmentId} for teamId ${teamId}`,
       );
 
-      return hierarchy?.parentDepartmentId || null;
+      return hierarchy?.parentDepartmentId ?? null;
     } catch (error) {
       this.logger.warn(
         `Failed to get departmentId from teamId ${teamId}: ${error.message}`,

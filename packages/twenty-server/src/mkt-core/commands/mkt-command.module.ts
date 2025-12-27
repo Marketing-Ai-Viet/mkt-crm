@@ -7,14 +7,12 @@ import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadat
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Workspace], 'core'),
     MessageQueueModule,
-    MktCommonModule,
     CustomerModule,
     ObjectMetadataModule,
     TwentyORMModule,

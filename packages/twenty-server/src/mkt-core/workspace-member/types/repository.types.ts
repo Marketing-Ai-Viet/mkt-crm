@@ -51,6 +51,10 @@ export type CreateWorkspaceMemberData = Partial<
     | 'colorScheme'
     | 'locale'
     | 'timeZone'
+    | 'position'
+    | 'calendarStartDay'
+    | 'dateFormat'
+    | 'timeFormat'
   >
 > & {
   name: FullNameMetadata;
