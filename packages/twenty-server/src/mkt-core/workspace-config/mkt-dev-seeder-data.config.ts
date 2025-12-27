@@ -84,10 +84,6 @@ import {
   MKT_REPORT_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-report-data-seeds.constants';
 import {
-  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
-import {
   MKT_STAFF_STATUS_HISTORY_DATA_SEED_COLUMNS,
   MKT_STAFF_STATUS_HISTORY_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-staff-status-history-data-seeds.constants';
@@ -343,11 +339,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktPermissionAudit',
     pgColumns: MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PERMISSION_AUDIT_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktSendmailTemplate',
-    pgColumns: MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
   },
   // Promotion configs (order matters: Promotion -> Rule -> Coupon -> Audit -> Usage)
   {

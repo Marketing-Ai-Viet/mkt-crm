@@ -40,10 +40,6 @@ import {
   MKT_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-template-data-seeds.constants';
 import {
-  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
-import {
   MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-generic-combo-data-seeds.constants';
@@ -218,16 +214,11 @@ export const getMasterDataSeeds = (): RecordSeedConfig[] => [
     pgColumns: MKT_PAYMENT_METHOD_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PAYMENT_METHOD_DATA_SEEDS,
   },
-  // Templates (email, document templates)
+  // Templates (email, document templates) - unified in mktTemplate
   {
     tableName: 'mktTemplate',
     pgColumns: MKT_TEMPLATE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_TEMPLATE_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktSendmailTemplate',
-    pgColumns: MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
   },
   // Generic combos (dropdown options, etc.)
   {
