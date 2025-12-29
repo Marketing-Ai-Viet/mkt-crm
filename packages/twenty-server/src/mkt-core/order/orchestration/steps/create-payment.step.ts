@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
+import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
 import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
@@ -51,6 +52,8 @@ export class CreatePaymentStep extends SagaStep<
     private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly paymentRepository: MktPaymentRepository,
     private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
   ) {
     super();
   }
@@ -321,7 +324,7 @@ export class CreatePaymentStep extends SagaStep<
       qrCodeUrl: params.qrCodeUrl ?? undefined,
       duration: params.duration ?? undefined,
       expiredAt: params.expiredAt ?? undefined,
-      paymentPageUrl: `${process.env.SERVER_URL}/payment/${params.orderCode}`,
+      paymentPageUrl: `${this.config.urls.serverUrl}${this.config.urls.paymentPagePath}/${params.orderCode}`,
       mktTemplateId: MKT_TEMPLATE.SEPAY,
     };
   }

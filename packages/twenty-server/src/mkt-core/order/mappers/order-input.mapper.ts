@@ -66,20 +66,14 @@ export const OrderInputMapper = {
   /**
    * Map ConfirmOrderInputDto to ConfirmOrderInput
    *
-   * accountingConfirmed is derived from action:
-   * - ACCOUNTING_CONFIRMED → true
-   * - Others → undefined (don't change)
+   * Simplified: Only ACCOUNTING_CONFIRMED action is supported.
+   * Other actions (COMPLETE, CANCEL, BLOCK) use updateOrderStatus mutation.
    */
   toConfirmOrderInput(dto: ConfirmOrderInputDto): ConfirmOrderInput {
-    // Derive accountingConfirmed from action
-    const accountingConfirmed =
-      dto.action === 'ACCOUNTING_CONFIRMED' ? true : undefined;
-
     return {
       orderId: dto.orderId,
-      // DTO uses CONFIRM_ORDER_ACTION enum, cast to domain type ConfirmOrderAction
       action: dto.action as unknown as ConfirmOrderAction,
-      accountingConfirmed,
+      accountingConfirmed: true, // Always true for ACCOUNTING_CONFIRMED
       note: dto.note,
     };
   },

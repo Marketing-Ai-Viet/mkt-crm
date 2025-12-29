@@ -1,18 +1,22 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { firstValueFrom } from 'rxjs';
 
 import { IdempotencyCacheRepository } from 'src/mkt-core/common/idempotency';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants';
+import {
+  ORDER_CODE_DEFAULTS,
+  ORDER_CODE_FORMAT,
+  ORDER_CONFIG_KEY,
+  OrderConfig,
+} from 'src/mkt-core/order/config';
+import { OrderCalculationService } from 'src/mkt-core/order/services/core/order-calculation.service';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
-import {
-  ORDER_CODE_PREFIX,
-  ORDER_METADATA,
-} from 'src/mkt-core/order/constants/order-status.constants';
+import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
@@ -31,6 +35,11 @@ import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
 const ORDER_CODE_LOCK_KEY_PREFIX = 'order:code-gen';
 const ORDER_CODE_LOCK_TIMEOUT_MS = 5000; // 5 seconds
 const ORDER_CODE_MAX_RETRIES = 3;
+
+/** Exponential backoff constants */
+const BACKOFF_BASE_MS = 100;
+const BACKOFF_MAX_MS = 2000;
+const JITTER_FACTOR = 0.3; // 30% jitter
 
 /**
  * Result type for order value calculations
@@ -61,6 +70,7 @@ export class OrderConfirmUtilsService {
     newVariantName: '',
   };
   private readonly logger = new Logger(OrderConfirmUtilsService.name);
+  private readonly orderCodePrefix: string;
   public orderMetadata: ORDER_METADATA | null = null;
 
   constructor(
@@ -69,69 +79,65 @@ export class OrderConfirmUtilsService {
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktPaymentMethodRepository: MktPaymentMethodRepository,
     private readonly idempotencyCacheRepository: IdempotencyCacheRepository,
-  ) {}
+    private readonly orderCalculationService: OrderCalculationService,
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
+  ) {
+    this.orderCodePrefix =
+      this.config?.code?.prefix ?? ORDER_CODE_DEFAULTS.PREFIX;
+  }
 
   /**
-   * calculate order values from order items
+   * Calculate order values from order items
+   *
+   * Delegates to OrderCalculationService for consistent calculation logic
+   * Handles absolute discount separately (stored in order entity)
    */
   async calculateOrderValues(
     currentOrder: MktOrderWorkspaceEntity | null,
   ): Promise<OrderCalculationResult> {
     this.logger.log('Calculating order values...');
+
+    const emptyResult: OrderCalculationResult = {
+      subtotal: 0,
+      tax: 0,
+      discount: 0,
+      totalAmount: 0,
+    };
+
     try {
       const orderItems = currentOrder?.orderItems;
 
       if (!orderItems || orderItems.length === 0) {
         this.logger.warn(`No order items found for order`);
 
-        return {
-          subtotal: 0,
-          tax: 0,
-          discount: 0,
-          totalAmount: 0,
-        };
+        return emptyResult;
       }
 
-      let subtotal = MoneyUtils.from(0);
-      let totalTax = MoneyUtils.from(0);
-
-      for (const item of orderItems) {
-        const quantity = item.quantity || 0;
-        const unitPrice = item.unitPrice || 0;
-        const taxPercentage = item.taxPercentage || 0;
-
-        const itemSubtotal = MoneyUtils.multiply(quantity, unitPrice);
-
-        subtotal = MoneyUtils.add(subtotal.toNumber(), itemSubtotal.toNumber());
-
-        const itemTax = MoneyUtils.percentage(
-          itemSubtotal.toNumber(),
-          taxPercentage,
+      // Use OrderCalculationService for consistent calculation
+      // Pass discountPercent = 0, we handle absolute discount separately
+      const calculated =
+        this.orderCalculationService.calculateOrderTotalsFromEntities(
+          orderItems,
+          0,
         );
 
-        totalTax = MoneyUtils.add(totalTax.toNumber(), itemTax.toNumber());
-
-        this.logger.debug(
-          `Order item ${item.id}: quantity=${quantity}, unitPrice=${unitPrice}, subtotal=${itemSubtotal.toNumber()}, tax=${itemTax.toNumber()}`,
-        );
-      }
-
-      const discount = MoneyUtils.from(currentOrder?.discount || 0);
-
+      // Apply absolute discount from order entity
+      const absoluteDiscount = currentOrder?.discount ?? 0;
       const totalAmount = MoneyUtils.subtract(
-        MoneyUtils.add(subtotal.toNumber(), totalTax.toNumber()).toNumber(),
-        discount.toNumber(),
-      );
+        calculated.totalAmount,
+        absoluteDiscount,
+      ).toNumber();
 
       this.logger.log(
-        `Calculated order values: subtotal=${subtotal.toNumber()}, tax=${totalTax.toNumber()}, discount=${discount.toNumber()}, totalAmount=${totalAmount.toNumber()}`,
+        `Calculated order values: subtotal=${calculated.subtotal}, tax=${calculated.tax}, discount=${absoluteDiscount}, totalAmount=${totalAmount}`,
       );
 
       return {
-        subtotal: MoneyUtils.round(subtotal.toNumber(), 2).toNumber(),
-        tax: MoneyUtils.round(totalTax.toNumber(), 2).toNumber(),
-        discount: MoneyUtils.round(discount.toNumber(), 2).toNumber(),
-        totalAmount: MoneyUtils.round(totalAmount.toNumber(), 2).toNumber(),
+        subtotal: MoneyUtils.round(calculated.subtotal, 2).toNumber(),
+        tax: MoneyUtils.round(calculated.tax, 2).toNumber(),
+        discount: MoneyUtils.round(absoluteDiscount, 2).toNumber(),
+        totalAmount: MoneyUtils.round(totalAmount, 2).toNumber(),
       };
     } catch (error) {
       this.logger.error(
@@ -139,20 +145,17 @@ export class OrderConfirmUtilsService {
         error,
       );
 
-      return {
-        subtotal: 0,
-        tax: 0,
-        discount: 0,
-        totalAmount: 0,
-      };
+      return emptyResult;
     }
   }
 
   /**
    * Generate unique order code with distributed locking
    *
-   * Uses Redis distributed lock to prevent race conditions when multiple
-   * requests try to generate order codes concurrently.
+   * Features:
+   * - Token-based locking to prevent releasing other process's lock
+   * - Exponential backoff with jitter for retry
+   * - Lock key unique per workspace and date
    *
    * Lock key format: order:code-gen:{workspaceId}:{datePrefix}
    */
@@ -168,47 +171,52 @@ export class OrderConfirmUtilsService {
     const lockKey = `${ORDER_CODE_LOCK_KEY_PREFIX}:${workspaceId}:${datePrefix}`;
 
     for (let attempt = 1; attempt <= ORDER_CODE_MAX_RETRIES; attempt++) {
+      let lockToken: string | null = null;
+
       try {
-        // Acquire distributed lock
-        const lockResult = await this.idempotencyCacheRepository.acquireLock(
-          lockKey,
-          ORDER_CODE_LOCK_TIMEOUT_MS,
-        );
+        // Acquire distributed lock with token
+        const lockResult =
+          await this.idempotencyCacheRepository.acquireLockWithToken(
+            lockKey,
+            ORDER_CODE_LOCK_TIMEOUT_MS,
+          );
 
         if (!lockResult.success) {
           this.logger.warn(
             `Failed to acquire lock for order code generation (attempt ${attempt}): ${lockResult.error}`,
           );
-          // Wait briefly before retry
-          await this.delay(100 * attempt);
+          await this.delayWithBackoff(attempt);
           continue;
         }
 
-        if (!lockResult.data) {
+        lockToken = lockResult.data;
+
+        if (!lockToken) {
           // Lock not acquired (held by another process)
           this.logger.warn(
             `Lock held by another process (attempt ${attempt}), waiting...`,
           );
-          await this.delay(200 * attempt);
+          await this.delayWithBackoff(attempt);
           continue;
         }
 
-        try {
-          // Generate order code within lock
-          const orderCode = await this.generateOrderCodeWithinLock(
-            workspaceId,
-            datePrefix,
-          );
+        // Generate order code within lock
+        const orderCode = await this.generateOrderCodeWithinLock(
+          workspaceId,
+          datePrefix,
+        );
 
-          this.logger.log(
-            `Generated orderCode: ${orderCode} (attempt ${attempt})`,
-          );
+        this.logger.log(
+          `Generated orderCode: ${orderCode} (attempt ${attempt})`,
+        );
 
-          return orderCode;
-        } finally {
-          // Always release lock
-          await this.idempotencyCacheRepository.releaseLock(lockKey);
-        }
+        // Release lock with token verification
+        await this.idempotencyCacheRepository.releaseLockWithToken(
+          lockKey,
+          lockToken,
+        );
+
+        return orderCode;
       } catch (error) {
         this.logger.error(
           `Failed to generate order code (attempt ${attempt}):`,
@@ -217,12 +225,10 @@ export class OrderConfirmUtilsService {
 
         if (attempt === ORDER_CODE_MAX_RETRIES) {
           // Final fallback: use timestamp-based code
-          const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
-            .toString()
-            .slice(-6);
-
-          return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
+          return this.generateFallbackOrderCode(datePrefix);
         }
+
+        await this.delayWithBackoff(attempt);
       }
     }
 
@@ -230,7 +236,49 @@ export class OrderConfirmUtilsService {
   }
 
   /**
+   * Generate fallback order code using timestamp + random
+   *
+   * Format: {PREFIX}{YYYYMMDD}{TTTT}{NN}
+   * - TTTT: 4 digits from timestamp (last 4 digits of milliseconds)
+   * - NN: 2 digits random number (00-99)
+   *
+   * This prevents collision when 2 requests happen in the same millisecond
+   * by adding 2 digits of randomness (100 unique codes per ms)
+   *
+   * Used when:
+   * - Lock acquisition fails after all retries
+   * - Daily order limit (999) is exceeded
+   */
+  private generateFallbackOrderCode(datePrefix: string): string {
+    // Get last 4 digits of timestamp
+    const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
+      .toString()
+      .slice(-ORDER_CODE_FORMAT.FALLBACK_TIMESTAMP_LENGTH);
+
+    // Generate random 2-digit suffix to prevent same-ms collision
+    const random = Math.floor(
+      Math.random() * (ORDER_CODE_FORMAT.FALLBACK_RANDOM_MAX + 1),
+    )
+      .toString()
+      .padStart(ORDER_CODE_FORMAT.FALLBACK_RANDOM_LENGTH, '0');
+
+    const fallbackSuffix = `${timestamp}${random}`;
+
+    this.logger.warn(
+      `Using fallback order code: timestamp=${timestamp}, random=${random}`,
+    );
+
+    return `${this.orderCodePrefix}${datePrefix}${fallbackSuffix}`;
+  }
+
+  /**
    * Generate order code within the distributed lock
+   *
+   * Format: {PREFIX}{YYYYMMDD}{NNN}
+   * - PREFIX: from config (e.g., 'MKT')
+   * - YYYYMMDD: 8 digits date
+   * - NNN: 3 digits sequence (001-999)
+   *
    * @private
    */
   private async generateOrderCodeWithinLock(
@@ -240,11 +288,22 @@ export class OrderConfirmUtilsService {
     const orderRepository =
       await this.mktOrderRepository.getRepository(workspaceId);
 
-    // Find the highest order number for today
-    const todayOrders = await orderRepository
+    // Calculate expected code length for normal format only
+    // PREFIX + YYYYMMDD + NNN (3 digits)
+    const normalFormatLength =
+      this.orderCodePrefix.length +
+      ORDER_CODE_FORMAT.DATE_LENGTH +
+      ORDER_CODE_FORMAT.SEQUENCE_LENGTH;
+
+    // Find the highest normal format order code for today
+    // Using LENGTH() to filter out fallback format (6 digits suffix)
+    const todayOrder = await orderRepository
       .createQueryBuilder('order')
       .where('order.orderCode LIKE :pattern', {
-        pattern: `${ORDER_CODE_PREFIX}${datePrefix}%`,
+        pattern: `${this.orderCodePrefix}${datePrefix}%`,
+      })
+      .andWhere('LENGTH(order.orderCode) = :normalLength', {
+        normalLength: normalFormatLength,
       })
       .orderBy('order.orderCode', 'DESC')
       .limit(1)
@@ -252,18 +311,32 @@ export class OrderConfirmUtilsService {
 
     let nextNumber = 1;
 
-    if (todayOrders?.orderCode) {
-      // Extract number from existing order code (e.g., MKT20241201001 -> 1)
-      const pattern = new RegExp(`${ORDER_CODE_PREFIX}\\d{8}(\\d{3})$`);
-      const match = todayOrders.orderCode.match(pattern);
+    if (todayOrder?.orderCode) {
+      // Extract sequence number from normal format code
+      const extractedNumber = this.extractSequenceNumber(
+        todayOrder.orderCode,
+        datePrefix,
+      );
 
-      if (match) {
-        nextNumber = parseInt(match[1], 10) + 1;
+      if (
+        extractedNumber !== null &&
+        extractedNumber <= ORDER_CODE_FORMAT.MAX_DAILY_ORDERS
+      ) {
+        nextNumber = extractedNumber + 1;
       }
     }
 
-    // Generate new order code: ORDER_CODE_PREFIX + YYYYMMDD + 3-digit number
-    const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+    // Check if we've exceeded max daily orders
+    if (nextNumber > ORDER_CODE_FORMAT.MAX_DAILY_ORDERS) {
+      this.logger.warn(
+        `Max daily orders (${ORDER_CODE_FORMAT.MAX_DAILY_ORDERS}) exceeded, using timestamp fallback`,
+      );
+
+      return this.generateFallbackOrderCode(datePrefix);
+    }
+
+    // Generate new order code: PREFIX + YYYYMMDD + sequence
+    const orderCode = `${this.orderCodePrefix}${datePrefix}${String(nextNumber).padStart(ORDER_CODE_FORMAT.SEQUENCE_LENGTH, '0')}`;
 
     // Double-check uniqueness (defensive)
     const existingOrder = await this.mktOrderRepository.findByOrderCode(
@@ -272,27 +345,69 @@ export class OrderConfirmUtilsService {
     );
 
     if (existingOrder) {
-      // If somehow duplicate (shouldn't happen with lock), use timestamp
-      const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
-        .toString()
-        .slice(-6);
-
       this.logger.warn(
         `Order code ${orderCode} already exists, using timestamp fallback`,
       );
 
-      return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
+      return this.generateFallbackOrderCode(datePrefix);
     }
 
     return orderCode;
   }
 
   /**
-   * Delay helper for retry logic
-   * @private
+   * Extract sequence number from order code
+   *
+   * Handles both formats:
+   * - Normal: MKT20241229001 -> 1
+   * - Fallback: MKT20241229847291 -> 847291 (will be > MAX_DAILY_ORDERS)
+   *
+   * @returns sequence number or null if pattern doesn't match
    */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private extractSequenceNumber(
+    orderCode: string,
+    datePrefix: string,
+  ): number | null {
+    // Pattern: PREFIX + 8 digits date + 3-6 digits sequence
+    // Capture the sequence part (last 3-6 digits after date)
+    const pattern = new RegExp(
+      `^${this.orderCodePrefix}${datePrefix}(\\d{${ORDER_CODE_FORMAT.SEQUENCE_LENGTH},${ORDER_CODE_FORMAT.FALLBACK_LENGTH}})$`,
+    );
+    const match = orderCode.match(pattern);
+
+    if (!match) {
+      return null;
+    }
+
+    return parseInt(match[1], 10);
+  }
+
+  /**
+   * Delay with exponential backoff and jitter
+   *
+   * Formula: min(base * 2^attempt + jitter, max)
+   * - base: 100ms
+   * - max: 2000ms
+   * - jitter: ±30% randomization to prevent thundering herd
+   *
+   * @param attempt - Current attempt number (1-based)
+   */
+  private async delayWithBackoff(attempt: number): Promise<void> {
+    // Exponential backoff: 100ms, 200ms, 400ms, 800ms, ...
+    const exponentialDelay = BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+
+    // Apply jitter: ±30%
+    const jitter = exponentialDelay * JITTER_FACTOR * (Math.random() * 2 - 1);
+    const delayWithJitter = exponentialDelay + jitter;
+
+    // Cap at max delay
+    const finalDelay = Math.min(delayWithJitter, BACKOFF_MAX_MS);
+
+    this.logger.debug(
+      `Backoff delay: ${Math.round(finalDelay)}ms (attempt ${attempt})`,
+    );
+
+    return new Promise((resolve) => setTimeout(resolve, finalDelay));
   }
 
   /**
@@ -427,6 +542,15 @@ export class OrderConfirmUtilsService {
     );
   }
 
+  /**
+   * Payment data for creating payment records
+   */
+  private readonly DEFAULT_CURRENCY = 'VND';
+
+  /**
+   * Create payment records from order metadata
+   * Refactored to reduce complexity using early returns and helper methods
+   */
   private async createPaymentFromOrder(
     paymentData: {
       paymentName: string;
@@ -442,75 +566,155 @@ export class OrderConfirmUtilsService {
       return;
     }
 
-    const paymentRepository = await this.mktPaymentRepository.getRepository(
-      paymentData.workspaceId,
-    );
-    const paymentMethodRepository =
-      await this.mktPaymentMethodRepository.getRepository(
-        paymentData.workspaceId,
-      );
-
     const result: PaymentQrResult = {
       orderCode: paymentData.generatedOrderCode,
       QRCodeUrl: null,
     };
 
-    if (Array.isArray(paymentMethodsMeta) && paymentMethodsMeta.length > 0) {
-      const pmIds = paymentMethodsMeta
-        .map((p) => p.mktPaymentMethodId)
-        .filter(Boolean);
+    // Early return if no payment methods
+    const pmIds = this.extractPaymentMethodIds(paymentMethodsMeta);
 
-      if (pmIds.length > 0) {
-        const methods = await paymentMethodRepository.find({
-          where: pmIds.map((id) => ({ id })) as unknown as { id: string },
-        });
-        const pmById = new Map(
-          methods.map((m: MktPaymentMethodWorkspaceEntity) => [m.id, m]),
-        );
+    if (pmIds.length === 0) {
+      return result;
+    }
 
-        const paymentsFromMeta = await Promise.all(
-          paymentMethodsMeta.map(async (p) => {
-            const pm: MktPaymentMethodWorkspaceEntity | undefined = pmById.get(
-              p.mktPaymentMethodId,
-            );
+    // Fetch payment methods and create payments
+    const paymentMethodRepository =
+      await this.mktPaymentMethodRepository.getRepository(
+        paymentData.workspaceId,
+      );
 
-            if (!pm) {
-              return null;
-            }
+    const pmById = await this.fetchPaymentMethodsMap(
+      paymentMethodRepository,
+      pmIds,
+    );
 
-            // generate position
-            const { qrCodeUrl, expiredAt } = await this.generateSepayQrCodeUrl(
-              pm,
-              paymentData.totalAmount || 0,
-              paymentData.generatedOrderCode,
-            );
+    const payments = await this.createPaymentRecords(
+      paymentData,
+      paymentMethodsMeta ?? [],
+      pmById,
+      result,
+    );
 
-            if (!result.QRCodeUrl) {
-              result.QRCodeUrl = qrCodeUrl;
-            }
+    // Save valid payments
+    if (payments.length > 0) {
+      const paymentRepository = await this.mktPaymentRepository.getRepository(
+        paymentData.workspaceId,
+      );
 
-            return paymentRepository.create({
-              mktOrderId: paymentData.orderId,
-              mktPaymentMethodId: p.mktPaymentMethodId,
-              name: `${pm?.name} - ${paymentData.paymentName}`,
-              amount: paymentData.totalAmount || 0,
-              currency: paymentData.currency || 'VND',
-              qrCodeUrl: qrCodeUrl || undefined,
-              duration: p.duration || null,
-              expiredAt: expiredAt || null,
-              paymentPageUrl: `${process.env.SERVER_URL}/payment/${paymentData.generatedOrderCode}`,
-              mktTemplateId: MKT_TEMPLATE.SEPAY,
-            } as Partial<MktPaymentWorkspaceEntity>);
-          }),
-        );
-
-        await paymentRepository.save(
-          paymentsFromMeta as MktPaymentWorkspaceEntity[],
-        );
-      }
+      await paymentRepository.save(payments);
     }
 
     return result;
+  }
+
+  /**
+   * Extract valid payment method IDs from metadata
+   */
+  private extractPaymentMethodIds(
+    paymentMethodsMeta: ORDER_METADATA['paymentMethods'] | null,
+  ): string[] {
+    if (!Array.isArray(paymentMethodsMeta) || paymentMethodsMeta.length === 0) {
+      return [];
+    }
+
+    return paymentMethodsMeta
+      .map((p) => p.mktPaymentMethodId)
+      .filter((id): id is string => Boolean(id));
+  }
+
+  /**
+   * Fetch payment methods and return as Map
+   */
+  private async fetchPaymentMethodsMap(
+    repository: Awaited<
+      ReturnType<typeof this.mktPaymentMethodRepository.getRepository>
+    >,
+    pmIds: string[],
+  ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
+    const methods = await repository.find({
+      where: pmIds.map((id) => ({ id })) as unknown as { id: string },
+    });
+
+    return new Map(
+      methods.map((m: MktPaymentMethodWorkspaceEntity) => [m.id, m]),
+    );
+  }
+
+  /**
+   * Create payment records from metadata
+   */
+  private async createPaymentRecords(
+    paymentData: {
+      paymentName: string;
+      totalAmount: number;
+      currency: string;
+      generatedOrderCode: string | null;
+      orderId: string;
+      workspaceId: string | null;
+    },
+    paymentMethodsMeta: NonNullable<ORDER_METADATA['paymentMethods']>,
+    pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
+    result: PaymentQrResult,
+  ): Promise<MktPaymentWorkspaceEntity[]> {
+    const paymentPromises = paymentMethodsMeta.map((meta) =>
+      this.createSinglePayment(paymentData, meta, pmById, result),
+    );
+
+    const payments = await Promise.all(paymentPromises);
+
+    return payments.filter((p): p is MktPaymentWorkspaceEntity => p !== null);
+  }
+
+  /**
+   * Create a single payment record
+   */
+  private async createSinglePayment(
+    paymentData: {
+      paymentName: string;
+      totalAmount: number;
+      currency: string;
+      generatedOrderCode: string | null;
+      orderId: string;
+      workspaceId: string | null;
+    },
+    meta: NonNullable<ORDER_METADATA['paymentMethods']>[number],
+    pmById: Map<string, MktPaymentMethodWorkspaceEntity>,
+    result: PaymentQrResult,
+  ): Promise<MktPaymentWorkspaceEntity | null> {
+    const pm = pmById.get(meta.mktPaymentMethodId);
+
+    if (!pm || !paymentData.workspaceId) {
+      return null;
+    }
+
+    const { qrCodeUrl, expiredAt } = await this.generateSepayQrCodeUrl(
+      pm,
+      paymentData.totalAmount || 0,
+      paymentData.generatedOrderCode,
+    );
+
+    // Set first QR code URL to result
+    if (!result.QRCodeUrl && qrCodeUrl) {
+      result.QRCodeUrl = qrCodeUrl;
+    }
+
+    const paymentRepository = await this.mktPaymentRepository.getRepository(
+      paymentData.workspaceId,
+    );
+
+    return paymentRepository.create({
+      mktOrderId: paymentData.orderId,
+      mktPaymentMethodId: meta.mktPaymentMethodId,
+      name: `${pm.name} - ${paymentData.paymentName}`,
+      amount: paymentData.totalAmount || 0,
+      currency: paymentData.currency || this.DEFAULT_CURRENCY,
+      qrCodeUrl: qrCodeUrl || undefined,
+      duration: meta.duration || null,
+      expiredAt: expiredAt || null,
+      paymentPageUrl: `${this.config.urls.serverUrl}${this.config.urls.paymentPagePath}/${paymentData.generatedOrderCode}`,
+      mktTemplateId: MKT_TEMPLATE.SEPAY,
+    } as Partial<MktPaymentWorkspaceEntity>) as MktPaymentWorkspaceEntity;
   }
 
   async generateSepayQrCodeUrl(
@@ -531,27 +735,23 @@ export class OrderConfirmUtilsService {
     }
 
     // Check if BIDV business mode is enabled
-    const isBidvBusiness = process.env.IS_BIDV_BUSINESS === 'true';
-
-    if (isBidvBusiness) {
+    if (this.config.bidv.enabled) {
       return this.generateBidvSepayQr(customAmount, orderCode);
     }
 
     try {
-      // Get environment variables
-      const sepayAcc = process.env.SEPAY_ACC || '';
-      const sepayBank = process.env.SEPAY_BANK || '';
-      const sepayVa = process.env.SEPAY_VA || '';
+      // Get SEPay config
+      const {
+        account: sepayAcc,
+        bank: sepayBank,
+        virtualAccount: sepayVa,
+      } = this.config.sepay;
 
       if (!sepayAcc || !sepayBank) {
-        this.logger.warn(
-          'SEPAY_ACC or SEPAY_BANK environment variables not set',
-        );
+        this.logger.warn('SEPay account or bank not configured');
 
         return result;
       }
-
-      // Get order information
 
       if (!orderCode) {
         this.logger.warn('No order code found for payment');
@@ -615,93 +815,145 @@ Thời gian: ${DateTimeUtils.toISO(DateTimeUtils.now())}
     });
   }
 
+  /**
+   * Default result for BIDV SEPay QR generation
+   */
+  private readonly EMPTY_QR_RESULT = {
+    qrCodeUrl: '',
+    expiredAt: null,
+  } as const;
+
+  /**
+   * Generate BIDV SEPay QR code
+   * Refactored to reduce complexity
+   */
   private async generateBidvSepayQr(
     customAmount?: number,
     orderCode?: string | null,
-  ) {
-    const result: { qrCodeUrl: string; expiredAt: string | null } = {
-      qrCodeUrl: '',
-      expiredAt: null,
-    };
-
+  ): Promise<{ qrCodeUrl: string; expiredAt: string | null }> {
     this.logger.log('Generating BIDV SEPay QR code...');
 
+    // Validate inputs and get validated values
+    const validation = this.validateBidvQrInputs(customAmount, orderCode);
+
+    if ('error' in validation) {
+      this.logger.warn(validation.error);
+
+      return { ...this.EMPTY_QR_RESULT };
+    }
+
     try {
-      // Get environment variables for BIDV API
-      const bidvApiUrl = process.env.BIDV_SEPAY_API_URL || '';
-      const bidvAuthToken = process.env.BIDV_SEPAY_AUTH_TOKEN || '';
-      const _bidvCookie = process.env.BIDV_SEPAY_COOKIE || '';
-
-      if (!bidvApiUrl || !bidvAuthToken) {
-        this.logger.warn('BIDV SEPay API URL or Auth Token not configured');
-
-        return result;
-      }
-
-      if (!orderCode) {
-        this.logger.warn('No order code found for BIDV payment');
-
-        return result;
-      }
-
-      if (!customAmount || customAmount <= 0) {
-        this.logger.warn('Invalid amount for BIDV QR code generation');
-
-        return result;
-      }
-
-      // Prepare API request
-      const requestData: BidvSepayOrderRequest = {
-        amount: customAmount,
-        order_code: orderCode,
-        duration: SEPAY_DEFAULT_DURATION,
-        with_qrcode: true,
-      };
-
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${bidvAuthToken}`,
-        //Cookie: bidvCookie,
-      };
-
-      this.logger.log(
-        `Calling BIDV SEPay API for order ${orderCode} with amount ${customAmount}`,
-      );
-
-      // Call BIDV SEPay API
-      const response = await firstValueFrom(
-        this.httpService.post<BidvSepayApiResponse>(bidvApiUrl, requestData, {
-          headers,
-        }),
-      );
-
-      if (response.data.status === 'success' && response.data.data) {
-        const { qr_code_url, qr_code, order_id, expired_at } =
-          response.data.data;
-
-        this.logger.log(
-          `Successfully generated BIDV SEPay QR for order ${orderCode}, order_id: ${order_id}`,
-        );
-
-        // Return QR code URL if available, otherwise return base64 QR code
-        result.qrCodeUrl = qr_code_url || qr_code || '';
-        result.expiredAt = expired_at || null;
-
-        return result;
-      } else {
-        this.logger.error(`BIDV SEPay API error: ${response.data.message}`);
-
-        return result;
-      }
+      return await this.callBidvSepayApi(validation);
     } catch (error) {
-      this.logger.error('Error calling BIDV SEPay API:', error);
+      this.handleBidvApiError(error);
 
-      // Log additional error details if available
-      if (error?.response?.data) {
-        this.logger.error('API Response:', error.response.data);
-      }
+      return { ...this.EMPTY_QR_RESULT };
+    }
+  }
 
-      return result;
+  /**
+   * Validate inputs for BIDV QR generation
+   * Returns validated inputs if valid, error object if invalid
+   */
+  private validateBidvQrInputs(
+    customAmount?: number,
+    orderCode?: string | null,
+  ):
+    | { amount: number; orderCode: string; apiUrl: string; authToken: string }
+    | { error: string } {
+    const { apiUrl, authToken } = this.config.bidv;
+
+    if (!apiUrl || !authToken) {
+      return { error: 'BIDV SEPay API URL or Auth Token not configured' };
+    }
+
+    if (!orderCode) {
+      return { error: 'No order code found for BIDV payment' };
+    }
+
+    if (!customAmount || customAmount <= 0) {
+      return { error: 'Invalid amount for BIDV QR code generation' };
+    }
+
+    return {
+      amount: customAmount,
+      orderCode,
+      apiUrl,
+      authToken,
+    };
+  }
+
+  /**
+   * Call BIDV SEPay API to generate QR code
+   */
+  private async callBidvSepayApi(inputs: {
+    amount: number;
+    orderCode: string;
+    apiUrl: string;
+    authToken: string;
+  }): Promise<{ qrCodeUrl: string; expiredAt: string | null }> {
+    const { amount, orderCode, apiUrl, authToken } = inputs;
+
+    const requestData: BidvSepayOrderRequest = {
+      amount,
+      order_code: orderCode,
+      duration: SEPAY_DEFAULT_DURATION,
+      with_qrcode: true,
+    };
+
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    };
+
+    this.logger.log(
+      `Calling BIDV SEPay API for order ${orderCode} with amount ${amount}`,
+    );
+
+    const response = await firstValueFrom(
+      this.httpService.post<BidvSepayApiResponse>(apiUrl, requestData, {
+        headers,
+      }),
+    );
+
+    return this.parseBidvApiResponse(response.data, orderCode);
+  }
+
+  /**
+   * Parse BIDV SEPay API response
+   */
+  private parseBidvApiResponse(
+    responseData: BidvSepayApiResponse,
+    orderCode: string,
+  ): { qrCodeUrl: string; expiredAt: string | null } {
+    if (responseData.status !== 'success' || !responseData.data) {
+      this.logger.error(`BIDV SEPay API error: ${responseData.message}`);
+
+      return { ...this.EMPTY_QR_RESULT };
+    }
+
+    const { qr_code_url, qr_code, order_id, expired_at } = responseData.data;
+
+    this.logger.log(
+      `Successfully generated BIDV SEPay QR for order ${orderCode}, order_id: ${order_id}`,
+    );
+
+    return {
+      qrCodeUrl: qr_code_url || qr_code || '',
+      expiredAt: expired_at || null,
+    };
+  }
+
+  /**
+   * Handle BIDV API errors
+   */
+  private handleBidvApiError(error: unknown): void {
+    this.logger.error('Error calling BIDV SEPay API:', error);
+
+    const axiosError = error as { response?: { data?: unknown } };
+
+    if (axiosError?.response?.data) {
+      this.logger.error('API Response:', axiosError.response.data);
     }
   }
 }

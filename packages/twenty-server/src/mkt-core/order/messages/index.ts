@@ -399,3 +399,68 @@ export const LICENSE_LIFECYCLE_MESSAGES = {
   SKIP_EVENT: (eventType: string) =>
     `Skipping license lifecycle for event type: ${eventType}`,
 };
+
+// ============================================
+// ORDER ORCHESTRATION LOG CONTEXT & MESSAGES
+// ============================================
+
+export const MKT_ORDER_ORCHESTRATION_LOG_CONTEXT = 'OrderOrchestration';
+
+export const MKT_ORDER_ORCHESTRATION_LOG_MESSAGES = {
+  // Create order
+  CREATE_START: (customerId: string, action: string) =>
+    `Creating order for customer: ${customerId}, action: ${action}`,
+  CREATE_CACHED: () => `Returned cached response for order creation`,
+  CREATE_VALIDATION_RESULT: (valid: boolean) =>
+    `Validation result: valid=${valid}`,
+  CREATE_VALIDATION_FAILED: (errors: string) => `Validation failed: ${errors}`,
+  CREATE_SUCCESS: (orderId: string, orderCode: string) =>
+    `Order created successfully: ${orderId} (${orderCode})`,
+  CREATE_FAILED: (error: string) => `Order creation failed: ${error}`,
+  CREATE_UNEXPECTED_ERROR: () => `Unexpected error during order creation`,
+
+  // Confirm order
+  CONFIRM_START: (orderId: string, action: string, by: string) =>
+    `Confirming order: ${orderId}, action: ${action}, by: ${by}`,
+  CONFIRM_SUCCESS: (orderId: string, newStatus: string) =>
+    `Order confirmed: ${orderId} -> ${newStatus}`,
+  CONFIRM_FAILED: (error: string) => `Order confirmation failed: ${error}`,
+  CONFIRM_UNEXPECTED_ERROR: () => `Unexpected error during order confirmation`,
+
+  // Update status
+  UPDATE_STATUS_START: (orderId: string, targetStatus: string, by: string) =>
+    `Updating order status: ${orderId}, target: ${targetStatus}, by: ${by}`,
+  UPDATE_STATUS_SUCCESS: (
+    orderId: string,
+    previousStatus: string,
+    newStatus: string,
+  ) => `Order status updated: ${orderId} ${previousStatus} -> ${newStatus}`,
+  UPDATE_STATUS_FAILED: (error: string) =>
+    `Order status update failed: ${error}`,
+  UPDATE_STATUS_UNEXPECTED_ERROR: () =>
+    `Unexpected error during order status update`,
+
+  // Refund order
+  REFUND_START: (orderId: string, isPartial: boolean, by: string) =>
+    `Refunding order: ${orderId}, partial: ${isPartial}, by: ${by}`,
+  REFUND_SUCCESS: (orderId: string, amount: number) =>
+    `Order refunded: ${orderId}, amount: ${amount}`,
+  REFUND_FAILED: (error: string) => `Order refund failed: ${error}`,
+  REFUND_UNEXPECTED_ERROR: () => `Unexpected error during order refund`,
+
+  // Update order item
+  UPDATE_ITEM_START: (itemId: string) => `Updating order item: ${itemId}`,
+  UPDATE_ITEM_SUCCESS: (itemId: string) => `Order item updated: ${itemId}`,
+  UPDATE_ITEM_FAILED: (error: string) => `Order item update failed: ${error}`,
+  UPDATE_ITEM_UNEXPECTED_ERROR: () =>
+    `Unexpected error during order item update`,
+
+  // Recalculate order items
+  RECALCULATE_START: (orderId: string) =>
+    `Recalculating order items for order: ${orderId}`,
+  RECALCULATE_SUCCESS: (count: number) =>
+    `Order items recalculated: ${count} items`,
+  RECALCULATE_HAD_ERRORS: () => `Order items recalculation had errors`,
+  RECALCULATE_UNEXPECTED_ERROR: () =>
+    `Unexpected error during order items recalculation`,
+} as const;

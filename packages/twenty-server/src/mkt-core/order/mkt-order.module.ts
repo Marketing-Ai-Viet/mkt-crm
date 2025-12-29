@@ -1,5 +1,6 @@
 import { HttpModule } from '@nestjs/axios';
 import { forwardRef, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
@@ -7,6 +8,7 @@ import { RecordPositionModule } from 'src/engine/core-modules/record-position/re
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
+import { orderConfig } from 'src/mkt-core/order/config';
 // DISABLED: MktInvoiceModule - temporarily disabled
 // import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
@@ -81,6 +83,7 @@ import {
 
 @Module({
   imports: [
+    ConfigModule.forFeature(orderConfig), // Order module configuration
     HttpModule, // For OrderConfirmUtilsService (BIDV SEPay API)
     EmailModule,
     MktEmailModule,

@@ -13,19 +13,12 @@ import {
   SagaStepResult,
 } from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import {
   CreateOrderStepOutput,
   CreateOrderWithItemsInput,
 } from 'src/mkt-core/order/types';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
-
-// ============================================
-// ORDER CODE CONSTANTS
-// ============================================
-
-const ORDER_CODE_PREFIX = 'MKT';
-const ORDER_CODE_NUMBER_LENGTH = 3;
 
 /**
  * CreateOrderStep - Step 1: Tạo order entity
@@ -48,7 +41,10 @@ export class CreateOrderStep extends SagaStep<
 
   private readonly logger = new Logger(CreateOrderStep.name);
 
-  constructor(private readonly orderRepository: MktOrderRepository) {
+  constructor(
+    private readonly orderRepository: MktOrderRepository,
+    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+  ) {
     super();
   }
 
@@ -60,8 +56,17 @@ export class CreateOrderStep extends SagaStep<
     try {
       this.logger.log(`Creating order for workspace: ${context.workspaceId}`);
 
-      // Generate unique order code
-      const orderCode = await this.generateOrderCode(context.workspaceId);
+      // Generate unique order code with distributed locking
+      const orderCode = await this.orderConfirmUtilsService.generateOrderCode(
+        context.workspaceId,
+      );
+
+      if (!orderCode) {
+        return {
+          success: false,
+          error: new Error('Failed to generate order code'),
+        };
+      }
 
       // Determine initial status based on action
       const initialStatus = this.getInitialStatus(input.action);
@@ -160,64 +165,6 @@ export class CreateOrderStep extends SagaStep<
   // ============================================
   // HELPER METHODS
   // ============================================
-
-  /**
-   * Generate unique order code: MKT + YYYYMMDD + 3-digit number
-   */
-  private async generateOrderCode(workspaceId: string): Promise<string> {
-    const repository = await this.orderRepository.getRepository(workspaceId);
-
-    const now = DateTimeUtils.now();
-    const year = now.year;
-    const month = String(now.month).padStart(2, '0');
-    const day = String(now.day).padStart(2, '0');
-    const datePrefix = `${year}${month}${day}`;
-
-    // Find the highest order number for today
-    const todayPattern = `${ORDER_CODE_PREFIX}${datePrefix}%`;
-    const latestOrder = await repository
-      .createQueryBuilder('order')
-      .where('order.orderCode LIKE :pattern', { pattern: todayPattern })
-      .orderBy('order.orderCode', 'DESC')
-      .limit(1)
-      .getOne();
-
-    let nextNumber = 1;
-
-    if (latestOrder?.orderCode) {
-      // Extract number from existing order code (e.g., MKT20241201001 -> 1)
-      const numberPart = latestOrder.orderCode.slice(
-        ORDER_CODE_PREFIX.length + 8,
-      );
-      const parsedNumber = parseInt(numberPart, 10);
-
-      if (!isNaN(parsedNumber)) {
-        nextNumber = parsedNumber + 1;
-      }
-    }
-
-    // Generate new order code
-    const orderCode = `${ORDER_CODE_PREFIX}${datePrefix}${String(nextNumber).padStart(ORDER_CODE_NUMBER_LENGTH, '0')}`;
-
-    // Double-check uniqueness
-    const existingOrder = await this.orderRepository.findByOrderCode(
-      workspaceId,
-      orderCode,
-    );
-
-    if (existingOrder) {
-      // If somehow duplicate, add timestamp
-      const timestamp = DateTimeUtils.toMillis(DateTimeUtils.now())
-        .toString()
-        .slice(-6);
-
-      return `${ORDER_CODE_PREFIX}${datePrefix}${timestamp}`;
-    }
-
-    this.logger.log(`Generated order code: ${orderCode}`);
-
-    return orderCode;
-  }
 
   /**
    * Get initial order status based on action

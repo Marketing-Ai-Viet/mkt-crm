@@ -114,7 +114,8 @@ export class IdempotencyCacheRepository {
   // ============================================
 
   /**
-   * Acquire distributed lock
+   * Acquire distributed lock (legacy - without token)
+   * @deprecated Use acquireLockWithToken for safer lock management
    */
   async acquireLock(
     key: IdempotencyKey,
@@ -135,7 +136,8 @@ export class IdempotencyCacheRepository {
   }
 
   /**
-   * Release distributed lock
+   * Release distributed lock (legacy - without token verification)
+   * @deprecated Use releaseLockWithToken for safer lock management
    */
   async releaseLock(key: IdempotencyKey): Promise<CacheOperationResult<void>> {
     try {
@@ -149,6 +151,89 @@ export class IdempotencyCacheRepository {
 
       // Don't log as error - lock will expire anyway
       this.logger.debug(`Failed to release lock (will expire): ${key}`);
+
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Acquire distributed lock with token for safe release
+   * Returns a unique token that must be used to release the lock
+   */
+  async acquireLockWithToken(
+    key: IdempotencyKey,
+    timeoutMs: number,
+  ): Promise<CacheOperationResult<string | null>> {
+    try {
+      const lockKey = this.buildLockKey(key);
+      const token = await this.cacheStorage.acquireLockWithToken(
+        lockKey,
+        timeoutMs,
+      );
+
+      return { success: true, data: token };
+    } catch (error) {
+      const errorMessage = this.extractErrorMessage(error);
+
+      this.logger.error(`Failed to acquire lock with token: ${key}`, error);
+
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Release distributed lock only if token matches
+   * Prevents accidentally releasing another process's lock
+   */
+  async releaseLockWithToken(
+    key: IdempotencyKey,
+    token: string,
+  ): Promise<CacheOperationResult<boolean>> {
+    try {
+      const lockKey = this.buildLockKey(key);
+      const released = await this.cacheStorage.releaseLockWithToken(
+        lockKey,
+        token,
+      );
+
+      if (!released) {
+        this.logger.debug(
+          `Lock release skipped (token mismatch or expired): ${key}`,
+        );
+      }
+
+      return { success: true, data: released };
+    } catch (error) {
+      const errorMessage = this.extractErrorMessage(error);
+
+      this.logger.debug(`Failed to release lock with token: ${key}`);
+
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Extend lock TTL (heartbeat) - only if token matches
+   * Use this for long-running operations to prevent lock expiration
+   */
+  async extendLock(
+    key: IdempotencyKey,
+    token: string,
+    ttlMs: number,
+  ): Promise<CacheOperationResult<boolean>> {
+    try {
+      const lockKey = this.buildLockKey(key);
+      const extended = await this.cacheStorage.extendLock(
+        lockKey,
+        token,
+        ttlMs,
+      );
+
+      return { success: true, data: extended };
+    } catch (error) {
+      const errorMessage = this.extractErrorMessage(error);
+
+      this.logger.debug(`Failed to extend lock: ${key}`);
 
       return { success: false, error: errorMessage };
     }

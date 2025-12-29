@@ -2,11 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
-import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
-import {
-  MKT_EVENT_TYPE,
-  MKT_ORDER_EVENT_TYPES,
-} from 'src/mkt-core/order/types';
+import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/order/types';
 import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/constants/payment.type';
 import {
   ORDER_METADATA,
@@ -15,7 +11,7 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { OrderEventService } from 'src/mkt-core/order/services/core/order-event.service';
 import { safeJsonStringify, safeJsonParse } from 'src/mkt-core/utils/json.util';
 
 /**
@@ -34,7 +30,7 @@ export class OrderMetadataService {
 
   constructor(
     private readonly mktOrderRepository: MktOrderRepository,
-    private readonly workspaceEventEmitter: WorkspaceEventEmitter,
+    private readonly orderEventService: OrderEventService,
   ) {}
 
   async updateOrderForRenew(
@@ -117,76 +113,52 @@ export class OrderMetadataService {
     return this.orderMetadata?.refund ?? [];
   }
 
+  /**
+   * Emit order event - delegates to OrderEventService
+   *
+   * @deprecated Consider using OrderEventService directly for new code
+   */
   async eventUpdated(
     orderId: string | null,
     workspaceId: string | null,
     orderType: MKT_ORDER_EVENT_TYPES,
     note?: string,
   ): Promise<void> {
-    if (!orderId || !workspaceId) return;
-    try {
-      this.logger.log(`Emitting order updated event for order: ${orderId}`);
-
-      // Phát sự kiện custom cho order updated
-      const orderUpdatedEvent = {
-        eventType: orderType,
-        orderId,
-        workspaceId,
-        orderData: {
-          id: orderId,
-          note,
-        },
-        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
-      };
-
-      this.workspaceEventEmitter.emitCustomBatchEvent(
-        MKT_EVENT_TYPE.MKT_ORDER,
-        [orderUpdatedEvent],
-        workspaceId,
-      );
-
-      this.logger.log(
-        `Successfully emitted order updated event for order: ${orderId}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to emit order updated event for order: ${orderId}`,
-        error,
-      );
-      // Không throw error để không làm gián đoạn flow tạo order
+    if (!orderId || !workspaceId) {
+      return;
     }
+
+    await this.orderEventService.emitOrderEvent(
+      orderId,
+      workspaceId,
+      orderType,
+      {
+        note,
+      },
+    );
   }
 
+  /**
+   * Emit payment event - delegates to OrderEventService
+   *
+   * @deprecated Consider using OrderEventService directly for new code
+   */
   async paymentUpdated(
     orderId: string | null,
     workspaceId: string | null,
     paymentType: PAYMENT_HISTORY_TYPE,
     note?: string,
-  ) {
-    if (!orderId || !workspaceId) return;
-    try {
-      const paymentUpdatedEvent = {
-        eventType: paymentType,
-        orderId,
-        workspaceId,
-        orderData: {
-          id: orderId,
-          note,
-        },
-        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
-      };
-
-      this.workspaceEventEmitter.emitCustomBatchEvent(
-        MKT_EVENT_TYPE.MKT_PAYMENT,
-        [paymentUpdatedEvent],
-        workspaceId,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to emit payment updated event for order: ${orderId}`,
-        error,
-      );
+  ): Promise<void> {
+    if (!orderId || !workspaceId) {
+      return;
     }
+
+    await this.orderEventService.emitPaymentEvent(
+      orderId,
+      workspaceId,
+      paymentType,
+      { note },
+    );
   }
 
   async handleRefund(

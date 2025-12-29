@@ -149,6 +149,10 @@ export class CacheStorageService {
     return keys;
   }
 
+  /**
+   * Acquire lock without token (legacy)
+   * @deprecated Use acquireLockWithToken for safer lock management
+   */
   async acquireLock(key: string, ttl = 1000): Promise<boolean> {
     if (!this.isRedisCache()) {
       throw new Error('acquireLock is only supported with Redis cache');
@@ -164,12 +168,125 @@ export class CacheStorageService {
     return result === 'OK';
   }
 
+  /**
+   * Release lock without token verification (legacy)
+   * @deprecated Use releaseLockWithToken for safer lock management
+   */
   async releaseLock(key: string): Promise<void> {
     if (!this.isRedisCache()) {
       throw new Error('releaseLock is only supported with Redis cache');
     }
 
     await this.del(key);
+  }
+
+  /**
+   * Acquire lock with token for safe release
+   * Returns a unique token that must be used to release the lock
+   *
+   * @param key - Lock key
+   * @param ttl - Time to live in milliseconds (default: 5000)
+   * @returns Lock token if acquired, null if lock already held
+   */
+  async acquireLockWithToken(key: string, ttl = 5000): Promise<string | null> {
+    if (!this.isRedisCache()) {
+      throw new Error(
+        'acquireLockWithToken is only supported with Redis cache',
+      );
+    }
+
+    const redisClient = (this.cache as RedisCache).store.client;
+    const token = this.generateLockToken();
+
+    const result = await redisClient.set(this.getKey(key), token, {
+      NX: true,
+      PX: ttl,
+    });
+
+    return result === 'OK' ? token : null;
+  }
+
+  /**
+   * Release lock only if token matches (prevents releasing other's lock)
+   *
+   * Uses Lua script for atomic check-and-delete operation
+   *
+   * @param key - Lock key
+   * @param token - Token received from acquireLockWithToken
+   * @returns true if lock was released, false if token didn't match
+   */
+  async releaseLockWithToken(key: string, token: string): Promise<boolean> {
+    if (!this.isRedisCache()) {
+      throw new Error(
+        'releaseLockWithToken is only supported with Redis cache',
+      );
+    }
+
+    const redisClient = (this.cache as RedisCache).store.client;
+    const fullKey = this.getKey(key);
+
+    // Lua script for atomic check-and-delete
+    // KEYS[1] = lock key, ARGV[1] = expected token
+    const luaScript = `
+      if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+      else
+        return 0
+      end
+    `;
+
+    const result = await redisClient.eval(luaScript, {
+      keys: [fullKey],
+      arguments: [token],
+    });
+
+    return result === 1;
+  }
+
+  /**
+   * Extend lock TTL (heartbeat) - only if token matches
+   *
+   * @param key - Lock key
+   * @param token - Token received from acquireLockWithToken
+   * @param ttl - New TTL in milliseconds
+   * @returns true if extended, false if token didn't match or lock expired
+   */
+  async extendLock(key: string, token: string, ttl: number): Promise<boolean> {
+    if (!this.isRedisCache()) {
+      throw new Error('extendLock is only supported with Redis cache');
+    }
+
+    const redisClient = (this.cache as RedisCache).store.client;
+    const fullKey = this.getKey(key);
+
+    // Lua script for atomic check-and-extend
+    const luaScript = `
+      if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("pexpire", KEYS[1], ARGV[2])
+      else
+        return 0
+      end
+    `;
+
+    const result = await redisClient.eval(luaScript, {
+      keys: [fullKey],
+      arguments: [token, ttl.toString()],
+    });
+
+    return result === 1;
+  }
+
+  /**
+   * Generate unique lock token
+   */
+  private generateLockToken(): string {
+    // Simple UUID v4 generation without external dependency
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+
+      return v.toString(16);
+    });
   }
 
   /**

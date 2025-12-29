@@ -8,8 +8,10 @@ export const ORDER_GRAPHQL_DESCRIPTIONS = {
   // Order mutations
   CREATE_ORDER_WITH_ITEMS:
     'Create a new order with items, licenses, and payment',
-  CONFIRM_ORDER: 'Confirm or update order status',
-  UPDATE_ORDER_STATUS: 'Update order status with state machine validation',
+  CONFIRM_ORDER:
+    'Confirm payment for an order (triggers license creation). Use updateOrderStatus for other status changes.',
+  UPDATE_ORDER_STATUS:
+    'Update order status (COMPLETE, CANCEL, BLOCK, etc.) with state machine validation',
   REFUND_ORDER: 'Refund an order (full or partial)',
 
   // Order item mutations

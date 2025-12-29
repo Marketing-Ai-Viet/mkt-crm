@@ -1,7 +1,5 @@
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
-export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV';
-
 // ============================================
 // TYPES
 // ============================================
@@ -298,32 +296,25 @@ export const IS_CREATE_ORDER_ACTION = (
   CREATE_ORDER_ACTIONS.includes(action as CreateOrderAction);
 
 /**
- * Actions cho phép khi XÁC NHẬN đơn hàng
- * - ACCOUNTING_CONFIRMED: Kế toán xác nhận thanh toán
- * - COMPLETE: Hoàn thành đơn hàng
- * - CANCEL: Hủy đơn hàng
- * - BLOCK: Khóa đơn hàng
+ * Actions cho phép khi XÁC NHẬN THANH TOÁN đơn hàng (confirmOrder mutation)
+ *
+ * Chỉ ACCOUNTING_CONFIRMED được hỗ trợ.
+ * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation.
  */
 export type ConfirmOrderAction = Extract<
   ORDER_ACTION,
-  | ORDER_ACTION.ACCOUNTING_CONFIRMED
-  | ORDER_ACTION.COMPLETE
-  | ORDER_ACTION.CANCEL
-  | ORDER_ACTION.BLOCK
+  ORDER_ACTION.ACCOUNTING_CONFIRMED
 >;
 
 /**
- * Array các actions cho phép khi confirm đơn hàng
+ * Array các actions cho phép khi confirm thanh toán
  */
 export const CONFIRM_ORDER_ACTIONS: ConfirmOrderAction[] = [
   ORDER_ACTION.ACCOUNTING_CONFIRMED,
-  ORDER_ACTION.COMPLETE,
-  ORDER_ACTION.CANCEL,
-  ORDER_ACTION.BLOCK,
 ];
 
 /**
- * Check if action is valid for confirming order
+ * Check if action is valid for confirming order payment
  */
 export const IS_CONFIRM_ORDER_ACTION = (
   action: ORDER_ACTION,

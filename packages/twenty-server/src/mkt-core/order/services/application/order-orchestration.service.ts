@@ -5,6 +5,10 @@ import {
   IdempotencyDomain,
 } from 'src/mkt-core/common/idempotency';
 import {
+  MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
+  MKT_ORDER_ORCHESTRATION_LOG_MESSAGES,
+} from 'src/mkt-core/order/messages';
+import {
   CreateOrderSaga,
   ConfirmOrderSaga,
   UpdateOrderSaga,
@@ -25,6 +29,8 @@ import {
   UpdateOrderItemResponse,
 } from 'src/mkt-core/order/types';
 
+const LOG = MKT_ORDER_ORCHESTRATION_LOG_MESSAGES;
+
 /**
  * OrderOrchestrationService - Facade for order operations
  *
@@ -37,7 +43,7 @@ import {
  */
 @Injectable()
 export class OrderOrchestrationService {
-  private readonly logger = new Logger(OrderOrchestrationService.name);
+  private readonly logger = new Logger(MKT_ORDER_ORCHESTRATION_LOG_CONTEXT);
 
   constructor(
     private readonly createOrderSaga: CreateOrderSaga,
@@ -58,9 +64,7 @@ export class OrderOrchestrationService {
     workspaceMemberId: string | undefined,
     input: CreateOrderWithItemsInput,
   ): Promise<CreateOrderResponse> {
-    this.logger.log(
-      `Creating order for customer: ${input.customerId}, action: ${input.action}`,
-    );
+    this.logger.log(LOG.CREATE_START(input.customerId, input.action));
 
     const result =
       await this.idempotencyService.executeWithIdempotency<CreateOrderResponse>(
@@ -75,7 +79,7 @@ export class OrderOrchestrationService {
       );
 
     if (result.fromCache) {
-      this.logger.log(`Returned cached response for order creation`);
+      this.logger.log(LOG.CREATE_CACHED());
     }
 
     return result.data;
@@ -93,18 +97,18 @@ export class OrderOrchestrationService {
     const validationResult =
       await this.validationService.validateCreateOrderInput(workspaceId, input);
 
-    this.logger.debug(`Validation result: valid=${validationResult.valid}`);
+    this.logger.debug(LOG.CREATE_VALIDATION_RESULT(validationResult.valid));
 
     if (!validationResult.valid) {
       const errorMessages = validationResult.errors
         .map((e) => `${e.field}: ${e.message}`)
         .join('; ');
 
-      this.logger.warn(`Validation failed: ${errorMessages}`);
+      this.logger.warn(LOG.CREATE_VALIDATION_FAILED(errorMessages));
 
       return {
         success: false,
-        error: `Validation failed: ${errorMessages}`,
+        error: LOG.CREATE_VALIDATION_FAILED(errorMessages),
       };
     }
 
@@ -118,15 +122,15 @@ export class OrderOrchestrationService {
 
       if (result.success) {
         this.logger.log(
-          `Order created successfully: ${result.orderId} (${result.orderCode})`,
+          LOG.CREATE_SUCCESS(result.orderId ?? '', result.orderCode ?? ''),
         );
       } else {
-        this.logger.error(`Order creation failed: ${result.error}`);
+        this.logger.error(LOG.CREATE_FAILED(result.error ?? ''));
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Unexpected error during order creation', error);
+      this.logger.error(LOG.CREATE_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -144,7 +148,11 @@ export class OrderOrchestrationService {
     input: ConfirmOrderInput,
   ): Promise<ConfirmOrderResponse> {
     this.logger.log(
-      `Confirming order: ${input.orderId}, action: ${input.action}, by: ${workspaceMemberId ?? 'system'}`,
+      LOG.CONFIRM_START(
+        input.orderId,
+        input.action,
+        workspaceMemberId ?? 'system',
+      ),
     );
 
     // Validate input
@@ -161,7 +169,7 @@ export class OrderOrchestrationService {
 
       return {
         success: false,
-        error: `Validation failed: ${errorMessages}`,
+        error: LOG.CREATE_VALIDATION_FAILED(errorMessages),
       };
     }
 
@@ -175,20 +183,23 @@ export class OrderOrchestrationService {
 
       if (result.success && result.data) {
         this.logger.log(
-          `Order confirmed: ${result.data.orderId} -> ${result.data.newStatus}`,
+          LOG.CONFIRM_SUCCESS(
+            result.data.orderId ?? '',
+            result.data.newStatus ?? '',
+          ),
         );
 
         return result.data;
       }
 
-      this.logger.error(`Order confirmation failed: ${result.error}`);
+      this.logger.error(LOG.CONFIRM_FAILED(result.error ?? ''));
 
       return {
         success: false,
-        error: result.error ?? 'Order confirmation failed',
+        error: result.error ?? LOG.CONFIRM_FAILED('Unknown error'),
       };
     } catch (error) {
-      this.logger.error('Unexpected error during order confirmation', error);
+      this.logger.error(LOG.CONFIRM_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -206,7 +217,11 @@ export class OrderOrchestrationService {
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
     this.logger.log(
-      `Updating order status: ${input.orderId}, target: ${input.status}, by: ${workspaceMemberId ?? 'system'}`,
+      LOG.UPDATE_STATUS_START(
+        input.orderId,
+        input.status,
+        workspaceMemberId ?? 'system',
+      ),
     );
 
     try {
@@ -218,15 +233,19 @@ export class OrderOrchestrationService {
 
       if (result.success) {
         this.logger.log(
-          `Order status updated: ${result.orderId} ${result.previousStatus} -> ${result.newStatus}`,
+          LOG.UPDATE_STATUS_SUCCESS(
+            result.orderId ?? '',
+            result.previousStatus ?? '',
+            result.newStatus ?? '',
+          ),
         );
       } else {
-        this.logger.error(`Order status update failed: ${result.error}`);
+        this.logger.error(LOG.UPDATE_STATUS_FAILED(result.error ?? ''));
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Unexpected error during order status update', error);
+      this.logger.error(LOG.UPDATE_STATUS_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -244,7 +263,11 @@ export class OrderOrchestrationService {
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
     this.logger.log(
-      `Refunding order: ${input.orderId}, partial: ${input.isPartial ?? false}, by: ${workspaceMemberId ?? 'system'}`,
+      LOG.REFUND_START(
+        input.orderId,
+        input.isPartial ?? false,
+        workspaceMemberId ?? 'system',
+      ),
     );
 
     try {
@@ -256,15 +279,15 @@ export class OrderOrchestrationService {
 
       if (result.success) {
         this.logger.log(
-          `Order refunded: ${result.orderId}, amount: ${result.refundedAmount}`,
+          LOG.REFUND_SUCCESS(result.orderId ?? '', result.refundedAmount ?? 0),
         );
       } else {
-        this.logger.error(`Order refund failed: ${result.error}`);
+        this.logger.error(LOG.REFUND_FAILED(result.error ?? ''));
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Unexpected error during order refund', error);
+      this.logger.error(LOG.REFUND_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -280,7 +303,7 @@ export class OrderOrchestrationService {
     workspaceId: string,
     input: UpdateOrderItemInput,
   ): Promise<UpdateOrderItemResponse> {
-    this.logger.log(`Updating order item: ${input.orderItemId}`);
+    this.logger.log(LOG.UPDATE_ITEM_START(input.orderItemId));
 
     try {
       const result = await this.orderItemService.updateOrderItem(
@@ -290,9 +313,9 @@ export class OrderOrchestrationService {
       );
 
       if (result.success) {
-        this.logger.log(`Order item updated: ${result.orderItem?.id}`);
+        this.logger.log(LOG.UPDATE_ITEM_SUCCESS(result.orderItem?.id ?? ''));
       } else {
-        this.logger.error(`Order item update failed: ${result.error}`);
+        this.logger.error(LOG.UPDATE_ITEM_FAILED(result.error ?? ''));
       }
 
       return {
@@ -302,7 +325,7 @@ export class OrderOrchestrationService {
         error: result.error,
       };
     } catch (error) {
-      this.logger.error('Unexpected error during order item update', error);
+      this.logger.error(LOG.UPDATE_ITEM_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -318,7 +341,7 @@ export class OrderOrchestrationService {
     workspaceId: string,
     orderId: string,
   ): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
-    this.logger.log(`Recalculating order items for order: ${orderId}`);
+    this.logger.log(LOG.RECALCULATE_START(orderId));
 
     try {
       const result = await this.orderItemService.recalculateAllOrderItems(
@@ -327,19 +350,14 @@ export class OrderOrchestrationService {
       );
 
       if (result.success) {
-        this.logger.log(
-          `Order items recalculated: ${result.updatedCount} items`,
-        );
+        this.logger.log(LOG.RECALCULATE_SUCCESS(result.updatedCount ?? 0));
       } else {
-        this.logger.error(`Order items recalculation had errors`);
+        this.logger.error(LOG.RECALCULATE_HAD_ERRORS());
       }
 
       return result;
     } catch (error) {
-      this.logger.error(
-        'Unexpected error during order items recalculation',
-        error,
-      );
+      this.logger.error(LOG.RECALCULATE_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,

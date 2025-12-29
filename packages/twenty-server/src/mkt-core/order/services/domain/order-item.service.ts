@@ -1,9 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import {
   ORDER_ITEM_DEFAULTS,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants';
+import {
+  ORDER_CONFIG_KEY,
+  ORDER_FEATURE_DEFAULTS,
+  OrderConfig,
+} from 'src/mkt-core/order/config';
 import { MKT_ORDER_ITEM_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -39,9 +44,14 @@ export class OrderItemService {
   private readonly logger = new Logger(MKT_ORDER_ITEM_LOG_CONTEXT);
   private readonly optimisticLockingEnabled: boolean;
 
-  constructor(private readonly orderItemRepository: MktOrderItemRepository) {
+  constructor(
+    private readonly orderItemRepository: MktOrderItemRepository,
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
+  ) {
     this.optimisticLockingEnabled =
-      process.env.ORDER_OPTIMISTIC_LOCKING_ENABLED !== 'false';
+      this.config?.features?.optimisticLockingEnabled ??
+      ORDER_FEATURE_DEFAULTS.OPTIMISTIC_LOCKING_ENABLED;
   }
 
   /**
