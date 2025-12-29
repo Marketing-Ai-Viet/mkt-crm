@@ -2,11 +2,10 @@
  * Order Services - Clean Architecture
  *
  * Structure:
- * - core/: Stateless business logic (status, calculation, validation, events)
+ * - core/: Stateless business logic (status, calculation, validation, events, overdue)
  * - domain/: Domain operations (CRUD, order items)
  * - application/: Orchestration/Facade
  * - integration/: Bridge services to other MKT modules
- * - legacy/: Deprecated services (for backward compatibility)
  */
 
 // Core Services
@@ -20,6 +19,3 @@ export * from './application';
 
 // Integration Services
 export * from './integration';
-
-// Legacy Services (deprecated - use new services instead)
-export * from './legacy';

@@ -31,21 +31,13 @@ import {
   OrderPaymentCalculationService,
   OrderConfirmUtilsService,
   OrderMetadataService,
+  MktOrderOverdueService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
   OrderLicenseQueryService,
   // Application Services
   OrderOrchestrationService,
-  // Legacy Services
-  OrderService,
-  OrderActionService,
-  OrderConfirmService,
-  OrderPayloadService,
-  OrderLicenseRenewService,
-  MktOrderOverdueService,
-  // DISABLED: MktOrderOverdueRegistrationService - cron registration disabled
-  // MktOrderOverdueRegistrationService,
 } from './services';
 import {
   OrderMutationResolver,
@@ -122,6 +114,7 @@ import {
     OrderPaymentCalculationService,
     OrderConfirmUtilsService,
     OrderMetadataService,
+    MktOrderOverdueService,
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -158,15 +151,7 @@ import {
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
 
-    // Legacy Services (backward compatibility)
-    OrderService,
-    OrderActionService,
-    OrderConfirmService,
-    OrderPayloadService,
-    OrderLicenseRenewService,
-    MktOrderOverdueService,
-    // DISABLED: MktOrderOverdueRegistrationService - cron registration disabled
-    // MktOrderOverdueRegistrationService,
+    // Jobs
     MktOrderOverdueJob,
 
     // GraphQL Resolvers

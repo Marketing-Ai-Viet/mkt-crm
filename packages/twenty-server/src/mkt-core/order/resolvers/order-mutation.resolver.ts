@@ -6,6 +6,7 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
+import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
 import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
@@ -58,7 +59,7 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => CreateOrderResponseDto, {
-    description: 'Create a new order with items, licenses, and payment',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.CREATE_ORDER_WITH_ITEMS,
   })
   async createOrderWithItems(
     @AuthWorkspace() workspace: Workspace,
@@ -79,7 +80,7 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => ConfirmOrderResponseDto, {
-    description: 'Confirm or update order status',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER,
   })
   async confirmOrder(
     @AuthWorkspace() workspace: Workspace,
@@ -101,7 +102,7 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Query(() => ValidationResultDto, {
-    description: 'Validate order input before creation',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.VALIDATE_ORDER_INPUT,
   })
   async validateOrderInput(
     @AuthWorkspace() workspace: Workspace,
@@ -131,7 +132,7 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => UpdateOrderStatusResponseDto, {
-    description: 'Update order status with state machine validation',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_STATUS,
   })
   async updateOrderStatus(
     @AuthWorkspace() workspace: Workspace,
@@ -155,19 +156,17 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => RefundOrderResponseDto, {
-    description: 'Refund an order (full or partial)',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.REFUND_ORDER,
   })
   async refundOrder(
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: RefundOrderInputDto,
   ): Promise<RefundOrderResponseDto> {
-    const domainInput = OrderInputMapper.toRefundOrderInput(input);
-
     return this.orderOrchestrationService.refundOrder(
       workspace.id,
       workspaceMemberId,
-      domainInput,
+      input,
     );
   }
 }

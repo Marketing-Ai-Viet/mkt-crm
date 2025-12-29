@@ -1,15 +1,11 @@
 import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
-  RefundOrderInputDto,
-  UpdateOrderItemInputDto,
   UpdateOrderStatusInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
   ConfirmOrderInput,
   CreateOrderWithItemsInput,
-  RefundOrderInput,
-  UpdateOrderItemInput,
   UpdateOrderStatusInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
@@ -117,33 +113,6 @@ export const OrderInputMapper = {
       orderId: dto.orderId,
       status,
       note: dto.note,
-    };
-  },
-
-  /**
-   * Map RefundOrderInputDto to RefundOrderInput
-   */
-  toRefundOrderInput(dto: RefundOrderInputDto): RefundOrderInput {
-    return {
-      orderId: dto.orderId,
-      licenseIds: dto.licenseIds,
-      refundAmount: dto.refundAmount,
-      reason: dto.reason,
-      isPartial: dto.isPartial,
-    };
-  },
-
-  /**
-   * Map UpdateOrderItemInputDto to UpdateOrderItemInput
-   */
-  toUpdateOrderItemInput(dto: UpdateOrderItemInputDto): UpdateOrderItemInput {
-    return {
-      orderItemId: dto.orderItemId,
-      variantId: dto.variantId,
-      quantity: dto.quantity,
-      unitPrice: dto.unitPrice,
-      note: dto.note,
-      updatedAt: dto.updatedAt,
     };
   },
 } as const;

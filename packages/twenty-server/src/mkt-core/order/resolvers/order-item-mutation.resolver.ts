@@ -5,10 +5,13 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
+import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
 import { UpdateOrderItemInputDto } from 'src/mkt-core/order/dto/create-order.input';
-import { UpdateOrderItemResponseDto } from 'src/mkt-core/order/dto/order-response.output';
+import {
+  RecalculateOrderItemsResponseDto,
+  UpdateOrderItemResponseDto,
+} from 'src/mkt-core/order/dto';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
-import { RecalculateOrderItemsResponseDto } from 'src/mkt-core/order/dto';
 
 /**
  * OrderItemMutationResolver - GraphQL resolver for order item mutations
@@ -29,7 +32,7 @@ export class OrderItemMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => UpdateOrderItemResponseDto, {
-    description: 'Update an order item with optimistic locking support',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_ITEM,
   })
   async updateOrderItem(
     @AuthWorkspace() workspace: Workspace,
@@ -51,7 +54,7 @@ export class OrderItemMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => RecalculateOrderItemsResponseDto, {
-    description: 'Recalculate all order items for an order',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.RECALCULATE_ORDER_ITEMS,
   })
   async recalculateOrderItems(
     @AuthWorkspace() workspace: Workspace,
