@@ -739,6 +739,9 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   //combos
   accountOwnerForMktCombos: '90e6970d-8c23-4562-8c25-cece175b20e8',
   accountOwnerForMktComboVariants: '35abe762-d4e7-4c16-b4c6-e22c990dc0b5',
+  //generic combos
+  createdMktGenericCombos: '5a6b7c8d-9e0f-1a2b-3c4d-e5f6a7b8c9d0',
+  accountOwnerForMktGenericCombos: '6b7c8d9e-0f1a-2b3c-4d5e-f6a7b8c9d0e1',
   //orders
   accountOwnerForMktOrders: '797601a1-d5f0-4c33-a4af-0232f02f7c68',
   createdMktOrders: 'c8f4a9e1-7d2b-4c5a-9f3e-8b1d6a2c4e7f',

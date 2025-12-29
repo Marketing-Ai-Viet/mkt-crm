@@ -41,6 +41,7 @@ import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/w
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
 import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
@@ -578,4 +579,30 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsSystem()
   accountOwnerForMktEmails: Relation<MktEmailWorkspaceEntity[]>;
+
+  // === GENERIC COMBO RELATIONS ===
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdMktGenericCombos,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Created Generic Combos`,
+    description: msg`Generic combos created by this workspace member`,
+    icon: 'IconPackages',
+    inverseSideTarget: () => MktGenericComboWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  createdMktGenericCombos: Relation<MktGenericComboWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktGenericCombos,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Generic Combos`,
+    description: msg`Account owner for generic combos`,
+    icon: 'IconPackages',
+    inverseSideTarget: () => MktGenericComboWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktGenericCombos: Relation<MktGenericComboWorkspaceEntity[]>;
 }

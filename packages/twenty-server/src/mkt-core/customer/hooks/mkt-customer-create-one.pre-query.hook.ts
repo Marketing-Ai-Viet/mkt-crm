@@ -76,6 +76,10 @@ export class MktCustomerCreateOnePreQueryHook
     // 5. Build payload with defaults
     const now = DateTimeUtils.toDate(DateTimeUtils.now());
 
+    // 6. Set accountOwnerId to current user if not provided
+    const accountOwnerId =
+      data.accountOwnerId ?? authContext.workspaceMemberId ?? null;
+
     const enrichedPayload: CreateOneResolverArgs<MktCustomerWorkspaceEntity> = {
       ...payload,
       data: {
@@ -90,6 +94,7 @@ export class MktCustomerCreateOnePreQueryHook
         churnRiskScore: data.churnRiskScore ?? 0,
         engagementScore: data.engagementScore ?? 0,
         customerLtv: data.customerLtv ?? 0,
+        accountOwnerId,
       },
     };
 

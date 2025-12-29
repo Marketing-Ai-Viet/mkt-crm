@@ -43,3 +43,4 @@ export * from './url-builder.util';
 export * from './error.util';
 export * from './http-exception-mapper.util';
 export * from './canonical-hash.util';
+export * from './entity-ownership.util';

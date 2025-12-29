@@ -4,6 +4,7 @@ import { UseGuards, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { MktSupportedLanguage } from 'src/mkt-core/mkt-product-integration/types';
 import { GenericComboService } from 'src/mkt-core/mkt-combo/services/generic-combo.service';
@@ -25,6 +26,7 @@ import {
   CreateGenericComboData,
   CreateGenericComboItemData,
 } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
+import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
 import {
   GenericComboPricingType,
   ComboItemType,
@@ -217,8 +219,14 @@ export class GenericComboResolver {
   })
   async mktCreateGenericCombo(
     @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: CreateGenericComboInput,
   ): Promise<GenericComboOutput> {
+    // Build ownership fields
+    const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+      workspaceMemberId,
+    });
+
     const data: CreateGenericComboData = {
       comboCode: input.comboCode,
       name: input.name,
@@ -231,6 +239,7 @@ export class GenericComboResolver {
       validFrom: input.validFrom ?? null,
       validTo: input.validTo ?? null,
       items: input.items.map((item) => this.mapItemInputToData(item)),
+      ...ownershipFields,
     };
 
     const combo = await this.genericComboService.createCombo(

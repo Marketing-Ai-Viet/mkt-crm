@@ -18,6 +18,7 @@ import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-cu
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
 
 /**
  * MktContractService - Business logic layer for Contract entity
@@ -133,6 +134,12 @@ export class MktContractService {
         years: DEFAULT_CONTRACT_DURATION_YEARS,
       });
 
+      // Build ownership fields from order's ownership
+      const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+        workspaceMemberId: order.createdById ?? undefined,
+        accountOwnerId: order.accountOwnerId ?? undefined,
+      });
+
       // Create the contract using repository
       const savedContract = await this.contractRepository.create(
         {
@@ -142,7 +149,7 @@ export class MktContractService {
           endDate: DateTimeUtils.toDate(endDateTime),
           status: MKT_CONTRACT_STATUS.ACTIVE,
           customerId: mktCustomerId,
-          createdById: order.createdById,
+          ...ownershipFields,
         },
         workspaceId,
       );

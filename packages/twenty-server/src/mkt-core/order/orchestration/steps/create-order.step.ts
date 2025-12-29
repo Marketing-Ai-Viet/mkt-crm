@@ -18,6 +18,7 @@ import {
   CreateOrderWithItemsInput,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
 
 // ============================================
 // ORDER CODE CONSTANTS
@@ -68,6 +69,11 @@ export class CreateOrderStep extends SagaStep<
       // Determine if trial license
       const isTrialLicense = input.action === ORDER_ACTION.TRIAL;
 
+      // Build ownership fields (createdById, accountOwnerId)
+      const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+        workspaceMemberId: context.workspaceMemberId,
+      });
+
       // Create order using repository
       const savedOrder = await this.orderRepository.create(
         context.workspaceId,
@@ -89,6 +95,8 @@ export class CreateOrderStep extends SagaStep<
           paidAmount: 0,
           remainingAmount: 0,
           paymentStatus: PAYMENT_STATUS.PENDING,
+          // Set ownership fields
+          ...ownershipFields,
         },
       );
 
