@@ -453,6 +453,37 @@ export class MktOrderRepository {
   }
 
   // ============================================
+  // CONDITIONAL UPDATE
+  // ============================================
+
+  /**
+   * Conditional update - only updates if conditions are met
+   * Returns affected row count for idempotency check
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - Conditions that must be met for update
+   * @param data - Data to update
+   * @returns Object with affected row count
+   */
+  async updateWhere(
+    workspaceId: string,
+    where: FindOptionsWhere<MktOrderWorkspaceEntity>,
+    data: UpdateOrderData,
+  ): Promise<{ affected: number }> {
+    this.logger.debug(
+      `Conditional update with where: ${JSON.stringify(where)}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository.update(where, data);
+
+    this.logger.debug(`Conditional update affected: ${result.affected ?? 0}`);
+
+    return { affected: result.affected ?? 0 };
+  }
+
+  // ============================================
   // REPOSITORY ACCESS
   // ============================================
 
