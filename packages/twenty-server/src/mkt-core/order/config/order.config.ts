@@ -4,6 +4,7 @@ import {
   ORDER_BIDV_DEFAULTS,
   ORDER_CODE_DEFAULTS,
   ORDER_FEATURE_DEFAULTS,
+  ORDER_OVERDUE_DEFAULTS,
   ORDER_SEPAY_DEFAULTS,
   ORDER_URL_DEFAULTS,
 } from 'src/mkt-core/order/config/order-config.defaults';
@@ -12,6 +13,7 @@ import {
   OrderCodeConfig,
   OrderConfig,
   OrderFeatureConfig,
+  OrderOverdueConfig,
   OrderSepayConfig,
   OrderUrlConfig,
 } from 'src/mkt-core/order/config/order-config.types';
@@ -31,6 +33,18 @@ const getEnvBoolean = (key: string, defaultValue: boolean): boolean => {
   }
 
   return value.toLowerCase() === 'true';
+};
+
+const getEnvNumber = (key: string, defaultValue: number): number => {
+  const value = process.env[key];
+
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const parsed = parseInt(value, 10);
+
+  return isNaN(parsed) ? defaultValue : parsed;
 };
 
 // ============================================
@@ -71,6 +85,35 @@ const buildBidvConfig = (): OrderBidvConfig => ({
   ),
 });
 
+const buildOverdueConfig = (): OrderOverdueConfig => {
+  // Đảm bảo delay không nhỏ hơn MIN_DELAY_MS (1 hour)
+  const delayMs = Math.max(
+    getEnvNumber('MKT_ORDER_OVERDUE_DELAY_MS', ORDER_OVERDUE_DEFAULTS.DELAY_MS),
+    ORDER_OVERDUE_DEFAULTS.MIN_DELAY_MS,
+  );
+
+  const msPerHour = 60 * 60 * 1000;
+
+  return {
+    delayMs,
+    delayHours: delayMs / msPerHour,
+    retryAttempts: getEnvNumber(
+      'MKT_ORDER_OVERDUE_RETRY_ATTEMPTS',
+      ORDER_OVERDUE_DEFAULTS.RETRY_ATTEMPTS,
+    ),
+    backoffMs: getEnvNumber(
+      'MKT_ORDER_OVERDUE_BACKOFF_MS',
+      ORDER_OVERDUE_DEFAULTS.BACKOFF_MS,
+    ),
+    workerConcurrency: getEnvNumber(
+      'MKT_ORDER_OVERDUE_WORKER_CONCURRENCY',
+      ORDER_OVERDUE_DEFAULTS.WORKER_CONCURRENCY,
+    ),
+    jobName: ORDER_OVERDUE_DEFAULTS.JOB_NAME,
+    jobIdPrefix: ORDER_OVERDUE_DEFAULTS.JOB_ID_PREFIX,
+  };
+};
+
 // ============================================
 // MAIN CONFIG
 // ============================================
@@ -100,6 +143,7 @@ export const orderConfig = registerAs(
     urls: buildUrlConfig(),
     sepay: buildSepayConfig(),
     bidv: buildBidvConfig(),
+    overdue: buildOverdueConfig(),
   }),
 );
 

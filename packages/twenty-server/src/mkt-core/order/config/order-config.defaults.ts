@@ -78,3 +78,30 @@ export const ORDER_BIDV_DEFAULTS = {
   API_URL: '',
   AUTH_TOKEN: '',
 } as const;
+
+// Milliseconds constants
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_MINUTE = 60 * 1000;
+
+/**
+ * Order overdue defaults
+ *
+ * Configuration for delayed job system that marks orders as OVERDUE
+ * when payment is not received within the specified time.
+ */
+export const ORDER_OVERDUE_DEFAULTS = {
+  /** Delay before order becomes overdue - default 24 hours */
+  DELAY_MS: 24 * MS_PER_HOUR,
+  /** Minimum delay - 1 hour (safety limit) */
+  MIN_DELAY_MS: MS_PER_HOUR,
+  /** Max retry attempts when job fails */
+  RETRY_ATTEMPTS: 3,
+  /** Base backoff delay for exponential retry - 1 minute */
+  BACKOFF_MS: MS_PER_MINUTE,
+  /** Worker concurrency - số jobs xử lý đồng thời */
+  WORKER_CONCURRENCY: 5,
+  /** Job name */
+  JOB_NAME: 'ProcessOrderOverdue',
+  /** Job ID prefix */
+  JOB_ID_PREFIX: 'order-overdue',
+} as const;
