@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
@@ -18,7 +18,6 @@ import {
   CreateOrderResponseDto,
   RefundOrderResponseDto,
   UpdateOrderStatusResponseDto,
-  ValidationResultDto,
 } from 'src/mkt-core/order/dto/order-response.output';
 import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
@@ -94,37 +93,6 @@ export class OrderMutationResolver {
       workspaceMemberId,
       domainInput,
     );
-  }
-
-  /**
-   * Validate order input before creation
-   * Useful for client-side validation
-   */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
-  @Query(() => ValidationResultDto, {
-    description: ORDER_GRAPHQL_DESCRIPTIONS.VALIDATE_ORDER_INPUT,
-  })
-  async validateOrderInput(
-    @AuthWorkspace() workspace: Workspace,
-    @Args('input') input: CreateOrderWithItemsInputDto,
-  ): Promise<ValidationResultDto> {
-    // Use same mapper - NO DUPLICATION
-    const domainInput = OrderInputMapper.toCreateOrderInput(input);
-
-    const result =
-      await this.orderOrchestrationService.validateCreateOrderInput(
-        workspace.id,
-        domainInput,
-      );
-
-    return {
-      valid: result.valid,
-      errors: result.errors.map((e) => ({
-        field: e.field,
-        message: e.message,
-        code: e.code,
-      })),
-    };
   }
 
   /**

@@ -9,8 +9,6 @@ import {
   UpdateOrderStatusInput,
   UpdateOrderStatusResponse,
 } from 'src/mkt-core/order/types';
-// DISABLED: SInvoiceIntegrationService - MktInvoiceModule temporarily disabled
-// import { SInvoiceIntegrationService } from 'src/mkt-core/invoice/integration/s-invoice.integration.service';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
@@ -41,8 +39,6 @@ export class UpdateOrderSaga {
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly eventEmitter: EventEmitter2,
     private readonly orderStatusService: OrderStatusService,
-    // DISABLED: SInvoiceIntegrationService - MktInvoiceModule temporarily disabled
-    // private readonly sInvoiceIntegrationService: SInvoiceIntegrationService,
   ) {}
 
   /**

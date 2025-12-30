@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { QueryRunner } from 'typeorm';
-
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   MKT_ORDER_EVENT_TYPES,
   RefundOrderInput,
@@ -14,6 +11,7 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
@@ -41,29 +39,22 @@ export class RefundOrderSaga {
   private readonly logger = new Logger(RefundOrderSaga.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly mktOrderRepository: MktOrderRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly orderStatusService: OrderStatusService,
   ) {}
 
   /**
    * Execute the refund order saga
+   *
+   * Note: Workspace repository handles its own connection,
+   * so external queryRunner transactions are not used.
    */
   async execute(
     workspaceId: string,
     workspaceMemberId: string | undefined,
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    const queryRunner = dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     const context: SagaContext = {
       workspaceId,
       workspaceMemberId,
@@ -73,15 +64,9 @@ export class RefundOrderSaga {
 
     try {
       // Step 1: Validate order can be refunded
-      const validateResult = await this.validateOrder(
-        context,
-        input,
-        queryRunner,
-      );
+      const validateResult = await this.validateOrder(context, input);
 
       if (!validateResult.success) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: validateResult.error?.message ?? 'Order validation failed',
@@ -91,8 +76,6 @@ export class RefundOrderSaga {
       const currentOrder = validateResult.data;
 
       if (!currentOrder) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: 'Order validation failed: no data returned',
@@ -115,8 +98,6 @@ export class RefundOrderSaga {
       if (
         !this.orderStatusService.validateTransition(previousStatus, newStatus)
       ) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: `Cannot refund order with status: ${previousStatus}`,
@@ -129,8 +110,6 @@ export class RefundOrderSaga {
       const refundAmount = input.refundAmount ?? 0;
 
       if (refundAmount === 0 && !input.refundAmount) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: 'Refund amount must be specified',
@@ -145,21 +124,16 @@ export class RefundOrderSaga {
         newStatus,
         refundAmount,
         input.licenseIds ?? [],
-        queryRunner,
       );
 
       if (!updateOrderResult.success) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: updateOrderResult.error?.message ?? 'Failed to update order',
         };
       }
 
-      await queryRunner.commitTransaction();
-
-      // Emit event after successful commit
+      // Emit event after successful update
       this.emitRefundEvent(context, input, newStatus, refundAmount);
 
       this.logger.log(
@@ -174,14 +148,11 @@ export class RefundOrderSaga {
       };
     } catch (error) {
       this.logger.error('RefundOrderSaga execution error', error);
-      await queryRunner.rollbackTransaction();
 
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
-    } finally {
-      await queryRunner.release();
     }
   }
 
@@ -191,20 +162,13 @@ export class RefundOrderSaga {
   private async validateOrder(
     context: SagaContext,
     input: RefundOrderInput,
-    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
     try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await orderRepository.findOne({
-        where: { id: input.orderId },
-        relations: ['orderItems'],
-      });
+      const order = await this.mktOrderRepository.findById(
+        context.workspaceId,
+        input.orderId,
+        { relations: { orderItems: true } },
+      );
 
       if (!order) {
         return {
@@ -268,7 +232,6 @@ export class RefundOrderSaga {
     newStatus: ORDER_STATUS,
     refundAmount: number,
     refundedLicenseIds: string[],
-    queryRunner: QueryRunner,
   ): Promise<SagaStepResult> {
     try {
       // Build refund metadata
@@ -281,18 +244,12 @@ export class RefundOrderSaga {
         reason: input.reason,
       };
 
-      const updateData: Partial<MktOrderWorkspaceEntity> = {
+      await this.mktOrderRepository.update(context.workspaceId, input.orderId, {
         status: newStatus,
         refundAmount,
         updatedAt: nowISO,
         metadata: safeJsonStringify(refundMetadata) as unknown as JSON,
-      };
-
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: input.orderId },
-        updateData,
-      );
+      });
 
       context.metadata.set('newStatus', newStatus);
       context.metadata.set('refundAmount', refundAmount);
