@@ -10,11 +10,11 @@ import { In, Repository } from 'typeorm';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { OrderConfig } from 'src/mkt-core/order/config/order-config.types';
 import { orderConfig } from 'src/mkt-core/order/config/order.config';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
@@ -41,7 +41,7 @@ export class OrderOverdueMigrationService implements OnApplicationBootstrap {
   private readonly logger = new Logger(OrderOverdueMigrationService.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly mktOrderRepository: MktOrderRepository,
     private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
     @Inject(orderConfig.KEY)
     private readonly config: OrderConfig,
@@ -151,20 +151,10 @@ export class OrderOverdueMigrationService implements OnApplicationBootstrap {
   private async migrateWorkspace(
     workspaceId: string,
   ): Promise<MigrationWorkspaceResult> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktOrderWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    // Query orders PENDING_PAYMENT
-    const orders = await repository.find({
-      where: {
-        status: ORDER_STATUS.PENDING_PAYMENT,
-      },
-      select: ['id', 'orderCode', 'createdAt'],
-    });
+    const orders = await this.mktOrderRepository.findByStatus(
+      workspaceId,
+      ORDER_STATUS.PENDING_PAYMENT,
+    );
 
     if (orders.length === 0) {
       return {
