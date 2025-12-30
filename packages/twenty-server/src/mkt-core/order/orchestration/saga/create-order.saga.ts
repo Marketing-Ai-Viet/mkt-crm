@@ -8,6 +8,9 @@ import {
   MKT_ORDER_EVENT_TYPES,
   CreateOrderWithItemsInput,
   CreateOrderResponse,
+  SagaStep,
+  SagaContext,
+  SagaStepResult,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
@@ -19,8 +22,6 @@ import {
   CreatePaymentStep,
   FinalizeOrderStep,
 } from 'src/mkt-core/order/orchestration/steps';
-
-import { SagaContext, SagaStep, SagaStepResult } from './order-saga.interface';
 
 /**
  * CreateOrderSaga - Saga orchestrator for creating orders

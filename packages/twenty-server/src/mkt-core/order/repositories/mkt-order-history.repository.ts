@@ -8,20 +8,9 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { ORDER_HISTORY_ACTION } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { CreateOrderHistoryData } from 'src/mkt-core/order/types';
 
 const LOG_CONTEXT = 'MktOrderHistory:Repository';
-
-type CreateOrderHistoryData = {
-  orderId: string;
-  action: ORDER_HISTORY_ACTION;
-  name: string;
-  note?: string;
-  fieldName?: string;
-  oldValue?: string;
-  newValue?: string;
-  metadata?: Record<string, unknown>;
-  workspaceMemberId?: string;
-};
 
 /**
  * MktOrderHistoryRepository - Data access layer for Order History entity

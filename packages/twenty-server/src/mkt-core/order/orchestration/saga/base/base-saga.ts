@@ -11,7 +11,7 @@ import {
   SagaExecutionResult,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga';
+} from 'src/mkt-core/order/types';
 
 /**
  * BaseSaga - Abstract base class for all order sagas

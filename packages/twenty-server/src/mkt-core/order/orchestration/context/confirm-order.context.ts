@@ -3,7 +3,7 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { SagaContext } from 'src/mkt-core/order/orchestration/saga';
+import { SagaContext } from 'src/mkt-core/order/types';
 
 /**
  * Typed context for ConfirmOrderSaga

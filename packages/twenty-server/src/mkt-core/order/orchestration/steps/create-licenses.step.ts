@@ -12,43 +12,18 @@ import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
 import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
 import {
+  CreatedLicenseInfo,
   CreateLicensesStepOutput,
   CreateOrderWithItemsInput,
+  DEFAULT_MAX_DEVICES,
+  DEFAULT_SPLIT_LICENSES,
   ExternalMktProductInput,
+  ItemLicenseResult,
+  LicenseConfig,
 } from 'src/mkt-core/order/types';
-import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const DEFAULT_MAX_DEVICES = 1;
-const DEFAULT_SPLIT_LICENSES = false;
-
-// ============================================
-// TYPES
-// ============================================
-
-type LicenseConfig = {
-  licenseCount: number;
-  devicesPerLicense: number;
-};
-
-type CreatedLicenseInfo = {
-  id: string;
-  licenseKey: string;
-  orderItemId: string;
-};
-
-type ItemLicenseResult = {
-  licenseIds: string[];
-  licenseKeys: string[];
-  snapshots: MktLicenseSnapshot[];
-  createdLicenses: CreatedLicenseInfo[];
-};
 
 /**
  * CreateLicensesStep - Step 3: Create licenses for order items

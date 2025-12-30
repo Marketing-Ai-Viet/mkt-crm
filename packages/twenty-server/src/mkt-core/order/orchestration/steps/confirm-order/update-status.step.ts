@@ -3,15 +3,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
-import { ConfirmOrderInput } from 'src/mkt-core/order/types';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
-import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
+  ConfirmOrderInput,
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga';
+} from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 
 /**
@@ -78,7 +78,7 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
 
         // When ACCOUNTING_CONFIRMED, update payment fields
         // Accounting confirms = payment is complete
-        if (input.accountingConfirmed === true) {
+        if (input.accountingConfirmed) {
           const totalAmount = typedContext.currentOrder?.totalAmount ?? 0;
 
           updateData.paymentStatus = PAYMENT_STATUS.PAID;

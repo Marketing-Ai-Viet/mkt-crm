@@ -5,43 +5,12 @@ import {
   PAYMENT_STATUS,
   IS_PAYMENT_COMPLETE,
 } from 'src/mkt-core/order/constants/payment-status.constants';
-
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * Payment summary calculated from confirmed payments
- */
-export type PaymentSummary = {
-  paidAmount: number;
-  remainingAmount: number;
-  paymentStatus: PAYMENT_STATUS;
-  paidPercent: number;
-};
-
-/**
- * Payment data for calculation (only confirmed payments)
- */
-export type ConfirmedPaymentData = {
-  amount: number;
-  refundedAmount?: number;
-};
-
-/**
- * Partial payment policy options
- */
-export type PartialPaymentPolicy = 'NONE' | 'THRESHOLD' | 'PRO_RATA';
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const DEFAULT_THRESHOLD_PERCENT = 100; // Require full payment by default
-
-// ============================================
-// SERVICE
-// ============================================
+import {
+  ConfirmedPaymentData,
+  PartialPaymentPolicy,
+  PaymentSummary,
+} from 'src/mkt-core/order/types';
+import { DEFAULT_THRESHOLD_PERCENT } from 'src/mkt-core/order/constants';
 
 /**
  * OrderPaymentCalculationService
@@ -104,7 +73,7 @@ export class OrderPaymentCalculationService {
    * Recalculate payment summary after a payment change
    * Convenience method that takes order data directly
    *
-   * @param order - Order with totalAmount
+   * @param totalAmount
    * @param payments - All payments for the order (will filter for confirmed)
    */
   recalculateFromPayments<

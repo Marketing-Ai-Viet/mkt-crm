@@ -249,3 +249,15 @@ export const PAYMENT_PROCESSING_ACTIONS: ORDER_ACTION[] = [
   ORDER_ACTION.TRIAL_TO_PAID,
   ORDER_ACTION.LICENSE_RENEWING,
 ];
+
+/** Constants for order code generation lock */
+export const ORDER_CODE_LOCK_KEY_PREFIX = 'order:code-gen';
+export const ORDER_CODE_LOCK_TIMEOUT_MS = 5000; // 5 seconds
+export const ORDER_CODE_MAX_RETRIES = 3;
+
+/** Exponential backoff constants */
+export const BACKOFF_BASE_MS = 100;
+export const BACKOFF_MAX_MS = 2000;
+export const JITTER_FACTOR = 0.3; // 30% jitter
+
+export const DEFAULT_THRESHOLD_PERCENT = 100; // Require full payment by default

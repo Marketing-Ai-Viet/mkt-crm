@@ -4,7 +4,15 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 
 import { IdempotencyCacheRepository } from 'src/mkt-core/common/idempotency';
-import { ORDER_ACTION } from 'src/mkt-core/order/constants';
+import {
+  BACKOFF_BASE_MS,
+  BACKOFF_MAX_MS,
+  JITTER_FACTOR,
+  ORDER_ACTION,
+  ORDER_CODE_LOCK_KEY_PREFIX,
+  ORDER_CODE_LOCK_TIMEOUT_MS,
+  ORDER_CODE_MAX_RETRIES,
+} from 'src/mkt-core/order/constants';
 import {
   ORDER_CODE_DEFAULTS,
   ORDER_CODE_FORMAT,
@@ -30,28 +38,7 @@ import {
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
 import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
-
-/** Constants for order code generation lock */
-const ORDER_CODE_LOCK_KEY_PREFIX = 'order:code-gen';
-const ORDER_CODE_LOCK_TIMEOUT_MS = 5000; // 5 seconds
-const ORDER_CODE_MAX_RETRIES = 3;
-
-/** Exponential backoff constants */
-const BACKOFF_BASE_MS = 100;
-const BACKOFF_MAX_MS = 2000;
-const JITTER_FACTOR = 0.3; // 30% jitter
-
-/**
- * Result type for order value calculations
- * Note: CalculateOrderResult is exported from legacy/order.confirm.service.ts
- * for backward compatibility
- */
-type OrderCalculationResult = {
-  subtotal: number;
-  tax: number;
-  discount: number;
-  totalAmount: number;
-};
+import { OrderCalculationResult } from 'src/mkt-core/order/types';
 
 /**
  * OrderConfirmUtilsService - Utility service for order confirmation operations

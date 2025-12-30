@@ -5,6 +5,7 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { PAYMENT_STATUS } from 'src/mkt-core/order/constants';
 
 // ============================================
 // ORDER ITEM SERVICE TYPES
@@ -156,27 +157,32 @@ export type ValidationResult = {
   errors: ValidationError[];
 };
 
-// ============================================
-// ORDER VALIDATION ERROR CODES
-// ============================================
+export type OrderCalculationResult = {
+  subtotal: number;
+  tax: number;
+  discount: number;
+  totalAmount: number;
+};
 
-export const ORDER_VALIDATION_ERROR_CODES = {
-  CUSTOMER_REQUIRED: 'CUSTOMER_REQUIRED',
-  CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
-  ITEMS_REQUIRED: 'ITEMS_REQUIRED',
-  EXTERNAL_PRODUCT_NOT_FOUND: 'EXTERNAL_PRODUCT_NOT_FOUND',
-  EXTERNAL_PRODUCT_INACTIVE: 'EXTERNAL_PRODUCT_INACTIVE',
-  EXTERNAL_PACKAGE_NOT_FOUND: 'EXTERNAL_PACKAGE_NOT_FOUND',
-  EXTERNAL_PACKAGE_INACTIVE: 'EXTERNAL_PACKAGE_INACTIVE',
-  EXTERNAL_PACKAGE_MISMATCH: 'EXTERNAL_PACKAGE_MISMATCH',
-  PAYMENT_METHOD_REQUIRED: 'PAYMENT_METHOD_REQUIRED',
-  PAYMENT_METHOD_NOT_FOUND: 'PAYMENT_METHOD_NOT_FOUND',
-  ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
-  INVALID_ORDER_STATUS: 'INVALID_ORDER_STATUS',
-  INVALID_ACTION: 'INVALID_ACTION',
-  TRIAL_ORDER_REQUIRED: 'TRIAL_ORDER_REQUIRED',
-  TRIAL_ORDER_NOT_FOUND: 'TRIAL_ORDER_NOT_FOUND',
-} as const;
+/**
+ * Payment summary calculated from confirmed payments
+ */
+export type PaymentSummary = {
+  paidAmount: number;
+  remainingAmount: number;
+  paymentStatus: PAYMENT_STATUS;
+  paidPercent: number;
+};
 
-export type OrderValidationErrorCode =
-  (typeof ORDER_VALIDATION_ERROR_CODES)[keyof typeof ORDER_VALIDATION_ERROR_CODES];
+/**
+ * Payment data for calculation (only confirmed payments)
+ */
+export type ConfirmedPaymentData = {
+  amount: number;
+  refundedAmount?: number;
+};
+
+/**
+ * Partial payment policy options
+ */
+export type PartialPaymentPolicy = 'NONE' | 'THRESHOLD' | 'PRO_RATA';

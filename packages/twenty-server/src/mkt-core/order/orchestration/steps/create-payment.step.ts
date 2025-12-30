@@ -10,7 +10,7 @@ import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
 import {
   CreateOrderWithItemsInput,
   CreatePaymentStepOutput,

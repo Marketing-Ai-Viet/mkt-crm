@@ -6,6 +6,7 @@ import {
   MKT_ORDER_EVENT_TYPES,
   ConfirmOrderInput,
   ConfirmOrderResponse,
+  SagaContext,
 } from 'src/mkt-core/order/types';
 import {
   ConfirmOrderSagaContext,
@@ -19,8 +20,6 @@ import {
   CompleteOrderAfterLicenseStep,
 } from 'src/mkt-core/order/orchestration/steps/confirm-order';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-
-import { SagaContext } from './order-saga.interface';
 
 import { BaseSaga } from './base/base-saga';
 

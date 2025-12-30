@@ -16,9 +16,9 @@ import {
   ExternalMktProductInput,
   ValidationError,
   ValidationResult,
-  ORDER_VALIDATION_ERROR_CODES,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { ORDER_VALIDATION_ERROR_CODES } from 'src/mkt-core/order/messages';
 
 /**
  * Service để validate order data trước khi xử lý

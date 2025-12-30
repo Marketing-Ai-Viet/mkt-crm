@@ -5,6 +5,8 @@ import {
   MKT_ORDER_EVENT_TYPES,
   RefundOrderInput,
   RefundOrderResponse,
+  SagaContext,
+  SagaStepResult,
 } from 'src/mkt-core/order/types';
 import {
   ORDER_ACTION,
@@ -15,8 +17,6 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
-
-import { SagaContext, SagaStepResult } from './order-saga.interface';
 
 /**
  * RefundOrderSaga - Saga for refunding orders

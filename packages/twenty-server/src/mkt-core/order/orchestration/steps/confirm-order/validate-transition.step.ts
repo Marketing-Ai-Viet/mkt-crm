@@ -7,13 +7,13 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
-import { ConfirmOrderInput } from 'src/mkt-core/order/types';
-import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
+  ConfirmOrderInput,
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga';
+} from 'src/mkt-core/order/types';
+import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 
 /**
  * Result type for transition validation

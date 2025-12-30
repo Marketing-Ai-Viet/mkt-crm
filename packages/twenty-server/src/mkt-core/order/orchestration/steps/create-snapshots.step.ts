@@ -11,7 +11,7 @@ import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
 import { OrderProductIntegrationService } from 'src/mkt-core/order/services/integration/order-product.integration';
 import {
   CreateOrderWithItemsInput,

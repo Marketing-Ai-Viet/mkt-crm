@@ -7,7 +7,7 @@ import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
 import { OrderPromotionIntegrationService } from 'src/mkt-core/order/services/integration/order-promotion.integration';
 import {
   CreateOrderWithItemsInput,

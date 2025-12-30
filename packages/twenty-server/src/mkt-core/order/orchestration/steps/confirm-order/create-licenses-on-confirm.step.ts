@@ -12,30 +12,16 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { ConfirmOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
 import {
+  ConfirmOrderInput,
+  CreatedLicenseInfo,
+  DEFAULT_MAX_DEVICES,
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga';
-import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
-import { ConfirmOrderInput } from 'src/mkt-core/order/types';
+} from 'src/mkt-core/order/types';
 import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const DEFAULT_MAX_DEVICES = 1; // Fallback if orderItem.maxDevices is null
-
-// ============================================
-// TYPES
-// ============================================
-
-type CreatedLicenseInfo = {
-  id: string;
-  licenseKey: string;
-  orderItemId: string;
-};
 
 /**
  * CreateLicensesOnConfirmStep - Create licenses when accounting confirms payment
