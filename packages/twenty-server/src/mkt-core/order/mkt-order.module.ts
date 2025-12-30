@@ -1,8 +1,10 @@
 import { HttpModule } from '@nestjs/axios';
 import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
@@ -37,6 +39,7 @@ import {
   MktOrderOverdueService,
   OrderOverdueSchedulerService,
   OrderOverdueWorkerService,
+  OrderOverdueMigrationService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -48,6 +51,7 @@ import {
   OrderMutationResolver,
   OrderQueryResolver,
   OrderItemMutationResolver,
+  OrderOverdueQueryResolver,
 } from './resolvers';
 import {
   MktOrderCustomEventListener,
@@ -87,6 +91,7 @@ import {
 @Module({
   imports: [
     ConfigModule.forFeature(orderConfig), // Order module configuration
+    TypeOrmModule.forFeature([Workspace], 'core'), // Workspace entity for migration service
     HttpModule, // For OrderConfirmUtilsService (BIDV SEPay API)
     EmailModule,
     MktEmailModule,
@@ -125,6 +130,7 @@ import {
     // Delayed Job Services (order overdue)
     OrderOverdueSchedulerService,
     OrderOverdueWorkerService,
+    OrderOverdueMigrationService, // Auto-run on startup
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -168,6 +174,7 @@ import {
     OrderMutationResolver,
     OrderQueryResolver,
     OrderItemMutationResolver,
+    OrderOverdueQueryResolver, // Observability - queue stats
   ],
   exports: [
     // Repositories

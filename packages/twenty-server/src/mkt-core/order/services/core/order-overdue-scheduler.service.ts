@@ -47,6 +47,19 @@ export class OrderOverdueSchedulerService {
     const delayMs = customDelayMs ?? this.config.overdue.delayMs;
     const jobId = GET_OVERDUE_JOB_ID(orderId);
 
+    // Validate delayMs is a valid finite positive number
+    if (!Number.isFinite(delayMs) || delayMs < 0) {
+      this.logger.error({
+        message: 'Invalid delayMs value, cannot schedule job',
+        orderId,
+        orderCode,
+        workspaceId,
+        delayMs,
+      });
+
+      return false;
+    }
+
     const payload: OrderOverduePayload = {
       orderId,
       workspaceId,
@@ -119,5 +132,35 @@ export class OrderOverdueSchedulerService {
     });
 
     return result.success;
+  }
+
+  /**
+   * Get queue statistics for monitoring/observability
+   *
+   * Returns current state of the order overdue queue:
+   * - waiting: Jobs waiting to be processed
+   * - delayed: Jobs scheduled for future execution
+   * - active: Jobs currently being processed
+   * - completed: Jobs completed successfully
+   * - failed: Jobs that failed
+   *
+   * @returns Queue statistics
+   */
+  async getQueueStats(): Promise<{
+    waiting: number;
+    delayed: number;
+    active: number;
+    completed: number;
+    failed: number;
+    total: number;
+  }> {
+    const stats = await this.delayedJobService.getQueueStats(
+      MKT_DELAYED_JOB_QUEUES.ORDER_OVERDUE,
+    );
+
+    return {
+      ...stats,
+      total: stats.waiting + stats.delayed + stats.active,
+    };
   }
 }

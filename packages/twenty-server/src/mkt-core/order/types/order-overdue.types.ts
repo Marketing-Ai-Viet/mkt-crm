@@ -53,3 +53,26 @@ export type ScheduleOverdueCheckInput = {
   /** Custom delay in ms (optional, default từ config) */
   customDelayMs?: number;
 };
+
+/**
+ * Kết quả migration cho một order
+ */
+export type MigrationOrderResult = {
+  orderId: string;
+  orderCode?: string;
+  status: 'scheduled' | 'immediate' | 'skipped' | 'error';
+  delayMs?: number;
+  error?: string;
+};
+
+/**
+ * Kết quả migration cho một workspace
+ */
+export type MigrationWorkspaceResult = {
+  workspaceId: string;
+  totalOrders: number;
+  scheduled: number;
+  immediate: number;
+  skipped: number;
+  errors: number;
+};

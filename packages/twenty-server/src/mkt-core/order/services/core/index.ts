@@ -23,3 +23,4 @@ export * from './order-metadata.service';
 export * from './mkt-order-overdue.service';
 export * from './order-overdue-scheduler.service';
 export * from './order-overdue-worker.service';
+export * from './order-overdue-migration.service';
