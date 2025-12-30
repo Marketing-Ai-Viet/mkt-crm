@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { QueryRunner } from 'typeorm';
-
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   MKT_ORDER_EVENT_TYPES,
+  SagaContext,
+  SagaStepResult,
   UpdateOrderStatusInput,
   UpdateOrderStatusResponse,
 } from 'src/mkt-core/order/types';
@@ -14,11 +13,10 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
-
-import { SagaContext, SagaStepResult } from './order-saga.interface';
 
 /**
  * UpdateOrderSaga - Saga for updating order status
@@ -36,29 +34,22 @@ export class UpdateOrderSaga {
   private readonly logger = new Logger(UpdateOrderSaga.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly mktOrderRepository: MktOrderRepository,
     private readonly eventEmitter: EventEmitter2,
     private readonly orderStatusService: OrderStatusService,
   ) {}
 
   /**
    * Execute the update order saga
+   *
+   * Note: Workspace repository handles its own connection,
+   * so external queryRunner transactions are not used.
    */
   async execute(
     workspaceId: string,
     workspaceMemberId: string | undefined,
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    const queryRunner = dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     const context: SagaContext = {
       workspaceId,
       workspaceMemberId,
@@ -68,15 +59,9 @@ export class UpdateOrderSaga {
 
     try {
       // Step 1: Validate order exists
-      const validateResult = await this.validateOrder(
-        context,
-        input,
-        queryRunner,
-      );
+      const validateResult = await this.validateOrder(context, input);
 
       if (!validateResult.success) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: validateResult.error?.message ?? 'Order validation failed',
@@ -86,8 +71,6 @@ export class UpdateOrderSaga {
       const currentOrder = validateResult.data;
 
       if (!currentOrder) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: 'Order validation failed: no data returned',
@@ -107,8 +90,6 @@ export class UpdateOrderSaga {
         !transitionResult.action ||
         !transitionResult.newStatus
       ) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error:
@@ -125,21 +106,16 @@ export class UpdateOrderSaga {
         input,
         action,
         newStatus,
-        queryRunner,
       );
 
       if (!updateResult.success) {
-        await queryRunner.rollbackTransaction();
-
         return {
           success: false,
           error: updateResult.error?.message ?? 'Failed to update order status',
         };
       }
 
-      await queryRunner.commitTransaction();
-
-      // Emit event after successful commit
+      // Emit event after successful update
       this.emitOrderUpdatedEvent(context, input, action, newStatus);
 
       this.logger.log(
@@ -154,14 +130,11 @@ export class UpdateOrderSaga {
       };
     } catch (error) {
       this.logger.error('UpdateOrderSaga execution error', error);
-      await queryRunner.rollbackTransaction();
 
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
-    } finally {
-      await queryRunner.release();
     }
   }
 
@@ -171,20 +144,13 @@ export class UpdateOrderSaga {
   private async validateOrder(
     context: SagaContext,
     input: UpdateOrderStatusInput,
-    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
     try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await orderRepository.findOne({
-        where: { id: input.orderId },
-        relations: ['orderItems', 'mktLicense'],
-      });
+      const order = await this.mktOrderRepository.findById(
+        context.workspaceId,
+        input.orderId,
+        { relations: { orderItems: true } },
+      );
 
       if (!order) {
         return {
@@ -236,7 +202,6 @@ export class UpdateOrderSaga {
     input: UpdateOrderStatusInput,
     action: ORDER_ACTION,
     newStatus: ORDER_STATUS,
-    queryRunner: QueryRunner,
   ): Promise<SagaStepResult> {
     try {
       const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
@@ -256,9 +221,9 @@ export class UpdateOrderSaga {
         updatedAt: nowISO,
       }) as unknown as JSON;
 
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: input.orderId },
+      await this.mktOrderRepository.update(
+        context.workspaceId,
+        input.orderId,
         updateData,
       );
 
