@@ -522,14 +522,28 @@ export class IdempotencyService {
     }
   }
 
+  /**
+   * Format idempotency key
+   *
+   * Key format: {workspaceId}:{action}:{hash}[:suffix]
+   *
+   * Note: Domain is NOT included in key because:
+   * - CacheStorageService namespace already provides domain context (e.g., 'mkt:order:')
+   * - Including domain would create redundancy: 'mkt:order:idempotency:{ws}:order:...'
+   *
+   * Full key structure: {namespace}:{prefix}:{workspaceId}:{action}:{hash}
+   * Example: mkt:order:idempotency:ws-123:createOrder:abc123
+   *
+   * @param _domain - Kept for signature compatibility (used for config lookup elsewhere)
+   */
   private formatKey(
     workspaceId: string,
-    domain: string,
+    _domain: string,
     action: string,
     hash: string,
     suffix?: string,
   ): IdempotencyKey {
-    const base = `${workspaceId}:${domain}:${action}:${hash}`;
+    const base = `${workspaceId}:${action}:${hash}`;
 
     return suffix ? `${base}:${suffix}` : base;
   }

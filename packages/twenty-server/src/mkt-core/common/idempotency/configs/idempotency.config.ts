@@ -5,8 +5,20 @@ import {
 import {
   CACHE_TTL,
   CACHE_TTL_MS,
-  ORDER_CACHE_PREFIX,
 } from 'src/mkt-core/infrastructure/redis/constants';
+
+/**
+ * Relative key prefixes for idempotency
+ *
+ * Used with CacheStorageService which already adds namespace (e.g., 'mkt:order:')
+ * Final key: namespace + relative prefix + key
+ *
+ * Example: 'mkt:order:' + 'idempotency:' + '{key}' = 'mkt:order:idempotency:{key}'
+ */
+const IDEMPOTENCY_RELATIVE_PREFIX = {
+  RECORD: 'idempotency',
+  LOCK: 'idempotency:lock',
+} as const;
 
 /**
  * Configuration for a specific idempotency action
@@ -166,14 +178,21 @@ export const getActionConfig = (
 /**
  * Global idempotency configuration
  *
- * Uses centralized cache key prefixes from redis infrastructure
+ * Uses relative prefixes since CacheStorageService adds namespace automatically
+ * @see IDEMPOTENCY_RELATIVE_PREFIX
  */
 export const IDEMPOTENCY_GLOBAL_CONFIG = {
-  /** Redis key prefix for idempotency records */
-  keyPrefix: ORDER_CACHE_PREFIX.IDEMPOTENCY,
+  /**
+   * Redis key prefix for idempotency records (relative)
+   * CacheStorageService will prepend namespace: 'mkt:order:' + 'idempotency:'
+   */
+  keyPrefix: IDEMPOTENCY_RELATIVE_PREFIX.RECORD,
 
-  /** Redis key prefix for locks */
-  lockPrefix: ORDER_CACHE_PREFIX.IDEMPOTENCY_LOCK,
+  /**
+   * Redis key prefix for locks (relative)
+   * CacheStorageService will prepend namespace: 'mkt:order:' + 'idempotency:lock:'
+   */
+  lockPrefix: IDEMPOTENCY_RELATIVE_PREFIX.LOCK,
 
   /** Default TTL for idempotency records (from centralized config) */
   defaultTtlSeconds: CACHE_TTL.LONG, // 30 minutes

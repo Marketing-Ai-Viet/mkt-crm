@@ -30,7 +30,14 @@ export type IdempotencyStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
 
 /**
  * Idempotency key - string format
- * Format: {namespace}:{workspaceId}:{domain}:{action}:{hash}[:nonce]
+ *
+ * Key format (without namespace): {workspaceId}:{action}:{hash}[:suffix]
+ * Full key (with namespace): {namespace}:{prefix}:{workspaceId}:{action}:{hash}
+ *
+ * Example: mkt:order:idempotency:ws-123:createOrder:abc123
+ *
+ * Note: Domain is NOT included in key because CacheStorageService namespace
+ * already provides domain context (e.g., 'mkt:order:')
  */
 export type IdempotencyKey = string;
 

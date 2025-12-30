@@ -326,11 +326,7 @@ export class OAuth2ClientService
       this.logger.log(`[OAuth2 Debug] Token Endpoint: ${tokenUrl}`);
       this.logger.log(`[OAuth2 Debug] Server URL: ${this.serverUrl}`);
       this.logger.log(`[OAuth2 Debug] Client ID: ${this.clientId}`);
-      this.logger.log(`[OAuth2 Debug] requestBody `, requestBody);
       this.logger.log(`[OAuth2 Debug] Scopes: ${JSON.stringify(this.scopes)}`);
-      this.logger.log(
-        `[OAuth2 Debug] Request Body: ${JSON.stringify(requestBody)}`,
-      );
       this.logger.log(`[OAuth2 Debug] Timeout: ${this.httpTimeoutMs}ms`);
 
       try {
