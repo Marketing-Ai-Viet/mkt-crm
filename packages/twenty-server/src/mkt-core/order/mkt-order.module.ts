@@ -8,6 +8,7 @@ import { RecordPositionModule } from 'src/engine/core-modules/record-position/re
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
+import { DelayedJobInfrastructureModule } from 'src/mkt-core/infrastructure/delayed-job';
 import { orderConfig } from 'src/mkt-core/order/config';
 // DISABLED: MktInvoiceModule - temporarily disabled
 // import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
@@ -34,6 +35,8 @@ import {
   OrderConfirmUtilsService,
   OrderMetadataService,
   MktOrderOverdueService,
+  OrderOverdueSchedulerService,
+  OrderOverdueWorkerService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -90,6 +93,7 @@ import {
     MessageQueueModule,
     RecordPositionModule,
     WorkspaceCacheStorageModule, // Redis caching for idempotency
+    DelayedJobInfrastructureModule, // BullMQ delayed jobs for overdue orders
     forwardRef(() => MktPaymentModule), // Circular dependency with MktPaymentModule
     // DISABLED: forwardRef(() => MktInvoiceModule),
     MktProductIntegrationModule, // External MKT Server product integration
@@ -118,6 +122,9 @@ import {
     OrderConfirmUtilsService,
     OrderMetadataService,
     MktOrderOverdueService,
+    // Delayed Job Services (order overdue)
+    OrderOverdueSchedulerService,
+    OrderOverdueWorkerService,
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -181,6 +188,8 @@ import {
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
+    // Delayed Job Services
+    OrderOverdueSchedulerService,
     // Sagas
     ConfirmOrderSaga,
     UpdateOrderSaga,

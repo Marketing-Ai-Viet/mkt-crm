@@ -4,15 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QueryRunner } from 'typeorm';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {
-  MKT_ORDER_EVENT_TYPES,
-  CreateOrderWithItemsInput,
-  CreateOrderResponse,
-  SagaStep,
-  SagaContext,
-  SagaStepResult,
-} from 'src/mkt-core/order/types';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   CreateOrderStep,
   CreateSnapshotsStep,
@@ -22,6 +14,16 @@ import {
   CreatePaymentStep,
   FinalizeOrderStep,
 } from 'src/mkt-core/order/orchestration/steps';
+import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
+import {
+  MKT_ORDER_EVENT_TYPES,
+  CreateOrderWithItemsInput,
+  CreateOrderResponse,
+  SagaStep,
+  SagaContext,
+  SagaStepResult,
+} from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * CreateOrderSaga - Saga orchestrator for creating orders
@@ -46,6 +48,7 @@ export class CreateOrderSaga implements OnModuleInit {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly eventEmitter: EventEmitter2,
+    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
     // Inject steps directly
     private readonly createOrderStep: CreateOrderStep,
     private readonly createSnapshotsStep: CreateSnapshotsStep,
@@ -206,6 +209,9 @@ export class CreateOrderSaga implements OnModuleInit {
         // Emit event cho async tasks (email, history)
         this.emitOrderCreatedEvent(context);
 
+        // Schedule overdue check nếu order ở trạng thái PENDING_PAYMENT
+        await this.scheduleOverdueCheckIfNeeded(context);
+
         return {
           success: true,
           orderId: context.orderId,
@@ -296,5 +302,48 @@ export class CreateOrderSaga implements OnModuleInit {
     this.logger.log(
       `Emitted ORDER_CREATED event for order: ${context.orderId}`,
     );
+  }
+
+  /**
+   * Schedule overdue check nếu order có status PENDING_PAYMENT
+   *
+   * Job sẽ được execute sau 24h (configurable) để tự động
+   * chuyển order sang OVERDUE nếu chưa thanh toán.
+   */
+  private async scheduleOverdueCheckIfNeeded(
+    context: SagaContext,
+  ): Promise<void> {
+    const orderStatus = context.metadata.get('orderStatus') as string;
+
+    // Chỉ schedule nếu order ở trạng thái PENDING_PAYMENT
+    if (orderStatus !== ORDER_STATUS.PENDING_PAYMENT) {
+      this.logger.debug(
+        `Skip scheduling overdue check - order status is ${orderStatus}`,
+      );
+
+      return;
+    }
+
+    if (!context.orderId || !context.workspaceId) {
+      this.logger.warn(
+        'Cannot schedule overdue check - missing orderId or workspaceId',
+      );
+
+      return;
+    }
+
+    try {
+      await this.orderOverdueSchedulerService.scheduleOverdueCheck(
+        context.workspaceId,
+        context.orderId,
+        context.orderCode,
+      );
+    } catch (error) {
+      // Log error nhưng không fail saga - overdue check là async task
+      this.logger.error(
+        `Failed to schedule overdue check for order ${context.orderId}`,
+        error,
+      );
+    }
   }
 }
