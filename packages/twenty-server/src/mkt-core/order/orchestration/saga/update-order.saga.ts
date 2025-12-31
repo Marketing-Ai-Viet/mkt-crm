@@ -90,6 +90,16 @@ export class UpdateOrderSaga {
         !transitionResult.action ||
         !transitionResult.newStatus
       ) {
+        // Check if this is a terminal status - return as message, not error
+        if (this.orderStatusService.isTerminalStatus(previousStatus)) {
+          return {
+            success: false,
+            orderId: input.orderId,
+            previousStatus,
+            message: transitionResult.error,
+          };
+        }
+
         return {
           success: false,
           error:

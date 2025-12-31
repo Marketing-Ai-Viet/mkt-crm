@@ -219,6 +219,8 @@ export const MKT_ORDER_STATUS_LOG_MESSAGES = {
     `Valid transition: ${from ?? 'null'} -> ${to}`,
   TRANSITION_INVALID: (from: string | null, to: string) =>
     `Invalid transition: ${from ?? 'null'} -> ${to}`,
+  TERMINAL_STATUS_ERROR: (status: string) =>
+    `Cannot change status. Order is in "${status}" state which is a terminal status and cannot be modified`,
   NO_TRANSITION_RULES: (status: string) =>
     `No transition rules defined for status: ${status}`,
 

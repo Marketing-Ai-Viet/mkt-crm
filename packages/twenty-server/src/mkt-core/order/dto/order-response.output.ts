@@ -172,6 +172,12 @@ export class UpdateOrderStatusResponseDto {
   })
   paymentStatus?: PAYMENT_STATUS;
 
+  @Field(() => String, {
+    nullable: true,
+    description: 'User-friendly message for the client',
+  })
+  message?: string;
+
   @Field(() => String, { nullable: true })
   error?: string;
 }

@@ -48,6 +48,17 @@ export class OrderStatusService {
       const stateMachine = new OrderStateMachine(currentOrder);
       const currentStatus = currentOrder?.status as ORDER_STATUS | null;
 
+      // Check for terminal status early - cannot transition from CANCELED or REFUND
+      if (currentStatus && this.isTerminalStatus(currentStatus)) {
+        return {
+          valid: false,
+          action: null,
+          newStatus: null,
+          error:
+            MKT_ORDER_STATUS_LOG_MESSAGES.TERMINAL_STATUS_ERROR(currentStatus),
+        };
+      }
+
       // Build payload for state machine with required type casting
       const payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity> = {
         id: currentOrder?.id ?? '',

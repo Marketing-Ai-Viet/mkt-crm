@@ -156,6 +156,8 @@ export type UpdateOrderStatusResponse = {
   orderId?: string;
   previousStatus?: ORDER_STATUS;
   newStatus?: ORDER_STATUS;
+  /** User-friendly message for the client */
+  message?: string;
   error?: string;
 };
 

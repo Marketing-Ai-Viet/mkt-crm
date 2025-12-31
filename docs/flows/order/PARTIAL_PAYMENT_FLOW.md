@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tài liệu này mô tả các chiến lược và best practices xử lý thanh toán một phần trong hệ thống MKT CRM. Flow này mở rộng từ [ORDER_LICENSE_CREATION_FLOW.md](./ORDER_LICENSE_CREATION_FLOW.md).
+Tài liệu này mô tả các chiến lược và best practices xử lý thanh toán một phần trong hệ thống MKT CRM. Flow này mở rộng từ [ORDER_LICENSE_CREATION_FLOW.md](ORDER_LICENSE_CREATION_FLOW.md).
 
 **Vấn đề cần giải quyết:**
 - Flow hiện tại là **all-or-nothing**: License chỉ được tạo sau khi thanh toán đầy đủ
@@ -435,8 +435,8 @@ const PARTIAL_PAYMENT_DEFAULTS = {
 
 | Document | Description |
 |----------|-------------|
-| [ORDER_LICENSE_CREATION_FLOW.md](./ORDER_LICENSE_CREATION_FLOW.md) | Flow tạo order và license cơ bản |
-| [MULTI_PAYMENT_METHODS_FLOW.md](./MULTI_PAYMENT_METHODS_FLOW.md) | Xử lý nhiều phương thức thanh toán |
+| [ORDER_LICENSE_CREATION_FLOW.md](ORDER_LICENSE_CREATION_FLOW.md) | Flow tạo order và license cơ bản |
+| [MULTI_PAYMENT_METHODS_FLOW.md](MULTI_PAYMENT_METHODS_FLOW.md) | Xử lý nhiều phương thức thanh toán |
 
 ---
 

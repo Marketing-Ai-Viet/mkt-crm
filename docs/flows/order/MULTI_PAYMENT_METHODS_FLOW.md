@@ -766,8 +766,8 @@ const PAYMENT_METHOD_CONFIG = {
 
 | Document | Description |
 |----------|-------------|
-| [ORDER_LICENSE_CREATION_FLOW.md](./ORDER_LICENSE_CREATION_FLOW.md) | Flow tạo order và license |
-| [PARTIAL_PAYMENT_FLOW.md](./PARTIAL_PAYMENT_FLOW.md) | Xử lý thanh toán một phần |
+| [ORDER_LICENSE_CREATION_FLOW.md](ORDER_LICENSE_CREATION_FLOW.md) | Flow tạo order và license |
+| [PARTIAL_PAYMENT_FLOW.md](PARTIAL_PAYMENT_FLOW.md) | Xử lý thanh toán một phần |
 
 ---
 
