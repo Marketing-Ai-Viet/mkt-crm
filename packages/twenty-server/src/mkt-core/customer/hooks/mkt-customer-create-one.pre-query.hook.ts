@@ -13,6 +13,7 @@ import {
   MKT_CUSTOMER_LOG_CONTEXT,
 } from 'src/mkt-core/customer/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
 
 /**
  * Pre-query hook for MktCustomer createOne operation
@@ -76,11 +77,13 @@ export class MktCustomerCreateOnePreQueryHook
     // 5. Build payload with defaults
     const now = DateTimeUtils.toDate(DateTimeUtils.now());
 
-    // 6. Set accountOwnerId to current user if not provided
-    const accountOwnerId =
-      data.accountOwnerId ?? authContext.workspaceMemberId ?? null;
+    // 6. Build ownership fields (createdById + accountOwnerId)
+    const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+      workspaceMemberId: authContext.workspaceMemberId,
+      accountOwnerId: data.accountOwnerId ?? undefined,
+    });
 
-    const enrichedPayload: CreateOneResolverArgs<MktCustomerWorkspaceEntity> = {
+    return {
       ...payload,
       data: {
         ...data,
@@ -94,11 +97,9 @@ export class MktCustomerCreateOnePreQueryHook
         churnRiskScore: data.churnRiskScore ?? 0,
         engagementScore: data.engagementScore ?? 0,
         customerLtv: data.customerLtv ?? 0,
-        accountOwnerId,
+        ...ownershipFields,
       },
     };
-
-    return enrichedPayload;
   }
 
   /**

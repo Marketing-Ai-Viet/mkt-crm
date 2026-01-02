@@ -10,7 +10,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
+import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
 import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import { WebhookLogStatus } from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';

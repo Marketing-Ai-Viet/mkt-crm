@@ -17,7 +17,7 @@ import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/reposito
 import {
   PaymentQrResult,
   RequestSepayJWT,
-} from 'src/mkt-core/payment/constants/payment.type';
+} from 'src/mkt-core/payment/types/payment.type';
 import {
   CreatePaymentInputDto,
   UpdatePaymentInputDto,

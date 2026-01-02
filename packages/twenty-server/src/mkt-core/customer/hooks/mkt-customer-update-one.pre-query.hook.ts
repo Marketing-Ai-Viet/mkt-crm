@@ -11,6 +11,8 @@ import {
   CUSTOMER_MESSAGES,
   MKT_CUSTOMER_LOG_CONTEXT,
 } from 'src/mkt-core/customer/messages';
+import { LinkedAccount } from 'src/mkt-core/customer/types';
+import { LinkedAccountValidationUtil } from 'src/mkt-core/customer/utils';
 
 /**
  * Pre-query hook for MktCustomer updateOne operation
@@ -20,6 +22,7 @@ import {
  * - Validate email uniqueness (if email is being updated)
  * - Validate tax code format (if tax code is being updated)
  * - Prevent mktCustomerCode from being changed (immutable after creation)
+ * - Validate linkedAccounts: ensure only one isPrimary per provider
  */
 @Injectable()
 @WorkspaceQueryHook('mktCustomer.updateOne')
@@ -71,6 +74,30 @@ export class MktCustomerUpdateOnePreQueryHook
     // 4. Validate tax code format (if tax code is being updated)
     if (data.taxCode !== undefined && data.taxCode !== null) {
       this.validateTaxCode(data.taxCode);
+    }
+
+    // 5. Validate linkedAccounts: ensure only one isPrimary per provider
+    if (data.linkedAccounts !== undefined && data.linkedAccounts !== null) {
+      const linkedAccounts = data.linkedAccounts as LinkedAccount[];
+
+      // Auto-fix and validate
+      const { fixed, fixedProviders } =
+        LinkedAccountValidationUtil.autoFixPrimary(linkedAccounts);
+
+      if (fixedProviders.length > 0) {
+        this.logger.warn(
+          CUSTOMER_MESSAGES.WARN.LINKED_ACCOUNT_PRIMARY_AUTO_FIXED(
+            fixedProviders,
+          ),
+        );
+        // Use the fixed array
+        data.linkedAccounts = fixed;
+      }
+
+      // Final validation (should pass after auto-fix, but double-check)
+      LinkedAccountValidationUtil.validateOrThrow(
+        data.linkedAccounts as LinkedAccount[],
+      );
     }
 
     return payload;

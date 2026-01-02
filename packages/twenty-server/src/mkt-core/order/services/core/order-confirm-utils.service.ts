@@ -30,7 +30,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
-import { PaymentQrResult } from 'src/mkt-core/payment/constants/payment.type';
+import { PaymentQrResult } from 'src/mkt-core/payment/types/payment.type';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import {

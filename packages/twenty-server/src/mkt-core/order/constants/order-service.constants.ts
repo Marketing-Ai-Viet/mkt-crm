@@ -1,5 +1,5 @@
 import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/order/types';
-import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/constants/payment.type';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import {
   ORDER_ACTION,
   ORDER_STATUS,

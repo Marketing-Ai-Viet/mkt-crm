@@ -7,7 +7,7 @@ import {
   OrderEventPayload,
   PaymentEventPayload,
 } from 'src/mkt-core/order/types';
-import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/constants/payment.type';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import {
   ACTION_TO_ORDER_EVENT_TYPE,
   ACTION_TO_PAYMENT_TYPE,

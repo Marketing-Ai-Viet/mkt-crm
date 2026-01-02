@@ -4,7 +4,7 @@ import { QueryRunner } from 'typeorm';
 
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/constants/payment.type';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 

@@ -29,7 +29,7 @@ import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-te
 import {
   RequestSepayJWT,
   SepayWebhookRequest,
-} from 'src/mkt-core/payment/constants/payment.type';
+} from 'src/mkt-core/payment/types/payment.type';
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import {
   SEPAY_TEMPLATE_DEFAULTS,

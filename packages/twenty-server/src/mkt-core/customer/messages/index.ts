@@ -116,6 +116,8 @@ export const CUSTOMER_MESSAGES = {
     TEMPLATE_NOT_FOUND: 'Email template not found, skipping email send',
     CUSTOMER_NOT_FOUND_BY_MKT_ACCOUNT: (mktAccountId: string, email?: string) =>
       `Customer not found for MKT Account: ${mktAccountId}${email ? `, email: ${email}` : ''}`,
+    LINKED_ACCOUNT_PRIMARY_AUTO_FIXED: (providers: string[]) =>
+      `Auto-fixed multiple primary accounts for providers: ${providers.join(', ')}. Only first primary kept.`,
   },
 
   ERROR: {
@@ -150,6 +152,12 @@ export const CUSTOMER_MESSAGES = {
       `MKT account ${mktAccountId} is already linked to another customer`,
     ACCOUNT_NOT_LINKED: (mktAccountId: string, customerId: string) =>
       `MKT account ${mktAccountId} is not linked to customer ${customerId}`,
+
+    // Linked account validation errors
+    LINKED_ACCOUNT_DUPLICATE_PRIMARY: (provider: string) =>
+      `Provider "${provider}" can only have one primary account`,
+    LINKED_ACCOUNT_INVALID: (errors: string[]) =>
+      `Invalid linkedAccounts: ${errors.join('; ')}`,
   },
 
   INFO: {
