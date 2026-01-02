@@ -217,6 +217,19 @@ export class CreateOrderWithItemsInputDto {
   @IsOptional()
   @IsBoolean()
   applyAutoPromotions?: boolean;
+
+  // ============================================
+  // MKT SERVER EMAIL (Optional override)
+  // ============================================
+
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'Email for MKT Server license registration. If not specified, auto-fetches from customer linkedAccounts (isPrimary=true, status=ACTIVE, provider=MKT_SERVER)',
+  })
+  @IsOptional()
+  @IsString()
+  mktServerEmail?: string;
 }
 
 /**

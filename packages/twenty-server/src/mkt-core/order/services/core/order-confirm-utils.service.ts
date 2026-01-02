@@ -70,6 +70,7 @@ export class OrderConfirmUtilsService {
     @Inject(ORDER_CONFIG_KEY)
     private readonly config: OrderConfig,
   ) {
+    // TODO : Load prefix from config
     this.orderCodePrefix =
       this.config?.code?.prefix ?? ORDER_CODE_DEFAULTS.PREFIX;
   }

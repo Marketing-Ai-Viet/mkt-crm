@@ -80,6 +80,14 @@ export type CreateOrderWithItemsInput = {
   couponCode?: string;
   /** Whether to automatically apply eligible promotions (default: true) */
   applyAutoPromotions?: boolean;
+
+  // MKT Server email override
+  /**
+   * Email for MKT Server license registration.
+   * If not specified, auto-fetches from customer linkedAccounts
+   * (isPrimary=true, status=ACTIVE, provider=MKT_SERVER)
+   */
+  mktServerEmail?: string;
 };
 
 /**

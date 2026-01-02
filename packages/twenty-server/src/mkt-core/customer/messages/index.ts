@@ -158,6 +158,12 @@ export const CUSTOMER_MESSAGES = {
       `Provider "${provider}" can only have one primary account`,
     LINKED_ACCOUNT_INVALID: (errors: string[]) =>
       `Invalid linkedAccounts: ${errors.join('; ')}`,
+
+    // MKT Server email errors
+    MKT_SERVER_EMAIL_NOT_FOUND: (customerId: string) =>
+      `Customer "${customerId}" does not have a valid MKT_SERVER linked account (isPrimary=true, status=ACTIVE). Please configure linkedAccounts or provide mktServerEmail in the request.`,
+    MKT_SERVER_EMAIL_NO_LINKED_ACCOUNTS: (customerId: string) =>
+      `Customer "${customerId}" has no linkedAccounts configured. Please add an MKT_SERVER account with isPrimary=true and status=ACTIVE, or provide mktServerEmail in the request.`,
   },
 
   INFO: {

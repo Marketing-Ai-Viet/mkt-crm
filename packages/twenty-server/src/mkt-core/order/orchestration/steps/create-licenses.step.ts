@@ -191,17 +191,34 @@ export class CreateLicensesStep extends SagaStep<
 
   /**
    * Get customer email for license creation
-   * Priority: MKT_SERVER linkedAccount > customer.email
+   *
+   * Priority:
+   * 1. input.mktServerEmail (explicit override from API)
+   * 2. MKT_SERVER linkedAccount (isPrimary=true, status=ACTIVE)
+   *
+   * @throws Error if no valid email found (no mktServerEmail provided and no valid linkedAccount)
    */
   private async getCustomerEmail(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
   ): Promise<string> {
+    // Priority 1: Use explicit mktServerEmail from input if provided
+    if (input.mktServerEmail) {
+      this.logger.debug(
+        `Using explicit mktServerEmail from input: "${input.mktServerEmail}"`,
+      );
+
+      return input.mktServerEmail;
+    }
+
+    // Priority 2: Extract from linkedAccounts (throws if not found)
     const customerId =
       input.customerId ?? (context.metadata.get('customerId') as string) ?? '';
 
     if (!customerId) {
-      return '';
+      throw new Error(
+        'No customerId provided. Cannot determine email for license creation.',
+      );
     }
 
     const customer = await this.customerRepository.findByIdOrNull(
@@ -209,9 +226,16 @@ export class CreateLicensesStep extends SagaStep<
       context.workspaceId,
     );
 
+    if (!customer) {
+      throw new Error(
+        `Customer "${customerId}" not found. Cannot determine email for license creation.`,
+      );
+    }
+
+    // This will throw if no valid MKT_SERVER email found
     const email = this.customerRepository.extractMktServerEmail(
-      customer?.linkedAccounts as LinkedAccount[] | null,
-      customer?.email ?? null,
+      customer.linkedAccounts as LinkedAccount[] | null,
+      customerId,
     );
 
     this.logger.debug(

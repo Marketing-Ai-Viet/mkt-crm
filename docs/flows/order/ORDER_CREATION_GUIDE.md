@@ -14,30 +14,44 @@ Tài liệu này mô tả quy trình tạo đơn hàng và cấp license cho kh�
 
 ## 1. Tổng quan Quy trình
 
-### 1.1 Hai Luồng Thanh toán
+### 1.1 Luồng Thanh toán Thống nhất
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│              HAI LUỒNG THANH TOÁN VÀ CẤP LICENSE               │
+│           LUỒNG THANH TOÁN THỐNG NHẤT (TẤT CẢ PHƯƠNG THỨC)     │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
-│  🔄 LUỒNG 1: SEPay (Tự động hoàn toàn)                        │
-│  ─────────────────────────────────────                        │
-│  Tạo đơn → Khách quét QR SEPay → Thanh toán thành công        │
-│          → Webhook tự động xác nhận → License cấp ngay        │
+│  BƯỚC 1: Tạo đơn hàng                                          │
+│  ─────────────────────                                         │
+│  Tạo đơn (bất kỳ phương thức TT nào)                           │
+│              ↓                                                 │
+│  Hệ thống TỰ ĐỘNG cấp LICENSE TRIAL (30 ngày)                  │
+│              ↓                                                 │
+│  Khách có thể sử dụng phần mềm NGAY                            │
 │                                                                │
-│  ⏳ Thời gian: Vài giây sau khi thanh toán                    │
-│  👤 Không cần Kế toán xác nhận                                │
+│  ✅ Áp dụng cho: SEPay, Chuyển khoản, Tiền mặt                 │
 │                                                                │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
-│  👋 LUỒNG 2: Tiền mặt / Chuyển khoản thường                   │
-│  ─────────────────────────────────────────                    │
-│  Tạo đơn → Khách thanh toán → Kế toán xác nhận thủ công       │
-│          → License được cấp                                    │
+│  BƯỚC 2: Xác nhận thanh toán                                   │
+│  ───────────────────────────                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ SEPay                    │ Chuyển khoản / Tiền mặt     │   │
+│  ├──────────────────────────┼─────────────────────────────┤   │
+│  │ Webhook TỰ ĐỘNG xác nhận │ Kế toán xác nhận THỦ CÔNG   │   │
+│  │ (vài giây sau khi TT)    │ (trong giờ hành chính)      │   │
+│  └──────────────────────────┴─────────────────────────────┘   │
+│              ↓                                                 │
+│  Hệ thống: Thu hồi trial → Cấp license CHÍNH THỨC              │
+│              ↓                                                 │
+│  Đơn hàng: "Hoàn thành"                                        │
 │                                                                │
-│  ⏳ Thời gian: Sau khi Kế toán xác nhận (trong giờ hành chính)│
-│  👤 Cần Kế toán xác nhận                                      │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  TRƯỜNG HỢP: Chưa thanh toán sau 30 ngày                       │
+│  ───────────────────────────────────────                       │
+│  Ngày 30: Gửi email nhắc nhở + Gia hạn 7 ngày                  │
+│  Sau ngày 37: Thu hồi license → Đơn chuyển "Quá hạn"           │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -53,11 +67,13 @@ Tài liệu này mô tả quy trình tạo đơn hàng và cấp license cho kh�
 
 ### 1.3 Các Phương thức Thanh toán
 
-| Phương thức | Loại | Xác nhận | Cấp License |
-|-------------|------|----------|-------------|
-| **SEPay** | Tự động | Webhook tự động | Tự động ngay lập tức |
-| **Chuyển khoản ngân hàng** | Thủ công | Kế toán xác nhận | Sau khi Kế toán xác nhận |
-| **Tiền mặt** | Thủ công | Kế toán xác nhận | Sau khi Kế toán xác nhận |
+| Phương thức | Xác nhận | License ban đầu | License chính thức |
+|-------------|----------|-----------------|-------------------|
+| **SEPay** | Webhook tự động (vài giây) | Trial 30 ngày | Thu hồi trial → Cấp mới |
+| **Chuyển khoản ngân hàng** | Kế toán xác nhận (giờ HC) | Trial 30 ngày | Thu hồi trial → Cấp mới |
+| **Tiền mặt** | Kế toán xác nhận (giờ HC) | Trial 30 ngày | Thu hồi trial → Cấp mới |
+
+> **Lưu ý:** Tất cả phương thức thanh toán đều cấp License Trial 30 ngày ngay khi tạo đơn. Sự khác biệt chỉ ở cách xác nhận thanh toán (tự động vs thủ công).
 
 ---
 
@@ -120,71 +136,137 @@ Xác nhận tạo đơn
 
 ### 2.2 Bước 2: Thanh toán
 
-#### A. Thanh toán qua SEPay (Tự động)
+#### A. Thanh toán qua SEPay (Tự động xác nhận)
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│               LUỒNG SEPAY - TỰ ĐỘNG HOÀN TOÀN                  │
+│            LUỒNG SEPAY - TỰ ĐỘNG XÁC NHẬN THANH TOÁN           │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
+│  BƯỚC 1: Tạo đơn hàng                                          │
+│  ────────────────────                                          │
+│  Tạo đơn (chọn SEPay) → Hiển thị QR thanh toán                 │
+│              ↓                                                 │
+│  Hệ thống TỰ ĐỘNG cấp LICENSE TRIAL (30 ngày)                  │
+│              ↓                                                 │
+│  Đơn hàng: "Chờ thanh toán" + License Trial đang hoạt động     │
+│                                                                │
+│  ✅ Khách có thể sử dụng phần mềm NGAY với license trial       │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  BƯỚC 2: Thanh toán qua SEPay                                  │
+│  ────────────────────────────                                  │
 │  Khách quét mã QR SEPay                                        │
 │              ↓                                                 │
 │  Khách xác nhận thanh toán trên app ngân hàng                  │
 │              ↓                                                 │
-│  SEPay nhận tiền thành công                                    │
-│              ↓                                                 │
-│  SEPay gửi webhook đến hệ thống CRM                            │
+│  SEPay nhận tiền → Gửi webhook đến CRM                         │
 │              ↓                                                 │
 │  Hệ thống TỰ ĐỘNG:                                             │
 │     • Xác nhận thanh toán                                      │
-│     • Cấp license ngay lập tức                                 │
-│     • Gửi email license cho khách                              │
+│     • THU HỒI license trial                                    │
+│     • Cấp LICENSE CHÍNH THỨC                                   │
+│     • Gửi email license chính thức cho khách                   │
 │              ↓                                                 │
 │  Đơn hàng: "Hoàn thành"                                        │
 │                                                                │
-│  ⏱️ Tổng thời gian: Vài giây                                  │
+│  ⏱️ Thời gian xác nhận: Vài giây sau khi thanh toán           │
 │  👤 Không cần sự can thiệp của nhân viên                       │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  LƯU Ý: QR Code có thời hạn                                    │
+│  ─────────────────────────────                                 │
+│  • QR SEPay có thời hạn 15-30 phút để bảo mật                  │
+│  • Nếu QR hết hạn → Nhấn "Tạo mã mới" để refresh               │
+│  • Khách đã có license trial nên không bị gián đoạn sử dụng    │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 ```
 
 **Ưu điểm SEPay:**
-- Nhanh chóng, khách nhận license ngay
-- Không cần Kế toán xác nhận
-- Hoạt động 24/7
+- Xác nhận tự động 24/7, không cần chờ Kế toán
+- Khách có license trial ngay, không bị gián đoạn
+- QR hết hạn không ảnh hưởng đến việc sử dụng phần mềm
 
-#### B. Thanh toán Chuyển khoản / Tiền mặt (Thủ công)
+#### B. Thanh toán Chuyển khoản / Tiền mặt (Xác nhận thủ công)
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│           LUỒNG CHUYỂN KHOẢN / TIỀN MẶT - THỦ CÔNG             │
+│     LUỒNG CHUYỂN KHOẢN / TIỀN MẶT - XÁC NHẬN THỦ CÔNG          │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
+│  BƯỚC 1: Tạo đơn hàng                                          │
+│  ────────────────────                                          │
+│  Tạo đơn (chọn Chuyển khoản/Tiền mặt)                          │
+│              ↓                                                 │
+│  Hệ thống TỰ ĐỘNG cấp LICENSE TRIAL (30 ngày)                  │
+│              ↓                                                 │
+│  Đơn hàng: "Chờ thanh toán" + License Trial đang hoạt động     │
+│              ↓                                                 │
+│  Gửi email: Thông tin đơn + License Trial + Hướng dẫn TT       │
+│                                                                │
+│  ✅ Khách có thể sử dụng phần mềm NGAY với license trial       │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  BƯỚC 2: Xác nhận thanh toán (trong vòng 30 ngày)              │
+│  ────────────────────────────────────────────────              │
 │  Khách chuyển khoản / thanh toán tiền mặt                      │
 │              ↓                                                 │
-│  Kế toán kiểm tra sao kê ngân hàng / nhận tiền mặt             │
-│              ↓                                                 │
-│  Kế toán tìm đơn hàng trên CRM                                 │
+│  Kế toán kiểm tra sao kê / nhận tiền                           │
 │              ↓                                                 │
 │  Kế toán nhấn "Xác nhận thanh toán"                            │
 │              ↓                                                 │
 │  Hệ thống TỰ ĐỘNG:                                             │
-│     • Cấp license                                              │
-│     • Gửi email license cho khách                              │
+│     • THU HỒI license trial                                    │
+│     • Cấp LICENSE CHÍNH THỨC (theo thời hạn mua)               │
+│     • Gửi email license chính thức cho khách                   │
 │              ↓                                                 │
 │  Đơn hàng: "Hoàn thành"                                        │
 │                                                                │
-│  ⏱️ Thời gian: Phụ thuộc vào Kế toán (trong giờ hành chính)   │
-│  👤 Cần Kế toán xác nhận thủ công                              │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  TRƯỜNG HỢP: Chưa thanh toán khi trial hết hạn                 │
+│  ─────────────────────────────────────────────                 │
+│  Ngày 30: Trial hết hạn                                        │
+│              ↓                                                 │
+│  Hệ thống gửi EMAIL NHẮC NHỞ thanh toán                        │
+│              ↓                                                 │
+│  Gia hạn thêm 7 NGÀY để thanh toán                             │
+│              ↓                                                 │
+│  ┌──────────────────┬──────────────────────────┐               │
+│  │ Thanh toán trong │ Không thanh toán sau     │               │
+│  │ 7 ngày gia hạn   │ 7 ngày gia hạn           │               │
+│  ├──────────────────┼──────────────────────────┤               │
+│  │ → Thu hồi trial  │ → License bị REVOKE      │               │
+│  │ → Cấp license    │ → Đơn hàng: "Quá hạn"    │               │
+│  │   chính thức     │ → Khách cần tạo đơn mới  │               │
+│  └──────────────────┴──────────────────────────┘               │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-#### Thời hạn thanh toán
+**Ưu điểm cấp Trial trước:**
+- Khách được sử dụng phần mềm ngay, không cần chờ xác nhận
+- Giảm áp lực cho Kế toán (không cần xác nhận gấp)
+- Tăng tỷ lệ chuyển đổi (khách đã dùng thử → dễ quyết định mua)
 
-- **Không giới hạn thời gian:** Đơn hàng giữ trạng thái "Chờ thanh toán" cho đến khi được thanh toán hoặc hủy
-- **Không tự động khóa license:** Hệ thống không tự động khóa hay hủy đơn quá hạn
-- **Nhắc nhở:** Có thể cấu hình gửi email nhắc nhở khách sau X ngày
+**Quy tắc quan trọng:**
+- Trial mặc định: **30 ngày**
+- Gia hạn khi hết trial: **+7 ngày** (kèm email nhắc nhở)
+- Tổng thời gian tối đa chờ thanh toán: **37 ngày**
+- Sau 37 ngày không thanh toán: License bị thu hồi, đơn chuyển "Quá hạn"
+
+#### Thời hạn thanh toán (Chuyển khoản/Tiền mặt)
+
+| Giai đoạn | Thời gian | License | Hành động hệ thống |
+|-----------|-----------|---------|-------------------|
+| Trial ban đầu | 30 ngày | ✅ Trial hoạt động | Khách sử dụng bình thường |
+| Nhắc nhở | Ngày 30 | ✅ Trial hoạt động | Gửi email nhắc thanh toán |
+| Gia hạn | +7 ngày | ✅ Trial hoạt động | Chờ thanh toán |
+| Quá hạn | Sau ngày 37 | ❌ Bị thu hồi | Chuyển trạng thái "Quá hạn" |
 
 ---
 
@@ -254,16 +336,20 @@ Trân trọng,
 
 ---
 
-## 3. So sánh Hai Luồng Thanh toán
+## 3. So sánh Các Phương thức Thanh toán
 
-| Tiêu chí | SEPay (Tự động) | Chuyển khoản/Tiền mặt (Thủ công) |
-|----------|-----------------|----------------------------------|
-| **Xác nhận thanh toán** | Webhook tự động | Kế toán xác nhận |
-| **Cấp license** | Tự động ngay lập tức | Sau khi Kế toán xác nhận |
-| **Thời gian nhận license** | Vài giây | Phụ thuộc Kế toán |
-| **Hoạt động 24/7** | ✅ Có | ❌ Chỉ trong giờ hành chính |
+| Tiêu chí | SEPay | Chuyển khoản / Tiền mặt |
+|----------|-------|-------------------------|
+| **License ban đầu** | Trial 30 ngày | Trial 30 ngày |
+| **Xác nhận thanh toán** | Webhook tự động (vài giây) | Kế toán xác nhận (giờ HC) |
+| **Cấp license chính thức** | Thu hồi trial → Cấp mới | Thu hồi trial → Cấp mới |
+| **Thời gian chờ tối đa** | 37 ngày (30 + 7 gia hạn) | 37 ngày (30 + 7 gia hạn) |
+| **Khách dùng phần mềm ngay** | ✅ Có (license trial) | ✅ Có (license trial) |
+| **Xác nhận 24/7** | ✅ Có | ❌ Giờ hành chính |
 | **Cần nhân viên** | ❌ Không | ✅ Cần Kế toán |
 | **Phù hợp với** | Khách cá nhân, mua online | Doanh nghiệp, thanh toán lớn |
+
+> **Lưu ý:** Cả hai phương thức đều cấp Trial 30 ngày ngay khi tạo đơn. Sự khác biệt chính là **cách xác nhận thanh toán**: SEPay tự động qua webhook, Chuyển khoản/Tiền mặt cần Kế toán xác nhận.
 
 ---
 
@@ -347,16 +433,21 @@ Thu hồi license cũ + Cấp license mới
 | Trạng thái | Ý nghĩa | License | Hành động tiếp theo |
 |------------|---------|---------|---------------------|
 | Nháp (Draft) | Đơn đang soạn, chưa gửi | ❌ Chưa có | Hoàn tất → Chờ thanh toán |
-| Chờ thanh toán | Đợi khách thanh toán | ❌ Chưa có | Thanh toán → Xác nhận |
-| Đang dùng thử | Khách đang trial | ✅ Trial | Mua → Chờ thanh toán |
+| Chờ thanh toán | Đợi khách thanh toán | ✅ Trial 30 ngày (*) | Thanh toán → Xác nhận |
+| Đang dùng thử | Khách đang trial (đơn trial thuần) | ✅ Trial | Mua → Chờ thanh toán |
 | Trial hết hạn | Hết thời gian trial | ❌ Hết hạn | Mua mới |
 | Đã xác nhận | Thanh toán xác nhận | ⏳ Đang tạo | Tự động → Hoàn thành |
 | Hoàn thành | Đơn hoàn tất | ✅ Hoạt động | Gia hạn / Nâng cấp |
+| Quá hạn | Hết 37 ngày chưa thanh toán | ❌ Bị thu hồi | Tạo đơn mới |
 | Đã chặn | Admin chặn đơn | ❌ Bị khóa | Mở khóa hoặc Hủy |
 | Đã hủy | Đơn bị hủy | ❌ Không có | Tạo đơn mới |
 | Hoàn tiền | Đã hoàn tiền | ❌ Bị thu hồi | Không thể thay đổi |
 
-> **Lưu ý:** Đơn hàng "Chờ thanh toán" sẽ giữ nguyên trạng thái cho đến khi được thanh toán hoặc hủy. Hệ thống **KHÔNG tự động** chuyển sang quá hạn hay khóa license.
+> (*) **Lưu ý về Trial cho thanh toán thủ công:**
+> - Đơn "Chờ thanh toán" (Chuyển khoản/Tiền mặt) được cấp license trial 30 ngày
+> - Ngày 30: Gửi email nhắc nhở, gia hạn thêm 7 ngày
+> - Sau 37 ngày không thanh toán: License bị thu hồi, đơn chuyển "Quá hạn"
+> - Đơn SEPay không có trial (chờ thanh toán hoàn tất mới cấp license chính thức)
 
 ### 5.2 Sơ đồ Luồng Trạng thái
 
@@ -393,15 +484,23 @@ Thu hồi license cũ + Cấp license mới
 
 ## 6. Xử lý Các Trường hợp Đặc biệt
 
-### 6.1 Đơn hàng Chờ Thanh toán Lâu
+### 6.1 Đơn hàng Chờ Thanh toán Lâu (Chuyển khoản/Tiền mặt)
 
-**Tình huống:** Khách tạo đơn nhưng chưa thanh toán sau nhiều ngày.
+**Tình huống:** Khách tạo đơn (Chuyển khoản/Tiền mặt) nhưng chưa thanh toán.
 
-**Xử lý:**
-- Đơn vẫn giữ trạng thái "Chờ thanh toán"
-- **KHÔNG tự động khóa** hay hủy
-- Có thể cấu hình gửi email nhắc nhở
-- Admin có thể hủy đơn thủ công nếu cần
+**Xử lý tự động:**
+
+| Ngày | Hành động |
+|------|-----------|
+| Ngày 1-30 | Khách sử dụng license trial bình thường |
+| Ngày 30 | Hệ thống gửi email nhắc nhở thanh toán |
+| Ngày 30-37 | Gia hạn trial thêm 7 ngày, chờ thanh toán |
+| Sau ngày 37 | License bị thu hồi, đơn chuyển "Quá hạn" |
+
+**Lưu ý:**
+- Khách được dùng phần mềm trong 37 ngày (30 + 7 gia hạn)
+- Admin có thể hủy đơn thủ công bất kỳ lúc nào
+- Nếu khách thanh toán sau ngày 37, cần tạo đơn mới
 
 ### 6.2 Khách Thanh toán Sai Số tiền
 
@@ -508,24 +607,30 @@ Thu hồi license cũ + Cấp license mới
 
 ## 8. Câu hỏi Thường gặp (FAQ)
 
-### Q1: Sau khi thanh toán, bao lâu thì nhận được license?
-**A:**
-- **SEPay:** Ngay lập tức (vài giây sau khi thanh toán)
-- **Chuyển khoản/Tiền mặt:** Sau khi Kế toán xác nhận (trong giờ hành chính)
+### Q1: Sau khi tạo đơn, bao lâu thì nhận được license?
+**A:** Ngay lập tức! Tất cả phương thức thanh toán (SEPay, Chuyển khoản, Tiền mặt) đều cấp **LICENSE TRIAL 30 ngày** ngay khi tạo đơn. Khách có thể sử dụng phần mềm ngay.
+- Khi thanh toán được xác nhận → Thu hồi trial → Cấp license chính thức
 
 ### Q2: Tại sao nên chọn thanh toán qua SEPay?
 **A:**
-- Nhận license ngay lập tức, không cần chờ
-- Hoạt động 24/7, kể cả ngoài giờ hành chính
-- Tự động, không cần liên hệ Kế toán
+- Xác nhận thanh toán tự động 24/7 (webhook)
+- Chuyển từ trial sang license chính thức chỉ trong vài giây
+- Không cần chờ Kế toán xác nhận
 
 ### Q3: Đơn hàng chờ thanh toán có bị tự động hủy không?
-**A:** Không. Đơn hàng sẽ giữ trạng thái "Chờ thanh toán" cho đến khi được thanh toán hoặc Admin hủy thủ công.
+**A:** Tất cả phương thức thanh toán có cùng quy tắc:
+- Trial 30 ngày → Ngày 30: gửi email nhắc nhở + gia hạn 7 ngày
+- Sau 37 ngày không thanh toán → License bị thu hồi → Đơn chuyển "Quá hạn"
 
 ### Q4: Khách thanh toán ngoài giờ hành chính thì sao?
-**A:**
-- **SEPay:** License được cấp ngay
-- **Chuyển khoản:** Đợi Kế toán xác nhận vào ngày làm việc tiếp theo
+**A:** Khách đã có license trial để sử dụng ngay, không bị gián đoạn.
+- **SEPay:** Xác nhận tự động 24/7 → License chính thức được cấp ngay
+- **Chuyển khoản/Tiền mặt:** Kế toán xác nhận vào ngày làm việc tiếp theo
+
+### Q4b: Trial 30 ngày có khác với Trial của đơn dùng thử không?
+**A:** Có khác:
+- **Trial khi tạo đơn mua (30 ngày):** Cấp tự động cho TẤT CẢ đơn hàng (SEPay, Chuyển khoản, Tiền mặt). Khi thanh toán được xác nhận → Thu hồi trial → Cấp license chính thức
+- **Trial đơn dùng thử thuần (7-14 ngày):** Dành cho khách dùng thử miễn phí, hết hạn phải tạo đơn mới để mua
 
 ### Q5: Khách muốn thay đổi sản phẩm sau khi tạo đơn?
 **A:**
@@ -606,6 +711,7 @@ Khách báo đã thanh toán SEPay nhưng chưa nhận license
 |-----------|------|----------------|-------------------|
 | 1.0 | 2024-01-15 | - | Tạo mới tài liệu |
 | 1.1 | 2024-01-16 | - | Cập nhật luồng SEPay tự động, bỏ tự động khóa license |
+| 1.2 | 2025-01-02 | - | **LUỒNG THỐNG NHẤT**: Tất cả phương thức thanh toán (SEPay, Chuyển khoản, Tiền mặt) đều cấp License Trial 30 ngày ngay khi tạo đơn. Gia hạn +7 ngày nếu chưa thanh toán (tối đa 37 ngày). Thu hồi trial và cấp license chính thức khi xác nhận thanh toán. Sự khác biệt chỉ còn ở cách xác nhận: SEPay (webhook tự động) vs Chuyển khoản/Tiền mặt (Kế toán xác nhận). |
 
 ---
 

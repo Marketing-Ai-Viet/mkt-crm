@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import {
-  IdempotencyService,
-  IdempotencyDomain,
-  IDEMPOTENCY_ORDER_ACTION,
-} from 'src/mkt-core/common/idempotency';
+// TODO: Re-enable idempotency after testing
+// import {
+//   IdempotencyService,
+//   IdempotencyDomain,
+//   IDEMPOTENCY_ORDER_ACTION,
+// } from 'src/mkt-core/common/idempotency';
+import { IdempotencyService } from 'src/mkt-core/common/idempotency';
 import {
   MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
   MKT_ORDER_ORCHESTRATION_LOG_MESSAGES,
@@ -58,7 +60,9 @@ export class OrderOrchestrationService {
 
   /**
    * Create order with items using saga pattern
-   * Includes idempotency support to prevent duplicate orders
+   *
+   * TODO: Re-enable idempotency after testing
+   * Idempotency temporarily disabled for debugging
    */
   async createOrderWithItems(
     workspaceId: string,
@@ -67,23 +71,27 @@ export class OrderOrchestrationService {
   ): Promise<CreateOrderResponse> {
     this.logger.log(LOG.CREATE_START(input.customerId, input.action));
 
-    const result =
-      await this.idempotencyService.executeWithIdempotency<CreateOrderResponse>(
-        {
-          workspaceId,
-          domain: 'order' as IdempotencyDomain,
-          action: IDEMPOTENCY_ORDER_ACTION.CREATE_ORDER,
-          requestBody: input,
-        },
-        async () =>
-          this.executeCreateOrder(workspaceId, workspaceMemberId, input),
-      );
+    // TODO: Re-enable idempotency after testing
+    // const result =
+    //   await this.idempotencyService.executeWithIdempotency<CreateOrderResponse>(
+    //     {
+    //       workspaceId,
+    //       domain: 'order' as IdempotencyDomain,
+    //       action: IDEMPOTENCY_ORDER_ACTION.CREATE_ORDER,
+    //       requestBody: input,
+    //     },
+    //     async () =>
+    //       this.executeCreateOrder(workspaceId, workspaceMemberId, input),
+    //   );
+    //
+    // if (result.fromCache) {
+    //   this.logger.log(LOG.CREATE_CACHED());
+    // }
+    //
+    // return result.data;
 
-    if (result.fromCache) {
-      this.logger.log(LOG.CREATE_CACHED());
-    }
-
-    return result.data;
+    // Direct execution without idempotency (temporary)
+    return this.executeCreateOrder(workspaceId, workspaceMemberId, input);
   }
 
   /**

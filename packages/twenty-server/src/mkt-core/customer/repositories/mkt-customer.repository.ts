@@ -5,7 +5,10 @@ import { IsNull, QueryRunner } from 'typeorm';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { ACCOUNT_PROVIDER } from 'src/mkt-core/customer/constants/linked-account.constants';
+import {
+  ACCOUNT_PROVIDER,
+  LINKED_ACCOUNT_STATUS,
+} from 'src/mkt-core/customer/constants/linked-account.constants';
 import {
   CUSTOMER_MESSAGES,
   MKT_CUSTOMER_LOG_CONTEXT,
@@ -658,46 +661,54 @@ export class MktCustomerRepository {
 
   /**
    * Extract MKT_SERVER email from linkedAccounts
-   * Falls back to customer email if no MKT_SERVER account found
+   * Throws error if no valid MKT_SERVER account found
    *
    * Priority:
-   * 1. Primary MKT_SERVER account email
-   * 2. Any MKT_SERVER account with email
-   * 3. Fallback email (usually customer.email)
+   * 1. Primary + ACTIVE MKT_SERVER account email
+   * 2. Any ACTIVE MKT_SERVER account with email
    *
    * @param linkedAccounts - Array of linked accounts from customer
-   * @param fallbackEmail - Fallback email if no MKT_SERVER account found
-   * @returns Email string (empty string if no email found)
+   * @param customerId - Customer ID for error messages
+   * @throws Error if no valid MKT_SERVER email found
+   * @returns Email string from valid MKT_SERVER account
    */
   extractMktServerEmail(
     linkedAccounts: LinkedAccount[] | null | undefined,
-    fallbackEmail: string | null,
+    customerId: string,
   ): string {
     if (!linkedAccounts || linkedAccounts.length === 0) {
-      return fallbackEmail ?? '';
+      throw new Error(
+        CUSTOMER_MESSAGES.ERROR.MKT_SERVER_EMAIL_NO_LINKED_ACCOUNTS(customerId),
+      );
     }
 
-    // Find primary MKT_SERVER account first
+    // Find primary + ACTIVE MKT_SERVER account first
     const primaryMktAccount = linkedAccounts.find(
       (account) =>
-        account.provider === ACCOUNT_PROVIDER.MKT_SERVER && account.isPrimary,
+        account.provider === ACCOUNT_PROVIDER.MKT_SERVER &&
+        account.isPrimary &&
+        account.status === LINKED_ACCOUNT_STATUS.ACTIVE,
     );
 
     if (primaryMktAccount?.email) {
       return primaryMktAccount.email;
     }
 
-    // Fall back to any active MKT_SERVER account
-    const anyMktAccount = linkedAccounts.find(
+    // Fall back to any ACTIVE MKT_SERVER account with email
+    const anyActiveMktAccount = linkedAccounts.find(
       (account) =>
-        account.provider === ACCOUNT_PROVIDER.MKT_SERVER && account.email,
+        account.provider === ACCOUNT_PROVIDER.MKT_SERVER &&
+        account.status === LINKED_ACCOUNT_STATUS.ACTIVE &&
+        account.email,
     );
 
-    if (anyMktAccount?.email) {
-      return anyMktAccount.email;
+    if (anyActiveMktAccount?.email) {
+      return anyActiveMktAccount.email;
     }
 
-    // Fall back to customer email
-    return fallbackEmail ?? '';
+    // No valid MKT_SERVER email found - throw error
+    throw new Error(
+      CUSTOMER_MESSAGES.ERROR.MKT_SERVER_EMAIL_NOT_FOUND(customerId),
+    );
   }
 }

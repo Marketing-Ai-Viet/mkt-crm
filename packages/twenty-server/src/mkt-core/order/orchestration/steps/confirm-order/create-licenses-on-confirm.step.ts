@@ -210,13 +210,17 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
 
   /**
    * Get customer email for license creation
+   *
+   * @throws Error if customer not found or no valid MKT_SERVER email
    */
   private async getCustomerEmail(
     workspaceId: string,
     customerId: string,
   ): Promise<string> {
     if (!customerId) {
-      return '';
+      throw new Error(
+        'No customerId provided. Cannot determine email for license creation.',
+      );
     }
 
     const customer = await this.customerRepository.findByIdOrNull(
@@ -224,9 +228,16 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       workspaceId,
     );
 
+    if (!customer) {
+      throw new Error(
+        `Customer "${customerId}" not found. Cannot determine email for license creation.`,
+      );
+    }
+
+    // This will throw if no valid MKT_SERVER email found
     const email = this.customerRepository.extractMktServerEmail(
-      customer?.linkedAccounts as LinkedAccount[] | null,
-      customer?.email ?? null,
+      customer.linkedAccounts as LinkedAccount[] | null,
+      customerId,
     );
 
     this.logger.debug(
