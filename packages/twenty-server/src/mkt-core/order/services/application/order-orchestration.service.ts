@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   IdempotencyService,
   IdempotencyDomain,
+  IDEMPOTENCY_ORDER_ACTION,
 } from 'src/mkt-core/common/idempotency';
 import {
   MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
@@ -71,7 +72,7 @@ export class OrderOrchestrationService {
         {
           workspaceId,
           domain: 'order' as IdempotencyDomain,
-          action: 'createOrder',
+          action: IDEMPOTENCY_ORDER_ACTION.CREATE_ORDER,
           requestBody: input,
         },
         async () =>

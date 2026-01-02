@@ -279,6 +279,7 @@ export class CreateOrderSaga implements OnModuleInit {
     const now = DateTimeUtils.now();
     const nowDate = DateTimeUtils.toDate(now);
 
+    // TODO : Thêm các trường cần thiết vào orderData và job event handler sẽ xử lý tiếp
     this.eventEmitter.emit(MKT_ORDER_EVENT_TYPES.ORDER_CREATED, {
       name: MKT_ORDER_EVENT_TYPES.ORDER_CREATED,
       workspaceId: context.workspaceId,

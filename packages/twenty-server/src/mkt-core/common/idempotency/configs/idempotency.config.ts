@@ -3,6 +3,12 @@ import {
   IdempotencyDomain,
 } from 'src/mkt-core/common/idempotency/types/idempotency.types';
 import {
+  IDEMPOTENCY_INVOICE_ACTION,
+  IDEMPOTENCY_LICENSE_ACTION,
+  IDEMPOTENCY_ORDER_ACTION,
+  IDEMPOTENCY_PAYMENT_ACTION,
+} from 'src/mkt-core/common/idempotency/constants';
+import {
   CACHE_TTL,
   CACHE_TTL_MS,
 } from 'src/mkt-core/infrastructure/redis/constants';
@@ -59,15 +65,24 @@ const FINANCIAL_CONFIG: Partial<IdempotencyActionConfig> = {
 };
 
 /**
+ * Helper to build action config key
+ * Format: {domain}:{action}
+ */
+const buildActionKey = (domain: string, action: string): string =>
+  `${domain}:${action}`;
+
+/**
  * Per-action configuration map
  * Key format: {domain}:{action}
+ *
+ * Sử dụng constants từ IDEMPOTENCY_*_ACTION để đảm bảo nhất quán
  */
 export const ACTION_CONFIGS: Record<
   string,
   Partial<IdempotencyActionConfig>
 > = {
   // Order actions
-  'order:createOrder': {
+  [buildActionKey('order', IDEMPOTENCY_ORDER_ACTION.CREATE_ORDER)]: {
     ...FINANCIAL_CONFIG,
     lockTimeoutMs: CACHE_TTL_MS.LOCK_SYNC, // 10 minutes for complex orders
     responseAllowedFields: [
@@ -82,7 +97,7 @@ export const ACTION_CONFIGS: Record<
       'error',
     ],
   },
-  'order:confirmOrder': {
+  [buildActionKey('order', IDEMPOTENCY_ORDER_ACTION.CONFIRM_ORDER)]: {
     ...FINANCIAL_CONFIG,
     ttlSeconds: CACHE_TTL.VERY_LONG * 2, // 2 hours
     responseAllowedFields: [
@@ -96,11 +111,11 @@ export const ACTION_CONFIGS: Record<
       'error',
     ],
   },
-  'order:updateOrderStatus': {
+  [buildActionKey('order', IDEMPOTENCY_ORDER_ACTION.UPDATE_ORDER_STATUS)]: {
     ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
     failureMode: 'FAIL_SAFE',
   },
-  'order:refundOrder': {
+  [buildActionKey('order', IDEMPOTENCY_ORDER_ACTION.REFUND_ORDER)]: {
     ...FINANCIAL_CONFIG,
     lockTimeoutMs: CACHE_TTL.MEDIUM_LONG * 1000, // 15 minutes
     responseAllowedFields: [
@@ -117,39 +132,39 @@ export const ACTION_CONFIGS: Record<
   },
 
   // Payment actions
-  'payment:createPayment': {
+  [buildActionKey('payment', IDEMPOTENCY_PAYMENT_ACTION.CREATE_PAYMENT)]: {
     ...FINANCIAL_CONFIG,
     responseAllowedFields: ['id', 'paymentId', 'status', 'amount'],
   },
-  'payment:processPayment': {
+  [buildActionKey('payment', IDEMPOTENCY_PAYMENT_ACTION.PROCESS_PAYMENT)]: {
     ...FINANCIAL_CONFIG,
     lockTimeoutMs: CACHE_TTL.MEDIUM_LONG * 1000, // 15 minutes
   },
-  'payment:refundPayment': {
+  [buildActionKey('payment', IDEMPOTENCY_PAYMENT_ACTION.REFUND_PAYMENT)]: {
     ...FINANCIAL_CONFIG,
   },
 
   // License actions
-  'license:createLicense': {
+  [buildActionKey('license', IDEMPOTENCY_LICENSE_ACTION.CREATE_LICENSE)]: {
     ttlSeconds: CACHE_TTL.DAY, // 24 hours
     failureMode: 'FAIL_STRICT',
     responseAllowedFields: ['id', 'licenseKey', 'status', 'expiresAt'],
   },
-  'license:renewLicense': {
+  [buildActionKey('license', IDEMPOTENCY_LICENSE_ACTION.RENEW_LICENSE)]: {
     ...FINANCIAL_CONFIG,
     responseAllowedFields: ['id', 'licenseKey', 'status', 'newExpiresAt'],
   },
-  'license:activateLicense': {
+  [buildActionKey('license', IDEMPOTENCY_LICENSE_ACTION.ACTIVATE_LICENSE)]: {
     ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
     failureMode: 'FAIL_SAFE',
   },
 
   // Invoice actions
-  'invoice:createInvoice': {
+  [buildActionKey('invoice', IDEMPOTENCY_INVOICE_ACTION.CREATE_INVOICE)]: {
     ...FINANCIAL_CONFIG,
     responseAllowedFields: ['id', 'invoiceNumber', 'status', 'totalAmount'],
   },
-  'invoice:sendInvoice': {
+  [buildActionKey('invoice', IDEMPOTENCY_INVOICE_ACTION.SEND_INVOICE)]: {
     ttlSeconds: CACHE_TTL.VERY_LONG, // 1 hour
     failureMode: 'FAIL_SAFE',
   },
