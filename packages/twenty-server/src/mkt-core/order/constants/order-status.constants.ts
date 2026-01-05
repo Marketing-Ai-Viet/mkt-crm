@@ -229,84 +229,94 @@ export enum ORDER_ACTION {
 }
 
 // ============================================
-// NEW: UNIFIED TRIAL LICENSE FLOW
+// NEW: SIMPLIFIED ORDER LICENSE FLOW
 // ============================================
 
 /**
- * Actions that CREATE NEW trial license when order is created.
+ * NEW FLOW (Simplified):
  *
- * These actions will:
- * 1. Check if user already has trial for the product
- * 2. If exists → reuse existing trial (link to order item)
- * 3. If not → create new trial license
+ * 1. Trial License: Created via standalone `mktCreateTrialLicense` mutation
+ * 2. NEW_ORDER: Skip trial creation (user already has trial)
+ * 3. TRIAL_TO_PAID: Upgrade existing trial to official license on confirm
  *
- * Business Rule: 1 user can only have 1 active trial per product
- *
- * Note: TRIAL action is handled separately via createTrialOrder mutation
+ * License creation happens in `CreateLicensesOnConfirmStep` (when payment confirmed)
  */
-export const CREATE_NEW_TRIAL_ACTIONS: ORDER_ACTION[] = [
+
+/**
+ * Actions that SKIP trial license creation (CreateLicensesStep).
+ *
+ * All order actions now skip trial creation because:
+ * - Trial is created separately via `mktCreateTrialLicense` mutation
+ * - Order flow only handles linking existing trial and upgrading on payment
+ */
+export const SKIP_TRIAL_CREATION_ACTIONS: ORDER_ACTION[] = [
   ORDER_ACTION.NEW_ORDER,
-];
-
-/**
- * Actions that REUSE existing license (no trial creation).
- *
- * These actions work with existing licenses:
- * - LICENSE_RENEWING: Uses existing licenseId from input
- * - TRIAL_TO_PAID: Uses trial from trialOrderId
- * - CHANGE_VARIANT: Uses existing license to change variant
- *
- * Note: These actions SKIP trial creation step entirely.
- */
-export const REUSE_EXISTING_LICENSE_ACTIONS: ORDER_ACTION[] = [
-  ORDER_ACTION.LICENSE_RENEWING,
   ORDER_ACTION.TRIAL_TO_PAID,
-  ORDER_ACTION.CHANGE_VARIANT,
 ];
 
 /**
- * Check if action should create NEW trial license on order creation
+ * Check if action should SKIP trial license creation
  *
- * For these actions:
- * - Check if user has existing trial → reuse
- * - If no trial → create new trial license
+ * Returns true for all current order actions because trial is created
+ * separately via `mktCreateTrialLicense` mutation.
  */
-export const IS_CREATE_NEW_TRIAL_ACTION = (action: ORDER_ACTION): boolean =>
-  CREATE_NEW_TRIAL_ACTIONS.includes(action);
+export const IS_SKIP_TRIAL_CREATION_ACTION = (action: ORDER_ACTION): boolean =>
+  SKIP_TRIAL_CREATION_ACTIONS.includes(action);
 
 /**
- * Check if action reuses existing license (skip trial creation)
+ * Actions that CREATE official license on payment confirmation.
  *
- * For these actions:
- * - Skip trial creation step entirely
- * - Link to existing license from input (licenseId, trialOrderId, etc.)
+ * - NEW_ORDER: Upgrade existing trial to official license
+ * - TRIAL_TO_PAID: Upgrade trial order's license to official
  */
-export const IS_REUSE_EXISTING_LICENSE_ACTION = (
+export const CREATE_LICENSE_ON_CONFIRM_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.NEW_ORDER,
+  ORDER_ACTION.TRIAL_TO_PAID,
+];
+
+/**
+ * Check if action should create license on payment confirmation
+ */
+export const IS_CREATE_LICENSE_ON_CONFIRM_ACTION = (
   action: ORDER_ACTION,
-): boolean => REUSE_EXISTING_LICENSE_ACTIONS.includes(action);
+): boolean => CREATE_LICENSE_ON_CONFIRM_ACTIONS.includes(action);
 
 /**
- * Actions that require payment confirmation to convert trial to official license.
- * TRIAL action is excluded because pure trial orders don't require payment.
+ * Actions that require payment confirmation.
  */
 export const PAYMENT_REQUIRED_ACTIONS: ORDER_ACTION[] = [
   ORDER_ACTION.NEW_ORDER,
-  ORDER_ACTION.LICENSE_RENEWING,
   ORDER_ACTION.TRIAL_TO_PAID,
-  ORDER_ACTION.CHANGE_VARIANT,
 ];
 
 /**
- * Check if action requires payment to convert trial to official license
+ * Check if action requires payment
  */
 export const IS_PAYMENT_REQUIRED_ACTION = (action: ORDER_ACTION): boolean =>
   PAYMENT_REQUIRED_ACTIONS.includes(action);
 
+// ============================================
+// DEPRECATED - Kept for backward compatibility
+// ============================================
+
 /**
- * Check if action is a pure trial (no payment required ever)
+ * @deprecated Use IS_SKIP_TRIAL_CREATION_ACTION instead
+ * Always returns false now (no action creates trial in order flow)
  */
-export const IS_PURE_TRIAL_ACTION = (action: ORDER_ACTION): boolean =>
-  action === ORDER_ACTION.TRIAL;
+export const IS_CREATE_NEW_TRIAL_ACTION = (_action: ORDER_ACTION): boolean =>
+  false;
+
+/**
+ * @deprecated Use IS_SKIP_TRIAL_CREATION_ACTION instead
+ */
+export const IS_REUSE_EXISTING_LICENSE_ACTION = (
+  action: ORDER_ACTION,
+): boolean => SKIP_TRIAL_CREATION_ACTIONS.includes(action);
+
+/**
+ * @deprecated No longer applicable - trial is created separately
+ */
+export const IS_PURE_TRIAL_ACTION = (_action: ORDER_ACTION): boolean => false;
 
 // ============================================
 // ORDER ACTION TYPE RESTRICTIONS
