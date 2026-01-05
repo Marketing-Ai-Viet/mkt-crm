@@ -229,45 +229,58 @@ export enum ORDER_ACTION {
 }
 
 // ============================================
-// NEW: SIMPLIFIED ORDER LICENSE FLOW
+// ORDER LICENSE FLOW
 // ============================================
 
 /**
- * NEW FLOW (Simplified):
+ * ORDER LICENSE FLOW:
  *
- * 1. Trial License: Created via standalone `mktCreateTrialLicense` mutation
- * 2. NEW_ORDER: Skip trial creation (user already has trial)
- * 3. TRIAL_TO_PAID: Upgrade existing trial to official license on confirm
+ * 1. NEW_ORDER:
+ *    - CreateLicensesStep: SKIP (không tạo license)
+ *    - CreateLicensesOnConfirmStep: Tạo license MỚI khi payment confirmed
  *
- * License creation happens in `CreateLicensesOnConfirmStep` (when payment confirmed)
+ * 2. TRIAL_TO_PAID:
+ *    - CreateLicensesStep: Tạo TRIAL license
+ *    - CreateLicensesOnConfirmStep: Upgrade trial → official khi payment confirmed
  */
 
 /**
- * Actions that SKIP trial license creation (CreateLicensesStep).
+ * Actions that CREATE TRIAL license when creating order (CreateLicensesStep).
  *
- * All order actions now skip trial creation because:
- * - Trial is created separately via `mktCreateTrialLicense` mutation
- * - Order flow only handles linking existing trial and upgrading on payment
+ * - TRIAL_TO_PAID: Tạo trial license ngay khi tạo order
  */
-export const SKIP_TRIAL_CREATION_ACTIONS: ORDER_ACTION[] = [
-  ORDER_ACTION.NEW_ORDER,
+export const CREATE_TRIAL_ON_ORDER_ACTIONS: ORDER_ACTION[] = [
   ORDER_ACTION.TRIAL_TO_PAID,
 ];
 
 /**
- * Check if action should SKIP trial license creation
- *
- * Returns true for all current order actions because trial is created
- * separately via `mktCreateTrialLicense` mutation.
+ * Check if action should CREATE TRIAL license when creating order
  */
-export const IS_SKIP_TRIAL_CREATION_ACTION = (action: ORDER_ACTION): boolean =>
-  SKIP_TRIAL_CREATION_ACTIONS.includes(action);
+export const IS_CREATE_TRIAL_ON_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): boolean => CREATE_TRIAL_ON_ORDER_ACTIONS.includes(action);
 
 /**
- * Actions that CREATE official license on payment confirmation.
+ * Actions that SKIP license creation when creating order (CreateLicensesStep).
  *
- * - NEW_ORDER: Upgrade existing trial to official license
- * - TRIAL_TO_PAID: Upgrade trial order's license to official
+ * - NEW_ORDER: Không tạo license, đợi payment confirmed
+ */
+export const SKIP_LICENSE_ON_ORDER_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.NEW_ORDER,
+];
+
+/**
+ * Check if action should SKIP license creation when creating order
+ */
+export const IS_SKIP_LICENSE_ON_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): boolean => SKIP_LICENSE_ON_ORDER_ACTIONS.includes(action);
+
+/**
+ * Actions that CREATE license on payment confirmation (CreateLicensesOnConfirmStep).
+ *
+ * - NEW_ORDER: Tạo license MỚI
+ * - TRIAL_TO_PAID: Upgrade trial → official
  */
 export const CREATE_LICENSE_ON_CONFIRM_ACTIONS: ORDER_ACTION[] = [
   ORDER_ACTION.NEW_ORDER,
@@ -275,7 +288,7 @@ export const CREATE_LICENSE_ON_CONFIRM_ACTIONS: ORDER_ACTION[] = [
 ];
 
 /**
- * Check if action should create license on payment confirmation
+ * Check if action should create/upgrade license on payment confirmation
  */
 export const IS_CREATE_LICENSE_ON_CONFIRM_ACTION = (
   action: ORDER_ACTION,
@@ -294,29 +307,6 @@ export const PAYMENT_REQUIRED_ACTIONS: ORDER_ACTION[] = [
  */
 export const IS_PAYMENT_REQUIRED_ACTION = (action: ORDER_ACTION): boolean =>
   PAYMENT_REQUIRED_ACTIONS.includes(action);
-
-// ============================================
-// DEPRECATED - Kept for backward compatibility
-// ============================================
-
-/**
- * @deprecated Use IS_SKIP_TRIAL_CREATION_ACTION instead
- * Always returns false now (no action creates trial in order flow)
- */
-export const IS_CREATE_NEW_TRIAL_ACTION = (_action: ORDER_ACTION): boolean =>
-  false;
-
-/**
- * @deprecated Use IS_SKIP_TRIAL_CREATION_ACTION instead
- */
-export const IS_REUSE_EXISTING_LICENSE_ACTION = (
-  action: ORDER_ACTION,
-): boolean => SKIP_TRIAL_CREATION_ACTIONS.includes(action);
-
-/**
- * @deprecated No longer applicable - trial is created separately
- */
-export const IS_PURE_TRIAL_ACTION = (_action: ORDER_ACTION): boolean => false;
 
 // ============================================
 // ORDER ACTION TYPE RESTRICTIONS

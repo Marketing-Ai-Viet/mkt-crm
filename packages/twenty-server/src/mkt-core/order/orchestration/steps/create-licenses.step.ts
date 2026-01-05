@@ -3,7 +3,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
-import { IS_SKIP_TRIAL_CREATION_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
+import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
+import {
+  IS_CREATE_TRIAL_ON_ORDER_ACTION,
+  IS_SKIP_LICENSE_ON_ORDER_ACTION,
+} from 'src/mkt-core/order/constants/order-status.constants';
+import { ORDER_TRIAL_CONFIG } from 'src/mkt-core/order/constants/order-service.constants';
+import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import {
+  MktOrderItemRepository,
+  MktOrderRepository,
+} from 'src/mkt-core/order/repositories';
 import {
   SagaContext,
   SagaStep,
@@ -12,17 +22,23 @@ import {
 import {
   CreateLicensesStepOutput,
   CreateOrderWithItemsInput,
+  DEFAULT_MAX_DEVICES,
+  CreatedLicenseInfo,
 } from 'src/mkt-core/order/types';
+import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';
 
 /**
- * CreateLicensesStep - Step 3: Create TRIAL licenses for order items
+ * CreateLicensesStep - Step 5: Create licenses for order items
  *
- * NEW FLOW (Simplified):
- * - Trial license is created separately via `mktCreateTrialLicense` mutation
- * - This step is SKIPPED for all current order actions (NEW_ORDER, TRIAL_TO_PAID)
- * - License creation/upgrade happens in `CreateLicensesOnConfirmStep` on payment confirm
+ * LICENSE FLOW:
  *
- * This step is kept for backward compatibility but will skip for all actions.
+ * 1. NEW_ORDER:
+ *    - SKIP: Không tạo license khi tạo order
+ *    - License được tạo MỚI trong CreateLicensesOnConfirmStep khi payment confirmed
+ *
+ * 2. TRIAL_TO_PAID:
+ *    - CREATE: Tạo TRIAL license ngay khi tạo order
+ *    - Upgrade trial → official trong CreateLicensesOnConfirmStep khi payment confirmed
  *
  * Compensate:
  * - Revoke licenses on MKT Server (if any were created)
@@ -33,11 +49,16 @@ export class CreateLicensesStep extends SagaStep<
   CreateLicensesStepOutput
 > {
   readonly name = 'create_licenses';
-  readonly description = 'Create licenses on MKT Server for order items';
+  readonly description = 'Create trial licenses for TRIAL_TO_PAID orders';
 
   private readonly logger = new Logger(CreateLicensesStep.name);
 
-  constructor(private readonly mktLicenseProxy: MktLicenseProxyService) {
+  constructor(
+    private readonly mktLicenseProxy: MktLicenseProxyService,
+    private readonly mktProductProxy: MktProductProxyService,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly orderItemRepository: MktOrderItemRepository,
+  ) {
     super();
   }
 
@@ -46,12 +67,10 @@ export class CreateLicensesStep extends SagaStep<
   // ============================================
 
   /**
-   * Skip license creation for all order actions
+   * Determine if this step should be skipped
    *
-   * NEW FLOW (Simplified):
-   * - Trial license is created via standalone `mktCreateTrialLicense` mutation
-   * - Order flow skips trial creation for all actions (NEW_ORDER, TRIAL_TO_PAID)
-   * - License upgrade happens in `CreateLicensesOnConfirmStep` on payment confirm
+   * - NEW_ORDER: Skip (license created on confirm)
+   * - TRIAL_TO_PAID: Do NOT skip (create trial license)
    */
   shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
     // Skip if no external products
@@ -70,45 +89,135 @@ export class CreateLicensesStep extends SagaStep<
       return true;
     }
 
-    // NEW FLOW: Skip trial creation for all order actions
-    // Trial is created separately via mktCreateTrialLicense mutation
-    if (input.action && IS_SKIP_TRIAL_CREATION_ACTION(input.action)) {
+    // NEW_ORDER: Skip - license created on confirm
+    if (input.action && IS_SKIP_LICENSE_ON_ORDER_ACTION(input.action)) {
       this.logger.debug(
-        `Skipping: Action "${input.action}" - trial created via mktCreateTrialLicense`,
+        `Skipping: Action "${input.action}" - license created on payment confirm`,
       );
 
       return true;
     }
 
-    // Fallback: skip for any unknown action
+    // TRIAL_TO_PAID: Do NOT skip - create trial license
+    if (input.action && IS_CREATE_TRIAL_ON_ORDER_ACTION(input.action)) {
+      this.logger.debug(
+        `Proceeding: Action "${input.action}" - creating trial license`,
+      );
+
+      return false;
+    }
+
+    // Unknown action - skip by default
     this.logger.debug(
-      `Skipping: Unknown action "${input.action ?? 'undefined'}" - trial creation disabled`,
+      `Skipping: Unknown action "${input.action ?? 'undefined'}"`,
     );
 
     return true;
   }
 
   /**
-   * Execute is no longer called because shouldSkip always returns true.
-   * Trial licenses are created via mktCreateTrialLicense mutation.
-   * License upgrade happens in CreateLicensesOnConfirmStep.
+   * Execute: Create trial licenses for TRIAL_TO_PAID orders
    */
   async execute(
-    _context: SagaContext,
-    _input: CreateOrderWithItemsInput,
+    context: SagaContext,
+    input: CreateOrderWithItemsInput,
     _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateLicensesStepOutput>> {
-    // This should never be called because shouldSkip always returns true
-    this.logger.warn(
-      'CreateLicensesStep.execute called unexpectedly - trial creation is disabled',
-    );
+    try {
+      // Validate context
+      if (!context.orderId) {
+        return {
+          success: false,
+          error: new Error('Order ID is required from previous step'),
+        };
+      }
 
-    return { success: true, data: { licenses: [] } };
+      // Get order with items from repository
+      const order = await this.orderRepository.findById(
+        context.workspaceId,
+        context.orderId,
+        { relations: { orderItems: true } },
+      );
+
+      if (!order) {
+        return {
+          success: false,
+          error: new Error(`Order ${context.orderId} not found`),
+        };
+      }
+
+      const orderItems = order.orderItems ?? [];
+
+      if (orderItems.length === 0) {
+        this.logger.warn('No order items found');
+
+        return { success: true, data: { licenses: [] } };
+      }
+
+      // Filter items that can have licenses (have productId)
+      const licensableItems = orderItems.filter(
+        (item) => item.externalMktProductId,
+      );
+
+      if (licensableItems.length === 0) {
+        this.logger.log('No licensable order items found');
+
+        return { success: true, data: { licenses: [] } };
+      }
+
+      this.logger.log(
+        `Creating trial licenses for ${licensableItems.length} items (action: ${input.action})`,
+      );
+
+      // Get trial duration
+      const trialDays =
+        input.trialDurationDays ??
+        ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS;
+
+      // Create trial licenses for each item
+      const createdLicenses: CreatedLicenseInfo[] = [];
+      const licenseIds: string[] = [];
+
+      for (const item of licensableItems) {
+        const license = await this.createTrialLicenseForItem(
+          context.workspaceId,
+          input.customerId,
+          item,
+          trialDays,
+        );
+
+        if (license) {
+          createdLicenses.push(license);
+          licenseIds.push(license.id);
+        }
+      }
+
+      // Store rollback data
+      context.rollbackData.set(this.name, { licenseIds });
+
+      // Update context for next steps
+      context.licenseIds = licenseIds;
+
+      this.logger.log(
+        `Created ${createdLicenses.length} trial licenses for order ${context.orderId}`,
+      );
+
+      return {
+        success: true,
+        data: { licenses: createdLicenses },
+      };
+    } catch (error) {
+      this.logger.error('Failed to create trial licenses', error);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+      };
+    }
   }
 
   /**
    * Compensate by revoking any licenses that were created.
-   * In the new flow, this should rarely be needed since we don't create licenses here.
    */
   async compensate(
     context: SagaContext,
@@ -124,7 +233,7 @@ export class CreateLicensesStep extends SagaStep<
       return;
     }
 
-    this.logger.warn(`Revoking ${data.licenseIds.length} licenses`);
+    this.logger.warn(`Revoking ${data.licenseIds.length} trial licenses`);
 
     for (const licenseId of data.licenseIds) {
       try {
@@ -136,5 +245,75 @@ export class CreateLicensesStep extends SagaStep<
     }
 
     this.logger.log('License compensation completed');
+  }
+
+  // ============================================
+  // PRIVATE METHODS
+  // ============================================
+
+  /**
+   * Create trial license for a single order item
+   *
+   * Uses createOrReuseTrial to check for existing trial first (1 user = 1 trial per product)
+   */
+  private async createTrialLicenseForItem(
+    workspaceId: string,
+    customerId: string,
+    item: MktOrderItemWorkspaceEntity,
+    trialDays: number,
+  ): Promise<CreatedLicenseInfo | null> {
+    const productId = item.externalMktProductId;
+
+    if (!productId) {
+      this.logger.warn(`Order item ${item.id} has no productId, skipping`);
+
+      return null;
+    }
+
+    try {
+      const maxDevices = item.maxDevices ?? DEFAULT_MAX_DEVICES;
+
+      this.logger.debug(
+        `Creating trial license for item ${item.id}, product ${productId}`,
+      );
+
+      // Create or reuse trial license (1 user = 1 trial per product)
+      const result = await this.mktLicenseProxy.createOrReuseTrial({
+        productId,
+        customerId,
+        workspaceId,
+        trialDays,
+        maxDevices,
+      });
+
+      const license = result.license;
+
+      // Create snapshot
+      const snapshot: MktLicenseSnapshot =
+        this.mktProductProxy.createLicenseSnapshot(license);
+
+      // Update order item with license info
+      await this.orderItemRepository.update(workspaceId, item.id, {
+        externalMktLicenseId: license.id,
+        externalMktLicenseKey: license.licenseKey,
+        licenseSnapshot: snapshot,
+      });
+
+      this.logger.log(
+        `${result.reused ? 'Reused' : 'Created'} trial license ${license.id} for item ${item.id}`,
+      );
+
+      return {
+        id: license.id,
+        licenseKey: license.licenseKey,
+        orderItemId: item.id,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create trial license for item ${item.id}`,
+        error,
+      );
+      throw error;
+    }
   }
 }
