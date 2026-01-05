@@ -268,3 +268,49 @@ export const BACKOFF_MAX_MS = 2000;
 export const JITTER_FACTOR = 0.3; // 30% jitter
 
 export const DEFAULT_THRESHOLD_PERCENT = 100; // Require full payment by default
+
+// ============================================
+// TRIAL CONFIGURATION
+// ============================================
+
+/**
+ * Trial duration configuration for unified order flow.
+ *
+ * All payment methods (SEPay, Bank Transfer, Cash) now receive
+ * a trial license immediately when order is created.
+ */
+export const ORDER_TRIAL_CONFIG = {
+  /** Thời gian trial mặc định (ngày) */
+  DEFAULT_TRIAL_DURATION_DAYS: 30,
+
+  /** Thời gian gia hạn khi trial hết (ngày) */
+  GRACE_PERIOD_DAYS: 7,
+
+  /** Tổng thời gian tối đa chờ thanh toán (ngày): 30 + 7 = 37 */
+  MAX_PENDING_DAYS: 37,
+
+  /** Số ngày trước khi hết trial để gửi reminder */
+  REMINDER_DAYS_BEFORE_EXPIRY: 3,
+} as const;
+
+// ============================================
+// OVERDUE JOB CONFIGURATION
+// ============================================
+
+/**
+ * Job configuration for order trial expiry handling.
+ * Replaces the old 24-hour overdue check.
+ */
+export const ORDER_OVERDUE_CONFIG = {
+  /** Job kiểm tra trial sắp hết hạn và gửi reminder */
+  TRIAL_REMINDER_JOB: 'order-trial-reminder',
+
+  /** Job kiểm tra trial hết hạn (ngày 30) */
+  TRIAL_EXPIRY_CHECK_JOB: 'order-trial-expiry-check',
+
+  /** Job kiểm tra grace period hết hạn (ngày 37) */
+  GRACE_PERIOD_CHECK_JOB: 'order-grace-period-check',
+
+  /** Queue name for order jobs */
+  QUEUE_NAME: 'order-trial-queue',
+} as const;

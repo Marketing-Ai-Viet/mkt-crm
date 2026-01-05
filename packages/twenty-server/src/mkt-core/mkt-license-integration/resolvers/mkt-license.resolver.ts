@@ -1,6 +1,8 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services';
 import {
@@ -14,6 +16,7 @@ import {
   MktLicenseAnalyticsOutput,
   MktLicenseActionOutput,
   MktBulkLicenseActionOutput,
+  MktTrialLicenseActionOutput,
   MktQueryLicensesInput,
   MktCreateLicenseInput,
   MktUpdateLicenseInput,
@@ -22,11 +25,13 @@ import {
   MktBulkCreateLicenseInput,
   MktBulkUpdateLicenseInput,
   MktBulkDeleteLicenseInput,
+  MktCreateTrialLicenseInput,
   MKT_LICENSE_GRAPHQL_DESCRIPTIONS,
 } from 'src/mkt-core/mkt-license-integration/dto';
 import {
   omitUndefined,
   mapLicenseToOutput,
+  emptyToUndefined,
 } from 'src/mkt-core/mkt-license-integration/utils';
 
 @Resolver()
@@ -144,6 +149,50 @@ export class MktLicenseResolver {
       success: true,
       message: MKT_LICENSE_MESSAGES.SUCCESS.CREATED,
       license: mapLicenseToOutput(license),
+    };
+  }
+
+  /**
+   * Create a trial license with simplified flow
+   *
+   * - Looks up customer email from linkedAccounts (MKT_SERVER provider)
+   * - Checks for existing trial license (1 user = 1 trial per product)
+   * - Reuses existing trial if found
+   * - Creates new trial license if not found
+   */
+  @Mutation(() => MktTrialLicenseActionOutput, {
+    description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.CREATE_TRIAL_LICENSE_MUTATION,
+  })
+  async mktCreateTrialLicense(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @Args('input') input: MktCreateTrialLicenseInput,
+  ): Promise<MktTrialLicenseActionOutput> {
+    const result = await this.licenseProxyService.createOrReuseTrial({
+      productId: input.productId,
+      customerId: input.customerId,
+      workspaceId,
+      trialDays: input.trialDays,
+      maxDevices: input.maxDevices,
+    });
+
+    // Reused existing trial - return minimal info
+    if (result.reused) {
+      return {
+        success: true,
+        message: MKT_LICENSE_MESSAGES.SUCCESS.TRIAL_REUSED,
+        license: mapLicenseToOutput(result.license),
+        reused: true,
+        trialExpiryDate: emptyToUndefined(result.license.endDate),
+      };
+    }
+
+    // Newly created trial - return full info
+    return {
+      success: true,
+      message: MKT_LICENSE_MESSAGES.SUCCESS.TRIAL_CREATED,
+      license: mapLicenseToOutput(result.license),
+      reused: false,
+      trialExpiryDate: emptyToUndefined(result.license.endDate),
     };
   }
 

@@ -38,7 +38,8 @@ import { OrderStatusService } from 'src/mkt-core/order/services/core';
  * - confirmOrder: Confirm/update order status
  * - updateOrderStatus: Update order status with state machine validation
  * - refundOrder: Full or partial order refund
- * - validateOrderInput: Validate order input before creation
+ *
+ * Note: Trial license creation is handled by MktLicenseResolver.mktCreateTrialLicense
  */
 @Resolver()
 export class OrderMutationResolver {

@@ -228,15 +228,68 @@ export enum ORDER_ACTION {
   REFUND_PARTIAL = 'REFUND_PARTIAL',
 }
 
-/**
- * Actions that create license immediately (no payment confirmation needed)
- */
-export const IMMEDIATE_LICENSE_ACTIONS: ORDER_ACTION[] = [ORDER_ACTION.TRIAL];
+// ============================================
+// NEW: UNIFIED TRIAL LICENSE FLOW
+// ============================================
 
 /**
- * Actions that require accounting confirmation before license creation
+ * Actions that CREATE NEW trial license when order is created.
+ *
+ * These actions will:
+ * 1. Check if user already has trial for the product
+ * 2. If exists → reuse existing trial (link to order item)
+ * 3. If not → create new trial license
+ *
+ * Business Rule: 1 user can only have 1 active trial per product
+ *
+ * Note: TRIAL action is handled separately via createTrialOrder mutation
  */
-export const DEFERRED_LICENSE_ACTIONS: ORDER_ACTION[] = [
+export const CREATE_NEW_TRIAL_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.NEW_ORDER,
+];
+
+/**
+ * Actions that REUSE existing license (no trial creation).
+ *
+ * These actions work with existing licenses:
+ * - LICENSE_RENEWING: Uses existing licenseId from input
+ * - TRIAL_TO_PAID: Uses trial from trialOrderId
+ * - CHANGE_VARIANT: Uses existing license to change variant
+ *
+ * Note: These actions SKIP trial creation step entirely.
+ */
+export const REUSE_EXISTING_LICENSE_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.LICENSE_RENEWING,
+  ORDER_ACTION.TRIAL_TO_PAID,
+  ORDER_ACTION.CHANGE_VARIANT,
+];
+
+/**
+ * Check if action should create NEW trial license on order creation
+ *
+ * For these actions:
+ * - Check if user has existing trial → reuse
+ * - If no trial → create new trial license
+ */
+export const IS_CREATE_NEW_TRIAL_ACTION = (action: ORDER_ACTION): boolean =>
+  CREATE_NEW_TRIAL_ACTIONS.includes(action);
+
+/**
+ * Check if action reuses existing license (skip trial creation)
+ *
+ * For these actions:
+ * - Skip trial creation step entirely
+ * - Link to existing license from input (licenseId, trialOrderId, etc.)
+ */
+export const IS_REUSE_EXISTING_LICENSE_ACTION = (
+  action: ORDER_ACTION,
+): boolean => REUSE_EXISTING_LICENSE_ACTIONS.includes(action);
+
+/**
+ * Actions that require payment confirmation to convert trial to official license.
+ * TRIAL action is excluded because pure trial orders don't require payment.
+ */
+export const PAYMENT_REQUIRED_ACTIONS: ORDER_ACTION[] = [
   ORDER_ACTION.NEW_ORDER,
   ORDER_ACTION.LICENSE_RENEWING,
   ORDER_ACTION.TRIAL_TO_PAID,
@@ -244,33 +297,34 @@ export const DEFERRED_LICENSE_ACTIONS: ORDER_ACTION[] = [
 ];
 
 /**
- * Check if action creates license immediately
+ * Check if action requires payment to convert trial to official license
  */
-export const IS_IMMEDIATE_LICENSE_ACTION = (action: ORDER_ACTION): boolean =>
-  IMMEDIATE_LICENSE_ACTIONS.includes(action);
+export const IS_PAYMENT_REQUIRED_ACTION = (action: ORDER_ACTION): boolean =>
+  PAYMENT_REQUIRED_ACTIONS.includes(action);
 
 /**
- * Check if action requires accounting confirmation
+ * Check if action is a pure trial (no payment required ever)
  */
-export const IS_DEFERRED_LICENSE_ACTION = (action: ORDER_ACTION): boolean =>
-  DEFERRED_LICENSE_ACTIONS.includes(action);
+export const IS_PURE_TRIAL_ACTION = (action: ORDER_ACTION): boolean =>
+  action === ORDER_ACTION.TRIAL;
 
 // ============================================
 // ORDER ACTION TYPE RESTRICTIONS
 // ============================================
 
 /**
- * Actions cho phép khi TẠO đơn hàng
+ * Actions cho phép khi TẠO đơn hàng (qua createOrderWithItems mutation)
+ *
  * - NEW_ORDER: Tạo đơn hàng mới
- * - TRIAL: Tạo đơn trial
  * - LICENSE_RENEWING: Gia hạn license
  * - TRIAL_TO_PAID: Chuyển trial sang trả phí
  * - CHANGE_VARIANT: Đổi gói
+ *
+ * Note: TRIAL action đã được tách ra mutation riêng (createTrialOrder)
  */
 export type CreateOrderAction = Extract<
   ORDER_ACTION,
   | ORDER_ACTION.NEW_ORDER
-  | ORDER_ACTION.TRIAL
   | ORDER_ACTION.LICENSE_RENEWING
   | ORDER_ACTION.TRIAL_TO_PAID
   | ORDER_ACTION.CHANGE_VARIANT
@@ -278,10 +332,11 @@ export type CreateOrderAction = Extract<
 
 /**
  * Array các actions cho phép khi tạo đơn hàng
+ *
+ * Note: TRIAL không còn trong list này - sử dụng createTrialOrder mutation
  */
 export const CREATE_ORDER_ACTIONS: CreateOrderAction[] = [
   ORDER_ACTION.NEW_ORDER,
-  ORDER_ACTION.TRIAL,
   ORDER_ACTION.LICENSE_RENEWING,
   ORDER_ACTION.TRIAL_TO_PAID,
   ORDER_ACTION.CHANGE_VARIANT,

@@ -22,11 +22,12 @@ import { MKT_SUPPORTED_LANGUAGES } from 'src/mkt-core/mkt-product-integration/co
 // ============================================
 
 /**
- * Actions cho phép khi TẠO đơn hàng
+ * Actions cho phép khi TẠO đơn hàng (qua createOrderWithItems mutation)
+ *
+ * Note: TRIAL đã được tách ra mutation riêng (createTrialOrder)
  */
 export enum CREATE_ORDER_ACTION {
   NEW_ORDER = 'NEW_ORDER',
-  TRIAL = 'TRIAL',
   LICENSE_RENEWING = 'LICENSE_RENEWING',
   TRIAL_TO_PAID = 'TRIAL_TO_PAID',
   CHANGE_VARIANT = 'CHANGE_VARIANT',
@@ -348,3 +349,5 @@ export class UpdateOrderItemInputDto {
   @IsString()
   updatedAt?: string;
 }
+
+// Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense

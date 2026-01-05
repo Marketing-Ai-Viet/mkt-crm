@@ -75,6 +75,14 @@ export type CreateOrderWithItemsInput = {
   // For trial to paid conversion
   trialOrderId?: string;
 
+  // Trial configuration for TRIAL_TO_PAID action
+  /**
+   * Duration of trial license in days.
+   * Uses ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS (30 days).
+   * Note: Pure trial creation is handled by MktLicenseResolver.mktCreateTrialLicense
+   */
+  trialDurationDays?: number;
+
   // Promotion fields
   /** Coupon code to apply for discount */
   couponCode?: string;
@@ -89,6 +97,8 @@ export type CreateOrderWithItemsInput = {
    */
   mktServerEmail?: string;
 };
+
+// Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense
 
 /**
  * Input để confirm order

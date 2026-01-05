@@ -60,6 +60,8 @@ export const MKT_LICENSE_GRAPHQL_DESCRIPTIONS = {
 
   // Mutations
   CREATE_LICENSE_MUTATION: 'Create a new license',
+  CREATE_TRIAL_LICENSE_MUTATION:
+    'Create a trial license. Reuses existing trial if found (1 user = 1 trial per product)',
   UPDATE_LICENSE_MUTATION: 'Update an existing license',
   DELETE_LICENSE_MUTATION: 'Delete a license',
   ACTIVATE_LICENSE_MUTATION: 'Activate a license',
@@ -460,4 +462,57 @@ export class MktBulkUpdateLicenseInput {
 export class MktBulkDeleteLicenseInput {
   @Field(() => [String])
   ids: string[];
+}
+
+// ============================================
+// TRIAL LICENSE INPUT/OUTPUT
+// ============================================
+
+const DEFAULT_TRIAL_DAYS = 14;
+const DEFAULT_MAX_DEVICES = 1;
+
+@InputType()
+export class MktCreateTrialLicenseInput {
+  @Field({ description: 'Product ID from MKT Server' })
+  productId: string;
+
+  @Field({
+    description: 'Customer ID from CRM (will lookup email from linkedAccounts)',
+  })
+  customerId: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    defaultValue: DEFAULT_TRIAL_DAYS,
+    description: 'Trial duration in days (default: 14, min: 7, max: 30)',
+  })
+  trialDays?: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    defaultValue: DEFAULT_MAX_DEVICES,
+    description: 'Maximum devices allowed (default: 1)',
+  })
+  maxDevices?: number;
+}
+
+@ObjectType()
+export class MktTrialLicenseActionOutput {
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
+
+  @Field(() => MktLicenseOutput, { nullable: true })
+  license?: MktLicenseOutput;
+
+  @Field({
+    nullable: true,
+    description: 'Whether an existing trial was reused',
+  })
+  reused?: boolean;
+
+  @Field({ nullable: true, description: 'Trial expiry date (ISO 8601)' })
+  trialExpiryDate?: string;
 }

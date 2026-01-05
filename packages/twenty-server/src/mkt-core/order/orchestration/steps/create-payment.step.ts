@@ -5,7 +5,6 @@ import { QueryRunner } from 'typeorm';
 import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
 import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
-import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   SagaContext,
   SagaStep,
@@ -59,10 +58,14 @@ export class CreatePaymentStep extends SagaStep<
   }
 
   /**
-   * Skip payment creation for TRIAL action
+   * Payment creation is always required for orders through this saga.
+   * Note: Trial orders are handled by TrialOrderService which doesn't require payment.
    */
-  shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
-    return input.action === ORDER_ACTION.TRIAL;
+  shouldSkip(
+    _context: SagaContext,
+    _input: CreateOrderWithItemsInput,
+  ): boolean {
+    return false;
   }
 
   async execute(

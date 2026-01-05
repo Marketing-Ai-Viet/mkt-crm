@@ -50,6 +50,8 @@ export class CreateOrderResponseDto {
   error?: string;
 }
 
+// Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense
+
 @ObjectType()
 export class ConfirmOrderResponseDto {
   @Field(() => Boolean)

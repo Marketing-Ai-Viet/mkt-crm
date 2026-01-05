@@ -116,23 +116,21 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
         };
       }
 
-      // Get order items that need licenses
+      // Get order items that can have licenses created
+      // With unified flow, items may already have trial licenses that need to be replaced
       const orderItems = order.orderItems ?? [];
-      const itemsNeedingLicenses = orderItems.filter(
-        (item) =>
-          item.externalMktPackageId &&
-          item.externalMktProductId &&
-          !item.externalMktLicenseId,
+      const licensableItems = orderItems.filter(
+        (item) => item.externalMktPackageId && item.externalMktProductId,
       );
 
-      if (itemsNeedingLicenses.length === 0) {
-        this.logger.log('No order items need licenses');
+      if (licensableItems.length === 0) {
+        this.logger.log('No order items can have licenses');
 
         return { success: true, data: [] };
       }
 
       this.logger.log(
-        `Creating licenses for ${itemsNeedingLicenses.length} order items`,
+        `Processing ${licensableItems.length} order items for official licenses`,
       );
 
       // Get customer email for license creation
@@ -141,31 +139,52 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
         order.mktCustomerId ?? '',
       );
 
-      // Create licenses for each item
-      const createdLicenses: CreatedLicenseInfo[] = [];
-      const licenseIds: string[] = [];
+      // Process licenses for each item
+      // - If trial license exists → upgrade to official (atomic, keeps license key)
+      // - If no license exists → create new official license
+      const processedLicenses: CreatedLicenseInfo[] = [];
+      const upgradedLicenseIds: string[] = [];
+      const newLicenseIds: string[] = [];
 
-      for (const item of itemsNeedingLicenses) {
-        const result = await this.createLicenseForItem(
-          context.workspaceId,
-          item,
-          customerEmail,
-        );
+      for (const item of licensableItems) {
+        if (item.externalMktLicenseId) {
+          // Upgrade existing trial license to official (atomic operation)
+          const result = await this.upgradeTrialLicenseForItem(
+            context.workspaceId,
+            item,
+          );
 
-        if (result) {
-          createdLicenses.push(result);
-          licenseIds.push(result.id);
+          if (result) {
+            processedLicenses.push(result);
+            upgradedLicenseIds.push(result.id);
+          }
+        } else {
+          // Create new official license (no trial exists)
+          const result = await this.createOfficialLicenseForItem(
+            context.workspaceId,
+            item,
+            customerEmail,
+          );
+
+          if (result) {
+            processedLicenses.push(result);
+            newLicenseIds.push(result.id);
+          }
         }
       }
 
       // Store rollback data
-      context.rollbackData.set(this.name, { licenseIds });
+      context.rollbackData.set(this.name, {
+        upgradedLicenseIds,
+        newLicenseIds,
+      });
 
       this.logger.log(
-        `Created ${createdLicenses.length} licenses for order: ${order.id}`,
+        `Order ${order.id}: Upgraded ${upgradedLicenseIds.length} trial licenses, ` +
+          `created ${newLicenseIds.length} new licenses`,
       );
 
-      return { success: true, data: createdLicenses };
+      return { success: true, data: processedLicenses };
     } catch (error) {
       this.logger.error('Failed to create licenses on confirm', error);
 
@@ -181,24 +200,41 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
     _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
-      licenseIds: string[];
+      upgradedLicenseIds?: string[];
+      newLicenseIds?: string[];
     } | null;
 
-    if (!data?.licenseIds?.length) {
+    const upgradedCount = data?.upgradedLicenseIds?.length ?? 0;
+    const newCount = data?.newLicenseIds?.length ?? 0;
+
+    if (upgradedCount === 0 && newCount === 0) {
       this.logger.warn('No licenses to compensate');
 
       return;
     }
 
-    this.logger.warn(`Revoking ${data.licenseIds.length} licenses`);
+    // Revoke newly created licenses (can be undone)
+    if (data?.newLicenseIds?.length) {
+      this.logger.warn(`Revoking ${data.newLicenseIds.length} new licenses`);
 
-    for (const licenseId of data.licenseIds) {
-      try {
-        await this.mktLicenseProxy.revoke(licenseId);
-        this.logger.debug(`Revoked license ${licenseId}`);
-      } catch (error) {
-        this.logger.error(`Failed to revoke license ${licenseId}`, error);
+      for (const licenseId of data.newLicenseIds) {
+        try {
+          await this.mktLicenseProxy.revoke(licenseId);
+          this.logger.debug(`Revoked new license ${licenseId}`);
+        } catch (error) {
+          this.logger.error(`Failed to revoke license ${licenseId}`, error);
+        }
       }
+    }
+
+    // Note: Upgraded licenses cannot be easily rolled back
+    // The upgrade is atomic and the trial state is lost
+    // Log a warning for manual intervention if needed
+    if (upgradedCount > 0) {
+      this.logger.warn(
+        `${upgradedCount} upgraded licenses cannot be auto-reverted. ` +
+          `Manual intervention may be required.`,
+      );
     }
 
     this.logger.log('License compensation completed');
@@ -248,9 +284,74 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
   }
 
   /**
-   * Create license for a single order item
+   * Upgrade trial license to official license
+   *
+   * Uses MKT Server's atomic upgrade endpoint which:
+   * - Validates trial license
+   * - Converts to official with productPackageId
+   * - Keeps the same license key (customer doesn't need new key)
    */
-  private async createLicenseForItem(
+  private async upgradeTrialLicenseForItem(
+    workspaceId: string,
+    item: MktOrderItemWorkspaceEntity,
+  ): Promise<CreatedLicenseInfo | null> {
+    const trialLicenseId = item.externalMktLicenseId;
+
+    if (!trialLicenseId) {
+      return null;
+    }
+
+    try {
+      const maxDevices = item.maxDevices ?? DEFAULT_MAX_DEVICES;
+
+      this.logger.debug(
+        `Upgrading trial license ${trialLicenseId} for item ${item.id}`,
+      );
+
+      // Upgrade trial to official (atomic operation on MKT Server)
+      const license = await this.mktLicenseProxy.upgradeTrial(trialLicenseId, {
+        productPackageId: item.externalMktPackageId ?? '',
+        maxDevices,
+        reason: 'Payment confirmed - upgrading trial to official license',
+      });
+
+      // Create snapshot with updated license info
+      const snapshot: MktLicenseSnapshot =
+        this.mktProductProxy.createLicenseSnapshot(license);
+
+      // Update order item with upgraded license snapshot
+      // Note: licenseId and licenseKey remain the same after upgrade
+      await this.orderItemRepository.update(workspaceId, item.id, {
+        licenseSnapshot: snapshot,
+      });
+
+      this.logger.log(
+        `Upgraded trial license ${license.id} to official for order item ${item.id}`,
+      );
+
+      return {
+        id: license.id,
+        licenseKey: license.licenseKey,
+        orderItemId: item.id,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to upgrade trial license ${trialLicenseId} for order item ${item.id}`,
+        error,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * Create official license for a single order item (no trial exists)
+   *
+   * Official licenses are created with:
+   * - productPackageId (required for duration/features)
+   * - maxDevices from order item (can be > 1 for paid licenses)
+   */
+  private async createOfficialLicenseForItem(
     workspaceId: string,
     item: MktOrderItemWorkspaceEntity,
     email: string,
@@ -260,10 +361,10 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       const maxDevices = item.maxDevices ?? DEFAULT_MAX_DEVICES;
 
       this.logger.debug(
-        `Creating license for item ${item.id} with maxDevices=${maxDevices}`,
+        `Creating official license for item ${item.id} with maxDevices=${maxDevices}`,
       );
 
-      // Create license on MKT Server
+      // Create official license on MKT Server (requires productPackageId)
       const license = await this.mktLicenseProxy.create({
         productPackageId: item.externalMktPackageId ?? '',
         productId: item.externalMktProductId ?? '',
@@ -282,8 +383,8 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
         licenseSnapshot: snapshot,
       });
 
-      this.logger.debug(
-        `Created license ${license.id} for order item ${item.id}`,
+      this.logger.log(
+        `Created official license ${license.id} for order item ${item.id}`,
       );
 
       return {
@@ -293,7 +394,7 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       };
     } catch (error) {
       this.logger.error(
-        `Failed to create license for order item ${item.id}`,
+        `Failed to create official license for order item ${item.id}`,
         error,
       );
 

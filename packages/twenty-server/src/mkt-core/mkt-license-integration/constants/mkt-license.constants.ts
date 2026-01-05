@@ -16,10 +16,13 @@ export const MKT_LICENSE_ENDPOINTS = {
   // Query
   LICENSE_BY_KEY: '/api/oauth/licenses/by-key/:licenseKey',
   LICENSE_VALIDATE: '/api/oauth/licenses/validate',
+  LICENSE_CHECK_EXISTS: '/api/oauth/licenses/check-exists',
 
   // Actions
   LICENSE_ACTIVATE: '/api/oauth/licenses/:id/activate',
   LICENSE_REVOKE: '/api/oauth/licenses/:id/revoke',
+  LICENSE_TRIAL: '/api/oauth/licenses/trial',
+  LICENSE_UPGRADE: '/api/oauth/licenses/:id/upgrade',
 
   // Bulk
   LICENSES_BULK: '/api/oauth/licenses/bulk',
@@ -61,6 +64,21 @@ export const MKT_LICENSE_MAX_DEVICES_LIMITS = {
   MIN: 1,
   MAX: 100,
   DEFAULT: 1,
+} as const;
+
+// ============================================
+// TRIAL LICENSE CONSTRAINTS
+// ============================================
+
+export const MKT_TRIAL_LICENSE_CONSTRAINTS = {
+  /** Default trial duration in days */
+  DEFAULT_TRIAL_DAYS: 14,
+  /** Minimum trial days */
+  MIN_TRIAL_DAYS: 1,
+  /** Maximum trial days */
+  MAX_TRIAL_DAYS: 90,
+  /** Default max devices for trial license (always 1) */
+  DEFAULT_MAX_DEVICES: 1,
 } as const;
 
 // ============================================

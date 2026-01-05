@@ -71,8 +71,8 @@ export class CreateOrderStep extends SagaStep<
       // Determine initial status based on action
       const initialStatus = this.getInitialStatus(input.action);
 
-      // Determine if trial license
-      const isTrialLicense = input.action === ORDER_ACTION.TRIAL;
+      // Note: Trial orders are handled by TrialOrderService, not this saga
+      const isTrialLicense = false;
 
       // Build ownership fields (createdById, accountOwnerId)
       const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
@@ -171,12 +171,10 @@ export class CreateOrderStep extends SagaStep<
    *
    * Flow chính:
    * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
-   * - TRIAL: TRIAL → (TRIAL_EXPIRED | PENDING_PAYMENT)
+   * - Note: TRIAL orders are handled by TrialOrderService, not this saga
    */
   private getInitialStatus(action: ORDER_ACTION): ORDER_STATUS {
     switch (action) {
-      case ORDER_ACTION.TRIAL:
-        return ORDER_STATUS.TRIAL;
       case ORDER_ACTION.NEW_ORDER:
       case ORDER_ACTION.LICENSE_RENEWING:
       case ORDER_ACTION.TRIAL_TO_PAID:

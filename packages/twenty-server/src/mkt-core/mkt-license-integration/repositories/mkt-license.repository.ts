@@ -16,12 +16,17 @@ import {
   MktLicenseApiResponse,
   MktQueryLicensesParams,
   MktCreateLicensePayload,
+  MktCreateTrialLicensePayload,
+  MktUpgradeTrialLicensePayload,
   MktUpdateLicensePayload,
   MktValidateLicensePayload,
   MktBulkCreateLicensePayload,
   MktBulkUpdateLicensePayload,
   MktBulkDeleteLicensePayload,
   MktLicenseAnalyticsQueryParams,
+  MktFindTrialByProductParams,
+  MktCheckLicenseExistsResponse,
+  MKT_LICENSE_TYPE,
 } from 'src/mkt-core/mkt-license-integration/types';
 import { buildFullUrl } from 'src/mkt-core/utils/url-builder.util';
 
@@ -129,6 +134,86 @@ export class MktLicenseRepository {
     }
   }
 
+  /**
+   * Check if a license exists by productId and email.
+   *
+   * Uses the optimized check-exists API endpoint.
+   * POST /api/oauth/licenses/check-exists
+   */
+  async checkLicenseExists(
+    params: MktFindTrialByProductParams,
+    userContext?: UserContext,
+  ): Promise<MktCheckLicenseExistsResponse> {
+    const { productId, email } = params;
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_CHECK_EXISTS);
+
+    this.logger.debug('Checking license exists', { productId, email });
+
+    try {
+      const response = await this.oauth2Http.post<
+        MktLicenseApiResponse<MktCheckLicenseExistsResponse>
+      >(url, { productId, email }, undefined, userContext);
+
+      this.logger.debug('Check license exists result', {
+        productId,
+        email,
+        exists: response.data.exists,
+      });
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        `Failed to check license exists: ${this.getErrorMessage(error)}`,
+        { productId, email },
+      );
+
+      // Return not exists on error (allow trial creation to proceed)
+      return { exists: false, license: null };
+    }
+  }
+
+  /**
+   * Find existing trial license by product and email.
+   *
+   * Uses the check-exists API and filters for trial licenses only.
+   * Returns the license if it's a trial, or null otherwise.
+   *
+   * Business Rule: 1 user can only have 1 active trial per product
+   */
+  async findTrialByProductAndEmail(
+    params: MktFindTrialByProductParams,
+    userContext?: UserContext,
+  ): Promise<MktLicenseResponse | null> {
+    const { productId, email } = params;
+
+    this.logger.debug('Finding existing trial license', { productId, email });
+
+    const result = await this.checkLicenseExists(params, userContext);
+
+    if (!result.exists || !result.license) {
+      this.logger.debug(
+        `No existing license found for product ${productId} and email ${email}`,
+      );
+
+      return null;
+    }
+
+    // Check if it's a trial license
+    if (result.license.type !== MKT_LICENSE_TYPE.TRIAL) {
+      this.logger.debug(
+        `Found license ${result.license.id} but it's not a trial (type: ${result.license.type})`,
+      );
+
+      return null;
+    }
+
+    this.logger.log(
+      `Found existing trial license ${result.license.id} for product ${productId}`,
+    );
+
+    return result.license;
+  }
+
   async validate(
     payload: MktValidateLicensePayload,
     userContext?: UserContext,
@@ -171,6 +256,48 @@ export class MktLicenseRepository {
 
       this.logger.log(MKT_LICENSE_MESSAGES.SUCCESS.CREATED, {
         licenseId: response.data.id,
+        createdBy: userContext?.userName ?? 'System',
+      });
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        MKT_LICENSE_ERROR_BUILDER.createFailed(this.getErrorMessage(error)),
+        { payload },
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Create a trial license on MKT Server
+   *
+   * Trial license does NOT require productPackageId.
+   * Default: maxDevices = 1 (single device only)
+   */
+  async createTrial(
+    payload: MktCreateTrialLicensePayload,
+    userContext?: UserContext,
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_TRIAL);
+
+    this.logger.debug('Creating trial license', {
+      productId: payload.productId,
+      email: payload.email,
+      trialDays: payload.trialDays,
+      maxDevices: payload.maxDevices ?? 1,
+    });
+
+    try {
+      const response = await this.oauth2Http.post<
+        MktLicenseApiResponse<MktLicenseResponse>
+      >(url, payload, undefined, userContext);
+
+      this.logger.log('Trial license created', {
+        licenseId: response.data.id,
+        licenseKey: response.data.licenseKey,
+        trialDays: payload.trialDays,
+        maxDevices: payload.maxDevices ?? 1,
         createdBy: userContext?.userName ?? 'System',
       });
 
@@ -287,6 +414,51 @@ export class MktLicenseRepository {
       this.logger.error(
         MKT_LICENSE_ERROR_BUILDER.revokeFailed(this.getErrorMessage(error)),
         { id },
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Upgrade a trial license to official license
+   *
+   * This is an atomic operation on MKT Server that:
+   * 1. Validates the trial license
+   * 2. Converts it to official license with productPackageId
+   * 3. Updates license type, duration, maxDevices
+   *
+   * The license key remains the same after upgrade.
+   */
+  async upgradeTrial(
+    id: string,
+    payload: MktUpgradeTrialLicensePayload,
+    userContext?: UserContext,
+  ): Promise<MktLicenseResponse> {
+    const url = this.buildUrl(MKT_LICENSE_ENDPOINTS.LICENSE_UPGRADE, { id });
+
+    this.logger.debug('Upgrading trial license', {
+      licenseId: id,
+      productPackageId: payload.productPackageId,
+      maxDevices: payload.maxDevices,
+    });
+
+    try {
+      const response = await this.oauth2Http.patch<
+        MktLicenseApiResponse<MktLicenseResponse>
+      >(url, payload, undefined, userContext);
+
+      this.logger.log('Trial license upgraded to official', {
+        licenseId: id,
+        newType: response.data.type,
+        productPackageId: payload.productPackageId,
+        upgradedBy: userContext?.userName ?? 'System',
+      });
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        `Failed to upgrade trial license: ${this.getErrorMessage(error)}`,
+        { id, payload },
       );
       throw error;
     }
