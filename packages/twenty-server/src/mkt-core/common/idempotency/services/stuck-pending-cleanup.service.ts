@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
@@ -25,7 +30,9 @@ import {
  * 3. Log for monitoring/alerting
  */
 @Injectable()
-export class StuckPendingCleanupService implements OnModuleInit {
+export class StuckPendingCleanupService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(StuckPendingCleanupService.name);
   private cleanupInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
@@ -34,6 +41,10 @@ export class StuckPendingCleanupService implements OnModuleInit {
 
   onModuleInit(): void {
     this.startCleanupInterval();
+  }
+
+  onModuleDestroy(): void {
+    this.stopCleanupInterval();
   }
 
   /**
