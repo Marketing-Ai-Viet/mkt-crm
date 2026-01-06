@@ -370,7 +370,8 @@ export class CreateOrderItemsStep extends SagaStep<
         // Snapshots
         snapshotMktProduct: item.snapshotMktProduct,
         snapshotMktPackage: item.snapshotMktPackage,
-        licenseSnapshot: item.licenseSnapshot,
+        // Licenses array (copy from trial order)
+        licenses: item.licenses,
         // Display fields
         name: item.name,
         snapshotProductName: item.snapshotProductName,

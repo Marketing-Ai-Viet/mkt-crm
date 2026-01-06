@@ -25,7 +25,11 @@ import {
   DEFAULT_MAX_DEVICES,
   CreatedLicenseInfo,
 } from 'src/mkt-core/order/types';
-import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import {
+  MktLicenseSnapshot,
+  OrderItemLicense,
+} from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * CreateLicensesStep - Step 5: Create licenses for order items
@@ -255,6 +259,7 @@ export class CreateLicensesStep extends SagaStep<
    * Create trial license for a single order item
    *
    * Uses createOrReuseTrial to check for existing trial first (1 user = 1 trial per product)
+   * Supports multiple licenses per item (based on maxDevices)
    */
   private async createTrialLicenseForItem(
     workspaceId: string,
@@ -274,7 +279,7 @@ export class CreateLicensesStep extends SagaStep<
       const maxDevices = item.maxDevices ?? DEFAULT_MAX_DEVICES;
 
       this.logger.debug(
-        `Creating trial license for item ${item.id}, product ${productId}`,
+        `Creating trial license for item ${item.id}, product ${productId}, maxDevices ${maxDevices}`,
       );
 
       // Create or reuse trial license (1 user = 1 trial per product)
@@ -292,15 +297,26 @@ export class CreateLicensesStep extends SagaStep<
       const snapshot: MktLicenseSnapshot =
         this.mktProductProxy.createLicenseSnapshot(license);
 
+      // Build OrderItemLicense for the new licenses array
+      const orderItemLicense: OrderItemLicense = {
+        id: license.id,
+        licenseKey: license.licenseKey,
+        snapshot,
+        deviceIndex: 1, // First device
+        createdAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+      };
+
+      // Get existing licenses or start fresh
+      const existingLicenses = item.licenses ?? [];
+      const updatedLicenses = [...existingLicenses, orderItemLicense];
+
       // Update order item with license info
       await this.orderItemRepository.update(workspaceId, item.id, {
-        externalMktLicenseId: license.id,
-        externalMktLicenseKey: license.licenseKey,
-        licenseSnapshot: snapshot,
+        licenses: updatedLicenses,
       });
 
       this.logger.log(
-        `${result.reused ? 'Reused' : 'Created'} trial license ${license.id} for item ${item.id}`,
+        `${result.reused ? 'Reused' : 'Created'} trial license ${license.id} for item ${item.id} (total: ${updatedLicenses.length})`,
       );
 
       return {

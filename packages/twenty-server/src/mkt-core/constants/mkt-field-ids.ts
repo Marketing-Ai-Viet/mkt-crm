@@ -231,9 +231,7 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   orderLanguage: '35d900f3-d659-42f1-91c1-dfca25a8733d',
 
   // External MKT License fields (from MKT Server)
-  externalMktLicenseId: 'd13bf167-c4ee-4991-b5fd-2fc9422fd2e1',
-  externalMktLicenseKey: '501d54b3-848d-443c-96c1-57fd13f5b126',
-  licenseSnapshot: '282984d2-0d56-4c73-bed3-adc1b96369df',
+  licenses: 'a8e2c7f1-3d5b-4a9e-8c6d-2f1e0b9a8c7d',
   // License configuration
   maxDevices: '4aa5bb85-50f3-45b0-bc7e-df41930b6350',
 
@@ -540,16 +538,6 @@ export const MKT_TEMPLATE_FIELD_IDS = {
   accountOwner: '2ad28a81-0905-4592-9070-708aa6920e82',
   timelineActivities: '9ec4140d-a6dd-42e0-b882-5f6b35556530',
   searchVector: '7efe35b6-1956-48e2-9e43-183998ebc800',
-};
-
-export const MKT_SENDMAIL_TEMPLATE_FIELD_IDS = {
-  // fields
-  type: '8d929665-d33f-4c4a-af8e-ae5528dcae8b',
-  subject: '4328ed8f-1534-43c2-a7ae-08de53ae0963',
-  body: 'a512224b-3afe-4802-91fa-5082f70a29b0',
-  name: '67b895c1-8407-49e9-b10a-25243420ae21',
-  code: '594c7d4c-cd8c-43fc-9e8f-a281e937f6e9',
-  language: '794c7d4c-cd8c-43fc-9e8f-a281e937f6e9',
 };
 
 export const MKT_CONTRACT_FIELD_IDS = {

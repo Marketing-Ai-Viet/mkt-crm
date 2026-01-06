@@ -21,7 +21,11 @@ import {
   SagaStep,
   SagaStepResult,
 } from 'src/mkt-core/order/types';
-import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import {
+  MktLicenseSnapshot,
+  OrderItemLicense,
+} from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * CreateLicensesOnConfirmStep - Create licenses when accounting confirms payment
@@ -147,7 +151,10 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       const newLicenseIds: string[] = [];
 
       for (const item of licensableItems) {
-        if (item.externalMktLicenseId) {
+        // Check if item has existing trial licenses to upgrade
+        const hasTrialLicenses = (item.licenses?.length ?? 0) > 0;
+
+        if (hasTrialLicenses) {
           // Upgrade existing trial license to official (atomic operation)
           const result = await this.upgradeTrialLicenseForItem(
             context.workspaceId,
@@ -295,7 +302,8 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
     workspaceId: string,
     item: MktOrderItemWorkspaceEntity,
   ): Promise<CreatedLicenseInfo | null> {
-    const trialLicenseId = item.externalMktLicenseId;
+    // Get trial license ID from the licenses array (first license for trial orders)
+    const trialLicenseId = item.licenses?.[0]?.id;
 
     if (!trialLicenseId) {
       return null;
@@ -319,10 +327,34 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       const snapshot: MktLicenseSnapshot =
         this.mktProductProxy.createLicenseSnapshot(license);
 
-      // Update order item with upgraded license snapshot
-      // Note: licenseId and licenseKey remain the same after upgrade
+      // Update licenses array - replace the trial license with upgraded snapshot
+      const existingLicenses = item.licenses ?? [];
+      const updatedLicenses = existingLicenses.map((lic) =>
+        lic.id === trialLicenseId
+          ? {
+              ...lic,
+              snapshot,
+              createdAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+            }
+          : lic,
+      );
+
+      // If not found in array (backward compat), add it
+      if (!existingLicenses.some((lic) => lic.id === trialLicenseId)) {
+        const orderItemLicense: OrderItemLicense = {
+          id: license.id,
+          licenseKey: license.licenseKey,
+          snapshot,
+          deviceIndex: 1,
+          createdAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+        };
+
+        updatedLicenses.push(orderItemLicense);
+      }
+
+      // Update order item with upgraded license
       await this.orderItemRepository.update(workspaceId, item.id, {
-        licenseSnapshot: snapshot,
+        licenses: updatedLicenses,
       });
 
       this.logger.log(
@@ -376,15 +408,26 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       const snapshot: MktLicenseSnapshot =
         this.mktProductProxy.createLicenseSnapshot(license);
 
+      // Build OrderItemLicense for the licenses array
+      const orderItemLicense: OrderItemLicense = {
+        id: license.id,
+        licenseKey: license.licenseKey,
+        snapshot,
+        deviceIndex: 1,
+        createdAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+      };
+
+      // Add to existing licenses array
+      const existingLicenses = item.licenses ?? [];
+      const updatedLicenses = [...existingLicenses, orderItemLicense];
+
       // Update order item with license info
       await this.orderItemRepository.update(workspaceId, item.id, {
-        externalMktLicenseId: license.id,
-        externalMktLicenseKey: license.licenseKey,
-        licenseSnapshot: snapshot,
+        licenses: updatedLicenses,
       });
 
       this.logger.log(
-        `Created official license ${license.id} for order item ${item.id}`,
+        `Created official license ${license.id} for order item ${item.id} (total: ${updatedLicenses.length})`,
       );
 
       return {

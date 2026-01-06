@@ -159,6 +159,7 @@ export class LicenseLifecycleListener {
 
   /**
    * Get external MKT license IDs from order items
+   * Extracts all license IDs from the licenses array of each order item
    */
   private async getExternalLicenseIds(
     workspaceId: string,
@@ -169,12 +170,10 @@ export class LicenseLifecycleListener {
       orderId,
     );
 
-    return orderItems
-      .filter(
-        (item): item is typeof item & { externalMktLicenseId: string } =>
-          !!item.externalMktLicenseId,
-      )
-      .map((item) => item.externalMktLicenseId);
+    // Flatten all license IDs from all order items
+    return orderItems.flatMap((item) =>
+      (item.licenses ?? []).map((license) => license.id),
+    );
   }
 
   /**

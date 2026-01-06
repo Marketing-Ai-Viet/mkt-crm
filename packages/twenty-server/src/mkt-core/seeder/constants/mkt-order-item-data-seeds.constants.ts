@@ -1,9 +1,9 @@
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/constants/mkt-order-data-seeds.constants';
 import {
-  MktLicenseSnapshot,
   MktPackageSnapshot,
   MktProductSnapshot,
   MktSupportedLanguage,
+  OrderItemLicense,
 } from 'src/mkt-core/order/types';
 
 type MktOrderItemDataSeed = {
@@ -30,44 +30,46 @@ type MktOrderItemDataSeed = {
   snapshotMktPackage: MktPackageSnapshot | null;
   snapshotPackageName: string | null;
   orderLanguage: MktSupportedLanguage | null;
-  // External MKT License fields
-  externalMktLicenseId: string | null;
-  externalMktLicenseKey: string | null;
-  licenseSnapshot: MktLicenseSnapshot | null;
+  // New: Array of licenses (supports multiple licenses per item)
+  licenses: OrderItemLicense[] | null;
   // License configuration
   maxDevices: number;
+  // Actor metadata (createdBy composite type)
+  createdBySource: string;
+  createdByWorkspaceMemberId: string | null;
+  createdByName: string;
 };
 
-// prettier-ignore
-export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] = [
-  'id',
-  'name',
-  'quantity',
-  'unitPrice',
-  'totalPrice',
-  'snapshotProductName',
-  'unitName',
-  'taxPercentage',
-  'taxAmount',
-  'totalAmountWithTax',
-  'position',
-  'mktOrderId',
-  'itemDiscount',
-  'externalMktProductId',
-  'externalMktProductCode',
-  'externalMktPackageId',
-  'externalMktPackageCode',
-  'snapshotMktProduct',
-  'snapshotMktPackage',
-  'snapshotPackageName',
-  'orderLanguage',
-  'externalMktLicenseId',
-  'externalMktLicenseKey',
-  'licenseSnapshot',
-  'maxDevices',
-];
+export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] =
+  [
+    'id',
+    'name',
+    'quantity',
+    'unitPrice',
+    'totalPrice',
+    'snapshotProductName',
+    'unitName',
+    'taxPercentage',
+    'taxAmount',
+    'totalAmountWithTax',
+    'position',
+    'mktOrderId',
+    'itemDiscount',
+    'externalMktProductId',
+    'externalMktProductCode',
+    'externalMktPackageId',
+    'externalMktPackageCode',
+    'snapshotMktProduct',
+    'snapshotMktPackage',
+    'snapshotPackageName',
+    'orderLanguage',
+    'licenses',
+    'maxDevices',
+    'createdBySource',
+    'createdByWorkspaceMemberId',
+    'createdByName',
+  ];
 
-//prettier-ignore
 export const MKT_ORDER_ITEM_DATA_SEEDS_IDS = {
   ID_1: '550e8400-e29b-41d4-a716-446655440001',
   ID_2: '550e8400-e29b-41d4-a716-446655440002',
@@ -104,15 +106,16 @@ const DEFAULT_EXTERNAL_FIELDS = {
   snapshotMktPackage: null,
   snapshotPackageName: null,
   orderLanguage: null,
-  // External license fields
-  externalMktLicenseId: null,
-  externalMktLicenseKey: null,
-  licenseSnapshot: null,
+  // New: Array of licenses
+  licenses: null,
   // License configuration
   maxDevices: 1,
+  // Actor metadata (createdBy composite type)
+  createdBySource: 'MANUAL',
+  createdByWorkspaceMemberId: null,
+  createdByName: 'Admin User',
 };
 
-// prettier-ignore
 export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
   // Order 1 - MKT Care Package
   {

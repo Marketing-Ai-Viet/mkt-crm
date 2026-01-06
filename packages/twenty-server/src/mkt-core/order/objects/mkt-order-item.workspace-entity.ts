@@ -24,10 +24,10 @@ import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
-  MktLicenseSnapshot,
   MktPackageSnapshot,
   MktProductSnapshot,
   MktSupportedLanguage,
+  OrderItemLicense,
 } from 'src/mkt-core/order/types';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -228,36 +228,19 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   // ============================================
   // EXTERNAL MKT LICENSE REFERENCE FIELDS
   // ============================================
-
+  /**
+   * Array of licenses for this order item
+   * Supports multiple licenses per item (e.g., multi-device orders)
+   */
   @WorkspaceField({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktLicenseId,
-    type: FieldMetadataType.TEXT,
-    label: msg`External License ID`,
-    description: msg`ID of license from MKT Server`,
-    icon: 'IconKey',
-  })
-  @WorkspaceIsNullable()
-  externalMktLicenseId: string | null;
-
-  @WorkspaceField({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktLicenseKey,
-    type: FieldMetadataType.TEXT,
-    label: msg`License Key`,
-    description: msg`License key from MKT Server`,
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.licenses,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Licenses`,
+    description: msg`Array of licenses with keys and snapshots`,
     icon: 'IconLicense',
   })
   @WorkspaceIsNullable()
-  externalMktLicenseKey: string | null;
-
-  @WorkspaceField({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.licenseSnapshot,
-    type: FieldMetadataType.RAW_JSON,
-    label: msg`License Snapshot`,
-    description: msg`Immutable snapshot of MKT license at order time`,
-    icon: 'IconCamera',
-  })
-  @WorkspaceIsNullable()
-  licenseSnapshot: MktLicenseSnapshot | null;
+  licenses: OrderItemLicense[] | null;
 
   @WorkspaceField({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.maxDevices,
