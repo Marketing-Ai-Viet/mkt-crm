@@ -97,6 +97,44 @@ export class ExternalMktProductInputDto {
   splitLicenses?: boolean;
 }
 
+/**
+ * Input for ordering a combo
+ */
+@InputType()
+export class ComboOrderInputDto {
+  @Field(() => String, { description: 'Combo ID' })
+  @IsUUID()
+  comboId: string;
+
+  @Field(() => Int, {
+    defaultValue: 1,
+    description: 'Number of this combo to order',
+  })
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Override maxDevices for all digital items in combo (default: 1)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxDevices?: number;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: false,
+    description:
+      'Split into multiple licenses for digital items in combo (e.g., maxDevices=3 with splitLicenses=true creates 3 licenses with 1 device each)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  splitLicenses?: boolean;
+}
+
 @InputType()
 export class OrderPaymentMethodInputDto {
   @Field(() => String)
@@ -146,12 +184,26 @@ export class CreateOrderWithItemsInputDto {
   requireContract?: boolean;
 
   @Field(() => [ExternalMktProductInputDto], {
-    description: 'List of external MKT Server products (required)',
+    nullable: true,
+    description:
+      'List of external MKT Server products (optional if combos provided)',
   })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ExternalMktProductInputDto)
-  externalProducts: ExternalMktProductInputDto[];
+  externalProducts?: ExternalMktProductInputDto[];
+
+  @Field(() => [ComboOrderInputDto], {
+    nullable: true,
+    description:
+      'List of combos to order (optional if externalProducts provided)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ComboOrderInputDto)
+  combos?: ComboOrderInputDto[];
 
   @Field(() => String, {
     nullable: true,

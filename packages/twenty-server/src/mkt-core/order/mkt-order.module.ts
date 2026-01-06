@@ -17,6 +17,7 @@ import { orderConfig } from 'src/mkt-core/order/config';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
+import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
@@ -86,6 +87,7 @@ import {
   OrderProductIntegrationService,
   OrderLicenseIntegrationService,
   OrderPromotionIntegrationService,
+  OrderComboIntegrationService,
 } from './services/integration';
 
 @Module({
@@ -104,6 +106,7 @@ import {
     MktProductIntegrationModule, // External MKT Server product integration
     MktLicenseIntegrationModule, // External MKT Server license integration
     MktPromotionModule, // Promotion and coupon management
+    MktComboModule, // Combo integration for order creation
     MktContractModule,
     CustomerModule,
     IdempotencyModule.register(), // Idempotency protection for order operations
@@ -166,6 +169,7 @@ import {
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
+    OrderComboIntegrationService,
 
     // Jobs
     MktOrderOverdueJob,
@@ -195,6 +199,7 @@ import {
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
+    OrderComboIntegrationService,
     // Delayed Job Services
     OrderOverdueSchedulerService,
     // Sagas

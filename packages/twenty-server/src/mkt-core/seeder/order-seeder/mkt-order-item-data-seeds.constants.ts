@@ -1,9 +1,16 @@
-import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/constants/mkt-order-data-seeds.constants';
+import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/order-seeder/mkt-order-data-seeds.constants';
 import {
   MktPackageSnapshot,
   MktProductSnapshot,
   MktSupportedLanguage,
   OrderItemLicense,
+  OrderItemSource,
+  OrderItemType,
+  GenericComboItemSnapshot,
+  InternalProductSnapshot,
+  InternalVariantSnapshot,
+  ORDER_ITEM_SOURCE,
+  ORDER_ITEM_TYPE,
 } from 'src/mkt-core/order/types';
 
 type MktOrderItemDataSeed = {
@@ -34,6 +41,15 @@ type MktOrderItemDataSeed = {
   licenses: OrderItemLicense[] | null;
   // License configuration
   maxDevices: number;
+  // Combo-related fields
+  itemSource: OrderItemSource;
+  itemType: OrderItemType;
+  sourceComboId: string | null;
+  sourceComboItemId: string | null;
+  comboItemSnapshot: GenericComboItemSnapshot | null;
+  // Internal product/variant snapshots
+  internalProductSnapshot: InternalProductSnapshot | null;
+  internalVariantSnapshot: InternalVariantSnapshot | null;
   // Actor metadata (createdBy composite type)
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
@@ -65,6 +81,15 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] =
     'orderLanguage',
     'licenses',
     'maxDevices',
+    // Combo-related fields
+    'itemSource',
+    'itemType',
+    'sourceComboId',
+    'sourceComboItemId',
+    'comboItemSnapshot',
+    // Internal product/variant snapshots
+    'internalProductSnapshot',
+    'internalVariantSnapshot',
     'createdBySource',
     'createdByWorkspaceMemberId',
     'createdByName',
@@ -110,6 +135,15 @@ const DEFAULT_EXTERNAL_FIELDS = {
   licenses: null,
   // License configuration
   maxDevices: 1,
+  // Combo-related fields (default: direct product purchase)
+  itemSource: ORDER_ITEM_SOURCE.PRODUCT,
+  itemType: ORDER_ITEM_TYPE.DIGITAL_EXTERNAL,
+  sourceComboId: null,
+  sourceComboItemId: null,
+  comboItemSnapshot: null,
+  // Internal product/variant snapshots
+  internalProductSnapshot: null,
+  internalVariantSnapshot: null,
   // Actor metadata (createdBy composite type)
   createdBySource: 'MANUAL',
   createdByWorkspaceMemberId: null,

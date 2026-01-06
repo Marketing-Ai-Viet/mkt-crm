@@ -8,8 +8,8 @@ import { mktOrderHistoryAllView } from 'src/mkt-core/seeder/order-seeder/mkt-ord
 import { mktContractsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-contract-all.view';
 // REMOVED: License module has been deleted
 // import { mktLicensesAllView } from 'src/mkt-core/seeder/prefill-data/mkt-license-all.view';
-import { mktOrdersAllView } from 'src/mkt-core/seeder/prefill-data/mkt-order-all.view';
-import { mktOrderItemsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-order-item-all.view';
+import { mktOrdersAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-all.view';
+import { mktOrderItemsAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-all.view';
 import { mktPaymentsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-all.view';
 import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-method-all.view';
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';

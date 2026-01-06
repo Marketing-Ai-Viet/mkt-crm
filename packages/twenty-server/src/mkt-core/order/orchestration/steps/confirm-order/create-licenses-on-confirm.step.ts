@@ -25,6 +25,7 @@ import {
   MktLicenseSnapshot,
   OrderItemLicense,
 } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import { ORDER_ITEM_TYPE } from 'src/mkt-core/order/types/order-combo.types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
@@ -121,20 +122,23 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       }
 
       // Get order items that can have licenses created
+      // Only DIGITAL_EXTERNAL items with packageId are licensable
       // With unified flow, items may already have trial licenses that need to be replaced
       const orderItems = order.orderItems ?? [];
-      const licensableItems = orderItems.filter(
-        (item) => item.externalMktPackageId && item.externalMktProductId,
+      const licensableItems = orderItems.filter((item) =>
+        this.isLicensableItem(item),
       );
 
       if (licensableItems.length === 0) {
-        this.logger.log('No order items can have licenses');
+        this.logger.log(
+          'No licensable order items found (no DIGITAL_EXTERNAL items with packageId)',
+        );
 
         return { success: true, data: [] };
       }
 
       this.logger.log(
-        `Processing ${licensableItems.length} order items for official licenses`,
+        `Processing ${licensableItems.length} DIGITAL_EXTERNAL order items for official licenses`,
       );
 
       // Get customer email for license creation
@@ -250,6 +254,32 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
   // ============================================
   // PRIVATE METHODS
   // ============================================
+
+  /**
+   * Check if an order item should have a license created
+   *
+   * Only DIGITAL_EXTERNAL items with a packageId are licensable
+   * - SERVICE, CUSTOM, INTERNAL_PRODUCT, INTERNAL_VARIANT items do NOT need licenses
+   */
+  private isLicensableItem(item: MktOrderItemWorkspaceEntity): boolean {
+    // Check itemType - only DIGITAL_EXTERNAL items need licenses
+    // If itemType is not set, fall back to checking externalMktPackageId (backwards compatibility)
+    if (item.itemType && item.itemType !== ORDER_ITEM_TYPE.DIGITAL_EXTERNAL) {
+      return false;
+    }
+
+    // Must have packageId - licenses are package-based
+    if (!item.externalMktPackageId) {
+      return false;
+    }
+
+    // Must have productId for license creation
+    if (!item.externalMktProductId) {
+      return false;
+    }
+
+    return true;
+  }
 
   /**
    * Get customer email for license creation

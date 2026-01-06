@@ -29,6 +29,7 @@ import {
   MktLicenseSnapshot,
   OrderItemLicense,
 } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import { ORDER_ITEM_TYPE } from 'src/mkt-core/order/types/order-combo.types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
@@ -77,18 +78,17 @@ export class CreateLicensesStep extends SagaStep<
    * - TRIAL_TO_PAID: Do NOT skip (create trial license)
    */
   shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
-    // Skip if no external products
-    if (!input.externalProducts || input.externalProducts.length === 0) {
-      this.logger.debug('Skipping: No external products');
+    // Check if we have any licensable items (external products with packages OR combos with digital items)
+    const hasExternalProductsWithPackages =
+      input.externalProducts?.some((p) => p.packageId) ?? false;
 
-      return true;
-    }
+    // Combos may contain DIGITAL_EXTERNAL items - we'll filter in execute()
+    const hasCombos = (input.combos?.length ?? 0) > 0;
 
-    // Skip if no packages
-    const hasPackages = input.externalProducts.some((p) => p.packageId);
-
-    if (!hasPackages) {
-      this.logger.debug('Skipping: No packages in external products');
+    if (!hasExternalProductsWithPackages && !hasCombos) {
+      this.logger.debug(
+        'Skipping: No external products with packages and no combos',
+      );
 
       return true;
     }
@@ -158,19 +158,23 @@ export class CreateLicensesStep extends SagaStep<
         return { success: true, data: { licenses: [] } };
       }
 
-      // Filter items that can have licenses (have productId)
-      const licensableItems = orderItems.filter(
-        (item) => item.externalMktProductId,
+      // Filter items that can have licenses:
+      // - itemType must be DIGITAL_EXTERNAL (only digital items need licenses)
+      // - must have externalMktPackageId (licenses are package-based)
+      const licensableItems = orderItems.filter((item) =>
+        this.isLicensableItem(item),
       );
 
       if (licensableItems.length === 0) {
-        this.logger.log('No licensable order items found');
+        this.logger.log(
+          'No licensable order items found (no DIGITAL_EXTERNAL items with packageId)',
+        );
 
         return { success: true, data: { licenses: [] } };
       }
 
       this.logger.log(
-        `Creating trial licenses for ${licensableItems.length} items (action: ${input.action})`,
+        `Creating trial licenses for ${licensableItems.length} DIGITAL_EXTERNAL items (action: ${input.action})`,
       );
 
       // Get trial duration
@@ -254,6 +258,27 @@ export class CreateLicensesStep extends SagaStep<
   // ============================================
   // PRIVATE METHODS
   // ============================================
+
+  /**
+   * Check if an order item should have a license created
+   *
+   * Only DIGITAL_EXTERNAL items with a packageId are licensable
+   * - SERVICE, CUSTOM, INTERNAL_PRODUCT, INTERNAL_VARIANT items do NOT need licenses
+   */
+  private isLicensableItem(item: MktOrderItemWorkspaceEntity): boolean {
+    // Check itemType - only DIGITAL_EXTERNAL items need licenses
+    // If itemType is not set, fall back to checking externalMktPackageId (backwards compatibility)
+    if (item.itemType && item.itemType !== ORDER_ITEM_TYPE.DIGITAL_EXTERNAL) {
+      return false;
+    }
+
+    // Must have packageId - licenses are package-based
+    if (!item.externalMktPackageId) {
+      return false;
+    }
+
+    return true;
+  }
 
   /**
    * Create trial license for a single order item

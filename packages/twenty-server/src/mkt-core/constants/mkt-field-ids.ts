@@ -206,6 +206,9 @@ export const MKT_ORDER_FIELD_IDS = {
   couponCode: '631e7f75-b806-447b-81d2-18cc42fb2042',
   promotionDiscount: '4be6781b-b704-406f-9f24-dc9d5607fcf8',
   appliedPromotions: '0165b922-6861-42c4-a905-12699c9e526f',
+  // Combo fields
+  appliedCombos: '281b870e-b751-42b6-b95a-252170849084',
+  comboDiscount: '68ca63d5-0d37-479b-94fc-15b95dd69a98',
 };
 
 export const MKT_ORDER_ITEM_FIELD_IDS = {
@@ -242,6 +245,17 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   mktCombo: '45c7d839-e7f7-44db-9d86-37dc84415dd5',
   // Promotion discount for item
   itemDiscount: '684661fb-6376-473b-a16e-f0315a24816f',
+
+  // Combo-related fields
+  itemSource: '225eff6b-a697-4e54-a0cf-86b54965f37e',
+  itemType: 'eb271f8f-ae93-43ab-b70d-d4b10d14e067',
+  sourceComboId: '4835fa8e-85c4-4bf8-8a6e-b5e4d787ac61',
+  sourceComboItemId: '91f4be4e-4540-4e98-bc74-9ecb80767e57',
+  comboItemSnapshot: '3110b6dc-0e0d-4c19-bfc4-e19e88e48e00',
+
+  // Internal product/variant snapshots (for INTERNAL_PRODUCT/INTERNAL_VARIANT types)
+  internalProductSnapshot: 'f7c3a8e2-1d4b-5c6e-9a0f-b2c3d4e5f6a7',
+  internalVariantSnapshot: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
 
   // common relations or fields
   position: '5e6f7081-9293-b4c5-6789-012345678901',

@@ -1,6 +1,7 @@
 import { MKT_CUSTOMER_DATA_SEEDS_IDS } from 'src/mkt-core/customer/constants/mkt-customer.constant';
 import { ORDER_STATUS, SINVOICE_STATUS } from 'src/mkt-core/order/constants';
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
+import { GenericComboSnapshot } from 'src/mkt-core/order/types';
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
 
@@ -31,6 +32,9 @@ type MktOrderDataSeed = {
   couponCode: string | null;
   promotionDiscount: number;
   appliedPromotions: PromotionSnapshot[] | null;
+  // Combo fields
+  appliedCombos: GenericComboSnapshot[] | null;
+  comboDiscount: number;
   // Multi-payment fields
   paidAmount: number;
   remainingAmount: number;
@@ -64,6 +68,9 @@ export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
   'couponCode',
   'promotionDiscount',
   'appliedPromotions',
+  // Combo fields
+  'appliedCombos',
+  'comboDiscount',
   // Multi-payment fields
   'paidAmount',
   'remainingAmount',
@@ -75,6 +82,12 @@ const DEFAULT_PROMOTION_FIELDS = {
   couponCode: null,
   promotionDiscount: 0,
   appliedPromotions: null,
+};
+
+// Default combo fields for seed data
+const DEFAULT_COMBO_FIELDS = {
+  appliedCombos: null,
+  comboDiscount: 0,
 };
 
 /**
@@ -158,6 +171,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.BRONZE_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(12100000, true),
   },
   {
@@ -184,6 +198,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(17100000, true),
   },
   {
@@ -210,6 +225,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(6600000, false),
   },
   {
@@ -236,6 +252,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(16500000, true),
   },
   {
@@ -262,6 +279,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(9900000, true),
   },
   {
@@ -288,6 +306,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(3300000, true),
   },
   {
@@ -314,6 +333,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(5500000, true),
   },
   {
@@ -340,6 +360,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(17600000, true),
   },
   {
@@ -366,6 +387,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(3300000, false),
   },
   {
@@ -392,6 +414,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(5500000, true),
   },
   {
@@ -418,6 +441,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(9900000, true),
   },
   {
@@ -444,6 +468,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(11000000, true),
   },
   {
@@ -470,6 +495,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(9350000, false),
   },
   {
@@ -496,6 +522,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(12100000, true),
   },
   // GOLD_CUSTOMER orders
@@ -523,6 +550,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(26500000, true),
   },
   {
@@ -549,6 +577,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(19300000, true),
   },
   {
@@ -575,6 +604,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(23400000, true),
   },
   // DIAMOND_CUSTOMER orders
@@ -602,6 +632,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(525000000, true),
   },
   {
@@ -628,6 +659,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(315000000, true),
   },
   {
@@ -654,6 +686,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(840000000, true),
   },
   {
@@ -680,6 +713,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(475000000, true),
   },
   {
@@ -706,6 +740,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(630000000, true),
   },
   {
@@ -732,6 +767,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(263000000, true),
   },
   {
@@ -758,6 +794,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(127000000, true),
   },
   {
@@ -784,6 +821,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(190000000, true),
   },
   {
@@ -810,6 +848,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(368000000, true),
   },
   {
@@ -836,6 +875,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(294000000, true),
   },
   {
@@ -862,6 +902,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(158000000, true),
   },
   {
@@ -888,6 +929,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(210000000, true),
   },
   {
@@ -914,6 +956,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(336000000, true),
   },
   {
@@ -940,6 +983,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(420000000, true),
   },
   {
@@ -966,6 +1010,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(630000000, true),
   },
   {
@@ -992,6 +1037,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(399000000, true),
   },
   {
@@ -1018,6 +1064,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(1260000000, true),
   },
   {
@@ -1044,6 +1091,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(525000000, true),
   },
   {
@@ -1070,6 +1118,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(788000000, true),
   },
   {
@@ -1096,6 +1145,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
     createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(2100000000, true),
   },
 ];

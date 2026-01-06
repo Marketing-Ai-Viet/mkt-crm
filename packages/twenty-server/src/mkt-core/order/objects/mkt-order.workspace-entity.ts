@@ -32,6 +32,7 @@ import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-paym
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
+import { GenericComboSnapshot } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
 import { PAYMENT_STATUS_OPTIONS } from 'src/mkt-core/order/constants/payment-status.constants';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -293,6 +294,31 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   appliedPromotions?: PromotionSnapshot[] | null;
+
+  // ============================================
+  // COMBO FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.appliedCombos,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Applied Combos`,
+    description: msg`Immutable snapshots of applied combos at order time`,
+    icon: 'IconPackages',
+  })
+  @WorkspaceIsNullable()
+  appliedCombos?: GenericComboSnapshot[] | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.comboDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Combo Discount`,
+    description: msg`Total discount from combo pricing`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  comboDiscount?: number;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,

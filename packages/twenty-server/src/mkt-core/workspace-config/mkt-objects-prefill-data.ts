@@ -16,9 +16,9 @@ import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/p
 import { prefillMktI18n } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpi-templates';
 import { prefillMktKpis } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpis';
-import { prefillMktOrderHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-order-histories';
-import { prefillMktOrderItems } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-order-items';
-import { prefillMktOrders } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-orders';
+import { prefillMktOrderHistories } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-histories';
+import { prefillMktOrderItems } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-items';
+import { prefillMktOrders } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-organization-levels';
 import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-methods';

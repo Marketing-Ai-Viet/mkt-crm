@@ -40,11 +40,17 @@ export const OrderInputMapper = {
       currency: dto.currency as PaymentCurrency | undefined,
       note: dto.note,
       requireContract: dto.requireContract,
-      externalProducts: dto.externalProducts.map((p) => ({
+      externalProducts: dto.externalProducts?.map((p) => ({
         productId: p.productId,
         packageId: p.packageId,
         maxDevices: p.maxDevices,
         splitLicenses: p.splitLicenses,
+      })),
+      combos: dto.combos?.map((c) => ({
+        comboId: c.comboId,
+        quantity: c.quantity,
+        maxDevices: c.maxDevices,
+        splitLicenses: c.splitLicenses,
       })),
       orderLanguage: dto.orderLanguage as MktSupportedLanguage | undefined,
       paymentMethods: dto.paymentMethods?.map((p) => ({

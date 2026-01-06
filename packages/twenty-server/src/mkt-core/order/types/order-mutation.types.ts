@@ -25,6 +25,20 @@ export type ExternalMktProductInput = {
 };
 
 /**
+ * Combo input trong order
+ */
+export type ComboOrderInputType = {
+  /** ID của combo */
+  comboId: string;
+  /** Số lượng combo */
+  quantity: number;
+  /** Override maxDevices cho tất cả digital items trong combo */
+  maxDevices?: number;
+  /** Tách thành nhiều license cho digital items trong combo */
+  splitLicenses?: boolean;
+};
+
+/**
  * Payment method trong order
  */
 export type OrderPaymentMethodInput = {
@@ -47,6 +61,7 @@ export type OrderCustomerInput = {
  * Thay thế việc sử dụng createMktOrder + post-hook
  *
  * Sử dụng external products từ MKT Server via OAuth2 API
+ * Hoặc combos từ mkt-combo module
  */
 export type CreateOrderWithItemsInput = {
   // Customer
@@ -57,8 +72,11 @@ export type CreateOrderWithItemsInput = {
   note?: string;
   requireContract?: boolean;
 
-  // Items - External MKT Server products (required)
-  externalProducts: ExternalMktProductInput[];
+  // Items - External MKT Server products (optional if combos provided)
+  externalProducts?: ExternalMktProductInput[];
+
+  // Combos - Combo items (optional if externalProducts provided)
+  combos?: ComboOrderInputType[];
 
   // Order language for display names from MKT Server (default: 'vi')
   orderLanguage?: MktSupportedLanguage;

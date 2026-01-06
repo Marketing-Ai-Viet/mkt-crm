@@ -28,6 +28,15 @@ import {
   MktProductSnapshot,
   MktSupportedLanguage,
   OrderItemLicense,
+  ORDER_ITEM_SOURCE,
+  ORDER_ITEM_SOURCE_OPTIONS,
+  OrderItemSource,
+  ORDER_ITEM_TYPE,
+  ORDER_ITEM_TYPE_OPTIONS,
+  OrderItemType,
+  GenericComboItemSnapshot,
+  InternalProductSnapshot,
+  InternalVariantSnapshot,
 } from 'src/mkt-core/order/types';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -276,6 +285,88 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   orderLanguage: MktSupportedLanguage | null;
+
+  // ============================================
+  // COMBO-RELATED FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemSource,
+    type: FieldMetadataType.SELECT,
+    label: msg`Item Source`,
+    description: msg`Source of this order item (PRODUCT or COMBO_ITEM)`,
+    icon: 'IconSource',
+    options: ORDER_ITEM_SOURCE_OPTIONS,
+    defaultValue: `'${ORDER_ITEM_SOURCE.PRODUCT}'`,
+  })
+  @WorkspaceIsNullable()
+  itemSource: OrderItemSource | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Item Type`,
+    description: msg`Type of order item (DIGITAL_EXTERNAL, INTERNAL_PRODUCT, INTERNAL_VARIANT, SERVICE, CUSTOM)`,
+    icon: 'IconCategory',
+    options: ORDER_ITEM_TYPE_OPTIONS,
+    defaultValue: `'${ORDER_ITEM_TYPE.DIGITAL_EXTERNAL}'`,
+  })
+  @WorkspaceIsNullable()
+  itemType: OrderItemType | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.sourceComboId,
+    type: FieldMetadataType.UUID,
+    label: msg`Source Combo ID`,
+    description: msg`ID of combo this item belongs to (if from combo)`,
+    icon: 'IconPackages',
+  })
+  @WorkspaceIsNullable()
+  sourceComboId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.sourceComboItemId,
+    type: FieldMetadataType.UUID,
+    label: msg`Source Combo Item ID`,
+    description: msg`ID of combo item this order item was created from`,
+    icon: 'IconBox',
+  })
+  @WorkspaceIsNullable()
+  sourceComboItemId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.comboItemSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Combo Item Snapshot`,
+    description: msg`Immutable snapshot of combo item at order time`,
+    icon: 'IconCamera',
+  })
+  @WorkspaceIsNullable()
+  comboItemSnapshot: GenericComboItemSnapshot | null;
+
+  // ============================================
+  // INTERNAL PRODUCT/VARIANT FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.internalProductSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Internal Product Snapshot`,
+    description: msg`Immutable snapshot of internal CRM product at order time (for INTERNAL_PRODUCT type)`,
+    icon: 'IconBox',
+  })
+  @WorkspaceIsNullable()
+  internalProductSnapshot: InternalProductSnapshot | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.internalVariantSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Internal Variant Snapshot`,
+    description: msg`Immutable snapshot of internal CRM variant at order time (for INTERNAL_VARIANT type)`,
+    icon: 'IconBoxMultiple',
+  })
+  @WorkspaceIsNullable()
+  internalVariantSnapshot: InternalVariantSnapshot | null;
 
   // ============================================
   // RELATIONS

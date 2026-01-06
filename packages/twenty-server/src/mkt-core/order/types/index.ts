@@ -8,3 +8,4 @@ export * from './listeners.types';
 export * from './order-event.types';
 export * from './order-saga.interface';
 export * from './order-overdue.types';
+export * from './order-combo.types';
