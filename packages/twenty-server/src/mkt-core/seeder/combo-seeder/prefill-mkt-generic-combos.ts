@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-generic-combo-data-seeds.constants';
+} from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-data-seeds.constants';
 
 export const prefillMktGenericCombos = async (
   entityManager: WorkspaceEntityManager,

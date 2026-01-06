@@ -42,11 +42,11 @@ import {
 import {
   MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-generic-combo-data-seeds.constants';
+} from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-data-seeds.constants';
 import {
   MKT_GENERIC_COMBO_ITEM_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_ITEM_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-generic-combo-item-data-seeds.constants';
+} from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-data-seeds.constants';
 import {
   MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,

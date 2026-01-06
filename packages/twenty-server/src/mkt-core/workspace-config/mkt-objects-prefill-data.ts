@@ -10,8 +10,8 @@ import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-department-hierarchies';
 import { prefillMktDepartments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-departments';
-import { prefillMktGenericComboItems } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-generic-combo-items';
-import { prefillMktGenericCombos } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-generic-combos';
+import { prefillMktGenericComboItems } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combo-items';
+import { prefillMktGenericCombos } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combos';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-employment-statuses';
 import { prefillMktI18n } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpi-templates';

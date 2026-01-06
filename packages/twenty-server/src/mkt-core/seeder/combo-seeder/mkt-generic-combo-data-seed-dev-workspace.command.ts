@@ -4,7 +4,7 @@ import { Command, CommandRunner } from 'nest-commander';
 
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { prefillMktGenericCombos } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-generic-combos';
+import { prefillMktGenericCombos } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combos';
 
 @Command({
   name: 'workspace-seed-dev:mkt-generic-combos',
