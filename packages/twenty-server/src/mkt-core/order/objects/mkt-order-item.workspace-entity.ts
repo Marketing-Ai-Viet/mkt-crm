@@ -23,9 +23,21 @@ import {
 import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import {
+  MktPackageSnapshot,
+  MktProductSnapshot,
+  MktSupportedLanguage,
+  OrderItemLicense,
+  ORDER_ITEM_SOURCE,
+  ORDER_ITEM_SOURCE_OPTIONS,
+  OrderItemSource,
+  ORDER_ITEM_TYPE,
+  ORDER_ITEM_TYPE_OPTIONS,
+  OrderItemType,
+  GenericComboItemSnapshot,
+  InternalProductSnapshot,
+  InternalVariantSnapshot,
+} from 'src/mkt-core/order/types';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -143,6 +155,223 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   totalPrice?: number;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Item Discount`,
+    description: msg`Discount amount from promotions for this item`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  itemDiscount?: number;
+
+  // ============================================
+  // EXTERNAL MKT PRODUCT REFERENCE FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktProductId,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Product ID`,
+    description: msg`ID of product from MKT Server (UUIDv7)`,
+    icon: 'IconLink',
+  })
+  @WorkspaceIsNullable()
+  externalMktProductId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktProductCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Product Code`,
+    description: msg`Unique code of product from MKT Server`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  externalMktProductCode: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktPackageId,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Package ID`,
+    description: msg`ID of package from MKT Server`,
+    icon: 'IconPackage',
+  })
+  @WorkspaceIsNullable()
+  externalMktPackageId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.externalMktPackageCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`External Package Code`,
+    description: msg`Code of package from MKT Server`,
+    icon: 'IconBarcode',
+  })
+  @WorkspaceIsNullable()
+  externalMktPackageCode: string | null;
+
+  // ============================================
+  // SNAPSHOT FIELDS - IMMUTABLE AFTER CREATION
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotMktProduct,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Product Snapshot`,
+    description: msg`Immutable snapshot of MKT product at order time`,
+    icon: 'IconCamera',
+  })
+  @WorkspaceIsNullable()
+  snapshotMktProduct: MktProductSnapshot | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotMktPackage,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Package Snapshot`,
+    description: msg`Immutable snapshot of MKT package at order time`,
+    icon: 'IconPackage',
+  })
+  @WorkspaceIsNullable()
+  snapshotMktPackage: MktPackageSnapshot | null;
+
+  // ============================================
+  // EXTERNAL MKT LICENSE REFERENCE FIELDS
+  // ============================================
+  /**
+   * Array of licenses for this order item
+   * Supports multiple licenses per item (e.g., multi-device orders)
+   */
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.licenses,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Licenses`,
+    description: msg`Array of licenses with keys and snapshots`,
+    icon: 'IconLicense',
+  })
+  @WorkspaceIsNullable()
+  licenses: OrderItemLicense[] | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.maxDevices,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Max Devices`,
+    description: msg`Maximum devices allowed for the license`,
+    icon: 'IconDevices',
+    defaultValue: 1,
+  })
+  @WorkspaceIsNullable()
+  maxDevices: number | null;
+
+  // ============================================
+  // DISPLAY FIELDS (denormalized for quick access)
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.snapshotPackageName,
+    type: FieldMetadataType.TEXT,
+    label: msg`Package Name (Snapshot)`,
+    description: msg`Package name at order time`,
+    icon: 'IconTag',
+  })
+  @WorkspaceIsNullable()
+  snapshotPackageName: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.orderLanguage,
+    type: FieldMetadataType.TEXT,
+    label: msg`Order Language`,
+    description: msg`Display language for order (vi/en/ko)`,
+    icon: 'IconLanguage',
+  })
+  @WorkspaceIsNullable()
+  orderLanguage: MktSupportedLanguage | null;
+
+  // ============================================
+  // COMBO-RELATED FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemSource,
+    type: FieldMetadataType.SELECT,
+    label: msg`Item Source`,
+    description: msg`Source of this order item (PRODUCT or COMBO_ITEM)`,
+    icon: 'IconSource',
+    options: ORDER_ITEM_SOURCE_OPTIONS,
+    defaultValue: `'${ORDER_ITEM_SOURCE.PRODUCT}'`,
+  })
+  @WorkspaceIsNullable()
+  itemSource: OrderItemSource | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.itemType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Item Type`,
+    description: msg`Type of order item (DIGITAL_EXTERNAL, INTERNAL_PRODUCT, INTERNAL_VARIANT, SERVICE, CUSTOM)`,
+    icon: 'IconCategory',
+    options: ORDER_ITEM_TYPE_OPTIONS,
+    defaultValue: `'${ORDER_ITEM_TYPE.DIGITAL_EXTERNAL}'`,
+  })
+  @WorkspaceIsNullable()
+  itemType: OrderItemType | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.sourceComboId,
+    type: FieldMetadataType.UUID,
+    label: msg`Source Combo ID`,
+    description: msg`ID of combo this item belongs to (if from combo)`,
+    icon: 'IconPackages',
+  })
+  @WorkspaceIsNullable()
+  sourceComboId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.sourceComboItemId,
+    type: FieldMetadataType.UUID,
+    label: msg`Source Combo Item ID`,
+    description: msg`ID of combo item this order item was created from`,
+    icon: 'IconBox',
+  })
+  @WorkspaceIsNullable()
+  sourceComboItemId: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.comboItemSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Combo Item Snapshot`,
+    description: msg`Immutable snapshot of combo item at order time`,
+    icon: 'IconCamera',
+  })
+  @WorkspaceIsNullable()
+  comboItemSnapshot: GenericComboItemSnapshot | null;
+
+  // ============================================
+  // INTERNAL PRODUCT/VARIANT FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.internalProductSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Internal Product Snapshot`,
+    description: msg`Immutable snapshot of internal CRM product at order time (for INTERNAL_PRODUCT type)`,
+    icon: 'IconBox',
+  })
+  @WorkspaceIsNullable()
+  internalProductSnapshot: InternalProductSnapshot | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.internalVariantSnapshot,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Internal Variant Snapshot`,
+    description: msg`Immutable snapshot of internal CRM variant at order time (for INTERNAL_VARIANT type)`,
+    icon: 'IconBoxMultiple',
+  })
+  @WorkspaceIsNullable()
+  internalVariantSnapshot: InternalVariantSnapshot | null;
+
+  // ============================================
+  // RELATIONS
+  // ============================================
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.mktOrder,
     type: RelationType.MANY_TO_ONE,
@@ -157,54 +386,6 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('mktOrder')
   mktOrderId: string;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktProduct,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Product`,
-    description: msg`Product for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktProductWorkspaceEntity,
-    inverseSideFieldKey: 'orderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktProduct?: Relation<MktProductWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('mktProduct')
-  mktProductId?: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktVariant,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Variant`,
-    description: msg`Variant for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktVariantWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktVariant?: Relation<MktVariantWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('mktVariant')
-  mktVariantId: string | null;
-
-  @WorkspaceRelation({
-    standardId: MKT_ORDER_ITEM_FIELD_IDS.mktCombo,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Combo`,
-    description: msg`Combo for this order item`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboWorkspaceEntity,
-    inverseSideFieldKey: 'mktOrderItems',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  mktCombo?: Relation<MktComboWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('mktCombo')
-  mktComboId: string | null;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_ITEM_FIELD_IDS.timelineActivities,

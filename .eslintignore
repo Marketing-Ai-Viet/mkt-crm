@@ -1,0 +1,10 @@
+# Claude Code skill files
+.claude/
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+.nx/

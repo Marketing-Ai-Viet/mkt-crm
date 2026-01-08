@@ -12,23 +12,11 @@ import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
-import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 import { MKT_DATA_ACCESS_POLICY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { MktPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities';
 
-@WorkspaceIndex(['objectName', 'isActive'], {
-  indexWhereClause: '"deletedAt" IS NULL',
-})
-@WorkspaceIndex(['minHierarchyLevel', 'maxHierarchyLevel'], {
-  indexWhereClause: '"deletedAt" IS NULL AND "isActive" = true',
-})
-@WorkspaceIndex(['departmentId'], {
-  indexWhereClause: '"deletedAt" IS NULL AND "departmentId" IS NOT NULL',
-})
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDataAccessPolicy,
   namePlural: 'mktDataAccessPolicies',
@@ -91,59 +79,6 @@ export class MktDataAccessPolicyWorkspaceEntity extends BaseWorkspaceEntity {
 
   @WorkspaceJoinColumn('specificMember')
   specificMemberId?: string | null;
-
-  // Organization Level Targeting (new for 11-level hierarchy)
-  @WorkspaceRelation({
-    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.organizationLevel,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Organization Level`,
-    description: msg`Specific organization level this policy applies to`,
-    icon: 'IconHierarchy',
-    inverseSideTarget: () => MktOrganizationLevelWorkspaceEntity,
-    inverseSideFieldKey: 'dataAccessPolicies',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  organizationLevel?: Relation<MktOrganizationLevelWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('organizationLevel')
-  organizationLevelId?: string | null;
-
-  @WorkspaceField({
-    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.minHierarchyLevel,
-    type: FieldMetadataType.NUMBER,
-    label: msg`Min Hierarchy Level`,
-    description: msg`Minimum hierarchy level this policy applies to (for range-based policies)`,
-    icon: 'IconArrowDown',
-  })
-  @WorkspaceIsNullable()
-  minHierarchyLevel?: number;
-
-  @WorkspaceField({
-    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.maxHierarchyLevel,
-    type: FieldMetadataType.NUMBER,
-    label: msg`Max Hierarchy Level`,
-    description: msg`Maximum hierarchy level this policy applies to (for range-based policies)`,
-    icon: 'IconArrowUp',
-  })
-  @WorkspaceIsNullable()
-  maxHierarchyLevel?: number;
-
-  @WorkspaceRelation({
-    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.permissionTemplate,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Permission Template`,
-    description: msg`Permission template used to generate this policy`,
-    icon: 'IconShield',
-    inverseSideTarget: () => MktPermissionTemplateWorkspaceEntity,
-    inverseSideFieldKey: 'dataAccessPolicies',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  @WorkspaceIsNullable()
-  permissionTemplate?: Relation<MktPermissionTemplateWorkspaceEntity>;
-
-  @WorkspaceJoinColumn('permissionTemplate')
-  permissionTemplateId?: string | null;
 
   @WorkspaceField({
     standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.objectName,

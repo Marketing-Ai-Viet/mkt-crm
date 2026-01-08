@@ -1,14 +1,13 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
-import { FindManyOptions, In } from 'typeorm';
+import { In } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getHierarchyLevelValidationError } from 'src/mkt-core/mkt-organization-level/validators/hierarchy-level-range.validator';
-import { WorkspaceMemberMktEntity } from 'src/mkt-core/mkt-entities-extends/workspace-member.mkt-entity';
 import {
   HIERARCHY_PERFORMANCE_LIMITS,
   MAX_ORGANIZATION_HIERARCHY_DEPTH,
@@ -21,39 +20,18 @@ import {
   OrganizationLevelStatistics,
   UpdateOrganizationLevelInput,
 } from 'src/mkt-core/mkt-organization-level/graphql-types';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { OrganizationLevelHierarchyValidator } from 'src/mkt-core/mkt-organization-level/validators/hierarchy-validator';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-
-interface RepositoryPair {
-  organizationLevelRepository: WorkspaceRepository<MktOrganizationLevelWorkspaceEntity>;
-  workspaceMemberRepository: WorkspaceRepository<WorkspaceMemberMktEntity>;
-}
+import { MktOrganizationLevelRepository } from 'src/mkt-core/mkt-organization-level/repositories/mkt-organization-level.repository';
 
 @Injectable()
 export class OrganizationLevelService {
+  private readonly logger = new Logger('MktOrganizationLevel:Service');
+
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly repository: MktOrganizationLevelRepository,
     private readonly hierarchyValidator: OrganizationLevelHierarchyValidator,
   ) {}
-
-  private async getRepositories(workspaceId: string): Promise<RepositoryPair> {
-    const organizationLevelRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrganizationLevelWorkspaceEntity>(
-        workspaceId,
-        'mktOrganizationLevel',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const workspaceMemberRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberMktEntity>(
-        workspaceId,
-        'workspaceMember',
-        { shouldBypassPermissionChecks: true },
-      );
-
-    return { organizationLevelRepository, workspaceMemberRepository };
-  }
 
   /**
    * Get organization level hierarchy tree
@@ -62,8 +40,10 @@ export class OrganizationLevelService {
     workspaceId: string,
     options: OrganizationLevelQueryOptions = {},
   ): Promise<OrganizationLevelHierarchyNode[]> {
-    const { organizationLevelRepository, workspaceMemberRepository } =
-      await this.getRepositories(workspaceId);
+    this.logger.debug('Getting organization level hierarchy');
+
+    const organizationLevelRepository =
+      await this.repository.getRepository(workspaceId);
 
     // Build query conditions
     const whereConditions: Record<string, unknown> = {};
@@ -79,17 +59,20 @@ export class OrganizationLevelService {
     }
 
     // Get all organization levels
-    const findOptions: FindManyOptions<MktOrganizationLevelWorkspaceEntity> = {
+    const organizationLevels = await organizationLevelRepository.find({
       where: whereConditions,
       order: { hierarchyLevel: 'ASC', displayOrder: 'ASC' },
-    };
+    });
 
-    const organizationLevels =
-      await organizationLevelRepository.find(findOptions);
-
-    if (!organizationLevels.length) {
+    if (organizationLevels.length === 0) {
       return [];
     }
+
+    // Get employee counts in one query to avoid N+1
+    const levelIds = organizationLevels.map((l) => l.id);
+    const employeeCounts = options.includeStatistics
+      ? await this.repository.getEmployeeCountsByLevels(workspaceId, levelIds)
+      : new Map<string, number>();
 
     // Build hierarchy tree
     const levelMap = new Map<string, OrganizationLevelHierarchyNode>();
@@ -97,10 +80,10 @@ export class OrganizationLevelService {
 
     // First pass: Create nodes
     for (const level of organizationLevels) {
-      const node = await this.buildHierarchyNode(
+      const node = this.buildHierarchyNode(
         level,
-        workspaceMemberRepository,
-        options.includeStatistics || false,
+        employeeCounts.get(level.id) ?? 0,
+        options.includeStatistics ?? false,
       );
 
       levelMap.set(level.id, node);
@@ -115,7 +98,9 @@ export class OrganizationLevelService {
     for (const level of organizationLevels) {
       const node = levelMap.get(level.id);
 
-      if (!node) continue;
+      if (!node) {
+        continue;
+      }
 
       if (level.parentLevelId) {
         const parentNode = levelMap.get(level.parentLevelId);
@@ -141,12 +126,10 @@ export class OrganizationLevelService {
     levelId: string,
     options: OrganizationLevelQueryOptions = {},
   ): Promise<OrganizationLevelHierarchyNode> {
-    const { organizationLevelRepository, workspaceMemberRepository } =
-      await this.getRepositories(workspaceId);
-
-    const organizationLevel = await organizationLevelRepository.findOne({
-      where: { id: levelId },
-    });
+    const organizationLevel = await this.repository.findById(
+      workspaceId,
+      levelId,
+    );
 
     if (!organizationLevel) {
       throw new NotFoundException(
@@ -154,10 +137,14 @@ export class OrganizationLevelService {
       );
     }
 
-    return await this.buildHierarchyNode(
+    const employeeCount = options.includeStatistics
+      ? await this.repository.countEmployeesAtLevel(workspaceId, levelId)
+      : 0;
+
+    return this.buildHierarchyNode(
       organizationLevel,
-      workspaceMemberRepository,
-      options.includeStatistics || false,
+      employeeCount,
+      options.includeStatistics ?? false,
     );
   }
 
@@ -167,41 +154,37 @@ export class OrganizationLevelService {
   async getOrganizationLevelStatistics(
     workspaceId: string,
   ): Promise<OrganizationLevelStatistics> {
-    const { organizationLevelRepository, workspaceMemberRepository } =
-      await this.getRepositories(workspaceId);
-
     // Get all organization levels
-    const allLevels = await organizationLevelRepository.find({
-      order: { hierarchyLevel: 'ASC' },
+    const allLevels = await this.repository.findAll(workspaceId, {
+      includeInactive: true,
+      orderBy: 'hierarchyLevel',
     });
 
     const activeLevels = allLevels.filter((l) => l.isActive);
 
-    // Get employee counts by level
+    // Get employee counts in one query to avoid N+1
+    const levelIds = allLevels.map((l) => l.id);
+    const employeeCounts = await this.repository.getEmployeeCountsByLevels(
+      workspaceId,
+      levelIds,
+    );
+
+    // Build employee stats by level
     const employeesByLevel: LevelEmployeeCount[] = [];
     let totalEmployees = 0;
     let activeEmployees = 0;
 
     for (const level of allLevels) {
-      const allMembers = await workspaceMemberRepository.count({
-        where: { organizationLevelId: level.id },
-      });
+      const employeeCount = employeeCounts.get(level.id) ?? 0;
 
-      const activeMembers = await workspaceMemberRepository.count({
-        where: {
-          organizationLevelId: level.id,
-          // Add additional active member criteria if needed
-        },
-      });
-
-      totalEmployees += allMembers;
-      activeEmployees += activeMembers;
+      totalEmployees += employeeCount;
+      activeEmployees += employeeCount; // Assuming all counted are active
 
       let status: 'normal' | 'understaffed' | 'overstaffed' = 'normal';
 
-      if (allMembers > HIERARCHY_PERFORMANCE_LIMITS.MAX_USERS_PER_LEVEL) {
+      if (employeeCount > HIERARCHY_PERFORMANCE_LIMITS.MAX_USERS_PER_LEVEL) {
         status = 'overstaffed';
-      } else if (allMembers === 0 && level.isActive) {
+      } else if (employeeCount === 0 && level.isActive) {
         status = 'understaffed';
       }
 
@@ -209,15 +192,15 @@ export class OrganizationLevelService {
         levelId: level.id,
         levelName: level.levelName,
         hierarchyLevel: level.hierarchyLevel,
-        employeeCount: allMembers,
-        activeEmployeeCount: activeMembers,
+        employeeCount,
+        activeEmployeeCount: employeeCount,
         status,
       });
     }
 
     // Check for hierarchy issues
     const hasGapsInHierarchy = this.checkHierarchyGaps(allLevels);
-    const hasCircularReferences = await this.checkCircularReferences(allLevels);
+    const hasCircularReferences = this.checkCircularReferences(allLevels);
 
     // Generate recommendations
     const recommendations = this.generateRecommendations(
@@ -230,7 +213,10 @@ export class OrganizationLevelService {
     return {
       totalLevels: allLevels.length,
       activeLevels: activeLevels.length,
-      maxHierarchyDepth: Math.max(...allLevels.map((l) => l.hierarchyLevel)),
+      maxHierarchyDepth:
+        allLevels.length > 0
+          ? Math.max(...allLevels.map((l) => l.hierarchyLevel))
+          : 0,
       rootLevelsCount: allLevels.filter((l) => l.hierarchyLevel === 1).length,
       totalEmployees,
       activeEmployees,
@@ -254,8 +240,7 @@ export class OrganizationLevelService {
     workspaceId: string,
     input: CreateOrganizationLevelInput,
   ): Promise<OrganizationLevelHierarchyNode> {
-    const { organizationLevelRepository, workspaceMemberRepository } =
-      await this.getRepositories(workspaceId);
+    this.logger.debug(`Creating organization level: ${input.levelCode}`);
 
     // 1. Validate hierarchy level range
     const rangeError = getHierarchyLevelValidationError(input.hierarchyLevel);
@@ -265,8 +250,8 @@ export class OrganizationLevelService {
     }
 
     // 2. Get existing levels for validation
-    const existingLevels = await organizationLevelRepository.find({
-      select: ['id', 'hierarchyLevel', 'isActive', 'levelCode'],
+    const existingLevels = await this.repository.findAll(workspaceId, {
+      includeInactive: true,
     });
 
     // 3. Validate input - transform data to match validator interface
@@ -276,7 +261,7 @@ export class OrganizationLevelService {
       existingLevels.map((level) => ({
         id: level.id,
         hierarchyLevel: level.hierarchyLevel,
-        isActive: level.isActive ?? false, // Convert undefined to false
+        isActive: level.isActive ?? false,
       })),
     );
 
@@ -287,33 +272,30 @@ export class OrganizationLevelService {
     }
 
     // Check for unique level code
-    const existingWithCode = existingLevels.find(
-      (l) => l.levelCode === input.levelCode,
+    const codeExists = await this.repository.existsByCode(
+      workspaceId,
+      input.levelCode,
     );
 
-    if (existingWithCode) {
+    if (codeExists) {
       throw new BadRequestException(
         `Organization level with code '${input.levelCode}' already exists`,
       );
     }
 
     // Create the organization level
-    const newLevel = await organizationLevelRepository.save({
+    const newLevel = await this.repository.create(workspaceId, {
       levelCode: input.levelCode,
       levelName: input.levelName,
       levelNameEn: input.levelNameEn,
       description: input.description,
       hierarchyLevel: input.hierarchyLevel,
       parentLevelId: input.parentLevelId,
-      displayOrder: input.displayOrder || 0,
+      displayOrder: input.displayOrder ?? 0,
       isActive: input.isActive ?? true,
     });
 
-    return await this.buildHierarchyNode(
-      newLevel,
-      workspaceMemberRepository,
-      true,
-    );
+    return this.buildHierarchyNode(newLevel, 0, true);
   }
 
   /**
@@ -324,12 +306,9 @@ export class OrganizationLevelService {
     levelId: string,
     input: UpdateOrganizationLevelInput,
   ): Promise<OrganizationLevelHierarchyNode> {
-    const { organizationLevelRepository, workspaceMemberRepository } =
-      await this.getRepositories(workspaceId);
+    this.logger.debug(`Updating organization level: ${levelId}`);
 
-    const existingLevel = await organizationLevelRepository.findOne({
-      where: { id: levelId },
-    });
+    const existingLevel = await this.repository.findById(workspaceId, levelId);
 
     if (!existingLevel) {
       throw new NotFoundException(
@@ -348,21 +327,21 @@ export class OrganizationLevelService {
         throw new BadRequestException(rangeError);
       }
 
-      const allLevels = await organizationLevelRepository.find({
-        select: ['id', 'hierarchyLevel', 'isActive'],
+      const allLevels = await this.repository.findAll(workspaceId, {
+        includeInactive: true,
       });
 
       const validationResult =
         this.hierarchyValidator.validateOrganizationLevel(
           input.hierarchyLevel,
-          input.parentLevelId || existingLevel.parentLevelId,
+          input.parentLevelId ?? existingLevel.parentLevelId,
           allLevels
             .filter((l) => l.id !== levelId)
             .map((level) => ({
               id: level.id,
               hierarchyLevel: level.hierarchyLevel,
-              isActive: level.isActive ?? false, // Convert undefined to false
-            })), // Exclude current level from validation
+              isActive: level.isActive ?? false,
+            })),
         );
 
       if (!validationResult.isValid) {
@@ -373,11 +352,11 @@ export class OrganizationLevelService {
     }
 
     // Update the level
-    await organizationLevelRepository.update(levelId, input);
-
-    const updatedLevel = await organizationLevelRepository.findOne({
-      where: { id: levelId },
-    });
+    const updatedLevel = await this.repository.updateAndReturn(
+      workspaceId,
+      levelId,
+      input,
+    );
 
     if (!updatedLevel) {
       throw new NotFoundException(
@@ -385,11 +364,12 @@ export class OrganizationLevelService {
       );
     }
 
-    return await this.buildHierarchyNode(
-      updatedLevel,
-      workspaceMemberRepository,
-      true,
+    const employeeCount = await this.repository.countEmployeesAtLevel(
+      workspaceId,
+      levelId,
     );
+
+    return this.buildHierarchyNode(updatedLevel, employeeCount, true);
   }
 
   /**
@@ -399,12 +379,9 @@ export class OrganizationLevelService {
     workspaceId: string,
     levelId: string,
   ): Promise<boolean> {
-    const { organizationLevelRepository, workspaceMemberRepository } =
-      await this.getRepositories(workspaceId);
+    this.logger.debug(`Deleting organization level: ${levelId}`);
 
-    const existingLevel = await organizationLevelRepository.findOne({
-      where: { id: levelId },
-    });
+    const existingLevel = await this.repository.findById(workspaceId, levelId);
 
     if (!existingLevel) {
       throw new NotFoundException(
@@ -413,9 +390,10 @@ export class OrganizationLevelService {
     }
 
     // Check if there are employees assigned to this level
-    const employeeCount = await workspaceMemberRepository.count({
-      where: { organizationLevelId: levelId },
-    });
+    const employeeCount = await this.repository.countEmployeesAtLevel(
+      workspaceId,
+      levelId,
+    );
 
     if (employeeCount > 0) {
       throw new BadRequestException(
@@ -424,9 +402,10 @@ export class OrganizationLevelService {
     }
 
     // Check if there are child levels
-    const childrenCount = await organizationLevelRepository.count({
-      where: { parentLevelId: levelId },
-    });
+    const childrenCount = await this.repository.countChildren(
+      workspaceId,
+      levelId,
+    );
 
     if (childrenCount > 0) {
       throw new BadRequestException(
@@ -434,34 +413,21 @@ export class OrganizationLevelService {
       );
     }
 
-    await organizationLevelRepository.delete(levelId);
+    await this.repository.delete(workspaceId, levelId);
 
     return true;
   }
 
   // Private helper methods
 
-  private async buildHierarchyNode(
+  /**
+   * Build hierarchy node từ entity
+   */
+  private buildHierarchyNode(
     level: MktOrganizationLevelWorkspaceEntity,
-    workspaceMemberRepository: WorkspaceRepository<WorkspaceMemberMktEntity>,
+    employeeCount: number,
     includeStatistics: boolean,
-  ): Promise<OrganizationLevelHierarchyNode> {
-    let totalEmployees = 0;
-    let activeEmployees = 0;
-
-    if (includeStatistics) {
-      totalEmployees = await workspaceMemberRepository.count({
-        where: { organizationLevelId: level.id },
-      });
-
-      activeEmployees = await workspaceMemberRepository.count({
-        where: {
-          organizationLevelId: level.id,
-          // Add additional active member criteria
-        },
-      });
-    }
-
+  ): OrganizationLevelHierarchyNode {
     return {
       id: level.id,
       levelCode: level.levelCode,
@@ -473,8 +439,8 @@ export class OrganizationLevelService {
       displayOrder: level.displayOrder,
       isActive: level.isActive,
       children: [],
-      totalEmployees,
-      activeEmployees,
+      totalEmployees: includeStatistics ? employeeCount : 0,
+      activeEmployees: includeStatistics ? employeeCount : 0,
       directChildrenCount: 0, // Will be calculated later
       totalDescendantsCount: 0, // Will be calculated later
       createdAt: new Date(level.createdAt),
@@ -515,9 +481,12 @@ export class OrganizationLevelService {
     return false;
   }
 
-  private async checkCircularReferences(
+  /**
+   * Kiểm tra circular references trong hierarchy
+   */
+  private checkCircularReferences(
     levels: MktOrganizationLevelWorkspaceEntity[],
-  ): Promise<boolean> {
+  ): boolean {
     // Simple circular reference check using DFS
     for (const level of levels) {
       if (level.parentLevelId) {
@@ -532,7 +501,7 @@ export class OrganizationLevelService {
           visited.add(currentId);
           const parent = levels.find((l) => l.id === currentId);
 
-          currentId = parent?.parentLevelId || undefined;
+          currentId = parent?.parentLevelId ?? undefined;
         }
       }
     }

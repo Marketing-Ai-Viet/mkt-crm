@@ -6,14 +6,18 @@ import { CreateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
   SINVOICE_FILE_STATUS,
   SINVOICE_FILE_TYPE,
-} from 'src/mkt-core/invoice/invoice.constants';
+} from 'src/mkt-core/invoice/constants';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
-import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
+import { MktSInvoiceRepository } from 'src/mkt-core/invoice/repositories';
 
+/**
+ * MktSInvoiceFileCreateOnePreQueryHook
+ *
+ * Uses MktSInvoiceRepository for thread-safe access to SInvoice data
+ */
 @Injectable()
 @WorkspaceQueryHook('mktSInvoiceFile.createOne')
 export class MktSInvoiceFileCreateOnePreQueryHook
@@ -24,8 +28,8 @@ export class MktSInvoiceFileCreateOnePreQueryHook
   );
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly sInvoiceRepository: MktSInvoiceRepository,
   ) {}
 
   async execute(
@@ -50,16 +54,11 @@ export class MktSInvoiceFileCreateOnePreQueryHook
 
     try {
       // get information of SInvoice to have enough information to call API
-      const sInvoiceRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSInvoiceWorkspaceEntity>(
-          workspaceId,
-          'mktSInvoice',
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const sInvoice = await sInvoiceRepository.findOne({
-        where: { id: input.mktSInvoiceId },
-      });
+      // Uses MktSInvoiceRepository for thread-safe access
+      const sInvoice = await this.sInvoiceRepository.findById(
+        input.mktSInvoiceId,
+        workspaceId,
+      );
 
       if (!sInvoice) {
         this.logger.warn(`SInvoice not found with ID: ${input.mktSInvoiceId}`);

@@ -1,0 +1,65 @@
+/**
+ * /!\ DO NOT EDIT THE IDS OF THIS FILE /!\
+ * Field IDs for promotion entities
+ */
+
+export const MKT_PROMOTION_FIELD_IDS = {
+  mktPromotion: {
+    name: '551e8400-e29b-41d4-a716-446655440101',
+    code: '551e8400-e29b-41d4-a716-446655440102',
+    description: '551e8400-e29b-41d4-a716-446655440103',
+    status: '551e8400-e29b-41d4-a716-446655440104',
+    promotionType: '551e8400-e29b-41d4-a716-446655440105',
+    discountValue: '551e8400-e29b-41d4-a716-446655440106',
+    maxDiscountAmount: '551e8400-e29b-41d4-a716-446655440107',
+    minOrderAmount: '551e8400-e29b-41d4-a716-446655440108',
+    currency: '551e8400-e29b-41d4-a716-446655440109',
+    startDate: '551e8400-e29b-41d4-a716-446655440110',
+    endDate: '551e8400-e29b-41d4-a716-446655440111',
+    usageLimit: '551e8400-e29b-41d4-a716-446655440112',
+    usageLimitPerCustomer: '551e8400-e29b-41d4-a716-446655440113',
+    currentUsageCount: '551e8400-e29b-41d4-a716-446655440114',
+    priority: '551e8400-e29b-41d4-a716-446655440115',
+    stackable: '551e8400-e29b-41d4-a716-446655440116',
+    isAutoApply: '551e8400-e29b-41d4-a716-446655440117',
+    metadata: '551e8400-e29b-41d4-a716-446655440118',
+    searchVector: '551e8400-e29b-41d4-a716-446655440119',
+    deletedAt: '551e8400-e29b-41d4-a716-446655440120',
+    createdBy: '551e8400-e29b-41d4-a716-446655440121',
+  },
+  mktPromotionRule: {
+    name: '552e8400-e29b-41d4-a716-446655440101',
+    ruleType: '552e8400-e29b-41d4-a716-446655440102',
+    operator: '552e8400-e29b-41d4-a716-446655440103',
+    targetIds: '552e8400-e29b-41d4-a716-446655440104',
+    targetValues: '552e8400-e29b-41d4-a716-446655440105',
+    isRequired: '552e8400-e29b-41d4-a716-446655440106',
+    logicOperator: '552e8400-e29b-41d4-a716-446655440107',
+    position: '552e8400-e29b-41d4-a716-446655440108',
+    deletedAt: '552e8400-e29b-41d4-a716-446655440109',
+  },
+  mktCoupon: {
+    code: '553e8400-e29b-41d4-a716-446655440101',
+    status: '553e8400-e29b-41d4-a716-446655440102',
+    usageLimit: '553e8400-e29b-41d4-a716-446655440103',
+    currentUsageCount: '553e8400-e29b-41d4-a716-446655440104',
+    validFrom: '553e8400-e29b-41d4-a716-446655440105',
+    validTo: '553e8400-e29b-41d4-a716-446655440106',
+    metadata: '553e8400-e29b-41d4-a716-446655440108',
+  },
+  mktPromotionUsage: {
+    discountAmount: '554e8400-e29b-41d4-a716-446655440101',
+    originalAmount: '554e8400-e29b-41d4-a716-446655440102',
+    appliedAt: '554e8400-e29b-41d4-a716-446655440103',
+    metadata: '554e8400-e29b-41d4-a716-446655440104',
+    deletedAt: '554e8400-e29b-41d4-a716-446655440105',
+  },
+  mktPromotionAudit: {
+    action: '555e8400-e29b-41d4-a716-446655440101',
+    previousValues: '555e8400-e29b-41d4-a716-446655440102',
+    newValues: '555e8400-e29b-41d4-a716-446655440103',
+    changedBy: '555e8400-e29b-41d4-a716-446655440104',
+    changedAt: '555e8400-e29b-41d4-a716-446655440105',
+    deletedAt: '555e8400-e29b-41d4-a716-446655440106',
+  },
+} as const;

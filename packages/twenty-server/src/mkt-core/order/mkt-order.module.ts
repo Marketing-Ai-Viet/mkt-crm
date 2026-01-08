@@ -1,51 +1,211 @@
-import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { forwardRef, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { EmailModule } from 'src/engine/core-modules/email/email.module';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
-import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
-import { MktLicenseModule } from 'src/mkt-core/license/mkt-license.module';
-import { OrderActionService } from 'src/mkt-core/order/services/order.action.service';
-import { OrderConfirmService } from 'src/mkt-core/order/services/order.confirm.service';
-import { OrderPayloadService } from 'src/mkt-core/order/services/order.payload.service';
-import { OrderService } from 'src/mkt-core/order/services/order.service';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { MktContractModule } from 'src/mkt-core/contract/mkt-contract.module';
+import { CustomerModule } from 'src/mkt-core/customer/customer.module';
+import { DelayedJobInfrastructureModule } from 'src/mkt-core/infrastructure/delayed-job';
+import { orderConfig } from 'src/mkt-core/order/config';
+// DISABLED: MktInvoiceModule - temporarily disabled
+// import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
+import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
+import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
+import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
+import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
+import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
-import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
-import { MktProductModule } from 'src/mkt-core/product/mkt-product.module';
+import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
+import {
+  MktOrderRepository,
+  MktOrderItemRepository,
+  MktOrderHistoryRepository,
+} from 'src/mkt-core/order/repositories';
+import { IdempotencyModule } from 'src/mkt-core/common/idempotency';
 
-import { MktOrderResolver } from './mkt-order.resolver';
-import { MktOrderService } from './mkt-order.service';
+import {
+  // Core Services
+  OrderCalculationService,
+  OrderValidationService,
+  OrderStatusService,
+  OrderEventService,
+  OrderPaymentCalculationService,
+  OrderConfirmUtilsService,
+  OrderMetadataService,
+  MktOrderOverdueService,
+  OrderOverdueSchedulerService,
+  OrderOverdueWorkerService,
+  OrderOverdueMigrationService,
+  // Domain Services
+  OrderCrudService,
+  OrderItemService,
+  OrderLicenseQueryService,
+  // Application Services
+  OrderOrchestrationService,
+} from './services';
+import {
+  OrderMutationResolver,
+  OrderQueryResolver,
+  OrderItemMutationResolver,
+  OrderOverdueQueryResolver,
+} from './resolvers';
+import {
+  MktOrderCustomEventListener,
+  LicenseLifecycleListener,
+} from './listeners';
 
-import { MktOrderCreateOnePostQueryHook } from './hooks/mkt-order-create-one.post-query.hook';
-import { MktOrderCreateOnePreQueryHook } from './hooks/mkt-order-create-one.pre-query.hook';
-import { MktOrderItemUpdateOnePreQueryHook } from './hooks/mkt-order-item-update-one.pre-query.hook';
-import { MktOrderUpdateOnePreQueryHook } from './hooks/mkt-order-update-one.pre-query.hook';
-import { OrderLicenseRenewService } from './services/order.license-renew.service';
+import {
+  CreateOrderSaga,
+  ConfirmOrderSaga,
+  UpdateOrderSaga,
+  RefundOrderSaga,
+} from './orchestration/saga';
+import {
+  CreateLicensesStep,
+  CreateOrderItemsStep,
+  CreateOrderStep,
+  CreatePaymentStep,
+  FinalizeOrderStep,
+  // New steps for snapshots and promotions
+  CreateSnapshotsStep,
+  CalculatePromotionStep,
+  RecordPromotionUsageStep,
+} from './orchestration/steps';
+import {
+  ValidateOrderStep,
+  ValidateTransitionStep,
+  UpdateStatusStep,
+  CreateLicensesOnConfirmStep,
+  CompleteOrderAfterLicenseStep,
+} from './orchestration/steps/confirm-order';
+import {
+  OrderProductIntegrationService,
+  OrderLicenseIntegrationService,
+  OrderPromotionIntegrationService,
+  OrderComboIntegrationService,
+} from './services/integration';
 
 @Module({
   imports: [
+    ConfigModule.forFeature(orderConfig), // Order module configuration
+    TypeOrmModule.forFeature([Workspace], 'core'), // Workspace entity for migration service
+    HttpModule, // For OrderConfirmUtilsService (BIDV SEPay API)
+    EmailModule,
+    MktEmailModule,
     MessageQueueModule,
     RecordPositionModule,
-    MktPaymentModule,
-    MktLicenseModule,
-    MktInvoiceModule,
-    MktProductModule,
-    MktCommonModule,
-    MktRbacEnterpriseGradeModule,
+    WorkspaceCacheStorageModule, // Redis caching for idempotency
+    DelayedJobInfrastructureModule, // BullMQ delayed jobs for overdue orders
+    forwardRef(() => MktPaymentModule), // Circular dependency with MktPaymentModule
+    // DISABLED: forwardRef(() => MktInvoiceModule),
+    MktProductIntegrationModule, // External MKT Server product integration
+    MktLicenseIntegrationModule, // External MKT Server license integration
+    MktPromotionModule, // Promotion and coupon management
+    MktComboModule, // Combo integration for order creation
+    MktContractModule,
+    CustomerModule,
+    IdempotencyModule.register(), // Idempotency protection for order operations
   ],
   providers: [
-    MktOrderResolver,
-    MktOrderService,
-    MktOrderCreateOnePreQueryHook,
-    MktOrderUpdateOnePreQueryHook,
-    MktOrderItemUpdateOnePreQueryHook,
-    MktOrderCreateOnePostQueryHook,
-    OrderPayloadService,
-    OrderActionService,
-    OrderConfirmService,
-    OrderService,
-    OrderLicenseRenewService,
+    // Event Listeners
+    MktOrderCustomEventListener,
+    LicenseLifecycleListener,
+
+    // Repositories (Data Access Layer)
+    MktOrderRepository,
+    MktOrderItemRepository,
+    MktOrderHistoryRepository,
+
+    // Core Services (stateless business logic)
+    OrderStatusService,
+    OrderCalculationService,
+    OrderValidationService,
+    OrderEventService,
+    OrderPaymentCalculationService,
+    OrderConfirmUtilsService,
+    OrderMetadataService,
+    MktOrderOverdueService,
+    // Delayed Job Services (order overdue)
+    OrderOverdueSchedulerService,
+    OrderOverdueWorkerService,
+    OrderOverdueMigrationService, // Auto-run on startup
+
+    // Domain Services (domain operations)
+    OrderCrudService,
+    OrderItemService,
+    OrderLicenseQueryService,
+
+    // Application Services (orchestration)
+    OrderOrchestrationService,
+
+    // Sagas (workflow orchestration)
+    CreateOrderSaga,
+    ConfirmOrderSaga,
+    UpdateOrderSaga,
+    RefundOrderSaga,
+
+    // Saga Steps - CreateOrder
+    CreateOrderStep,
+    CreateOrderItemsStep,
+    CreateLicensesStep,
+    CreatePaymentStep,
+    FinalizeOrderStep,
+    CreateSnapshotsStep,
+    CalculatePromotionStep,
+    RecordPromotionUsageStep,
+    // Saga Steps - ConfirmOrder
+    ValidateOrderStep,
+    ValidateTransitionStep,
+    UpdateStatusStep,
+    CreateLicensesOnConfirmStep,
+    CompleteOrderAfterLicenseStep,
+
+    // Integration Services (bridge to other MKT modules)
+    OrderProductIntegrationService,
+    OrderLicenseIntegrationService,
+    OrderPromotionIntegrationService,
+    OrderComboIntegrationService,
+
+    // Jobs
+    MktOrderOverdueJob,
+
+    // GraphQL Resolvers
+    OrderMutationResolver,
+    OrderQueryResolver,
+    OrderItemMutationResolver,
+    OrderOverdueQueryResolver, // Observability - queue stats
   ],
-  exports: [MktOrderService],
+  exports: [
+    // Repositories
+    MktOrderRepository,
+    MktOrderItemRepository,
+    MktOrderHistoryRepository,
+    // Services
+    OrderStatusService,
+    OrderEventService,
+    OrderItemService,
+    OrderCrudService,
+    OrderLicenseQueryService,
+    OrderOrchestrationService,
+    OrderPaymentCalculationService,
+    OrderConfirmUtilsService,
+    OrderMetadataService,
+    // Integration Services
+    OrderProductIntegrationService,
+    OrderLicenseIntegrationService,
+    OrderPromotionIntegrationService,
+    OrderComboIntegrationService,
+    // Delayed Job Services
+    OrderOverdueSchedulerService,
+    // Sagas
+    ConfirmOrderSaga,
+    UpdateOrderSaga,
+    RefundOrderSaga,
+  ],
 })
 export class MktOrderModule {}

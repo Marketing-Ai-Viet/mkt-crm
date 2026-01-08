@@ -1,0 +1,250 @@
+import { msg } from '@lingui/core/macro';
+import { FieldMetadataType } from 'twenty-shared/types';
+
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
+import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
+import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
+
+import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/constants/search-vector-field.constants';
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/indexType.types';
+import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceDuplicateCriteria } from 'src/engine/twenty-orm/decorators/workspace-duplicate-criteria.decorator';
+import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
+import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
+import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
+import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
+import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
+import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
+import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import {
+  FieldTypeAndNameMetadata,
+  getTsVectorColumnExpressionFromFields,
+} from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
+import { MKT_CONTRACT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+
+const TABLE_CONTRACT_NAME = 'mktContract';
+const NAME_FIELD_NAME = 'name';
+
+export const SEARCH_FIELDS_FOR_MKT_CONTRACT: FieldTypeAndNameMetadata[] = [
+  { name: NAME_FIELD_NAME, type: FieldMetadataType.TEXT },
+];
+
+@WorkspaceEntity({
+  standardId: MKT_OBJECT_IDS.mktContract,
+  namePlural: `${TABLE_CONTRACT_NAME}s`,
+  labelSingular: msg`Contract`,
+  labelPlural: msg`Contracts`,
+  description: msg`Contract entity for catalog`,
+  icon: 'IconBox',
+  labelIdentifierStandardId: MKT_CONTRACT_FIELD_IDS.name,
+})
+@WorkspaceDuplicateCriteria([['name']])
+@WorkspaceIsSearchable()
+export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.name,
+    type: FieldMetadataType.TEXT,
+    label: msg`Contract Name`,
+    description: msg`Contract name`,
+    icon: 'IconText',
+  })
+  name: string;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.contractNumber,
+    type: FieldMetadataType.TEXT,
+    label: msg`Contract Number`,
+    description: msg`Contract number`,
+    icon: 'IconText',
+  })
+  @WorkspaceIsNullable()
+  contractNumber: string;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.startDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Start Date`,
+    description: msg`Contract start date`,
+    icon: 'IconBarcode',
+  })
+  @WorkspaceIsNullable()
+  startDate?: Date;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.endDate,
+    type: FieldMetadataType.DATE,
+    label: msg`End Date`,
+    description: msg`Contract end date`,
+    icon: 'IconClock',
+  })
+  @WorkspaceIsNullable()
+  endDate?: Date;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.status,
+    type: FieldMetadataType.TEXT,
+    label: msg`Status`,
+    description: msg`Contract status`,
+    icon: 'IconCheckupList',
+  })
+  @WorkspaceIsNullable()
+  status?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.contractType,
+    type: FieldMetadataType.TEXT,
+    label: msg`Contract Type`,
+    description: msg`Type of contract`,
+    icon: 'IconFileType',
+  })
+  @WorkspaceIsNullable()
+  contractType?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.signedDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Signed Date`,
+    description: msg`Date when the contract was signed`,
+    icon: 'IconSignature',
+  })
+  @WorkspaceIsNullable()
+  signedDate?: Date | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.filePath,
+    type: FieldMetadataType.TEXT,
+    label: msg`File Path`,
+    description: msg`Path to the contract file`,
+    icon: 'IconFile',
+  })
+  @WorkspaceIsNullable()
+  filePath?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.fileName,
+    type: FieldMetadataType.TEXT,
+    label: msg`File Name`,
+    description: msg`Name of the contract file`,
+    icon: 'IconFile',
+  })
+  @WorkspaceIsNullable()
+  fileName?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.description,
+    type: FieldMetadataType.TEXT,
+    label: msg`Description`,
+    description: msg`Detailed description of the contract`,
+    icon: 'IconTextWrap',
+  })
+  @WorkspaceIsNullable()
+  description?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.position,
+    type: FieldMetadataType.POSITION,
+    label: msg`Position`,
+    description: msg`Position in list`,
+    icon: 'IconHierarchy',
+  })
+  @WorkspaceIsNullable()
+  position: number;
+
+  @WorkspaceRelation({
+    standardId: MKT_CONTRACT_FIELD_IDS.createdBy,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Created By`,
+    description: msg`The workspace member who created this contract`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'createdMktContracts',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  createdBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('createdBy')
+  createdById: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_CONTRACT_FIELD_IDS.mktOrder,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Order`,
+    description: msg`Orders linked to the contract`,
+    icon: 'IconShoppingCart',
+    inverseSideTarget: () => MktOrderWorkspaceEntity,
+    inverseSideFieldKey: 'mktContract',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktOrders: Relation<MktOrderWorkspaceEntity[]> | null;
+
+  //customer owner
+  @WorkspaceRelation({
+    standardId: MKT_CONTRACT_FIELD_IDS.customer,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Customer`,
+    description: msg`The customer associated with the contract`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => MktCustomerWorkspaceEntity, // Replace null with the actual CustomerWorkspaceEntity when available
+    inverseSideFieldKey: 'contracts',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  customer: Relation<MktCustomerWorkspaceEntity> | null; // Replace any with the actual CustomerWorkspaceEntity type when available
+
+  @WorkspaceJoinColumn('customer')
+  customerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_CONTRACT_FIELD_IDS.accountOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Account Owner`,
+    description: msg`Your team member responsible for managing the contract`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwnerForMktContracts',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('accountOwner')
+  accountOwnerId: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_CONTRACT_FIELD_IDS.timelineActivities,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Timeline Activities`,
+    description: msg`Timeline Activities linked to the contract`,
+    icon: 'IconIconTimelineEvent',
+    inverseSideTarget: () => TimelineActivityWorkspaceEntity,
+    inverseSideFieldKey: 'mktContract',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
+
+  @WorkspaceField({
+    standardId: MKT_CONTRACT_FIELD_IDS.searchVector,
+    type: FieldMetadataType.TS_VECTOR,
+    label: SEARCH_VECTOR_FIELD.label,
+    description: SEARCH_VECTOR_FIELD.description,
+    icon: 'IconUser',
+    generatedType: 'STORED',
+    asExpression: getTsVectorColumnExpressionFromFields(
+      SEARCH_FIELDS_FOR_MKT_CONTRACT,
+    ),
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsSystem()
+  @WorkspaceFieldIndex({ indexType: IndexType.GIN })
+  searchVector: string;
+}

@@ -128,7 +128,7 @@ export class MktCustomerTagWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconIconTimelineEvent',
     inverseSideTarget: () => TimelineActivityWorkspaceEntity,
     inverseSideFieldKey: 'mktCustomerTag',
-    onDelete: RelationOnDeleteAction.CASCADE,
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsNullable()
   @WorkspaceIsSystem()

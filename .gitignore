@@ -4,7 +4,7 @@
 **/**/node_modules/
 .cache
 .kiro
-mcp-server-configurations
+/mcp-server-configurations
 
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
@@ -51,3 +51,6 @@ mcp.json
 GEMINI.md
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+qodana.yaml
+
+packages/twenty-server/src/mkt-core/doc_local

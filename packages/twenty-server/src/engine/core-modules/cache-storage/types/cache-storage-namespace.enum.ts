@@ -5,4 +5,8 @@ export enum CacheStorageNamespace {
   EngineWorkspace = 'engine:workspace',
   EngineLock = 'engine:lock',
   EngineHealth = 'engine:health',
+  MktOAuth2 = 'mkt:oauth2',
+  MktProduct = 'mkt:product',
+  MktPromotion = 'mkt:promotion',
+  MktOrder = 'mkt:order',
 }

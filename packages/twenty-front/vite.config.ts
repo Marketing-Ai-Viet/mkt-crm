@@ -6,7 +6,12 @@ import wyw from '@wyw-in-js/vite';
 import fs from 'fs';
 import path from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { defineConfig, loadEnv, PluginOption, searchForWorkspaceRoot } from 'vite';
+import {
+  defineConfig,
+  loadEnv,
+  PluginOption,
+  searchForWorkspaceRoot,
+} from 'vite';
 import checker from 'vite-plugin-checker';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -25,6 +30,7 @@ export default defineConfig(({ command, mode }) => {
     SSL_KEY_PATH,
     REACT_APP_PORT,
     IS_DEBUG_MODE,
+    ALLOW_HOSTS,
   } = env;
 
   const port = isNonEmptyString(REACT_APP_PORT)
@@ -36,7 +42,6 @@ export default defineConfig(({ command, mode }) => {
   const tsConfigPath = isBuildCommand
     ? path.resolve(__dirname, './tsconfig.build.json')
     : path.resolve(__dirname, './tsconfig.dev.json');
-
 
   const CHUNK_SIZE_WARNING_LIMIT = 1024 * 1024; // 1MB
   // Please don't increase this limit for main index chunk
@@ -101,6 +106,7 @@ export default defineConfig(({ command, mode }) => {
           '**/@blocknote/core/src/fonts/**',
         ],
       },
+      allowedHosts: ALLOW_HOSTS ? ALLOW_HOSTS.split(',') : undefined,
     },
 
     plugins: [
@@ -187,27 +193,32 @@ export default defineConfig(({ command, mode }) => {
               name: 'chunk-size-limit',
               generateBundle(_options, bundle) {
                 const oversizedChunks: string[] = [];
-                
+
                 Object.entries(bundle).forEach(([fileName, chunk]) => {
                   if (chunk.type === 'chunk' && chunk.code) {
                     const size = Buffer.byteLength(chunk.code, 'utf8');
-                    const isMainChunk = fileName.includes('index') && chunk.isEntry;
-                    const sizeLimit = isMainChunk ? MAIN_CHUNK_SIZE_LIMIT : OTHER_CHUNK_SIZE_LIMIT;
+                    const isMainChunk =
+                      fileName.includes('index') && chunk.isEntry;
+                    const sizeLimit = isMainChunk
+                      ? MAIN_CHUNK_SIZE_LIMIT
+                      : OTHER_CHUNK_SIZE_LIMIT;
                     const limitType = isMainChunk ? 'main' : 'other';
-                    
+
                     if (size > sizeLimit) {
-                      oversizedChunks.push(`${fileName} (${limitType}): ${(size / 1024 / 1024).toFixed(2)}MB (limit: ${(sizeLimit / 1024 / 1024).toFixed(2)}MB)`);
+                      oversizedChunks.push(
+                        `${fileName} (${limitType}): ${(size / 1024 / 1024).toFixed(2)}MB (limit: ${(sizeLimit / 1024 / 1024).toFixed(2)}MB)`,
+                      );
                     }
                   }
                 });
-                
+
                 if (oversizedChunks.length > 0) {
-                  const errorMessage = `Build failed: The following chunks exceed their size limits:\n${oversizedChunks.map(chunk => `  - ${chunk}`).join('\n')}`;
+                  const errorMessage = `Build failed: The following chunks exceed their size limits:\n${oversizedChunks.map((chunk) => `  - ${chunk}`).join('\n')}`;
                   this.error(errorMessage);
                 }
-              }
+              },
             },
-            // TODO; later - think about prefetching modules such 
+            // TODO; later - think about prefetching modules such
             // as date time picker, phone input etc...
             /*
             {
@@ -249,8 +260,8 @@ export default defineConfig(({ command, mode }) => {
              
               },
             }*/
-          ]
-        }
+          ],
+        },
       },
     },
 

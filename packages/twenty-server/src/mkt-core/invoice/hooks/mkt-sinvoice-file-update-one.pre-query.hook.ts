@@ -9,17 +9,23 @@ import axios from 'axios';
 import { WorkspacePreQueryHookInstance } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/interfaces/workspace-query-hook.interface';
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import {
-  GetInvoiceFileResponse,
   SINVOICE_FILE_STATUS,
   SINVOICE_FILE_TYPE,
-} from 'src/mkt-core/invoice/invoice.constants';
+} from 'src/mkt-core/invoice/constants';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
+import { MktSInvoiceFileRepository } from 'src/mkt-core/invoice/repositories';
+import { GetInvoiceFileResponse } from 'src/mkt-core/invoice/types';
 
+/**
+ * MktSInvoiceFileUpdateOnePreQueryHook
+ *
+ * Uses MktSInvoiceFileRepository for thread-safe access to SInvoiceFile data
+ */
 @Injectable()
 @WorkspaceQueryHook('mktSInvoiceFile.updateOne')
 export class MktSInvoiceFileUpdateOnePreQueryHook
@@ -30,8 +36,8 @@ export class MktSInvoiceFileUpdateOnePreQueryHook
   );
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly sInvoiceFileRepository: MktSInvoiceFileRepository,
   ) {}
 
   async execute(
@@ -56,16 +62,11 @@ export class MktSInvoiceFileUpdateOnePreQueryHook
 
     try {
       // Get current file data to check if we have required information
-      const fileRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktSInvoiceFileWorkspaceEntity>(
-          workspaceId,
-          'mktSInvoiceFile',
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const currentFile = await fileRepository.findOne({
-        where: { id: fileId },
-      });
+      // Uses MktSInvoiceFileRepository for thread-safe access
+      const currentFile = await this.sInvoiceFileRepository.findById(
+        fileId,
+        workspaceId,
+      );
 
       if (!currentFile) {
         this.logger.warn(`SInvoiceFile not found with ID: ${fileId}`);
@@ -256,7 +257,10 @@ export class MktSInvoiceFileUpdateOnePreQueryHook
 
       // Generate file name with timestamp to avoid conflicts
       const fileExtension = currentFile.fileType?.toLowerCase() || 'pdf';
-      const _timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const _timestamp = DateTimeUtils.toISO(DateTimeUtils.now()).replace(
+        /[:.]/g,
+        '-',
+      );
       const fileName = `${currentFile.invoiceNo}.${fileExtension}`;
       const filePath = path.join(uploadsDir, fileName);
 

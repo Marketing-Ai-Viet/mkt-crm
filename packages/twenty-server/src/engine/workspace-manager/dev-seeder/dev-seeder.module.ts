@@ -19,6 +19,7 @@ import { TimelineActivitySeederService } from 'src/engine/workspace-manager/dev-
 import { DevSeederMetadataService } from 'src/engine/workspace-manager/dev-seeder/metadata/services/dev-seeder-metadata.service';
 import { DevSeederService } from 'src/engine/workspace-manager/dev-seeder/services/dev-seeder.service';
 import { WorkspaceSyncMetadataModule } from 'src/engine/workspace-manager/workspace-sync-metadata/workspace-sync-metadata.module';
+import { SeedConfigService } from 'src/mkt-core/seeder/services/seed-config.service';
 
 @Module({
   imports: [
@@ -35,13 +36,14 @@ import { WorkspaceSyncMetadataModule } from 'src/engine/workspace-manager/worksp
     TypeOrmModule.forFeature([Workspace, ObjectMetadataEntity], 'core'),
     ObjectPermissionModule,
   ],
-  exports: [DevSeederService],
+  exports: [DevSeederService, SeedConfigService],
   providers: [
     DevSeederService,
     DevSeederMetadataService,
     DevSeederPermissionsService,
     DevSeederDataService,
     TimelineActivitySeederService,
+    SeedConfigService,
   ],
 })
 export class DevSeederModule {}

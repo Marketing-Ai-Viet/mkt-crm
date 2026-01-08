@@ -205,6 +205,48 @@
             "nx command-no-deps -- workspace:seed:dev"
           ],
           "parallel": false
+        },
+        "production": {
+          "cwd": "packages/twenty-server",
+          "env": {
+            "MKT_SEED_PROFILE": "production"
+          },
+          "commands": [
+            "nx ts-node-no-deps-transpile-only -- ./scripts/truncate-db.ts",
+            "nx ts-node-no-deps-transpile-only -- ./scripts/setup-db.ts",
+            "nx database:migrate",
+            "nx command-no-deps -- cache:flush",
+            "nx command-no-deps -- workspace:seed:dev"
+          ],
+          "parallel": false
+        },
+        "staging": {
+          "cwd": "packages/twenty-server",
+          "env": {
+            "MKT_SEED_PROFILE": "staging"
+          },
+          "commands": [
+            "nx ts-node-no-deps-transpile-only -- ./scripts/truncate-db.ts",
+            "nx ts-node-no-deps-transpile-only -- ./scripts/setup-db.ts",
+            "nx database:migrate",
+            "nx command-no-deps -- cache:flush",
+            "nx command-no-deps -- workspace:seed:dev"
+          ],
+          "parallel": false
+        },
+        "demo": {
+          "cwd": "packages/twenty-server",
+          "env": {
+            "MKT_SEED_PROFILE": "demo"
+          },
+          "commands": [
+            "nx ts-node-no-deps-transpile-only -- ./scripts/truncate-db.ts",
+            "nx ts-node-no-deps-transpile-only -- ./scripts/setup-db.ts",
+            "nx database:migrate",
+            "nx command-no-deps -- cache:flush",
+            "nx command-no-deps -- workspace:seed:dev"
+          ],
+          "parallel": false
         }
       },
       "defaultConfiguration": "seed"

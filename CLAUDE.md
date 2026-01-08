@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Twenty is an open-source CRM built with modern technologies in a monorepo structure. The codebase is organized as an Nx workspace with multiple packages.
+Dự án CRM được fork từ [Twenty CRM](https://twenty.com) và tùy biến với module **mkt-core** để phục vụ quản lý marketing, licensing, orders, invoices và tổ chức doanh nghiệp. Codebase được tổ chức theo Nx monorepo.
 
 ## Key Commands
 
@@ -68,6 +68,16 @@ npx nx run twenty-server:typeorm migration:generate src/database/typeorm/core/mi
 npx nx run twenty-server:command workspace:sync-metadata -f
 ```
 
+### Data Seeding (mkt-core)
+```bash
+# Seed development data
+npx nx command twenty-server -- mkt-license-data-seed-dev-workspace
+npx nx command twenty-server -- mkt-customer-tag-data-seed-dev-workspace
+npx nx command twenty-server -- mkt-department-data-seed-dev-workspace
+npx nx command twenty-server -- mkt-payment-data-seed-dev-workspace
+npx nx command twenty-server -- mkt-invoice-data-seed-dev-workspace
+```
+
 ### GraphQL
 ```bash
 # Generate GraphQL types
@@ -86,6 +96,11 @@ npx nx run twenty-front:graphql:generate
 packages/
 ├── twenty-front/          # React frontend application
 ├── twenty-server/         # NestJS backend API
+│   └── src/
+│       ├── mkt-core/      # Custom marketing/business module (380+ files)
+│       ├── modules/       # Twenty core modules
+│       ├── engine/        # Core engine (ORM, API, middleware)
+│       └── database/      # TypeORM migrations
 ├── twenty-ui/             # Shared UI components library
 ├── twenty-shared/         # Common types and utilities
 ├── twenty-emails/         # Email templates with React Email
@@ -95,13 +110,133 @@ packages/
 └── twenty-e2e-testing/    # Playwright E2E tests
 ```
 
-### Key Development Principles
+## mkt-core Module
+
+Module tùy biến chính nằm tại `packages/twenty-server/src/mkt-core/` với các tính năng:
+
+### Core Modules
+| Module | Mô tả |
+|--------|-------|
+| `MktOrderModule` | Quản lý đơn hàng và xử lý order |
+| `MktInvoiceModule` | Tạo và quản lý hóa đơn |
+| `MktLicenseModule` | Quản lý license với gia hạn tự động |
+| `MktPaymentModule` | Xử lý thanh toán (SEPay, BIDV) |
+| `MktDepartmentModule` | Phân cấp phòng ban (tree structure) |
+| `MktCustomerModule` | Quản lý khách hàng và tags |
+| `MktProductModule` | Quản lý sản phẩm và biến thể |
+| `MktProductIntegrationModule` | Tích hợp với MKT Server (OAuth2, caching, sync) |
+| `UserManagementModule` | Quản lý người dùng và roles |
+
+### Key Features
+- **License Management**: Trạng thái (ACTIVE, INACTIVE, TRIAL, EXPIRED, RENEWING), lịch sử, gia hạn
+- **Order Processing**: Workflow đơn hàng (PENDING, CONFIRMED, BLOCKED, OVERDUE)
+- **Payment Integration**: SEPay webhook, BIDV QR code
+- **Department Hierarchy**: Tree queries với ancestors/descendants
+- **RBAC Enterprise**: Role-based access control
+- **KPI System**: Theo dõi KPI với templates và history
+- **2FA**: OTP-based authentication
+- **Reseller Management**: Tier system (Bronze, Silver, Gold)
+- **Product Integration**: OAuth2 sync với MKT Server, Redis caching, immutable snapshots
+
+### Key Files
+```
+mkt-core/
+├── mkt-core.module.ts                    # Main module definition
+├── constants/
+│   ├── mkt-object-ids.ts                 # Entity identifiers (immutable)
+│   └── mkt-field-ids.ts                  # Field identifiers (immutable)
+├── utils/
+│   ├── date-time.utils.ts                # DateTimeUtils - use for all date/time operations
+│   ├── money.utils.ts                    # MoneyUtils - use for all financial calculations
+│   └── json.util.ts                      # safeJsonParse/safeJsonStringify - use for JSON operations
+├── license/                              # License management
+├── order/                                # Order processing
+├── invoice/                              # Invoice system
+├── payment/                              # Payment integration
+├── customer/                             # Customer management
+├── product/                              # Product & variants
+├── mkt-department/                       # Department hierarchy
+├── mkt-organization-level/               # Organization levels
+├── mkt-rbac-enterprise-grade/            # RBAC utilities
+├── mkt-kpi/                              # KPI tracking
+├── mkt-reseller/                         # Reseller management
+├── mkt-two-facetor-authentication/       # 2FA
+├── mkt-product-integration/              # MKT Server product integration
+│   ├── configs/                          # Zod-validated sync configuration
+│   ├── constants/                        # API endpoints, cache keys
+│   ├── dto/                              # GraphQL input/output types
+│   ├── jobs/                             # Scheduled sync job (cron)
+│   ├── message/                          # Centralized messages
+│   ├── repositories/                     # Data access layer (HTTP)
+│   ├── resolvers/                        # GraphQL resolvers
+│   ├── services/                         # Business logic services
+│   ├── types/                            # TypeScript type definitions
+│   └── utils/                            # Mapper utilities
+└── dev-seeder/                           # Development data seeding
+```
+
+### WorkspaceEntity Pattern
+Tất cả entities tuân theo pattern của Twenty CRM:
+```typescript
+@WorkspaceEntity({
+  standardId: MKT_OBJECT_IDS.mktLicense,
+  namePlural: 'mktLicenses',
+  labelSingular: 'License',
+  icon: 'IconBox'
+})
+export class MktLicenseWorkspaceEntity extends BaseWorkspaceEntity {
+  @WorkspaceField({ ... })
+  name: string;
+
+  @WorkspaceRelation({ ... })
+  customer: MktCustomerWorkspaceEntity;
+}
+```
+
+### MKT Product Integration Module
+
+Module tích hợp với MKT Server để lấy dữ liệu Product và ProductPackage thông qua OAuth2.
+
+**Architecture**: Repository-Service pattern với Facade (MktProductProxyService)
+
+**Key Services**:
+| Service | Purpose |
+|---------|---------|
+| `MktProductProxyService` | Facade - orchestrates cache, repos, validation |
+| `MktProductCacheService` | Redis distributed caching (24h TTL) |
+| `MktProductSyncService` | Event-driven sync on OAuth2 token acquired |
+| `MktSnapshotService` | Immutable snapshots with SHA-256 checksum |
+| `MktValidationService` | Validate products/packages for orders |
+
+**GraphQL Queries**:
+- `mktDigitalProduct(productId)` - Get single product by ID
+- `mktDigitalProductByCode(code)` - Get product by code
+- `mktDigitalProducts(input)` - Get paginated products
+- `mktDigitalPackage(input)` - Get single package
+- `mktDigitalPackagesByProduct(input)` - Get packages by product
+
+**Cache Keys** (CacheStorageNamespace.MktProduct):
+- `digital:{productId}` → Product data (24h TTL)
+- `digital:code:{code}` → productId mapping
+- `digital:pkgs:{productId}` → [packages] array
+
+**Sync Environment Variables**:
+- `MKT_AUTO_SYNC_ENABLED` (default: true) - Auto-sync on token acquired
+- `MKT_SCHEDULED_SYNC_ENABLED` (default: true) - Enable cron sync
+- `MKT_SCHEDULED_SYNC_CRON` (default: `0 */30 * * * *`) - Every 30 minutes
+
+## Key Development Principles
+
+### Code Standards
 - **Functional components only** (no class components)
 - **Named exports only** (no default exports)
 - **Types over interfaces** (except when extending third-party interfaces)
-- **String literals over enums** (except for GraphQL enums)
 - **No 'any' type allowed**
-- **Event handlers preferred over useEffect** for state updates
+- **No forEach** - sử dụng for...of hoặc map/filter/reduce
+- **No hard-coded values** - khai báo bằng const hoặc enum với default values
+- **Early return pattern** - tránh chuỗi if-else
+- **Prefer lodash** để tối ưu code size
+- **Use DateTimeUtils** cho date/time operations (không dùng `new Date()` trực tiếp)
 
 ### State Management
 - **Recoil** for global state management
@@ -114,6 +249,7 @@ packages/
 - **GraphQL** API with code-first approach
 - **Redis** for caching and session management
 - **BullMQ** for background job processing
+- **Hooks system** for pre/post query validation
 
 ### Database
 - **PostgreSQL** as primary database
@@ -145,10 +281,64 @@ packages/
 - `nx.json` - Nx workspace configuration with task definitions
 - `tsconfig.base.json` - Base TypeScript configuration
 - `package.json` - Root package with workspace definitions
-- `.cursor/rules/` - Development guidelines and best practices
+- `packages/twenty-server/src/mkt-core/` - Custom business logic
+- `packages/twenty-server/src/mkt-core/constants/` - Object và field IDs
 
-## Coding conventions
+## Git Workflow
+- **Main branch**: `main`
+- **Development branch**: `develop`
+- Feature branches: `feature/[name]`, `task/[name]`
+
+## Coding Conventions
 - Do not use type `any`
 - Use named exports only (no default exports)
-- Prefer string literals over enums (except for GraphQL enums)
 - Prefer types over interfaces (except when extending third-party interfaces)
+- Use early return pattern instead of nested if-else
+- Use lodash for array/object operations
+- Declare constants with const or enum, add default values when needed
+- chạy npx nx reset khi lỗi với nx
+
+### Required Utilities
+
+Luôn sử dụng các utilities sau thay cho các hàm mặc định:
+
+#### DateTimeUtils (date/time operations)
+```typescript
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+// KHÔNG dùng: new Date(), Date.now()
+// SỬ DỤNG:
+const now = DateTimeUtils.now();
+const fromISO = DateTimeUtils.fromISO('2024-01-01');
+const isoString = DateTimeUtils.toISO(dateTime);
+const jsDate = DateTimeUtils.toDate(dateTime);
+const millis = DateTimeUtils.toMillis(dateTime);
+const future = DateTimeUtils.add(dateTime, { days: 30 });
+const past = DateTimeUtils.subtract(dateTime, { hours: 24 });
+```
+
+#### MoneyUtils (financial calculations)
+```typescript
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+
+// KHÔNG dùng: manual arithmetic (quantity * price, Math.round())
+// SỬ DỤNG:
+const total = MoneyUtils.multiply(quantity, unitPrice).toNumber();
+const tax = MoneyUtils.percentage(amount, taxPercent).toNumber();
+const sum = MoneyUtils.add(subtotal, taxAmount).toNumber();
+const diff = MoneyUtils.subtract(total, discount).toNumber();
+const itemsTotal = MoneyUtils.sumBy(items, 'price').toNumber();
+const rounded = MoneyUtils.round(value, 2).toNumber();
+const safe = MoneyUtils.divideSafe(amount, days); // handles division by zero
+```
+
+#### JSON Utilities (safe JSON operations)
+```typescript
+import { safeJsonStringify, safeJsonParse, parseJsonOrDefault } from 'src/mkt-core/utils/json.util';
+
+// KHÔNG dùng: JSON.stringify(), JSON.parse() trực tiếp
+// SỬ DỤNG:
+const jsonStr = safeJsonStringify(data);              // returns null if error
+const parsed = safeJsonParse<MyType>(jsonString);     // returns { success, data, error }
+const withDefault = parseJsonOrDefault(str, {});      // returns default if parse fails
+```

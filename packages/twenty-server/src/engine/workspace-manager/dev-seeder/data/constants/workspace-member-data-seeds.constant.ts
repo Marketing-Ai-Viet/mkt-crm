@@ -1,12 +1,13 @@
 import { USER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/core/utils/seed-users.util';
-import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-department-data-seeds.constants';
-import { MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-employment-status-data-seeds.constants';
-import { MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS } from 'src/mkt-core/dev-seeder/constants/mkt-organization-level-data-seeds.constants';
+import { MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/constants/mkt-employment-status-data-seeds.constants';
+import { MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/constants/mkt-organization-level-data-seeds.constants';
+import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
 type WorkspaceMemberDataSeed = {
   id: string;
   nameFirstName: string;
   nameLastName: string;
+  startDate: Date;
   locale: string;
   colorScheme: string;
   userEmail: string;
@@ -21,6 +22,7 @@ export const WORKSPACE_MEMBER_DATA_SEED_COLUMNS: (keyof WorkspaceMemberDataSeed)
     'id',
     'nameFirstName',
     'nameLastName',
+    'startDate',
     'locale',
     'colorScheme',
     'userEmail',
@@ -42,11 +44,12 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     id: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
     nameFirstName: 'Tim',
     nameLastName: 'Apple',
+    startDate: new Date('2015-01-15'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'tim@apple.dev',
     userId: USER_DATA_SEED_IDS.TIM,
-    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ADMIN,
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS['TECH_BACKEND'],
     organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
     employmentStatusId: MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS.CONTRACT,
   },
@@ -54,23 +57,25 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     id: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
     nameFirstName: 'Jony',
     nameLastName: 'Ive',
+    startDate: new Date('2017-06-01'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'jony.ive@apple.dev',
     userId: USER_DATA_SEED_IDS.JONY,
-    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
-    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.MANAGER,
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS['SALES'],
+    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.DIRECTOR,
     employmentStatusId: MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS.INTERNSHIP,
   },
   {
     id: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
     nameFirstName: 'Phil',
     nameLastName: 'Schiler',
+    startDate: new Date('2019-09-10'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'phil.schiler@apple.dev',
     userId: USER_DATA_SEED_IDS.PHIL,
-    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS['TECH_FRONTEND'],
     organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.TEAM_LEAD,
     employmentStatusId: MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS.PART_TIME,
   },
@@ -78,12 +83,13 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     id: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
     nameFirstName: 'Jane',
     nameLastName: 'Austen',
+    startDate: new Date('2020-11-20'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'jane.austen@apple.dev',
     userId: USER_DATA_SEED_IDS.JANE,
-    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
-    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.STAFF,
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS['TECH_DEVOPS'],
+    organizationLevelId: MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS.SENIOR_STAFF,
     employmentStatusId: MKT_EMPLOYMENT_STATUS_DATA_SEEDS_IDS.RESIGNED,
   },
 ];

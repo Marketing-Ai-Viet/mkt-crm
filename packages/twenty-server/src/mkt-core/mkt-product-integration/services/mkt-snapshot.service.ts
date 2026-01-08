@@ -1,0 +1,204 @@
+import { Injectable, Logger } from '@nestjs/common';
+
+import { createHash } from 'crypto';
+
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+import {
+  MktProduct,
+  MktProductPackage,
+  MktProductSnapshot,
+  MktPackageSnapshot,
+  MktSupportedLanguage,
+} from 'src/mkt-core/mkt-product-integration/types';
+import {
+  MKT_DEFAULT_CURRENCY,
+  MKT_PRODUCT_LOG_CONTEXT,
+} from 'src/mkt-core/mkt-product-integration/constants';
+import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
+import { MktLicenseResponse } from 'src/mkt-core/mkt-license-integration/types';
+import { MktLicenseSnapshot } from 'src/mkt-core/order/types';
+
+@Injectable()
+export class MktSnapshotService {
+  private readonly logger = new Logger(MKT_PRODUCT_LOG_CONTEXT);
+
+  /**
+   * Create immutable product snapshot
+   *
+   * @param product - Product data from MKT Server
+   * @param language - Display language for snapshot
+   * @returns Immutable product snapshot
+   */
+  createProductSnapshot(
+    product: MktProduct,
+    language: MktSupportedLanguage = 'vi',
+  ): MktProductSnapshot {
+    const snapshot: MktProductSnapshot = {
+      id: product.id,
+      code: product.code,
+      productName: {
+        vi: product.productName,
+        en: product.productName,
+        ko: product.productName,
+      },
+      productDescription: product.productDescription
+        ? {
+            vi: product.productDescription,
+            en: product.productDescription,
+            ko: product.productDescription,
+          }
+        : null,
+      displayName: product.productName,
+      displayDescription: product.productDescription,
+      displayLanguage: language,
+      basePrice: product.basePrice,
+      currency: MKT_DEFAULT_CURRENCY,
+      status: product.status,
+      version: product.version,
+      iconUrl: product.iconUrl,
+      bannerUrl: product.bannerUrl,
+      capturedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+      sourceVersion: product.updatedAt,
+      checksum: '',
+    };
+
+    snapshot.checksum = this.generateChecksum(snapshot);
+
+    this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
+      productId: product.id,
+      checksum: snapshot.checksum,
+    });
+
+    return snapshot;
+  }
+
+  /**
+   * Create immutable package snapshot
+   *
+   * @param pkg - Package data from MKT Server
+   * @returns Immutable package snapshot
+   */
+  createPackageSnapshot(pkg: MktProductPackage): MktPackageSnapshot {
+    const snapshot: MktPackageSnapshot = {
+      id: pkg.id,
+      packageCode: pkg.packageCode,
+      productId: pkg.productId,
+      packageName: {
+        vi: pkg.packageName,
+        en: pkg.packageName,
+        ko: pkg.packageName,
+      },
+      packageDescription: pkg.packageDescription
+        ? {
+            vi: pkg.packageDescription,
+            en: pkg.packageDescription,
+            ko: pkg.packageDescription,
+          }
+        : null,
+      displayName: pkg.packageName,
+      displayDescription: pkg.packageDescription,
+      packageType: pkg.packageType,
+      licenseType: pkg.licenseType,
+      billingCycle: pkg.billingCycle,
+      durationDays: pkg.durationDays,
+      price: pkg.price,
+      currency: pkg.currency,
+      capturedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    };
+
+    this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
+      packageId: pkg.id,
+    });
+
+    return snapshot;
+  }
+
+  /**
+   * Create immutable license snapshot
+   *
+   * @param license - License data from MKT Server
+   * @returns Immutable license snapshot
+   */
+  createLicenseSnapshot(license: MktLicenseResponse): MktLicenseSnapshot {
+    const snapshot: MktLicenseSnapshot = {
+      id: license.id,
+      licenseKey: license.licenseKey,
+      licenseType: license.type,
+      status: this.mapLicenseStatus(license.status),
+      productId: license.productId,
+      packageId: license.metadata?.sourceConfig?.configId ?? '',
+      activatedAt: license.startDate,
+      expiresAt: license.endDate,
+      maxDevices: license.maxDevices,
+      customerId: license.userId,
+      metadata: license.metadata,
+      capturedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+      sourceVersion: String(license.version),
+    };
+
+    this.logger.debug(MKT_PRODUCT_MESSAGES.SUCCESS.SNAPSHOT_CREATED, {
+      licenseId: license.id,
+    });
+
+    return snapshot;
+  }
+
+  /**
+   * Map MKT Server license status to MktLicenseSnapshot status
+   */
+  private mapLicenseStatus(status: string): MktLicenseSnapshot['status'] {
+    const statusMap: Record<string, MktLicenseSnapshot['status']> = {
+      active: 'ACTIVE',
+      pending: 'INACTIVE',
+      expired: 'EXPIRED',
+      revoked: 'CANCELLED',
+    };
+
+    return statusMap[status] ?? 'INACTIVE';
+  }
+
+  /**
+   * Verify snapshot integrity by comparing checksum
+   *
+   * @param snapshot - Product snapshot to verify
+   * @returns True if checksum is valid
+   */
+  verifyChecksum(snapshot: MktProductSnapshot): boolean {
+    const originalChecksum = snapshot.checksum;
+    const snapshotCopy = { ...snapshot, checksum: '' };
+    const calculatedChecksum = this.generateChecksum(snapshotCopy);
+
+    const isValid = originalChecksum === calculatedChecksum;
+
+    if (!isValid) {
+      this.logger.warn(MKT_PRODUCT_MESSAGES.ERROR.SNAPSHOT_CHECKSUM_MISMATCH, {
+        productId: snapshot.id,
+        expected: originalChecksum,
+        calculated: calculatedChecksum,
+      });
+    }
+
+    return isValid;
+  }
+
+  /**
+   * Generate SHA-256 checksum for snapshot
+   */
+  private generateChecksum(
+    snapshot: Omit<MktProductSnapshot, 'checksum'> & { checksum: string },
+  ): string {
+    const dataToHash =
+      safeJsonStringify({
+        id: snapshot.id,
+        code: snapshot.code,
+        basePrice: snapshot.basePrice,
+        capturedAt: snapshot.capturedAt,
+      }) ?? '';
+
+    return createHash('sha256')
+      .update(dataToHash)
+      .digest('hex')
+      .substring(0, 16);
+  }
+}

@@ -1,10 +1,12 @@
 import { msg } from '@lingui/core/macro';
+import { FieldMetadataType } from 'twenty-shared/types';
 
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
@@ -14,6 +16,7 @@ import { WORKSPACE_MEMBER_MKT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
@@ -22,32 +25,131 @@ import { MktSInvoiceMetadataWorkspaceEntity } from 'src/mkt-core/invoice/objects
 import { MktSInvoicePaymentWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-payment.workspace-entity';
 import { MktSInvoiceTaxBreakdownWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-tax-breakdown.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
-import { MktLicenseWorkspaceEntity } from 'src/mkt-core/license/mkt-license.workspace-entity';
-import { MktLicenseHistoryWorkspaceEntity } from 'src/mkt-core/license/objects/mkt-license-history.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/mkt-department.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
 import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
 import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-permission-audit/mkt-permission-audit.workspace-entity';
 import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
-import { MktUserPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-template.workspace-entity';
-import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
-import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
-import { MktAttributeWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-attribute.workspace-entity';
-import { MktCategoryWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-category.workspace-entity';
-import { MktComboVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo-variant.workspace-entity';
-import { MktComboWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-combo.workspace-entity';
-import { MktProductWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-product.workspace-entity';
-import { MktValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-value.workspace-entity';
-import { MktVariantValueWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant-value.workspace-entity';
-import { MktVariantWorkspaceEntity } from 'src/mkt-core/product/objects/mkt-variant.workspace-entity';
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
+import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
+import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
+import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
+  // core fields
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberType,
+    type: FieldMetadataType.TEXT,
+    label: msg`Member Type`,
+    description: msg`The type of the workspace member in the marketing module`,
+    icon: 'IconUserCheck',
+  })
+  @WorkspaceIsNullable()
+  memberType: string;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.grade,
+    type: FieldMetadataType.TEXT,
+    label: msg`Grade`,
+    description: msg`The grade of the workspace member`,
+    icon: 'IconCertificate',
+  })
+  @WorkspaceIsNullable()
+  grade: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.address,
+    type: FieldMetadataType.TEXT,
+    label: msg`Address`,
+    description: msg`The address of the workspace member`,
+    icon: 'IconHome',
+  })
+  @WorkspaceIsNullable()
+  address: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.memberCode,
+    type: FieldMetadataType.TEXT,
+    label: msg`Member Code`,
+    description: msg`The code assigned to the workspace member`,
+    icon: 'IconIdBadge',
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsUnique()
+  memberCode: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.supportForMemberId,
+    type: FieldMetadataType.TEXT,
+    label: msg`Support For Member ID`,
+    description: msg`The member ID that this workspace member provides support for`,
+    icon: 'IconLifebuoy',
+  })
+  @WorkspaceIsNullable()
+  supportForMemberId: string | null;
+
+  @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.status,
+    type: FieldMetadataType.TEXT,
+    label: msg`Status`,
+    description: msg`The current status of the workspace member`,
+    icon: 'IconInfoCircle',
+  })
+  @WorkspaceIsNullable()
+  status: string | null;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Department`,
+    description: msg`Person's department`,
+    icon: 'IconBuilding',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'people',
+  })
+  @WorkspaceIsNullable()
+  department: Relation<MktDepartmentWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('department')
+  departmentId: string | null;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.team,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Team`,
+    description: msg`Person's team`,
+    icon: 'IconUsers',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'teamMembers',
+  })
+  @WorkspaceIsNullable()
+  team: Relation<MktDepartmentWorkspaceEntity> | null;
+  @WorkspaceJoinColumn('team')
+  teamId: string | null;
+
+  // other relations
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOptions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Options`,
+    description: msg`Account owner for options`,
+    icon: 'IconTag',
+    inverseSideTarget: () => MktOptionWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktOptions: Relation<MktOptionWorkspaceEntity[]>;
+
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForI18ns,
     type: RelationType.ONE_TO_MANY,
@@ -97,129 +199,6 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktCustomerTags: Relation<MktCustomerTagWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktProducts,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Products`,
-    description: msg`Account owner for products`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktProductWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktProducts: Relation<MktProductWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktCategories,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Categories`,
-    description: msg`Account owner for categories`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktCategoryWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktCategories: Relation<MktCategoryWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktAttributes,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Attributes`,
-    description: msg`Account owner for attributes`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktAttributeWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktAttributes: Relation<MktAttributeWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktVariants,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Variants`,
-    description: msg`Account owner for variants`,
-    icon: 'IconBoxMultiple',
-    inverseSideTarget: () => MktVariantWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktVariants: Relation<MktVariantWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktCombos,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Combos`,
-    description: msg`Account owner for combos`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktCombos: Relation<MktComboWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktComboVariants,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Combo Variants`,
-    description: msg`Account owner for combo variants`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktComboVariantWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktComboVariants: Relation<MktComboVariantWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktValues,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Values`,
-    description: msg`Account owner for values`,
-    icon: 'IconListDetails',
-    inverseSideTarget: () => MktValueWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktValues: Relation<MktValueWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktVariantValues,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Variant Values`,
-    description: msg`Account owner for variant values`,
-    icon: 'IconListDetails',
-    inverseSideTarget: () => MktVariantValueWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktVariantValues: Relation<MktVariantValueWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktLicenses,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For Licenses`,
-    description: msg`Account owner for licenses`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktLicenseWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktLicenses: Relation<MktLicenseWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId:
-      WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktLicenseHistories,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Account Owner For License Histories`,
-    description: msg`Account owner for license histories`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktLicenseHistoryWorkspaceEntity,
-    inverseSideFieldKey: 'accountOwner',
-    onDelete: RelationOnDeleteAction.SET_NULL,
-  })
-  accountOwnerForMktLicenseHistories: Relation<
-    MktLicenseHistoryWorkspaceEntity[]
-  >;
-
-  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktContracts,
     type: RelationType.ONE_TO_MANY,
     label: msg`Account Owner For Contracts`,
@@ -230,6 +209,19 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktContracts: Relation<MktContractWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdMktContracts,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Created Contracts`,
+    description: msg`Contracts created by this workspace member`,
+    icon: 'IconFilePlus',
+    inverseSideTarget: () => MktContractWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  createdMktContracts: Relation<MktContractWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOrders,
@@ -244,6 +236,19 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktOrders: Relation<MktOrderWorkspaceEntity[]>;
 
   @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdMktOrders,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Created Orders`,
+    description: msg`Orders created by this workspace member`,
+    icon: 'IconShoppingCartPlus',
+    inverseSideTarget: () => MktOrderWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  createdMktOrders: Relation<MktOrderWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktOrderItems,
     type: RelationType.ONE_TO_MANY,
     label: msg`Account Owner For Order Items`,
@@ -254,6 +259,21 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktOrderItems: Relation<MktOrderItemWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId:
+      WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktPaymentHistories,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner for Payment Histories`,
+    description: msg`The account owner for the payment histories created by this member`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+  })
+  @WorkspaceIsSystem()
+  accountOwnerForMktPaymentHistories: Relation<
+    MktPaymentHistoryWorkspaceEntity[]
+  >;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktSInvoiceAuths,
@@ -349,6 +369,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktSInvoiceFiles: Relation<MktSInvoiceFileWorkspaceEntity[]>;
 
   @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktReports,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Reports`,
+    description: msg`Account owner for reports`,
+    icon: 'IconFile',
+    inverseSideTarget: () => MktReportWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktReports: Relation<MktReportWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktTemplates,
     type: RelationType.ONE_TO_MANY,
     label: msg`Account Owner For Templates`,
@@ -373,19 +405,28 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   // accountOwnerForMktKpiTemplates: Relation<MktKpiTemplateWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.department,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Department`,
-    description: msg`Person's department`,
-    icon: 'IconBuilding',
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.leaderForMktDepartments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Leader For Departments`,
+    description: msg`Leader for departments`,
+    icon: 'IconBox',
     inverseSideTarget: () => MktDepartmentWorkspaceEntity,
-    inverseSideFieldKey: 'people',
+    inverseSideFieldKey: 'leader',
+    onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  @WorkspaceIsNullable()
-  department: Relation<MktDepartmentWorkspaceEntity> | null;
+  leaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
 
-  @WorkspaceJoinColumn('department')
-  departmentId: string | null;
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.subLeaderForMktDepartments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Sub Leader For Departments`,
+    description: msg`Sub leader for departments`,
+    icon: 'IconBox',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'subLeader',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  subLeaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.staffStatusHistories,
@@ -456,20 +497,51 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceIsSystem()
   createdKpiTemplates: Relation<MktKpiTemplateWorkspaceEntity[]>;
 
-  // === DEPRECATED: TEMPORARY PERMISSIONS (Replaced by User Permission Override) ===
-  // Note: These relations are deprecated and should be migrated to permissionOverrides
-  // Temporary Permission functionality is now handled by MktUserPermissionOverride
-  // which provides:
-  // - GRANT and REVOKE capabilities (vs only GRANT in temporary permissions)
-  // - Approval workflow with approvedBy tracking
-  // - Context filters for fine-grained control
-  // - All permission actions (not just READ/UPDATE/DELETE)
-  // - Categorized reasons (EMERGENCY_ACCESS, BUSINESS_EXCEPTION, etc.)
-  //
-  // Migration path:
-  // 1. Use permissionOverrides for new grants
-  // 2. Migrate existing temporary permissions to overrides
-  // 3. Deprecate these relations after migration complete
+  // === TEMPORARY PERMISSIONS RELATIONS ===
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.grantedTemporaryPermissions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Granted Temporary Permissions`,
+    description: msg`Temporary permissions granted by this user`,
+    icon: 'IconUserCheck',
+    inverseSideTarget: () => MktTemporaryPermissionWorkspaceEntity,
+    inverseSideFieldKey: 'granterWorkspaceMember',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsSystem()
+  grantedTemporaryPermissions: Relation<
+    MktTemporaryPermissionWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.receivedTemporaryPermissions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Received Temporary Permissions`,
+    description: msg`Temporary permissions received by this user`,
+    icon: 'IconUser',
+    inverseSideTarget: () => MktTemporaryPermissionWorkspaceEntity,
+    inverseSideFieldKey: 'granteeWorkspaceMember',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsSystem()
+  receivedTemporaryPermissions: Relation<
+    MktTemporaryPermissionWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.revokedTemporaryPermissions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Revoked Temporary Permissions`,
+    description: msg`Temporary permissions revoked by this user`,
+    icon: 'IconUserX',
+    inverseSideTarget: () => MktTemporaryPermissionWorkspaceEntity,
+    inverseSideFieldKey: 'revokedBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  revokedTemporaryPermissions: Relation<
+    MktTemporaryPermissionWorkspaceEntity[]
+  >;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.dataAccessPolicies,
@@ -495,63 +567,42 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   @WorkspaceIsSystem()
   permissionAudits: Relation<MktPermissionAuditWorkspaceEntity[]>;
 
-  // === PERMISSION TEMPLATE RELATIONS ===
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionTemplateAssignments,
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktEmails,
     type: RelationType.ONE_TO_MANY,
-    label: msg`Permission Template Assignments`,
-    description: msg`Permission templates assigned to this workspace member`,
-    icon: 'IconUserShield',
-    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
-    inverseSideFieldKey: 'workspaceMember',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsSystem()
-  permissionTemplateAssignments: Relation<
-    MktUserPermissionTemplateWorkspaceEntity[]
-  >;
-
-  @WorkspaceRelation({
-    standardId:
-      WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionTemplateAssignmentsMade,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Permission Template Assignments Made`,
-    description: msg`Permission template assignments made by this workspace member`,
-    icon: 'IconUserCheck',
-    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
-    inverseSideFieldKey: 'assignedBy',
+    label: msg`Account Owner For Emails`,
+    description: msg`Account owner for emails`,
+    icon: 'IconMail',
+    inverseSideTarget: () => MktEmailWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsSystem()
-  permissionTemplateAssignmentsMade: Relation<
-    MktUserPermissionTemplateWorkspaceEntity[]
-  >;
+  accountOwnerForMktEmails: Relation<MktEmailWorkspaceEntity[]>;
 
+  // === GENERIC COMBO RELATIONS ===
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionOverrides,
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdMktGenericCombos,
     type: RelationType.ONE_TO_MANY,
-    label: msg`Permission Overrides`,
-    description: msg`Permission overrides for this workspace member`,
-    icon: 'IconUserX',
-    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
-    inverseSideFieldKey: 'workspaceMember',
-    onDelete: RelationOnDeleteAction.CASCADE,
-  })
-  @WorkspaceIsSystem()
-  permissionOverrides: Relation<MktUserPermissionOverrideWorkspaceEntity[]>;
-
-  @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.approvedPermissionOverrides,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Approved Permission Overrides`,
-    description: msg`Permission overrides approved by this workspace member`,
-    icon: 'IconUserCheck',
-    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
-    inverseSideFieldKey: 'approvedBy',
+    label: msg`Created Generic Combos`,
+    description: msg`Generic combos created by this workspace member`,
+    icon: 'IconPackages',
+    inverseSideTarget: () => MktGenericComboWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   @WorkspaceIsSystem()
-  approvedPermissionOverrides: Relation<
-    MktUserPermissionOverrideWorkspaceEntity[]
-  >;
+  createdMktGenericCombos: Relation<MktGenericComboWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktGenericCombos,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Account Owner For Generic Combos`,
+    description: msg`Account owner for generic combos`,
+    icon: 'IconPackages',
+    inverseSideTarget: () => MktGenericComboWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  accountOwnerForMktGenericCombos: Relation<MktGenericComboWorkspaceEntity[]>;
 }

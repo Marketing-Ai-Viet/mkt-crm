@@ -14,13 +14,13 @@ export const Footer = () => {
         <Column>
           <ShadowText>
             <Link
-              href="https://twenty.com/"
+              href="https://phanmemmkt.vn"
               value={i18n._('Website')}
-              aria-label={i18n._("Visit Twenty's website")}
+              aria-label="Truy cập trang web"
             />
           </ShadowText>
         </Column>
-        <Column>
+        {/* <Column>
           <ShadowText>
             <Link
               href="https://github.com/twentyhq/twenty"
@@ -28,8 +28,8 @@ export const Footer = () => {
               aria-label={i18n._("Visit Twenty's GitHub repository")}
             />
           </ShadowText>
-        </Column>
-        <Column>
+        </Column> */}
+        {/* <Column>
           <ShadowText>
             <Link
               href="https://twenty.com/user-guide"
@@ -37,8 +37,8 @@ export const Footer = () => {
               aria-label={i18n._("Read Twenty's user guide")}
             />
           </ShadowText>
-        </Column>
-        <Column>
+        </Column> */}
+        {/* <Column>
           <ShadowText>
             <Link
               href="https://docs.twenty.com/"
@@ -46,13 +46,14 @@ export const Footer = () => {
               aria-label={i18n._("Visit Twenty's developer documentation")}
             />
           </ShadowText>
-        </Column>
+        </Column> */}
       </Row>
       <ShadowText>
         <>
-          {i18n._('Twenty.com, Public Benefit Corporation')}
+          Công ty CP GIẢI PHÁP MKT
           <br />
-          {i18n._('San Francisco / Paris')}
+          35 Lê Văn Thiêm, Phường Thanh Xuân Trung, Quận Thanh Xuân, Thành phố
+          Hà Nội
         </>
       </ShadowText>
     </Container>

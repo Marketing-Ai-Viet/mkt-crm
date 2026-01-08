@@ -6,10 +6,11 @@ import { CreateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { OrganizationLevelValidationService } from 'src/mkt-core/mkt-organization-level/services/organization-level-validation.service';
 import { CreateOrganizationLevelDto } from 'src/mkt-core/mkt-organization-level/dto/create-organization-level.dto';
+import { PERMISSION_TEMPLATES } from 'src/mkt-core/mkt-organization-level/constants/permission-templates.constants';
+import { MktOrganizationLevelRepository } from 'src/mkt-core/mkt-organization-level/repositories/mkt-organization-level.repository';
 
 @WorkspaceQueryHook('mktOrganizationLevel.createOne')
 export class MktOrganizationLevelCreateOnePreQueryHook
@@ -20,7 +21,7 @@ export class MktOrganizationLevelCreateOnePreQueryHook
   );
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly repository: MktOrganizationLevelRepository,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly validationService: OrganizationLevelValidationService,
   ) {}
@@ -61,25 +62,13 @@ export class MktOrganizationLevelCreateOnePreQueryHook
     };
   }
 
-  private async getRepository(workspaceId: string) {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrganizationLevelWorkspaceEntity>(
-      workspaceId,
-      'mktOrganizationLevel',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
-
   private async validateLevelCodeUniqueness(
     levelCode: string,
     workspaceId: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+    const exists = await this.repository.existsByCode(workspaceId, levelCode);
 
-    const existingLevel = await repository.findOne({
-      where: { levelCode },
-    });
-
-    if (existingLevel) {
+    if (exists) {
       throw new BadRequestException(
         `Organization level with code '${levelCode}' already exists`,
       );
@@ -93,36 +82,43 @@ export class MktOrganizationLevelCreateOnePreQueryHook
     const { hierarchyLevel, parentLevelId } = input;
 
     // Validate parent exists and has correct hierarchy
-    if (parentLevelId) {
-      const repository = await this.getRepository(workspaceId);
-
-      const parentLevel = await repository.findOne({
-        where: { id: parentLevelId },
-      });
-
-      if (!parentLevel) {
-        throw new BadRequestException(
-          `Parent level with ID '${parentLevelId}' not found`,
-        );
-      }
-
-      if (parentLevel.hierarchyLevel >= hierarchyLevel) {
-        throw new BadRequestException(
-          `Parent level hierarchy (${parentLevel.hierarchyLevel}) must be lower than current level hierarchy (${hierarchyLevel})`,
-        );
-      }
-
-      if (!parentLevel.isActive) {
-        throw new BadRequestException(
-          'Cannot set inactive organization level as parent',
-        );
-      }
+    if (!parentLevelId) {
+      return;
     }
+
+    const parentLevel = await this.repository.findById(
+      workspaceId,
+      parentLevelId,
+    );
+
+    if (!parentLevel) {
+      throw new BadRequestException(
+        `Parent level with ID '${parentLevelId}' not found`,
+      );
+    }
+
+    if (parentLevel.hierarchyLevel >= hierarchyLevel) {
+      throw new BadRequestException(
+        `Parent level hierarchy (${parentLevel.hierarchyLevel}) must be lower than current level hierarchy (${hierarchyLevel})`,
+      );
+    }
+
+    if (!parentLevel.isActive) {
+      throw new BadRequestException(
+        'Cannot set inactive organization level as parent',
+      );
+    }
+  }
+
+  private getDefaultPermissionsTemplate() {
+    return PERMISSION_TEMPLATES.JUNIOR_STAFF;
   }
 
   private transformDtoToEntity(
     dto: CreateOrganizationLevelDto,
   ): Partial<MktOrganizationLevelWorkspaceEntity> {
+    const defaultTemplate = this.getDefaultPermissionsTemplate();
+
     return {
       levelCode: dto.levelCode,
       levelName: dto.levelName,
@@ -132,8 +128,10 @@ export class MktOrganizationLevelCreateOnePreQueryHook
       description: dto.description ?? undefined,
       parentLevelId: dto.parentLevelId ?? undefined,
       isActive: dto.isActive ?? true,
-      // defaultPermissions và accessLimitations đã được remove khỏi entity
-      // Permissions được quản lý thông qua Data Access Policy (tạo trong post-query hook)
+      defaultPermissions:
+        dto.defaultPermissions ?? defaultTemplate.defaultPermissions,
+      accessLimitations:
+        dto.accessLimitations ?? defaultTemplate.accessLimitations,
       position: 0,
     };
   }

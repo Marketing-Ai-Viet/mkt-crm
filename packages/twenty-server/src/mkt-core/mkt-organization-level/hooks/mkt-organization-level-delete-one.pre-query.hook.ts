@@ -6,8 +6,8 @@ import { DeleteOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelRepository } from 'src/mkt-core/mkt-organization-level/repositories/mkt-organization-level.repository';
 
 @WorkspaceQueryHook('mktOrganizationLevel.deleteOne')
 export class MktOrganizationLevelDeleteOnePreQueryHook
@@ -18,7 +18,7 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
   );
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly repository: MktOrganizationLevelRepository,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
@@ -57,23 +57,11 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
     return payload;
   }
 
-  private async getRepository(workspaceId: string) {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrganizationLevelWorkspaceEntity>(
-      workspaceId,
-      'mktOrganizationLevel',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
-
   private async getCurrentRecord(
     recordId: string,
     workspaceId: string,
   ): Promise<MktOrganizationLevelWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    const record = await repository.findOne({
-      where: { id: recordId },
-    });
+    const record = await this.repository.findById(workspaceId, recordId);
 
     if (!record) {
       throw new BadRequestException(
@@ -88,11 +76,10 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
     recordId: string,
     workspaceId: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    const childLevels = await repository.find({
-      where: { parentLevelId: recordId },
-    });
+    const childLevels = await this.repository.findByParentId(
+      workspaceId,
+      recordId,
+    );
 
     if (childLevels.length > 0) {
       const childNames = childLevels.map((child) => child.levelName).join(', ');
@@ -109,32 +96,27 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
     workspaceId: string,
   ): Promise<void> {
     try {
-      // Check if WorkspaceMember entity exists and has organizationLevel field
-      const workspaceMemberRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          workspaceId,
-          'workspaceMember',
-          { shouldBypassPermissionChecks: true },
-        );
+      const employeeCount = await this.repository.countEmployeesAtLevel(
+        workspaceId,
+        recordId,
+      );
 
-      // Try to find members assigned to this organization level
-      const assignedMembers = await workspaceMemberRepository.find({
-        where: { organizationLevelId: recordId },
-      });
-
-      if (assignedMembers.length > 0) {
+      if (employeeCount > 0) {
         throw new BadRequestException(
-          `Cannot delete organization level: it is assigned to ${assignedMembers.length} workspace member(s). ` +
+          `Cannot delete organization level: it is assigned to ${employeeCount} workspace member(s). ` +
             'Please reassign these members to other levels first.',
         );
       }
     } catch (error) {
-      // If WorkspaceMember doesn't have organizationLevel field yet, log but don't fail
+      // Nếu là BadRequestException, throw lại
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      // Các lỗi khác thì log warning và tiếp tục
       this.logger.warn(
         'Could not check workspace member assignments:',
         error.message,
       );
-      // Continue with deletion - this validation can be added later when the relationship is implemented
     }
   }
 
@@ -146,13 +128,9 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
       return; // If already inactive, deletion is allowed
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const activeCount = await this.repository.countActive(workspaceId);
 
-    const activeLevels = await repository.find({
-      where: { isActive: true },
-    });
-
-    if (activeLevels.length <= 1) {
+    if (activeCount <= 1) {
       throw new BadRequestException(
         'Cannot delete the last active organization level. ' +
           'Please create another active level before deleting this one.',

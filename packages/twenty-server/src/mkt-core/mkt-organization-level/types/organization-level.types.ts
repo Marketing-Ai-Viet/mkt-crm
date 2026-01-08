@@ -2,14 +2,20 @@
  * Organization Level Service Types
  */
 
-export interface OrganizationLevelQueryConditions {
+/**
+ * Điều kiện truy vấn organization level
+ */
+export type OrganizationLevelQueryConditions = {
   isActive?: boolean;
   hierarchyLevel?: number | number[];
   levelCodes?: string[];
   parentLevelId?: string;
-}
+};
 
-export interface HierarchyNodeMetadata {
+/**
+ * Metadata của node trong cây phân cấp
+ */
+export type HierarchyNodeMetadata = {
   totalEmployees: number;
   activeEmployees: number;
   directChildrenCount: number;
@@ -17,9 +23,12 @@ export interface HierarchyNodeMetadata {
   depth: number;
   isLeaf: boolean;
   hasCircularReference: boolean;
-}
+};
 
-export interface OrganizationLevelPermissionSummary {
+/**
+ * Tóm tắt permissions của organization level
+ */
+export type OrganizationLevelPermissionSummary = {
   resourceCount: number;
   actionCount: number;
   restrictionCount: number;
@@ -27,9 +36,12 @@ export interface OrganizationLevelPermissionSummary {
   dataAccessLimitations: boolean;
   operationalLimitations: boolean;
   functionalLimitations: boolean;
-}
+};
 
-export interface OrganizationLevelAnalytics {
+/**
+ * Analytics của organization level
+ */
+export type OrganizationLevelAnalytics = {
   levelId: string;
   levelName: string;
   hierarchyLevel: number;
@@ -50,17 +62,26 @@ export interface OrganizationLevelAnalytics {
     managementSpan: number;
     organizationalDepth: number;
   };
-}
+};
 
+/**
+ * Kích thước tổ chức
+ */
 export type OrganizationSize = 'small' | 'medium' | 'large' | 'enterprise';
 
+/**
+ * Mức độ nghiêm trọng của validation
+ */
 export type HierarchyValidationSeverity = 'error' | 'warning' | 'info';
 
-export interface HierarchyOptimizationSuggestion {
+/**
+ * Đề xuất tối ưu hóa cấu trúc phân cấp
+ */
+export type HierarchyOptimizationSuggestion = {
   type: 'restructure' | 'merge' | 'split' | 'rebalance';
   priority: 'high' | 'medium' | 'low';
   description: string;
   affectedLevels: string[];
   expectedBenefit: string;
   implementationComplexity: 'easy' | 'medium' | 'complex';
-}
+};

@@ -56,6 +56,17 @@ export class MktI18nWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconTag',
   })
   name: string;
+
+  @WorkspaceField({
+    standardId: MKT_I18N_FIELD_IDS.mktFieldId,
+    type: FieldMetadataType.TEXT,
+    label: msg`Field ID`,
+    description: msg`Associated field ID`,
+    icon: 'IconHash',
+  })
+  @WorkspaceIsNullable()
+  mktFieldId?: string;
+
   @WorkspaceField({
     standardId: MKT_I18N_FIELD_IDS.key,
     type: FieldMetadataType.TEXT,
