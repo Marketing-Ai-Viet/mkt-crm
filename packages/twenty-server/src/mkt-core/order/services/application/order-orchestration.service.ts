@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 // TODO: Re-enable idempotency after testing
 // import {
@@ -7,6 +7,9 @@ import { Injectable, Logger } from '@nestjs/common';
 //   IDEMPOTENCY_ORDER_ACTION,
 // } from 'src/mkt-core/common/idempotency';
 import { IdempotencyService } from 'src/mkt-core/common/idempotency';
+import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
   MKT_ORDER_ORCHESTRATION_LOG_MESSAGES,
@@ -17,7 +20,12 @@ import {
   UpdateOrderSaga,
   RefundOrderSaga,
 } from 'src/mkt-core/order/orchestration/saga';
-import { OrderValidationService } from 'src/mkt-core/order/services/core';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import {
+  OrderValidationService,
+  OrderConfirmUtilsService,
+} from 'src/mkt-core/order/services/core';
+import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
   CreateOrderWithItemsInput,
@@ -30,7 +38,14 @@ import {
   UpdateOrderStatusResponse,
   UpdateOrderItemInput,
   UpdateOrderItemResponse,
+  PublishDraftOrderInput,
+  PublishDraftOrderResponse,
 } from 'src/mkt-core/order/types';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
+import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
+import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
+import { CreatePaymentData } from 'src/mkt-core/payment/types/repository.types';
 
 const LOG = MKT_ORDER_ORCHESTRATION_LOG_MESSAGES;
 
@@ -56,6 +71,14 @@ export class OrderOrchestrationService {
     private readonly validationService: OrderValidationService,
     private readonly orderItemService: OrderItemService,
     private readonly idempotencyService: IdempotencyService,
+    // Dependencies for publishDraftOrder
+    private readonly orderRepository: MktOrderRepository,
+    private readonly paymentRepository: MktPaymentRepository,
+    private readonly paymentMethodRepository: MktPaymentMethodRepository,
+    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
   ) {}
 
   /**
@@ -386,5 +409,167 @@ export class OrderOrchestrationService {
     errors: Array<{ field: string; message: string; code: string }>;
   }> {
     return this.validationService.validateCreateOrderInput(workspaceId, input);
+  }
+
+  // ============================================
+  // PUBLISH DRAFT ORDER
+  // ============================================
+
+  /**
+   * Publish a draft order - converts DRAFT to PENDING_PAYMENT
+   *
+   * Steps:
+   * 1. Validate order exists and is in DRAFT status
+   * 2. Create payment/QR code
+   * 3. Update order status to PENDING_PAYMENT
+   * 4. Schedule overdue check
+   */
+  async publishDraftOrder(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: PublishDraftOrderInput,
+  ): Promise<PublishDraftOrderResponse> {
+    this.logger.log(`[PublishDraft] Starting for order: ${input.orderId}`);
+
+    try {
+      // 1. Get and validate order
+      const order = await this.orderRepository.findById(
+        workspaceId,
+        input.orderId,
+      );
+
+      if (!order) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} not found`,
+        };
+      }
+
+      if (order.status !== ORDER_STATUS.DRAFT) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} is not in DRAFT status. Current status: ${order.status}`,
+        };
+      }
+
+      // 2. Create payments if payment methods provided
+      let qrCodeUrl: string | undefined;
+
+      if (input.paymentMethods && input.paymentMethods.length > 0) {
+        const paymentResult = await this.createPaymentsForDraftOrder(
+          workspaceId,
+          order.id,
+          order.orderCode,
+          order.totalAmount ?? 0,
+          order.currency ?? DEFAULT_PAYMENT_CURRENCY,
+          input.paymentMethods,
+        );
+
+        qrCodeUrl = paymentResult.qrCodeUrl;
+      }
+
+      // 3. Update order status to PENDING_PAYMENT
+      const updateNote = input.note
+        ? `[PUBLISHED] ${input.note}`
+        : '[PUBLISHED] Draft order published';
+
+      await this.orderRepository.update(workspaceId, order.id, {
+        status: ORDER_STATUS.PENDING_PAYMENT,
+        note: order.note ? `${order.note}\n${updateNote}` : updateNote,
+      });
+
+      // 4. Schedule overdue check
+      await this.orderOverdueSchedulerService.scheduleOverdueCheck(
+        workspaceId,
+        order.id,
+        order.orderCode,
+      );
+
+      this.logger.log(
+        `[PublishDraft] Success - Order ${order.id} published with status PENDING_PAYMENT`,
+      );
+
+      return {
+        success: true,
+        orderId: order.id,
+        orderCode: order.orderCode,
+        paymentQrCode: qrCodeUrl,
+        newStatus: ORDER_STATUS.PENDING_PAYMENT,
+      };
+    } catch (error) {
+      this.logger.error('[PublishDraft] Unexpected error', error);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Create payments for a draft order
+   */
+  private async createPaymentsForDraftOrder(
+    workspaceId: string,
+    orderId: string,
+    orderCode: string,
+    totalAmount: number,
+    currency: string,
+    paymentMethods: PublishDraftOrderInput['paymentMethods'],
+  ): Promise<{ qrCodeUrl?: string }> {
+    if (!paymentMethods || paymentMethods.length === 0) {
+      return {};
+    }
+
+    let primaryQrCodeUrl: string | undefined;
+
+    // Get payment method entities
+    const paymentMethodIds = paymentMethods.map((p) => p.paymentMethodId);
+    const paymentMethodMap = await this.paymentMethodRepository.findManyByIds(
+      workspaceId,
+      paymentMethodIds,
+    );
+
+    for (const pmInput of paymentMethods) {
+      const paymentMethod = paymentMethodMap.get(pmInput.paymentMethodId);
+
+      if (!paymentMethod) {
+        this.logger.warn(
+          `[PublishDraft] Payment method ${pmInput.paymentMethodId} not found, skipping`,
+        );
+        continue;
+      }
+
+      // Generate QR code
+      const { qrCodeUrl, expiredAt } =
+        await this.orderConfirmUtilsService.generateSepayQrCodeUrl(
+          paymentMethod,
+          totalAmount,
+          orderCode,
+        );
+
+      // Create payment record
+      const paymentData: CreatePaymentData = {
+        name: `Thanh toán - ${paymentMethod.name} - ${orderCode}`,
+        amount: totalAmount,
+        currency: currency as PaymentCurrency,
+        mktOrderId: orderId,
+        mktPaymentMethodId: pmInput.paymentMethodId,
+        qrCodeUrl: qrCodeUrl ?? undefined,
+        duration: pmInput.duration ?? undefined,
+        expiredAt: expiredAt ?? undefined,
+        paymentPageUrl: `${this.config.urls.serverUrl}${this.config.urls.paymentPagePath}/${orderCode}`,
+        mktTemplateId: MKT_TEMPLATE.SEPAY,
+      };
+
+      await this.paymentRepository.create(workspaceId, paymentData);
+
+      // Set first QR code as primary
+      if (!primaryQrCodeUrl && qrCodeUrl) {
+        primaryQrCodeUrl = qrCodeUrl;
+      }
+    }
+
+    return { qrCodeUrl: primaryQrCodeUrl };
   }
 }

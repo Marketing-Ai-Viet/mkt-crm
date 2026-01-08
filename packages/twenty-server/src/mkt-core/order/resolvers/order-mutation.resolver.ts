@@ -12,12 +12,14 @@ import {
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
   RefundOrderInputDto,
+  PublishDraftOrderInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
   ConfirmOrderResponseDto,
   CreateOrderResponseDto,
   RefundOrderResponseDto,
   UpdateOrderStatusResponseDto,
+  PublishDraftOrderResponseDto,
 } from 'src/mkt-core/order/dto/order-response.output';
 import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
@@ -136,6 +138,40 @@ export class OrderMutationResolver {
       workspace.id,
       workspaceMemberId,
       input,
+    );
+  }
+
+  /**
+   * Publish a draft order - converts DRAFT to PENDING_PAYMENT
+   *
+   * Steps:
+   * - Creates payment/QR code
+   * - Updates order status to PENDING_PAYMENT
+   * - Schedules overdue check
+   */
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @Mutation(() => PublishDraftOrderResponseDto, {
+    description:
+      'Publish a draft order to create payment and start the payment flow',
+  })
+  async publishDraftOrder(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+    @Args('input') input: PublishDraftOrderInputDto,
+  ): Promise<PublishDraftOrderResponseDto> {
+    return this.orderOrchestrationService.publishDraftOrder(
+      workspace.id,
+      workspaceMemberId,
+      {
+        orderId: input.orderId,
+        paymentMethods: input.paymentMethods?.map((p) => ({
+          paymentMethodId: p.paymentMethodId,
+          name: p.name,
+          duration: p.duration,
+          amount: p.amount,
+        })),
+        note: input.note,
+      },
     );
   }
 }

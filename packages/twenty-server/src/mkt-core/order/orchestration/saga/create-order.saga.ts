@@ -310,13 +310,16 @@ export class CreateOrderSaga implements OnModuleInit {
    *
    * Job sẽ được execute sau 24h (configurable) để tự động
    * chuyển order sang OVERDUE nếu chưa thanh toán.
+   *
+   * Note: Draft orders (DRAFT status) are not scheduled for overdue check.
    */
   private async scheduleOverdueCheckIfNeeded(
     context: SagaContext,
   ): Promise<void> {
     const orderStatus = context.metadata.get('orderStatus') as string;
 
-    // Chỉ schedule nếu order ở trạng thái PENDING_PAYMENT
+    // Only schedule for PENDING_PAYMENT orders
+    // Draft orders (DRAFT status) don't need overdue check
     if (orderStatus !== ORDER_STATUS.PENDING_PAYMENT) {
       this.logger.debug(
         `Skip scheduling overdue check - order status is ${orderStatus}`,

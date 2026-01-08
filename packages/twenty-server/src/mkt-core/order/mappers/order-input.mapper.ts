@@ -66,6 +66,8 @@ export const OrderInputMapper = {
       // Promotion fields
       couponCode: dto.couponCode,
       applyAutoPromotions: dto.applyAutoPromotions ?? true,
+      // Draft mode
+      isDraft: dto.isDraft ?? false,
     };
   },
 

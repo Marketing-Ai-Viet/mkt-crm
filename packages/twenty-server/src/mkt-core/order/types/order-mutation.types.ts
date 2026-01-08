@@ -107,6 +107,15 @@ export type CreateOrderWithItemsInput = {
   /** Whether to automatically apply eligible promotions (default: true) */
   applyAutoPromotions?: boolean;
 
+  // Draft mode
+  /**
+   * Create as draft order.
+   * Draft orders only calculate totals without creating QR code or licenses.
+   * Use publishDraftOrder mutation to convert to real order.
+   * Default: false
+   */
+  isDraft?: boolean;
+
   // MKT Server email override
   /**
    * Email for MKT Server license registration.
@@ -145,6 +154,20 @@ export type RefundOrderInput = {
 export type UpdateOrderStatusInput = {
   orderId: string;
   status: ORDER_STATUS;
+  note?: string;
+};
+
+/**
+ * Input để publish draft order
+ *
+ * Converts a DRAFT order to PENDING_PAYMENT:
+ * - Creates payment/QR code
+ * - Updates order status
+ * - Schedules overdue check
+ */
+export type PublishDraftOrderInput = {
+  orderId: string;
+  paymentMethods?: OrderPaymentMethodInput[];
   note?: string;
 };
 
@@ -194,6 +217,18 @@ export type UpdateOrderStatusResponse = {
   newStatus?: ORDER_STATUS;
   /** User-friendly message for the client */
   message?: string;
+  error?: string;
+};
+
+/**
+ * Response khi publish draft order
+ */
+export type PublishDraftOrderResponse = {
+  success: boolean;
+  orderId?: string;
+  orderCode?: string;
+  paymentQrCode?: string;
+  newStatus?: ORDER_STATUS;
   error?: string;
 };
 

@@ -58,13 +58,21 @@ export class CreatePaymentStep extends SagaStep<
   }
 
   /**
-   * Payment creation is always required for orders through this saga.
+   * Determine if payment creation should be skipped
+   *
+   * - isDraft: Skip (draft orders don't create payments/QR codes)
+   * - Otherwise: Always create payment
+   *
    * Note: Trial orders are handled by TrialOrderService which doesn't require payment.
    */
-  shouldSkip(
-    _context: SagaContext,
-    _input: CreateOrderWithItemsInput,
-  ): boolean {
+  shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
+    // Draft mode: Skip payment creation
+    if (input.isDraft) {
+      this.logger.debug('Skipping: Draft order - no payment creation');
+
+      return true;
+    }
+
     return false;
   }
 

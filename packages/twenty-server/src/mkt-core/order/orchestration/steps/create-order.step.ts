@@ -68,8 +68,8 @@ export class CreateOrderStep extends SagaStep<
         };
       }
 
-      // Determine initial status based on action
-      const initialStatus = this.getInitialStatus(input.action);
+      // Determine initial status based on action and draft mode
+      const initialStatus = this.getInitialStatus(input.action, input.isDraft);
 
       // Note: Trial orders are handled by TrialOrderService, not this saga
       const isTrialLicense = false;
@@ -167,13 +167,22 @@ export class CreateOrderStep extends SagaStep<
   // ============================================
 
   /**
-   * Get initial order status based on action
+   * Get initial order status based on action and draft mode
    *
    * Flow chính:
-   * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+   * - isDraft=true: Always DRAFT (no payment, no license)
+   * - NEW_ORDER: PENDING_PAYMENT → CONFIRMED → COMPLETED
    * - Note: TRIAL orders are handled by TrialOrderService, not this saga
    */
-  private getInitialStatus(action: ORDER_ACTION): ORDER_STATUS {
+  private getInitialStatus(
+    action: ORDER_ACTION,
+    isDraft?: boolean,
+  ): ORDER_STATUS {
+    // Draft mode: Always start with DRAFT status
+    if (isDraft) {
+      return ORDER_STATUS.DRAFT;
+    }
+
     switch (action) {
       case ORDER_ACTION.NEW_ORDER:
       case ORDER_ACTION.LICENSE_RENEWING:

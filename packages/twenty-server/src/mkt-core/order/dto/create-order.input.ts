@@ -271,6 +271,20 @@ export class CreateOrderWithItemsInputDto {
   applyAutoPromotions?: boolean;
 
   // ============================================
+  // DRAFT MODE
+  // ============================================
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: false,
+    description:
+      'Create as draft order. Draft orders only calculate totals without creating QR code or licenses. Use publishDraftOrder to convert to real order.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isDraft?: boolean;
+
+  // ============================================
   // MKT SERVER EMAIL (Optional override)
   // ============================================
 
@@ -402,3 +416,33 @@ export class UpdateOrderItemInputDto {
 }
 
 // Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense
+
+/**
+ * Input DTO for publishing a draft order
+ *
+ * Converts a DRAFT order to PENDING_PAYMENT:
+ * - Creates payment/QR code
+ * - Updates order status
+ * - Schedules overdue check
+ */
+@InputType()
+export class PublishDraftOrderInputDto {
+  @Field(() => String, { description: 'Draft order ID to publish' })
+  @IsUUID()
+  orderId: string;
+
+  @Field(() => [OrderPaymentMethodInputDto], {
+    nullable: true,
+    description: 'Payment methods for the order',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderPaymentMethodInputDto)
+  paymentMethods?: OrderPaymentMethodInputDto[];
+
+  @Field(() => String, { nullable: true, description: 'Optional note' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}

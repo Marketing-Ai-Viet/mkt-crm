@@ -255,3 +255,27 @@ export class OrderOverdueQueueStatsOutput {
   })
   total: number;
 }
+
+/**
+ * Response for publishing a draft order
+ */
+@ObjectType()
+export class PublishDraftOrderResponseDto {
+  @Field(() => Boolean)
+  success: boolean;
+
+  @Field(() => String, { nullable: true })
+  orderId?: string;
+
+  @Field(() => String, { nullable: true })
+  orderCode?: string;
+
+  @Field(() => String, { nullable: true })
+  paymentQrCode?: string;
+
+  @Field(() => ORDER_STATUS, { nullable: true })
+  newStatus?: ORDER_STATUS;
+
+  @Field(() => String, { nullable: true })
+  error?: string;
+}

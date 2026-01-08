@@ -74,10 +74,18 @@ export class CreateLicensesStep extends SagaStep<
   /**
    * Determine if this step should be skipped
    *
+   * - isDraft: Always skip (draft orders don't create licenses)
    * - NEW_ORDER: Skip (license created on confirm)
    * - TRIAL_TO_PAID: Do NOT skip (create trial license)
    */
   shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
+    // Draft mode: Always skip license creation
+    if (input.isDraft) {
+      this.logger.debug('Skipping: Draft order - no license creation');
+
+      return true;
+    }
+
     // Check if we have any licensable items (external products with packages OR combos with digital items)
     const hasExternalProductsWithPackages =
       input.externalProducts?.some((p) => p.packageId) ?? false;

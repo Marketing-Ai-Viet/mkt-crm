@@ -59,6 +59,11 @@ export class OrderConfirmUtilsService {
   private readonly logger = new Logger(OrderConfirmUtilsService.name);
   private readonly orderCodePrefix: string;
   public orderMetadata: ORDER_METADATA | null = null;
+  private readonly SEPAY_QR_CONFIG = {
+    BASE_URL: 'https://qr.sepay.vn/img',
+    TEMPLATE: 'qronly',
+    DOWNLOAD: 'false',
+  } as const;
 
   constructor(
     private readonly httpService: HttpService,
@@ -754,7 +759,13 @@ export class OrderConfirmUtilsService {
       }
 
       // Generate QR code URL
-      const qrCodeUrl = `https://qr.sepay.vn/img?acc=${sepayAcc}&bank=${sepayBank}&amount=${customAmount}&des=${sepayVa} ${orderCode}&template=qronly&download=false`;
+      const qrCodeUrl = this.buildSepayQrUrl({
+        account: sepayAcc,
+        bank: sepayBank,
+        amount: customAmount,
+        virtualAccount: sepayVa,
+        orderCode,
+      });
 
       this.logger.log(
         `Generated SEPay QR code URL for order ${orderCode} with amount ${customAmount}`,
@@ -943,6 +954,36 @@ Thời gian: ${DateTimeUtils.toISO(DateTimeUtils.now())}
     if (axiosError?.response?.data) {
       this.logger.error('API Response:', axiosError.response.data);
     }
+  }
+
+  // ============================================
+  // QR URL BUILDERS
+  // ============================================
+  /**
+   * Build SEPay QR code URL from parameters
+   *
+   * @param params - QR URL parameters
+   * @returns Formatted SEPay QR URL
+   */
+  private buildSepayQrUrl(params: {
+    account: string;
+    bank: string;
+    amount: number;
+    virtualAccount: string;
+    orderCode: string;
+  }): string {
+    const { account, bank, amount, virtualAccount, orderCode } = params;
+
+    const queryParams = new URLSearchParams({
+      acc: account,
+      bank: bank,
+      amount: amount.toString(),
+      des: `${virtualAccount} ${orderCode}`,
+      template: this.SEPAY_QR_CONFIG.TEMPLATE,
+      download: this.SEPAY_QR_CONFIG.DOWNLOAD,
+    });
+
+    return `${this.SEPAY_QR_CONFIG.BASE_URL}?${queryParams.toString()}`;
   }
 }
 
