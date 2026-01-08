@@ -36,7 +36,7 @@ packages/twenty-server/src/mkt-core/infrastructure/redis/
 
 **Constants có sẵn**:
 - `CACHE_TTL` - Centralized TTL configuration (SHORT, MEDIUM, LONG, VERY_LONG, DAY)
-- Cache key prefixes - Centralized cache key management
+- Cache key prefixes - Centralized cache key management (⚠️ RBAC prefix chưa có)
 - Cache tags - Tag-based invalidation
 
 **Utils có sẵn**:
@@ -63,26 +63,43 @@ mkt-rbac-enterprise-grade/
 │   ├── cache-invalidation.constants.ts
 │   ├── enterprise-rbac.constants.ts
 │   ├── hierarchy.constants.ts
-│   ├── messages.ts                 # ⚠️ Chưa chuẩn - không dùng createModuleMessages
+│   ├── index.ts                    # ✅ Có index exports
+│   ├── messages.ts                 # ⚠️ Có nhưng không dùng createModuleMessages
 │   ├── policy.constants.ts
 │   └── rbac-cache.constants.ts
 ├── decorators/                      # ✅ CÓ
 │   └── permission.decorator.ts
 ├── guards/                          # ✅ CÓ
 │   └── enterprise-rbac.guard.ts
+├── helpers/                         # ⚠️ CÓ - Empty folder
 ├── interceptors/                    # ✅ CÓ
 │   └── audit-logging.interceptor.ts
-├── interfaces/                      # ⚠️ Nên chuyển sang types/
+├── interfaces/                      # ⚠️ Nên merge vào types/
 │   └── validation-step.interface.ts
 ├── services/                        # ⚠️ CHƯA CHUẨN - Thiếu phân chia layers
-│   ├── (15 step services...)
+│   ├── step1-pre-validation.service.ts
+│   ├── step2-user-context-resolution.service.ts
+│   ├── step3-resource-identification.service.ts
+│   ├── step4-permission-template-check.service.ts
+│   ├── step5-action-permission-validation.service.ts
+│   ├── step6-resource-permission-check.service.ts
+│   ├── step7-hierarchy-validation.service.ts
+│   ├── step8-data-access-policy-check.service.ts
+│   ├── step9-special-permissions.service.ts
+│   ├── step10-sensitive-data-checks.service.ts
+│   ├── step11-department-restrictions.service.ts
+│   ├── step12-dynamic-conditions.service.ts
+│   ├── step13-cache-performance.service.ts
+│   ├── step14-audit-logging.service.ts
+│   ├── step15-final-decision.service.ts
 │   ├── cache-invalidation.service.ts
 │   ├── hierarchy-level.service.ts
 │   ├── rbac-cache-manager.service.ts
 │   └── validation-orchestrator.service.ts
 ├── subscribers/                     # ✅ CÓ
 │   └── permission-template-cache.subscriber.ts
-├── types/                          # ✅ CÓ
+├── types/                           # ✅ CÓ với index.ts
+│   ├── index.ts
 │   ├── audit.types.ts
 │   ├── enhanced-permission-context.type.ts
 │   ├── hierarchy-context.type.ts
@@ -92,41 +109,62 @@ mkt-rbac-enterprise-grade/
 │   ├── resource-identification.types.ts
 │   ├── service.types.ts
 │   └── validation-step.types.ts
+├── utils/                           # ⚠️ CÓ - Empty folder
+├── validators/                      # ⚠️ CÓ - Empty folder
+├── workspace-entities/              # ✅ CÓ - 13 entities (QUAN TRỌNG!)
+│   ├── constants/
+│   │   ├── index.ts
+│   │   ├── permission-audit-options.constants.ts
+│   │   ├── rbac-v2-options.constants.ts
+│   │   └── temporary-permission-options.constants.ts
+│   ├── index.ts
+│   ├── mkt-data-access-policy.workspace-entity.ts
+│   ├── mkt-permission-action.workspace-entity.ts
+│   ├── mkt-permission-audit.workspace-entity.ts
+│   ├── mkt-permission-context.workspace-entity.ts
+│   ├── mkt-permission-priority-config.workspace-entity.ts
+│   ├── mkt-permission-resource.workspace-entity.ts
+│   ├── mkt-permission-template.workspace-entity.ts
+│   ├── mkt-template-access-limitation.workspace-entity.ts
+│   ├── mkt-template-resource-permission.workspace-entity.ts
+│   ├── mkt-template-system-action.workspace-entity.ts
+│   ├── mkt-temporary-permission.workspace-entity.ts
+│   ├── mkt-user-permission-override.workspace-entity.ts
+│   └── mkt-user-permission-template.workspace-entity.ts
 └── mkt-rbac-enterprise-grade.module.ts
 
-❌ THIẾU:
+❌ THIẾU (cần tạo mới):
 ├── errors/                          # Custom error classes
-├── dto/                            # GraphQL inputs/outputs
+├── dto/                             # GraphQL inputs/outputs
 │   ├── inputs/
 │   └── outputs/
-├── configs/                        # Zod-validated configuration
-├── message/                        # Centralized messages
-├── events/                         # Event definitions
-├── listeners/                      # Event listeners
-├── hooks/                          # Pre/Post query hooks
-├── repositories/                   # Data access layer
-├── jobs/                           # Background jobs
-├── resolvers/                      # GraphQL resolvers
-├── utils/                          # Utilities
-└── workspace-entities/             # WorkspaceEntity definitions
+├── configs/                         # Zod-validated configuration
+├── message/                         # Centralized messages (thay thế constants/messages.ts)
+├── events/                          # Event definitions
+├── listeners/                       # Event listeners
+├── hooks/                           # Pre/Post query hooks cho workspace entities
+├── repositories/                    # Data access layer cho 13 workspace entities
+├── jobs/                            # Background jobs
+└── resolvers/                       # GraphQL resolvers
 ```
 
 ### Cấu trúc mới (theo chuẩn mkt-promotion)
 
 ```
 mkt-rbac-enterprise-grade/
-├── errors/                          # 🆕 Custom error classes
+├── errors/                          # 🆕 TẠO MỚI - Custom error classes
 │   ├── index.ts
 │   └── rbac.errors.ts
-├── constants/                       # ♻️ REFACTOR - Tổ chức lại
+├── constants/                       # ♻️ REFACTOR - Giữ structure, thêm index exports
+│   ├── index.ts                    # ✅ Đã có - Cần thêm export messages
+│   ├── cache-invalidation.constants.ts
+│   ├── enterprise-rbac.constants.ts
+│   ├── hierarchy.constants.ts
+│   ├── messages.ts                 # ♻️ Giữ nguyên hoặc migrate sang message/
+│   ├── policy.constants.ts
+│   └── rbac-cache.constants.ts
+├── dto/                            # 🆕 TẠO MỚI - GraphQL DTOs
 │   ├── index.ts
-│   ├── mkt-rbac-field-ids.ts       # Field IDs (nếu có workspace entities)
-│   ├── mkt-rbac-relation-ids.ts    # Relation IDs
-│   ├── mkt-rbac.constants.ts       # Main constants (VALIDATION_STEPS, etc)
-│   ├── mkt-rbac-cache.constants.ts # Cache keys
-│   ├── mkt-rbac-log.constants.ts   # Log contexts
-│   └── mkt-rbac-policy.constants.ts
-├── dto/                            # 🆕 GraphQL DTOs
 │   ├── inputs/
 │   │   ├── index.ts
 │   │   ├── check-permission.input.ts
@@ -137,49 +175,74 @@ mkt-rbac-enterprise-grade/
 │       ├── permission-result.output.ts
 │       ├── validation-result.output.ts
 │       └── paginated-audit-log.output.ts
-├── configs/                        # 🆕 Zod-validated configuration
+├── configs/                        # 🆕 TẠO MỚI - Zod-validated configuration
 │   ├── index.ts
 │   └── mkt-rbac.config.ts
-├── message/                        # 🆕 Centralized messages
-│   └── index.ts
-├── events/                         # 🆕 Event definitions
+├── message/                        # 🆕 TẠO MỚI - Centralized messages
+│   └── index.ts                    # Dùng createModuleMessages pattern
+├── events/                         # 🆕 TẠO MỚI - Event definitions
 │   ├── index.ts
 │   └── rbac.events.ts
-├── listeners/                      # 🆕 Event listeners
+├── listeners/                      # 🆕 TẠO MỚI - Event listeners
 │   ├── index.ts
 │   ├── permission-template.listener.ts
 │   └── user-role.listener.ts
-├── hooks/                          # 🆕 Query hooks
+├── hooks/                          # 🆕 TẠO MỚI - Query hooks cho 13 entities
 │   ├── index.ts
 │   ├── permission-template-pre-query.hook.ts
-│   └── audit-log-pre-query.hook.ts
-├── repositories/                   # 🆕 Data access layer
+│   ├── permission-template-post-query.hook.ts
+│   ├── permission-audit-pre-query.hook.ts
+│   └── ...
+├── repositories/                   # 🆕 TẠO MỚI - Data access layer cho 13 entities
 │   ├── index.ts
 │   ├── mkt-permission-template.repository.ts
-│   ├── mkt-policy.repository.ts
-│   └── mkt-audit-log.repository.ts
-├── jobs/                           # 🆕 Background jobs
+│   ├── mkt-permission-audit.repository.ts
+│   ├── mkt-data-access-policy.repository.ts
+│   ├── mkt-permission-action.repository.ts
+│   ├── mkt-permission-resource.repository.ts
+│   ├── mkt-user-permission-template.repository.ts
+│   ├── mkt-user-permission-override.repository.ts
+│   ├── mkt-template-resource-permission.repository.ts
+│   ├── mkt-template-system-action.repository.ts
+│   ├── mkt-template-access-limitation.repository.ts
+│   ├── mkt-permission-context.repository.ts
+│   ├── mkt-permission-priority-config.repository.ts
+│   └── mkt-temporary-permission.repository.ts
+├── jobs/                           # 🆕 TẠO MỚI - Background jobs
 │   ├── index.ts
 │   ├── cache-warmup.job.ts
 │   ├── audit-log-cleanup.job.ts
+│   ├── temporary-permission-cleanup.job.ts
 │   └── permission-sync.job.ts
-├── resolvers/                      # 🆕 GraphQL resolvers
+├── resolvers/                      # 🆕 TẠO MỚI - GraphQL resolvers
 │   ├── index.ts
 │   ├── permission.resolver.ts
+│   ├── permission-template.resolver.ts
 │   └── audit-log.resolver.ts
-├── utils/                          # 🆕 Utilities
+├── helpers/                        # ♻️ POPULATE - Hiện đang empty
+│   ├── index.ts
+│   └── permission.helper.ts
+├── utils/                          # ♻️ POPULATE - Hiện đang empty
 │   ├── index.ts
 │   ├── permission-mapper.utils.ts
 │   └── policy-evaluator.utils.ts
-├── types/                          # ♻️ REFACTOR - Merge interfaces/
+├── validators/                     # ♻️ POPULATE - Hiện đang empty
 │   ├── index.ts
+│   └── permission-input.validator.ts
+├── types/                          # ♻️ REFACTOR - Merge interfaces/
+│   ├── index.ts                    # ✅ Đã có
 │   ├── audit.types.ts
-│   ├── permission-context.types.ts
+│   ├── enhanced-permission-context.type.ts
+│   ├── hierarchy-context.type.ts
 │   ├── hierarchy.types.ts
+│   ├── policy-context.type.ts
 │   ├── policy.types.ts
-│   ├── validation.types.ts         # Merge từ validation-step.types.ts
-│   └── validation-step.interface.ts # Giữ lại hoặc merge
+│   ├── resource-identification.types.ts
+│   ├── service.types.ts
+│   ├── validation-step.types.ts
+│   └── validation-step.interface.ts # 🔀 MERGE từ interfaces/
 ├── services/                       # ♻️ REFACTOR - Phân chia layers
+│   ├── index.ts
 │   ├── domain/                     # Business logic
 │   │   ├── index.ts
 │   │   ├── permission-validation.service.ts
@@ -188,14 +251,13 @@ mkt-rbac-enterprise-grade/
 │   │   └── rule-engine.service.ts
 │   ├── application/                # Orchestration
 │   │   ├── index.ts
-│   │   ├── validation-orchestrator.service.ts # Di chuyển từ root services/
+│   │   ├── validation-orchestrator.service.ts # 🔀 Di chuyển từ root services/
 │   │   ├── permission-check.service.ts
 │   │   └── audit-application.service.ts
-│   └── infrastructure/             # Infrastructure concerns
+│   └── infrastructure/             # Infrastructure (Wrapper cho Redis)
 │       ├── index.ts
-│       ├── rbac-cache-manager.service.ts # Di chuyển từ root services/
-│       └── cache-invalidation.service.ts # Di chuyển từ root services/
-├── validation-steps/               # ♻️ REFACTOR - Tách riêng 15 steps
+│       └── rbac-cache.service.ts   # 🆕 Wrapper cho RedisCacheService
+├── validation-steps/               # ♻️ REFACTOR - Tách riêng từ services/
 │   ├── index.ts
 │   ├── step01-pre-validation.service.ts
 │   ├── step02-user-context-resolution.service.ts
@@ -212,24 +274,44 @@ mkt-rbac-enterprise-grade/
 │   ├── step13-cache-performance.service.ts
 │   ├── step14-audit-logging.service.ts
 │   └── step15-final-decision.service.ts
-├── workspace-entities/             # 🆕 WorkspaceEntity definitions (nếu cần)
-│   ├── index.ts
+├── workspace-entities/             # ✅ ĐÃ CÓ - 13 entities (GIỮ NGUYÊN)
+│   ├── constants/                  # ✅ ĐÃ CÓ
+│   │   ├── index.ts
+│   │   ├── permission-audit-options.constants.ts
+│   │   ├── rbac-v2-options.constants.ts
+│   │   └── temporary-permission-options.constants.ts
+│   ├── index.ts                    # ✅ ĐÃ CÓ
+│   ├── mkt-data-access-policy.workspace-entity.ts
+│   ├── mkt-permission-action.workspace-entity.ts
+│   ├── mkt-permission-audit.workspace-entity.ts
+│   ├── mkt-permission-context.workspace-entity.ts
+│   ├── mkt-permission-priority-config.workspace-entity.ts
+│   ├── mkt-permission-resource.workspace-entity.ts
 │   ├── mkt-permission-template.workspace-entity.ts
-│   ├── mkt-policy.workspace-entity.ts
-│   └── mkt-audit-log.workspace-entity.ts
+│   ├── mkt-template-access-limitation.workspace-entity.ts
+│   ├── mkt-template-resource-permission.workspace-entity.ts
+│   ├── mkt-template-system-action.workspace-entity.ts
+│   ├── mkt-temporary-permission.workspace-entity.ts
+│   ├── mkt-user-permission-override.workspace-entity.ts
+│   └── mkt-user-permission-template.workspace-entity.ts
 ├── decorators/                     # ✅ GIỮ NGUYÊN
 │   └── permission.decorator.ts
 ├── guards/                         # ✅ GIỮ NGUYÊN
 │   └── enterprise-rbac.guard.ts
 ├── interceptors/                   # ✅ GIỮ NGUYÊN
 │   └── audit-logging.interceptor.ts
+├── interfaces/                     # ❌ XÓA - Merge vào types/
+│   └── validation-step.interface.ts
 ├── subscribers/                    # ✅ GIỮ NGUYÊN
 │   └── permission-template-cache.subscriber.ts
 └── mkt-rbac-enterprise-grade.module.ts # ♻️ UPDATE - Cập nhật imports
 
+Legend:
 🆕 = Tạo mới
 ♻️ = Refactor/Di chuyển
+🔀 = Merge/Move
 ✅ = Giữ nguyên
+❌ = Xóa
 ```
 
 ---
@@ -1035,20 +1117,20 @@ validation-steps/
 
 ### 8. repositories/ - Data Access Layer
 
-**Tạo mới** repositories cho các entities (nếu có workspace entities):
+**Tạo mới** repositories cho 13 workspace entities đã có:
 
 ```typescript
 // repositories/mkt-permission-template.repository.ts
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectWorkspaceRepository } from 'src/engine/twenty-orm/decorators/inject-workspace-repository.decorator';
+import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { MktPermissionTemplateWorkspaceEntity } from '../workspace-entities';
 
 @Injectable()
 export class MktPermissionTemplateRepository {
   constructor(
-    @InjectRepository(MktPermissionTemplateWorkspaceEntity)
-    private readonly repository: Repository<MktPermissionTemplateWorkspaceEntity>,
+    @InjectWorkspaceRepository(MktPermissionTemplateWorkspaceEntity)
+    private readonly repository: WorkspaceRepository<MktPermissionTemplateWorkspaceEntity>,
   ) {}
 
   async findById(id: string): Promise<MktPermissionTemplateWorkspaceEntity | null> {
@@ -1059,8 +1141,48 @@ export class MktPermissionTemplateRepository {
     return this.repository.find({ where: { roleId } });
   }
 
+  async findActive(): Promise<MktPermissionTemplateWorkspaceEntity[]> {
+    return this.repository.find({ where: { isActive: true } });
+  }
+
   // ... other methods
 }
+```
+
+**Danh sách repositories cần tạo cho 13 entities**:
+
+| Repository | Entity | Mô tả |
+|------------|--------|-------|
+| `MktPermissionTemplateRepository` | `MktPermissionTemplateWorkspaceEntity` | Permission templates |
+| `MktPermissionActionRepository` | `MktPermissionActionWorkspaceEntity` | Permission actions |
+| `MktPermissionResourceRepository` | `MktPermissionResourceWorkspaceEntity` | Permission resources |
+| `MktPermissionAuditRepository` | `MktPermissionAuditWorkspaceEntity` | Audit logs |
+| `MktDataAccessPolicyRepository` | `MktDataAccessPolicyWorkspaceEntity` | Data access policies |
+| `MktUserPermissionTemplateRepository` | `MktUserPermissionTemplateWorkspaceEntity` | User-template assignments |
+| `MktUserPermissionOverrideRepository` | `MktUserPermissionOverrideWorkspaceEntity` | Permission overrides |
+| `MktTemplateResourcePermissionRepository` | `MktTemplateResourcePermissionWorkspaceEntity` | Resource permissions |
+| `MktTemplateSystemActionRepository` | `MktTemplateSystemActionWorkspaceEntity` | System actions |
+| `MktTemplateAccessLimitationRepository` | `MktTemplateAccessLimitationWorkspaceEntity` | Access limitations |
+| `MktPermissionContextRepository` | `MktPermissionContextWorkspaceEntity` | Permission contexts |
+| `MktPermissionPriorityConfigRepository` | `MktPermissionPriorityConfigWorkspaceEntity` | Priority configs |
+| `MktTemporaryPermissionRepository` | `MktTemporaryPermissionWorkspaceEntity` | Temporary permissions |
+
+**File**: `repositories/index.ts`
+
+```typescript
+export * from './mkt-permission-template.repository';
+export * from './mkt-permission-action.repository';
+export * from './mkt-permission-resource.repository';
+export * from './mkt-permission-audit.repository';
+export * from './mkt-data-access-policy.repository';
+export * from './mkt-user-permission-template.repository';
+export * from './mkt-user-permission-override.repository';
+export * from './mkt-template-resource-permission.repository';
+export * from './mkt-template-system-action.repository';
+export * from './mkt-template-access-limitation.repository';
+export * from './mkt-permission-context.repository';
+export * from './mkt-permission-priority-config.repository';
+export * from './mkt-temporary-permission.repository';
 ```
 
 ---
@@ -1315,59 +1437,52 @@ export class PolicyEvaluatorUtils {
 
 ### 15. workspace-entities/ - WorkspaceEntity Definitions
 
-**Tạo mới** (nếu cần lưu trữ data):
+**✅ ĐÃ CÓ**: Module đã có 13 workspace entities. **KHÔNG cần tạo mới**.
 
-```typescript
-// workspace-entities/mkt-permission-template.workspace-entity.ts
-import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
-import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
-import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
-import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
-import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
+**Danh sách 13 entities hiện có**:
 
-@WorkspaceEntity({
-  standardId: MKT_OBJECT_IDS.mktPermissionTemplate,
-  namePlural: 'mktPermissionTemplates',
-  labelSingular: 'Permission Template',
-  labelPlural: 'Permission Templates',
-  description: 'Permission template for role-based access control',
-  icon: 'IconLock',
-})
-export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
-  @WorkspaceField({
-    standardId: 'name',
-    type: 'TEXT',
-    label: 'Name',
-    description: 'Template name',
-  })
-  name: string;
+| Entity | Mô tả |
+|--------|-------|
+| `MktPermissionTemplateWorkspaceEntity` | Permission templates |
+| `MktPermissionActionWorkspaceEntity` | Permission actions |
+| `MktPermissionResourceWorkspaceEntity` | Permission resources |
+| `MktPermissionAuditWorkspaceEntity` | Audit logs |
+| `MktDataAccessPolicyWorkspaceEntity` | Data access policies |
+| `MktUserPermissionTemplateWorkspaceEntity` | User-template assignments |
+| `MktUserPermissionOverrideWorkspaceEntity` | Permission overrides |
+| `MktTemplateResourcePermissionWorkspaceEntity` | Resource permissions per template |
+| `MktTemplateSystemActionWorkspaceEntity` | System actions per template |
+| `MktTemplateAccessLimitationWorkspaceEntity` | Access limitations per template |
+| `MktPermissionContextWorkspaceEntity` | Permission contexts |
+| `MktPermissionPriorityConfigWorkspaceEntity` | Priority configurations |
+| `MktTemporaryPermissionWorkspaceEntity` | Temporary permissions |
 
-  @WorkspaceField({
-    standardId: 'roleId',
-    type: 'TEXT',
-    label: 'Role ID',
-    description: 'Associated role ID',
-  })
-  roleId: string;
+**Cấu trúc hiện có**:
 
-  @WorkspaceField({
-    standardId: 'permissions',
-    type: 'JSON',
-    label: 'Permissions',
-    description: 'Permission definitions',
-  })
-  permissions: Record<string, unknown>;
-
-  @WorkspaceField({
-    standardId: 'isActive',
-    type: 'BOOLEAN',
-    label: 'Is Active',
-    description: 'Whether template is active',
-    defaultValue: true,
-  })
-  isActive: boolean;
-}
 ```
+workspace-entities/
+├── constants/
+│   ├── index.ts
+│   ├── permission-audit-options.constants.ts
+│   ├── rbac-v2-options.constants.ts
+│   └── temporary-permission-options.constants.ts
+├── index.ts                                    # ✅ Đã export tất cả entities
+├── mkt-data-access-policy.workspace-entity.ts
+├── mkt-permission-action.workspace-entity.ts
+├── mkt-permission-audit.workspace-entity.ts
+├── mkt-permission-context.workspace-entity.ts
+├── mkt-permission-priority-config.workspace-entity.ts
+├── mkt-permission-resource.workspace-entity.ts
+├── mkt-permission-template.workspace-entity.ts
+├── mkt-template-access-limitation.workspace-entity.ts
+├── mkt-template-resource-permission.workspace-entity.ts
+├── mkt-template-system-action.workspace-entity.ts
+├── mkt-temporary-permission.workspace-entity.ts
+├── mkt-user-permission-override.workspace-entity.ts
+└── mkt-user-permission-template.workspace-entity.ts
+```
+
+**⚠️ LƯU Ý**: Cần tạo repositories, hooks, và jobs tương ứng cho 13 entities này.
 
 ---
 
@@ -1402,12 +1517,25 @@ import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis';
 import {
   MktPermissionTemplateRepository,
   MktPolicyRepository,
-  MktAuditLogRepository,
+  MktPermissionTemplateRepository,
+  MktPermissionActionRepository,
+  MktPermissionResourceRepository,
+  MktPermissionAuditRepository,
+  MktDataAccessPolicyRepository,
+  MktUserPermissionTemplateRepository,
+  MktUserPermissionOverrideRepository,
+  MktTemplateResourcePermissionRepository,
+  MktTemplateSystemActionRepository,
+  MktTemplateAccessLimitationRepository,
+  MktPermissionContextRepository,
+  MktPermissionPriorityConfigRepository,
+  MktTemporaryPermissionRepository,
 } from './repositories';
 
 // Resolvers
 import {
   PermissionResolver,
+  PermissionTemplateResolver,
   AuditLogResolver,
 } from './resolvers';
 
@@ -1415,6 +1543,7 @@ import {
 import {
   RbacCacheWarmupJob,
   AuditLogCleanupJob,
+  TemporaryPermissionCleanupJob,
   PermissionSyncJob,
 } from './jobs';
 
@@ -1422,7 +1551,10 @@ import {
 import {
   PermissionTemplateFindOnePreQueryHook,
   PermissionTemplateFindManyPreQueryHook,
-  AuditLogFindManyPreQueryHook,
+  PermissionTemplateCreateOnePostQueryHook,
+  PermissionTemplateUpdateOnePostQueryHook,
+  PermissionTemplateDeleteOnePostQueryHook,
+  PermissionAuditFindManyPreQueryHook,
 } from './hooks';
 
 // Listeners
@@ -1525,11 +1657,21 @@ import { MKT_RBAC_CONFIG } from './configs';
     },
 
     // ============================================
-    // REPOSITORIES (Data Access Layer)
+    // REPOSITORIES (Data Access Layer) - 13 repositories cho 13 entities
     // ============================================
     MktPermissionTemplateRepository,
-    MktPolicyRepository,
-    MktAuditLogRepository,
+    MktPermissionActionRepository,
+    MktPermissionResourceRepository,
+    MktPermissionAuditRepository,
+    MktDataAccessPolicyRepository,
+    MktUserPermissionTemplateRepository,
+    MktUserPermissionOverrideRepository,
+    MktTemplateResourcePermissionRepository,
+    MktTemplateSystemActionRepository,
+    MktTemplateAccessLimitationRepository,
+    MktPermissionContextRepository,
+    MktPermissionPriorityConfigRepository,
+    MktTemporaryPermissionRepository,
 
     // ============================================
     // DOMAIN SERVICES (Business Logic Layer)
@@ -1575,6 +1717,7 @@ import { MKT_RBAC_CONFIG } from './configs';
     // RESOLVERS (GraphQL Layer)
     // ============================================
     PermissionResolver,
+    PermissionTemplateResolver,
     AuditLogResolver,
 
     // ============================================
@@ -1582,6 +1725,7 @@ import { MKT_RBAC_CONFIG } from './configs';
     // ============================================
     RbacCacheWarmupJob,
     AuditLogCleanupJob,
+    TemporaryPermissionCleanupJob,
     PermissionSyncJob,
 
     // ============================================
@@ -1589,7 +1733,18 @@ import { MKT_RBAC_CONFIG } from './configs';
     // ============================================
     PermissionTemplateFindOnePreQueryHook,
     PermissionTemplateFindManyPreQueryHook,
-    AuditLogFindManyPreQueryHook,
+
+    // ============================================
+    // POST-QUERY HOOKS
+    // ============================================
+    PermissionTemplateCreateOnePostQueryHook,
+    PermissionTemplateUpdateOnePostQueryHook,
+    PermissionTemplateDeleteOnePostQueryHook,
+
+    // ============================================
+    // AUDIT HOOKS
+    // ============================================
+    PermissionAuditFindManyPreQueryHook,
 
     // ============================================
     // EVENT LISTENERS
@@ -1720,12 +1875,24 @@ npx nx typecheck twenty-server
    - `repositories/`
    - `jobs/`
    - `resolvers/`
-   - `utils/`
    - `validation-steps/`
-   - `workspace-entities/` (optional)
    - `services/domain/`, `services/application/`, `services/infrastructure/`
 
-2. ✅ Copy files để backup:
+2. ⚠️ Các thư mục đã có nhưng empty (cần populate):
+   - `utils/` - Đã có, cần thêm utility files
+   - `helpers/` - Đã có, cần thêm helper files
+   - `validators/` - Đã có, cần thêm validator files
+
+3. ✅ Các thư mục đã có và đầy đủ (GIỮ NGUYÊN):
+   - `workspace-entities/` - ĐÃ CÓ 13 entities
+   - `constants/` - ĐÃ CÓ với index.ts
+   - `types/` - ĐÃ CÓ với index.ts
+   - `decorators/`
+   - `guards/`
+   - `interceptors/`
+   - `subscribers/`
+
+4. ✅ Copy files để backup:
    ```bash
    cp -r mkt-rbac-enterprise-grade mkt-rbac-enterprise-grade.backup
    ```
@@ -1755,12 +1922,11 @@ npx nx typecheck twenty-server
 
 ### Phase 4: Tạo Infrastructure (2-3 ngày)
 
-1. ✅ Tạo `repositories/` (nếu có workspace entities)
+1. ✅ Tạo `repositories/` cho 13 workspace entities đã có
 2. ✅ Tạo `jobs/` - Background jobs
 3. ✅ Tạo `resolvers/` - GraphQL resolvers
-4. ✅ Tạo `hooks/` - Query hooks (nếu có workspace entities)
+4. ✅ Tạo `hooks/` - Query hooks cho workspace entities (pre/post query)
 5. ✅ Tạo `listeners/` - Event listeners
-6. ✅ Tạo `workspace-entities/` (optional)
 
 ### Phase 5: Testing & Migration (2-3 ngày)
 
@@ -1903,36 +2069,50 @@ throw new PermissionDeniedError(
 
 - [ ] `errors/rbac.errors.ts`
 - [ ] `configs/mkt-rbac.config.ts`
-- [ ] `message/index.ts`
+- [ ] `message/index.ts` (dùng createModuleMessages)
 - [ ] `events/rbac.events.ts`
 - [ ] `dto/inputs/*.input.ts`
 - [ ] `dto/outputs/*.output.ts`
 - [ ] `listeners/*.listener.ts`
-- [ ] `hooks/*.hook.ts` (optional)
-- [ ] `repositories/*.repository.ts` (optional)
+- [ ] `hooks/*.hook.ts` - Cho 13 workspace entities (pre/post query)
+- [ ] `repositories/*.repository.ts` - 13 repositories cho 13 entities
 - [ ] `jobs/*.job.ts`
 - [ ] `resolvers/*.resolver.ts`
-- [ ] `utils/*.utils.ts`
 - [ ] `services/domain/*.service.ts`
 - [ ] `services/application/*.service.ts`
-- [ ] `services/infrastructure/*.service.ts`
-- [ ] `workspace-entities/*.workspace-entity.ts` (optional)
+- [ ] `services/infrastructure/rbac-cache.service.ts`
+
+### Populate (folders đã có nhưng empty)
+
+- [ ] `utils/permission-mapper.utils.ts`
+- [ ] `utils/policy-evaluator.utils.ts`
+- [ ] `helpers/permission.helper.ts`
+- [ ] `validators/permission-input.validator.ts`
 
 ### Refactor
 
-- [ ] `constants/` - Reorganize và tạo index.ts
+- [ ] `constants/index.ts` - Thêm export messages
 - [ ] `services/` - Phân chia theo domain/application/infrastructure
-- [ ] `validation-steps/` - Di chuyển 15 step services
+- [ ] `validation-steps/` - Di chuyển 15 step services từ services/
 - [ ] `types/` - Merge từ interfaces/
 - [ ] `mkt-rbac-enterprise-grade.module.ts` - Update imports
 
 ### Xóa
 
 - [ ] `interfaces/` folder (sau khi merge vào types/)
-- [ ] Các files cũ trong `services/` (sau khi di chuyển)
-- [ ] `constants/messages.ts` (thay bằng message/)
+- [ ] Các files cũ trong `services/` (sau khi di chuyển sang validation-steps/)
 - [ ] `services/rbac-cache-manager.service.ts` (⚠️ thay bằng RbacCacheService wrapper)
 - [ ] `services/cache-invalidation.service.ts` (⚠️ dùng RedisInvalidationService)
+
+### Giữ nguyên
+
+- [x] `workspace-entities/` - ĐÃ CÓ 13 entities
+- [x] `constants/` - ĐÃ CÓ với index.ts
+- [x] `types/` - ĐÃ CÓ với index.ts
+- [x] `decorators/permission.decorator.ts`
+- [x] `guards/enterprise-rbac.guard.ts`
+- [x] `interceptors/audit-logging.interceptor.ts`
+- [x] `subscribers/permission-template-cache.subscriber.ts`
 
 ### Testing
 
@@ -1953,13 +2133,16 @@ throw new PermissionDeniedError(
 
 ## Notes
 
-1. **WorkspaceEntities**: Nếu module không cần lưu trữ data (chỉ là utility module), có thể bỏ qua `workspace-entities/`, `repositories/`, và `hooks/`.
+1. **WorkspaceEntities**: Module **ĐÃ CÓ** 13 workspace entities. Cần tạo repositories, hooks, và jobs tương ứng cho tất cả entities.
 
-2. **GraphQL Resolvers**: Nếu module không expose GraphQL API, có thể bỏ qua `resolvers/` và `dto/`.
+2. **GraphQL Resolvers**: Tùy vào yêu cầu, có thể expose một số entities qua GraphQL API (ví dụ: PermissionTemplate, AuditLog).
 
-3. **Background Jobs**: Nếu không có scheduled tasks, có thể bỏ qua `jobs/`.
+3. **Background Jobs**: Cần các jobs cho:
+   - Cache warmup (định kỳ)
+   - Audit log cleanup (xóa logs cũ theo retention policy)
+   - Temporary permission cleanup (xóa các temporary permissions hết hạn)
 
-4. **Events & Listeners**: Nếu không cần event-driven architecture, có thể bỏ qua `events/` và `listeners/`.
+4. **Events & Listeners**: Quan trọng cho cache invalidation khi permission templates thay đổi.
 
 5. **Backward Compatibility**: Có thể giữ lại các export cũ trong `index.ts` với `@deprecated` tags để hỗ trợ migration:
 
@@ -1972,6 +2155,8 @@ export { ValidationOrchestratorService } from './services/application';
 ```
 
 6. **Incremental Migration**: Có thể thực hiện migration từng phần thay vì refactor toàn bộ cùng lúc.
+
+7. **constants/messages.ts**: File này có cấu trúc riêng (VALIDATION_STEP_NAMES, VALIDATION_STEP_DESCRIPTIONS). Có thể giữ lại hoặc migrate sang message/ với createModuleMessages pattern.
 
 ---
 
@@ -2014,9 +2199,12 @@ export { ValidationOrchestratorService } from './services/application';
 **Implementation**:
 1. Import `RedisInfrastructureModule` vào RBAC module
 2. Tạo `RbacCacheService` wrapper với RBAC-specific methods
-3. Update các services hiện tại để inject `RedisCacheService`
-4. Xóa `RbacCacheManagerService` và `CacheInvalidationService` cũ
-5. Update imports trong toàn bộ module
+3. Tạo 13 repositories cho 13 workspace entities đã có
+4. Tạo hooks (pre/post query) cho các entities quan trọng
+5. Di chuyển 15 step services sang `validation-steps/`
+6. Phân chia services theo layers (domain/application/infrastructure)
+7. Xóa `RbacCacheManagerService` và `CacheInvalidationService` cũ
+8. Update imports trong toàn bộ module
 
 ---
 
@@ -2025,11 +2213,33 @@ export { ValidationOrchestratorService } from './services/application';
 - **Pattern Reference**: `packages/twenty-server/src/mkt-core/mkt-promotion/`
 - **Redis Infrastructure**: `packages/twenty-server/src/mkt-core/infrastructure/redis/`
 - **CLAUDE.md**: `/home/phuth/Desktop/CRM/CLAUDE.md`
-- **Coding Standards**: `/home/phuth/.claude/CLAUDE.md`
+
+---
+
+## Workspace Entities Summary
+
+Module đã có **13 workspace entities** với cấu trúc đầy đủ:
+
+| # | Entity | Mô tả |
+|---|--------|-------|
+| 1 | `MktPermissionTemplateWorkspaceEntity` | Permission templates |
+| 2 | `MktPermissionActionWorkspaceEntity` | Permission actions |
+| 3 | `MktPermissionResourceWorkspaceEntity` | Permission resources |
+| 4 | `MktPermissionAuditWorkspaceEntity` | Audit logs |
+| 5 | `MktDataAccessPolicyWorkspaceEntity` | Data access policies |
+| 6 | `MktUserPermissionTemplateWorkspaceEntity` | User-template assignments |
+| 7 | `MktUserPermissionOverrideWorkspaceEntity` | Permission overrides |
+| 8 | `MktTemplateResourcePermissionWorkspaceEntity` | Resource permissions per template |
+| 9 | `MktTemplateSystemActionWorkspaceEntity` | System actions per template |
+| 10 | `MktTemplateAccessLimitationWorkspaceEntity` | Access limitations per template |
+| 11 | `MktPermissionContextWorkspaceEntity` | Permission contexts |
+| 12 | `MktPermissionPriorityConfigWorkspaceEntity` | Priority configurations |
+| 13 | `MktTemporaryPermissionWorkspaceEntity` | Temporary permissions |
 
 ---
 
 **Last Updated**: 2026-01-08
 **Author**: Claude Code
 **Status**: Ready for Implementation
-**Redis Infrastructure**: Integrated ✅
+**Redis Infrastructure**: Cần thêm RBAC_CACHE_PREFIX
+**Workspace Entities**: ĐÃ CÓ 13 entities ✅

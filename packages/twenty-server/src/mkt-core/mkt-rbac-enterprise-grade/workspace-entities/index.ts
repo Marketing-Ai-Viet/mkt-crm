@@ -24,3 +24,6 @@ export { MktPermissionPriorityConfigWorkspaceEntity } from './mkt-permission-pri
 
 // Temporary Permission Entities
 export { MktTemporaryPermissionWorkspaceEntity } from './mkt-temporary-permission.workspace-entity';
+
+// Constants and Enums
+export * from './constants';
