@@ -212,6 +212,97 @@ const orders = await repository
 
 ---
 
+## Repository Methods vs QueryBuilder - Khi nào dùng gì?
+
+### Dùng Repository Methods khi:
+
+| Trường hợp | Ví dụ |
+|------------|-------|
+| **CRUD đơn giản** (80% các trường hợp) | `findOne()`, `save()`, `update()`, `delete()` |
+| **Cần hooks hoạt động** | `@BeforeInsert`, `@BeforeUpdate`, `@AfterLoad` |
+| **Cần cascade operations** | Auto-save/delete related entities |
+| **Team member chưa quen với SQL** | Object notation dễ đọc hơn |
+| **Cần type safety tối đa** | TypeScript auto-complete |
+| **Query có thể mô tả bằng object notation** | Simple where conditions |
+
+```typescript
+// ✅ GOOD - Repository Methods
+const order = await repository.findOne({
+  where: { id: orderId, status: ORDER_STATUS.ACTIVE },
+  relations: ['customer', 'items'],
+});
+
+await repository.save(repository.create(dto));
+await repository.update(id, { status: ORDER_STATUS.CONFIRMED });
+```
+
+### Dùng QueryBuilder khi:
+
+| Trường hợp | Ví dụ |
+|------------|-------|
+| **Query phức tạp** | Subqueries, complex joins, aggregations |
+| **Cần tối ưu performance** | Specific queries với index hints |
+| **Reports, analytics, dashboards** | GROUP BY, HAVING, window functions |
+| **Bulk insert/update/delete** | Large batch operations |
+| **Dynamic query building** | Filters dựa trên user input |
+| **Cần partial select** | Giảm data transfer |
+| **Hooks không cần thiết** | Hoặc đã xử lý ở layer khác |
+
+```typescript
+// ✅ GOOD - QueryBuilder
+// Aggregation
+const stats = await repository
+  .createQueryBuilder('order')
+  .select('order.status', 'status')
+  .addSelect('COUNT(*)', 'count')
+  .addSelect('SUM(order.totalAmount)', 'total')
+  .where('order.createdAt >= :startDate', { startDate })
+  .groupBy('order.status')
+  .getRawMany();
+
+// Dynamic filters
+const qb = repository.createQueryBuilder('order');
+if (filters.status) {
+  qb.andWhere('order.status = :status', { status: filters.status });
+}
+if (filters.customerId) {
+  qb.andWhere('order.customerId = :customerId', { customerId: filters.customerId });
+}
+const orders = await qb.getMany();
+
+// Bulk update (bypass hooks, faster)
+await repository
+  .createQueryBuilder()
+  .update()
+  .set({ status: ORDER_STATUS.EXPIRED })
+  .where('expiresAt < :now', { now: new Date() })
+  .execute();
+```
+
+### Quick Decision Matrix
+
+```
+Cần hooks?  ──Yes──> Repository Methods
+    │
+    No
+    │
+Query phức tạp? ──Yes──> QueryBuilder
+    │
+    No
+    │
+Bulk operation? ──Yes──> QueryBuilder
+    │
+    No
+    │
+Dynamic filters? ──Yes──> QueryBuilder (có thể kết hợp)
+    │
+    No
+    │
+Repository Methods (default choice)
+```
+
+---
+
 ## Transactions
 
 ### Using QueryRunner
@@ -476,5 +567,5 @@ const order = await repository.findOne({
 
 ---
 
-**Version**: 1.0
-**Last Updated**: 2025-12-13
+**Version**: 1.1
+**Last Updated**: 2025-12-26

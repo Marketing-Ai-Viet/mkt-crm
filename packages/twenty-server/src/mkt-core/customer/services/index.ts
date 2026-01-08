@@ -1,7 +1,17 @@
-export * from './mkt-customer-creation.service';
-export * from './mkt-customer-queue.service';
-export * from './mkt-customer-tier-calculation.service';
-export * from './mkt-customer-tier.service';
-export * from './mkt-customer-export.service';
-export * from './mkt-customer-update.service';
-export * from './mkt-customer-code-generation.service';
+// Core CRUD operations
+export * from './core';
+
+// Tier management
+export * from './tier';
+
+// Lifecycle & categorization
+export * from './lifecycle';
+
+// Account & linked accounts
+export * from './account';
+
+// License integration
+export * from './license';
+
+// Export functionality
+export * from './export';

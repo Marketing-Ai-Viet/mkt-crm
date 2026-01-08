@@ -68,20 +68,20 @@ export class OrderLicenseQueryService {
       orderId,
     );
 
-    const licensePromises = orderItems
-      .filter(
-        (item): item is typeof item & { externalMktLicenseId: string } =>
-          !!item.externalMktLicenseId,
-      )
-      .map(async (item): Promise<LicenseStatus | null> => {
-        const status = await this.getLicenseStatus(item.externalMktLicenseId);
+    // Flatten all licenses from all order items
+    const licensePromises = orderItems.flatMap((item) =>
+      (item.licenses ?? []).map(
+        async (license): Promise<LicenseStatus | null> => {
+          const status = await this.getLicenseStatus(license.id);
 
-        if (status) {
-          return { ...status, orderItemId: item.id };
-        }
+          if (status) {
+            return { ...status, orderItemId: item.id };
+          }
 
-        return null;
-      });
+          return null;
+        },
+      ),
+    );
 
     const results = await Promise.all(licensePromises);
 

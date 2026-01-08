@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  CACHE_TTL_MS,
+  SYNC_LOCK_CACHE_PREFIX,
+} from 'src/mkt-core/infrastructure/redis/constants';
+
 // ============================================
 // DEFAULTS
 // ============================================
@@ -7,7 +12,6 @@ import { z } from 'zod';
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_MIN_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const DEFAULT_MAX_RETRIES = 3;
-const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const DEFAULT_SCHEDULED_SYNC_CRON = '0 */30 * * * *'; // Every 30 minutes
 
 // ============================================
@@ -137,11 +141,11 @@ export type MktSyncConfigType = typeof MKT_SYNC_CONFIG;
 // ============================================
 
 export const MKT_SYNC_LOCK_CONFIG = {
-  /** Lock key for distributed sync lock */
-  KEY: 'mkt:product:sync:lock',
+  /** Lock key for distributed sync lock (from centralized config) */
+  KEY: SYNC_LOCK_CACHE_PREFIX.PRODUCT,
 
-  /** Lock TTL in milliseconds (10 minutes) */
-  TTL_MS: DEFAULT_LOCK_TTL_MS,
+  /** Lock TTL in milliseconds (from centralized config) */
+  TTL_MS: CACHE_TTL_MS.LOCK_SYNC,
 } as const;
 
 // ============================================

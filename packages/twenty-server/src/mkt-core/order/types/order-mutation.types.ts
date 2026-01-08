@@ -1,20 +1,14 @@
 import {
-  ORDER_ACTION,
   ORDER_STATUS,
+  CreateOrderAction,
+  ConfirmOrderAction,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 
 // ============================================
 // INPUT TYPES
 // ============================================
-
-/**
- * Variant item trong order (internal CRM product)
- */
-export type OrderVariantInput = {
-  variantId: string;
-  quantity?: number;
-};
 
 /**
  * External MKT product trong order (từ MKT Server)
@@ -24,8 +18,24 @@ export type ExternalMktProductInput = {
   productId: string;
   /** ID của package từ MKT Server */
   packageId?: string;
-  /** Số lượng */
-  quantity?: number;
+  /** Số thiết bị tối đa cho license (default: 1) */
+  maxDevices?: number;
+  /** Tách thành nhiều license (vd: maxDevices=3 với splitLicenses=true sẽ tạo 3 license với 1 device mỗi cái) */
+  splitLicenses?: boolean;
+};
+
+/**
+ * Combo input trong order
+ */
+export type ComboOrderInputType = {
+  /** ID của combo */
+  comboId: string;
+  /** Số lượng combo */
+  quantity: number;
+  /** Override maxDevices cho tất cả digital items trong combo */
+  maxDevices?: number;
+  /** Tách thành nhiều license cho digital items trong combo */
+  splitLicenses?: boolean;
 };
 
 /**
@@ -50,26 +60,23 @@ export type OrderCustomerInput = {
  * Input để tạo Order với đầy đủ items, licenses, payment
  * Thay thế việc sử dụng createMktOrder + post-hook
  *
- * Supports 2 types of products:
- * - Internal variants: CRM products từ mktVariant table
- * - External products: Products từ MKT Server via OAuth2 API
+ * Sử dụng external products từ MKT Server via OAuth2 API
+ * Hoặc combos từ mkt-combo module
  */
 export type CreateOrderWithItemsInput = {
   // Customer
   customerId: string;
 
-  // Order metadata
-  name?: string;
-  currency?: string;
+  // Order metadata (name is auto-generated)
+  currency?: PaymentCurrency;
   note?: string;
   requireContract?: boolean;
-  discountPercent?: number;
 
-  // Items - Internal CRM products (optional if using externalProducts)
-  variants?: OrderVariantInput[];
-
-  // Items - External MKT Server products (optional if using variants)
+  // Items - External MKT Server products (optional if combos provided)
   externalProducts?: ExternalMktProductInput[];
+
+  // Combos - Combo items (optional if externalProducts provided)
+  combos?: ComboOrderInputType[];
 
   // Order language for display names from MKT Server (default: 'vi')
   orderLanguage?: MktSupportedLanguage;
@@ -77,8 +84,8 @@ export type CreateOrderWithItemsInput = {
   // Payment
   paymentMethods?: OrderPaymentMethodInput[];
 
-  // Action
-  action: ORDER_ACTION;
+  // Action - chỉ cho phép các actions tạo đơn hàng
+  action: CreateOrderAction;
 
   // For license renewal
   licenseId?: string;
@@ -86,19 +93,46 @@ export type CreateOrderWithItemsInput = {
   // For trial to paid conversion
   trialOrderId?: string;
 
+  // Trial configuration for TRIAL_TO_PAID action
+  /**
+   * Duration of trial license in days.
+   * Uses ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS (30 days).
+   * Note: Pure trial creation is handled by MktLicenseResolver.mktCreateTrialLicense
+   */
+  trialDurationDays?: number;
+
   // Promotion fields
   /** Coupon code to apply for discount */
   couponCode?: string;
   /** Whether to automatically apply eligible promotions (default: true) */
   applyAutoPromotions?: boolean;
+
+  // Draft mode
+  /**
+   * Create as draft order.
+   * Draft orders only calculate totals without creating QR code or licenses.
+   * Use publishDraftOrder mutation to convert to real order.
+   * Default: false
+   */
+  isDraft?: boolean;
+
+  // MKT Server email override
+  /**
+   * Email for MKT Server license registration.
+   * If not specified, auto-fetches from customer linkedAccounts
+   * (isPrimary=true, status=ACTIVE, provider=MKT_SERVER)
+   */
+  mktServerEmail?: string;
 };
+
+// Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense
 
 /**
  * Input để confirm order
  */
 export type ConfirmOrderInput = {
   orderId: string;
-  action: ORDER_ACTION;
+  action: ConfirmOrderAction;
   accountingConfirmed?: boolean;
   note?: string;
 };
@@ -120,6 +154,20 @@ export type RefundOrderInput = {
 export type UpdateOrderStatusInput = {
   orderId: string;
   status: ORDER_STATUS;
+  note?: string;
+};
+
+/**
+ * Input để publish draft order
+ *
+ * Converts a DRAFT order to PENDING_PAYMENT:
+ * - Creates payment/QR code
+ * - Updates order status
+ * - Schedules overdue check
+ */
+export type PublishDraftOrderInput = {
+  orderId: string;
+  paymentMethods?: OrderPaymentMethodInput[];
   note?: string;
 };
 
@@ -166,6 +214,20 @@ export type UpdateOrderStatusResponse = {
   success: boolean;
   orderId?: string;
   previousStatus?: ORDER_STATUS;
+  newStatus?: ORDER_STATUS;
+  /** User-friendly message for the client */
+  message?: string;
+  error?: string;
+};
+
+/**
+ * Response khi publish draft order
+ */
+export type PublishDraftOrderResponse = {
+  success: boolean;
+  orderId?: string;
+  orderCode?: string;
+  paymentQrCode?: string;
   newStatus?: ORDER_STATUS;
   error?: string;
 };

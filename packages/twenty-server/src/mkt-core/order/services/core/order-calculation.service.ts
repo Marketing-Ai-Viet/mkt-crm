@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { ORDER_CALCULATION_CONFIG } from 'src/mkt-core/order/constants';
+import { ORDER_CONFIG_KEY } from 'src/mkt-core/order/config/order.config';
+import { OrderConfig } from 'src/mkt-core/order/config/order-config.types';
 import { MKT_ORDER_CALCULATION_LOG_CONTEXT } from 'src/mkt-core/order/messages';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import {
@@ -13,10 +15,19 @@ import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 /**
  * Service để tính toán các giá trị trong order
  * Tách biệt với database operations
+ *
+ * Tax calculation is controlled by environment variables:
+ * - MKT_ORDER_TAX_ENABLED: Enable/disable tax calculation (default: false)
+ * - MKT_ORDER_TAX_PERCENTAGE: Default tax percentage (default: 10)
  */
 @Injectable()
 export class OrderCalculationService {
   private readonly logger = new Logger(MKT_ORDER_CALCULATION_LOG_CONTEXT);
+
+  constructor(
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
+  ) {}
 
   // ============================================
   // ORDER ITEM CALCULATIONS
@@ -25,17 +36,26 @@ export class OrderCalculationService {
   /**
    * Tính toán giá trị cho một order item
    * Sử dụng MoneyUtils để đảm bảo chính xác trong tính toán tài chính
+   *
+   * Tax calculation is controlled by config.tax.enabled:
+   * - If disabled: taxPercentage = 0, taxAmount = 0
+   * - If enabled: uses config.tax.defaultPercentage or provided taxPercentage
    */
   calculateOrderItem(
     variant: VariantForCalculation,
     quantity: number,
-    taxPercentage: number = ORDER_CALCULATION_CONFIG.DEFAULT_TAX_PERCENTAGE,
+    taxPercentage?: number,
   ): OrderItemWithCalculation {
     const unitPrice = variant.price;
     const totalPrice = MoneyUtils.multiply(unitPrice, quantity).toNumber();
+
+    // Determine effective tax percentage based on config
+    const effectiveTaxPercentage =
+      this.getEffectiveTaxPercentage(taxPercentage);
+
     const taxAmount = MoneyUtils.percentage(
       totalPrice,
-      taxPercentage,
+      effectiveTaxPercentage,
     ).toNumber();
     const totalAmountWithTax = MoneyUtils.add(totalPrice, taxAmount).toNumber();
 
@@ -45,19 +65,37 @@ export class OrderCalculationService {
       unitPrice,
       quantity,
       totalPrice,
-      taxPercentage,
+      taxPercentage: effectiveTaxPercentage,
       taxAmount,
       totalAmountWithTax,
     };
   }
 
   /**
+   * Get effective tax percentage based on config
+   *
+   * @param providedTaxPercentage - Tax percentage provided by caller (optional)
+   * @returns Effective tax percentage (0 if tax disabled, otherwise config default or provided value)
+   */
+  private getEffectiveTaxPercentage(providedTaxPercentage?: number): number {
+    // If tax is disabled, always return 0
+    if (!this.config.tax.enabled) {
+      return 0;
+    }
+
+    // If tax is enabled, use provided value or config default
+    return providedTaxPercentage ?? this.config.tax.defaultPercentage;
+  }
+
+  /**
    * Tính toán giá trị cho nhiều order items
+   *
+   * Tax percentage will be determined by config if not provided
    */
   calculateOrderItems(
     variants: VariantForCalculation[],
     quantities: Map<string, number>,
-    taxPercentage: number = ORDER_CALCULATION_CONFIG.DEFAULT_TAX_PERCENTAGE,
+    taxPercentage?: number,
   ): OrderItemWithCalculation[] {
     return variants.map((variant) => {
       const quantity = quantities.get(variant.id) ?? 1;
@@ -169,6 +207,20 @@ export class OrderCalculationService {
   // ============================================
   // HELPER METHODS
   // ============================================
+
+  /**
+   * Check if tax calculation is enabled
+   */
+  isTaxEnabled(): boolean {
+    return this.config.tax.enabled;
+  }
+
+  /**
+   * Get default tax percentage from config
+   */
+  getDefaultTaxPercentage(): number {
+    return this.config.tax.enabled ? this.config.tax.defaultPercentage : 0;
+  }
 
   /**
    * Format số tiền theo currency

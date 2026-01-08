@@ -2,6 +2,12 @@
 // REDIS INFRASTRUCTURE CONSTANTS
 // ============================================
 
+import { CACHE_TTL, CACHE_TTL_MS } from './cache-ttl.constant';
+import {
+  LOCK_CACHE_PREFIX,
+  RATE_LIMIT_CACHE_PREFIX,
+} from './cache-keys.constant';
+
 export const REDIS_LOG_CONTEXT = 'MktRedisInfrastructure';
 
 // ============================================
@@ -23,7 +29,7 @@ export const REDIS_CIRCUIT_BREAKER_DEFAULTS = {
   RESET_TIMEOUT_MS: 30_000,
   HALF_OPEN_ATTEMPTS: 3,
   KEY_PREFIX: 'circuit-breaker:',
-  STATE_TTL_SECONDS: 300, // 5 minutes
+  STATE_TTL_SECONDS: CACHE_TTL.SHORT, // 5 minutes
 } as const;
 
 // ============================================
@@ -33,8 +39,8 @@ export const REDIS_CIRCUIT_BREAKER_DEFAULTS = {
 export const REDIS_RATE_LIMITER_DEFAULTS = {
   ENABLED: true,
   MAX_ATTEMPTS: 100,
-  WINDOW_MS: 60_000, // 1 minute
-  KEY_PREFIX: 'rate-limit:',
+  WINDOW_MS: CACHE_TTL.RATE_LIMIT_WINDOW * 1000, // 1 minute
+  KEY_PREFIX: RATE_LIMIT_CACHE_PREFIX.COUNTER,
 } as const;
 
 // ============================================
@@ -43,8 +49,8 @@ export const REDIS_RATE_LIMITER_DEFAULTS = {
 
 export const REDIS_CACHE_DEFAULTS = {
   LRU_MAX: 100,
-  LRU_TTL_MS: 60_000, // 1 minute
-  REDIS_TTL_SECONDS: 3600, // 1 hour
+  LRU_TTL_MS: CACHE_TTL.RATE_LIMIT_WINDOW * 1000, // 1 minute
+  REDIS_TTL_SECONDS: CACHE_TTL.VERY_LONG, // 1 hour
   KEY_PREFIX: 'cache:',
 } as const;
 
@@ -66,8 +72,8 @@ export const REDIS_HEALTH_DEFAULTS = {
 // ============================================
 
 export const REDIS_LOCK_DEFAULTS = {
-  TTL_MS: 30_000, // 30 seconds
+  TTL_MS: CACHE_TTL_MS.LOCK_DEFAULT, // 30 seconds
   RETRY_DELAY_MS: 100,
   MAX_RETRIES: 10,
-  KEY_PREFIX: 'lock:',
+  KEY_PREFIX: LOCK_CACHE_PREFIX.GENERAL,
 } as const;

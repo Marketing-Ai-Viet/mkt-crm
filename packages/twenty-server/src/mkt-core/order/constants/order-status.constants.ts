@@ -1,6 +1,8 @@
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
-export const ORDER_CODE_PREFIX = process.env.ORDER_CODE_PREFIX || 'DEV'; // Mặc định là 'DEV' nếu không có biến môi trường
+// ============================================
+// TYPES
+// ============================================
 
 export type RefundItem = {
   licenseId?: string | null;
@@ -11,7 +13,6 @@ export type RefundItem = {
 };
 
 export type ORDER_METADATA = {
-  variants?: Array<{ mktVariantId: string; quantity?: number }>;
   paymentMethods?: Array<{
     mktPaymentMethodId: string;
     name?: string;
@@ -20,28 +21,63 @@ export type ORDER_METADATA = {
   }>;
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
-  trialOrderId?: string; // ID của đơn hàng trial gốc khi chuyển đổi
-  authFirebase?: void;
+  trialOrderId?: string;
   note?: string;
   oldOrderId?: string;
   oldLicenseId?: string;
-  oldVariantId?: string;
-  refund?: RefundItem[]; // Danh sách các mục hoàn tiền
-  licenseHistory?: Record<string, unknown> | null; // Thông tin lịch sử license liên quan đến đơn hàng
-  licenseRefundIds?: string[]; // Danh sách ID của các license đã được hoàn tiền
+  refund?: RefundItem[];
+  licenseHistory?: Record<string, unknown> | null;
+  licenseRefundIds?: string[];
 };
 
+// ============================================
+// ORDER STATUS
+// ============================================
+
+/**
+ * Order Status - Trạng thái đơn hàng
+ *
+ * Flow chính:
+ * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+ * - TRIAL: TRIAL → (TRIAL_EXPIRED | PENDING_PAYMENT)
+ *
+ * License creation rules:
+ * - TRIAL: License được tạo ngay khi tạo đơn
+ * - Khác: License được tạo sau khi ACCOUNTING_CONFIRMED
+ */
 export enum ORDER_STATUS {
-  DRAFT = 'DRAFT', // đơn hàng mới tạo, chờ xử lý
-  TRIAL = 'TRIAL', // đang ở trong giai đoạn trial
-  COMPLETED = 'COMPLETED', // kết thúc toàn bộ lifecycle (cả thanh toán + giao hàng + hậu kỳ)
-  WAIT = 'WAIT', // chờ xử lý (đơn hàng đã được tạo nhưng chưa xác nhận)
-  OVERDUE = 'OVERDUE', // quá hạn (đơn hàng đã được tạo nhưng chưa thanh toán trong thời gian quy định)
-  REFUSE = 'REFUSE', // từ chối (người mua/người bán)
-  REFUND = 'REFUND', // hoàn tiền (đơn hàng đã được hoàn tiền)
-  CONFIRMED = 'CONFIRMED', // đơn hàng đã được xác nhận
-  BLOCKED = 'BLOCKED', // đơn hàng bị khóa (do nghi ngờ gian lận hoặc vi phạm chính sách)
-  REFUND_PARTIAL = 'REFUND_PARTIAL', // hoàn tiền một phần (đơn hàng đã được hoàn tiền một phần)
+  /** Nháp - Đơn hàng đang được soạn, chưa gửi đi */
+  DRAFT = 'DRAFT',
+
+  /** Chờ thanh toán - Đơn hàng đã gửi, đang chờ khách thanh toán */
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
+
+  /** Đã xác nhận - Kế toán đã xác nhận thanh toán, license đã được tạo */
+  CONFIRMED = 'CONFIRMED',
+
+  /** Hoàn thành - Đơn hàng hoàn tất, license đã giao cho khách */
+  COMPLETED = 'COMPLETED',
+
+  /** Dùng thử - Đơn trial, license trial đã được tạo ngay */
+  TRIAL = 'TRIAL',
+
+  /** Trial hết hạn - Đơn trial đã hết thời gian dùng thử */
+  TRIAL_EXPIRED = 'TRIAL_EXPIRED',
+
+  /** Đã hủy - Đơn hàng bị hủy bởi khách hoặc sales */
+  CANCELED = 'CANCELED',
+
+  /** Quá hạn - Đơn hàng quá thời hạn thanh toán */
+  OVERDUE = 'OVERDUE',
+
+  /** Bị khóa - Đơn hàng bị khóa do vi phạm chính sách */
+  BLOCKED = 'BLOCKED',
+
+  /** Hoàn tiền - Đơn hàng đã được hoàn tiền toàn bộ */
+  REFUND = 'REFUND',
+
+  /** Hoàn tiền một phần - Đơn hàng đã được hoàn tiền một phần */
+  REFUND_PARTIAL = 'REFUND_PARTIAL',
 }
 
 export const ORDER_STATUS_OPTIONS = {
@@ -50,114 +86,323 @@ export const ORDER_STATUS_OPTIONS = {
     {
       value: ORDER_STATUS.DRAFT,
       label: 'Nháp',
-      color: 'gray',
+      color: 'gray' as TagColor,
       position: 0,
     },
     {
-      value: ORDER_STATUS.TRIAL,
-      label: 'Dùng thử',
-      color: 'yellow',
+      value: ORDER_STATUS.PENDING_PAYMENT,
+      label: 'Chờ thanh toán',
+      color: 'orange' as TagColor,
       position: 1,
-    },
-    {
-      value: ORDER_STATUS.COMPLETED,
-      label: 'Hoàn thành',
-      color: 'green',
-      position: 2,
-    },
-    {
-      value: ORDER_STATUS.WAIT,
-      label: 'Chờ xử lý',
-      color: 'orange',
-      position: 3,
-    },
-    {
-      value: ORDER_STATUS.OVERDUE,
-      label: 'Quá hạn',
-      color: 'red',
-      position: 4,
-    },
-    {
-      value: ORDER_STATUS.REFUSE,
-      label: 'Từ chối',
-      color: 'purple',
-      position: 5,
-    },
-    {
-      value: ORDER_STATUS.REFUND,
-      label: 'Hoàn tiền',
-      color: 'blue',
-      position: 6,
     },
     {
       value: ORDER_STATUS.CONFIRMED,
       label: 'Đã xác nhận',
-      color: 'blue',
+      color: 'blue' as TagColor,
+      position: 2,
+    },
+    {
+      value: ORDER_STATUS.COMPLETED,
+      label: 'Hoàn thành',
+      color: 'green' as TagColor,
+      position: 3,
+    },
+    {
+      value: ORDER_STATUS.TRIAL,
+      label: 'Dùng thử',
+      color: 'yellow' as TagColor,
+      position: 4,
+    },
+    {
+      value: ORDER_STATUS.TRIAL_EXPIRED,
+      label: 'Trial hết hạn',
+      color: 'red' as TagColor,
+      position: 5,
+    },
+    {
+      value: ORDER_STATUS.CANCELED,
+      label: 'Đã hủy',
+      color: 'gray' as TagColor,
+      position: 6,
+    },
+    {
+      value: ORDER_STATUS.OVERDUE,
+      label: 'Quá hạn',
+      color: 'red' as TagColor,
       position: 7,
     },
     {
       value: ORDER_STATUS.BLOCKED,
-      label: 'Khóa đơn hàng',
-      color: 'black',
+      label: 'Bị khóa',
+      color: 'purple' as TagColor,
       position: 8,
+    },
+    {
+      value: ORDER_STATUS.REFUND,
+      label: 'Hoàn tiền',
+      color: 'cyan' as TagColor,
+      position: 9,
     },
     {
       value: ORDER_STATUS.REFUND_PARTIAL,
       label: 'Hoàn tiền một phần',
-      color: 'cyan',
-      position: 9,
+      color: 'cyan' as TagColor,
+      position: 10,
     },
   ],
   labels: {
     EN: {
       DRAFT: 'Draft',
-      TRIAL: 'Trial',
-      COMPLETED: 'Completed',
-      WAIT: 'Wait',
-      OVERDUE: 'Overdue',
-      REFUSE: 'Refuse',
-      REFUND: 'Refund',
+      PENDING_PAYMENT: 'Pending Payment',
       CONFIRMED: 'Confirmed',
+      COMPLETED: 'Completed',
+      TRIAL: 'Trial',
+      TRIAL_EXPIRED: 'Trial Expired',
+      CANCELED: 'Canceled',
+      OVERDUE: 'Overdue',
       BLOCKED: 'Blocked',
+      REFUND: 'Refund',
       REFUND_PARTIAL: 'Partial Refund',
     },
     VI: {
       DRAFT: 'Nháp',
-      TRIAL: 'Dùng thử',
-      COMPLETED: 'Hoàn thành',
-      WAIT: 'Chờ xử lý',
-      OVERDUE: 'Quá hạn',
-      REFUSE: 'Từ chối',
-      REFUND: 'Hoàn tiền',
+      PENDING_PAYMENT: 'Chờ thanh toán',
       CONFIRMED: 'Đã xác nhận',
-      BLOCKED: 'Khóa đơn hàng',
+      COMPLETED: 'Hoàn thành',
+      TRIAL: 'Dùng thử',
+      TRIAL_EXPIRED: 'Trial hết hạn',
+      CANCELED: 'Đã hủy',
+      OVERDUE: 'Quá hạn',
+      BLOCKED: 'Bị khóa',
+      REFUND: 'Hoàn tiền',
       REFUND_PARTIAL: 'Hoàn tiền một phần',
     },
   },
 };
 
+// ============================================
+// ORDER ACTION
+// ============================================
+
+/**
+ * Order Action - Hành động trên đơn hàng
+ *
+ * Phân loại:
+ * - Create actions: NEW_ORDER, TRIAL, LICENSE_RENEWING
+ * - Status change actions: ACCOUNTING_CONFIRMED, COMPLETE, CANCEL, BLOCK
+ * - Refund actions: REFUND, REFUND_PARTIAL
+ * - Special actions: TRIAL_TO_PAID, CHANGE_VARIANT
+ */
 export enum ORDER_ACTION {
-  DRAFT = 'DRAFT',
-  CONFIRMED = 'CONFIRMED',
+  /** Tạo đơn hàng mới - License tạo sau khi xác nhận thanh toán */
+  NEW_ORDER = 'NEW_ORDER',
+
+  /** Tạo đơn trial - License trial được tạo ngay */
   TRIAL = 'TRIAL',
-  PAID = 'PAID',
-  PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
-  LOCKED = 'LOCKED',
-  CANCELLED = 'CANCELLED',
-  LICENSE = 'LICENSE',
-  SINVOICE = 'SINVOICE',
-  TRIAL_TO_CONFIRMED = 'TRIAL_TO_CONFIRMED',
-  TRIAL_TO_PAID = 'TRIAL_TO_PAID',
-  FREE = 'FREE',
-  WAIT = 'WAIT',
-  OVERDUE = 'OVERDUE',
-  REFUSE = 'REFUSE',
+
+  /** Gia hạn license - License gia hạn sau khi xác nhận thanh toán */
   LICENSE_RENEWING = 'LICENSE_RENEWING',
+
+  /** Đổi gói - Thay đổi variant/package của license */
   CHANGE_VARIANT = 'CHANGE_VARIANT',
+
+  /** Kế toán xác nhận thanh toán - Trigger tạo license */
+  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
+
+  /** Hoàn thành đơn hàng */
+  COMPLETE = 'COMPLETE',
+
+  /** Hủy đơn hàng */
+  CANCEL = 'CANCEL',
+
+  /** Khóa đơn hàng */
+  BLOCK = 'BLOCK',
+
+  /** Chuyển trial sang đơn trả phí - License mới sau xác nhận */
+  TRIAL_TO_PAID = 'TRIAL_TO_PAID',
+
+  /** Hoàn tiền toàn bộ */
   REFUND = 'REFUND',
+
+  /** Hoàn tiền một phần */
   REFUND_PARTIAL = 'REFUND_PARTIAL',
 }
+
+// ============================================
+// ORDER LICENSE FLOW
+// ============================================
+
+/**
+ * ORDER LICENSE FLOW:
+ *
+ * 1. NEW_ORDER:
+ *    - CreateLicensesStep: SKIP (không tạo license)
+ *    - CreateLicensesOnConfirmStep: Tạo license MỚI khi payment confirmed
+ *
+ * 2. TRIAL_TO_PAID:
+ *    - CreateLicensesStep: Tạo TRIAL license
+ *    - CreateLicensesOnConfirmStep: Upgrade trial → official khi payment confirmed
+ */
+
+/**
+ * Actions that CREATE TRIAL license when creating order (CreateLicensesStep).
+ *
+ * - TRIAL_TO_PAID: Tạo trial license ngay khi tạo order
+ */
+export const CREATE_TRIAL_ON_ORDER_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.TRIAL_TO_PAID,
+];
+
+/**
+ * Check if action should CREATE TRIAL license when creating order
+ */
+export const IS_CREATE_TRIAL_ON_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): boolean => CREATE_TRIAL_ON_ORDER_ACTIONS.includes(action);
+
+/**
+ * Actions that SKIP license creation when creating order (CreateLicensesStep).
+ *
+ * - NEW_ORDER: Không tạo license, đợi payment confirmed
+ */
+export const SKIP_LICENSE_ON_ORDER_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.NEW_ORDER,
+];
+
+/**
+ * Check if action should SKIP license creation when creating order
+ */
+export const IS_SKIP_LICENSE_ON_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): boolean => SKIP_LICENSE_ON_ORDER_ACTIONS.includes(action);
+
+/**
+ * Actions that CREATE license on payment confirmation (CreateLicensesOnConfirmStep).
+ *
+ * - NEW_ORDER: Tạo license MỚI
+ * - TRIAL_TO_PAID: Upgrade trial → official
+ */
+export const CREATE_LICENSE_ON_CONFIRM_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.NEW_ORDER,
+  ORDER_ACTION.TRIAL_TO_PAID,
+];
+
+/**
+ * Check if action should create/upgrade license on payment confirmation
+ */
+export const IS_CREATE_LICENSE_ON_CONFIRM_ACTION = (
+  action: ORDER_ACTION,
+): boolean => CREATE_LICENSE_ON_CONFIRM_ACTIONS.includes(action);
+
+/**
+ * Actions that require payment confirmation.
+ */
+export const PAYMENT_REQUIRED_ACTIONS: ORDER_ACTION[] = [
+  ORDER_ACTION.NEW_ORDER,
+  ORDER_ACTION.TRIAL_TO_PAID,
+];
+
+/**
+ * Check if action requires payment
+ */
+export const IS_PAYMENT_REQUIRED_ACTION = (action: ORDER_ACTION): boolean =>
+  PAYMENT_REQUIRED_ACTIONS.includes(action);
+
+// ============================================
+// ORDER ACTION TYPE RESTRICTIONS
+// ============================================
+
+/**
+ * Actions cho phép khi TẠO đơn hàng (qua createOrderWithItems mutation)
+ *
+ * - NEW_ORDER: Tạo đơn hàng mới
+ * - LICENSE_RENEWING: Gia hạn license
+ * - TRIAL_TO_PAID: Chuyển trial sang trả phí
+ * - CHANGE_VARIANT: Đổi gói
+ *
+ * Note: TRIAL action đã được tách ra mutation riêng (createTrialOrder)
+ */
+export type CreateOrderAction = Extract<
+  ORDER_ACTION,
+  | ORDER_ACTION.NEW_ORDER
+  | ORDER_ACTION.LICENSE_RENEWING
+  | ORDER_ACTION.TRIAL_TO_PAID
+  | ORDER_ACTION.CHANGE_VARIANT
+>;
+
+/**
+ * Array các actions cho phép khi tạo đơn hàng
+ *
+ * Note: TRIAL không còn trong list này - sử dụng createTrialOrder mutation
+ */
+export const CREATE_ORDER_ACTIONS: CreateOrderAction[] = [
+  ORDER_ACTION.NEW_ORDER,
+  ORDER_ACTION.LICENSE_RENEWING,
+  ORDER_ACTION.TRIAL_TO_PAID,
+  ORDER_ACTION.CHANGE_VARIANT,
+];
+
+/**
+ * Check if action is valid for creating order
+ */
+export const IS_CREATE_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): action is CreateOrderAction =>
+  CREATE_ORDER_ACTIONS.includes(action as CreateOrderAction);
+
+/**
+ * Actions cho phép khi XÁC NHẬN THANH TOÁN đơn hàng (confirmOrder mutation)
+ *
+ * Chỉ ACCOUNTING_CONFIRMED được hỗ trợ.
+ * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation.
+ */
+export type ConfirmOrderAction = Extract<
+  ORDER_ACTION,
+  ORDER_ACTION.ACCOUNTING_CONFIRMED
+>;
+
+/**
+ * Array các actions cho phép khi confirm thanh toán
+ */
+export const CONFIRM_ORDER_ACTIONS: ConfirmOrderAction[] = [
+  ORDER_ACTION.ACCOUNTING_CONFIRMED,
+];
+
+/**
+ * Check if action is valid for confirming order payment
+ */
+export const IS_CONFIRM_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): action is ConfirmOrderAction =>
+  CONFIRM_ORDER_ACTIONS.includes(action as ConfirmOrderAction);
+
+/**
+ * Actions cho phép khi HOÀN TIỀN đơn hàng
+ */
+export type RefundOrderAction = Extract<
+  ORDER_ACTION,
+  ORDER_ACTION.REFUND | ORDER_ACTION.REFUND_PARTIAL
+>;
+
+/**
+ * Array các actions cho phép khi refund đơn hàng
+ */
+export const REFUND_ORDER_ACTIONS: RefundOrderAction[] = [
+  ORDER_ACTION.REFUND,
+  ORDER_ACTION.REFUND_PARTIAL,
+];
+
+/**
+ * Check if action is valid for refunding order
+ */
+export const IS_REFUND_ORDER_ACTION = (
+  action: ORDER_ACTION,
+): action is RefundOrderAction =>
+  REFUND_ORDER_ACTIONS.includes(action as RefundOrderAction);
+
+// ============================================
+// SINVOICE STATUS
+// ============================================
 
 export enum SINVOICE_STATUS {
   PENDING = 'PENDING',
@@ -167,97 +412,32 @@ export enum SINVOICE_STATUS {
   SUCCESS = 'SUCCESS',
 }
 
-export const SINVOICE_STATUS_OPTIONS = [
-  {
-    value: SINVOICE_STATUS.PENDING,
-    label: 'Pending',
-    color: 'orange' as TagColor,
-    position: 0,
-  },
-  {
-    value: SINVOICE_STATUS.SEND,
-    label: 'Send',
-    color: 'blue' as TagColor,
-    position: 1,
-  },
-  {
-    value: SINVOICE_STATUS.FAILED,
-    label: 'Failed',
-    color: 'red' as TagColor,
-    position: 2,
-  },
-  {
-    value: SINVOICE_STATUS.ERROR,
-    label: 'Error',
-    color: 'gray' as TagColor,
-    position: 3,
-  },
-  {
-    value: SINVOICE_STATUS.SUCCESS,
-    label: 'Success',
-    color: 'green' as TagColor,
-    position: 4,
-  },
-];
+// ============================================
+// ORDER LICENSE STATUS
+// ============================================
 
 export enum MKT_ORDER_LICENSE_STATUS {
-  PENDING = 'PENDING', // Đang chờ xử lý cấp phép, chưa bắt đầu quá trình lấy license
-  GETTING = 'GETTING', // Đang trong quá trình gọi API hoặc service để lấy license
-  FAILED = 'FAILED', // Quá trình lấy license thất bại (ví dụ: lỗi network, timeout, dữ liệu không hợp lệ)
-  ERROR = 'ERROR', // Lỗi hệ thống hoặc lỗi không mong muốn trong khi xử lý license
-  SUCCESS = 'SUCCESS', // License đã được lấy thành công và hợp lệ
-  REVOKED = 'REVOKED', // License đã bị thu hồi (do hết hạn, bị hủy hoặc do vi phạm điều kiện)
-  DELETED = 'DELETED', // License đã bị xóa khỏi hệ thống (không còn được quản lý/truy vết)
-  TRIAL = 'TRIAL', // License đang ở trong giai đoạn trial
-}
+  /** Chờ tạo license - Đơn đang chờ xác nhận thanh toán */
+  PENDING = 'PENDING',
 
-export const MKT_ORDER_LICENSE_STATUS_OPTIONS = [
-  {
-    value: MKT_ORDER_LICENSE_STATUS.PENDING,
-    label: 'Pending',
-    color: 'orange' as TagColor,
-    position: 0,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.GETTING,
-    label: 'Getting',
-    color: 'blue' as TagColor,
-    position: 1,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.FAILED,
-    label: 'Failed',
-    color: 'red' as TagColor,
-    position: 2,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.ERROR,
-    label: 'Error',
-    color: 'gray' as TagColor,
-    position: 3,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.SUCCESS,
-    label: 'Success',
-    color: 'green' as TagColor,
-    position: 4,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.REVOKED,
-    label: 'Revoked',
-    color: 'purple' as TagColor,
-    position: 5,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.DELETED,
-    label: 'Deleted',
-    color: 'gray' as TagColor,
-    position: 6,
-  },
-  {
-    value: MKT_ORDER_LICENSE_STATUS.TRIAL,
-    label: 'Trial',
-    color: 'yellow' as TagColor,
-    position: 7,
-  },
-];
+  /** Đang tạo license - Đang gọi API MKT Server */
+  CREATING = 'CREATING',
+
+  /** Tạo thất bại - Lỗi khi gọi API */
+  FAILED = 'FAILED',
+
+  /** Lỗi hệ thống */
+  ERROR = 'ERROR',
+
+  /** Thành công - License đã tạo và active */
+  SUCCESS = 'SUCCESS',
+
+  /** Đã thu hồi - License bị revoke */
+  REVOKED = 'REVOKED',
+
+  /** Đã xóa - License bị xóa */
+  DELETED = 'DELETED',
+
+  /** Trial - License đang trong giai đoạn dùng thử */
+  TRIAL = 'TRIAL',
+}

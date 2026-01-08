@@ -1,289 +1,142 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { QueryRunner } from 'typeorm';
-
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_ORDER_EVENT_TYPES } from 'src/mkt-core/common/common.type';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import {
-  ORDER_ACTION,
-  ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { OrderStatusService } from 'src/mkt-core/order/services/core';
+  ConfirmOrderSagaContext,
+  createConfirmOrderContext,
+} from 'src/mkt-core/order/orchestration/context';
 import {
+  ValidateOrderStep,
+  ValidateTransitionStep,
+  UpdateStatusStep,
+  CreateLicensesOnConfirmStep,
+  CompleteOrderAfterLicenseStep,
+} from 'src/mkt-core/order/orchestration/steps/confirm-order';
+import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
+import {
+  MKT_ORDER_EVENT_TYPES,
   ConfirmOrderInput,
   ConfirmOrderResponse,
+  SagaContext,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
-import { SagaContext, SagaStepResult } from './order-saga.interface';
+import { BaseSaga } from './base/base-saga';
 
 /**
  * ConfirmOrderSaga - Saga for confirming/updating order status
  *
- * Handles order status transitions with validation:
- * - Validates order exists
- * - Validates status transition is allowed
- * - Updates order status
- * - Emits appropriate events
+ * Extends BaseSaga for unified step execution pattern.
+ *
+ * Registered Steps:
+ * 1. ValidateOrderStep - Validate order exists and load state
+ * 2. ValidateTransitionStep - Validate status transition is allowed
+ * 3. UpdateStatusStep - Update order status and payment fields
+ * 4. CreateLicensesOnConfirmStep - Create licenses when accounting confirms
+ * 5. CompleteOrderAfterLicenseStep - Auto-complete order after licenses created
+ *
+ * ACCOUNTING_CONFIRMED Flow:
+ * 1. Validate order exists
+ * 2. Validate status transition is allowed
+ * 3. Update: status = CONFIRMED, paymentStatus = PAID, paidAmount = totalAmount
+ * 4. Create licenses on MKT Server
+ * 5. Auto-update: status = COMPLETED (if licenses created)
+ * 6. Emit success events
  *
  * Supports actions:
- * - COMPLETED: Complete the order
- * - CONFIRMED: Confirm payment received
- * - SINVOICE: Sync S-Invoice
+ * - ACCOUNTING_CONFIRMED: Confirm payment, create licenses, auto-complete
+ * - COMPLETE: Complete the order
+ * - CANCEL: Cancel the order
+ * - BLOCK: Block the order
  * - And other status transitions
  */
 @Injectable()
-export class ConfirmOrderSaga {
-  private readonly logger = new Logger(ConfirmOrderSaga.name);
+export class ConfirmOrderSaga
+  extends BaseSaga<ConfirmOrderInput, ConfirmOrderResponse>
+  implements OnModuleInit
+{
+  protected readonly logger = new Logger(ConfirmOrderSaga.name);
+  protected readonly sagaName = 'ConfirmOrderSaga';
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly eventEmitter: EventEmitter2,
-    private readonly orderStatusService: OrderStatusService,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    eventEmitter: EventEmitter2,
+    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
+    // Inject steps directly
+    private readonly validateOrderStep: ValidateOrderStep,
+    private readonly validateTransitionStep: ValidateTransitionStep,
+    private readonly updateStatusStep: UpdateStatusStep,
+    private readonly createLicensesOnConfirmStep: CreateLicensesOnConfirmStep,
+    private readonly completeOrderAfterLicenseStep: CompleteOrderAfterLicenseStep,
+  ) {
+    super(twentyORMGlobalManager, eventEmitter);
+    // Register steps immediately in constructor
+    // (onModuleInit may not be called for lazy-loaded providers)
+    this.initializeSteps();
+  }
 
   /**
-   * Execute the confirm order saga
+   * Initialize and register steps
    */
-  async execute(
+  private initializeSteps(): void {
+    this.registerSteps([
+      this.validateOrderStep,
+      this.validateTransitionStep,
+      this.updateStatusStep,
+      this.createLicensesOnConfirmStep,
+      this.completeOrderAfterLicenseStep,
+    ]);
+  }
+
+  /**
+   * OnModuleInit - fallback if constructor initialization didn't run
+   */
+  onModuleInit(): void {
+    if (this.steps.length === 0) {
+      this.initializeSteps();
+    }
+  }
+
+  /**
+   * Create typed context for ConfirmOrderSaga
+   */
+  protected createContext(
     workspaceId: string,
-    workspaceMemberId: string | undefined,
-    input: ConfirmOrderInput,
-  ): Promise<ConfirmOrderResponse> {
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
+    workspaceMemberId?: string,
+  ): ConfirmOrderSagaContext {
+    return createConfirmOrderContext(workspaceId, workspaceMemberId);
+  }
 
-    const queryRunner = dataSource.createQueryRunner();
+  /**
+   * Build success response from context
+   */
+  protected buildSuccessResponse(context: SagaContext): ConfirmOrderResponse {
+    const typedContext = context as ConfirmOrderSagaContext;
 
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    const context: SagaContext = {
-      workspaceId,
-      workspaceMemberId,
-      rollbackData: new Map(),
-      metadata: new Map(),
+    return {
+      success: true,
+      orderId: typedContext.orderId,
+      newStatus: typedContext.targetStatus,
     };
-
-    try {
-      // Step 1: Validate order exists
-      const validateResult = await this.validateOrder(
-        context,
-        input,
-        queryRunner,
-      );
-
-      if (!validateResult.success) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: validateResult.error?.message ?? 'Order validation failed',
-        };
-      }
-
-      const currentOrder = validateResult.data;
-
-      if (!currentOrder) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: 'Order validation failed: no data returned',
-        };
-      }
-
-      const previousStatus = currentOrder.status as ORDER_STATUS;
-
-      // Step 2: Determine action and validate transition
-      const transitionResult = this.orderStatusService.determineAction(
-        currentOrder,
-        {
-          status: this.getTargetStatusFromAction(input.action),
-          accountingConfirmed: input.accountingConfirmed,
-        },
-      );
-
-      if (
-        !transitionResult.valid ||
-        !transitionResult.action ||
-        !transitionResult.newStatus
-      ) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: transitionResult.error ?? 'Invalid status transition',
-        };
-      }
-
-      const { action, newStatus } = transitionResult;
-
-      // Step 3: Update order status
-      const updateResult = await this.updateOrderStatus(
-        context,
-        input,
-        action,
-        newStatus,
-        queryRunner,
-      );
-
-      if (!updateResult.success) {
-        await queryRunner.rollbackTransaction();
-
-        return {
-          success: false,
-          error: updateResult.error?.message ?? 'Failed to update order status',
-        };
-      }
-
-      await queryRunner.commitTransaction();
-
-      // Emit event after successful commit
-      this.emitOrderConfirmedEvent(context, input, newStatus);
-
-      this.logger.log(
-        `Order ${input.orderId} confirmed: ${previousStatus} -> ${newStatus}`,
-      );
-
-      return {
-        success: true,
-        orderId: input.orderId,
-        newStatus,
-      };
-    } catch (error) {
-      this.logger.error('ConfirmOrderSaga execution error', error);
-      await queryRunner.rollbackTransaction();
-
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   /**
-   * Step 1: Validate order exists and can be updated
+   * Emit success event after saga completion
    */
-  private async validateOrder(
+  protected emitSuccessEvent(
     context: SagaContext,
     input: ConfirmOrderInput,
-    _queryRunner: QueryRunner,
-  ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
-    try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktOrderWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await orderRepository.findOne({
-        where: { id: input.orderId },
-        relations: ['orderItems', 'mktLicense'],
-      });
-
-      if (!order) {
-        return {
-          success: false,
-          error: new Error(`Order ${input.orderId} not found`),
-        };
-      }
-
-      // Store for rollback
-      context.orderId = order.id;
-      context.orderCode = order.orderCode;
-      context.rollbackData.set('previousOrder', {
-        status: order.status,
-        accountingConfirmed: order.accountingConfirmed,
-      });
-
-      return {
-        success: true,
-        data: order,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error : new Error('Validation failed'),
-      };
-    }
-  }
-
-  /**
-   * Step 2: Update order status
-   */
-  private async updateOrderStatus(
-    context: SagaContext,
-    input: ConfirmOrderInput,
-    action: ORDER_ACTION,
-    newStatus: ORDER_STATUS,
-    queryRunner: QueryRunner,
-  ): Promise<SagaStepResult> {
-    try {
-      const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
-      const updateData: Partial<MktOrderWorkspaceEntity> = {
-        status: newStatus,
-        updatedAt: nowISO,
-      };
-
-      // Handle accounting confirmation
-      if (input.accountingConfirmed !== undefined) {
-        updateData.accountingConfirmed = input.accountingConfirmed;
-      }
-
-      // Handle note
-      if (input.note) {
-        updateData.note = input.note;
-      }
-
-      // Update metadata with action
-      updateData.metadata = safeJsonStringify({
-        orderAction: action,
-        confirmedAt: nowISO,
-      }) as unknown as JSON;
-
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: input.orderId },
-        updateData,
-      );
-
-      context.metadata.set('newStatus', newStatus);
-      context.metadata.set('action', action);
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error : new Error('Update failed'),
-      };
-    }
-  }
-
-  /**
-   * Get target status from action
-   */
-  private getTargetStatusFromAction(action: ORDER_ACTION): ORDER_STATUS {
-    return this.orderStatusService.getStatusFromAction(action);
-  }
-
-  /**
-   * Emit event after order confirmation
-   */
-  private emitOrderConfirmedEvent(
-    context: SagaContext,
-    input: ConfirmOrderInput,
-    newStatus: ORDER_STATUS,
   ): void {
-    if (!context.orderId) return;
+    const typedContext = context as ConfirmOrderSagaContext;
+
+    if (!typedContext.orderId) {
+      return;
+    }
+
+    // Cancel overdue check nếu order chuyển từ PENDING_PAYMENT sang status khác
+    this.cancelOverdueCheckIfNeeded(typedContext);
 
     const eventType = input.accountingConfirmed
       ? MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED
@@ -291,16 +144,18 @@ export class ConfirmOrderSaga {
 
     this.eventEmitter.emit(eventType, {
       name: eventType,
-      workspaceId: context.workspaceId,
+      workspaceId: typedContext.workspaceId,
       events: [
         {
           eventType,
-          orderId: context.orderId,
-          workspaceId: context.workspaceId,
+          orderId: typedContext.orderId,
+          workspaceId: typedContext.workspaceId,
           orderData: {
-            id: context.orderId,
-            status: newStatus,
-            action: input.action,
+            id: typedContext.orderId,
+            orderCode: typedContext.orderCode,
+            previousStatus: typedContext.previousStatus,
+            newStatus: typedContext.targetStatus,
+            action: typedContext.action,
             accountingConfirmed: input.accountingConfirmed,
           },
           timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
@@ -308,6 +163,33 @@ export class ConfirmOrderSaga {
       ],
     });
 
-    this.logger.log(`Emitted ${eventType} event for order: ${context.orderId}`);
+    this.logger.log(`Emitted ${eventType} for order: ${typedContext.orderId}`);
+  }
+
+  /**
+   * Cancel overdue check nếu order chuyển từ PENDING_PAYMENT sang status khác
+   *
+   * Khi order được thanh toán (ACCOUNTING_CONFIRMED) hoặc huỷ (CANCEL),
+   * cần cancel delayed job để tránh mark OVERDUE sai.
+   */
+  private cancelOverdueCheckIfNeeded(context: ConfirmOrderSagaContext): void {
+    // Chỉ cancel nếu previous status là PENDING_PAYMENT
+    if (context.previousStatus !== ORDER_STATUS.PENDING_PAYMENT) {
+      return;
+    }
+
+    if (!context.orderId) {
+      return;
+    }
+
+    // Fire and forget - không block saga completion
+    this.orderOverdueSchedulerService
+      .cancelOverdueCheck(context.orderId)
+      .catch((error) => {
+        // Log nhưng không fail - job sẽ tự skip khi execute do idempotent check
+        this.logger.warn(
+          `Failed to cancel overdue check for order ${context.orderId}: ${error.message}`,
+        );
+      });
   }
 }

@@ -1,22 +1,31 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
+// TODO: Re-enable idempotency after testing
+// import {
+//   IdempotencyService,
+//   IdempotencyDomain,
+//   IDEMPOTENCY_ORDER_ACTION,
+// } from 'src/mkt-core/common/idempotency';
+import { IdempotencyService } from 'src/mkt-core/common/idempotency';
+import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
+import {
+  MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
+  MKT_ORDER_ORCHESTRATION_LOG_MESSAGES,
+} from 'src/mkt-core/order/messages';
 import {
   CreateOrderSaga,
   ConfirmOrderSaga,
   UpdateOrderSaga,
   RefundOrderSaga,
 } from 'src/mkt-core/order/orchestration/saga';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import {
-  CreateOrderStep,
-  CreateOrderItemsStep,
-  CreateLicensesStep,
-  CreatePaymentStep,
-  FinalizeOrderStep,
-  CreateSnapshotsStep,
-  CalculatePromotionStep,
-  RecordPromotionUsageStep,
-} from 'src/mkt-core/order/orchestration/steps';
-import { OrderValidationService } from 'src/mkt-core/order/services/core';
+  OrderValidationService,
+  OrderConfirmUtilsService,
+} from 'src/mkt-core/order/services/core';
+import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
   CreateOrderWithItemsInput,
@@ -29,7 +38,16 @@ import {
   UpdateOrderStatusResponse,
   UpdateOrderItemInput,
   UpdateOrderItemResponse,
+  PublishDraftOrderInput,
+  PublishDraftOrderResponse,
 } from 'src/mkt-core/order/types';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
+import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
+import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
+import { CreatePaymentData } from 'src/mkt-core/payment/types/repository.types';
+
+const LOG = MKT_ORDER_ORCHESTRATION_LOG_MESSAGES;
 
 /**
  * OrderOrchestrationService - Facade for order operations
@@ -38,10 +56,12 @@ import {
  * - Validating inputs before processing
  * - Orchestrating saga execution
  * - Handling errors gracefully
+ *
+ * Note: Saga steps are registered in each saga's onModuleInit()
  */
 @Injectable()
-export class OrderOrchestrationService implements OnModuleInit {
-  private readonly logger = new Logger(OrderOrchestrationService.name);
+export class OrderOrchestrationService {
+  private readonly logger = new Logger(MKT_ORDER_ORCHESTRATION_LOG_CONTEXT);
 
   constructor(
     private readonly createOrderSaga: CreateOrderSaga,
@@ -50,73 +70,77 @@ export class OrderOrchestrationService implements OnModuleInit {
     private readonly refundOrderSaga: RefundOrderSaga,
     private readonly validationService: OrderValidationService,
     private readonly orderItemService: OrderItemService,
-    // Core Steps
-    private readonly createOrderStep: CreateOrderStep,
-    private readonly createOrderItemsStep: CreateOrderItemsStep,
-    private readonly createLicensesStep: CreateLicensesStep,
-    private readonly createPaymentStep: CreatePaymentStep,
-    private readonly finalizeOrderStep: FinalizeOrderStep,
-    // Snapshot & Promotion Steps
-    private readonly createSnapshotsStep: CreateSnapshotsStep,
-    private readonly calculatePromotionStep: CalculatePromotionStep,
-    private readonly recordPromotionUsageStep: RecordPromotionUsageStep,
+    private readonly idempotencyService: IdempotencyService,
+    // Dependencies for publishDraftOrder
+    private readonly orderRepository: MktOrderRepository,
+    private readonly paymentRepository: MktPaymentRepository,
+    private readonly paymentMethodRepository: MktPaymentMethodRepository,
+    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
   ) {}
 
   /**
-   * Register saga steps on module initialization
-   *
-   * Step order for CreateOrderSaga:
-   * 1. CreateOrderStep - Create order entity
-   * 2. CreateSnapshotsStep - Validate & create product/package snapshots
-   * 3. CreateOrderItemsStep - Create order items with snapshots
-   * 4. CalculatePromotionStep - Calculate and apply promotions
-   * 5. CreateLicensesStep - Create licenses for order items
-   * 6. CreatePaymentStep - Create payment (if not TRIAL)
-   * 7. FinalizeOrderStep - Finalize order status
-   *
-   * Note: RecordPromotionUsageStep should be registered in ConfirmOrderSaga
-   * since usage should only be recorded after order confirmation
-   */
-  onModuleInit(): void {
-    this.createOrderSaga.registerSteps([
-      this.createOrderStep,
-      this.createSnapshotsStep,
-      this.createOrderItemsStep,
-      this.calculatePromotionStep,
-      this.createLicensesStep,
-      this.createPaymentStep,
-      this.finalizeOrderStep,
-    ]);
-
-    this.logger.log('Order saga steps registered successfully');
-  }
-
-  /**
    * Create order with items using saga pattern
+   *
+   * TODO: Re-enable idempotency after testing
+   * Idempotency temporarily disabled for debugging
    */
   async createOrderWithItems(
     workspaceId: string,
     workspaceMemberId: string | undefined,
     input: CreateOrderWithItemsInput,
   ): Promise<CreateOrderResponse> {
-    this.logger.log(
-      `Creating order for customer: ${input.customerId}, action: ${input.action}`,
-    );
+    this.logger.log(LOG.CREATE_START(input.customerId, input.action));
 
+    // TODO: Re-enable idempotency after testing
+    // const result =
+    //   await this.idempotencyService.executeWithIdempotency<CreateOrderResponse>(
+    //     {
+    //       workspaceId,
+    //       domain: 'order' as IdempotencyDomain,
+    //       action: IDEMPOTENCY_ORDER_ACTION.CREATE_ORDER,
+    //       requestBody: input,
+    //     },
+    //     async () =>
+    //       this.executeCreateOrder(workspaceId, workspaceMemberId, input),
+    //   );
+    //
+    // if (result.fromCache) {
+    //   this.logger.log(LOG.CREATE_CACHED());
+    // }
+    //
+    // return result.data;
+
+    // Direct execution without idempotency (temporary)
+    return this.executeCreateOrder(workspaceId, workspaceMemberId, input);
+  }
+
+  /**
+   * Execute order creation (validation + saga)
+   */
+  private async executeCreateOrder(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: CreateOrderWithItemsInput,
+  ): Promise<CreateOrderResponse> {
     // Validate input
     const validationResult =
       await this.validationService.validateCreateOrderInput(workspaceId, input);
+
+    this.logger.debug(LOG.CREATE_VALIDATION_RESULT(validationResult.valid));
 
     if (!validationResult.valid) {
       const errorMessages = validationResult.errors
         .map((e) => `${e.field}: ${e.message}`)
         .join('; ');
 
-      this.logger.warn(`Validation failed: ${errorMessages}`);
+      this.logger.warn(LOG.CREATE_VALIDATION_FAILED(errorMessages));
 
       return {
         success: false,
-        error: `Validation failed: ${errorMessages}`,
+        error: LOG.CREATE_VALIDATION_FAILED(errorMessages),
       };
     }
 
@@ -130,15 +154,15 @@ export class OrderOrchestrationService implements OnModuleInit {
 
       if (result.success) {
         this.logger.log(
-          `Order created successfully: ${result.orderId} (${result.orderCode})`,
+          LOG.CREATE_SUCCESS(result.orderId ?? '', result.orderCode ?? ''),
         );
       } else {
-        this.logger.error(`Order creation failed: ${result.error}`);
+        this.logger.error(LOG.CREATE_FAILED(result.error ?? ''));
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Unexpected error during order creation', error);
+      this.logger.error(LOG.CREATE_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -156,7 +180,11 @@ export class OrderOrchestrationService implements OnModuleInit {
     input: ConfirmOrderInput,
   ): Promise<ConfirmOrderResponse> {
     this.logger.log(
-      `Confirming order: ${input.orderId}, action: ${input.action}, by: ${workspaceMemberId ?? 'system'}`,
+      LOG.CONFIRM_START(
+        input.orderId,
+        input.action,
+        workspaceMemberId ?? 'system',
+      ),
     );
 
     // Validate input
@@ -173,7 +201,7 @@ export class OrderOrchestrationService implements OnModuleInit {
 
       return {
         success: false,
-        error: `Validation failed: ${errorMessages}`,
+        error: LOG.CREATE_VALIDATION_FAILED(errorMessages),
       };
     }
 
@@ -185,17 +213,25 @@ export class OrderOrchestrationService implements OnModuleInit {
         input,
       );
 
-      if (result.success) {
+      if (result.success && result.data) {
         this.logger.log(
-          `Order confirmed: ${result.orderId} -> ${result.newStatus}`,
+          LOG.CONFIRM_SUCCESS(
+            result.data.orderId ?? '',
+            result.data.newStatus ?? '',
+          ),
         );
-      } else {
-        this.logger.error(`Order confirmation failed: ${result.error}`);
+
+        return result.data;
       }
 
-      return result;
+      this.logger.error(LOG.CONFIRM_FAILED(result.error ?? ''));
+
+      return {
+        success: false,
+        error: result.error ?? LOG.CONFIRM_FAILED('Unknown error'),
+      };
     } catch (error) {
-      this.logger.error('Unexpected error during order confirmation', error);
+      this.logger.error(LOG.CONFIRM_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -213,7 +249,11 @@ export class OrderOrchestrationService implements OnModuleInit {
     input: UpdateOrderStatusInput,
   ): Promise<UpdateOrderStatusResponse> {
     this.logger.log(
-      `Updating order status: ${input.orderId}, target: ${input.status}, by: ${workspaceMemberId ?? 'system'}`,
+      LOG.UPDATE_STATUS_START(
+        input.orderId,
+        input.status,
+        workspaceMemberId ?? 'system',
+      ),
     );
 
     try {
@@ -225,15 +265,19 @@ export class OrderOrchestrationService implements OnModuleInit {
 
       if (result.success) {
         this.logger.log(
-          `Order status updated: ${result.orderId} ${result.previousStatus} -> ${result.newStatus}`,
+          LOG.UPDATE_STATUS_SUCCESS(
+            result.orderId ?? '',
+            result.previousStatus ?? '',
+            result.newStatus ?? '',
+          ),
         );
       } else {
-        this.logger.error(`Order status update failed: ${result.error}`);
+        this.logger.error(LOG.UPDATE_STATUS_FAILED(result.error ?? ''));
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Unexpected error during order status update', error);
+      this.logger.error(LOG.UPDATE_STATUS_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -251,7 +295,11 @@ export class OrderOrchestrationService implements OnModuleInit {
     input: RefundOrderInput,
   ): Promise<RefundOrderResponse> {
     this.logger.log(
-      `Refunding order: ${input.orderId}, partial: ${input.isPartial ?? false}, by: ${workspaceMemberId ?? 'system'}`,
+      LOG.REFUND_START(
+        input.orderId,
+        input.isPartial ?? false,
+        workspaceMemberId ?? 'system',
+      ),
     );
 
     try {
@@ -263,15 +311,15 @@ export class OrderOrchestrationService implements OnModuleInit {
 
       if (result.success) {
         this.logger.log(
-          `Order refunded: ${result.orderId}, amount: ${result.refundedAmount}`,
+          LOG.REFUND_SUCCESS(result.orderId ?? '', result.refundedAmount ?? 0),
         );
       } else {
-        this.logger.error(`Order refund failed: ${result.error}`);
+        this.logger.error(LOG.REFUND_FAILED(result.error ?? ''));
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Unexpected error during order refund', error);
+      this.logger.error(LOG.REFUND_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -287,7 +335,7 @@ export class OrderOrchestrationService implements OnModuleInit {
     workspaceId: string,
     input: UpdateOrderItemInput,
   ): Promise<UpdateOrderItemResponse> {
-    this.logger.log(`Updating order item: ${input.orderItemId}`);
+    this.logger.log(LOG.UPDATE_ITEM_START(input.orderItemId));
 
     try {
       const result = await this.orderItemService.updateOrderItem(
@@ -297,9 +345,9 @@ export class OrderOrchestrationService implements OnModuleInit {
       );
 
       if (result.success) {
-        this.logger.log(`Order item updated: ${result.orderItem?.id}`);
+        this.logger.log(LOG.UPDATE_ITEM_SUCCESS(result.orderItem?.id ?? ''));
       } else {
-        this.logger.error(`Order item update failed: ${result.error}`);
+        this.logger.error(LOG.UPDATE_ITEM_FAILED(result.error ?? ''));
       }
 
       return {
@@ -309,7 +357,7 @@ export class OrderOrchestrationService implements OnModuleInit {
         error: result.error,
       };
     } catch (error) {
-      this.logger.error('Unexpected error during order item update', error);
+      this.logger.error(LOG.UPDATE_ITEM_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -325,7 +373,7 @@ export class OrderOrchestrationService implements OnModuleInit {
     workspaceId: string,
     orderId: string,
   ): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
-    this.logger.log(`Recalculating order items for order: ${orderId}`);
+    this.logger.log(LOG.RECALCULATE_START(orderId));
 
     try {
       const result = await this.orderItemService.recalculateAllOrderItems(
@@ -334,19 +382,14 @@ export class OrderOrchestrationService implements OnModuleInit {
       );
 
       if (result.success) {
-        this.logger.log(
-          `Order items recalculated: ${result.updatedCount} items`,
-        );
+        this.logger.log(LOG.RECALCULATE_SUCCESS(result.updatedCount ?? 0));
       } else {
-        this.logger.error(`Order items recalculation had errors`);
+        this.logger.error(LOG.RECALCULATE_HAD_ERRORS());
       }
 
       return result;
     } catch (error) {
-      this.logger.error(
-        'Unexpected error during order items recalculation',
-        error,
-      );
+      this.logger.error(LOG.RECALCULATE_UNEXPECTED_ERROR(), error);
 
       return {
         success: false,
@@ -366,5 +409,167 @@ export class OrderOrchestrationService implements OnModuleInit {
     errors: Array<{ field: string; message: string; code: string }>;
   }> {
     return this.validationService.validateCreateOrderInput(workspaceId, input);
+  }
+
+  // ============================================
+  // PUBLISH DRAFT ORDER
+  // ============================================
+
+  /**
+   * Publish a draft order - converts DRAFT to PENDING_PAYMENT
+   *
+   * Steps:
+   * 1. Validate order exists and is in DRAFT status
+   * 2. Create payment/QR code
+   * 3. Update order status to PENDING_PAYMENT
+   * 4. Schedule overdue check
+   */
+  async publishDraftOrder(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: PublishDraftOrderInput,
+  ): Promise<PublishDraftOrderResponse> {
+    this.logger.log(`[PublishDraft] Starting for order: ${input.orderId}`);
+
+    try {
+      // 1. Get and validate order
+      const order = await this.orderRepository.findById(
+        workspaceId,
+        input.orderId,
+      );
+
+      if (!order) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} not found`,
+        };
+      }
+
+      if (order.status !== ORDER_STATUS.DRAFT) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} is not in DRAFT status. Current status: ${order.status}`,
+        };
+      }
+
+      // 2. Create payments if payment methods provided
+      let qrCodeUrl: string | undefined;
+
+      if (input.paymentMethods && input.paymentMethods.length > 0) {
+        const paymentResult = await this.createPaymentsForDraftOrder(
+          workspaceId,
+          order.id,
+          order.orderCode,
+          order.totalAmount ?? 0,
+          order.currency ?? DEFAULT_PAYMENT_CURRENCY,
+          input.paymentMethods,
+        );
+
+        qrCodeUrl = paymentResult.qrCodeUrl;
+      }
+
+      // 3. Update order status to PENDING_PAYMENT
+      const updateNote = input.note
+        ? `[PUBLISHED] ${input.note}`
+        : '[PUBLISHED] Draft order published';
+
+      await this.orderRepository.update(workspaceId, order.id, {
+        status: ORDER_STATUS.PENDING_PAYMENT,
+        note: order.note ? `${order.note}\n${updateNote}` : updateNote,
+      });
+
+      // 4. Schedule overdue check
+      await this.orderOverdueSchedulerService.scheduleOverdueCheck(
+        workspaceId,
+        order.id,
+        order.orderCode,
+      );
+
+      this.logger.log(
+        `[PublishDraft] Success - Order ${order.id} published with status PENDING_PAYMENT`,
+      );
+
+      return {
+        success: true,
+        orderId: order.id,
+        orderCode: order.orderCode,
+        paymentQrCode: qrCodeUrl,
+        newStatus: ORDER_STATUS.PENDING_PAYMENT,
+      };
+    } catch (error) {
+      this.logger.error('[PublishDraft] Unexpected error', error);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Create payments for a draft order
+   */
+  private async createPaymentsForDraftOrder(
+    workspaceId: string,
+    orderId: string,
+    orderCode: string,
+    totalAmount: number,
+    currency: string,
+    paymentMethods: PublishDraftOrderInput['paymentMethods'],
+  ): Promise<{ qrCodeUrl?: string }> {
+    if (!paymentMethods || paymentMethods.length === 0) {
+      return {};
+    }
+
+    let primaryQrCodeUrl: string | undefined;
+
+    // Get payment method entities
+    const paymentMethodIds = paymentMethods.map((p) => p.paymentMethodId);
+    const paymentMethodMap = await this.paymentMethodRepository.findManyByIds(
+      workspaceId,
+      paymentMethodIds,
+    );
+
+    for (const pmInput of paymentMethods) {
+      const paymentMethod = paymentMethodMap.get(pmInput.paymentMethodId);
+
+      if (!paymentMethod) {
+        this.logger.warn(
+          `[PublishDraft] Payment method ${pmInput.paymentMethodId} not found, skipping`,
+        );
+        continue;
+      }
+
+      // Generate QR code
+      const { qrCodeUrl, expiredAt } =
+        await this.orderConfirmUtilsService.generateSepayQrCodeUrl(
+          paymentMethod,
+          totalAmount,
+          orderCode,
+        );
+
+      // Create payment record
+      const paymentData: CreatePaymentData = {
+        name: `Thanh toán - ${paymentMethod.name} - ${orderCode}`,
+        amount: totalAmount,
+        currency: currency as PaymentCurrency,
+        mktOrderId: orderId,
+        mktPaymentMethodId: pmInput.paymentMethodId,
+        qrCodeUrl: qrCodeUrl ?? undefined,
+        duration: pmInput.duration ?? undefined,
+        expiredAt: expiredAt ?? undefined,
+        paymentPageUrl: `${this.config.urls.serverUrl}${this.config.urls.paymentPagePath}/${orderCode}`,
+        mktTemplateId: MKT_TEMPLATE.SEPAY,
+      };
+
+      await this.paymentRepository.create(workspaceId, paymentData);
+
+      // Set first QR code as primary
+      if (!primaryQrCodeUrl && qrCodeUrl) {
+        primaryQrCodeUrl = qrCodeUrl;
+      }
+    }
+
+    return { qrCodeUrl: primaryQrCodeUrl };
   }
 }

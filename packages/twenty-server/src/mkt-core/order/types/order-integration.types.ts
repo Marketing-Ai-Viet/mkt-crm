@@ -44,7 +44,8 @@ export type OrderLicenseSummary = {
 export type OrderLicenseInput = {
   productId: string;
   packageId: string;
-  customerId: string;
+  /** Email address for the license owner (from customer's linkedAccounts or email field) */
+  email: string;
   maxDevices?: number;
 };
 
@@ -93,7 +94,8 @@ export type ProductWithSnapshot = {
   package: MktProductPackage | null;
   productSnapshot: MktProductSnapshot;
   packageSnapshot: MktPackageSnapshot | null;
-  quantity: number;
+  /** Maximum devices allowed for license (default: 1) */
+  maxDevices: number;
 };
 
 /**

@@ -6,11 +6,11 @@ import {
 import {
   MKT_CUSTOMER_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-customer-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-data-seeds.constants';
 import {
   MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_TAG_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-customer-tag-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seeds.constants';
 import {
   MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
   MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
@@ -50,15 +50,15 @@ import {
 import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-order-data-seeds.constants';
+} from 'src/mkt-core/seeder/order-seeder/mkt-order-data-seeds.constants';
 import {
   MKT_ORDER_HISTORY_DATA_SEED_COLUMNS,
   MKT_ORDER_HISTORY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-order-history-data-seeds.constants';
+} from 'src/mkt-core/seeder/order-seeder/mkt-order-history-data-seeds.constants';
 import {
   MKT_ORDER_ITEM_DATA_SEED_COLUMNS,
   MKT_ORDER_ITEM_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-order-item-data-seeds.constants';
+} from 'src/mkt-core/seeder/order-seeder/mkt-order-item-data-seeds.constants';
 import {
   MKT_ORGANIZATION_LEVEL_DATA_SEED_COLUMNS,
   MKT_ORGANIZATION_LEVEL_DATA_SEEDS,
@@ -83,10 +83,6 @@ import {
   MKT_REPORT_DATA_SEED_COLUMNS,
   MKT_REPORT_DATA_SEEDS,
 } from 'src/mkt-core/seeder/constants/mkt-report-data-seeds.constants';
-import {
-  MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-  MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-sendmail-template-seeds.constant.ts';
 import {
   MKT_STAFF_STATUS_HISTORY_DATA_SEED_COLUMNS,
   MKT_STAFF_STATUS_HISTORY_DATA_SEEDS,
@@ -130,11 +126,11 @@ import {
 import {
   MKT_GENERIC_COMBO_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-generic-combo-data-seeds.constants';
+} from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-data-seeds.constants';
 import {
   MKT_GENERIC_COMBO_ITEM_DATA_SEED_COLUMNS,
   MKT_GENERIC_COMBO_ITEM_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-generic-combo-item-data-seeds.constants';
+} from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-data-seeds.constants';
 // Promotion seeder configs
 import {
   MKT_PROMOTION_DATA_SEED_COLUMNS,
@@ -343,11 +339,6 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktPermissionAudit',
     pgColumns: MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PERMISSION_AUDIT_DATA_SEEDS,
-  },
-  {
-    tableName: 'mktSendmailTemplate',
-    pgColumns: MKT_SENDMAIL_TEMPLATE_DATA_SEED_COLUMNS,
-    recordSeeds: MKT_SENDMAIL_TEMPLATE_DATA_SEEDS,
   },
   // Promotion configs (order matters: Promotion -> Rule -> Coupon -> Audit -> Usage)
   {

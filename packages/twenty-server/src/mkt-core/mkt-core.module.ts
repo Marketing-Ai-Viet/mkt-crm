@@ -6,13 +6,14 @@ import {
 } from '@nestjs/common';
 
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
-import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration/mkt-product-integration.module';
+import { MktSendmailTemplateModule } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.module';
+import { MktSettingModule } from 'src/mkt-core/setting/mkt-setting.module';
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
@@ -23,7 +24,6 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
 @Module({
   imports: [
     MktOrderModule,
-    MktInvoiceModule,
     MktPaymentModule,
     MktDepartmentModule,
     UserManagementModule,
@@ -35,6 +35,8 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
     MktUserIntegrationModule,
     MktComboModule,
     MktPromotionModule,
+    MktSendmailTemplateModule,
+    MktSettingModule,
   ],
 })
 export class MktCoreModule implements NestModule {

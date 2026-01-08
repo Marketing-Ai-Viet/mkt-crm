@@ -4,60 +4,124 @@ import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
-import { MktCommonModule } from 'src/mkt-core/common/service/mkt-common.module';
-import { MktCustomerTierUpdateCommand } from 'src/mkt-core/customer/commands/mkt-customer-tier-update.command';
-import { MktCustomerTierCronJob } from 'src/mkt-core/customer/commands/mkt-customer-tier.cron.job';
-import { MktCustomerExportController } from 'src/mkt-core/customer/controllers/mkt-customer-export.controller';
-import { MktCustomerTierUpdateJob } from 'src/mkt-core/customer/jobs/mkt-customer-tier-update.job';
+import { MktCustomerCreateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-create-one.pre-query.hook';
+import { MktCustomerUpdateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-update-one.pre-query.hook';
+import { MktCustomerEventListener } from 'src/mkt-core/customer/listeners/mkt-customer-event.listener';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
+import { MktCustomerTierHistoryRepository } from 'src/mkt-core/customer/repositories/mkt-customer-tier-history.repository';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
+import { MktCustomerExportResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-export.resolver';
 import { MktCustomerLicenseResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-license.resolver';
+import { MktCustomerLinkedAccountResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-linked-account.resolver';
+import { MktCustomerTierResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier.resolver';
+import { MktCustomerTierHistoryResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier-history.resolver';
+// Services - organized by domain
 import {
+  // Core
+  MktCustomerCodeGenerationService,
   MktCustomerCreationService,
-  MktCustomerTierCalculationService,
-  MktCustomerTierService,
   MktCustomerUpdateService,
+  // Tier
+  MktCustomerDowngradePolicyService,
+  MktCustomerQueueService,
+  MktCustomerTierCalculationService,
+  MktCustomerTierHistoryService,
+  // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
+  // MktCustomerTierRegistrationService,
+  MktCustomerTierService,
+  // Lifecycle
+  MktCustomerAutoAssignService,
+  MktCustomerCategorizationService,
+  // Account
+  MktCustomerAccountService,
+  // License
+  MktCustomerLicenseService,
+  // Export
+  MktCustomerExportService,
 } from 'src/mkt-core/customer/services';
-import { MktCustomerExportService } from 'src/mkt-core/customer/services/mkt-customer-export.service';
-import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/mkt-customer-license.service';
-import { MktCustomerQueueService } from 'src/mkt-core/customer/services/mkt-customer-queue.service';
-import { MktCustomerTierRegistrationService } from 'src/mkt-core/customer/services/mkt-customer-tier-registration.service';
-import { MktCustomerCodeGenerationService } from 'src/mkt-core/customer/services/mkt-customer-code-generation.service';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
+import { MktSendmailTemplateModule } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.module';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
+import {
+  MktCustomerCategorizationCronJob,
+  MktCustomerTierCronJob,
+  MktCustomerTierUpdateJob,
+} from 'src/mkt-core/customer/jobs';
 
 @Module({
   imports: [
-    MktCommonModule,
     EmailModule,
     MktEmailModule,
+    MktSendmailTemplateModule,
     TokenModule,
     TwentyORMModule,
     WorkspaceCacheStorageModule,
     MktLicenseIntegrationModule,
   ],
-  controllers: [MktCustomerExportController],
   providers: [
+    // Repositories
+    MktCustomerRepository,
+    MktCustomerTierHistoryRepository,
+    MktWorkspaceMemberRepository,
+    MktOrderRepository,
+
+    // Services
     MktCustomerCreationService,
+    MktCustomerAccountService,
     MktCustomerTierCalculationService,
+    MktCustomerTierHistoryService,
     MktCustomerTierService,
     MktCustomerQueueService,
     MktCustomerUpdateService,
-    //MktCustomerEventListener,
-    MktCustomerTierUpdateJob,
-    MktCustomerTierUpdateCommand,
-    MktCustomerTierCronJob,
-    MktCustomerTierRegistrationService,
+    // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
+    // MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
-    MktCustomerLicenseResolver,
     MktCustomerCodeGenerationService,
+    MktCustomerCategorizationService,
+    MktCustomerAutoAssignService,
+    MktCustomerDowngradePolicyService,
+
+    // Resolvers (GraphQL)
+    MktCustomerLicenseResolver,
+    MktCustomerLinkedAccountResolver,
+    MktCustomerExportResolver,
+    MktCustomerTierResolver,
+    MktCustomerTierHistoryResolver,
+
+    // Pre-Query Hooks (Validation)
+    MktCustomerCreateOnePreQueryHook,
+    MktCustomerUpdateOnePreQueryHook,
+
+    // Event Listeners
+    MktCustomerEventListener,
+
+    // Jobs & Commands
+    MktCustomerTierUpdateJob,
+    MktCustomerTierCronJob,
+    MktCustomerCategorizationCronJob,
   ],
   exports: [
+    // Repositories
+    MktCustomerRepository,
+    MktCustomerTierHistoryRepository,
+
+    // Services
     MktCustomerCreationService,
+    MktCustomerAccountService,
     MktCustomerQueueService,
-    MktCustomerTierRegistrationService,
+    MktCustomerTierHistoryService,
+    // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
+    // MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
     MktCustomerUpdateService,
+    MktCustomerTierService,
+    MktCustomerCategorizationService,
+    MktCustomerAutoAssignService,
+    MktCustomerCodeGenerationService,
+    MktCustomerDowngradePolicyService,
   ],
 })
 export class CustomerModule {}

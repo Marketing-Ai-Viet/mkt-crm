@@ -164,6 +164,9 @@ export type CreateGenericComboData = {
   validTo?: Date | null;
   metadata?: Record<string, unknown> | null;
   items: CreateGenericComboItemData[];
+  // Ownership fields (optional, will be set by service if not provided)
+  createdById?: string | null;
+  accountOwnerId?: string | null;
 };
 
 /**

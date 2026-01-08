@@ -383,6 +383,91 @@ export class MktProductProxyService {
   }
 
   // ============================================
+  // BATCH OPERATIONS (prevent N+1)
+  // ============================================
+
+  /**
+   * Get multiple products by IDs in parallel
+   * Uses Promise.all to prevent N+1 sequential calls
+   *
+   * @param productIds - Array of product IDs to fetch
+   * @param userContext - OAuth2 user context
+   * @returns Map of productId -> product (null if not found)
+   */
+  async getProductsByIds(
+    productIds: string[],
+    userContext?: UserContext,
+  ): Promise<Map<string, MktProduct | null>> {
+    const uniqueIds = [...new Set(productIds)];
+    const results = new Map<string, MktProduct | null>();
+
+    if (uniqueIds.length === 0) {
+      return results;
+    }
+
+    // Fetch all products in parallel
+    const promises = uniqueIds.map(async (productId) => {
+      const product = await this.getProduct(productId, userContext);
+
+      return { productId, product };
+    });
+
+    const fetchResults = await Promise.all(promises);
+
+    for (const { productId, product } of fetchResults) {
+      results.set(productId, product);
+    }
+
+    return results;
+  }
+
+  /**
+   * Get multiple packages by IDs in parallel
+   * Uses Promise.all to prevent N+1 sequential calls
+   *
+   * @param items - Array of { packageId, productId } to fetch
+   * @param userContext - OAuth2 user context
+   * @returns Map of packageId -> package (null if not found)
+   */
+  async getPackagesByIds(
+    items: Array<{ packageId: string; productId?: string }>,
+    userContext?: UserContext,
+  ): Promise<Map<string, MktProductPackage | null>> {
+    const results = new Map<string, MktProductPackage | null>();
+
+    if (items.length === 0) {
+      return results;
+    }
+
+    // Deduplicate by packageId
+    const uniqueItems = items.reduce(
+      (acc, item) => {
+        if (!acc.some((i) => i.packageId === item.packageId)) {
+          acc.push(item);
+        }
+
+        return acc;
+      },
+      [] as Array<{ packageId: string; productId?: string }>,
+    );
+
+    // Fetch all packages in parallel
+    const promises = uniqueItems.map(async ({ packageId, productId }) => {
+      const pkg = await this.getPackage(packageId, userContext, productId);
+
+      return { packageId, pkg };
+    });
+
+    const fetchResults = await Promise.all(promises);
+
+    for (const { packageId, pkg } of fetchResults) {
+      results.set(packageId, pkg);
+    }
+
+    return results;
+  }
+
+  // ============================================
   // CACHE MANAGEMENT
   // ============================================
 

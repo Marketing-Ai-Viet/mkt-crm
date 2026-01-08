@@ -1,37 +1,30 @@
 import { Injectable } from '@nestjs/common';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentHierarchyRepository } from 'src/mkt-core/mkt-department/repositories';
 
 @Injectable()
 export class MktDepartmentHierarchyService {
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+  constructor(
+    private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
+  ) {}
 
   async createTeamDepartmentHierarchy(
-    hierarchyData: MktDepartmentHierarchyWorkspaceEntity,
+    hierarchyData: Partial<MktDepartmentHierarchyWorkspaceEntity>,
   ): Promise<void> {
-    // Implementation for creating team department hierarchy
-
-    const hierarchyRepo = await this.mktRepo.getRepository(
-      MktDepartmentHierarchyWorkspaceEntity,
-    );
-    const hierarchy = hierarchyRepo.create(hierarchyData);
-
-    await hierarchyRepo.save(hierarchy);
+    await this.hierarchyRepository.createWithContext(hierarchyData);
   }
 
   async updateTeamDepartmentHierarchy(
-    hierarchyData: MktDepartmentHierarchyWorkspaceEntity,
+    hierarchyData: Partial<MktDepartmentHierarchyWorkspaceEntity>,
   ): Promise<void> {
-    const hierarchyRepo = await this.mktRepo.getRepository(
-      MktDepartmentHierarchyWorkspaceEntity,
-    );
-    const hierarchy = await hierarchyRepo.findOneBy({
-      childDepartmentId: hierarchyData.childDepartmentId,
-    });
-
-    if (hierarchy) {
-      hierarchyRepo.update(hierarchy.id, hierarchyData);
+    if (!hierarchyData.childDepartmentId) {
+      return;
     }
+
+    await this.hierarchyRepository.updateWithContext(
+      hierarchyData.childDepartmentId,
+      hierarchyData,
+    );
   }
 }

@@ -28,7 +28,7 @@ import {
   SINVOICE_FILE_STATUS_OPTIONS,
   SINVOICE_FILE_TYPE,
   SINVOICE_FILE_TYPE_OPTIONS,
-} from 'src/mkt-core/invoice/invoice.constants';
+} from 'src/mkt-core/invoice/constants';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';

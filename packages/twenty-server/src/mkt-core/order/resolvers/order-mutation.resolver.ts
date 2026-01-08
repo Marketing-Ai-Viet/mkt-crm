@@ -1,23 +1,25 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
+import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
 import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
   RefundOrderInputDto,
+  PublishDraftOrderInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
   ConfirmOrderResponseDto,
   CreateOrderResponseDto,
   RefundOrderResponseDto,
   UpdateOrderStatusResponseDto,
-  ValidationResultDto,
+  PublishDraftOrderResponseDto,
 } from 'src/mkt-core/order/dto/order-response.output';
 import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
@@ -38,7 +40,8 @@ import { OrderStatusService } from 'src/mkt-core/order/services/core';
  * - confirmOrder: Confirm/update order status
  * - updateOrderStatus: Update order status with state machine validation
  * - refundOrder: Full or partial order refund
- * - validateOrderInput: Validate order input before creation
+ *
+ * Note: Trial license creation is handled by MktLicenseResolver.mktCreateTrialLicense
  */
 @Resolver()
 export class OrderMutationResolver {
@@ -54,10 +57,11 @@ export class OrderMutationResolver {
    * - Single transaction for all operations
    * - Automatic rollback on failure
    * - Better error handling
+   * - Idempotency support to prevent duplicate orders
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => CreateOrderResponseDto, {
-    description: 'Create a new order with items, licenses, and payment',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.CREATE_ORDER_WITH_ITEMS,
   })
   async createOrderWithItems(
     @AuthWorkspace() workspace: Workspace,
@@ -78,7 +82,7 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => ConfirmOrderResponseDto, {
-    description: 'Confirm or update order status',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER,
   })
   async confirmOrder(
     @AuthWorkspace() workspace: Workspace,
@@ -95,42 +99,11 @@ export class OrderMutationResolver {
   }
 
   /**
-   * Validate order input before creation
-   * Useful for client-side validation
-   */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
-  @Query(() => ValidationResultDto, {
-    description: 'Validate order input before creation',
-  })
-  async validateOrderInput(
-    @AuthWorkspace() workspace: Workspace,
-    @Args('input') input: CreateOrderWithItemsInputDto,
-  ): Promise<ValidationResultDto> {
-    // Use same mapper - NO DUPLICATION
-    const domainInput = OrderInputMapper.toCreateOrderInput(input);
-
-    const result =
-      await this.orderOrchestrationService.validateCreateOrderInput(
-        workspace.id,
-        domainInput,
-      );
-
-    return {
-      valid: result.valid,
-      errors: result.errors.map((e) => ({
-        field: e.field,
-        message: e.message,
-        code: e.code,
-      })),
-    };
-  }
-
-  /**
    * Update order status using state machine validation
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => UpdateOrderStatusResponseDto, {
-    description: 'Update order status with state machine validation',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_STATUS,
   })
   async updateOrderStatus(
     @AuthWorkspace() workspace: Workspace,
@@ -154,19 +127,51 @@ export class OrderMutationResolver {
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => RefundOrderResponseDto, {
-    description: 'Refund an order (full or partial)',
+    description: ORDER_GRAPHQL_DESCRIPTIONS.REFUND_ORDER,
   })
   async refundOrder(
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: RefundOrderInputDto,
   ): Promise<RefundOrderResponseDto> {
-    const domainInput = OrderInputMapper.toRefundOrderInput(input);
-
     return this.orderOrchestrationService.refundOrder(
       workspace.id,
       workspaceMemberId,
-      domainInput,
+      input,
+    );
+  }
+
+  /**
+   * Publish a draft order - converts DRAFT to PENDING_PAYMENT
+   *
+   * Steps:
+   * - Creates payment/QR code
+   * - Updates order status to PENDING_PAYMENT
+   * - Schedules overdue check
+   */
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @Mutation(() => PublishDraftOrderResponseDto, {
+    description:
+      'Publish a draft order to create payment and start the payment flow',
+  })
+  async publishDraftOrder(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+    @Args('input') input: PublishDraftOrderInputDto,
+  ): Promise<PublishDraftOrderResponseDto> {
+    return this.orderOrchestrationService.publishDraftOrder(
+      workspace.id,
+      workspaceMemberId,
+      {
+        orderId: input.orderId,
+        paymentMethods: input.paymentMethods?.map((p) => ({
+          paymentMethodId: p.paymentMethodId,
+          name: p.name,
+          duration: p.duration,
+          amount: p.amount,
+        })),
+        note: input.note,
+      },
     );
   }
 }

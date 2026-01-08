@@ -22,7 +22,8 @@ import { CalendarEventImportManagerModule } from 'src/modules/calendar/calendar-
 import { MessagingImportManagerModule } from 'src/modules/messaging/message-import-manager/messaging-import-manager.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
 import { MktCommandModule } from 'src/mkt-core/commands/mkt-command.module';
-import { MktCronRegisterCommand } from 'src/mkt-core/commands/mkt-cron-register.command';
+// DISABLED: MktCronRegisterCommand - cron registration disabled
+// import { MktCronRegisterCommand } from 'src/mkt-core/commands/mkt-cron-register.command';
 
 import { DataSeedWorkspaceCommand } from './data-seed-dev-workspace.command';
 
@@ -56,7 +57,8 @@ import { DataSeedWorkspaceCommand } from './data-seed-dev-workspace.command';
     MigrateViewsToCoreCommand,
     ConfirmationQuestion,
     CronRegisterAllCommand,
-    MktCronRegisterCommand,
+    // DISABLED: MktCronRegisterCommand - cron registration disabled
+    // MktCronRegisterCommand,
     ...MKT_DATABASE_COMMAND_MODULES,
   ],
 })

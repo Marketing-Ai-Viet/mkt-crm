@@ -2,6 +2,7 @@ import { FindOptionsRelations, QueryRunner } from 'typeorm';
 
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { ORDER_HISTORY_ACTION } from 'src/mkt-core/order/constants';
 
 // ============================================
 // ORDER TYPES (Repository Level)
@@ -16,6 +17,15 @@ export type CreateOrderData = Partial<MktOrderWorkspaceEntity>;
  * Data type for updating an order (repository level)
  */
 export type UpdateOrderData = Partial<MktOrderWorkspaceEntity>;
+
+/**
+ * Data for updating payment amounts on order
+ */
+export type UpdatePaymentAmountsData = {
+  paidAmount: number;
+  remainingAmount: number;
+  paymentStatus: string;
+};
 
 /**
  * Options for order find operations
@@ -34,6 +44,14 @@ export const DEFAULT_ORDER_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEnti
     mktCustomer: true,
     mktPayments: true,
     mktContract: true,
+  };
+
+/**
+ * Relations for payment summary queries
+ */
+export const PAYMENT_SUMMARY_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEntity> =
+  {
+    mktPayments: true,
   };
 
 // ============================================
@@ -65,3 +83,15 @@ export const DEFAULT_ORDER_ITEM_RELATIONS: FindOptionsRelations<MktOrderItemWork
   {
     mktOrder: true,
   };
+
+export type CreateOrderHistoryData = {
+  orderId: string;
+  action: ORDER_HISTORY_ACTION;
+  name: string;
+  note?: string;
+  fieldName?: string;
+  oldValue?: string;
+  newValue?: string;
+  metadata?: Record<string, unknown>;
+  workspaceMemberId?: string;
+};

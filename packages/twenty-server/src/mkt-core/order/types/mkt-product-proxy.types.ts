@@ -175,6 +175,23 @@ export type MktLicenseSnapshot = {
 };
 
 /**
+ * Order Item License - License info for an order item
+ * Supports multiple licenses per order item (e.g., multi-device orders)
+ */
+export type OrderItemLicense = {
+  /** License ID from MKT Server */
+  id: string;
+  /** Unique license key */
+  licenseKey: string;
+  /** License snapshot (immutable) */
+  snapshot: MktLicenseSnapshot;
+  /** Device index (1-based, for multi-device) */
+  deviceIndex?: number;
+  /** Created timestamp */
+  createdAt: string;
+};
+
+/**
  * API Response wrapper (matching MKT Server format)
  */
 export type MktApiResponse<T> = {

@@ -2,7 +2,7 @@ import { Field, Int, ObjectType } from '@nestjs/graphql';
 
 import { GraphQLJSON } from 'graphql-type-json';
 
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 
 @ObjectType('OrganizationLevelHierarchyNode')
 export class OrganizationLevelHierarchyNode {

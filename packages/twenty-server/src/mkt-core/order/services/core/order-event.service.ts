@@ -4,8 +4,10 @@ import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/worksp
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
-  PAYMENT_HISTORY_TYPE,
-} from 'src/mkt-core/common/common.type';
+  OrderEventPayload,
+  PaymentEventPayload,
+} from 'src/mkt-core/order/types';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import {
   ACTION_TO_ORDER_EVENT_TYPE,
   ACTION_TO_PAYMENT_TYPE,
@@ -15,10 +17,6 @@ import {
   MKT_ORDER_EVENT_LOG_CONTEXT,
   MKT_ORDER_EVENT_LOG_MESSAGES,
 } from 'src/mkt-core/order/messages';
-import {
-  OrderEventPayload,
-  PaymentEventPayload,
-} from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**

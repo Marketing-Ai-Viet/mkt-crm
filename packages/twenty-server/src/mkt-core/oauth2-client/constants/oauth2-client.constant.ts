@@ -1,3 +1,5 @@
+import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
+
 export const OAUTH2_CLIENT_DEFAULTS = {
   SERVER_URL: 'http://localhost:3006',
   TOKEN_ENDPOINT: '/oauth/token',
@@ -8,13 +10,13 @@ export const OAUTH2_CLIENT_DEFAULTS = {
 
 export const OAUTH2_CACHE_DEFAULTS = {
   LRU_MAX: 10,
-  LRU_TTL_MS: 3600000,
-  REDIS_TTL_SECONDS: 3600,
+  LRU_TTL_MS: CACHE_TTL.VERY_LONG * 1000, // 1 hour
+  REDIS_TTL_SECONDS: CACHE_TTL.VERY_LONG, // 1 hour
 } as const;
 
 export const OAUTH2_REFRESH_DEFAULTS = {
-  THRESHOLD_SECONDS: 300,
-  INTERVAL_MS: 30000,
+  THRESHOLD_SECONDS: CACHE_TTL.SHORT, // 5 minutes
+  INTERVAL_MS: CACHE_TTL.LOCK_DEFAULT * 1000, // 30 seconds
 } as const;
 
 export const OAUTH2_HTTP_DEFAULTS = {
@@ -26,13 +28,13 @@ export const OAUTH2_HTTP_DEFAULTS = {
 export const OAUTH2_RATE_LIMIT_DEFAULTS = {
   ENABLED: true,
   MAX_ATTEMPTS: 10,
-  WINDOW_MS: 60000,
+  WINDOW_MS: CACHE_TTL.RATE_LIMIT_WINDOW * 1000, // 1 minute
 } as const;
 
 export const OAUTH2_CIRCUIT_BREAKER_DEFAULTS = {
   ENABLED: true,
   FAILURE_THRESHOLD: 5,
-  RESET_TIMEOUT_MS: 60000,
+  RESET_TIMEOUT_MS: CACHE_TTL.RATE_LIMIT_WINDOW * 1000, // 1 minute
   HALF_OPEN_ATTEMPTS: 3,
 } as const;
 
@@ -44,7 +46,7 @@ export const OAUTH2_JWT_DEFAULTS = {
 export const OAUTH2_LOCK_OPTIONS = {
   MS: 100,
   MAX_RETRIES: 10,
-  TTL: 5000,
+  TTL: 5000, // 5 seconds - short lock for token refresh
 } as const;
 
 export const OAUTH2_REDIS_HEALTH_DEFAULTS = {

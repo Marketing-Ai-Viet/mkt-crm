@@ -14,6 +14,7 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import {
@@ -24,13 +25,15 @@ import { MKT_ORDER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
-import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
+import { GenericComboSnapshot } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
+import { PAYMENT_STATUS_OPTIONS } from 'src/mkt-core/order/constants/payment-status.constants';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
@@ -84,7 +87,10 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
     standardId: MKT_ORDER_FIELD_IDS.orderCode,
     type: FieldMetadataType.TEXT,
     label: msg`Order Code`,
+    description: msg`Unique order code (format: PREFIX + YYYYMMDD + sequence)`,
+    icon: 'IconBarcode',
   })
+  @WorkspaceIsUnique()
   @WorkspaceIsNullable()
   orderCode: string;
 
@@ -217,6 +223,44 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   accountingConfirmed?: boolean;
 
   // ============================================
+  // MULTI-PAYMENT FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.paidAmount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Paid Amount`,
+    description: msg`Total confirmed payment amount`,
+    icon: 'IconCash',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  paidAmount?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.remainingAmount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Remaining Amount`,
+    description: msg`Remaining amount to be paid (totalAmount - paidAmount)`,
+    icon: 'IconCashBanknote',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  remainingAmount?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.paymentStatus,
+    type: FieldMetadataType.SELECT,
+    label: msg`Payment Status`,
+    description: msg`Payment status of the order`,
+    icon: 'IconCreditCard',
+    options: PAYMENT_STATUS_OPTIONS.options,
+    defaultValue: "'PENDING'",
+  })
+  @WorkspaceIsNullable()
+  paymentStatus?: string;
+
+  // ============================================
   // PROMOTION FIELDS
   // ============================================
 
@@ -250,6 +294,31 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   appliedPromotions?: PromotionSnapshot[] | null;
+
+  // ============================================
+  // COMBO FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.appliedCombos,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Applied Combos`,
+    description: msg`Immutable snapshots of applied combos at order time`,
+    icon: 'IconPackages',
+  })
+  @WorkspaceIsNullable()
+  appliedCombos?: GenericComboSnapshot[] | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.comboDiscount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Combo Discount`,
+    description: msg`Total discount from combo pricing`,
+    icon: 'IconDiscount',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  comboDiscount?: number;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,

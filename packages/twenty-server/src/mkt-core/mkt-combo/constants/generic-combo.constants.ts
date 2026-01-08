@@ -1,8 +1,14 @@
 /**
  * Constants for Generic Combo module
+ *
+ * Uses centralized cache configuration from infrastructure/redis
  */
 
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
+import {
+  CACHE_TTL,
+  COMBO_CACHE_PREFIX,
+} from 'src/mkt-core/infrastructure/redis/constants';
 
 // ============================================
 // COMBO ITEM TYPE
@@ -113,9 +119,20 @@ export const GENERIC_COMBO_DEFAULTS = {
 // ============================================
 
 export const GENERIC_COMBO_CACHE = {
-  TTL_SECONDS: 300, // 5 minutes
-  CALCULATION_TTL_SECONDS: 60, // 1 minute
-  KEY_PREFIX: 'generic-combo',
+  /** TTL in seconds (from centralized config) */
+  TTL_SECONDS: CACHE_TTL.SHORT, // 5 minutes
+
+  /** Calculation TTL in seconds (from centralized config) */
+  CALCULATION_TTL_SECONDS: CACHE_TTL.RATE_LIMIT_WINDOW, // 1 minute
+
+  /** Key prefix (from centralized config) */
+  KEY_PREFIX: COMBO_CACHE_PREFIX.DATA,
+
+  /** Calculation cache prefix */
+  CALCULATION_PREFIX: COMBO_CACHE_PREFIX.CALCULATION,
+
+  /** Code lookup prefix */
+  BY_CODE_PREFIX: COMBO_CACHE_PREFIX.BY_CODE,
 } as const;
 
 // ============================================

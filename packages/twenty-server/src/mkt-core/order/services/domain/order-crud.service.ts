@@ -173,7 +173,7 @@ export class OrderCrudService {
     queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.warn(`Hard deleting order: ${orderId}`);
-    await this.orderRepository.hardDelete(workspaceId, orderId, queryRunner);
+    await this.orderRepository.softDelete(workspaceId, orderId, queryRunner);
   }
 
   // ============================================
@@ -324,7 +324,7 @@ export class OrderCrudService {
     }
 
     this.logger.warn(`Hard deleting order items: ${orderItemIds.join(', ')}`);
-    await this.orderItemRepository.hardDeleteMany(
+    await this.orderItemRepository.softDeleteMany(
       workspaceId,
       orderItemIds,
       queryRunner,
@@ -340,7 +340,7 @@ export class OrderCrudService {
     queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.warn(`Hard deleting order items for order: ${orderId}`);
-    await this.orderItemRepository.hardDeleteByOrderId(
+    await this.orderItemRepository.softDeleteByOrderId(
       workspaceId,
       orderId,
       queryRunner,

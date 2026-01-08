@@ -1,88 +1,113 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import { MKT_CONTRACT_STATUS } from 'src/mkt-core/order/constants/mkt-contract.constant';
-import { MktContractWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-contract.workspace-entity';
+import {
+  CONTRACT_NUMBER_PREFIX,
+  CONTRACT_SEQUENCE_DIGITS,
+  DEFAULT_CONTRACT_DURATION_YEARS,
+  MKT_CONTRACT_STATUS,
+  TIMESTAMP_DIGITS,
+} from 'src/mkt-core/contract/constants';
+import {
+  CONTRACT_MESSAGES,
+  MKT_CONTRACT_LOG_CONTEXT,
+} from 'src/mkt-core/contract/messages';
+import { MktContractRepository } from 'src/mkt-core/contract/repositories';
+import { UpdateContractData } from 'src/mkt-core/contract/types';
+import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
 
-export type CreateContractData = {
-  name: string;
-  contractNumber: string;
-  orderId: string;
-  startDate?: string;
-  endDate?: string;
-  createdBy?: string;
-  workspaceId: string;
-};
-
+/**
+ * MktContractService - Business logic layer for Contract entity
+ *
+ * Responsibilities:
+ * - Contract number generation
+ * - Contract creation for orders
+ * - Contract-order linking
+ * - Contract updates
+ */
 @Injectable()
 export class MktContractService {
-  private readonly logger = new Logger(MktContractService.name);
+  private readonly logger = new Logger(`${MKT_CONTRACT_LOG_CONTEXT}:Service`);
 
-  constructor(private readonly mktRepo: MktRepositoryService) {}
+  constructor(
+    private readonly contractRepository: MktContractRepository,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly customerRepository: MktCustomerRepository,
+  ) {}
 
   /**
    * Generate unique contract number
+   * Format: CT + YYYYMMDD + 3-digit sequence
+   * Example: CT20241201001
    */
   async generateContractNumber(workspaceId: string): Promise<string> {
     try {
-      const contractRepository = await this.getContractRepo(workspaceId);
-
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const now = DateTimeUtils.now();
+      const year = now.year;
+      const month = String(now.month).padStart(2, '0');
+      const day = String(now.day).padStart(2, '0');
       const datePrefix = `${year}${month}${day}`;
 
-      // Find the highest contract number for today
-      const todayContracts = await contractRepository
-        .createQueryBuilder('contract')
-        .where('contract.contractNumber LIKE :pattern', {
-          pattern: `CT${datePrefix}%`,
-        })
-        .orderBy('contract.contractNumber', 'DESC')
-        .limit(1)
-        .getOne();
+      // Tìm số hợp đồng lớn nhất của ngày hôm nay
+      const lastContractNumber =
+        await this.contractRepository.findLastNumberWithPrefix(
+          `${CONTRACT_NUMBER_PREFIX}${datePrefix}`,
+          workspaceId,
+        );
 
       let nextNumber = 1;
 
-      if (todayContracts?.contractNumber) {
-        // Extract number from existing contract code (e.g., CT20241201001 -> 1)
-        const match = todayContracts.contractNumber.match(/CT\d{8}(\d{3})$/);
+      if (lastContractNumber) {
+        // Trích xuất số từ mã hợp đồng (e.g., CT20241201001 -> 1)
+        const regex = new RegExp(
+          `${CONTRACT_NUMBER_PREFIX}\\d{8}(\\d{${CONTRACT_SEQUENCE_DIGITS}})$`,
+        );
+        const match = lastContractNumber.match(regex);
 
         if (match) {
           nextNumber = parseInt(match[1], 10) + 1;
         }
       }
 
-      // Generate new contract code: CT + YYYYMMDD + 3-digit number
-      const contractNumber = `CT${datePrefix}${String(nextNumber).padStart(3, '0')}`;
+      // Tạo mã hợp đồng mới: CT + YYYYMMDD + 3-digit number
+      const contractNumber = `${CONTRACT_NUMBER_PREFIX}${datePrefix}${String(nextNumber).padStart(CONTRACT_SEQUENCE_DIGITS, '0')}`;
 
-      // Double-check uniqueness
-      const existingContract = await contractRepository.findOne({
-        where: { contractNumber },
-      });
+      // Kiểm tra trùng lặp
+      // TODO : Cải thiện hiệu suất
+      const existingContract =
+        await this.contractRepository.isContractNumberExists(
+          contractNumber,
+          workspaceId,
+        );
 
       if (existingContract) {
-        // If somehow duplicate, try with timestamp
-        const timestamp = Date.now().toString().slice(-6);
+        // Nếu trùng, sử dụng timestamp
+        const timestamp = DateTimeUtils.toMillis(now)
+          .toString()
+          .slice(-TIMESTAMP_DIGITS);
 
-        return `CT${datePrefix}${timestamp}`;
+        return `${CONTRACT_NUMBER_PREFIX}${datePrefix}${timestamp}`;
       }
 
-      this.logger.log(`Generated contract number: ${contractNumber}`);
+      this.logger.log(
+        CONTRACT_MESSAGES.LOG.GENERATE_NUMBER_SUCCESS(contractNumber),
+      );
 
       return contractNumber;
     } catch (error) {
-      this.logger.error('Failed to generate contract number:', error);
+      this.logger.error(CONTRACT_MESSAGES.ERROR.GENERATE_NUMBER_FAILED, error);
 
-      throw new Error('Failed to generate contract number');
+      throw new Error(CONTRACT_MESSAGES.ERROR.GENERATE_NUMBER_FAILED);
     }
   }
 
   /**
    * Create contract for order
+   * Tạo hợp đồng mới khi đơn hàng được xác nhận
    */
   async createContractForOrder(
     order: MktOrderWorkspaceEntity,
@@ -93,41 +118,41 @@ export class MktContractService {
     try {
       this.logger.log(`Creating contract for order: ${order.id}`);
 
-      const contractRepository = await this.getContractRepo(workspaceId);
-
       // Generate contract data
       const contractNumber = await this.generateContractNumber(workspaceId);
 
       const contractName = await this.generateContractName(
-        order,
+        workspaceId,
         mktCustomerId,
         generatedOrderCode,
       );
 
-      const now = new Date();
-      const startDate = now.toISOString().split('T')[0];
+      const now = DateTimeUtils.now();
 
       // Default contract duration: 1 year from now
-      const endDate = new Date();
-
-      endDate.setFullYear(endDate.getFullYear() + 1);
-      const formattedEndDate = endDate.toISOString().split('T')[0];
-
-      // Create the contract entity
-      const contract = contractRepository.create({
-        name: contractName,
-        contractNumber,
-        startDate: startDate,
-        endDate: formattedEndDate,
-        status: MKT_CONTRACT_STATUS.ACTIVE,
-        customerId: mktCustomerId,
+      const endDateTime = DateTimeUtils.add(now, {
+        years: DEFAULT_CONTRACT_DURATION_YEARS,
       });
 
-      // Set the createdById field (reference to workspace member who created the order)
-      contract.createdById = order.createdById;
+      // Build ownership fields from order's ownership
+      const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+        workspaceMemberId: order.createdById ?? undefined,
+        accountOwnerId: order.accountOwnerId ?? undefined,
+      });
 
-      // Save the contract
-      const savedContract = await contractRepository.save(contract);
+      // Create the contract using repository
+      const savedContract = await this.contractRepository.create(
+        {
+          name: contractName,
+          contractNumber,
+          startDate: DateTimeUtils.toDate(now),
+          endDate: DateTimeUtils.toDate(endDateTime),
+          status: MKT_CONTRACT_STATUS.ACTIVE,
+          customerId: mktCustomerId,
+          ...ownershipFields,
+        },
+        workspaceId,
+      );
 
       this.logger.log(
         `Successfully created contract ${contractNumber} for order ${order.id}`,
@@ -140,12 +165,14 @@ export class MktContractService {
         error,
       );
 
-      throw new Error('Failed to create contract for order');
+      throw new Error(CONTRACT_MESSAGES.ERROR.CREATE_FAILED(order.id));
     }
-  } /**
-   * Link contract to order
-   */
+  }
 
+  /**
+   * Link contract to order
+   * Liên kết hợp đồng với đơn hàng
+   */
   async linkContractToOrder(
     contractId: string,
     orderId: string,
@@ -154,10 +181,7 @@ export class MktContractService {
     try {
       this.logger.log(`Linking contract ${contractId} to order ${orderId}`);
 
-      const orderRepository =
-        await this.mktRepo.getOrderRepositoryByWorkspaceId(workspaceId);
-
-      await orderRepository.update(orderId, {
+      await this.orderRepository.update(workspaceId, orderId, {
         mktContractId: contractId,
       });
 
@@ -176,31 +200,36 @@ export class MktContractService {
 
   /**
    * Generate contract name based on order
+   * Format: Hợp đồng {orderCode} - {customerName}
    */
   private async generateContractName(
-    order: MktOrderWorkspaceEntity,
+    workspaceId: string,
     mktCustomerId: string | null,
     orderCode: string | null,
   ): Promise<string> {
     try {
-      const mktCustomerRepo = await this.mktRepo.getRepository(
-        MktCustomerWorkspaceEntity,
-      );
       let customerName = 'Unknown Customer';
 
       if (mktCustomerId) {
-        const customer = await mktCustomerRepo.findOne({
-          where: { id: mktCustomerId },
-        });
+        const customer = await this.customerRepository.findByIdOrNull(
+          mktCustomerId,
+          workspaceId,
+        );
 
-        if (customer?.name) customerName = customer.name;
+        if (customer?.name) {
+          customerName = customer.name;
+        }
       }
 
       return `Hợp đồng ${orderCode} - ${customerName}`;
     } catch (error) {
       this.logger.error('Failed to generate contract name:', error);
 
-      return `Hợp đồng ${new Date().toLocaleDateString('vi-VN')}`;
+      // Fallback với ngày tạo
+      const now = DateTimeUtils.now();
+      const formattedDate = DateTimeUtils.format(now, 'dd/MM/yyyy');
+
+      return `Hợp đồng ${formattedDate}`;
     }
   }
 
@@ -209,51 +238,39 @@ export class MktContractService {
    */
   async updateContract(
     contractId: string,
-    updateData: Partial<MktContractWorkspaceEntity>,
+    updateData: UpdateContractData,
     workspaceId: string,
   ): Promise<void> {
     try {
       this.logger.log(`Updating contract ${contractId}`);
 
-      const contractRepository = await this.getContractRepo(workspaceId);
+      await this.contractRepository.update(contractId, updateData, workspaceId);
 
-      await contractRepository.update(contractId, updateData);
-
-      this.logger.log(`Successfully updated contract ${contractId}`);
+      this.logger.log(CONTRACT_MESSAGES.LOG.UPDATE_SUCCESS(contractId));
     } catch (error) {
       this.logger.error(`Failed to update contract ${contractId}:`, error);
 
-      throw new Error('Failed to update contract');
+      throw new Error(CONTRACT_MESSAGES.ERROR.UPDATE_FAILED(contractId));
     }
   }
 
   /**
-   * Find contract by ID
+   * Find contract by ID with relations
    */
   async findContractById(
     contractId: string,
     workspaceId: string,
   ): Promise<MktContractWorkspaceEntity | null> {
     try {
-      const contractRepository = await this.getContractRepo(workspaceId);
-
-      return await contractRepository.findOne({
-        where: { id: contractId },
-        relations: ['mktOrders'],
-      });
+      return await this.contractRepository.findByIdWithRelations(
+        contractId,
+        ['mktOrders'],
+        workspaceId,
+      );
     } catch (error) {
       this.logger.error(`Failed to find contract ${contractId}:`, error);
 
       return null;
     }
-  }
-
-  /**
-   * Get contract repository with workspace context
-   */
-  private async getContractRepo(workspaceId: string) {
-    if (!workspaceId) return this.mktRepo.getContractRepository();
-
-    return this.mktRepo.getContractRepositoryByWorkspaceId(workspaceId);
   }
 }

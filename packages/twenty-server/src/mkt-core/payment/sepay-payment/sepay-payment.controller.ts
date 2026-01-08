@@ -5,6 +5,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,35 +15,34 @@ import {
   Res,
   UnauthorizedException,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 
 import { Response } from 'express';
 
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
 import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-template.workspace-entity';
-import { RequestSepayJWT } from 'src/mkt-core/payment/constants/payment.type';
-import { FireBaseIntegrationService } from 'src/mkt-core/payment/integration/firebase-integration.service';
-import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
+import {
+  RequestSepayJWT,
+  SepayWebhookRequest,
+} from 'src/mkt-core/payment/types/payment.type';
+import { paymentConfig } from 'src/mkt-core/payment/config';
+import {
+  SEPAY_TEMPLATE_DEFAULTS,
+  VIETNAM_TIMEZONE,
+} from 'src/mkt-core/payment/constants/sepay.constants';
+import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
+import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
-
-type SepayWebhookPayload = {
-  gateway: string; // "sepay",
-  transactionDate: string; // "2025-09-24 10:45:51",
-  accountNumber: string; // "0971304083",
-  subAccount: string | null; // null,
-  code: string; // "MKT20250924001",
-  content: string; // "MKT20250924001",
-  transferType: string; // "in",
-  description: string; // "Payment for order MKT20250924001",
-  transferAmount: number; // 55000,
-  referenceCode: string; // "",
-  accumulated: number; // 33648579,
-  id: number; // 237046
-};
+import { SepayWebhookResponse } from 'src/mkt-core/payment/types';
+import {
+  DATE_TIME_FORMATS,
+  DateTimeUtils,
+} from 'src/mkt-core/utils/date-time.utils';
 
 // Choose guards based on environment flag
 // Removed unused sepayGuards variable
@@ -53,10 +53,10 @@ export class SepayPaymentController {
   private readonly logger = new Logger(SepayPaymentController.name);
 
   constructor(
-    private readonly accessTokenService: AccessTokenService,
+    @Inject(paymentConfig.KEY)
+    private readonly config: ConfigType<typeof paymentConfig>,
     private readonly mktPaymentService: MktPaymentService,
-    private readonly fireBaseIntegrationService: FireBaseIntegrationService,
-    private readonly mktPaymentPrepareService: MktPaymentPrepareService,
+    private readonly mktPaymentWebhookService: MktPaymentWebhookService,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
 
@@ -66,11 +66,10 @@ export class SepayPaymentController {
    * @returns boolean indicating if the API key is valid
    */
   private isValidApiKey(apiKey: string): boolean {
-    // Get the valid API key from environment variable
-    const validApiKey = process.env.SEPAY_WEBHOOK_API_KEY;
+    const validApiKey = this.config.sepay.webhookApiKey;
 
     if (!validApiKey) {
-      this.logger.warn('SEPAY_WEBHOOK_API_KEY environment variable not set');
+      this.logger.warn('SEPAY_WEBHOOK_API_KEY not configured');
 
       return false;
     }
@@ -120,55 +119,35 @@ export class SepayPaymentController {
   @UseGuards(PublicEndpointGuard)
   @Post('hooks/sepay-payment')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async handleSepayPayment(
-    @Body() payload: SepayWebhookPayload,
-    @Req() request: RequestSepayJWT,
+    @Body() payload: SepayWebhookDto,
+    @Req() request: SepayWebhookRequest,
     @Headers('authorization') authorization?: string,
-  ) {
-    this.logger.log('Received sepay-payment webhook', payload);
+  ): Promise<SepayWebhookResponse> {
+    this.logger.log('Received sepay-payment webhook', {
+      id: payload.id,
+      code: payload.code,
+    });
 
-    // Validate authorization header with API key from .env
+    // Step 1: Validate authorization header with API key from .env
     try {
       this.validateAuthorizationHeader(authorization);
       this.logger.log('API key validation successful');
     } catch (error) {
       this.logger.error('Authorization validation failed:', error.message);
-      throw error; // Always throw error for invalid API key
+      throw error;
     }
 
-    this.logger.log('Request user info', {
-      user: request.user,
-      workspaceId: request.workspaceId,
-      workspaceMemberId: request.workspaceMemberId,
-      userWorkspaceId: request.userWorkspaceId,
-    });
-    const workspaceId = process.env.SEPAY_WORKSPACE_ID;
+    const workspaceId = this.config.sepay.workspaceId;
 
     if (!workspaceId) {
-      this.logger.error('Workspace ID is not available');
+      this.logger.error('SEPAY_WORKSPACE_ID is not configured');
 
       return { success: true };
     }
 
-    const order = await this.mktPaymentService.findOneByOrderCode(
-      workspaceId,
-      payload.code,
-    );
-
-    if (!order) {
-      this.logger.error(`Order not found for code: ${payload.code}`);
-
-      return { success: true };
-    }
-
-    const payments = await this.mktPaymentService.findPaymentsByOrderId(
-      workspaceId,
-      order.id,
-    );
-
-    if (payments.length === 0) {
-      this.logger.warn(`No payments found for order ${order.id}`);
-    }
+    // Step 2: Process payment with transaction (includes logging, validation, update)
     const authContext: RequestSepayJWT = {
       user: request.user,
       workspaceId: request.workspaceId,
@@ -176,24 +155,21 @@ export class SepayPaymentController {
       userWorkspaceId: request.userWorkspaceId,
     };
 
-    for (const payment of payments) {
-      await this.mktPaymentService.updatePaymentById(
-        workspaceId,
-        payment.id,
-        {
-          status: MKT_PAYMENT_STATUS.COMPLETED,
-          paymentDate: payload.transactionDate,
-          amount: payload.transferAmount,
-          description: payload.content || payload.description,
-        },
-        authContext,
-      );
-      this.logger.log(`Updated payment ${payment.id} for order ${order.id}`);
-      this.fireBaseIntegrationService.completedOrderToFirebase(order);
-      break; // Assuming only one payment needs to be updated
-    }
+    // Get client IP address for logging
+    const ipAddress =
+      (request.headers?.['x-forwarded-for'] as string)?.split(',')[0] ||
+      request.ip ||
+      undefined;
 
-    return { success: true };
+    // Delegate all logic to webhook service with DB transaction
+    const result = await this.mktPaymentWebhookService.processWebhookPayment(
+      workspaceId,
+      payload,
+      authContext,
+      ipAddress,
+    );
+
+    return result;
   }
 
   @UseGuards(PublicEndpointGuard)
@@ -206,10 +182,10 @@ export class SepayPaymentController {
     this.logger.log(`Fetching payment QR for order: ${orderCode}`);
 
     try {
-      const workspaceId = process.env.MKT_WORKSPACE_ID;
+      const workspaceId = this.config.workspace.mktWorkspaceId;
 
       if (!workspaceId) {
-        this.logger.error('Workspace ID is not available');
+        this.logger.error('MKT_WORKSPACE_ID is not configured');
         throw new NotFoundException('Workspace not configured');
       }
 
@@ -257,43 +233,40 @@ export class SepayPaymentController {
       // Replace template variables
       let htmlContent = template.content || '';
 
-      // Format expired_at if available
+      // Format expired_at if available using DateTimeUtils
       let formattedExpiredAt = payment.expiredAt;
 
       if (formattedExpiredAt) {
         try {
-          const expiredDate = new Date(formattedExpiredAt);
+          const expiredDateTime = DateTimeUtils.fromISO(formattedExpiredAt);
 
-          formattedExpiredAt = expiredDate.toLocaleString('vi-VN', {
-            timeZone: 'Asia/Ho_Chi_Minh',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
+          // Convert to Vietnam timezone and format
+          formattedExpiredAt = expiredDateTime
+            .setZone(VIETNAM_TIMEZONE)
+            .toFormat(DATE_TIME_FORMATS.DISPLAY_DATE_TIME);
         } catch (error) {
           this.logger.warn('Error formatting expired_at:', error);
         }
       }
 
       const templateVariables = {
-        customer_name: order.name || 'Khách hàng',
+        customer_name:
+          order.name || SEPAY_TEMPLATE_DEFAULTS.DEFAULT_CUSTOMER_NAME,
         order_code: orderCode,
         amount: payment.amount?.toLocaleString('vi-VN') || '0',
-        currency: payment.currency || 'VND',
+        currency: payment.currency || SEPAY_TEMPLATE_DEFAULTS.DEFAULT_CURRENCY,
         qr_code_url: payment.qrCodeUrl || '',
-        expired_at: formattedExpiredAt || '" - trong vòng 24h"',
-        company_name: 'MKT CRM',
+        expired_at:
+          formattedExpiredAt || SEPAY_TEMPLATE_DEFAULTS.DEFAULT_EXPIRY_TEXT,
+        company_name: SEPAY_TEMPLATE_DEFAULTS.COMPANY_NAME,
       };
 
-      // Replace all template variables
-      Object.entries(templateVariables).forEach(([key, value]) => {
+      // Replace all template variables - sử dụng for...of thay vì forEach
+      for (const [key, value] of Object.entries(templateVariables)) {
         const regex = new RegExp(`{{${key}}}`, 'g');
 
-        htmlContent = htmlContent.replace(regex, value || '');
-      });
+        htmlContent = htmlContent.replace(regex, String(value ?? ''));
+      }
 
       this.logger.log(`Generated payment page for order ${orderCode}`);
 

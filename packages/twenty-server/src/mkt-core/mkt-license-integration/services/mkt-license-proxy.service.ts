@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
+import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
 import { UserContext } from 'src/mkt-core/oauth2-client/types';
-import { MKT_LICENSE_LOG_CONTEXT } from 'src/mkt-core/mkt-license-integration/constants';
 import {
   MktLicenseResponse,
   MktPaginatedLicenseResponse,
@@ -9,12 +10,17 @@ import {
   MktLicenseAnalytics,
   MktQueryLicensesParams,
   MktCreateLicensePayload,
+  MktCreateTrialLicensePayload,
+  MktUpgradeTrialLicensePayload,
   MktUpdateLicensePayload,
   MktValidateLicensePayload,
   MktBulkCreateLicensePayload,
   MktBulkUpdateLicensePayload,
   MktBulkDeleteLicensePayload,
   MktLicenseAnalyticsQueryParams,
+  MktFindTrialByProductParams,
+  MktCreateOrReuseTrialResult,
+  MktCreateTrialWithCustomerPayload,
 } from 'src/mkt-core/mkt-license-integration/types';
 import { MktLicenseRepository } from 'src/mkt-core/mkt-license-integration/repositories';
 
@@ -36,9 +42,12 @@ import { MktLicenseRepository } from 'src/mkt-core/mkt-license-integration/repos
  */
 @Injectable()
 export class MktLicenseProxyService {
-  private readonly logger = new Logger(MKT_LICENSE_LOG_CONTEXT);
+  private readonly logger = new Logger(MktLicenseProxyService.name);
 
-  constructor(private readonly licenseRepository: MktLicenseRepository) {}
+  constructor(
+    private readonly licenseRepository: MktLicenseRepository,
+    private readonly customerRepository: MktCustomerRepository,
+  ) {}
 
   // ==================== READ OPERATIONS ====================
 
@@ -63,6 +72,24 @@ export class MktLicenseProxyService {
     return this.licenseRepository.findByLicenseKey(licenseKey, userContext);
   }
 
+  /**
+   * Find existing trial license by product and email.
+   *
+   * Used to check if user already has trial before creating new one.
+   * Returns the first active/pending trial license if found, or null.
+   *
+   * Business Rule: 1 user can only have 1 active trial per product
+   */
+  async findTrialByProductAndEmail(
+    params: MktFindTrialByProductParams,
+    userContext?: UserContext,
+  ): Promise<MktLicenseResponse | null> {
+    return this.licenseRepository.findTrialByProductAndEmail(
+      params,
+      userContext,
+    );
+  }
+
   async validate(
     payload: MktValidateLicensePayload,
     userContext?: UserContext,
@@ -77,6 +104,120 @@ export class MktLicenseProxyService {
     userContext?: UserContext,
   ): Promise<MktLicenseResponse> {
     return this.licenseRepository.create(payload, userContext);
+  }
+
+  /**
+   * Create a trial license on MKT Server
+   *
+   * Trial license does NOT require productPackageId.
+   * Default: maxDevices = 1 (single device only)
+   */
+  async createTrial(
+    payload: MktCreateTrialLicensePayload,
+    userContext?: UserContext,
+  ): Promise<MktLicenseResponse> {
+    return this.licenseRepository.createTrial(payload, userContext);
+  }
+
+  /**
+   * Create or reuse existing trial license (with customerId)
+   *
+   * Business Logic:
+   * - 1 user can only have 1 active trial per product
+   * - Lookup email from customer's linkedAccounts (MKT_SERVER, isPrimary, ACTIVE)
+   * - If trial exists → reuse existing trial license
+   * - If no trial exists → create new trial license
+   *
+   * @param payload - Contains customerId (not email)
+   * @param userContext
+   * @returns Object containing license and whether it was reused
+   */
+  async createOrReuseTrial(
+    payload: MktCreateTrialWithCustomerPayload,
+    userContext?: UserContext,
+  ): Promise<MktCreateOrReuseTrialResult> {
+    // Lookup email from customer's linkedAccounts
+    const email = await this.getCustomerEmail(
+      payload.customerId,
+      payload.workspaceId,
+    );
+
+    this.logger.debug(
+      `Customer ${payload.customerId}: using email "${email}" for trial license`,
+    );
+
+    // Check for existing trial license
+    const existingTrial = await this.findTrialByProductAndEmail(
+      {
+        productId: payload.productId,
+        email,
+      },
+      userContext,
+    );
+
+    if (existingTrial) {
+      this.logger.log(
+        `Reusing existing trial license ${existingTrial.id} for product ${payload.productId}`,
+      );
+
+      return {
+        license: existingTrial,
+        reused: true,
+      };
+    }
+
+    // Create new trial license
+    const license = await this.createTrial(
+      {
+        productId: payload.productId,
+        email,
+        trialDays: payload.trialDays,
+        maxDevices: payload.maxDevices,
+      },
+      userContext,
+    );
+
+    this.logger.log(
+      `Created new trial license ${license.id} for product ${payload.productId}`,
+    );
+
+    return {
+      license,
+      reused: false,
+    };
+  }
+
+  // ==================== PRIVATE METHODS ====================
+
+  /**
+   * Get customer email for license creation from linkedAccounts
+   *
+   * Priority:
+   * 1. MKT_SERVER linkedAccount (isPrimary=true, status=ACTIVE)
+   * 2. Any ACTIVE MKT_SERVER linkedAccount with email
+   *
+   * @throws Error if no valid email found
+   */
+  private async getCustomerEmail(
+    customerId: string,
+    workspaceId: string,
+  ): Promise<string> {
+    const customer = await this.customerRepository.findByIdOrNull(
+      customerId,
+      workspaceId,
+    );
+
+    if (!customer) {
+      throw new Error(
+        `Customer "${customerId}" not found. Cannot determine email for license creation.`,
+      );
+    }
+
+    // Extract email from linkedAccounts (throws if not found)
+    return this.customerRepository.extractMktServerEmail(
+      customer.linkedAccounts as LinkedAccount[] | null,
+      customerId,
+    );
   }
 
   async update(
@@ -105,6 +246,22 @@ export class MktLicenseProxyService {
     userContext?: UserContext,
   ): Promise<MktLicenseResponse> {
     return this.licenseRepository.revoke(id, userContext);
+  }
+
+  /**
+   * Upgrade a trial license to official license
+   *
+   * This is an atomic operation on MKT Server:
+   * - Validates trial license
+   * - Converts to official with productPackageId
+   * - License key remains the same
+   */
+  async upgradeTrial(
+    id: string,
+    payload: MktUpgradeTrialLicensePayload,
+    userContext?: UserContext,
+  ): Promise<MktLicenseResponse> {
+    return this.licenseRepository.upgradeTrial(id, payload, userContext);
   }
 
   // ==================== BULK OPERATIONS ====================

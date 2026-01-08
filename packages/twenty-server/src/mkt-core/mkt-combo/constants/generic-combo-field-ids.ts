@@ -20,6 +20,9 @@ export const MKT_GENERIC_COMBO_FIELD_IDS = {
     // Audit fields
     version: 'a2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d',
     lastModifiedById: 'b3c4d5e6-f7a8-9b0c-1d2e-3f4a5b6c7d8e',
+    // Ownership fields
+    createdBy: '3f4a5b6c-7d8e-9f0a-1b2c-d3e4f5a6b7c8',
+    accountOwner: '4a5b6c7d-8e9f-0a1b-2c3d-e4f5a6b7c8d9',
     // Relations
     items: 'c4d5e6f7-a8b9-0c1d-2e3f-4a5b6c7d8e9f',
   },

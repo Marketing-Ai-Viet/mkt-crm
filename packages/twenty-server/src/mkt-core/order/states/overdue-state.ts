@@ -5,38 +5,91 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-
 import {
   OrderState,
   OrderStateContext,
   OrderStateInput,
-} from './order-state.interface';
+} from 'src/mkt-core/order/types/order-state.interface';
 
+/**
+ * OverdueState - State for overdue orders (past payment deadline)
+ *
+ * Transitions:
+ * - OVERDUE → PENDING_PAYMENT (gia hạn thời gian thanh toán)
+ * - OVERDUE → CANCELED (hủy đơn)
+ * - OVERDUE → BLOCKED (khóa đơn)
+ */
 export class OverdueState extends OrderState {
   constructor() {
     super(ORDER_STATUS.OVERDUE);
   }
 
   canTransitionTo(
-    _newStatus: ORDER_STATUS,
+    newStatus: ORDER_STATUS,
     _context: OrderStateContext,
     _input: OrderStateInput,
   ): boolean {
-    return false;
+    return [
+      ORDER_STATUS.PENDING_PAYMENT,
+      ORDER_STATUS.CANCELED,
+      ORDER_STATUS.BLOCKED,
+    ].includes(newStatus);
   }
 
   getAction(
     _context: OrderStateContext,
-    _input: OrderStateInput,
+    input: OrderStateInput,
   ): ORDER_ACTION | null {
-    return ORDER_ACTION.OVERDUE;
+    // OVERDUE → PENDING_PAYMENT (gia hạn)
+    if (input.status === ORDER_STATUS.PENDING_PAYMENT) {
+      return ORDER_ACTION.NEW_ORDER;
+    }
+
+    // OVERDUE → CANCELED
+    if (input.status === ORDER_STATUS.CANCELED) {
+      return ORDER_ACTION.CANCEL;
+    }
+
+    // OVERDUE → BLOCKED
+    if (input.status === ORDER_STATUS.BLOCKED) {
+      return ORDER_ACTION.BLOCK;
+    }
+
+    return null;
   }
 
   getPayload(
-    _payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
+    payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity>,
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
+      case ORDER_ACTION.NEW_ORDER:
+        return {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: ORDER_STATUS.PENDING_PAYMENT,
+          },
+        };
+
+      case ORDER_ACTION.CANCEL:
+        return {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: ORDER_STATUS.CANCELED,
+          },
+        };
+
+      case ORDER_ACTION.BLOCK:
+        return {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: ORDER_STATUS.BLOCKED,
+          },
+        };
+
       default:
         throw new Error(`Invalid action ${action} for OverdueState`);
     }

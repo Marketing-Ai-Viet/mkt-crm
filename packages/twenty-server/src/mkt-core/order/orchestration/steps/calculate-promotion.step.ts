@@ -2,14 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { OrderItemForPromotion } from 'src/mkt-core/mkt-promotion/types';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { OrderPromotionIntegrationService } from 'src/mkt-core/order/services/integration/order-promotion.integration';
 import {
   CalculatePromotionStepOutput,
@@ -51,7 +50,7 @@ export class CalculatePromotionStep extends SagaStep<
   private readonly logger = new Logger(CalculatePromotionStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderRepository: MktOrderRepository,
     private readonly promotionIntegration: OrderPromotionIntegrationService,
   ) {
     super();
@@ -77,7 +76,7 @@ export class CalculatePromotionStep extends SagaStep<
   async execute(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CalculatePromotionStepOutput>> {
     try {
       if (!context.orderId) {
@@ -90,6 +89,8 @@ export class CalculatePromotionStep extends SagaStep<
       this.logger.log(`Calculating promotions for order: ${context.orderId}`);
 
       // Get order subtotal from context metadata
+      // TODO : Combo calculation types may affect this
+      // TODO: Customer tier discounts may affect this
       const orderSubtotal =
         (context.metadata.get('totalAmount') as number) ?? 0;
 
@@ -139,7 +140,6 @@ export class CalculatePromotionStep extends SagaStep<
         context,
         promotionResult,
         input.couponCode,
-        queryRunner,
       );
 
       // Store in context for subsequent steps
@@ -180,7 +180,7 @@ export class CalculatePromotionStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const rollbackData = context.rollbackData.get(this.name) as {
       orderId: string;
@@ -198,10 +198,10 @@ export class CalculatePromotionStep extends SagaStep<
         'Compensating promotion step - resetting promotion data',
       );
 
-      // Reset promotion fields
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: rollbackData.orderId },
+      // Reset promotion fields using repository
+      await this.orderRepository.update(
+        context.workspaceId,
+        rollbackData.orderId,
         {
           couponCode: null,
           promotionDiscount: 0,
@@ -264,24 +264,24 @@ export class CalculatePromotionStep extends SagaStep<
     context: SagaContext,
     result: OrderPromotionResult,
     couponCode: string | undefined,
-    queryRunner: QueryRunner,
   ): Promise<void> {
     const currentTotalAmount =
       (context.metadata.get('totalAmount') as number) ?? 0;
 
     const finalAmount = currentTotalAmount - result.totalDiscount;
 
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: context.orderId },
-      {
-        couponCode: couponCode ?? null,
-        promotionDiscount: result.totalDiscount,
-        appliedPromotions:
-          result.promotions.length > 0 ? result.promotions : null,
-        totalAmount: Math.max(0, finalAmount), // Ensure non-negative
-      },
-    );
+    if (!context.orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
+    await this.orderRepository.update(context.workspaceId, context.orderId, {
+      couponCode: couponCode ?? null,
+      promotionDiscount: result.totalDiscount,
+      appliedPromotions:
+        result.promotions.length > 0 ? result.promotions : null,
+      totalAmount: Math.max(0, finalAmount), // Ensure non-negative
+    });
 
     // Update totalAmount in context for subsequent steps
     context.metadata.set('totalAmount', Math.max(0, finalAmount));

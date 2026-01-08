@@ -3,32 +3,44 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_DEFAULT_LANGUAGE } from 'src/mkt-core/mkt-product-integration/constants';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
+import {
+  MktOrderItemRepository,
+  MktOrderRepository,
+} from 'src/mkt-core/order/repositories';
 import { OrderCalculationService } from 'src/mkt-core/order/services/core';
+import { OrderComboIntegrationService } from 'src/mkt-core/order/services/integration';
 import {
   CreateOrderItemsStepOutput,
   CreateOrderWithItemsInput,
   ExternalMktProductInput,
+  ComboOrderInputType,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
+import {
+  ORDER_ITEM_SOURCE,
+  ORDER_ITEM_TYPE,
+  CreateOrderItemFromComboData,
+  GenericComboSnapshot,
+} from 'src/mkt-core/order/types/order-combo.types';
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 /**
- * CreateOrderItemsStep - Step 2: Tạo order items từ external products
+ * CreateOrderItemsStep - Step 2: Tạo order items từ external products và combos
  *
  * Thực hiện:
  * - Lấy thông tin products từ MKT Server
+ * - Flatten combos thành order items (nếu có)
  * - Tạo order items với calculated values và snapshots
- * - Tính toán tổng order (subtotal, tax, discount, totalAmount)
+ * - Tính toán tổng order (subtotal, tax, discount, totalAmount, comboDiscount)
  * - Update order với các giá trị đã tính
  *
  * Compensate:
@@ -41,15 +53,17 @@ export class CreateOrderItemsStep extends SagaStep<
 > {
   readonly name = 'create_order_items';
   readonly description =
-    'Create order items from variants and calculate totals';
+    'Create order items from external products/combos and calculate totals';
 
   private readonly logger = new Logger(CreateOrderItemsStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly orderItemRepository: MktOrderItemRepository,
     private readonly calculationService: OrderCalculationService,
     private readonly recordPositionService: RecordPositionService,
     private readonly mktProductProxy: MktProductProxyService,
+    private readonly comboIntegrationService: OrderComboIntegrationService,
   ) {
     super();
   }
@@ -74,19 +88,22 @@ export class CreateOrderItemsStep extends SagaStep<
         return this.cloneOrderItemsFromTrial(context, input, queryRunner);
       }
 
-      // Check if we have external products
+      // Check if we have external products or combos
       const hasExternalProducts =
         input.externalProducts && input.externalProducts.length > 0;
+      const hasCombos = input.combos && input.combos.length > 0;
 
-      if (!hasExternalProducts) {
+      if (!hasExternalProducts && !hasCombos) {
         return {
           success: false,
-          error: new Error('At least one external product is required'),
+          error: new Error(
+            'At least one external product or combo is required',
+          ),
         };
       }
 
-      // Create order items from external products
-      return this.createOrderItemsFromExternalProducts(
+      // Create order items from products and/or combos
+      return this.createOrderItemsFromProductsAndCombos(
         context,
         input,
         queryRunner,
@@ -103,7 +120,7 @@ export class CreateOrderItemsStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       orderItemIds: string[];
@@ -118,8 +135,9 @@ export class CreateOrderItemsStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.orderItemIds.length} order items`);
 
-      await queryRunner.manager.delete(
-        MktOrderItemWorkspaceEntity,
+      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
+      await this.orderItemRepository.softDeleteMany(
+        context.workspaceId,
         data.orderItemIds,
       );
 
@@ -135,43 +153,56 @@ export class CreateOrderItemsStep extends SagaStep<
   // ============================================
 
   /**
-   * Create order items from external MKT products
+   * Create order items from external products and/or combos
    */
-  private async createOrderItemsFromExternalProducts(
+  private async createOrderItemsFromProductsAndCombos(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateOrderItemsStepOutput>> {
-    const orderItemRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderItemWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     const orderLanguage = (input.orderLanguage ??
       MKT_DEFAULT_LANGUAGE) as MktSupportedLanguage;
 
-    // Build order items from external products
-    const orderItemsData = await this.buildOrderItemsFromExternalProducts(
-      context,
-      input.externalProducts ?? [],
-      orderLanguage,
-    );
+    const allOrderItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
+    let totalComboDiscount = 0;
+    const comboSnapshots: GenericComboSnapshot[] = [];
 
-    if (orderItemsData.length === 0) {
+    // 1. Build order items from external products (if any)
+    if (input.externalProducts && input.externalProducts.length > 0) {
+      const productItemsData = await this.buildOrderItemsFromExternalProducts(
+        context,
+        input.externalProducts,
+        orderLanguage,
+      );
+
+      allOrderItemsData.push(...productItemsData);
+    }
+
+    // 2. Build order items from combos (if any)
+    if (input.combos && input.combos.length > 0) {
+      const comboResult = await this.buildOrderItemsFromCombos(
+        context,
+        input.combos,
+        orderLanguage,
+      );
+
+      allOrderItemsData.push(...comboResult.orderItemsData);
+      totalComboDiscount = comboResult.totalComboDiscount;
+      comboSnapshots.push(...comboResult.comboSnapshots);
+    }
+
+    if (allOrderItemsData.length === 0) {
       return {
         success: false,
         error: new Error('No order items could be created'),
       };
     }
 
-    // Save order items
-    const orderItems = orderItemsData.map((data) =>
-      orderItemRepository.create(data),
+    // Save order items using repository
+    const savedOrderItems = await this.orderItemRepository.createMany(
+      context.workspaceId,
+      allOrderItemsData,
     );
-
-    const savedOrderItems = await queryRunner.manager.save(orderItems);
 
     this.logger.log(`Created ${savedOrderItems.length} order items`);
 
@@ -187,13 +218,17 @@ export class CreateOrderItemsStep extends SagaStep<
       totalAmountWithTax: item.totalAmountWithTax ?? 0,
     }));
 
-    const totals = this.calculationService.calculateOrderTotals(
-      calculatedItems,
-      input.discountPercent,
-    );
+    // Calculate totals (discount is handled by promotion system separately)
+    const totals =
+      this.calculationService.calculateOrderTotals(calculatedItems);
 
-    // Update order with totals
-    await this.updateOrderTotals(context, totals, queryRunner);
+    // Update order with totals and combo data
+    await this.updateOrderTotalsWithCombo(
+      context,
+      totals,
+      totalComboDiscount,
+      comboSnapshots,
+    );
 
     // Store rollback data
     context.orderItemIds = savedOrderItems.map((item) => item.id);
@@ -213,6 +248,152 @@ export class CreateOrderItemsStep extends SagaStep<
         },
       },
     };
+  }
+
+  /**
+   * Build order items from combos using ComboFlattenService
+   */
+  private async buildOrderItemsFromCombos(
+    context: SagaContext,
+    combos: ComboOrderInputType[],
+    language: MktSupportedLanguage,
+  ): Promise<{
+    orderItemsData: Partial<MktOrderItemWorkspaceEntity>[];
+    totalComboDiscount: number;
+    comboSnapshots: GenericComboSnapshot[];
+  }> {
+    // Convert ComboOrderInputType to ComboOrderInput
+    const comboInputs = combos.map((combo) => ({
+      comboId: combo.comboId,
+      quantity: combo.quantity,
+      maxDevices: combo.maxDevices,
+      splitLicenses: combo.splitLicenses,
+    }));
+
+    // Flatten combos
+    const flattenResult = await this.comboIntegrationService.flattenCombos(
+      context.workspaceId,
+      comboInputs,
+      language,
+    );
+
+    // Convert flattened items to order item data
+    const orderItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
+
+    for (const flattenedItem of flattenResult.flattenedItems) {
+      const orderItemData = await this.convertComboItemToOrderItem(
+        context,
+        flattenedItem,
+        language,
+      );
+
+      orderItemsData.push(orderItemData);
+    }
+
+    return {
+      orderItemsData,
+      totalComboDiscount: flattenResult.totalComboDiscount,
+      comboSnapshots: flattenResult.comboSnapshots,
+    };
+  }
+
+  /**
+   * Convert flattened combo item to order item entity data
+   */
+  private async convertComboItemToOrderItem(
+    context: SagaContext,
+    flattenedItem: CreateOrderItemFromComboData,
+    language: MktSupportedLanguage,
+  ): Promise<Partial<MktOrderItemWorkspaceEntity>> {
+    const position = await this.recordPositionService.buildRecordPosition({
+      value: 'last',
+      objectMetadata: {
+        isCustom: false,
+        nameSingular: 'mktOrderItem',
+      },
+      workspaceId: context.workspaceId,
+    });
+
+    // Calculate tax
+    const calculatedItem = this.calculationService.calculateOrderItem(
+      {
+        id: flattenedItem.sourceComboItemId,
+        name: flattenedItem.name,
+        price: flattenedItem.unitPrice,
+      },
+      flattenedItem.quantity,
+    );
+
+    // Base order item data
+    const orderItemData: Partial<MktOrderItemWorkspaceEntity> = {
+      mktOrderId: context.orderId,
+      name: flattenedItem.name,
+      orderLanguage: language,
+      unitName: 'unit',
+      // Calculated values
+      unitPrice: calculatedItem.unitPrice,
+      quantity: calculatedItem.quantity,
+      totalPrice: calculatedItem.totalPrice,
+      taxPercentage: calculatedItem.taxPercentage,
+      taxAmount: calculatedItem.taxAmount,
+      totalAmountWithTax: calculatedItem.totalAmountWithTax,
+      // Combo fields
+      itemSource: flattenedItem.itemSource,
+      itemType: flattenedItem.itemType,
+      sourceComboId: flattenedItem.sourceComboId,
+      sourceComboItemId: flattenedItem.sourceComboItemId,
+      comboItemSnapshot: flattenedItem.comboItemSnapshot,
+      position,
+    };
+
+    // Add type-specific fields based on itemType
+    this.addTypeSpecificFieldsToOrderItem(orderItemData, flattenedItem);
+
+    return orderItemData;
+  }
+
+  /**
+   * Add type-specific fields to order item based on item type
+   */
+  private addTypeSpecificFieldsToOrderItem(
+    orderItemData: Partial<MktOrderItemWorkspaceEntity>,
+    flattenedItem: CreateOrderItemFromComboData,
+  ): void {
+    switch (flattenedItem.itemType) {
+      case ORDER_ITEM_TYPE.DIGITAL_EXTERNAL:
+        orderItemData.externalMktProductId = flattenedItem.externalMktProductId;
+        orderItemData.externalMktProductCode =
+          flattenedItem.externalMktProductCode;
+        orderItemData.externalMktPackageId = flattenedItem.externalMktPackageId;
+        orderItemData.externalMktPackageCode =
+          flattenedItem.externalMktPackageCode;
+        orderItemData.snapshotMktProduct = flattenedItem.snapshotMktProduct;
+        orderItemData.snapshotMktPackage = flattenedItem.snapshotMktPackage;
+        orderItemData.snapshotProductName =
+          flattenedItem.snapshotMktProduct?.displayName ?? undefined;
+        orderItemData.snapshotPackageName =
+          flattenedItem.snapshotMktPackage?.displayName ?? undefined;
+        orderItemData.maxDevices = flattenedItem.maxDevices ?? 1;
+        break;
+
+      case ORDER_ITEM_TYPE.INTERNAL_PRODUCT:
+        orderItemData.internalProductSnapshot =
+          flattenedItem.internalProductSnapshot;
+        break;
+
+      case ORDER_ITEM_TYPE.INTERNAL_VARIANT:
+        orderItemData.internalVariantSnapshot =
+          flattenedItem.internalVariantSnapshot;
+        break;
+
+      case ORDER_ITEM_TYPE.SERVICE:
+        // SERVICE items use the comboItemSnapshot for service details
+        break;
+
+      case ORDER_ITEM_TYPE.CUSTOM:
+        // CUSTOM items use the comboItemSnapshot for custom details
+        break;
+    }
   }
 
   /**
@@ -263,7 +444,9 @@ export class CreateOrderItemsStep extends SagaStep<
         }
       }
 
-      const quantity = productInput.quantity ?? 1;
+      // For digital products, quantity is always 1 (each license is 1 unit)
+      // maxDevices is used for license creation, not for order item quantity
+      const quantity = 1;
       const calculatedItem = this.calculationService.calculateOrderItem(
         {
           id: product.id,
@@ -284,6 +467,9 @@ export class CreateOrderItemsStep extends SagaStep<
 
       orderItemsData.push({
         mktOrderId: context.orderId,
+        // Item source and type (PRODUCT source, DIGITAL_EXTERNAL type)
+        itemSource: ORDER_ITEM_SOURCE.PRODUCT,
+        itemType: ORDER_ITEM_TYPE.DIGITAL_EXTERNAL,
         // External product references
         externalMktProductId: product.id,
         externalMktProductCode: product.code,
@@ -305,6 +491,8 @@ export class CreateOrderItemsStep extends SagaStep<
         taxPercentage: calculatedItem.taxPercentage,
         taxAmount: calculatedItem.taxAmount,
         totalAmountWithTax: calculatedItem.totalAmountWithTax,
+        // License configuration
+        maxDevices: productInput.maxDevices ?? 1,
         position,
       });
     }
@@ -318,7 +506,7 @@ export class CreateOrderItemsStep extends SagaStep<
   private async cloneOrderItemsFromTrial(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreateOrderItemsStepOutput>> {
     if (!input.trialOrderId) {
       return {
@@ -328,17 +516,11 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Get trial order with items
-    const orderRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const trialOrder = await orderRepository.findOne({
-      where: { id: input.trialOrderId },
-      relations: ['orderItems'],
-    });
+    const trialOrder = await this.orderRepository.findById(
+      context.workspaceId,
+      input.trialOrderId,
+      { relations: { orderItems: true } },
+    );
 
     if (!trialOrder) {
       return {
@@ -355,13 +537,6 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Clone order items
-    const orderItemRepository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        context.workspaceId,
-        MktOrderItemWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
     const clonedItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
 
     for (const item of trialOrder.orderItems) {
@@ -384,7 +559,8 @@ export class CreateOrderItemsStep extends SagaStep<
         // Snapshots
         snapshotMktProduct: item.snapshotMktProduct,
         snapshotMktPackage: item.snapshotMktPackage,
-        licenseSnapshot: item.licenseSnapshot,
+        // Licenses array (copy from trial order)
+        licenses: item.licenses,
         // Display fields
         name: item.name,
         snapshotProductName: item.snapshotProductName,
@@ -398,15 +574,17 @@ export class CreateOrderItemsStep extends SagaStep<
         taxPercentage: item.taxPercentage,
         taxAmount: item.taxAmount,
         totalAmountWithTax: item.totalAmountWithTax,
+        // License configuration
+        maxDevices: item.maxDevices ?? 1,
         position,
       });
     }
 
-    const clonedItems = clonedItemsData.map((data) =>
-      orderItemRepository.create(data),
+    // Save order items using repository
+    const savedOrderItems = await this.orderItemRepository.createMany(
+      context.workspaceId,
+      clonedItemsData,
     );
-
-    const savedOrderItems = await queryRunner.manager.save(clonedItems);
 
     this.logger.log(
       `Cloned ${savedOrderItems.length} order items from trial order`,
@@ -421,16 +599,17 @@ export class CreateOrderItemsStep extends SagaStep<
     };
 
     // Update new order with totals and trial order reference
-    await this.updateOrderTotals(context, totals, queryRunner);
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: context.orderId },
-      {
-        note: `Converted from trial order: ${input.trialOrderId}`,
-        name: trialOrder.name,
-        mktCustomerId: trialOrder.mktCustomerId,
-      },
-    );
+    await this.updateOrderTotals(context, totals);
+
+    // Update order with trial order reference
+    if (!context.orderId) {
+      throw new Error('Order ID is required');
+    }
+    await this.orderRepository.update(context.workspaceId, context.orderId, {
+      note: `Converted from trial order: ${input.trialOrderId}`,
+      name: trialOrder.name,
+      mktCustomerId: trialOrder.mktCustomerId,
+    });
 
     // Store rollback data
     context.orderItemIds = savedOrderItems.map((item) => item.id);
@@ -459,20 +638,68 @@ export class CreateOrderItemsStep extends SagaStep<
       discount: number;
       totalAmount: number;
     },
-    queryRunner: QueryRunner,
   ): Promise<void> {
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: context.orderId },
-      {
-        subtotal: totals.subtotal,
-        tax: totals.tax,
-        discount: totals.discount,
-        totalAmount: totals.totalAmount,
-      },
-    );
+    if (!context.orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
+    await this.orderRepository.update(context.workspaceId, context.orderId, {
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      discount: totals.discount,
+      totalAmount: totals.totalAmount,
+      // Set remainingAmount = totalAmount (no payment yet)
+      remainingAmount: totals.totalAmount,
+    });
 
     // Store in context for subsequent steps
     context.metadata.set('totalAmount', totals.totalAmount);
+  }
+
+  /**
+   * Update order với totals và combo data
+   */
+  private async updateOrderTotalsWithCombo(
+    context: SagaContext,
+    totals: {
+      subtotal: number;
+      tax: number;
+      discount: number;
+      totalAmount: number;
+    },
+    comboDiscount: number,
+    comboSnapshots: GenericComboSnapshot[],
+  ): Promise<void> {
+    if (!context.orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    // Apply combo discount to total
+    const adjustedTotalAmount = MoneyUtils.subtract(
+      totals.totalAmount,
+      comboDiscount,
+    ).toNumber();
+
+    // Use repository for update
+    await this.orderRepository.update(context.workspaceId, context.orderId, {
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      discount: totals.discount,
+      totalAmount: adjustedTotalAmount,
+      // Set remainingAmount = totalAmount (no payment yet)
+      remainingAmount: adjustedTotalAmount,
+      // Combo fields
+      comboDiscount: comboDiscount > 0 ? comboDiscount : undefined,
+      appliedCombos: comboSnapshots.length > 0 ? comboSnapshots : undefined,
+    });
+
+    // Store in context for subsequent steps
+    context.metadata.set('totalAmount', adjustedTotalAmount);
+    context.metadata.set('comboDiscount', comboDiscount);
+
+    if (comboSnapshots.length > 0) {
+      context.metadata.set('appliedCombos', comboSnapshots);
+    }
   }
 }

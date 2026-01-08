@@ -61,7 +61,6 @@ export class OrderProductIntegrationService {
     const validationItems = items.map((item) => ({
       productId: item.productId,
       packageId: item.packageId,
-      quantity: item.quantity ?? 1,
     }));
 
     const result = await this.validationService.validateForOrder(
@@ -81,6 +80,7 @@ export class OrderProductIntegrationService {
 
   /**
    * Create snapshots for order items
+   * Uses batch fetching to prevent N+1 queries
    *
    * @param items - External product inputs from order request
    * @param language - Display language for snapshots
@@ -97,13 +97,34 @@ export class OrderProductIntegrationService {
       language,
     });
 
+    if (items.length === 0) {
+      return [];
+    }
+
+    // Batch fetch all products in parallel (prevents N+1)
+    const productIds = items.map((item) => item.productId);
+    const productMap = await this.productProxyService.getProductsByIds(
+      productIds,
+      userContext,
+    );
+
+    // Batch fetch all packages in parallel (prevents N+1)
+    const packageItems = items
+      .filter((item) => item.packageId)
+      .map((item) => ({
+        packageId: item.packageId as string,
+        productId: item.productId,
+      }));
+    const packageMap = await this.productProxyService.getPackagesByIds(
+      packageItems,
+      userContext,
+    );
+
+    // Build results using fetched data
     const results: ProductWithSnapshot[] = [];
 
     for (const item of items) {
-      const product = await this.productProxyService.getProduct(
-        item.productId,
-        userContext,
-      );
+      const product = productMap.get(item.productId);
 
       if (!product) {
         this.logger.warn(`Product not found: ${item.productId}`);
@@ -114,11 +135,7 @@ export class OrderProductIntegrationService {
       let packageSnapshot: MktPackageSnapshot | null = null;
 
       if (item.packageId) {
-        pkg = await this.productProxyService.getPackage(
-          item.packageId,
-          userContext,
-          item.productId,
-        );
+        pkg = packageMap.get(item.packageId) ?? null;
 
         if (pkg) {
           packageSnapshot = this.snapshotService.createPackageSnapshot(pkg);
@@ -135,7 +152,7 @@ export class OrderProductIntegrationService {
         package: pkg,
         productSnapshot,
         packageSnapshot,
-        quantity: item.quantity ?? 1,
+        maxDevices: item.maxDevices ?? 1,
       });
     }
 

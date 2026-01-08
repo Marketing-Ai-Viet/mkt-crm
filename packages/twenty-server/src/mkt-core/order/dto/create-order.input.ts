@@ -17,27 +17,47 @@ import { Type } from 'class-transformer';
 import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MKT_SUPPORTED_LANGUAGES } from 'src/mkt-core/mkt-product-integration/constants';
 
-// Register enum for GraphQL
-registerEnumType(ORDER_ACTION, {
-  name: 'OrderAction',
-  description: 'Action to perform when creating/confirming order',
-});
+// ============================================
+// GRAPHQL ENUMS - Restricted action sets
+// ============================================
 
 /**
- * Input for internal CRM product variant
+ * Actions cho phép khi TẠO đơn hàng (qua createOrderWithItems mutation)
+ *
+ * Note: TRIAL đã được tách ra mutation riêng (createTrialOrder)
  */
-@InputType()
-export class OrderVariantInputDto {
-  @Field(() => String)
-  @IsUUID()
-  variantId: string;
-
-  @Field(() => Int, { nullable: true, defaultValue: 1 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  quantity?: number;
+export enum CREATE_ORDER_ACTION {
+  NEW_ORDER = 'NEW_ORDER',
+  LICENSE_RENEWING = 'LICENSE_RENEWING',
+  TRIAL_TO_PAID = 'TRIAL_TO_PAID',
 }
+
+/**
+ * Actions cho phép khi XÁC NHẬN thanh toán đơn hàng
+ *
+ * Chỉ dùng cho confirmOrder mutation.
+ * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation với ORDER_ACTION enum.
+ */
+export enum CONFIRM_ORDER_ACTION {
+  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
+}
+
+// Register enums for GraphQL
+registerEnumType(ORDER_ACTION, {
+  name: 'OrderAction',
+  description: 'All order actions (for backward compatibility)',
+});
+
+registerEnumType(CREATE_ORDER_ACTION, {
+  name: 'CreateOrderAction',
+  description: 'Actions allowed when creating an order',
+});
+
+registerEnumType(CONFIRM_ORDER_ACTION, {
+  name: 'ConfirmOrderAction',
+  description:
+    'Action for accounting confirmation (use updateOrderStatus for other actions)',
+});
 
 /**
  * Input for external MKT Server product
@@ -54,17 +74,65 @@ export class ExternalMktProductInputDto {
   })
   @IsOptional()
   @IsString()
-  packageId?: string;
+  packageId: string;
 
   @Field(() => Int, {
     nullable: true,
     defaultValue: 1,
-    description: 'Quantity',
+    description: 'Maximum devices allowed for license',
   })
   @IsOptional()
   @IsNumber()
   @Min(1)
-  quantity?: number;
+  maxDevices?: number;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: false,
+    description:
+      'Split into multiple licenses (e.g., maxDevices=3 with splitLicenses=true creates 3 licenses with 1 device each)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  splitLicenses?: boolean;
+}
+
+/**
+ * Input for ordering a combo
+ */
+@InputType()
+export class ComboOrderInputDto {
+  @Field(() => String, { description: 'Combo ID' })
+  @IsUUID()
+  comboId: string;
+
+  @Field(() => Int, {
+    defaultValue: 1,
+    description: 'Number of this combo to order',
+  })
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Override maxDevices for all digital items in combo (default: 1)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxDevices?: number;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: false,
+    description:
+      'Split into multiple licenses for digital items in combo (e.g., maxDevices=3 with splitLicenses=true creates 3 licenses with 1 device each)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  splitLicenses?: boolean;
 }
 
 @InputType()
@@ -92,22 +160,13 @@ export class OrderPaymentMethodInputDto {
 /**
  * Input DTO for creating order with items
  *
- * Supports 2 types of products:
- * - variants: Internal CRM products from mktVariant table
- * - externalProducts: Products from MKT Server via OAuth2 API
- *
- * At least one of variants or externalProducts must be provided.
+ * Uses external products from MKT Server via OAuth2 API
  */
 @InputType()
 export class CreateOrderWithItemsInputDto {
   @Field(() => String, { description: 'Customer ID' })
   @IsUUID()
   customerId: string;
-
-  @Field(() => String, { nullable: true, description: 'Order name' })
-  @IsOptional()
-  @IsString()
-  name?: string;
 
   @Field(() => String, { nullable: true, defaultValue: 'VND' })
   @IsOptional()
@@ -124,32 +183,27 @@ export class CreateOrderWithItemsInputDto {
   @IsBoolean()
   requireContract?: boolean;
 
-  @Field(() => Number, { nullable: true, defaultValue: 0 })
-  @IsOptional()
-  @IsNumber()
-  discountPercent?: number;
-
-  @Field(() => [OrderVariantInputDto], {
-    nullable: true,
-    description:
-      'List of internal CRM variants (optional if using externalProducts)',
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => OrderVariantInputDto)
-  variants?: OrderVariantInputDto[];
-
   @Field(() => [ExternalMktProductInputDto], {
     nullable: true,
     description:
-      'List of external MKT Server products (optional if using variants)',
+      'List of external MKT Server products (optional if combos provided)',
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ExternalMktProductInputDto)
   externalProducts?: ExternalMktProductInputDto[];
+
+  @Field(() => [ComboOrderInputDto], {
+    nullable: true,
+    description:
+      'List of combos to order (optional if externalProducts provided)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ComboOrderInputDto)
+  combos?: ComboOrderInputDto[];
 
   @Field(() => String, {
     nullable: true,
@@ -163,7 +217,8 @@ export class CreateOrderWithItemsInputDto {
 
   @Field(() => [OrderPaymentMethodInputDto], {
     nullable: true,
-    description: 'Payment methods (not required for TRIAL)',
+    description:
+      'Payment methods (optional). Order starts with paymentStatus = PENDING if not provided.',
   })
   @IsOptional()
   @IsArray()
@@ -171,9 +226,12 @@ export class CreateOrderWithItemsInputDto {
   @Type(() => OrderPaymentMethodInputDto)
   paymentMethods?: OrderPaymentMethodInputDto[];
 
-  @Field(() => ORDER_ACTION, { description: 'Action type' })
-  @IsEnum(ORDER_ACTION)
-  action: ORDER_ACTION;
+  @Field(() => CREATE_ORDER_ACTION, {
+    description:
+      'Action type (NEW_ORDER, TRIAL, LICENSE_RENEWING, TRIAL_TO_PAID, CHANGE_VARIANT)',
+  })
+  @IsEnum(CREATE_ORDER_ACTION)
+  action: CREATE_ORDER_ACTION;
 
   @Field(() => String, {
     nullable: true,
@@ -211,24 +269,55 @@ export class CreateOrderWithItemsInputDto {
   @IsOptional()
   @IsBoolean()
   applyAutoPromotions?: boolean;
+
+  // ============================================
+  // DRAFT MODE
+  // ============================================
+
+  @Field(() => Boolean, {
+    nullable: true,
+    defaultValue: false,
+    description:
+      'Create as draft order. Draft orders only calculate totals without creating QR code or licenses. Use publishDraftOrder to convert to real order.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isDraft?: boolean;
+
+  // ============================================
+  // MKT SERVER EMAIL (Optional override)
+  // ============================================
+
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'Email for MKT Server license registration. If not specified, auto-fetches from customer linkedAccounts (isPrimary=true, status=ACTIVE, provider=MKT_SERVER)',
+  })
+  @IsOptional()
+  @IsString()
+  mktServerEmail?: string;
 }
 
+/**
+ * Input cho xác nhận thanh toán đơn hàng
+ *
+ * Chỉ hỗ trợ ACCOUNTING_CONFIRMED action.
+ * Sử dụng updateOrderStatus mutation cho các action khác (COMPLETE, CANCEL, BLOCK).
+ */
 @InputType()
 export class ConfirmOrderInputDto {
-  @Field(() => String)
+  @Field(() => String, { description: 'Order ID to confirm' })
   @IsUUID()
   orderId: string;
 
-  @Field(() => ORDER_ACTION)
-  @IsEnum(ORDER_ACTION)
-  action: ORDER_ACTION;
+  @Field(() => CONFIRM_ORDER_ACTION, {
+    description: 'Confirmation action (ACCOUNTING_CONFIRMED only)',
+    defaultValue: CONFIRM_ORDER_ACTION.ACCOUNTING_CONFIRMED,
+  })
+  @IsEnum(CONFIRM_ORDER_ACTION)
+  action: CONFIRM_ORDER_ACTION;
 
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  @IsBoolean()
-  accountingConfirmed?: boolean;
-
-  @Field(() => String, { nullable: true })
+  @Field(() => String, { nullable: true, description: 'Optional note' })
   @IsOptional()
   @IsString()
   note?: string;
@@ -324,4 +413,36 @@ export class UpdateOrderItemInputDto {
   @IsOptional()
   @IsString()
   updatedAt?: string;
+}
+
+// Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense
+
+/**
+ * Input DTO for publishing a draft order
+ *
+ * Converts a DRAFT order to PENDING_PAYMENT:
+ * - Creates payment/QR code
+ * - Updates order status
+ * - Schedules overdue check
+ */
+@InputType()
+export class PublishDraftOrderInputDto {
+  @Field(() => String, { description: 'Draft order ID to publish' })
+  @IsUUID()
+  orderId: string;
+
+  @Field(() => [OrderPaymentMethodInputDto], {
+    nullable: true,
+    description: 'Payment methods for the order',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderPaymentMethodInputDto)
+  paymentMethods?: OrderPaymentMethodInputDto[];
+
+  @Field(() => String, { nullable: true, description: 'Optional note' })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }

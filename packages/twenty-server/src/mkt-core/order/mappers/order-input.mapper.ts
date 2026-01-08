@@ -1,19 +1,20 @@
 import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
-  RefundOrderInputDto,
-  UpdateOrderItemInputDto,
   UpdateOrderStatusInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
   ConfirmOrderInput,
   CreateOrderWithItemsInput,
-  RefundOrderInput,
-  UpdateOrderItemInput,
   UpdateOrderStatusInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants';
+import {
+  ORDER_STATUS,
+  CreateOrderAction,
+  ConfirmOrderAction,
+} from 'src/mkt-core/order/constants';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 
 /**
@@ -36,19 +37,20 @@ export const OrderInputMapper = {
   ): CreateOrderWithItemsInput {
     return {
       customerId: dto.customerId,
-      name: dto.name,
-      currency: dto.currency,
+      currency: dto.currency as PaymentCurrency | undefined,
       note: dto.note,
       requireContract: dto.requireContract,
-      discountPercent: dto.discountPercent,
-      variants: dto.variants?.map((v) => ({
-        variantId: v.variantId,
-        quantity: v.quantity,
-      })),
       externalProducts: dto.externalProducts?.map((p) => ({
         productId: p.productId,
         packageId: p.packageId,
-        quantity: p.quantity,
+        maxDevices: p.maxDevices,
+        splitLicenses: p.splitLicenses,
+      })),
+      combos: dto.combos?.map((c) => ({
+        comboId: c.comboId,
+        quantity: c.quantity,
+        maxDevices: c.maxDevices,
+        splitLicenses: c.splitLicenses,
       })),
       orderLanguage: dto.orderLanguage as MktSupportedLanguage | undefined,
       paymentMethods: dto.paymentMethods?.map((p) => ({
@@ -57,23 +59,29 @@ export const OrderInputMapper = {
         duration: p.duration,
         amount: p.amount,
       })),
-      action: dto.action,
+      // DTO uses CREATE_ORDER_ACTION enum, cast to domain type CreateOrderAction
+      action: dto.action as unknown as CreateOrderAction,
       licenseId: dto.licenseId,
       trialOrderId: dto.trialOrderId,
       // Promotion fields
       couponCode: dto.couponCode,
       applyAutoPromotions: dto.applyAutoPromotions ?? true,
+      // Draft mode
+      isDraft: dto.isDraft ?? false,
     };
   },
 
   /**
    * Map ConfirmOrderInputDto to ConfirmOrderInput
+   *
+   * Simplified: Only ACCOUNTING_CONFIRMED action is supported.
+   * Other actions (COMPLETE, CANCEL, BLOCK) use updateOrderStatus mutation.
    */
   toConfirmOrderInput(dto: ConfirmOrderInputDto): ConfirmOrderInput {
     return {
       orderId: dto.orderId,
-      action: dto.action,
-      accountingConfirmed: dto.accountingConfirmed,
+      action: dto.action as unknown as ConfirmOrderAction,
+      accountingConfirmed: true, // Always true for ACCOUNTING_CONFIRMED
       note: dto.note,
     };
   },
@@ -107,33 +115,6 @@ export const OrderInputMapper = {
       orderId: dto.orderId,
       status,
       note: dto.note,
-    };
-  },
-
-  /**
-   * Map RefundOrderInputDto to RefundOrderInput
-   */
-  toRefundOrderInput(dto: RefundOrderInputDto): RefundOrderInput {
-    return {
-      orderId: dto.orderId,
-      licenseIds: dto.licenseIds,
-      refundAmount: dto.refundAmount,
-      reason: dto.reason,
-      isPartial: dto.isPartial,
-    };
-  },
-
-  /**
-   * Map UpdateOrderItemInputDto to UpdateOrderItemInput
-   */
-  toUpdateOrderItemInput(dto: UpdateOrderItemInputDto): UpdateOrderItemInput {
-    return {
-      orderItemId: dto.orderItemId,
-      variantId: dto.variantId,
-      quantity: dto.quantity,
-      unitPrice: dto.unitPrice,
-      note: dto.note,
-      updatedAt: dto.updatedAt,
     };
   },
 } as const;

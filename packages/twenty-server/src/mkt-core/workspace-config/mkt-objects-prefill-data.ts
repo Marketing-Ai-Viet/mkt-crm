@@ -5,20 +5,20 @@ import { prefillMktSInvoicePayments } from 'src/mkt-core/seeder/invoice-seeder/p
 import { prefillMktSInvoiceTaxBreakdowns } from 'src/mkt-core/seeder/invoice-seeder/prefill-mkt-sinvoice-tax-breakdowns';
 import { prefillMktSInvoices } from 'src/mkt-core/seeder/invoice-seeder/prefill-mkt-sinvoices';
 import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
-import { prefillMktCustomerTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-customer-tags';
-import { prefillMktCustomers } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-customers';
+import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
+import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-department-hierarchies';
 import { prefillMktDepartments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-departments';
-import { prefillMktGenericComboItems } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-generic-combo-items';
-import { prefillMktGenericCombos } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-generic-combos';
+import { prefillMktGenericComboItems } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combo-items';
+import { prefillMktGenericCombos } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combos';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-employment-statuses';
 import { prefillMktI18n } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpi-templates';
 import { prefillMktKpis } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpis';
-import { prefillMktOrderHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-order-histories';
-import { prefillMktOrderItems } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-order-items';
-import { prefillMktOrders } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-orders';
+import { prefillMktOrderHistories } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-histories';
+import { prefillMktOrderItems } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-items';
+import { prefillMktOrders } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-organization-levels';
 import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-methods';
@@ -28,14 +28,14 @@ import { prefillMktStaffStatusHistories } from 'src/mkt-core/seeder/prefill-data
 import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-templates';
 import { prefillMktTemporaryPermissions } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-temporary-permissions';
-import { prefillMktEmails } from 'src/mkt-core/email/seeder/prefill-mkt-emails';
-import { prefillMktReports } from 'src/mkt-core/report/seeder/prefill-mkt-reports';
+import { prefillMktEmails } from 'src/mkt-core/seeder/email-seeder/prefill-mkt-emails';
+import { prefillMktReports } from 'src/mkt-core/seeder/mkt-report-seeder/prefill-mkt-reports';
 import { prefillMktCoupons } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-coupons';
 import { prefillMktPromotionAudits } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-audits';
 import { prefillMktPromotionRules } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-rules';
 import { prefillMktPromotionUsages } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-usages';
 import { prefillMktPromotions } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotions';
-import { prefillMktOptions } from 'src/mkt-core/setting/seeder/prefill-mkt-options';
+import { prefillMktOptions } from 'src/mkt-core/seeder/mkt-option-seeder/prefill-mkt-options';
 
 export const MKT_PREFILLS = [
   // core prefills

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MKT_DEFAULT_LANGUAGE } from 'src/mkt-core/mkt-product-integration/constants';
 import {
   MktProductSnapshot,
@@ -12,7 +11,7 @@ import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
 import { OrderProductIntegrationService } from 'src/mkt-core/order/services/integration/order-product.integration';
 import {
   CreateOrderWithItemsInput,
@@ -54,7 +53,6 @@ export class CreateSnapshotsStep extends SagaStep<
   private readonly logger = new Logger(CreateSnapshotsStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly productIntegration: OrderProductIntegrationService,
   ) {
     super();

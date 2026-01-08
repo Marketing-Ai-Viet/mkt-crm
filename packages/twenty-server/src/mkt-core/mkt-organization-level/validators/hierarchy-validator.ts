@@ -7,17 +7,23 @@ import {
   HIERARCHY_PERFORMANCE_LIMITS,
 } from 'src/mkt-core/mkt-organization-level/constants/hierarchy-constraints.constants';
 
-export interface HierarchyValidationError {
+/**
+ * Lỗi validation hierarchy
+ */
+export type HierarchyValidationError = {
   field: string;
   message: string;
   code: string;
-}
+};
 
-export interface HierarchyValidationResult {
+/**
+ * Kết quả validation hierarchy
+ */
+export type HierarchyValidationResult = {
   isValid: boolean;
   errors: HierarchyValidationError[];
   warnings: string[];
-}
+};
 
 @Injectable()
 export class OrganizationLevelHierarchyValidator {

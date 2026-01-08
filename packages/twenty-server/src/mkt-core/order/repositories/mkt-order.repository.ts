@@ -14,8 +14,11 @@ import {
   CreateOrderData,
   DEFAULT_ORDER_RELATIONS,
   FindOrderOptions,
+  PAYMENT_SUMMARY_RELATIONS,
   UpdateOrderData,
+  UpdatePaymentAmountsData,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktOrderRepository - Data access layer for Order entity
@@ -78,6 +81,23 @@ export class MktOrderRepository {
   ): Promise<MktOrderWorkspaceEntity | null> {
     return this.findById(workspaceId, orderId, {
       relations: DEFAULT_ORDER_RELATIONS,
+    });
+  }
+
+  /**
+   * Find order by ID with payment relations
+   * Used for payment summary calculations
+   */
+  async findByIdWithPaymentSummary(
+    workspaceId: string,
+    orderId: string,
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    this.logger.debug(
+      `Finding order ${orderId} with payment summary relations`,
+    );
+
+    return this.findById(workspaceId, orderId, {
+      relations: PAYMENT_SUMMARY_RELATIONS,
     });
   }
 
@@ -201,11 +221,12 @@ export class MktOrderRepository {
 
   /**
    * Create new order
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async create(
     workspaceId: string,
     data: CreateOrderData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_START());
 
@@ -217,13 +238,8 @@ export class MktOrderRepository {
       currency: data.currency ?? 'VND',
     });
 
-    let savedOrder: MktOrderWorkspaceEntity;
-
-    if (queryRunner) {
-      savedOrder = await queryRunner.manager.save(order);
-    } else {
-      savedOrder = await repository.save(order);
-    }
+    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
+    const savedOrder = await repository.save(order);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_SUCCESS(savedOrder.id));
 
@@ -236,26 +252,20 @@ export class MktOrderRepository {
 
   /**
    * Update order by ID
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
   async update(
     workspaceId: string,
     orderId: string,
     data: UpdateOrderData,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_START(orderId));
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.update(
-        MktOrderWorkspaceEntity,
-        { id: orderId },
-        data,
-      );
-    } else {
-      await repository.update(orderId, data);
-    }
+    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
+    await repository.update(orderId, data);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_SUCCESS(orderId));
   }
@@ -294,36 +304,234 @@ export class MktOrderRepository {
     return this.findById(workspaceId, orderId);
   }
 
+  /**
+   * Update payment amounts for an order
+   * Used when payment status changes (new payment, refund, etc.)
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderId - Order ID
+   * @param data - Payment amounts data (paidAmount, remainingAmount, paymentStatus)
+   */
+  async updatePaymentAmounts(
+    workspaceId: string,
+    orderId: string,
+    data: UpdatePaymentAmountsData,
+  ): Promise<void> {
+    this.logger.debug(
+      `Updating payment amounts for order ${orderId}: ` +
+        `paid=${data.paidAmount}, remaining=${data.remainingAmount}, status=${data.paymentStatus}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(orderId, {
+      paidAmount: data.paidAmount,
+      remainingAmount: data.remainingAmount,
+      paymentStatus: data.paymentStatus,
+      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
+
+    this.logger.debug(`Payment amounts updated for order ${orderId}`);
+  }
+
   // ============================================
   // DELETE OPERATIONS
   // ============================================
 
   /**
-   * Hard delete order (use with caution)
+   * Soft delete order by setting deletedAt timestamp
+   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async hardDelete(
+  async softDelete(
     workspaceId: string,
     orderId: string,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_START(orderId));
 
     const repository = await this.getRepository(workspaceId);
 
-    if (queryRunner) {
-      await queryRunner.manager.delete(MktOrderWorkspaceEntity, {
-        id: orderId,
-      });
-    } else {
-      await repository.delete(orderId);
-    }
+    await repository.update(orderId, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_SUCCESS(orderId));
   }
 
   // ============================================
+  // AGGREGATION OPERATIONS
+  // ============================================
+
+  /**
+   * Get order statistics aggregated by customer IDs
+   * Single query with GROUP BY to avoid N+1 problem
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerIds - Array of customer IDs to aggregate
+   * @returns Array of { customerId, orderCount, totalValue }
+   */
+  async getOrderStatsByCustomers(
+    workspaceId: string,
+    customerIds: string[],
+  ): Promise<
+    Array<{ customerId: string; orderCount: number; totalValue: number }>
+  > {
+    if (customerIds.length === 0) {
+      return [];
+    }
+
+    this.logger.debug(
+      `Fetching order stats for ${customerIds.length} customers`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const stats = await repository
+      .createQueryBuilder('order')
+      .select('order.mktCustomerId', 'customerId')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .where('order.mktCustomerId IN (:...customerIds)', { customerIds })
+      .groupBy('order.mktCustomerId')
+      .getRawMany();
+
+    return stats.map((s) => ({
+      customerId: s.customerId,
+      orderCount: parseInt(s.orderCount, 10) || 0,
+      totalValue: parseFloat(s.totalValue) || 0,
+    }));
+  }
+
+  /**
+   * Get order statistics for a single customer
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerId - Customer ID
+   * @returns Order statistics including counts, totals, and dates
+   */
+  async getCustomerOrderStats(
+    workspaceId: string,
+    customerId: string,
+  ): Promise<{
+    orderCount: number;
+    totalValue: number;
+    firstOrderDate: string | null;
+    lastOrderDate: string | null;
+    averageOrderInterval: number;
+  }> {
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository
+      .createQueryBuilder('order')
+      .select('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .addSelect('MIN(order.createdAt)', 'firstOrderDate')
+      .addSelect('MAX(order.createdAt)', 'lastOrderDate')
+      .where('order.mktCustomerId = :customerId', { customerId })
+      .getRawOne();
+
+    const orderCount = parseInt(result?.orderCount, 10) || 0;
+
+    // Calculate average order interval in days
+    let averageOrderInterval = 0;
+
+    if (orderCount > 1 && result?.firstOrderDate && result?.lastOrderDate) {
+      const firstDateTime = DateTimeUtils.fromISO(result.firstOrderDate);
+      const lastDateTime = DateTimeUtils.fromISO(result.lastOrderDate);
+      const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
+
+      averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+    }
+
+    return {
+      orderCount,
+      totalValue: parseFloat(result?.totalValue) || 0,
+      firstOrderDate: result?.firstOrderDate ?? null,
+      lastOrderDate: result?.lastOrderDate ?? null,
+      averageOrderInterval,
+    };
+  }
+
+  // ============================================
+  // CONDITIONAL UPDATE
+  // ============================================
+
+  /**
+   * Conditional update - only updates if conditions are met
+   * Returns affected row count for idempotency check
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - Conditions that must be met for update
+   * @param data - Data to update
+   * @returns Object with affected row count
+   */
+  async updateWhere(
+    workspaceId: string,
+    where: FindOptionsWhere<MktOrderWorkspaceEntity>,
+    data: UpdateOrderData,
+  ): Promise<{ affected: number }> {
+    this.logger.debug(
+      `Conditional update with where: ${JSON.stringify(where)}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository.update(where, data);
+
+    this.logger.debug(`Conditional update affected: ${result.affected ?? 0}`);
+
+    return { affected: result.affected ?? 0 };
+  }
+
+  // ============================================
   // REPOSITORY ACCESS
   // ============================================
+
+  /**
+   * Get completed order statistics aggregated by customer IDs
+   * Single query with GROUP BY to avoid N+1 problem
+   * Only counts orders with COMPLETED status for tier calculation
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerIds - Array of customer IDs to aggregate
+   * @param completedStatuses - Array of order statuses to count (default: ['COMPLETED'])
+   * @returns Array of { customerId, orderCount, totalValue }
+   */
+  async getCompletedOrderStatsByCustomers(
+    workspaceId: string,
+    customerIds: string[],
+    completedStatuses: ORDER_STATUS[] = [ORDER_STATUS.COMPLETED],
+  ): Promise<
+    Array<{ customerId: string; orderCount: number; totalValue: number }>
+  > {
+    if (customerIds.length === 0) {
+      return [];
+    }
+
+    this.logger.debug(
+      `Fetching completed order stats for ${customerIds.length} customers with statuses: ${completedStatuses.join(', ')}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const stats = await repository
+      .createQueryBuilder('order')
+      .select('order.mktCustomerId', 'customerId')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .where('order.mktCustomerId IN (:...customerIds)', { customerIds })
+      .andWhere('order.status IN (:...statuses)', {
+        statuses: completedStatuses,
+      })
+      .groupBy('order.mktCustomerId')
+      .getRawMany();
+
+    return stats.map((s) => ({
+      customerId: s.customerId,
+      orderCount: parseInt(s.orderCount, 10) || 0,
+      totalValue: parseFloat(s.totalValue) || 0,
+    }));
+  }
 
   /**
    * Get the underlying TypeORM repository

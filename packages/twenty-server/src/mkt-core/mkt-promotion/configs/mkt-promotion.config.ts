@@ -1,10 +1,12 @@
 import { z } from 'zod';
 
+import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
+
 // ============================================
-// DEFAULTS
+// DEFAULTS (using centralized cache TTL)
 // ============================================
 
-const DEFAULT_CACHE_TTL_SECONDS = 300; // 5 minutes
+const DEFAULT_CACHE_TTL_SECONDS = CACHE_TTL.SHORT; // 5 minutes (from centralized)
 const DEFAULT_MAX_RULES_PER_PROMOTION = 20;
 const DEFAULT_MAX_COUPONS_BULK_CREATE = 1000;
 const DEFAULT_EXPIRATION_CHECK_CRON = '0 0 * * * *'; // Every hour

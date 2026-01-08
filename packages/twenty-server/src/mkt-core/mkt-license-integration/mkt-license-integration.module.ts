@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories';
 
 import { MktLicenseRepository } from './repositories';
 import { MktLicenseProxyService } from './services';
@@ -36,6 +37,7 @@ import { MktLicenseResolver } from './resolvers';
     MktLicenseProxyService, // Facade service - orchestrates repository
     // Resolvers
     MktLicenseResolver,
+    MktCustomerRepository,
   ],
   exports: [
     // Public API

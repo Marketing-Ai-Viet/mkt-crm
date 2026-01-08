@@ -1,15 +1,18 @@
 import { BadRequestException, Logger } from '@nestjs/common';
 
+import isNil from 'lodash.isnil';
+import omitBy from 'lodash.omitby';
+
 import { WorkspacePreQueryHookInstance } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/interfaces/workspace-query-hook.interface';
 import { UpdateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
 import { WorkspaceQueryHook } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/decorators/workspace-query-hook.decorator';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { OrganizationLevelValidationService } from 'src/mkt-core/mkt-organization-level/services/organization-level-validation.service';
 import { UpdateOrganizationLevelDto } from 'src/mkt-core/mkt-organization-level/dto/update-organization-level.dto';
+import { MktOrganizationLevelRepository } from 'src/mkt-core/mkt-organization-level/repositories/mkt-organization-level.repository';
 
 @WorkspaceQueryHook('mktOrganizationLevel.updateOne')
 export class MktOrganizationLevelUpdateOnePreQueryHook
@@ -20,7 +23,7 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
   );
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly repository: MktOrganizationLevelRepository,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly validationService: OrganizationLevelValidationService,
   ) {}
@@ -105,23 +108,11 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     };
   }
 
-  private async getRepository(workspaceId: string) {
-    return await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrganizationLevelWorkspaceEntity>(
-      workspaceId,
-      'mktOrganizationLevel',
-      { shouldBypassPermissionChecks: true },
-    );
-  }
-
   private async getCurrentRecord(
     recordId: string,
     workspaceId: string,
   ): Promise<MktOrganizationLevelWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    const record = await repository.findOne({
-      where: { id: recordId },
-    });
+    const record = await this.repository.findById(workspaceId, recordId);
 
     if (!record) {
       throw new BadRequestException(
@@ -137,13 +128,13 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     workspaceId: string,
     currentRecordId: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+    const exists = await this.repository.existsByCode(
+      workspaceId,
+      levelCode,
+      currentRecordId,
+    );
 
-    const existingLevel = await repository.findOne({
-      where: { levelCode },
-    });
-
-    if (existingLevel && existingLevel.id !== currentRecordId) {
+    if (exists) {
       throw new BadRequestException(
         `Organization level with code '${levelCode}' already exists`,
       );
@@ -163,11 +154,10 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     }
 
     // Check if this level has children - if so, hierarchy change might break structure
-    const repository = await this.getRepository(workspaceId);
-
-    const childLevels = await repository.find({
-      where: { parentLevelId: currentRecord.id },
-    });
+    const childLevels = await this.repository.findByParentId(
+      workspaceId,
+      currentRecord.id,
+    );
 
     if (
       childLevels.length > 0 &&
@@ -208,11 +198,10 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
     // Validate parent exists and relationships
     if (newParentLevelId && newParentLevelId !== currentRecord.id) {
-      const repository = await this.getRepository(workspaceId);
-
-      const parentLevel = await repository.findOne({
-        where: { id: newParentLevelId },
-      });
+      const parentLevel = await this.repository.findById(
+        workspaceId,
+        newParentLevelId,
+      );
 
       if (!parentLevel) {
         throw new BadRequestException(
@@ -246,8 +235,6 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     newParentId: string,
     workspaceId: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
     let checkId: string | null | undefined = newParentId;
     const visited = new Set<string>();
 
@@ -260,11 +247,9 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
       visited.add(checkId);
 
-      const parent = await repository.findOne({
-        where: { id: checkId },
-      });
+      const parent = await this.repository.findById(workspaceId, checkId);
 
-      checkId = parent?.parentLevelId || null;
+      checkId = parent?.parentLevelId ?? null;
     }
   }
 
@@ -275,14 +260,12 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
   ): Promise<void> {
     // If deactivating, check if this level has active children
     if (!newIsActive && currentRecord.isActive) {
-      const repository = await this.getRepository(workspaceId);
+      const childLevels = await this.repository.findByParentId(
+        workspaceId,
+        currentRecord.id,
+      );
 
-      const activeChildren = await repository.find({
-        where: {
-          parentLevelId: currentRecord.id,
-          isActive: true,
-        },
-      });
+      const activeChildren = childLevels.filter((c) => c.isActive);
 
       if (activeChildren.length > 0) {
         throw new BadRequestException(
@@ -294,11 +277,10 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
     // If activating, check if parent is active
     if (newIsActive && !currentRecord.isActive && currentRecord.parentLevelId) {
-      const repository = await this.getRepository(workspaceId);
-
-      const parent = await repository.findOne({
-        where: { id: currentRecord.parentLevelId },
-      });
+      const parent = await this.repository.findById(
+        workspaceId,
+        currentRecord.parentLevelId,
+      );
 
       if (parent && !parent.isActive) {
         throw new BadRequestException(
@@ -309,26 +291,27 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     }
   }
 
+  /**
+   * Transform DTO to Entity using omitBy pattern
+   * Removes undefined/null fields to avoid overwriting existing values
+   */
   private transformDtoToEntity(
     dto: UpdateOrganizationLevelDto,
   ): Partial<MktOrganizationLevelWorkspaceEntity> {
-    const entity: Partial<MktOrganizationLevelWorkspaceEntity> = {};
-
-    if (dto.levelCode !== undefined) entity.levelCode = dto.levelCode;
-    if (dto.levelName !== undefined) entity.levelName = dto.levelName;
-    if (dto.levelNameEn !== undefined) entity.levelNameEn = dto.levelNameEn;
-    if (dto.description !== undefined) entity.description = dto.description;
-    if (dto.hierarchyLevel !== undefined)
-      entity.hierarchyLevel = dto.hierarchyLevel;
-    if (dto.parentLevelId !== undefined)
-      entity.parentLevelId = dto.parentLevelId;
-    if (dto.displayOrder !== undefined) entity.displayOrder = dto.displayOrder;
-    if (dto.isActive !== undefined) entity.isActive = dto.isActive;
-    if (dto.defaultPermissions !== undefined)
-      entity.defaultPermissions = dto.defaultPermissions;
-    if (dto.accessLimitations !== undefined)
-      entity.accessLimitations = dto.accessLimitations;
-
-    return entity;
+    return omitBy(
+      {
+        levelCode: dto.levelCode,
+        levelName: dto.levelName,
+        levelNameEn: dto.levelNameEn,
+        description: dto.description,
+        hierarchyLevel: dto.hierarchyLevel,
+        parentLevelId: dto.parentLevelId,
+        displayOrder: dto.displayOrder,
+        isActive: dto.isActive,
+        defaultPermissions: dto.defaultPermissions,
+        accessLimitations: dto.accessLimitations,
+      },
+      isNil,
+    ) as Partial<MktOrganizationLevelWorkspaceEntity>;
   }
 }

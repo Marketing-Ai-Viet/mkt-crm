@@ -10,7 +10,9 @@ import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-enti
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import {
   MKT_GENERIC_COMBO_OBJECT_IDS,
   MKT_GENERIC_COMBO_FIELD_IDS,
@@ -176,6 +178,42 @@ export class MktGenericComboWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   @WorkspaceIsSystem()
   lastModifiedById: string | null;
+
+  // ============================================
+  // OWNERSHIP RELATIONS
+  // ============================================
+
+  @WorkspaceRelation({
+    standardId: MKT_GENERIC_COMBO_FIELD_IDS.mktGenericCombo.createdBy,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Created By`,
+    description: msg`The workspace member who created this combo`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'createdMktGenericCombos',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  createdBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('createdBy')
+  createdById: string | null;
+
+  @WorkspaceRelation({
+    standardId: MKT_GENERIC_COMBO_FIELD_IDS.mktGenericCombo.accountOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Account Owner`,
+    description: msg`Your team member responsible for managing this combo`,
+    icon: 'IconUserCircle',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'accountOwnerForMktGenericCombos',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  accountOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('accountOwner')
+  accountOwnerId: string | null;
 
   // ============================================
   // RELATIONS

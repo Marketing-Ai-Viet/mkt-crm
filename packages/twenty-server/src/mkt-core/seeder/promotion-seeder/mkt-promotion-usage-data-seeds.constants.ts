@@ -1,5 +1,5 @@
 import { MKT_CUSTOMER_DATA_SEEDS_IDS } from 'src/mkt-core/customer/constants/mkt-customer.constant';
-import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/constants/mkt-order-data-seeds.constants';
+import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/order-seeder/mkt-order-data-seeds.constants';
 
 import { MKT_PROMOTION_DATA_SEEDS_IDS } from './mkt-promotion-data-seeds.constants';
 import { MKT_COUPON_DATA_SEEDS_IDS } from './mkt-coupon-data-seeds.constants';

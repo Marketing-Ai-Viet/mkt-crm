@@ -4,15 +4,13 @@ import { OnEvent } from '@nestjs/event-emitter';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
-} from 'src/mkt-core/common/common.type';
-import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants';
-import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
-import {
   LicenseOperationResult,
   MktOrderCustomEventData,
   MktOrderCustomEventPayload,
 } from 'src/mkt-core/order/types';
+import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants';
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
 import { LICENSE_LIFECYCLE_MESSAGES } from 'src/mkt-core/order/messages';
 
 // ============================================
@@ -161,6 +159,7 @@ export class LicenseLifecycleListener {
 
   /**
    * Get external MKT license IDs from order items
+   * Extracts all license IDs from the licenses array of each order item
    */
   private async getExternalLicenseIds(
     workspaceId: string,
@@ -171,12 +170,10 @@ export class LicenseLifecycleListener {
       orderId,
     );
 
-    return orderItems
-      .filter(
-        (item): item is typeof item & { externalMktLicenseId: string } =>
-          !!item.externalMktLicenseId,
-      )
-      .map((item) => item.externalMktLicenseId);
+    // Flatten all license IDs from all order items
+    return orderItems.flatMap((item) =>
+      (item.licenses ?? []).map((license) => license.id),
+    );
   }
 
   /**

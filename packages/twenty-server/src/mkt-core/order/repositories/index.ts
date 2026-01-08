@@ -7,3 +7,4 @@
 
 export * from './mkt-order.repository';
 export * from './mkt-order-item.repository';
+export * from './mkt-order-history.repository';

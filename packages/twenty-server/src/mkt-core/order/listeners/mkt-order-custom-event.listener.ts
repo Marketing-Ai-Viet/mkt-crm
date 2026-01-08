@@ -5,28 +5,29 @@ import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
   MktCustomEventName,
-} from 'src/mkt-core/common/common.type';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+  MktOrderCustomEventData,
+  MktOrderCustomEventPayload,
+} from 'src/mkt-core/order/types';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
 import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
 import {
   ORDER_HISTORY_ACTION,
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants';
-import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { safeJsonStringify } from 'src/mkt-core/utils';
 import {
-  MktOrderCustomEventData,
-  MktOrderCustomEventPayload,
-} from 'src/mkt-core/order/types';
+  MktOrderRepository,
+  MktOrderHistoryRepository,
+} from 'src/mkt-core/order/repositories';
+import { safeJsonStringify } from 'src/mkt-core/utils';
 
 @Injectable()
 export class MktOrderCustomEventListener {
   private readonly logger = new Logger(MktOrderCustomEventListener.name);
   constructor(
-    private mktRepo: MktRepositoryService,
-    private customerQueueService: MktCustomerQueueService,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly orderHistoryRepository: MktOrderHistoryRepository,
+    private readonly customerQueueService: MktCustomerQueueService,
     private readonly mktEmailService: MktEmailService,
   ) {}
 
@@ -89,17 +90,26 @@ export class MktOrderCustomEventListener {
   private async processOrderCustomEvent(
     event: MktOrderCustomEventData,
   ): Promise<MktOrderWorkspaceEntity | void> {
-    this.mktRepo.workspaceId = event.workspaceId;
-    const orderHistoryRepo = await this.mktRepo.getRepository(
-      MktOrderHistoryWorkspaceEntity,
+    if (!event.orderId) {
+      this.logger.warn(
+        'Event missing orderId, skipping order event processing',
+      );
+
+      return;
+    }
+
+    const updatedOrder = await this.orderRepository.findById(
+      event.workspaceId,
+      event.orderId,
+      {
+        relations: {
+          mktPayments: true,
+          mktCustomer: true,
+          orderItems: true,
+          accountOwner: true,
+        },
+      },
     );
-
-    const orderRepo = await this.mktRepo.getRepository(MktOrderWorkspaceEntity);
-
-    const updatedOrder = await orderRepo.findOne({
-      where: { id: event.orderId },
-      relations: ['mktPayments', 'mktCustomer', 'orderItems', 'accountOwner'],
-    });
 
     if (!updatedOrder) {
       this.logger.warn(`Order not found: ${event.orderId}`);
@@ -109,25 +119,24 @@ export class MktOrderCustomEventListener {
 
     this.logger.log(`start tier update for customer`);
 
-    await this.tierForCustomer(updatedOrder);
+    await this.tierForCustomer(updatedOrder, event.workspaceId);
 
-    const orderHistoryData = await this.makeOrderHistoryData(
+    const orderHistoryData = this.makeOrderHistoryData(
       event.eventType,
       updatedOrder,
     );
-    const orderHistory = orderHistoryRepo.create({
-      name: orderHistoryData.name,
-      mktOrderId: event.orderId,
-      action: orderHistoryData.action as ORDER_HISTORY_ACTION,
-      fieldName: orderHistoryData.fieldName ?? null,
-      newValue: orderHistoryData.newValue ?? null,
-      oldValue: orderHistoryData.oldValue ?? null,
-      metadata: updatedOrder as MktOrderWorkspaceEntity as unknown as JSON,
-      note: orderHistoryData.note ?? '',
-    });
 
-    // TODO: Update OrderHistory entity to use relation instead of ActorMetadata for createdBy
-    await orderHistoryRepo.save(orderHistory);
+    // Use repository to create order history
+    await this.orderHistoryRepository.create(event.workspaceId, {
+      orderId: event.orderId,
+      action: orderHistoryData.action,
+      name: orderHistoryData.name,
+      fieldName: orderHistoryData.fieldName,
+      newValue: orderHistoryData.newValue,
+      oldValue: orderHistoryData.oldValue,
+      note: orderHistoryData.note,
+      metadata: updatedOrder as unknown as Record<string, unknown>,
+    });
 
     this.logger.log(
       `Processing order ${event.orderId} in workspace ${event.workspaceId}`,
@@ -142,10 +151,17 @@ export class MktOrderCustomEventListener {
     return updatedOrder;
   }
 
-  private async makeOrderHistoryData(
+  private makeOrderHistoryData(
     eventType?: MktCustomEventName,
     updatedOrder?: MktOrderWorkspaceEntity,
-  ) {
+  ): {
+    name: string;
+    action: ORDER_HISTORY_ACTION;
+    fieldName: string;
+    newValue: string;
+    oldValue: string;
+    note: string;
+  } {
     let name = 'Cập nhật trạng thái';
     let action = ORDER_HISTORY_ACTION.UPDATED;
     let fieldName = 'status';
@@ -182,7 +198,10 @@ export class MktOrderCustomEventListener {
     return { name, action, fieldName, newValue, oldValue, note };
   }
 
-  private async tierForCustomer(order: MktOrderWorkspaceEntity) {
+  private async tierForCustomer(
+    order: MktOrderWorkspaceEntity,
+    workspaceId: string,
+  ) {
     // Trigger customer tier update via queue when order is updated
     if (order.mktCustomerId) {
       try {
@@ -190,7 +209,11 @@ export class MktOrderCustomEventListener {
           `Enqueuing customer tier update for customer ${order.mktCustomerId}`,
         );
 
-        await this.customerQueueService.updateCustomerTier(order.mktCustomerId);
+        await this.customerQueueService.updateCustomerTier(
+          order.mktCustomerId,
+          workspaceId,
+          { reason: 'order_completed' },
+        );
 
         this.logger.log(
           `Successfully enqueued customer tier update for customer ${order.mktCustomerId}`,

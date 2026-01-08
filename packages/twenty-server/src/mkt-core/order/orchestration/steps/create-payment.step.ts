@@ -1,28 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrderCommonConfirmService } from 'src/mkt-core/common/service/mkt.common-order.confirm.service';
+import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
+import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
-import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   SagaContext,
   SagaStep,
   SagaStepResult,
-} from 'src/mkt-core/order/orchestration/saga/order-saga.interface';
+} from 'src/mkt-core/order/types/order-saga.interface';
 import {
   CreateOrderWithItemsInput,
   CreatePaymentStepOutput,
+  OrderPaymentMethodInput,
+  PaymentCreationParams,
 } from 'src/mkt-core/order/types';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
-
-// ============================================
-// DEFAULT CONSTANTS
-// ============================================
-
-const DEFAULT_CURRENCY = 'VND';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
+import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';
+import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
+import { CreatePaymentData } from 'src/mkt-core/payment/types/repository.types';
 
 /**
  * CreatePaymentStep - Step 4: Tạo payment records
@@ -48,150 +48,76 @@ export class CreatePaymentStep extends SagaStep<
   private readonly logger = new Logger(CreatePaymentStep.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly mktCommonOrderConfirmService: MktOrderCommonConfirmService,
+    private readonly paymentMethodRepository: MktPaymentMethodRepository,
+    private readonly paymentRepository: MktPaymentRepository,
+    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+    @Inject(ORDER_CONFIG_KEY)
+    private readonly config: OrderConfig,
   ) {
     super();
   }
 
   /**
-   * Skip payment creation for TRIAL action
+   * Determine if payment creation should be skipped
+   *
+   * - isDraft: Skip (draft orders don't create payments/QR codes)
+   * - Otherwise: Always create payment
+   *
+   * Note: Trial orders are handled by TrialOrderService which doesn't require payment.
    */
   shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
-    return input.action === ORDER_ACTION.TRIAL;
+    // Draft mode: Skip payment creation
+    if (input.isDraft) {
+      this.logger.debug('Skipping: Draft order - no payment creation');
+
+      return true;
+    }
+
+    return false;
   }
 
   async execute(
     context: SagaContext,
     input: CreateOrderWithItemsInput,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<SagaStepResult<CreatePaymentStepOutput>> {
     try {
-      if (!context.orderId) {
-        return {
-          success: false,
-          error: new Error('Order ID is required from previous step'),
-        };
-      }
+      const validationResult = this.validateInput(context, input);
 
-      if (!input.paymentMethods || input.paymentMethods.length === 0) {
-        this.logger.warn(
-          'No payment methods provided, skipping payment creation',
-        );
-
-        return {
-          success: true,
-          data: { payments: [] },
-        };
-      }
+      if (validationResult) return validationResult;
 
       this.logger.log(`Creating payments for order: ${context.orderId}`);
 
-      // Get payment methods from database
-      const paymentMethodIds = input.paymentMethods.map(
-        (p) => p.paymentMethodId,
-      );
-      const paymentMethods = await this.getPaymentMethods(
+      const paymentMethods = input.paymentMethods ?? [];
+      const paymentMethodMap = await this.getPaymentMethodMap(
         context.workspaceId,
-        paymentMethodIds,
+        paymentMethods,
       );
 
-      if (paymentMethods.length === 0) {
+      if (paymentMethodMap.size === 0) {
         return {
           success: false,
           error: new Error('No valid payment methods found'),
         };
       }
 
-      // Get total amount from context
       const totalAmount = (context.metadata.get('totalAmount') as number) ?? 0;
+      const currency = (input.currency ??
+        DEFAULT_PAYMENT_CURRENCY) as PaymentCurrency;
 
-      // Create payment repository
-      const paymentRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-          context.workspaceId,
-          MktPaymentWorkspaceEntity,
-          { shouldBypassPermissionChecks: true },
-        );
+      const { payments, primaryQrCodeUrl } = await this.createPayments(
+        paymentMethods,
+        paymentMethodMap,
+        totalAmount,
+        context,
+        currency,
+      );
 
-      const payments: MktPaymentWorkspaceEntity[] = [];
-      let primaryQrCodeUrl: string | undefined;
-
-      // Create payments for each payment method
-      for (const paymentMethodInput of input.paymentMethods) {
-        const paymentMethod = paymentMethods.find(
-          (pm) => pm.id === paymentMethodInput.paymentMethodId,
-        );
-
-        if (!paymentMethod) {
-          this.logger.warn(
-            `Payment method ${paymentMethodInput.paymentMethodId} not found, skipping`,
-          );
-          continue;
-        }
-
-        // Calculate amount for this payment
-        let amount = totalAmount;
-        let paymentName = `Thanh toán - ${paymentMethod.name} - ${context.orderCode}`;
-
-        // Handle discount payment (pre-payment)
-        if (
-          paymentMethodInput.name === 'discount' &&
-          paymentMethodInput.amount
-        ) {
-          amount = paymentMethodInput.amount;
-          paymentName = `Thanh toán trước - ${paymentMethod.name} - ${context.orderCode}`;
-        }
-
-        // Generate QR code for SEPay
-        const { qrCodeUrl, expiredAt } =
-          await this.mktCommonOrderConfirmService.generateSepayQrCodeUrl(
-            paymentMethod,
-            amount,
-            context.orderCode ?? null,
-          );
-
-        // Store primary QR code URL
-        if (!primaryQrCodeUrl && qrCodeUrl) {
-          primaryQrCodeUrl = qrCodeUrl;
-        }
-
-        // Create payment record
-        const paymentData: Partial<MktPaymentWorkspaceEntity> = {
-          mktOrderId: context.orderId,
-          mktPaymentMethodId: paymentMethodInput.paymentMethodId,
-          name: paymentName,
-          amount,
-          currency: input.currency ?? DEFAULT_CURRENCY,
-          qrCodeUrl: qrCodeUrl ?? undefined,
-          duration: paymentMethodInput.duration ?? undefined,
-          expiredAt: expiredAt ?? undefined,
-          paymentPageUrl: `${process.env.SERVER_URL}/payment/${context.orderCode}`,
-          mktTemplateId: MKT_TEMPLATE.SEPAY,
-        };
-
-        const payment = paymentRepository.create(paymentData);
-
-        const savedPayment = await queryRunner.manager.save(payment);
-
-        payments.push(savedPayment as MktPaymentWorkspaceEntity);
-      }
-
-      this.logger.log(`Created ${payments.length} payment records`);
-
-      // Store in context
-      context.paymentId = payments[0]?.id;
-      context.metadata.set('paymentQrCode', primaryQrCodeUrl);
-      context.rollbackData.set(this.name, {
-        paymentIds: payments.map((p) => p.id),
-      });
+      this.storeInContext(context, payments, primaryQrCodeUrl);
 
       return {
         success: true,
-        data: {
-          payments,
-          qrCodeUrl: primaryQrCodeUrl,
-        },
+        data: { payments, qrCodeUrl: primaryQrCodeUrl },
       };
     } catch (error) {
       this.logger.error('Failed to create payments', error);
@@ -205,7 +131,7 @@ export class CreatePaymentStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       paymentIds: string[];
@@ -220,8 +146,9 @@ export class CreatePaymentStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
 
-      await queryRunner.manager.delete(
-        MktPaymentWorkspaceEntity,
+      // Uses MktPaymentRepository for thread-safe access
+      await this.paymentRepository.softDeleteMany(
+        context.workspaceId,
         data.paymentIds,
       );
 
@@ -236,22 +163,192 @@ export class CreatePaymentStep extends SagaStep<
   // PRIVATE METHODS
   // ============================================
 
-  /**
-   * Get payment methods from database
-   */
-  private async getPaymentMethods(
-    workspaceId: string,
-    paymentMethodIds: string[],
-  ): Promise<MktPaymentMethodWorkspaceEntity[]> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktPaymentMethodWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
+  private validateInput(
+    context: SagaContext,
+    input: CreateOrderWithItemsInput,
+  ): SagaStepResult<CreatePaymentStepOutput> | null {
+    if (!context.orderId) {
+      return {
+        success: false,
+        error: new Error('Order ID is required from previous step'),
+      };
+    }
+
+    if (!input.paymentMethods?.length) {
+      this.logger.warn(
+        'No payment methods provided, skipping payment creation',
       );
 
-    return repository.find({
-      where: paymentMethodIds.map((id) => ({ id })),
+      return { success: true, data: { payments: [] } };
+    }
+
+    return null;
+  }
+
+  /**
+   * Get payment method map by IDs
+   * Uses MktPaymentMethodRepository for thread-safe access
+   */
+  private async getPaymentMethodMap(
+    workspaceId: string,
+    paymentMethodInputs: OrderPaymentMethodInput[],
+  ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
+    const paymentMethodIds = paymentMethodInputs.map((p) => p.paymentMethodId);
+
+    return this.paymentMethodRepository.findManyByIds(
+      workspaceId,
+      paymentMethodIds,
+    );
+  }
+
+  /**
+   * Create payments for all payment methods
+   * Uses MktPaymentRepository for thread-safe access
+   */
+  private async createPayments(
+    paymentMethodInputs: OrderPaymentMethodInput[],
+    paymentMethodMap: Map<string, MktPaymentMethodWorkspaceEntity>,
+    totalAmount: number,
+    context: SagaContext,
+    currency: PaymentCurrency,
+  ): Promise<{
+    payments: MktPaymentWorkspaceEntity[];
+    primaryQrCodeUrl?: string;
+  }> {
+    const payments: MktPaymentWorkspaceEntity[] = [];
+    let primaryQrCodeUrl: string | undefined;
+
+    for (const paymentMethodInput of paymentMethodInputs) {
+      const paymentMethod = paymentMethodMap.get(
+        paymentMethodInput.paymentMethodId,
+      );
+
+      if (!paymentMethod) {
+        this.logger.warn(
+          `Payment method ${paymentMethodInput.paymentMethodId} not found, skipping`,
+        );
+        continue;
+      }
+
+      const savedPayment = await this.createSinglePayment({
+        paymentMethodInput,
+        paymentMethod,
+        totalAmount,
+        context,
+        currency,
+      });
+
+      payments.push(savedPayment);
+
+      if (!primaryQrCodeUrl && savedPayment.qrCodeUrl) {
+        primaryQrCodeUrl = savedPayment.qrCodeUrl;
+      }
+    }
+
+    this.logger.log(`Created ${payments.length} payment records`);
+
+    return { payments, primaryQrCodeUrl };
+  }
+
+  /**
+   * Create a single payment record
+   * Uses MktPaymentRepository for thread-safe access
+   */
+  private async createSinglePayment(
+    params: PaymentCreationParams,
+  ): Promise<MktPaymentWorkspaceEntity> {
+    const {
+      paymentMethodInput,
+      paymentMethod,
+      totalAmount,
+      context,
+      currency,
+    } = params;
+
+    const { amount, paymentName } = this.calculatePaymentDetails(
+      paymentMethodInput,
+      paymentMethod,
+      totalAmount,
+      context.orderCode,
+    );
+
+    const { qrCodeUrl, expiredAt } =
+      await this.orderConfirmUtilsService.generateSepayQrCodeUrl(
+        paymentMethod,
+        amount,
+        context.orderCode ?? null,
+      );
+
+    const orderId = context.orderId ?? '';
+    const paymentData = this.buildPaymentData({
+      orderId,
+      paymentMethodId: paymentMethodInput.paymentMethodId,
+      paymentName,
+      amount,
+      currency,
+      qrCodeUrl,
+      expiredAt,
+      duration: paymentMethodInput.duration,
+      orderCode: context.orderCode,
+    });
+
+    // Uses MktPaymentRepository for thread-safe access
+    return this.paymentRepository.create(context.workspaceId, paymentData);
+  }
+
+  private calculatePaymentDetails(
+    paymentMethodInput: OrderPaymentMethodInput,
+    paymentMethod: MktPaymentMethodWorkspaceEntity,
+    totalAmount: number,
+    orderCode?: string,
+  ): { amount: number; paymentName: string } {
+    const isDiscountPayment =
+      paymentMethodInput.name === 'discount' && paymentMethodInput.amount;
+
+    const amount = isDiscountPayment
+      ? (paymentMethodInput.amount ?? totalAmount)
+      : totalAmount;
+
+    const prefix = isDiscountPayment ? 'Thanh toán trước' : 'Thanh toán';
+    const paymentName = `${prefix} - ${paymentMethod.name} - ${orderCode}`;
+
+    return { amount, paymentName };
+  }
+
+  private buildPaymentData(params: {
+    orderId: string;
+    paymentMethodId: string;
+    paymentName: string;
+    amount: number;
+    currency: PaymentCurrency;
+    qrCodeUrl?: string;
+    expiredAt?: string | null;
+    duration?: number;
+    orderCode?: string;
+  }): CreatePaymentData {
+    return {
+      name: params.paymentName,
+      amount: params.amount,
+      currency: params.currency,
+      mktOrderId: params.orderId,
+      mktPaymentMethodId: params.paymentMethodId,
+      qrCodeUrl: params.qrCodeUrl ?? undefined,
+      duration: params.duration ?? undefined,
+      expiredAt: params.expiredAt ?? undefined,
+      paymentPageUrl: `${this.config.urls.serverUrl}${this.config.urls.paymentPagePath}/${params.orderCode}`,
+      mktTemplateId: MKT_TEMPLATE.SEPAY,
+    };
+  }
+
+  private storeInContext(
+    context: SagaContext,
+    payments: MktPaymentWorkspaceEntity[],
+    primaryQrCodeUrl?: string,
+  ): void {
+    context.paymentId = payments[0]?.id;
+    context.metadata.set('paymentQrCode', primaryQrCodeUrl);
+    context.rollbackData.set(this.name, {
+      paymentIds: payments.map((p) => p.id),
     });
   }
 }

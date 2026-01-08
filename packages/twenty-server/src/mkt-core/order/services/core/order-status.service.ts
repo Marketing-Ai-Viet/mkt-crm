@@ -48,6 +48,17 @@ export class OrderStatusService {
       const stateMachine = new OrderStateMachine(currentOrder);
       const currentStatus = currentOrder?.status as ORDER_STATUS | null;
 
+      // Check for terminal status early - cannot transition from CANCELED or REFUND
+      if (currentStatus && this.isTerminalStatus(currentStatus)) {
+        return {
+          valid: false,
+          action: null,
+          newStatus: null,
+          error:
+            MKT_ORDER_STATUS_LOG_MESSAGES.TERMINAL_STATUS_ERROR(currentStatus),
+        };
+      }
+
       // Build payload for state machine with required type casting
       const payload: UpdateOneResolverArgs<MktOrderWorkspaceEntity> = {
         id: currentOrder?.id ?? '',
@@ -136,38 +147,33 @@ export class OrderStatusService {
 
   /**
    * Get ORDER_STATUS from ORDER_ACTION
+   *
+   * Flow chính:
+   * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+   * - TRIAL: TRIAL → (TRIAL_EXPIRED | PENDING_PAYMENT)
    */
   getStatusFromAction(
     action: ORDER_ACTION,
     currentStatus?: ORDER_STATUS | null,
   ): ORDER_STATUS {
     switch (action) {
-      case ORDER_ACTION.DRAFT:
-        return ORDER_STATUS.DRAFT;
+      case ORDER_ACTION.NEW_ORDER:
+        return ORDER_STATUS.PENDING_PAYMENT;
 
       case ORDER_ACTION.TRIAL:
         return ORDER_STATUS.TRIAL;
 
-      case ORDER_ACTION.WAIT:
-        return ORDER_STATUS.WAIT;
-
-      case ORDER_ACTION.CONFIRMED:
-      case ORDER_ACTION.TRIAL_TO_CONFIRMED:
+      case ORDER_ACTION.ACCOUNTING_CONFIRMED:
         return ORDER_STATUS.CONFIRMED;
 
-      case ORDER_ACTION.COMPLETED:
-      case ORDER_ACTION.PAID:
+      case ORDER_ACTION.COMPLETE:
         return ORDER_STATUS.COMPLETED;
 
-      case ORDER_ACTION.LOCKED:
+      case ORDER_ACTION.BLOCK:
         return ORDER_STATUS.BLOCKED;
 
-      case ORDER_ACTION.OVERDUE:
-        return ORDER_STATUS.OVERDUE;
-
-      case ORDER_ACTION.REFUSE:
-      case ORDER_ACTION.CANCELLED:
-        return ORDER_STATUS.REFUSE;
+      case ORDER_ACTION.CANCEL:
+        return ORDER_STATUS.CANCELED;
 
       case ORDER_ACTION.REFUND:
         return ORDER_STATUS.REFUND;
@@ -175,18 +181,14 @@ export class OrderStatusService {
       case ORDER_ACTION.REFUND_PARTIAL:
         return ORDER_STATUS.REFUND_PARTIAL;
 
-      // Actions that don't change status
-      case ORDER_ACTION.LICENSE:
-      case ORDER_ACTION.SINVOICE:
+      // TRIAL_TO_PAID: Trial chuyển sang chờ thanh toán
+      case ORDER_ACTION.TRIAL_TO_PAID:
+        return ORDER_STATUS.PENDING_PAYMENT;
+
+      // Actions that don't change status (keep current or default)
       case ORDER_ACTION.LICENSE_RENEWING:
       case ORDER_ACTION.CHANGE_VARIANT:
-        return currentStatus ?? ORDER_STATUS.WAIT;
-
-      case ORDER_ACTION.TRIAL_TO_PAID:
-        return ORDER_STATUS.WAIT;
-
-      case ORDER_ACTION.FREE:
-        return ORDER_STATUS.COMPLETED;
+        return currentStatus ?? ORDER_STATUS.PENDING_PAYMENT;
 
       default:
         this.logger.warn(MKT_ORDER_STATUS_LOG_MESSAGES.UNKNOWN_ACTION(action));
@@ -199,7 +201,7 @@ export class OrderStatusService {
    * Get ORDER_ACTION from ORDER_STATUS
    */
   getActionFromStatus(status: ORDER_STATUS): ORDER_ACTION {
-    return STATUS_ACTION_MAP[status] ?? ORDER_ACTION.DRAFT;
+    return STATUS_ACTION_MAP[status] ?? ORDER_ACTION.NEW_ORDER;
   }
 
   /**
@@ -231,13 +233,6 @@ export class OrderStatusService {
   }
 
   /**
-   * Check if action requires S-Invoice sync
-   */
-  requiresSInvoiceSync(action: ORDER_ACTION): boolean {
-    return action === ORDER_ACTION.SINVOICE;
-  }
-
-  /**
    * Check if status is terminal (no further transitions allowed)
    */
   isTerminalStatus(status: ORDER_STATUS): boolean {
@@ -260,26 +255,28 @@ export class OrderStatusService {
     const labels: Record<'VI' | 'EN', Record<ORDER_STATUS, string>> = {
       VI: {
         [ORDER_STATUS.DRAFT]: 'Nháp',
+        [ORDER_STATUS.PENDING_PAYMENT]: 'Chờ thanh toán',
         [ORDER_STATUS.TRIAL]: 'Dùng thử',
-        [ORDER_STATUS.COMPLETED]: 'Hoàn thành',
-        [ORDER_STATUS.WAIT]: 'Chờ xử lý',
-        [ORDER_STATUS.OVERDUE]: 'Quá hạn',
-        [ORDER_STATUS.REFUSE]: 'Từ chối',
-        [ORDER_STATUS.REFUND]: 'Hoàn tiền',
+        [ORDER_STATUS.TRIAL_EXPIRED]: 'Trial hết hạn',
         [ORDER_STATUS.CONFIRMED]: 'Đã xác nhận',
-        [ORDER_STATUS.BLOCKED]: 'Khóa đơn hàng',
+        [ORDER_STATUS.COMPLETED]: 'Hoàn thành',
+        [ORDER_STATUS.CANCELED]: 'Đã hủy',
+        [ORDER_STATUS.OVERDUE]: 'Quá hạn',
+        [ORDER_STATUS.BLOCKED]: 'Bị khóa',
+        [ORDER_STATUS.REFUND]: 'Hoàn tiền',
         [ORDER_STATUS.REFUND_PARTIAL]: 'Hoàn tiền một phần',
       },
       EN: {
         [ORDER_STATUS.DRAFT]: 'Draft',
+        [ORDER_STATUS.PENDING_PAYMENT]: 'Pending Payment',
         [ORDER_STATUS.TRIAL]: 'Trial',
-        [ORDER_STATUS.COMPLETED]: 'Completed',
-        [ORDER_STATUS.WAIT]: 'Waiting',
-        [ORDER_STATUS.OVERDUE]: 'Overdue',
-        [ORDER_STATUS.REFUSE]: 'Refused',
-        [ORDER_STATUS.REFUND]: 'Refunded',
+        [ORDER_STATUS.TRIAL_EXPIRED]: 'Trial Expired',
         [ORDER_STATUS.CONFIRMED]: 'Confirmed',
+        [ORDER_STATUS.COMPLETED]: 'Completed',
+        [ORDER_STATUS.CANCELED]: 'Canceled',
+        [ORDER_STATUS.OVERDUE]: 'Overdue',
         [ORDER_STATUS.BLOCKED]: 'Blocked',
+        [ORDER_STATUS.REFUND]: 'Refunded',
         [ORDER_STATUS.REFUND_PARTIAL]: 'Partial Refund',
       },
     };

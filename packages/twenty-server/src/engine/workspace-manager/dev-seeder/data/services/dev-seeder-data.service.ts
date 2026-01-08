@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
@@ -95,12 +95,20 @@ import { TimelineActivitySeederService } from 'src/engine/workspace-manager/dev-
 import { prefillViews } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-views';
 import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
 import {
-  MKT_RECORD_SEEDS_CONFIGS,
-  MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
-} from 'src/mkt-core/workspace-config/mkt-dev-seeder-data.config';
+  getCompleteMktSeedsByProfile,
+  getFirstPhaseSeedsByProfile,
+} from 'src/mkt-core/seeder/factories/seed-data.factory';
+import {
+  DEFAULT_SEED_PROFILE,
+  SeedProfile,
+  shouldSeedDemoData,
+} from 'src/mkt-core/seeder/types/seed-profile.types';
 
-const RECORD_SEEDS_CONFIGS = [
-  ...MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
+/**
+ * Standard Twenty CRM demo data seeds
+ * These are only seeded for development/demo profiles
+ */
+const STANDARD_DEMO_SEEDS_CONFIGS = [
   {
     tableName: 'workspaceMember',
     pgColumns: WORKSPACE_MEMBER_DATA_SEED_COLUMNS,
@@ -211,23 +219,34 @@ const RECORD_SEEDS_CONFIGS = [
     pgColumns: TASK_TARGET_DATA_SEED_COLUMNS,
     recordSeeds: TASK_TARGET_DATA_SEEDS,
   },
-  ...MKT_RECORD_SEEDS_CONFIGS,
 ];
 
 @Injectable()
 export class DevSeederDataService {
+  private readonly logger = new Logger(DevSeederDataService.name);
+
   constructor(
     private readonly workspaceDataSourceService: WorkspaceDataSourceService,
     private readonly objectMetadataService: ObjectMetadataService,
     private readonly timelineActivitySeederService: TimelineActivitySeederService,
   ) {}
 
+  /**
+   * Seed business data based on profile
+   *
+   * @param params - Seed parameters
+   * @param params.schemaName - Database schema name
+   * @param params.workspaceId - Workspace ID
+   * @param params.profile - Seed profile (default: DEVELOPMENT)
+   */
   public async seed({
     schemaName,
     workspaceId,
+    profile = DEFAULT_SEED_PROFILE,
   }: {
     schemaName: string;
     workspaceId: string;
+    profile?: SeedProfile;
   }) {
     const mainDataSource =
       await this.workspaceDataSourceService.connectToMainDataSource();
@@ -236,12 +255,38 @@ export class DevSeederDataService {
       throw new Error('Could not connect to main data source');
     }
 
+    this.logger.log(`Seeding business data with profile: ${profile}`);
+
+    // Get MKT seeds based on profile
+    const mktFirstPhaseSeeds = getFirstPhaseSeedsByProfile(profile);
+    const mktSeeds = getCompleteMktSeedsByProfile(profile);
+
+    // Get standard seeds based on profile
+    const standardSeeds = shouldSeedDemoData(profile)
+      ? STANDARD_DEMO_SEEDS_CONFIGS
+      : [];
+
+    // Combine seeds in correct order:
+    // 1. MKT first phase (no FK dependencies)
+    // 2. Standard seeds (workspaceMember first for FK references)
+    // 3. MKT remaining seeds
+    const allRecordSeeds = [
+      ...mktFirstPhaseSeeds,
+      ...standardSeeds,
+      ...mktSeeds.filter(
+        (seed) =>
+          !mktFirstPhaseSeeds.some((fp) => fp.tableName === seed.tableName),
+      ),
+    ];
+
+    this.logger.log(`Total seed configs: ${allRecordSeeds.length}`);
+
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        for (const recordSeedsConfig of RECORD_SEEDS_CONFIGS) {
+        for (const recordSeedsConfig of allRecordSeeds) {
           const objectMetadata = objectMetadataItems.find(
             (item) =>
               computeTableName(item.nameSingular, item.isCustom) ===
@@ -261,16 +306,16 @@ export class DevSeederDataService {
           });
         }
 
-        await this.timelineActivitySeederService.seedTimelineActivities({
-          entityManager,
-          schemaName,
-          workspaceId,
-        });
+        // Timeline activities only for development/demo profiles
+        if (shouldSeedDemoData(profile)) {
+          await this.timelineActivitySeederService.seedTimelineActivities({
+            entityManager,
+            schemaName,
+            workspaceId,
+          });
+        }
 
-        // For now views/favorites are auto-created for custom
-        // objects but not for standard objects.
-        // This is probably something we want to fix in the future.
-
+        // Views and favorites are always created
         const viewDefinitionsWithId = await prefillViews(
           entityManager,
           schemaName,
@@ -293,6 +338,8 @@ export class DevSeederDataService {
         );
       },
     );
+
+    this.logger.log(`Business data seeding completed for profile: ${profile}`);
   }
 
   private async seedRecords({
@@ -308,6 +355,10 @@ export class DevSeederDataService {
     pgColumns: string[];
     recordSeeds: Record<string, unknown>[];
   }) {
+    if (recordSeeds.length === 0) {
+      return;
+    }
+
     await entityManager
       .createQueryBuilder(undefined, undefined, undefined, {
         shouldBypassPermissionChecks: true,

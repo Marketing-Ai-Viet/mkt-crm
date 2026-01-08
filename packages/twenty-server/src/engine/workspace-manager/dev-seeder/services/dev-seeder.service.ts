@@ -11,6 +11,8 @@ import { seedCoreSchema } from 'src/engine/workspace-manager/dev-seeder/core/uti
 import { DevSeederDataService } from 'src/engine/workspace-manager/dev-seeder/data/services/dev-seeder-data.service';
 import { DevSeederMetadataService } from 'src/engine/workspace-manager/dev-seeder/metadata/services/dev-seeder-metadata.service';
 import { WorkspaceSyncMetadataService } from 'src/engine/workspace-manager/workspace-sync-metadata/workspace-sync-metadata.service';
+import { SeedConfigService } from 'src/mkt-core/seeder/services/seed-config.service';
+import { shouldSeedDemoData } from 'src/mkt-core/seeder/types/seed-profile.types';
 
 @Injectable()
 export class DevSeederService {
@@ -27,57 +29,92 @@ export class DevSeederService {
     private readonly devSeederMetadataService: DevSeederMetadataService,
     private readonly devSeederPermissionsService: DevSeederPermissionsService,
     private readonly devSeederDataService: DevSeederDataService,
+    private readonly seedConfigService: SeedConfigService,
   ) {}
 
-  public async seedDev(workspaceId: string): Promise<void> {
+  /**
+   * Seed development workspace with data
+   *
+   * @param workspaceId - Optional workspace ID (uses env config if not provided)
+   */
+  public async seedDev(workspaceId?: string): Promise<void> {
     const mainDataSource = this.typeORMService.getMainDataSource();
 
     if (!mainDataSource) {
       throw new Error('Could not connect to workspace data source');
     }
 
+    // Get seed configuration from environment
+    const config = await this.seedConfigService.getConfig();
+    const effectiveWorkspaceId = workspaceId || config.workspace.id;
+    const profile = config.profile;
+
+    this.logger.log(`========================================`);
+    this.logger.log(`Starting seed with profile: ${profile}`);
+    this.logger.log(`Workspace ID: ${effectiveWorkspaceId}`);
+    this.logger.log(`Workspace Name: ${config.workspace.displayName}`);
+    this.logger.log(`User Email: ${config.user.email}`);
+    this.logger.log(`Include demo data: ${shouldSeedDemoData(profile)}`);
+    this.logger.log(`========================================`);
+
     const isBillingEnabled = this.twentyConfigService.get('IS_BILLING_ENABLED');
     const appVersion = this.twentyConfigService.get('APP_VERSION');
 
+    // Seed core schema with environment config
     await seedCoreSchema({
       dataSource: mainDataSource,
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
       seedBilling: isBillingEnabled,
       appVersion,
+      workspaceConfig: config.workspace,
+      userConfig: config.user,
+      // Include legacy users only for development/demo profiles
+      includeLegacyUsers: shouldSeedDemoData(profile),
     });
 
     const schemaName =
       await this.workspaceDataSourceService.createWorkspaceDBSchema(
-        workspaceId,
+        effectiveWorkspaceId,
       );
 
     const dataSourceMetadata =
       await this.dataSourceService.createDataSourceMetadata(
-        workspaceId,
+        effectiveWorkspaceId,
         schemaName,
       );
 
     const featureFlags =
-      await this.featureFlagService.getWorkspaceFeatureFlagsMap(workspaceId);
+      await this.featureFlagService.getWorkspaceFeatureFlagsMap(
+        effectiveWorkspaceId,
+      );
 
     await this.workspaceSyncMetadataService.synchronize({
-      workspaceId: workspaceId,
+      workspaceId: effectiveWorkspaceId,
       dataSourceId: dataSourceMetadata.id,
       featureFlags,
     });
 
     await this.devSeederMetadataService.seed({
       dataSourceMetadata,
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
     });
 
-    await this.devSeederPermissionsService.initPermissions(workspaceId);
+    await this.devSeederPermissionsService.initPermissions(
+      effectiveWorkspaceId,
+    );
 
+    // Seed business data with profile
     await this.devSeederDataService.seed({
       schemaName: dataSourceMetadata.schema,
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
+      profile,
     });
 
-    await this.workspaceCacheStorageService.flush(workspaceId, undefined);
+    await this.workspaceCacheStorageService.flush(
+      effectiveWorkspaceId,
+      undefined,
+    );
+
+    this.logger.log(`Seed completed successfully for profile: ${profile}`);
   }
 }

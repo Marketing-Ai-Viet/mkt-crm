@@ -15,6 +15,8 @@ export const MKT_LICENSE_MESSAGES = createModuleMessages({
     BULK_CREATED: 'Licenses created successfully',
     BULK_UPDATED: 'Licenses updated successfully',
     BULK_DELETED: 'Licenses deleted successfully',
+    TRIAL_CREATED: 'Trial license created successfully',
+    TRIAL_REUSED: 'Existing trial license found and reused',
   },
   customError: {
     ACTIVATION_FAILED: 'Failed to activate license',

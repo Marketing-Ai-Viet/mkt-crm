@@ -1,14 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import {
-  MKT_EVENT_TYPE,
-  MktCustomEventName,
-  PAYMENT_HISTORY_TYPE,
-} from 'src/mkt-core/common/common.type';
-import { MktRepositoryService } from 'src/mkt-core/common/service/mkt-repository.service';
+import { MKT_EVENT_TYPE, MktCustomEventName } from 'src/mkt-core/order/types';
+import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
+import { MktPaymentHistoryRepository } from 'src/mkt-core/payment/repositories';
 
 export interface MktPaymentCustomEventData {
   eventType: MktCustomEventName;
@@ -30,25 +28,29 @@ export interface MktPaymentCustomEventPayload {
 @Injectable()
 export class MktPaymentListenerService {
   private readonly logger = new Logger(MktPaymentListenerService.name);
-  constructor(private mktRepo: MktRepositoryService) {}
+
+  constructor(
+    private readonly mktOrderRepository: MktOrderRepository,
+    private readonly mktPaymentHistoryRepository: MktPaymentHistoryRepository,
+  ) {}
 
   @OnEvent(MKT_EVENT_TYPE.MKT_PAYMENT)
   async handleMktPaymentEvent(payload: MktPaymentCustomEventPayload) {
     for (const event of payload.events) {
       try {
-        this.mktRepo.workspaceId = payload.workspaceId;
-        // Lấy order mới nhất
-        const orderRepo = await this.mktRepo.getRepository(
-          MktOrderWorkspaceEntity,
+        const updatedOrder = await this.mktOrderRepository.findById(
+          payload.workspaceId,
+          event.orderId,
+          { relations: { mktPayments: true } },
         );
-        const updatedOrder = await orderRepo.findOne({
-          where: { id: event.orderId },
-          relations: ['mktPayments'],
-        });
 
         const paymentType = event.eventType as PAYMENT_HISTORY_TYPE;
 
-        await this.pushLicenseHistory(updatedOrder, paymentType);
+        await this.pushLicenseHistory(
+          payload.workspaceId,
+          updatedOrder,
+          paymentType,
+        );
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
         );
@@ -62,6 +64,7 @@ export class MktPaymentListenerService {
   }
 
   private async pushLicenseHistory(
+    workspaceId: string,
     order: MktOrderWorkspaceEntity | null,
     paymentType: PAYMENT_HISTORY_TYPE,
   ): Promise<void> {
@@ -81,8 +84,6 @@ export class MktPaymentListenerService {
       return;
     }
 
-    const paymentHistoryRepo = await this.mktRepo.getPaymentHistoryRepository();
-
     let note = '';
 
     if (payment.description) {
@@ -92,8 +93,7 @@ export class MktPaymentListenerService {
       note += `Ghi chú đơn hàng: ${order.note}`;
     }
 
-    // Tạo entry trong payment history
-    const paymentHistory = paymentHistoryRepo.create({
+    await this.mktPaymentHistoryRepository.create(workspaceId, {
       name: `Payment ${paymentType} recorded for order ${order.orderCode}`,
       paymentType,
       amount: payment.amount ?? order.totalAmount ?? 0,
@@ -101,9 +101,6 @@ export class MktPaymentListenerService {
       mktOrderId: order.id,
       mktPaymentId: payment.id,
     });
-
-    // TODO: Update PaymentHistory entity to use relation instead of ActorMetadata for createdBy
-    await paymentHistoryRepo.save(paymentHistory);
 
     this.logger.log(`Created payment history entry for order ${order.id}.`);
   }

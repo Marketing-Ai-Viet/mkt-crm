@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * Service để tạo mã code tự động cho workspace member
@@ -25,7 +26,7 @@ export class MktMemberCodeGenerationService {
         'workspaceMember',
       );
 
-    const currentYear = new Date().getFullYear();
+    const currentYear = DateTimeUtils.now().toJSDate().getFullYear();
     const prefix = `MEM${currentYear}`;
 
     // Tìm member code lớn nhất có prefix này
@@ -144,10 +145,9 @@ export class MktMemberCodeGenerationService {
         'workspaceMember',
       );
 
-    const count = await repository
-      .createQueryBuilder('member')
-      .where('member.memberCode = :memberCode', { memberCode })
-      .getCount();
+    const count = await repository.count({
+      where: { memberCode },
+    });
 
     return count > 0;
   }

@@ -1,25 +1,30 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 
 import { firstValueFrom } from 'rxjs';
 
 import { CreateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
+import { paymentConfig } from 'src/mkt-core/payment/config';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/mkt-payment.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
+import { PaymentCurrency } from 'src/mkt-core/payment/types';
 
 @Injectable()
 export class MktPaymentPrepareService {
   private readonly logger = new Logger(MktPaymentPrepareService.name);
 
   constructor(
+    @Inject(paymentConfig.KEY)
+    private readonly config: ConfigType<typeof paymentConfig>,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
     private readonly httpService: HttpService,
@@ -79,7 +84,10 @@ export class MktPaymentPrepareService {
 
       // currency
       if (!input.currency && order?.currency) {
-        payload.data = { ...payload.data, currency: order.currency };
+        payload.data = {
+          ...payload.data,
+          currency: order.currency as PaymentCurrency,
+        };
         this.logger.log(
           `Copied currency ${order.currency} from order ${order.id}`,
         );
@@ -115,22 +123,20 @@ export class MktPaymentPrepareService {
     if (mktPaymentMethod?.name !== 'SEPay QR') return result;
 
     // Check if BIDV business mode is enabled
-    const isBidvBusiness = process.env.IS_BIDV_BUSINESS === 'true';
-
-    if (isBidvBusiness) {
+    if (this.config.bidv.enabled) {
       return this.generateBidvSepayQr(customAmount, orderCode);
     }
 
     try {
-      // Get environment variables
-      const sepayAcc = process.env.SEPAY_ACC || '';
-      const sepayBank = process.env.SEPAY_BANK || '';
-      const sepayVa = process.env.SEPAY_VA || '';
+      // Get sepay config
+      const {
+        account: sepayAcc,
+        bank: sepayBank,
+        virtualAccount: sepayVa,
+      } = this.config.sepay;
 
       if (!sepayAcc || !sepayBank) {
-        this.logger.warn(
-          'SEPAY_ACC or SEPAY_BANK environment variables not set',
-        );
+        this.logger.warn('SEPAY account or bank not configured');
 
         return result;
       }
@@ -173,10 +179,12 @@ export class MktPaymentPrepareService {
     this.logger.log('Generating BIDV SEPay QR code...');
 
     try {
-      // Get environment variables for BIDV API
-      const bidvApiUrl = process.env.BIDV_SEPAY_API_URL || '';
-      const bidvAuthToken = process.env.BIDV_SEPAY_AUTH_TOKEN || '';
-      const _bidvCookie = process.env.BIDV_SEPAY_COOKIE || '';
+      // Get BIDV config
+      const {
+        apiUrl: bidvApiUrl,
+        authToken: bidvAuthToken,
+        defaultDuration,
+      } = this.config.bidv;
 
       if (!bidvApiUrl || !bidvAuthToken) {
         this.logger.warn('BIDV SEPay API URL or Auth Token not configured');
@@ -200,7 +208,7 @@ export class MktPaymentPrepareService {
       const requestData: BidvSepayOrderRequest = {
         amount: customAmount,
         order_code: orderCode,
-        duration: 300, // 5 minutes expiry
+        duration: defaultDuration,
         with_qrcode: true,
       };
 
