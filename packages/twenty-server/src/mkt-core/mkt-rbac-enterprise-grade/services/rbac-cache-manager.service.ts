@@ -95,7 +95,7 @@ export class RbacCacheManagerService implements OnModuleInit, OnModuleDestroy {
   private keyLastAccess = new Map<string, DateTime>();
 
   constructor(
-    @InjectCacheStorage(CacheStorageNamespace.EngineWorkspace)
+    @InjectCacheStorage(CacheStorageNamespace.RbacPermission)
     private readonly cacheStorage: CacheStorageService,
   ) {
     this.logger.log('RBAC Cache Manager Service initialized');

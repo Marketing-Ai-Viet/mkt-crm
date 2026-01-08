@@ -762,6 +762,14 @@ export const ENTERPRISE_RBAC_CONFIG = {
     | 'SIMPLIFIED'
     | 'FULL',
 
+  // Cache settings (configurable via environment variables)
+  CACHE_ENABLED: process.env.RBAC_CACHE_ENABLED !== 'false', // Default: true
+  CACHE_TTL: parseInt(process.env.RBAC_CACHE_TTL || '300', 10), // Default: 5 minutes (in seconds)
+
+  // Emergency bypass (DANGEROUS - only for critical situations)
+  // When true, skips all RBAC validation and grants all permissions
+  BYPASS_VALIDATION: process.env.RBAC_BYPASS_VALIDATION === 'true', // Default: false
+
   // Feature flags
   ENABLE_15_STEP_VALIDATION: true,
   ENABLE_HIERARCHY_VALIDATION: true,
@@ -770,7 +778,7 @@ export const ENTERPRISE_RBAC_CONFIG = {
   ENABLE_SENSITIVE_DATA_CONTROLS: true,
 
   // Performance settings
-  ENABLE_CACHING: true,
+  ENABLE_CACHING: process.env.RBAC_CACHE_ENABLED !== 'false', // Sync with CACHE_ENABLED
   ENABLE_PARALLEL_EXECUTION: true,
   ENABLE_EARLY_EXIT: true,
   ENABLE_STEP_OPTIMIZATION: true,
@@ -782,7 +790,7 @@ export const ENTERPRISE_RBAC_CONFIG = {
   ENABLE_THREAT_DETECTION: true,
 
   // Development settings
-  ENABLE_DEBUG_MODE: false,
+  ENABLE_DEBUG_MODE: process.env.RBAC_DEBUG_MODE === 'true',
   ENABLE_PROFILING: false,
   ENABLE_METRICS: true,
   ENABLE_TRACING: false,
