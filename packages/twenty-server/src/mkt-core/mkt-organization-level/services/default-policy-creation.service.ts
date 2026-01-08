@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
 import {
   PERMISSION_TEMPLATES,
   HIERARCHY_LEVEL_MAPPING,
 } from 'src/mkt-core/mkt-organization-level/constants/permission-templates.constants';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity';
 
 // Type definitions for filter conditions
 interface LegacyPermissions {

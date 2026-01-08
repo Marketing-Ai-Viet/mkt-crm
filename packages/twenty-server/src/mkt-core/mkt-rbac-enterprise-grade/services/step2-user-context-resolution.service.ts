@@ -29,8 +29,8 @@ import { VALIDATION_STEP_NAMES } from 'src/mkt-core/mkt-rbac-enterprise-grade/co
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import {
   RBAC_CACHE_KEYS,
   RBAC_CACHE_TTL,
@@ -816,8 +816,8 @@ export class Step2UserContextResolutionService
       });
 
       return hierarchyRules.map((rule) => ({
-        sourceLevel: rule.hierarchyLevel,
-        targetLevel: rule.hierarchyLevel + 1,
+        sourceLevel: rule.hierarchyLevel ?? 0,
+        targetLevel: (rule.hierarchyLevel ?? 0) + 1,
         inheritsPermissions: rule.inheritsPermissions || false,
         inheritsParentPermissions: rule.inheritsParentPermissions || false,
         permissions: {

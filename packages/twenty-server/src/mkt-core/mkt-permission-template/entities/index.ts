@@ -1,10 +1,14 @@
-export { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
-export { MktPermissionResourceWorkspaceEntity } from './mkt-permission-resource.workspace-entity';
-export { MktPermissionActionWorkspaceEntity } from './mkt-permission-action.workspace-entity';
-export { MktTemplateResourcePermissionWorkspaceEntity } from './mkt-template-resource-permission.workspace-entity';
-export { MktTemplateSystemActionWorkspaceEntity } from './mkt-template-system-action.workspace-entity';
-export { MktTemplateAccessLimitationWorkspaceEntity } from './mkt-template-access-limitation.workspace-entity';
-export { MktUserPermissionTemplateWorkspaceEntity } from './mkt-user-permission-template.workspace-entity';
-export { MktUserPermissionOverrideWorkspaceEntity } from './mkt-user-permission-override.workspace-entity';
-export { MktPermissionContextWorkspaceEntity } from './mkt-permission-context.workspace-entity';
-export { MktPermissionPriorityConfigWorkspaceEntity } from './mkt-permission-priority-config.workspace-entity';
+// All entities have been moved to mkt-rbac-enterprise-grade/workspace-entities
+// Re-export from new location for backward compatibility
+export {
+  MktPermissionTemplateWorkspaceEntity,
+  MktPermissionResourceWorkspaceEntity,
+  MktPermissionActionWorkspaceEntity,
+  MktTemplateResourcePermissionWorkspaceEntity,
+  MktTemplateSystemActionWorkspaceEntity,
+  MktTemplateAccessLimitationWorkspaceEntity,
+  MktUserPermissionTemplateWorkspaceEntity,
+  MktUserPermissionOverrideWorkspaceEntity,
+  MktPermissionContextWorkspaceEntity,
+  MktPermissionPriorityConfigWorkspaceEntity,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';

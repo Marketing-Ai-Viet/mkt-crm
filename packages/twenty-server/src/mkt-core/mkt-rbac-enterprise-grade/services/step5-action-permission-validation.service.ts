@@ -40,7 +40,7 @@ import {
   MktUserPermissionOverrideWorkspaceEntity,
   MktPermissionActionWorkspaceEntity,
   MktTemplateResourcePermissionWorkspaceEntity,
-} from 'src/mkt-core/mkt-permission-template/entities';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import {
   RBAC_CACHE_KEYS,
   RBAC_CACHE_TTL,

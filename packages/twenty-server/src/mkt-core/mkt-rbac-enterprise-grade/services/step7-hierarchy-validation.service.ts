@@ -29,8 +29,8 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
-import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 /**
@@ -421,7 +421,8 @@ export class Step7HierarchyValidationService
               userHierarchyLevel: userHierarchyInfo.hierarchyLevel,
               departmentAccess: true,
               canEscalateToParent: hierarchy.canEscalateToParent || false,
-              canAccessSubordinates: hierarchy.canManageUsers || false,
+              // TODO: Add canManageUsers field to MktDepartmentHierarchyWorkspaceEntity
+              canAccessSubordinates: false, // hierarchy.canManageUsers || false,
               crossDepartmentAllowed:
                 hierarchy.allowsCrossBranchAccess || false,
               hierarchyPath: hierarchy.hierarchyPath,
@@ -633,17 +634,18 @@ export class Step7HierarchyValidationService
   private extractPermissionsFromHierarchy(
     hierarchy: MktDepartmentHierarchyWorkspaceEntity,
   ): Record<string, boolean> {
+    // TODO: Add missing permission fields to MktDepartmentHierarchyWorkspaceEntity
     return {
       canViewTeamData: hierarchy.canViewTeamData || false,
       canEditTeamData: hierarchy.canEditTeamData || false,
       canExportTeamData: hierarchy.canExportTeamData || false,
-      canApprove: hierarchy.canApprove || false,
-      canDelegate: hierarchy.canDelegate || false,
-      canAudit: hierarchy.canAudit || false,
-      canManageUsers: hierarchy.canManageUsers || false,
-      canAccessSensitiveData: hierarchy.canAccessSensitiveData || false,
-      canOverrideSubordinates: hierarchy.canOverrideSubordinates || false,
-      canDeleteData: hierarchy.canDeleteData || false,
+      canApprove: false, // hierarchy.canApprove || false,
+      canDelegate: false, // hierarchy.canDelegate || false,
+      canAudit: false, // hierarchy.canAudit || false,
+      canManageUsers: false, // hierarchy.canManageUsers || false,
+      canAccessSensitiveData: false, // hierarchy.canAccessSensitiveData || false,
+      canOverrideSubordinates: false, // hierarchy.canOverrideSubordinates || false,
+      canDeleteData: false, // hierarchy.canDeleteData || false,
     };
   }
 
@@ -723,18 +725,19 @@ export class Step7HierarchyValidationService
   ): string[] {
     const restrictions: string[] = [];
 
-    if (hierarchy.requiresDualApproval) {
-      restrictions.push('Requires dual approval');
-    }
-    if (hierarchy.requiresMFA) {
-      restrictions.push('Requires multi-factor authentication');
-    }
-    if (!hierarchy.canAccessAfterHours) {
-      restrictions.push('No after-hours access allowed');
-    }
-    if (hierarchy.requiresFullAuditTrail) {
-      restrictions.push('Full audit trail required');
-    }
+    // TODO: Add missing security fields to MktDepartmentHierarchyWorkspaceEntity
+    // if (hierarchy.requiresDualApproval) {
+    //   restrictions.push('Requires dual approval');
+    // }
+    // if (hierarchy.requiresMFA) {
+    //   restrictions.push('Requires multi-factor authentication');
+    // }
+    // if (!hierarchy.canAccessAfterHours) {
+    //   restrictions.push('No after-hours access allowed');
+    // }
+    // if (hierarchy.requiresFullAuditTrail) {
+    //   restrictions.push('Full audit trail required');
+    // }
     if (hierarchy.validFrom && hierarchy.validTo) {
       const now = new Date();
 

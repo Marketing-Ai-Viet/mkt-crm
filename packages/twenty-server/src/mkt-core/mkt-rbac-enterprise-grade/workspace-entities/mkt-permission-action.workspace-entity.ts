@@ -16,7 +16,7 @@ import {
   PERMISSION_ACTION_CATEGORY_OPTIONS,
   PERMISSION_RISK_LEVEL_OPTIONS,
 } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
-import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
+import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAction,

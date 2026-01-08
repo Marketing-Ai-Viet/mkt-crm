@@ -30,7 +30,7 @@ import {
   VALIDATION_STEP_NAMES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-permission-audit/mkt-permission-audit.workspace-entity';
+import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
 /**
  * Audit event severity levels

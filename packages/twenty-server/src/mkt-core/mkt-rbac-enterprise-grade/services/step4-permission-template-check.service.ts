@@ -36,7 +36,7 @@ import {
   MktUserPermissionTemplateWorkspaceEntity,
   MktUserPermissionOverrideWorkspaceEntity,
   MktPermissionPriorityConfigWorkspaceEntity,
-} from 'src/mkt-core/mkt-permission-template/entities';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { RbacCacheManagerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache-manager.service';
 import {
   RBAC_CACHE_KEYS,

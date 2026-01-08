@@ -30,10 +30,12 @@ import { VALIDATION_STEP_NAMES } from 'src/mkt-core/mkt-rbac-enterprise-grade/co
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department-hierarchy/mkt-department-hierarchy.workspace-entity';
-// DISABLED: import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
-import { MktPermissionResourceWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-permission-resource.workspace-entity';
-import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+// DISABLED: import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import {
+  MktPermissionResourceWorkspaceEntity,
+  MktDataAccessPolicyWorkspaceEntity,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import {
   RBAC_CACHE_KEYS,
   RBAC_CACHE_TTL,
@@ -493,9 +495,8 @@ export class Step3ResourceIdentificationService
       const hasUserSpecificPolicies = dataAccessPolicies.some(
         (p) => p.specificMemberId !== null,
       );
-      const hasHierarchyPolicies = dataAccessPolicies.some(
-        (p) => p.minHierarchyLevel !== null || p.maxHierarchyLevel !== null,
-      );
+      // TODO: Add minHierarchyLevel and maxHierarchyLevel to MktDataAccessPolicyWorkspaceEntity
+      const hasHierarchyPolicies = false; // dataAccessPolicies.some((p) => p.minHierarchyLevel !== null || p.maxHierarchyLevel !== null);
       const highestPolicyPriority = Math.max(
         ...dataAccessPolicies.map((p) => p.priority || 0),
         0,

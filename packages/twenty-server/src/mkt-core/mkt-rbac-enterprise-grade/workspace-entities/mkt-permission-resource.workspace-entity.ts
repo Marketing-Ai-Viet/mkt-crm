@@ -13,8 +13,10 @@ import { MKT_PERMISSION_RESOURCE_FIELD_IDS } from 'src/mkt-core/constants/mkt-fi
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { PERMISSION_RESOURCE_CATEGORY_OPTIONS } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
-import { MktTemplateResourcePermissionWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-template-resource-permission.workspace-entity';
-import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-permission-template/entities/mkt-user-permission-override.workspace-entity';
+import {
+  MktTemplateResourcePermissionWorkspaceEntity,
+  MktUserPermissionOverrideWorkspaceEntity,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionResource,

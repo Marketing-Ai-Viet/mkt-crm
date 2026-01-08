@@ -117,7 +117,8 @@ export class MktOrganizationLevelCreateOnePreQueryHook
   private transformDtoToEntity(
     dto: CreateOrganizationLevelDto,
   ): Partial<MktOrganizationLevelWorkspaceEntity> {
-    const defaultTemplate = this.getDefaultPermissionsTemplate();
+    // TODO: Restore when defaultPermissions and accessLimitations fields are added to entity
+    // const defaultTemplate = this.getDefaultPermissionsTemplate();
 
     return {
       levelCode: dto.levelCode,
@@ -128,10 +129,11 @@ export class MktOrganizationLevelCreateOnePreQueryHook
       description: dto.description ?? undefined,
       parentLevelId: dto.parentLevelId ?? undefined,
       isActive: dto.isActive ?? true,
-      defaultPermissions:
-        dto.defaultPermissions ?? defaultTemplate.defaultPermissions,
-      accessLimitations:
-        dto.accessLimitations ?? defaultTemplate.accessLimitations,
+      // TODO: Add defaultPermissions and accessLimitations fields to MktOrganizationLevelWorkspaceEntity
+      // defaultPermissions:
+      //   dto.defaultPermissions ?? defaultTemplate.defaultPermissions,
+      // accessLimitations:
+      //   dto.accessLimitations ?? defaultTemplate.accessLimitations,
       position: 0,
     };
   }

@@ -25,15 +25,19 @@ import { MktSInvoiceMetadataWorkspaceEntity } from 'src/mkt-core/invoice/objects
 import { MktSInvoicePaymentWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-payment.workspace-entity';
 import { MktSInvoiceTaxBreakdownWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-tax-breakdown.workspace-entity';
 import { MktSInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice.workspace-entity';
-import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-data-access-policy/mkt-data-access-policy.workspace-entity';
+import {
+  MktDataAccessPolicyWorkspaceEntity,
+  MktPermissionAuditWorkspaceEntity,
+  MktTemporaryPermissionWorkspaceEntity,
+  MktUserPermissionTemplateWorkspaceEntity,
+  MktUserPermissionOverrideWorkspaceEntity,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
 import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
 import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
-import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-permission-audit/mkt-permission-audit.workspace-entity';
 import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
-import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-temporary-permission/mkt-temporary-permission.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -566,6 +570,61 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsSystem()
   permissionAudits: Relation<MktPermissionAuditWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionTemplateAssignments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Template Assignments`,
+    description: msg`Permission templates assigned to this member`,
+    icon: 'IconShieldCheck',
+    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'workspaceMember',
+  })
+  @WorkspaceIsSystem()
+  permissionTemplateAssignments: Relation<
+    MktUserPermissionTemplateWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
+    standardId:
+      WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionTemplateAssignmentsMade,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Template Assignments Made`,
+    description: msg`Permission template assignments made by this member`,
+    icon: 'IconShieldPlus',
+    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'assignedBy',
+  })
+  @WorkspaceIsSystem()
+  permissionTemplateAssignmentsMade: Relation<
+    MktUserPermissionTemplateWorkspaceEntity[]
+  >;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.permissionOverrides,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Overrides`,
+    description: msg`Permission overrides for this member`,
+    icon: 'IconShieldX',
+    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
+    inverseSideFieldKey: 'workspaceMember',
+  })
+  @WorkspaceIsSystem()
+  permissionOverrides: Relation<MktUserPermissionOverrideWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.approvedPermissionOverrides,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Approved Permission Overrides`,
+    description: msg`Permission overrides approved by this member`,
+    icon: 'IconShieldCheck',
+    inverseSideTarget: () => MktUserPermissionOverrideWorkspaceEntity,
+    inverseSideFieldKey: 'approvedBy',
+  })
+  @WorkspaceIsSystem()
+  approvedPermissionOverrides: Relation<
+    MktUserPermissionOverrideWorkspaceEntity[]
+  >;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktEmails,

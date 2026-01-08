@@ -308,8 +308,9 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
         parentLevelId: dto.parentLevelId,
         displayOrder: dto.displayOrder,
         isActive: dto.isActive,
-        defaultPermissions: dto.defaultPermissions,
-        accessLimitations: dto.accessLimitations,
+        // TODO: Add defaultPermissions and accessLimitations fields to MktOrganizationLevelWorkspaceEntity
+        // defaultPermissions: dto.defaultPermissions,
+        // accessLimitations: dto.accessLimitations,
       },
       isNil,
     ) as Partial<MktOrganizationLevelWorkspaceEntity>;
