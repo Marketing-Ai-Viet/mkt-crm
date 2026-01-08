@@ -77,6 +77,18 @@ export type OrderOverdueConfig = {
 };
 
 /**
+ * Order tax configuration
+ *
+ * Configuration for tax calculation in order module
+ */
+export type OrderTaxConfig = {
+  /** Whether tax calculation is enabled */
+  enabled: boolean;
+  /** Default tax percentage (%) */
+  defaultPercentage: number;
+};
+
+/**
  * Complete order module configuration
  */
 export type OrderConfig = {
@@ -86,4 +98,5 @@ export type OrderConfig = {
   sepay: OrderSepayConfig;
   bidv: OrderBidvConfig;
   overdue: OrderOverdueConfig;
+  tax: OrderTaxConfig;
 };

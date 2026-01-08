@@ -105,3 +105,27 @@ export const ORDER_OVERDUE_DEFAULTS = {
   /** Job ID prefix */
   JOB_ID_PREFIX: 'order-overdue',
 } as const;
+
+/**
+ * Order tax defaults
+ *
+ * Configuration for tax calculation in order module
+ * - ENABLED: Whether tax calculation is enabled (default: false)
+ * - DEFAULT_PERCENTAGE: Default tax percentage when enabled (default: 10%)
+ *
+ * Set MKT_ORDER_TAX_ENABLED=true in env to enable tax calculation
+ */
+export const ORDER_TAX_DEFAULTS = {
+  /** Tax calculation disabled by default */
+  ENABLED: false,
+  /** Default tax percentage (10% VAT in Vietnam) */
+  DEFAULT_PERCENTAGE: 10,
+} as const;
+
+/**
+ * Tax configuration validation constants
+ */
+export const TAX_VALIDATION = {
+  MIN_PERCENTAGE: 0,
+  MAX_PERCENTAGE: 100,
+} as const;

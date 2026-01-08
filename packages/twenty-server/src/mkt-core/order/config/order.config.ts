@@ -15,8 +15,10 @@ import {
   OrderFeatureConfig,
   OrderOverdueConfig,
   OrderSepayConfig,
+  OrderTaxConfig,
   OrderUrlConfig,
 } from 'src/mkt-core/order/config/order-config.types';
+import { validateTaxEnv } from 'src/mkt-core/order/config/order-config.validation';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -114,6 +116,25 @@ const buildOverdueConfig = (): OrderOverdueConfig => {
   };
 };
 
+/**
+ * Build tax configuration with validation
+ *
+ * Environment variables:
+ * - MKT_ORDER_TAX_ENABLED: Enable/disable tax calculation (default: false)
+ * - MKT_ORDER_TAX_PERCENTAGE: Default tax percentage (default: 10, must be 0-100)
+ *
+ * Uses Zod validation to ensure:
+ * - MKT_ORDER_TAX_PERCENTAGE is between 0 and 100
+ */
+const buildTaxConfig = (): OrderTaxConfig => {
+  const validated = validateTaxEnv();
+
+  return {
+    enabled: validated.enabled,
+    defaultPercentage: validated.percentage,
+  };
+};
+
 // ============================================
 // MAIN CONFIG
 // ============================================
@@ -144,6 +165,7 @@ export const orderConfig = registerAs(
     sepay: buildSepayConfig(),
     bidv: buildBidvConfig(),
     overdue: buildOverdueConfig(),
+    tax: buildTaxConfig(),
   }),
 );
 

@@ -89,6 +89,8 @@ export class CalculatePromotionStep extends SagaStep<
       this.logger.log(`Calculating promotions for order: ${context.orderId}`);
 
       // Get order subtotal from context metadata
+      // TODO : Combo calculation types may affect this
+      // TODO: Customer tier discounts may affect this
       const orderSubtotal =
         (context.metadata.get('totalAmount') as number) ?? 0;
 
