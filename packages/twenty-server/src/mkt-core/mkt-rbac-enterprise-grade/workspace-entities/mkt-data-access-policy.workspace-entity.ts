@@ -12,6 +12,7 @@ import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
+import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 import { MKT_DATA_ACCESS_POLICY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
@@ -19,7 +20,23 @@ import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organizati
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 import { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
+import {
+  POLICY_TYPE_OPTIONS,
+  EVALUATION_MODE_OPTIONS,
+  RISK_LEVEL_OPTIONS,
+  CONFLICT_RESOLUTION_OPTIONS,
+  PolicyType,
+  EvaluationMode,
+  RiskLevel,
+  ConflictResolution,
+} from './constants';
 
+@WorkspaceIndex(['policyType', 'isActive'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
+@WorkspaceIndex(['objectName', 'priority'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDataAccessPolicy,
   namePlural: 'mktDataAccessPolicies',
@@ -154,6 +171,54 @@ export class MktDataAccessPolicyWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   isActive?: boolean;
+
+  // Phase 2: Policy Type
+  @WorkspaceField({
+    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.policyType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Policy Type`,
+    description: msg`Type of policy (ROW_LEVEL, FIELD_LEVEL, COLUMN_LEVEL)`,
+    icon: 'IconLayersSubtract',
+    options: POLICY_TYPE_OPTIONS,
+    defaultValue: `'${PolicyType.ROW_LEVEL}'`,
+  })
+  policyType: PolicyType;
+
+  // Phase 2: Evaluation Mode
+  @WorkspaceField({
+    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.evaluationMode,
+    type: FieldMetadataType.SELECT,
+    label: msg`Evaluation Mode`,
+    description: msg`Mode for evaluating this policy (STRICT, PERMISSIVE, BALANCED)`,
+    icon: 'IconAdjustments',
+    options: EVALUATION_MODE_OPTIONS,
+    defaultValue: `'${EvaluationMode.BALANCED}'`,
+  })
+  evaluationMode: EvaluationMode;
+
+  // Phase 2: Risk Level
+  @WorkspaceField({
+    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.riskLevel,
+    type: FieldMetadataType.SELECT,
+    label: msg`Risk Level`,
+    description: msg`Risk level of data protected by this policy (LOW, MEDIUM, HIGH, CRITICAL)`,
+    icon: 'IconAlertTriangle',
+    options: RISK_LEVEL_OPTIONS,
+    defaultValue: `'${RiskLevel.LOW}'`,
+  })
+  riskLevel: RiskLevel;
+
+  // Phase 2: Conflict Resolution
+  @WorkspaceField({
+    standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.conflictResolution,
+    type: FieldMetadataType.SELECT,
+    label: msg`Conflict Resolution`,
+    description: msg`Strategy for resolving conflicts between policies (DENY_WINS, ALLOW_WINS, HIGHEST_PRIORITY)`,
+    icon: 'IconScale',
+    options: CONFLICT_RESOLUTION_OPTIONS,
+    defaultValue: `'${ConflictResolution.DENY_WINS}'`,
+  })
+  conflictResolution: ConflictResolution;
 
   @WorkspaceField({
     standardId: MKT_DATA_ACCESS_POLICY_FIELD_IDS.position,

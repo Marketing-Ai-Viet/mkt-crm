@@ -24,6 +24,8 @@ import {
   CheckResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
 
+import { VALIDATION_MODE_OPTIONS, ValidationMode } from './constants';
+
 import {
   PERMISSION_SOURCE_OPTIONS,
   PERMISSION_ACTION_OPTIONS,
@@ -41,6 +43,9 @@ import {
 })
 @WorkspaceIndex(['requestContext'], {
   indexType: IndexType.GIN,
+})
+@WorkspaceIndex(['workspaceMemberId', 'action', 'createdAt'], {
+  indexWhereClause: '"deletedAt" IS NULL',
 })
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionAudit,
@@ -179,6 +184,51 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   checkDurationMs?: number;
+
+  // Phase 2: Validation Mode
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.validationMode,
+    type: FieldMetadataType.SELECT,
+    label: msg`Validation Mode`,
+    description: msg`Mode used for this permission check (SIMPLIFIED or FULL)`,
+    icon: 'IconAdjustments',
+    options: VALIDATION_MODE_OPTIONS,
+    defaultValue: `'${ValidationMode.SIMPLIFIED}'`,
+  })
+  validationMode: ValidationMode;
+
+  // Phase 2: Step Results (detailed breakdown of validation steps)
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.stepResults,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Step Results`,
+    description: msg`Detailed results from each validation step`,
+    icon: 'IconListCheck',
+  })
+  @WorkspaceIsNullable()
+  stepResults?: object;
+
+  // Phase 2: Cache Hit
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.cacheHit,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Cache Hit`,
+    description: msg`Whether this permission check used cached data`,
+    icon: 'IconDatabase',
+    defaultValue: false,
+  })
+  cacheHit: boolean;
+
+  // Phase 2: Execution Path
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.executionPath,
+    type: FieldMetadataType.TEXT,
+    label: msg`Execution Path`,
+    description: msg`Path taken through the validation pipeline`,
+    icon: 'IconRoute',
+  })
+  @WorkspaceIsNullable()
+  executionPath?: string;
 
   @WorkspaceField({
     standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.position,

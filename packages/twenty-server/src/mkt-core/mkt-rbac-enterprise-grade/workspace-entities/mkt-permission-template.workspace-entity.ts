@@ -1,6 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import { FieldMetadataType } from 'twenty-shared/types';
 
+import { RelationOnDeleteAction } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-on-delete-action.interface';
 import { RelationType } from 'src/engine/metadata-modules/field-metadata/interfaces/relation-type.interface';
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
@@ -10,22 +11,34 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 import { MKT_PERMISSION_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { TEMPLATE_CREATED_BY_SOURCE_OPTIONS } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 import { MktTemplateResourcePermissionWorkspaceEntity } from './mkt-template-resource-permission.workspace-entity';
 import { MktTemplateSystemActionWorkspaceEntity } from './mkt-template-system-action.workspace-entity';
 import { MktTemplateAccessLimitationWorkspaceEntity } from './mkt-template-access-limitation.workspace-entity';
 import { MktUserPermissionTemplateWorkspaceEntity } from './mkt-user-permission-template.workspace-entity';
+import {
+  PERMISSION_TEMPLATE_TYPE_OPTIONS,
+  RESOLUTION_STRATEGY_OPTIONS,
+  PermissionTemplateType,
+  ResolutionStrategy,
+} from './constants';
 
 @WorkspaceIndex(['isActive', 'hierarchyLevel'], {
   indexWhereClause: '"deletedAt" IS NULL',
 })
 @WorkspaceIndex(['templateKey'], {
   indexWhereClause: '"deletedAt" IS NULL AND "isActive" = true',
+})
+@WorkspaceIndex(['departmentType', 'isActive'], {
+  indexWhereClause: '"deletedAt" IS NULL',
 })
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktPermissionTemplate,
@@ -68,6 +81,29 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   description?: string;
 
+  // Phase 2: Template Type
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.templateType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Template Type`,
+    description: msg`Type of permission template (ROLE_BASED, HIERARCHY_BASED, DEPARTMENT_BASED, CUSTOM)`,
+    icon: 'IconCategory',
+    options: PERMISSION_TEMPLATE_TYPE_OPTIONS,
+    defaultValue: `'${PermissionTemplateType.ROLE_BASED}'`,
+  })
+  templateType: PermissionTemplateType;
+
+  // Phase 2: Department Type
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.departmentType,
+    type: FieldMetadataType.TEXT,
+    label: msg`Department Type`,
+    description: msg`Department type this template applies to (EXECUTIVE, ENGINEERING, SALES, etc.)`,
+    icon: 'IconBuilding',
+  })
+  @WorkspaceIsNullable()
+  departmentType?: string;
+
   // Hierarchy mapping
   @WorkspaceField({
     standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.hierarchyLevel,
@@ -76,7 +112,8 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Primary hierarchy level this template applies to`,
     icon: 'IconHierarchy',
   })
-  hierarchyLevel: number;
+  @WorkspaceIsNullable()
+  hierarchyLevel?: number;
 
   @WorkspaceField({
     standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.applicableToLevels,
@@ -126,6 +163,50 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
     defaultValue: 100,
   })
   priority: number;
+
+  // Phase 2: Resolution Strategy
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.resolutionStrategy,
+    type: FieldMetadataType.SELECT,
+    label: msg`Resolution Strategy`,
+    description: msg`Strategy for resolving permission conflicts (PRIORITY_BASED, MOST_RESTRICTIVE, MOST_PERMISSIVE)`,
+    icon: 'IconScale',
+    options: RESOLUTION_STRATEGY_OPTIONS,
+    defaultValue: `'${ResolutionStrategy.PRIORITY_BASED}'`,
+  })
+  resolutionStrategy: ResolutionStrategy;
+
+  // Phase 2: Effective dates
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.effectiveFrom,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Effective From`,
+    description: msg`Date/time when this template becomes effective`,
+    icon: 'IconCalendarEvent',
+  })
+  @WorkspaceIsNullable()
+  effectiveFrom?: Date;
+
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.effectiveTo,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Effective To`,
+    description: msg`Date/time when this template expires`,
+    icon: 'IconCalendarOff',
+  })
+  @WorkspaceIsNullable()
+  effectiveTo?: Date;
+
+  // Phase 2: Metadata
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional metadata for this template`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  metadata?: object;
 
   // Audit fields
   @WorkspaceField({
@@ -223,4 +304,38 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'template',
   })
   userAssignments: Relation<MktUserPermissionTemplateWorkspaceEntity[]>;
+
+  // Phase 2: Organization Level relation
+  @WorkspaceRelation({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.organizationLevel,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Organization Level`,
+    description: msg`Organization level this template is associated with`,
+    icon: 'IconHierarchy',
+    inverseSideTarget: () => MktOrganizationLevelWorkspaceEntity,
+    inverseSideFieldKey: 'permissionTemplates',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  organizationLevel?: Relation<MktOrganizationLevelWorkspaceEntity>;
+
+  @WorkspaceJoinColumn('organizationLevel')
+  organizationLevelId?: string | null;
+
+  // Phase 2: Created By relation
+  @WorkspaceRelation({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.createdBy,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Created By`,
+    description: msg`Workspace member who created this template`,
+    icon: 'IconUserPlus',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'createdPermissionTemplates',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  createdBy?: Relation<WorkspaceMemberWorkspaceEntity>;
+
+  @WorkspaceJoinColumn('createdBy')
+  createdById?: string | null;
 }

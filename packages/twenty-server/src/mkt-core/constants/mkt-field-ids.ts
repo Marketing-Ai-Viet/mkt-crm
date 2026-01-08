@@ -786,6 +786,8 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   // permission overrides
   permissionOverrides: 'a0a0a0a0-1e2f-3a4b-5c6d-7e8f9a0b1c2d',
   approvedPermissionOverrides: 'a0a0a0a0-2f3a-4b5c-6d7e-8f9a0b1c2d3e',
+  // Phase 2: created permission templates
+  createdPermissionTemplates: 'b0b0b0b0-3a4b-5c6d-7e8f-9a0b1c2d3e4f',
 
   accountOwnerForMktEmails: '66a1da50-b66a-439a-99f2-aced752fc864',
 };
@@ -824,6 +826,8 @@ export const MKT_ORGANIZATION_LEVEL_FIELD_IDS = {
   // relations
   staffMembers: '20202020-5a6b-7c8d-9e0f-1a2b3c4d5e6f',
   dataAccessPolicies: '20202020-6b7c-8d9e-0f1a-2b3c4d5e6f7a',
+  // Phase 2: permission templates relation
+  permissionTemplates: '20202020-7c8d-9e0f-1a2b-3c4d5e6f7a8b',
 };
 
 export const MKT_EMPLOYMENT_STATUS_FIELD_IDS = {
@@ -1084,6 +1088,16 @@ export const MKT_PERMISSION_TEMPLATE_FIELD_IDS = {
 
   // standard fields
   position: 'f1b6d8e9-0a2c-1d4f-5b6a-7c8d9e0f1a2b',
+
+  // Phase 2: New fields per authorization-design-v2.md
+  templateType: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+  departmentType: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e',
+  organizationLevel: 'c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f',
+  resolutionStrategy: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a',
+  effectiveFrom: 'e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b',
+  effectiveTo: 'f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c',
+  metadata: 'a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d',
+  createdBy: 'b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e',
 };
 
 export const MKT_PERMISSION_ACTION_FIELD_IDS = {
@@ -1319,6 +1333,12 @@ export const MKT_DATA_ACCESS_POLICY_FIELD_IDS = {
 
   // standard fields
   position: 'd0b0c1d2-e4f5-a6b7-c8d9-eafba0b1c2d3',
+
+  // Phase 2: New fields per authorization-design-v2.md
+  policyType: 'e1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c',
+  evaluationMode: 'f2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d',
+  riskLevel: 'a3c4d5e6-f7a8-9b0c-1d2e-3f4a5b6c7d8e',
+  conflictResolution: 'b4d5e6f7-a8b9-0c1d-2e3f-4a5b6c7d8e9f',
 };
 
 export const MKT_PERMISSION_AUDIT_FIELD_IDS = {
@@ -1346,6 +1366,12 @@ export const MKT_PERMISSION_AUDIT_FIELD_IDS = {
 
   // standard fields
   position: 'e3f4a5b6-7c8d-9eaf-ba0b-1c2d3e4f5a6b',
+
+  // Phase 2: New fields per authorization-design-v2.md
+  validationMode: 'f4a5b6c7-8d9e-0fab-1c2d-3e4f5a6b7c8d',
+  stepResults: 'a5b6c7d8-9e0f-1ab2-3c4d-5e6f7a8b9c0d',
+  cacheHit: 'b6c7d8e9-0f1a-2bc3-4d5e-6f7a8b9c0d1e',
+  executionPath: 'c7d8e9f0-1a2b-3cd4-5e6f-7a8b9c0d1e2f',
 };
 
 export const MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS = {

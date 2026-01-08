@@ -702,7 +702,7 @@ export class Step4PermissionTemplateCheckService
           'ROLE_BASED',
           {
             isSystemTemplate: template.isSystemTemplate,
-            hierarchyLevel: template.hierarchyLevel,
+            hierarchyLevel: template.hierarchyLevel ?? 0,
           },
         );
 
@@ -721,7 +721,7 @@ export class Step4PermissionTemplateCheckService
           effectiveTo: undefined,
           metadata: {
             templateKey: template.templateKey,
-            hierarchyLevel: template.hierarchyLevel,
+            hierarchyLevel: template.hierarchyLevel ?? 0,
             version: template.version,
             source: 'database',
           },
@@ -783,7 +783,7 @@ export class Step4PermissionTemplateCheckService
           'TEMPLATE',
           'HIERARCHY_BASED',
           {
-            hierarchyLevel: template.hierarchyLevel,
+            hierarchyLevel: template.hierarchyLevel ?? 0,
           },
         );
 
@@ -802,7 +802,7 @@ export class Step4PermissionTemplateCheckService
           effectiveTo: undefined,
           metadata: {
             templateKey: template.templateKey,
-            hierarchyLevel: template.hierarchyLevel,
+            hierarchyLevel: template.hierarchyLevel ?? 0,
             version: template.version,
             source: 'database',
           },
@@ -919,7 +919,7 @@ export class Step4PermissionTemplateCheckService
           metadata: {
             templateKey: template.templateKey,
             departmentId,
-            hierarchyLevel: template.hierarchyLevel,
+            hierarchyLevel: template.hierarchyLevel ?? 0,
             version: template.version,
             source: 'database',
           },

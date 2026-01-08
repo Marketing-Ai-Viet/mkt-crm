@@ -31,6 +31,7 @@ import {
   MktTemporaryPermissionWorkspaceEntity,
   MktUserPermissionTemplateWorkspaceEntity,
   MktUserPermissionOverrideWorkspaceEntity,
+  MktPermissionTemplateWorkspaceEntity,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
@@ -664,4 +665,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
   accountOwnerForMktGenericCombos: Relation<MktGenericComboWorkspaceEntity[]>;
+
+  // === PHASE 2: CREATED PERMISSION TEMPLATES ===
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.createdPermissionTemplates,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Created Permission Templates`,
+    description: msg`Permission templates created by this workspace member`,
+    icon: 'IconShieldPlus',
+    inverseSideTarget: () => MktPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'createdBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  createdPermissionTemplates: Relation<MktPermissionTemplateWorkspaceEntity[]>;
 }

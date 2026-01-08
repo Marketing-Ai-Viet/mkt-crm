@@ -15,6 +15,7 @@ import { MKT_ORGANIZATION_LEVEL_FIELD_IDS } from 'src/mkt-core/constants/mkt-fie
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import { MktPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities/mkt-permission-template.workspace-entity';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktOrganizationLevel,
@@ -144,4 +145,16 @@ export class MktOrganizationLevelWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'organizationLevel',
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
+
+  // Phase 2: Permission templates relation
+  @WorkspaceRelation({
+    standardId: MKT_ORGANIZATION_LEVEL_FIELD_IDS.permissionTemplates,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Permission Templates`,
+    description: msg`Permission templates associated with this organization level`,
+    icon: 'IconShieldCheck',
+    inverseSideTarget: () => MktPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'organizationLevel',
+  })
+  permissionTemplates: Relation<MktPermissionTemplateWorkspaceEntity[]>;
 }
