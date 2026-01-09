@@ -1,8 +1,10 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
+import { CasbinRuleEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/casbin-rule.entity';
 import { CasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/casbin-rule.repository';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
@@ -44,7 +46,12 @@ import { RbacHealthIndicator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casb
  */
 @Global()
 @Module({
-  imports: [ConfigModule, TerminusModule, CacheStorageModule],
+  imports: [
+    ConfigModule,
+    TerminusModule,
+    CacheStorageModule,
+    TypeOrmModule.forFeature([CasbinRuleEntity], 'core'),
+  ],
   providers: [
     // Repositories
     CasbinRuleRepository,

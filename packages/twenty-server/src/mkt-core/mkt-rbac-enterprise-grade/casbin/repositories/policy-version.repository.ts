@@ -39,7 +39,7 @@ type DeadLetterEntry = {
   resolvedAt?: string;
 };
 
-const DEAD_LETTER_KEY = 'rbac:sync:dead_letter';
+const DEAD_LETTER_KEY = 'rbac-seeder:sync:dead_letter';
 const DEAD_LETTER_TTL = 86400 * 7; // 7 days
 
 /**

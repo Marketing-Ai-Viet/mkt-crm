@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  HealthIndicator,
   HealthIndicatorResult,
-  HealthCheckError,
+  HealthIndicatorService,
 } from '@nestjs/terminus';
 
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
@@ -61,57 +60,53 @@ type RbacHealthDetails = {
  *   @HealthCheck()
  *   check() {
  *     return this.health.check([
- *       () => this.rbacHealth.isHealthy('rbac'),
+ *       () => this.rbacHealth.isHealthy(),
  *     ]);
  *   }
  * }
  * ```
  */
 @Injectable()
-export class RbacHealthIndicator extends HealthIndicator {
+export class RbacHealthIndicator {
   private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:HealthIndicator`);
 
   // Thresholds for health checks
   private readonly MAX_P95_LATENCY_MS = 100;
-  private readonly MIN_CACHE_HIT_RATE = 50;
 
   constructor(
+    private readonly healthIndicatorService: HealthIndicatorService,
     private readonly enforcerService: CasbinEnforcerService,
     private readonly metricsService: RbacMetricsService,
-  ) {
-    super();
-  }
+  ) {}
 
   /**
    * Check overall RBAC system health
    */
-  async isHealthy(key: string): Promise<HealthIndicatorResult> {
+  async isHealthy(): Promise<HealthIndicatorResult> {
+    const indicator = this.healthIndicatorService.check('rbac');
+
     try {
       const health = await this.checkAllComponents();
-      const isHealthy = this.evaluateHealth(health);
+      const isSystemHealthy = this.evaluateHealth(health);
 
-      if (isHealthy) {
-        return this.getStatus(key, true, health);
+      if (isSystemHealthy) {
+        return indicator.up({ details: health });
       }
 
-      throw new HealthCheckError(
-        'RBAC health check failed',
-        this.getStatus(key, false, health),
-      );
+      return indicator.down({
+        message: 'RBAC system unhealthy',
+        details: health,
+      });
     } catch (error) {
-      if (error instanceof HealthCheckError) {
-        throw error;
-      }
-
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
       this.logger.error(`RBAC health check failed: ${errorMessage}`);
 
-      throw new HealthCheckError(
-        'RBAC health check failed',
-        this.getStatus(key, false, { error: errorMessage }),
-      );
+      return indicator.down({
+        message: errorMessage,
+        details: { error: errorMessage },
+      });
     }
   }
 
@@ -261,26 +256,27 @@ export class RbacHealthIndicator extends HealthIndicator {
   /**
    * Quick health check - just enforcer availability
    */
-  async isReady(key: string): Promise<HealthIndicatorResult> {
+  async isReady(): Promise<HealthIndicatorResult> {
+    const indicator = this.healthIndicatorService.check('rbac-ready');
+
     try {
       const stats = this.enforcerService.getStats();
 
-      return this.getStatus(key, true, {
+      return indicator.up({
         status: 'ready',
         cachedEnforcers: stats.cachedEnforcers,
       });
     } catch (error) {
-      throw new HealthCheckError(
-        'RBAC not ready',
-        this.getStatus(key, false, { status: 'not_ready' }),
-      );
+      return indicator.down({ status: 'not_ready' });
     }
   }
 
   /**
    * Liveness check - basic service alive
    */
-  async isAlive(key: string): Promise<HealthIndicatorResult> {
-    return this.getStatus(key, true, { status: 'alive' });
+  async isAlive(): Promise<HealthIndicatorResult> {
+    const indicator = this.healthIndicatorService.check('rbac-alive');
+
+    return indicator.up({ status: 'alive' });
   }
 }

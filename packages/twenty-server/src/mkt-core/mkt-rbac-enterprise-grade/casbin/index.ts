@@ -1,6 +1,9 @@
 // Adapters
 export * from './adapters';
 
+// Entities
+export * from './entities';
+
 // Repositories
 export * from './repositories';
 

@@ -53,7 +53,7 @@ type HealthStatus = {
   };
 };
 
-const METRICS_KEY = 'rbac:metrics:checks';
+const METRICS_KEY = 'rbac-seeder:metrics:checks';
 const METRICS_RETENTION_MS = 3600000; // 1 hour
 const MAX_METRICS_ENTRIES = 10000;
 
@@ -335,7 +335,7 @@ export class RbacMetricsService {
   }> {
     try {
       // Try a simple set/get
-      const testKey = 'rbac:health:test';
+      const testKey = 'rbac-seeder:health:test';
 
       await this.cacheStorage.set(testKey, 'ok', 1000);
       const value = await this.cacheStorage.get<string>(testKey);

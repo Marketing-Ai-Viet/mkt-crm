@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import {
@@ -9,22 +9,7 @@ import {
   CasbinPolicyType,
   PolicyStatistics,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/casbin.types';
-
-/**
- * Casbin rule entity (internal)
- */
-type CasbinRuleEntity = {
-  id?: number;
-  ptype: string;
-  v0: string;
-  v1: string;
-  v2: string;
-  v3: string;
-  v4: string;
-  v5: string;
-};
-
-const CASBIN_RULE_TABLE = 'casbin_rule';
+import { CasbinRuleEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/casbin-rule.entity';
 
 /**
  * Repository cho Casbin Rules
@@ -47,14 +32,11 @@ export class CasbinRuleRepository {
   private readonly logger = new Logger(
     `${CASBIN_LOG_CONTEXT}:CasbinRuleRepository`,
   );
-  private repository: Repository<CasbinRuleEntity>;
 
   constructor(
-    @InjectDataSource('core')
-    private readonly dataSource: DataSource,
-  ) {
-    this.repository = this.dataSource.getRepository(CASBIN_RULE_TABLE);
-  }
+    @InjectRepository(CasbinRuleEntity, 'core')
+    private readonly repository: Repository<CasbinRuleEntity>,
+  ) {}
 
   /**
    * Find all rules for a workspace
@@ -385,8 +367,8 @@ export class CasbinRuleRepository {
   ): Promise<number> {
     const domain = `ws:${workspaceId}`;
 
-    return this.dataSource.transaction(async (manager) => {
-      const repo = manager.getRepository(CASBIN_RULE_TABLE);
+    return this.repository.manager.transaction(async (manager) => {
+      const repo = manager.getRepository(CasbinRuleEntity);
 
       // Delete all existing rules for workspace
       await repo.delete({ v1: domain });
@@ -419,7 +401,10 @@ export class CasbinRuleRepository {
   /**
    * Create entity from rule array
    */
-  private createEntity(ptype: string, rule: string[]): CasbinRuleEntity {
+  private createEntity(
+    ptype: string,
+    rule: string[],
+  ): Partial<CasbinRuleEntity> {
     return {
       ptype,
       v0: rule[0] ?? '',
@@ -436,7 +421,7 @@ export class CasbinRuleRepository {
    */
   private toRuleRow(entity: CasbinRuleEntity): CasbinRuleRow {
     return {
-      id: entity.id ?? 0,
+      id: entity.id,
       ptype: entity.ptype,
       v0: entity.v0,
       v1: entity.v1,
@@ -444,8 +429,8 @@ export class CasbinRuleRepository {
       v3: entity.v3,
       v4: entity.v4,
       v5: entity.v5,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     };
   }
 }
