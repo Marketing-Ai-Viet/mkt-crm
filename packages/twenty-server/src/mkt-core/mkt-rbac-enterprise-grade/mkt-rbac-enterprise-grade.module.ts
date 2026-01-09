@@ -32,6 +32,8 @@ import { HierarchyLevelService } from 'src/mkt-core/mkt-rbac-enterprise-grade/se
 import { RbacCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/infrastructure/rbac-cache.service';
 // Repositories
 import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+// CLI Commands
+import { RBAC_COMMANDS } from 'src/mkt-core/mkt-rbac-enterprise-grade/commands';
 
 // Hooks - currently disabled
 // import { RBAC_HOOKS } from 'src/mkt-core/mkt-rbac-enterprise-grade/hooks';
@@ -129,6 +131,9 @@ const DEFAULT_CONFIG = {
 
     // Repositories
     ...RBAC_REPOSITORIES,
+
+    // CLI Commands
+    ...RBAC_COMMANDS,
 
     // Hooks - currently disabled, enable when repository methods are implemented
     // ...RBAC_HOOKS,
