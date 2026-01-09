@@ -28,11 +28,13 @@ export type PermissionCheckResult = {
 
 /**
  * Casbin policy entry (p type)
+ *
+ * Format: subject, object, action, effect, condition
+ * Note: No domain field - workspace isolation via schema
  */
 export type CasbinPolicy = {
   ptype: 'p';
   subject: string;
-  domain: string;
   object: string;
   action: string;
   effect: 'allow' | 'deny';
@@ -41,12 +43,14 @@ export type CasbinPolicy = {
 
 /**
  * Grouping policy (g type) - Role assignment
+ *
+ * Format: subject, role
+ * Note: No domain field - workspace isolation via schema
  */
 export type GroupingPolicy = {
   ptype: 'g';
   subject: string;
   role: string;
-  domain: string;
 };
 
 /**
@@ -84,6 +88,7 @@ export type BatchPermissionRequest = {
     resource: string;
     resourceId?: string;
     action: string;
+    attributes?: Record<string, unknown>;
   }>;
 };
 

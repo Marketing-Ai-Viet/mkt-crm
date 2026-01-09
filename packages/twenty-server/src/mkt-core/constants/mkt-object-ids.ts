@@ -95,4 +95,8 @@ export const MKT_OBJECT_IDS = {
   // casbin RBAC
   mktCasbinRule: '1a2b3c4d-e5f6-7890-abcd-ef1234567890',
   mktPolicyVersion: '2b3c4d5e-f6a7-8901-bcde-f01234567891',
+  mktPolicyChangeRequest: '3c4d5e6f-a7b8-9012-cdef-012345678902',
+  mktPolicyApproval: '4d5e6f7a-b8c9-0123-def0-123456789013',
+  // department ancestry
+  mktDepartmentAncestry: '5e6f7a8b-c9d0-1234-ef01-234567890124',
 };

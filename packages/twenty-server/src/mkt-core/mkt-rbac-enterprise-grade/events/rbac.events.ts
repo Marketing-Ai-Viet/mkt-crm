@@ -186,6 +186,12 @@ export const RBAC_EVENTS = {
   POLICY_UPDATED: 'rbac-seeder.policy.updated',
   POLICY_DELETED: 'rbac-seeder.policy.deleted',
 
+  // Policy change approval events
+  POLICY_CHANGE_REQUESTED: 'rbac-seeder.policy-change.requested',
+  POLICY_CHANGE_APPROVED: 'rbac-seeder.policy-change.approved',
+  POLICY_CHANGE_REJECTED: 'rbac-seeder.policy-change.rejected',
+  POLICY_CHANGE_APPLIED: 'rbac-seeder.policy-change.applied',
+
   // Permission check events
   PERMISSION_GRANTED: 'rbac-seeder.permission.granted',
   PERMISSION_DENIED: 'rbac-seeder.permission.denied',
@@ -198,4 +204,7 @@ export const RBAC_EVENTS = {
   // Cache events
   CACHE_INVALIDATED: 'rbac-seeder.cache.invalidated',
   CACHE_WARMED: 'rbac-seeder.cache.warmed',
+
+  // Cross-region invalidation events
+  CROSS_REGION_INVALIDATION: 'rbac-seeder.cross-region.invalidation',
 } as const;

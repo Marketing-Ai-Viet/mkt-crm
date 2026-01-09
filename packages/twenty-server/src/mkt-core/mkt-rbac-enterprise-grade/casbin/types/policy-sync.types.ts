@@ -1,6 +1,11 @@
-/**
- * Policy sync related types
- */
+import {
+  ApprovalDecision,
+  CasbinPolicy,
+  GroupingPolicy,
+  HighRiskAssessment,
+  PolicyChangeRequestStatus,
+  PolicyChangeType,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin';
 
 /**
  * Sync result status
@@ -90,4 +95,108 @@ export type SyncDeadLetterEntry = {
   lastError: string;
   retryCount: number;
   resolvedAt?: Date;
+};
+
+/**
+ * Change request creation input
+ */
+export type CreateChangeRequestInput = {
+  policy: CasbinPolicy | GroupingPolicy;
+  changeType: PolicyChangeType;
+  requesterId: string;
+  requestReason?: string;
+};
+
+/**
+ * Change request result
+ */
+export type ChangeRequestResult = {
+  id: string;
+  status: PolicyChangeRequestStatus;
+  riskAssessment: HighRiskAssessment;
+  requiresApproval: boolean;
+  requiredApprovals: number;
+};
+
+/**
+ * Process approval input
+ */
+export type ProcessApprovalInput = {
+  changeRequestId: string;
+  approverId: string;
+  decision: ApprovalDecision;
+  reason?: string;
+};
+
+/**
+ * Process approval result
+ */
+export type ProcessApprovalResult = {
+  success: boolean;
+  message: string;
+  changeRequest?: {
+    id: string;
+    status: PolicyChangeRequestStatus;
+    currentApprovals: number;
+    requiredApprovals: number;
+  };
+  policyApplied?: boolean;
+};
+
+/**
+ * Audit entry for policy changes
+ */
+export type PolicyAuditEntry = {
+  id: string;
+  changeType: PolicyChangeType;
+  status: PolicyChangeRequestStatus;
+  policyData: object;
+  riskAssessment: object;
+  requesterId: string;
+  requestReason: string | null;
+  requiredApprovals: number;
+  currentApprovals: number;
+  approvals: Array<{
+    approverId: string;
+    decision: ApprovalDecision;
+    reason: string | null;
+    createdAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Audit query options
+ */
+export type AuditQueryOptions = {
+  status?: PolicyChangeRequestStatus;
+  requesterId?: string;
+  fromDate?: Date;
+  toDate?: Date;
+  limit?: number;
+  offset?: number;
+};
+
+/**
+ * Create approval input
+ */
+export type CreateApprovalData = {
+  decision: ApprovalDecision;
+  reason?: string | null;
+  changeRequestId: string;
+  approverId: string;
+};
+
+/**
+ * Query options for approvals
+ */
+export type ApprovalQueryOptions = {
+  changeRequestId?: string;
+  approverId?: string;
+  decision?: ApprovalDecision;
+  fromDate?: Date;
+  toDate?: Date;
+  limit?: number;
+  offset?: number;
 };

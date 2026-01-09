@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
@@ -107,7 +108,7 @@ export class DualPathAuthzGuard implements CanActivate {
       throw new ForbiddenException(CASBIN_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
     }
 
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     // Execute based on mode
     switch (mode) {
@@ -190,7 +191,7 @@ export class DualPathAuthzGuard implements CanActivate {
     resource: string,
     action: string,
     mode: RbacEngineMode,
-    startTime: number,
+    startTime: ReturnType<typeof DateTimeUtils.now>,
   ): Promise<boolean> {
     // Run both checks in parallel
     const [casbinResultPromise, legacyResultPromise] = [
@@ -203,7 +204,10 @@ export class DualPathAuthzGuard implements CanActivate {
       legacyResultPromise,
     ]);
 
-    const latencyMs = Date.now() - startTime;
+    const latencyMs = DateTimeUtils.diffInMillis(
+      startTime,
+      DateTimeUtils.now(),
+    );
 
     // Log discrepancy if results differ
     if (casbinResult !== legacyResult) {
@@ -214,7 +218,7 @@ export class DualPathAuthzGuard implements CanActivate {
         action,
         casbinResult,
         legacyResult,
-        timestamp: new Date(),
+        timestamp: DateTimeUtils.toDateRequired(DateTimeUtils.now()),
         latencyMs,
       });
     }

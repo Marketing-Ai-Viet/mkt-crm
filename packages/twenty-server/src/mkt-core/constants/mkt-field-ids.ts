@@ -905,6 +905,9 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   departmentOwnerForMktLicenses: 'a5f91075-a4d8-4ff2-9b4a-ff646b39850c',
   teamOwnerForMktLicenses: 'a3510a9e-04c7-4a8d-874b-332f87911b37',
   teamMembers: '9186741b-ad29-4acb-a955-48af8c1f7b1f',
+  // ancestry relations (for materialized ancestry table)
+  ancestryRecordsAsDescendant: 'd7e8f9a0-b1c2-3d4e-5f6a-7b8c9d0e1f2a',
+  ancestryRecordsAsAncestor: 'e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b',
   // standard fields
   position: 'f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c',
   createdBy: 'a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d',
@@ -1426,4 +1429,50 @@ export const MKT_POLICY_VERSION_FIELD_IDS = {
   syncedAt: 'd3e4f5a6-7890-abcd-ef01-234567890123',
   // standard fields
   position: 'e4f5a6b7-890a-bcde-f012-345678901234',
+};
+
+// Casbin RBAC - Policy change request (approval workflow)
+export const MKT_POLICY_CHANGE_REQUEST_FIELD_IDS = {
+  // status and type
+  status: 'f5a6b7c8-901a-bcde-f012-345678901235',
+  changeType: 'a6b7c8d9-012b-cdef-0123-456789012346',
+  // policy data
+  policyData: 'b7c8d9e0-123c-def0-1234-567890123457',
+  riskAssessment: 'c8d9e0f1-234d-ef01-2345-678901234568',
+  // approval tracking
+  requiredApprovals: 'd9e0f1a2-345e-f012-3456-789012345679',
+  currentApprovals: 'e0f1a2b3-456f-0123-4567-890123456780',
+  // reason and notes
+  requestReason: 'f1a2b3c4-5670-1234-5678-901234567891',
+  // relations
+  requestedBy: 'a2b3c4d5-6781-2345-6789-012345678902',
+  approvals: 'b3c4d5e6-7892-3456-7890-123456789013',
+  // standard fields
+  position: 'c4d5e6f7-8903-4567-8901-234567890124',
+};
+
+// Casbin RBAC - Policy approval
+export const MKT_POLICY_APPROVAL_FIELD_IDS = {
+  // approval details
+  decision: 'd5e6f7a8-9014-5678-9012-345678901235',
+  reason: 'e6f7a8b9-0125-6789-0123-456789012346',
+  // relations
+  changeRequest: 'f7a8b9c0-1236-7890-1234-567890123457',
+  approver: 'a8b9c0d1-2347-8901-2345-678901234568',
+  // standard fields
+  position: 'b9c0d1e2-3458-9012-3456-789012345679',
+};
+
+// Department ancestry (materialized)
+export const MKT_DEPARTMENT_ANCESTRY_FIELD_IDS = {
+  // ancestry fields
+  departmentId: 'c0d1e2f3-4569-0123-4567-890123456780',
+  ancestorId: 'd1e2f3a4-5670-1234-5678-901234567891',
+  distance: 'e2f3a4b5-6781-2345-6789-012345678902',
+  computedAt: 'f3a4b5c6-7892-3456-7890-123456789013',
+  // relations
+  department: 'a4b5c6d7-8903-4567-8901-234567890124',
+  ancestor: 'b5c6d7e8-9014-5678-9012-345678901235',
+  // standard fields
+  position: 'c6d7e8f9-0125-6789-0123-456789012346',
 };

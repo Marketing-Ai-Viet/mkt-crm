@@ -1,7 +1,13 @@
 /**
  * RBAC Metrics Constants
+ *
+ * Re-exports from infrastructure for centralized management.
+ * @see src/mkt-core/infrastructure/redis/constants/rbac.constant.ts
  */
 
-export const METRICS_KEY = 'rbac-seeder:metrics:checks';
-export const METRICS_RETENTION_MS = 3600000; // 1 hour
-export const MAX_METRICS_ENTRIES = 10000;
+export {
+  RBAC_MAX_METRICS_ENTRIES,
+  RBAC_METRICS,
+  RBAC_METRICS_KEY,
+  RBAC_METRICS_RETENTION_MS,
+} from 'src/mkt-core/infrastructure/redis/constants/rbac.constant';

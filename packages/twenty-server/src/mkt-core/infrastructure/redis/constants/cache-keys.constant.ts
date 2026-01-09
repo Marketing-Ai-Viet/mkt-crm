@@ -329,6 +329,30 @@ export const RBAC_CACHE_PREFIX = {
 } as const;
 
 // ============================================
+// PUB/SUB CHANNELS
+// ============================================
+
+export const PUBSUB_CHANNELS = {
+  /** RBAC policy invalidation: mkt:pubsub:rbac:policy:invalidation */
+  RBAC_POLICY_INVALIDATION: 'mkt:pubsub:rbac:policy:invalidation',
+
+  /** Cache invalidation: mkt:pubsub:cache:invalidation */
+  CACHE_INVALIDATION: 'mkt:pubsub:cache:invalidation',
+
+  /** Department hierarchy changed: mkt:pubsub:department:hierarchy */
+  DEPARTMENT_HIERARCHY: 'mkt:pubsub:department:hierarchy',
+
+  /** License status changed: mkt:pubsub:license:status */
+  LICENSE_STATUS: 'mkt:pubsub:license:status',
+
+  /** Order status changed: mkt:pubsub:order:status */
+  ORDER_STATUS: 'mkt:pubsub:order:status',
+} as const;
+
+export type PubSubChannel =
+  (typeof PUBSUB_CHANNELS)[keyof typeof PUBSUB_CHANNELS];
+
+// ============================================
 // COMBINED EXPORT
 // ============================================
 

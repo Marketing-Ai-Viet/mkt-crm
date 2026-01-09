@@ -25,6 +25,7 @@ import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
 import {
   DEPARTMENT_TYPE,
   DEPARTMENT_TYPE_OPTIONS,
@@ -311,6 +312,31 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   teamMembers: Relation<WorkspaceMemberWorkspaceEntity[]>;
+
+  // Ancestry relations (for materialized ancestry table)
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.ancestryRecordsAsDescendant,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Ancestry Records (as Descendant)`,
+    description: msg`Ancestry records where this department is the descendant`,
+    icon: 'IconHierarchy',
+    inverseSideTarget: () => MktDepartmentAncestryWorkspaceEntity,
+    inverseSideFieldKey: 'department',
+  })
+  @WorkspaceIsNullable()
+  ancestryRecordsAsDescendant: Relation<MktDepartmentAncestryWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.ancestryRecordsAsAncestor,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Ancestry Records (as Ancestor)`,
+    description: msg`Ancestry records where this department is the ancestor`,
+    icon: 'IconHierarchy2',
+    inverseSideTarget: () => MktDepartmentAncestryWorkspaceEntity,
+    inverseSideFieldKey: 'ancestor',
+  })
+  @WorkspaceIsNullable()
+  ancestryRecordsAsAncestor: Relation<MktDepartmentAncestryWorkspaceEntity[]>;
 
   // ✅ Search vector field
   @WorkspaceField({

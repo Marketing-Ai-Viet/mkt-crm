@@ -1,8 +1,14 @@
 /**
  * Policy Version Constants
  *
- * Dead letter queue constants for failed syncs
+ * Re-exports from infrastructure for centralized management.
+ * @see src/mkt-core/infrastructure/redis/constants/rbac.constant.ts
  */
 
-export const DEAD_LETTER_KEY = 'rbac-seeder:sync:dead_letter';
-export const DEAD_LETTER_TTL = 86400 * 7; // 7 days in seconds
+export {
+  RBAC_DEAD_LETTER_KEY,
+  RBAC_DEAD_LETTER_TTL,
+  RBAC_POLICY_HASH_KEY,
+  RBAC_POLICY_VERSION_KEY,
+  RBAC_SYNC,
+} from 'src/mkt-core/infrastructure/redis/constants/rbac.constant';

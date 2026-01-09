@@ -6,3 +6,5 @@ export * from './policy-sync.types';
 
 // RBAC configuration types
 export * from './rbac-config.types';
+
+export * from './policy-change-request.types';

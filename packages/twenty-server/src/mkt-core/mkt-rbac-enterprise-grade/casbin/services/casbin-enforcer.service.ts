@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   OnModuleInit,
@@ -7,10 +8,7 @@ import {
 
 import { newEnforcer, Enforcer, newModelFromString } from 'casbin';
 
-import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
-import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
-import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
@@ -23,13 +21,15 @@ import {
   BatchPermissionResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 import { WorkspaceCasbinAdapter } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/adapters/workspace-casbin.adapter';
-import { MktCasbinRuleWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { PgNotifyWatcher } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/watchers/pg-notify.watcher';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
 import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
-import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
-import { RBAC_MODEL } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
-import { ENFORCER_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
+import { CASBIN_MODEL } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
+import {
+  CasbinRbacConfig,
+  rbacConfig,
+  RbacEnforcerConfig,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
 
 /**
  * Casbin Enforcer Service
@@ -64,16 +64,16 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
   private watcher: PgNotifyWatcher | null = null;
 
   // Config
-  private readonly config = ENFORCER_CONFIG;
+  private readonly enforcerConfig: RbacEnforcerConfig;
 
   constructor(
-    private readonly twentyORMManager: TwentyORMManager,
-    @InjectCacheStorage(CacheStorageNamespace.RbacPolicy)
-    private readonly cacheStorage: CacheStorageService,
-    private readonly policyVersionRepository: PolicyVersionRepository,
+    @Inject(rbacConfig.KEY)
+    private readonly config: CasbinRbacConfig,
     private readonly casbinRuleRepository: WorkspaceCasbinRuleRepository,
-    private readonly policyValidator: PolicyValidator,
-  ) {}
+    private readonly policyVersionRepository: PolicyVersionRepository,
+  ) {
+    this.enforcerConfig = this.config.enforcer;
+  }
 
   async onModuleInit(): Promise<void> {
     await this.initializeWatcher();
@@ -149,17 +149,15 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
    * Create new enforcer for workspace
    */
   private async createEnforcer(workspaceId: string): Promise<Enforcer> {
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     try {
-      // Create model (workspace-isolated, no domain needed)
-      const model = newModelFromString(RBAC_MODEL);
+      // Create unified RBAC+ABAC model (workspace-isolated, no domain needed)
+      const model = newModelFromString(CASBIN_MODEL);
 
-      // Get workspace repository
+      // Get workspace repository via WorkspaceCasbinRuleRepository
       const repository =
-        await this.twentyORMManager.getRepository<MktCasbinRuleWorkspaceEntity>(
-          'mktCasbinRule',
-        );
+        await this.casbinRuleRepository.getWorkspaceRepository();
 
       // Create workspace adapter
       const adapter = await WorkspaceCasbinAdapter.newAdapter(
@@ -180,7 +178,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
       const meta: EnforcerWithMeta = {
         enforcer,
         workspaceId,
-        loadedAt: new Date(),
+        loadedAt: DateTimeUtils.toDateRequired(DateTimeUtils.now()),
         policyCount,
         version:
           await this.policyVersionRepository.getVersionNumber(workspaceId),
@@ -188,7 +186,10 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
       this.cacheEnforcer(workspaceId, meta);
 
-      const latencyMs = Date.now() - startTime;
+      const latencyMs = DateTimeUtils.diffInMillis(
+        startTime,
+        DateTimeUtils.now(),
+      );
 
       this.logger.log(
         CASBIN_MESSAGES.LOG.ENFORCER_CREATED(workspaceId) +
@@ -212,7 +213,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
    */
   private cacheEnforcer(workspaceId: string, meta: EnforcerWithMeta): void {
     // Evict oldest if at capacity
-    if (this.enforcers.size >= this.config.maxEnforcersInMemory) {
+    if (this.enforcers.size >= this.enforcerConfig.maxEnforcersInMemory) {
       const oldestKey = this.findOldestEnforcer();
 
       if (oldestKey) {
@@ -245,19 +246,40 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
    * Check if cached enforcer is still valid
    */
   private isEnforcerValid(meta: EnforcerWithMeta): boolean {
-    const age = Date.now() - meta.loadedAt.getTime();
+    const loadedAt = DateTimeUtils.fromDate(meta.loadedAt);
+    const age = DateTimeUtils.diffInMillis(loadedAt, DateTimeUtils.now());
 
-    return age < this.config.enforcerTtlMs;
+    return age < this.enforcerConfig.enforcerTtlMs;
   }
 
   /**
    * Check permission for user on resource/action
    * Note: No domain needed - workspace isolation via schema
+   *
+   * Unified RBAC+ABAC model - pass attributes for condition evaluation:
+   * ```typescript
+   * // Pure RBAC (no conditions)
+   * checkPermission({
+   *   userId: 'user-1',
+   *   workspaceId: 'ws-1',
+   *   resource: 'mktOrder',
+   *   action: 'read',
+   * })
+   *
+   * // With ABAC conditions
+   * checkPermission({
+   *   userId: 'user-1',
+   *   workspaceId: 'ws-1',
+   *   resource: 'mktOrder',
+   *   action: 'read',
+   *   attributes: { currentTime: '2026-01-09', userClearance: 3 }
+   * })
+   * ```
    */
   async checkPermission(
     input: PermissionCheckInput,
   ): Promise<PermissionCheckResult> {
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     try {
       const enforcer = await this.getEnforcer(input.workspaceId);
@@ -271,14 +293,20 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
         ),
       );
 
-      // Check permission (sub, obj, act - no domain)
+      // Unified model: enforce(sub, obj, act, attr)
+      // Policies without conditions work as pure RBAC
+      // Policies with conditions evaluate against attributes
       const allowed = await enforcer.enforce(
         subject,
         input.resource,
         input.action,
+        input.attributes ?? {},
       );
 
-      const latencyMs = Date.now() - startTime;
+      const latencyMs = DateTimeUtils.diffInMillis(
+        startTime,
+        DateTimeUtils.now(),
+      );
 
       this.logger.debug(
         CASBIN_MESSAGES.LOG.PERMISSION_CHECK_RESULT(allowed, latencyMs),
@@ -300,14 +328,17 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
             ),
       };
     } catch (error) {
-      const latencyMs = Date.now() - startTime;
+      const latencyMs = DateTimeUtils.diffInMillis(
+        startTime,
+        DateTimeUtils.now(),
+      );
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
       this.logger.error(CASBIN_MESSAGES.ERROR.ENFORCEMENT_FAILED(errorMessage));
 
       // Fail-closed: deny on error
-      if (this.config.failClosed) {
+      if (this.enforcerConfig.failClosed) {
         this.logger.warn(CASBIN_MESSAGES.WARN.FAIL_CLOSED_TRIGGERED);
 
         return {
@@ -328,7 +359,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
   async checkPermissionBatch(
     request: BatchPermissionRequest,
   ): Promise<BatchPermissionResult> {
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     try {
       const enforcer = await this.getEnforcer(request.workspaceId);
@@ -343,15 +374,20 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
         const key = `${check.resource}:${check.resourceId ?? '*'}:${check.action}`;
 
-        // Enforce without domain (sub, obj, act)
-        const allowed = await enforcer.enforce(subject, resource, check.action);
+        // Unified model: enforce(sub, obj, act, attr)
+        const allowed = await enforcer.enforce(
+          subject,
+          resource,
+          check.action,
+          check.attributes ?? {},
+        );
 
         results.set(key, allowed);
       }
 
       return {
         results,
-        latencyMs: Date.now() - startTime,
+        latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
       };
     } catch (error) {
       const errorMessage =
@@ -360,7 +396,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(CASBIN_MESSAGES.ERROR.ENFORCEMENT_FAILED(errorMessage));
 
       // Fail-closed: deny all on error
-      if (this.config.failClosed) {
+      if (this.enforcerConfig.failClosed) {
         const results = new Map<string, boolean>();
 
         for (const check of request.checks) {
@@ -371,7 +407,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
         return {
           results,
-          latencyMs: Date.now() - startTime,
+          latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
         };
       }
 

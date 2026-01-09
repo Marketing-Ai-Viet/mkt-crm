@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
@@ -12,10 +13,10 @@ import {
   HealthStatus,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 import {
-  METRICS_KEY,
-  METRICS_RETENTION_MS,
-  MAX_METRICS_ENTRIES,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
+  RBAC_MAX_METRICS_ENTRIES,
+  RBAC_METRICS_KEY,
+  RBAC_METRICS_RETENTION_MS,
+} from 'src/mkt-core/infrastructure/redis/constants/rbac.constant';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
 
@@ -49,7 +50,7 @@ export class RbacMetricsService {
 
   // In-memory metrics buffer (flushed periodically to Redis)
   private metricsBuffer: PermissionCheckMetric[] = [];
-  private lastFlush = Date.now();
+  private lastFlush = DateTimeUtils.toMillis(DateTimeUtils.now());
 
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.RbacPolicy)
@@ -70,7 +71,7 @@ export class RbacMetricsService {
   ): Promise<void> {
     this.metricsBuffer.push({
       ...metric,
-      timestamp: Date.now(),
+      timestamp: DateTimeUtils.toMillis(DateTimeUtils.now()),
     });
 
     // Flush if buffer is full
@@ -92,17 +93,22 @@ export class RbacMetricsService {
       const existing = await this.getStoredMetrics();
 
       // Combine and trim old entries
-      const cutoff = Date.now() - METRICS_RETENTION_MS;
+      const cutoff =
+        DateTimeUtils.toMillis(DateTimeUtils.now()) - RBAC_METRICS_RETENTION_MS;
       const combined = [...existing, ...this.metricsBuffer]
         .filter((m) => m.timestamp > cutoff)
-        .slice(-MAX_METRICS_ENTRIES);
+        .slice(-RBAC_MAX_METRICS_ENTRIES);
 
       // Store
-      await this.cacheStorage.set(METRICS_KEY, combined, METRICS_RETENTION_MS);
+      await this.cacheStorage.set(
+        RBAC_METRICS_KEY,
+        combined,
+        RBAC_METRICS_RETENTION_MS,
+      );
 
       // Clear buffer
       this.metricsBuffer = [];
-      this.lastFlush = Date.now();
+      this.lastFlush = DateTimeUtils.toMillis(DateTimeUtils.now());
     } catch (error) {
       this.logger.error(`Failed to flush metrics: ${error}`);
     }
@@ -114,7 +120,7 @@ export class RbacMetricsService {
   private async getStoredMetrics(): Promise<PermissionCheckMetric[]> {
     try {
       const data =
-        await this.cacheStorage.get<PermissionCheckMetric[]>(METRICS_KEY);
+        await this.cacheStorage.get<PermissionCheckMetric[]>(RBAC_METRICS_KEY);
 
       return data ?? [];
     } catch (error) {
@@ -141,7 +147,8 @@ export class RbacMetricsService {
 
     // Filter by time range
     if (options?.timeRangeMs) {
-      const cutoff = Date.now() - options.timeRangeMs;
+      const cutoff =
+        DateTimeUtils.toMillis(DateTimeUtils.now()) - options.timeRangeMs;
 
       metrics = metrics.filter((m) => m.timestamp > cutoff);
     }
@@ -424,7 +431,7 @@ export class RbacMetricsService {
    */
   async clearMetrics(): Promise<void> {
     this.metricsBuffer = [];
-    await this.cacheStorage.del(METRICS_KEY);
+    await this.cacheStorage.del(RBAC_METRICS_KEY);
     this.logger.log('Metrics cleared');
   }
 
@@ -444,7 +451,7 @@ export class RbacMetricsService {
       action: record.action,
       casbin: record.casbinResult ? 'ALLOW' : 'DENY',
       legacy: record.legacyResult ? 'ALLOW' : 'DENY',
-      timestamp: new Date().toISOString(),
+      timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
     });
 
     // TODO: Store in Redis or emit event for aggregation

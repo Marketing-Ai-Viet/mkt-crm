@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { Client } from 'pg';
 import { Watcher } from 'casbin';
 
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
@@ -170,8 +172,8 @@ export class PgNotifyWatcher implements Watcher {
     }
 
     try {
-      const payload = JSON.stringify({
-        timestamp: new Date().toISOString(),
+      const payload = safeJsonStringify({
+        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         source: process.env.HOSTNAME ?? 'unknown',
       });
 

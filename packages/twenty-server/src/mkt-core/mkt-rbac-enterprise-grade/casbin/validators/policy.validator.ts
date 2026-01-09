@@ -19,19 +19,21 @@ import {
 const PATTERNS = {
   // Subject format: user:{uuid} hoặc role:{roleName}
   SUBJECT: /^(user|role):[a-zA-Z0-9-_]+$/,
-  // Domain format: ws:{uuid}
-  DOMAIN: /^ws:[a-f0-9-]{36}$/,
   // Object format: {resource} hoặc {resource}:{id}
   OBJECT: /^[a-zA-Z][a-zA-Z0-9_]*(:([a-f0-9-]{36}|\*))?$/,
   // UUID format
   UUID: /^[a-f0-9-]{36}$/,
+  // Condition format: valid JavaScript expression or empty
+  CONDITION: /^[\w\s.,()[\]<>=!&|'"+\-*/]*$/,
 } as const;
 
 /**
  * Validation options
+ *
+ * Note: No domain validation - workspace isolation via schema
  */
 type PolicyValidatorOptions = {
-  // Workspace ID để validate domain
+  // Workspace ID for context (not used for domain validation)
   workspaceId: string;
   // Strict mode - reject unknown resources/actions
   strictMode?: boolean;
@@ -43,11 +45,13 @@ type PolicyValidatorOptions = {
  * Policy Validator cho Casbin
  *
  * Thực hiện validation:
- * - Cross-tenant access prevention
  * - Privilege escalation detection
  * - Valid resource/action check
  * - Self-escalation prevention
  * - Format validation
+ * - ABAC condition validation
+ *
+ * Note: No cross-tenant validation - workspace isolation via schema
  *
  * Security: Fail-closed pattern - reject if any check fails
  */
@@ -66,6 +70,8 @@ export class PolicyValidator {
 
   /**
    * Validate a permission policy (p type)
+   *
+   * Note: No domain validation - workspace isolation via schema
    */
   validatePolicy(
     policy: CasbinPolicy,
@@ -73,34 +79,18 @@ export class PolicyValidator {
   ): PolicyValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
-    const expectedDomain = `ws:${options.workspaceId}`;
 
     // 1. Validate subject format
     if (!PATTERNS.SUBJECT.test(policy.subject)) {
       errors.push(CASBIN_MESSAGES.ERROR.INVALID_SUBJECT_FORMAT(policy.subject));
     }
 
-    // 2. Validate domain - CRITICAL for multi-tenancy
-    if (policy.domain !== expectedDomain) {
-      errors.push(
-        `Cross-tenant policy rejected: expected ${expectedDomain}, got ${policy.domain}`,
-      );
-      this.logger.warn(
-        CASBIN_MESSAGES.WARN.CROSS_TENANT_REJECTED(policy.domain),
-      );
-    }
-
-    // 3. Validate domain format
-    if (!PATTERNS.DOMAIN.test(policy.domain)) {
-      errors.push(CASBIN_MESSAGES.ERROR.INVALID_DOMAIN_FORMAT(policy.domain));
-    }
-
-    // 4. Validate object (resource) format
+    // 2. Validate object (resource) format
     if (!PATTERNS.OBJECT.test(policy.object)) {
       errors.push(`Invalid object format: ${policy.object}`);
     }
 
-    // 5. Validate resource exists (strict mode)
+    // 3. Validate resource exists (strict mode)
     if (options.strictMode) {
       const resourceBase = policy.object.split(':')[0];
 
@@ -109,7 +99,7 @@ export class PolicyValidator {
       }
     }
 
-    // 6. Validate action
+    // 4. Validate action
     if (!this.validActions.has(policy.action) && policy.action !== '*') {
       if (options.strictMode) {
         errors.push(`Unknown action: ${policy.action}`);
@@ -118,12 +108,17 @@ export class PolicyValidator {
       }
     }
 
-    // 7. Validate effect
+    // 5. Validate effect
     if (!['allow', 'deny'].includes(policy.effect)) {
       errors.push(`Invalid effect: ${policy.effect}`);
     }
 
-    // 8. Check self-escalation
+    // 6. Validate ABAC condition format (if present)
+    if (policy.condition && !PATTERNS.CONDITION.test(policy.condition)) {
+      errors.push(`Invalid condition format: ${policy.condition}`);
+    }
+
+    // 7. Check self-escalation
     if (options.actingUserId) {
       const selfEscalation = this.checkSelfEscalation(
         policy,
@@ -138,7 +133,7 @@ export class PolicyValidator {
       }
     }
 
-    // 9. Check privilege escalation patterns
+    // 8. Check privilege escalation patterns
     const escalationCheck = this.checkPrivilegeEscalation(policy);
 
     if (escalationCheck) {
@@ -157,6 +152,8 @@ export class PolicyValidator {
 
   /**
    * Validate a grouping policy (g type - role assignment)
+   *
+   * Note: No domain validation - workspace isolation via schema
    */
   validateGroupingPolicy(
     policy: GroupingPolicy,
@@ -164,7 +161,6 @@ export class PolicyValidator {
   ): PolicyValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
-    const expectedDomain = `ws:${options.workspaceId}`;
 
     // 1. Validate subject format
     if (!PATTERNS.SUBJECT.test(policy.subject)) {
@@ -178,14 +174,7 @@ export class PolicyValidator {
       );
     }
 
-    // 3. Validate domain
-    if (policy.domain !== expectedDomain) {
-      errors.push(
-        `Cross-tenant role assignment rejected: expected ${expectedDomain}, got ${policy.domain}`,
-      );
-    }
-
-    // 4. Check self-escalation for role assignments
+    // 3. Check self-escalation for role assignments
     if (options.actingUserId) {
       if (policy.subject === `user:${options.actingUserId}`) {
         errors.push('Cannot assign roles to yourself');
@@ -235,7 +224,11 @@ export class PolicyValidator {
 
   /**
    * Validate policy rule array (from Casbin)
-   * Format: [subject, domain, object, action, effect]
+   *
+   * Format (no domain - workspace isolation via schema):
+   * - p: [subject, object, action, effect, condition]
+   * - g: [subject, role]
+   * - g2: [resource, group]
    */
   validatePolicyRule(
     ptype: CasbinPolicyType,
@@ -243,32 +236,34 @@ export class PolicyValidator {
     options: PolicyValidatorOptions,
   ): PolicyValidationResult {
     if (ptype === 'p') {
-      // Permission policy
+      // Permission policy: subject, object, action, effect, condition
       if (rule.length < 4) {
         return {
           valid: false,
-          errors: ['Policy rule must have at least 4 values'],
+          errors: [
+            'Policy rule must have at least 4 values (subject, object, action, effect)',
+          ],
         };
       }
 
       const policy: CasbinPolicy = {
         ptype: 'p',
         subject: rule[0],
-        domain: rule[1],
-        object: rule[2],
-        action: rule[3],
-        effect: (rule[4] as 'allow' | 'deny') ?? 'allow',
+        object: rule[1],
+        action: rule[2],
+        effect: (rule[3] as 'allow' | 'deny') ?? 'allow',
+        condition: rule[4],
       };
 
       return this.validatePolicy(policy, options);
     }
 
     if (ptype === 'g') {
-      // Grouping policy
-      if (rule.length < 3) {
+      // Grouping policy: subject, role
+      if (rule.length < 2) {
         return {
           valid: false,
-          errors: ['Grouping rule must have at least 3 values'],
+          errors: ['Grouping rule must have at least 2 values (subject, role)'],
         };
       }
 
@@ -276,7 +271,6 @@ export class PolicyValidator {
         ptype: 'g',
         subject: rule[0],
         role: rule[1],
-        domain: rule[2],
       };
 
       return this.validateGroupingPolicy(policy, options);
@@ -378,20 +372,13 @@ export class PolicyValidator {
   }
 
   /**
-   * Validate domain format
+   * Validate ABAC condition format
    */
-  isValidDomain(domain: string): boolean {
-    return PATTERNS.DOMAIN.test(domain);
-  }
-
-  /**
-   * Extract workspace ID from domain
-   */
-  extractWorkspaceId(domain: string): string | null {
-    if (!PATTERNS.DOMAIN.test(domain)) {
-      return null;
+  isValidCondition(condition: string): boolean {
+    if (!condition) {
+      return true; // Empty condition is valid (pure RBAC)
     }
 
-    return domain.substring(3); // Remove 'ws:'
+    return PATTERNS.CONDITION.test(condition);
   }
 }

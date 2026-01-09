@@ -1,18 +1,24 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, In } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { WarmResult } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 import {
-  CacheWarmerConfig,
-  CACHE_WARMER_CONFIG,
+  CasbinRbacConfig,
+  rbacConfig,
+  RbacCacheWarmerConfig,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
@@ -30,6 +36,12 @@ import { PolicySyncService } from './policy-sync.service';
  * - Concurrent warming with rate limiting
  * - Scheduled resync
  *
+ * Configuration via environment variables:
+ * - RBAC_CACHE_WARM_ENABLED: Enable cache warming (default: true)
+ * - RBAC_CACHE_WARM_ON_STARTUP: Warm on startup (default: true)
+ * - RBAC_CACHE_WARM_CONCURRENCY: Concurrent workspaces (default: 5)
+ * - RBAC_PRIORITY_WORKSPACES: Comma-separated priority workspace IDs
+ *
  * Usage:
  * ```typescript
  * // Warm all caches
@@ -43,27 +55,28 @@ import { PolicySyncService } from './policy-sync.service';
 export class CacheWarmerService implements OnApplicationBootstrap {
   private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:CacheWarmer`);
 
-  private readonly config: CacheWarmerConfig;
+  private readonly cacheWarmerConfig: RbacCacheWarmerConfig;
   private isWarming = false;
 
   constructor(
+    @Inject(rbacConfig.KEY)
+    private readonly config: CasbinRbacConfig,
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
     private readonly enforcerService: CasbinEnforcerService,
     private readonly policySyncService: PolicySyncService,
   ) {
-    this.config = {
-      ...CACHE_WARMER_CONFIG,
-      enabled: process.env.RBAC_CACHE_WARM_ENABLED !== 'false',
-      warmOnStartup: process.env.RBAC_CACHE_WARM_ON_STARTUP !== 'false',
-    };
+    this.cacheWarmerConfig = this.config.cacheWarmer;
   }
 
   /**
    * Warm caches on application bootstrap
    */
   async onApplicationBootstrap(): Promise<void> {
-    if (!this.config.enabled || !this.config.warmOnStartup) {
+    if (
+      !this.cacheWarmerConfig.enabled ||
+      !this.cacheWarmerConfig.warmOnStartup
+    ) {
       this.logger.log('Cache warming disabled on startup');
 
       return;
@@ -73,20 +86,6 @@ export class CacheWarmerService implements OnApplicationBootstrap {
     setTimeout(async () => {
       await this.warmAllCaches();
     }, 5000);
-  }
-
-  /**
-   * Scheduled hourly resync
-   * Fallback mechanism if PG NOTIFY misses updates
-   */
-  @Cron(CronExpression.EVERY_HOUR)
-  async scheduledResync(): Promise<void> {
-    if (!this.config.enabled) {
-      return;
-    }
-
-    this.logger.log('Starting scheduled hourly resync');
-    await this.warmAllCaches();
   }
 
   /**
@@ -106,7 +105,7 @@ export class CacheWarmerService implements OnApplicationBootstrap {
     }
 
     this.isWarming = true;
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     try {
       // Get all active workspaces from core schema
@@ -120,7 +119,10 @@ export class CacheWarmerService implements OnApplicationBootstrap {
       // Warm caches
       const result = await this.warmWorkspaces(prioritized);
 
-      result.latencyMs = Date.now() - startTime;
+      result.latencyMs = DateTimeUtils.diffInMillis(
+        startTime,
+        DateTimeUtils.now(),
+      );
 
       this.logger.log(
         CASBIN_MESSAGES.LOG.CACHE_WARM_COMPLETE(result.latencyMs),
@@ -161,10 +163,13 @@ export class CacheWarmerService implements OnApplicationBootstrap {
       errors: [],
     };
 
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     // Process in batches for concurrency control
-    const batches = this.chunk(workspaceIds, this.config.concurrency);
+    const batches = this.chunk(
+      workspaceIds,
+      this.cacheWarmerConfig.concurrency,
+    );
 
     for (const batch of batches) {
       const warmPromises = batch.map((workspaceId) =>
@@ -197,7 +202,10 @@ export class CacheWarmerService implements OnApplicationBootstrap {
       }
     }
 
-    result.latencyMs = Date.now() - startTime;
+    result.latencyMs = DateTimeUtils.diffInMillis(
+      startTime,
+      DateTimeUtils.now(),
+    );
 
     this.logger.log(
       `Cache warming complete: ${result.warmed}/${result.totalWorkspaces} succeeded`,
@@ -248,7 +256,7 @@ export class CacheWarmerService implements OnApplicationBootstrap {
    * Priority workspaces come first, then sort by policy count (descending)
    */
   private prioritizeWorkspaces(workspaces: string[]): string[] {
-    const priority = new Set(this.config.priorityWorkspaces);
+    const priority = new Set(this.cacheWarmerConfig.priorityWorkspaces);
 
     // Split into priority and non-priority
     const priorityWs = workspaces.filter((ws) => priority.has(ws));
@@ -291,26 +299,12 @@ export class CacheWarmerService implements OnApplicationBootstrap {
   getStatus(): {
     isWarming: boolean;
     enabled: boolean;
-    config: CacheWarmerConfig;
+    config: RbacCacheWarmerConfig;
   } {
     return {
       isWarming: this.isWarming,
-      enabled: this.config.enabled,
-      config: this.config,
+      enabled: this.cacheWarmerConfig.enabled,
+      config: this.cacheWarmerConfig,
     };
-  }
-
-  /**
-   * Set priority workspaces
-   */
-  setPriorityWorkspaces(workspaceIds: string[]): void {
-    this.config.priorityWorkspaces = workspaceIds;
-  }
-
-  /**
-   * Enable/disable cache warming
-   */
-  setEnabled(enabled: boolean): void {
-    this.config.enabled = enabled;
   }
 }

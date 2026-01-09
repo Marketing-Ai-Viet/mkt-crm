@@ -38,6 +38,15 @@ export class WorkspaceCasbinRuleRepository {
   }
 
   /**
+   * Get raw workspace repository for adapter usage
+   *
+   * Used by WorkspaceCasbinAdapter to implement Casbin's FilteredAdapter interface
+   */
+  async getWorkspaceRepository() {
+    return this.getRepository();
+  }
+
+  /**
    * Find all rules in current workspace
    */
   async findAll(): Promise<CasbinRuleRow[]> {

@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { createHash } from 'crypto';
 
+import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -20,19 +22,27 @@ import {
   DeadLetterEntry,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 import {
-  DEAD_LETTER_KEY,
-  DEAD_LETTER_TTL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
+  RBAC_DEAD_LETTER_KEY,
+  RBAC_DEAD_LETTER_TTL,
+} from 'src/mkt-core/infrastructure/redis/constants/rbac.constant';
+import { MktPolicyVersionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-version.workspace-entity';
 
 /**
  * Repository cho Policy Versions
  *
- * Quản lý version tracking cho policies để:
- * - Detect policy changes
- * - Enable idempotent sync
- * - Track sync failures
+ * Quản lý version tracking cho policies với hybrid approach:
+ * - Database (MktPolicyVersionWorkspaceEntity): Source of truth, durability, audit trail
+ * - Redis cache: High-performance read access
  *
- * Sử dụng Redis cho high-performance access
+ * Features:
+ * - Detect policy changes via hash comparison
+ * - Enable idempotent sync
+ * - Track sync failures (dead letter queue)
+ * - Version history for compliance (SOC2)
+ *
+ * Strategy:
+ * - Write-through: Write to DB first, then update cache
+ * - Read: Cache first, fallback to DB on miss
  */
 @Injectable()
 export class PolicyVersionRepository {
@@ -41,14 +51,72 @@ export class PolicyVersionRepository {
   );
 
   constructor(
+    private readonly twentyORMManager: TwentyORMManager,
     @InjectCacheStorage(CacheStorageNamespace.RbacPolicy)
     private readonly cacheStorage: CacheStorageService,
   ) {}
 
+  // ==================== Private Helpers ====================
+
+  /**
+   * Get workspace entity repository
+   */
+  private async getRepository() {
+    return this.twentyORMManager.getRepository<MktPolicyVersionWorkspaceEntity>(
+      'mktPolicyVersion',
+    );
+  }
+
+  // ==================== Read Operations ====================
+
   /**
    * Get policy version for workspace
+   * Strategy: Cache first, fallback to DB on miss
    */
   async getVersion(workspaceId: string): Promise<PolicyVersion | null> {
+    try {
+      // 1. Try cache first
+      const cached = await this.getVersionFromCache(workspaceId);
+
+      if (cached) {
+        return cached;
+      }
+
+      // 2. Cache miss - read from database
+      const dbVersion = await this.getVersionFromDatabase();
+
+      if (!dbVersion) {
+        return null;
+      }
+
+      // 3. Populate cache for next read
+      await this.updateCache(workspaceId, dbVersion);
+
+      return {
+        workspaceId,
+        version: dbVersion.version,
+        policyHash: dbVersion.policyHash ?? '',
+        updatedAt: dbVersion.syncedAt
+          ? DateTimeUtils.toDateRequired(
+              DateTimeUtils.fromDate(dbVersion.syncedAt),
+            )
+          : DateTimeUtils.toDateRequired(DateTimeUtils.now()),
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get policy version for ${workspaceId}: ${error}`,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Get version from cache
+   */
+  private async getVersionFromCache(
+    workspaceId: string,
+  ): Promise<PolicyVersion | null> {
     try {
       const key = CASBIN_CACHE_KEYS.POLICY_VERSION(workspaceId);
       const data = await this.cacheStorage.get<PolicyVersionEntry>(key);
@@ -61,14 +129,71 @@ export class PolicyVersionRepository {
         workspaceId,
         version: data.version,
         policyHash: data.hash,
-        updatedAt: new Date(data.updatedAt),
+        updatedAt: DateTimeUtils.toDateRequired(
+          DateTimeUtils.fromISO(data.updatedAt),
+        ),
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to get policy version for ${workspaceId}: ${error}`,
-      );
+      this.logger.debug(`Cache miss for policy version ${workspaceId}`);
 
       return null;
+    }
+  }
+
+  /**
+   * Get latest version from database
+   * Note: Each workspace has one version record (upsert pattern)
+   */
+  private async getVersionFromDatabase(): Promise<MktPolicyVersionWorkspaceEntity | null> {
+    try {
+      const repository = await this.getRepository();
+
+      // Get the latest version record
+      return repository.findOne({
+        where: {},
+        order: { version: 'DESC' },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get version from database: ${error}`);
+
+      return null;
+    }
+  }
+
+  /**
+   * Update cache with version data
+   */
+  private async updateCache(
+    workspaceId: string,
+    entity: MktPolicyVersionWorkspaceEntity,
+  ): Promise<void> {
+    try {
+      const versionKey = CASBIN_CACHE_KEYS.POLICY_VERSION(workspaceId);
+      const hashKey = CASBIN_CACHE_KEYS.POLICY_HASH(workspaceId);
+
+      const entry: PolicyVersionEntry = {
+        version: entity.version,
+        hash: entity.policyHash ?? '',
+        updatedAt: entity.syncedAt
+          ? DateTimeUtils.toISO(DateTimeUtils.fromDate(entity.syncedAt))
+          : DateTimeUtils.toISO(DateTimeUtils.now()),
+        policyCount: entity.policyCount,
+      };
+
+      await Promise.all([
+        this.cacheStorage.set(
+          versionKey,
+          entry,
+          CASBIN_CACHE_TTL.POLICY_VERSION * 1000,
+        ),
+        this.cacheStorage.set(
+          hashKey,
+          entity.policyHash ?? '',
+          CASBIN_CACHE_TTL.POLICY_VERSION * 1000,
+        ),
+      ]);
+    } catch (error) {
+      this.logger.debug(`Failed to update cache: ${error}`);
     }
   }
 
@@ -83,13 +208,33 @@ export class PolicyVersionRepository {
 
   /**
    * Get policy hash for workspace
+   * Strategy: Cache first, fallback to DB
    */
   async getPolicyHash(workspaceId: string): Promise<string | null> {
     try {
+      // 1. Try cache first
       const key = CASBIN_CACHE_KEYS.POLICY_HASH(workspaceId);
-      const value = await this.cacheStorage.get<string>(key);
+      const cached = await this.cacheStorage.get<string>(key);
 
-      return value ?? null;
+      if (cached) {
+        return cached;
+      }
+
+      // 2. Fallback to database
+      const dbVersion = await this.getVersionFromDatabase();
+
+      if (dbVersion?.policyHash) {
+        // Populate cache
+        await this.cacheStorage.set(
+          key,
+          dbVersion.policyHash,
+          CASBIN_CACHE_TTL.POLICY_VERSION * 1000,
+        );
+
+        return dbVersion.policyHash;
+      }
+
+      return null;
     } catch (error) {
       this.logger.error(
         `Failed to get policy hash for ${workspaceId}: ${error}`,
@@ -99,8 +244,10 @@ export class PolicyVersionRepository {
     }
   }
 
+  // ==================== Write Operations ====================
+
   /**
-   * Set policy version
+   * Set policy version (write-through: DB first, then cache)
    */
   async setVersion(
     workspaceId: string,
@@ -109,13 +256,40 @@ export class PolicyVersionRepository {
     policyCount: number,
   ): Promise<void> {
     try {
+      const repository = await this.getRepository();
+      const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
+
+      // 1. Find existing or create new
+      const existing = await this.getVersionFromDatabase();
+
+      if (existing) {
+        // Update existing record
+        await repository.update(existing.id, {
+          version,
+          policyHash: hash,
+          policyCount,
+          syncedAt: now,
+        });
+      } else {
+        // Create new record
+        const entity = repository.create({
+          version,
+          policyHash: hash,
+          policyCount,
+          syncedAt: now,
+        });
+
+        await repository.save(entity);
+      }
+
+      // 2. Update cache (write-through)
       const versionKey = CASBIN_CACHE_KEYS.POLICY_VERSION(workspaceId);
       const hashKey = CASBIN_CACHE_KEYS.POLICY_HASH(workspaceId);
 
       const entry: PolicyVersionEntry = {
         version,
         hash,
-        updatedAt: new Date().toISOString(),
+        updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
         policyCount,
       };
 
@@ -189,10 +363,19 @@ export class PolicyVersionRepository {
   }
 
   /**
-   * Delete version for workspace
+   * Delete version for workspace (from both DB and cache)
    */
   async deleteVersion(workspaceId: string): Promise<void> {
     try {
+      // 1. Delete from database
+      const repository = await this.getRepository();
+      const existing = await this.getVersionFromDatabase();
+
+      if (existing) {
+        await repository.delete(existing.id);
+      }
+
+      // 2. Delete from cache
       const versionKey = CASBIN_CACHE_KEYS.POLICY_VERSION(workspaceId);
       const hashKey = CASBIN_CACHE_KEYS.POLICY_HASH(workspaceId);
 
@@ -209,6 +392,47 @@ export class PolicyVersionRepository {
     }
   }
 
+  /**
+   * Invalidate cache only (force next read from DB)
+   */
+  async invalidateCache(workspaceId: string): Promise<void> {
+    try {
+      const versionKey = CASBIN_CACHE_KEYS.POLICY_VERSION(workspaceId);
+      const hashKey = CASBIN_CACHE_KEYS.POLICY_HASH(workspaceId);
+
+      await Promise.all([
+        this.cacheStorage.del(versionKey),
+        this.cacheStorage.del(hashKey),
+      ]);
+
+      this.logger.debug(`Invalidated policy version cache for ${workspaceId}`);
+    } catch (error) {
+      this.logger.debug(
+        `Failed to invalidate cache for ${workspaceId}: ${error}`,
+      );
+    }
+  }
+
+  /**
+   * Get version history for audit (from database only)
+   */
+  async getVersionHistory(
+    limit = 100,
+  ): Promise<MktPolicyVersionWorkspaceEntity[]> {
+    try {
+      const repository = await this.getRepository();
+
+      return repository.find({
+        order: { version: 'DESC' },
+        take: limit,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get version history: ${error}`);
+
+      return [];
+    }
+  }
+
   // ==================== Sync Lock ====================
 
   /**
@@ -218,7 +442,7 @@ export class PolicyVersionRepository {
   async acquireSyncLock(workspaceId: string): Promise<boolean> {
     try {
       const key = CASBIN_CACHE_KEYS.SYNC_LOCK(workspaceId);
-      const lockValue = `lock:${Date.now()}`;
+      const lockValue = `lock:${DateTimeUtils.toMillis(DateTimeUtils.now())}`;
 
       // Use setNX-style behavior (set if not exists)
       const existing = await this.cacheStorage.get<string>(key);
@@ -287,14 +511,16 @@ export class PolicyVersionRepository {
     try {
       // Get raw entries from cache
       const rawEntries =
-        (await this.cacheStorage.get<DeadLetterEntry[]>(DEAD_LETTER_KEY)) ?? [];
+        (await this.cacheStorage.get<DeadLetterEntry[]>(
+          RBAC_DEAD_LETTER_KEY,
+        )) ?? [];
       const existingIndex = rawEntries.findIndex(
         (e) => e.workspaceId === workspaceId,
       );
 
       const entry: DeadLetterEntry = {
         workspaceId,
-        failedAt: new Date().toISOString(),
+        failedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
         lastError: error,
         retryCount,
       };
@@ -306,9 +532,9 @@ export class PolicyVersionRepository {
       }
 
       await this.cacheStorage.set(
-        DEAD_LETTER_KEY,
+        RBAC_DEAD_LETTER_KEY,
         rawEntries,
-        DEAD_LETTER_TTL * 1000,
+        RBAC_DEAD_LETTER_TTL * 1000,
       );
 
       this.logger.warn(
@@ -329,9 +555,9 @@ export class PolicyVersionRepository {
 
       if (filtered.length !== entries.length) {
         await this.cacheStorage.set(
-          DEAD_LETTER_KEY,
+          RBAC_DEAD_LETTER_KEY,
           filtered,
-          DEAD_LETTER_TTL * 1000,
+          RBAC_DEAD_LETTER_TTL * 1000,
         );
 
         this.logger.log(`Removed ${workspaceId} from dead letter queue`);
@@ -347,7 +573,7 @@ export class PolicyVersionRepository {
   async getDeadLetterEntries(): Promise<SyncDeadLetterEntry[]> {
     try {
       const entries =
-        await this.cacheStorage.get<DeadLetterEntry[]>(DEAD_LETTER_KEY);
+        await this.cacheStorage.get<DeadLetterEntry[]>(RBAC_DEAD_LETTER_KEY);
 
       if (!entries) {
         return [];
@@ -356,10 +582,14 @@ export class PolicyVersionRepository {
       return entries.map((e) => ({
         id: `${e.workspaceId}:${e.failedAt}`,
         workspaceId: e.workspaceId,
-        failedAt: new Date(e.failedAt),
+        failedAt: DateTimeUtils.toDateRequired(
+          DateTimeUtils.fromISO(e.failedAt),
+        ),
         lastError: e.lastError,
         retryCount: e.retryCount,
-        resolvedAt: e.resolvedAt ? new Date(e.resolvedAt) : undefined,
+        resolvedAt: e.resolvedAt
+          ? DateTimeUtils.toDateRequired(DateTimeUtils.fromISO(e.resolvedAt))
+          : undefined,
       }));
     } catch (error) {
       this.logger.error(`Failed to get dead letter entries: ${error}`);

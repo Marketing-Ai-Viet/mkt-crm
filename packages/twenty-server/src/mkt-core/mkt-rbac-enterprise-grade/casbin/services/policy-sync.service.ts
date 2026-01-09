@@ -1,6 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
+import {
+  DateTimeUtils,
+  DATE_TIME_FORMATS,
+} from 'src/mkt-core/utils/date-time.utils';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
@@ -20,7 +24,11 @@ import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
 import { MktPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories/mkt-permission-template.repository';
 import { MktUserPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories/mkt-user-permission-template.repository';
-import { SYNC_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
+import {
+  CasbinRbacConfig,
+  rbacConfig,
+  RbacSyncConfig,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
 
@@ -55,14 +63,21 @@ export class PolicySyncService {
   // Active syncs tracking
   private readonly activeSyncs = new Set<string>();
 
+  // Config
+  private readonly syncConfig: RbacSyncConfig;
+
   constructor(
+    @Inject(rbacConfig.KEY)
+    private readonly config: CasbinRbacConfig,
     private readonly casbinRuleRepository: WorkspaceCasbinRuleRepository,
     private readonly policyVersionRepository: PolicyVersionRepository,
     private readonly policyValidator: PolicyValidator,
     private readonly enforcerService: CasbinEnforcerService,
     private readonly templateRepository: MktPermissionTemplateRepository,
     private readonly userTemplateRepository: MktUserPermissionTemplateRepository,
-  ) {}
+  ) {
+    this.syncConfig = this.config.sync;
+  }
 
   /**
    * Handle permission change event
@@ -92,7 +107,7 @@ export class PolicySyncService {
     const timer = setTimeout(async () => {
       this.debounceTimers.delete(workspaceId);
       await this.syncWorkspace(workspaceId);
-    }, SYNC_CONFIG.debounceMs);
+    }, this.syncConfig.debounceMs);
 
     this.debounceTimers.set(workspaceId, timer);
   }
@@ -101,7 +116,7 @@ export class PolicySyncService {
    * Sync policies for workspace
    */
   async syncWorkspace(workspaceId: string): Promise<SyncResult> {
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.now();
 
     // Check if already syncing
     if (this.activeSyncs.has(workspaceId)) {
@@ -171,12 +186,12 @@ export class PolicySyncService {
       }
 
       // Check policy limit
-      if (policyRules.length > SYNC_CONFIG.maxPoliciesPerWorkspace) {
+      if (policyRules.length > this.syncConfig.maxPoliciesPerWorkspace) {
         this.logger.warn(
           CASBIN_MESSAGES.WARN.POLICY_LIMIT_EXCEEDED(
             workspaceId,
             policyRules.length,
-            SYNC_CONFIG.maxPoliciesPerWorkspace,
+            this.syncConfig.maxPoliciesPerWorkspace,
           ),
         );
       }
@@ -206,7 +221,10 @@ export class PolicySyncService {
       // Remove from dead letter if present
       await this.policyVersionRepository.removeFromDeadLetter(workspaceId);
 
-      const latencyMs = Date.now() - startTime;
+      const latencyMs = DateTimeUtils.diffInMillis(
+        startTime,
+        DateTimeUtils.now(),
+      );
 
       this.logger.log(
         CASBIN_MESSAGES.LOG.SYNC_SUCCESS(workspaceId, count, latencyMs),
@@ -230,7 +248,7 @@ export class PolicySyncService {
       return {
         status: 'failed',
         reason: errorMessage,
-        latencyMs: Date.now() - startTime,
+        latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
       };
     } finally {
       this.activeSyncs.delete(workspaceId);
@@ -243,7 +261,7 @@ export class PolicySyncService {
    */
   async syncWithRetry(
     workspaceId: string,
-    maxRetries: number = SYNC_CONFIG.maxRetries,
+    maxRetries: number = this.syncConfig.maxRetries,
   ): Promise<SyncResult> {
     let lastError: string | undefined;
 
@@ -257,7 +275,7 @@ export class PolicySyncService {
       lastError = result.reason;
 
       if (attempt < maxRetries) {
-        const delay = SYNC_CONFIG.retryDelayMs * Math.pow(2, attempt - 1);
+        const delay = this.syncConfig.retryDelayMs * Math.pow(2, attempt - 1);
 
         this.logger.warn(CASBIN_MESSAGES.LOG.SYNC_RETRY(workspaceId, attempt));
 
@@ -325,12 +343,14 @@ export class PolicySyncService {
 
   /**
    * Generate policies from permission templates
+   *
+   * Note: No domain in policies - workspace isolation via schema
+   * Supports ABAC conditions from template configuration
    */
   private async generatePolicies(
     workspaceId: string,
   ): Promise<Array<CasbinPolicy | GroupingPolicy>> {
     const policies: Array<CasbinPolicy | GroupingPolicy> = [];
-    const domain = `ws:${workspaceId}`;
 
     // Get active templates
     const templates = await this.templateRepository.findActive(workspaceId);
@@ -362,14 +382,17 @@ export class PolicySyncService {
           // Xác định resource key từ relation hoặc dùng resourceId
           const resourceKey = rp.resourceId;
 
+          // Extract ABAC condition from resourcePermission if present
+          const condition = this.extractAbacCondition(rp);
+
           for (const action of actions) {
             policies.push({
               ptype: 'p',
               subject: roleName,
-              domain,
               object: resourceKey,
               action,
               effect: 'allow',
+              condition,
             });
           }
         }
@@ -382,7 +405,6 @@ export class PolicySyncService {
             policies.push({
               ptype: 'p',
               subject: roleName,
-              domain,
               object: CASBIN_RESOURCES.SYSTEM_CONFIG,
               action: sa.actionKey,
               effect: 'allow',
@@ -404,7 +426,6 @@ export class PolicySyncService {
         ptype: 'g',
         subject: `user:${ut.workspaceMemberId}`,
         role: `role:${template.templateKey}`,
-        domain,
       });
     }
 
@@ -416,21 +437,106 @@ export class PolicySyncService {
   }
 
   /**
+   * Extract ABAC condition from resource permission
+   *
+   * Supports conditions from:
+   * - Time-based: validFrom/validTo in permission
+   * - Attribute-based: conditions field in permission
+   *
+   * Returns undefined for pure RBAC (no conditions)
+   */
+  private extractAbacCondition(resourcePermission: {
+    conditions?: object | null;
+    validFrom?: Date | null;
+    validTo?: Date | null;
+  }): string | undefined {
+    const conditionParts: string[] = [];
+
+    // Time-based conditions
+    if (resourcePermission.validFrom) {
+      const fromDate = DateTimeUtils.format(
+        DateTimeUtils.fromDate(resourcePermission.validFrom),
+        DATE_TIME_FORMATS.DATE_ONLY,
+      );
+
+      conditionParts.push(`r.attr.currentDate >= '${fromDate}'`);
+    }
+
+    if (resourcePermission.validTo) {
+      const toDate = DateTimeUtils.format(
+        DateTimeUtils.fromDate(resourcePermission.validTo),
+        DATE_TIME_FORMATS.DATE_ONLY,
+      );
+
+      conditionParts.push(`r.attr.currentDate <= '${toDate}'`);
+    }
+
+    // Custom conditions from permission config
+    if (resourcePermission.conditions) {
+      const customConditions = resourcePermission.conditions as Record<
+        string,
+        unknown
+      >;
+
+      // Support common condition patterns
+      if ('minClearance' in customConditions) {
+        conditionParts.push(
+          `r.attr.userClearance >= ${customConditions.minClearance}`,
+        );
+      }
+
+      if ('maxAmount' in customConditions) {
+        conditionParts.push(`r.attr.amount <= ${customConditions.maxAmount}`);
+      }
+
+      if ('departments' in customConditions) {
+        const depts = customConditions.departments as string[];
+
+        if (depts.length > 0) {
+          conditionParts.push(
+            `(${depts.map((d) => `r.attr.department == '${d}'`).join(' || ')})`,
+          );
+        }
+      }
+
+      // Raw condition string if provided
+      if (
+        'expression' in customConditions &&
+        typeof customConditions.expression === 'string'
+      ) {
+        conditionParts.push(customConditions.expression);
+      }
+    }
+
+    // Return undefined for pure RBAC (empty conditions)
+    if (conditionParts.length === 0) {
+      return undefined;
+    }
+
+    // Combine conditions with AND
+    return conditionParts.join(' && ');
+  }
+
+  /**
    * Convert policy to rule array
+   *
+   * Format (no domain - workspace isolation via schema):
+   * - p: [subject, object, action, effect, condition]
+   * - g: [subject, role]
    */
   private policyToRule(policy: CasbinPolicy | GroupingPolicy): string[] {
     if (policy.ptype === 'p') {
       return [
         policy.subject,
-        policy.domain,
         policy.object,
         policy.action,
         policy.effect ?? 'allow',
+        policy.condition ?? '',
       ];
     }
 
-    // g policy
-    return [policy.subject, policy.role, policy.domain];
+    // g policy - role assignment
+    return [policy.subject, policy.role];
   }
 
   /**

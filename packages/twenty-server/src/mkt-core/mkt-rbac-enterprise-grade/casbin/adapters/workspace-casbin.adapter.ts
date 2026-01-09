@@ -1,7 +1,8 @@
 import { Logger } from '@nestjs/common';
 
-import { Helper, FilteredAdapter, Model } from 'casbin';
+import { FilteredAdapter, Helper, Model } from 'casbin';
 
+import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
@@ -41,9 +42,7 @@ export class WorkspaceCasbinAdapter implements FilteredAdapter {
     repository: WorkspaceRepository<MktCasbinRuleWorkspaceEntity>,
     workspaceId: string,
   ): Promise<WorkspaceCasbinAdapter> {
-    const adapter = new WorkspaceCasbinAdapter(repository, workspaceId);
-
-    return adapter;
+    return new WorkspaceCasbinAdapter(repository, workspaceId);
   }
 
   /**
@@ -248,7 +247,7 @@ export class WorkspaceCasbinAdapter implements FilteredAdapter {
 
     await this.repository.delete(where);
     this.logger.debug(
-      `Removed filtered policies: ptype=${ptype}, filter=${JSON.stringify(where)}`,
+      `Removed filtered policies: ptype=${ptype}, filter=${safeJsonStringify(where)}`,
     );
   }
 
