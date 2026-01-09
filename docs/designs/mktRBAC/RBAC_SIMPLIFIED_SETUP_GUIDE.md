@@ -941,7 +941,7 @@ async function setupSimplifiedPolicies() {
 ### Bước 4: Simplified Permission Resolver
 
 ```typescript
-// File: packages/twenty-server/src/mkt-core/mkt-rbac-simplified/permission-resolver.service.ts
+// File: packages/twenty-server/src/mkt-core/mkt-rbac-seeder-simplified/permission-resolver.service.ts
 
 @Injectable()
 export class SimplifiedPermissionResolverService {

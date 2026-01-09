@@ -1,42 +1,23 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import { Repository, In } from 'typeorm';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/casbin-rule.repository';
+import { WarmResult } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
+import {
+  CacheWarmerConfig,
+  CACHE_WARMER_CONFIG,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
 import { PolicySyncService } from './policy-sync.service';
-
-/**
- * Warm cache configuration
- */
-type WarmCacheConfig = {
-  enabled: boolean;
-  warmOnStartup: boolean;
-  concurrency: number;
-  priorityWorkspaces: string[];
-};
-
-const DEFAULT_CONFIG: WarmCacheConfig = {
-  enabled: true,
-  warmOnStartup: true,
-  concurrency: 5,
-  priorityWorkspaces: [],
-};
-
-/**
- * Warm cache result
- */
-type WarmResult = {
-  totalWorkspaces: number;
-  warmed: number;
-  failed: number;
-  latencyMs: number;
-  errors: Array<{ workspaceId: string; error: string }>;
-};
 
 /**
  * Cache Warmer Service
@@ -62,16 +43,17 @@ type WarmResult = {
 export class CacheWarmerService implements OnApplicationBootstrap {
   private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:CacheWarmer`);
 
-  private readonly config: WarmCacheConfig;
+  private readonly config: CacheWarmerConfig;
   private isWarming = false;
 
   constructor(
-    private readonly casbinRuleRepository: CasbinRuleRepository,
+    @InjectRepository(Workspace, 'core')
+    private readonly workspaceRepository: Repository<Workspace>,
     private readonly enforcerService: CasbinEnforcerService,
     private readonly policySyncService: PolicySyncService,
   ) {
     this.config = {
-      ...DEFAULT_CONFIG,
+      ...CACHE_WARMER_CONFIG,
       enabled: process.env.RBAC_CACHE_WARM_ENABLED !== 'false',
       warmOnStartup: process.env.RBAC_CACHE_WARM_ON_STARTUP !== 'false',
     };
@@ -127,8 +109,8 @@ export class CacheWarmerService implements OnApplicationBootstrap {
     const startTime = Date.now();
 
     try {
-      // Get all active workspaces
-      const workspaces = await this.casbinRuleRepository.getActiveWorkspaces();
+      // Get all active workspaces from core schema
+      const workspaces = await this.getActiveWorkspaces();
 
       this.logger.log(CASBIN_MESSAGES.LOG.CACHE_WARM_START(workspaces.length));
 
@@ -148,6 +130,23 @@ export class CacheWarmerService implements OnApplicationBootstrap {
     } finally {
       this.isWarming = false;
     }
+  }
+
+  /**
+   * Get all active workspace IDs from core schema
+   */
+  private async getActiveWorkspaces(): Promise<string[]> {
+    const workspaces = await this.workspaceRepository.find({
+      select: ['id'],
+      where: {
+        activationStatus: In([
+          WorkspaceActivationStatus.ACTIVE,
+          WorkspaceActivationStatus.SUSPENDED,
+        ]),
+      },
+    });
+
+    return workspaces.map((ws) => ws.id);
   }
 
   /**
@@ -292,7 +291,7 @@ export class CacheWarmerService implements OnApplicationBootstrap {
   getStatus(): {
     isWarming: boolean;
     enabled: boolean;
-    config: WarmCacheConfig;
+    config: CacheWarmerConfig;
   } {
     return {
       isWarming: this.isWarming,

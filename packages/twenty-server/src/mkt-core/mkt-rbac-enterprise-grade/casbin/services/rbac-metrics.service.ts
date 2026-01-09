@@ -4,58 +4,20 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/casbin-rule.repository';
+import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
+import {
+  PermissionCheckMetric,
+  AggregatedMetrics,
+  HealthStatus,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
+import {
+  METRICS_KEY,
+  METRICS_RETENTION_MS,
+  MAX_METRICS_ENTRIES,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
-
-/**
- * Metrics entry for permission check
- */
-type PermissionCheckMetric = {
-  timestamp: number;
-  workspaceId: string;
-  latencyMs: number;
-  allowed: boolean;
-  cached: boolean;
-};
-
-/**
- * Aggregated metrics
- */
-type AggregatedMetrics = {
-  totalChecks: number;
-  allowedCount: number;
-  deniedCount: number;
-  avgLatencyMs: number;
-  p50LatencyMs: number;
-  p95LatencyMs: number;
-  p99LatencyMs: number;
-  cacheHitRate: number;
-};
-
-/**
- * System health status
- */
-type HealthStatus = {
-  healthy: boolean;
-  components: {
-    enforcer: { healthy: boolean; message?: string };
-    watcher: { healthy: boolean; message?: string };
-    cache: { healthy: boolean; message?: string };
-    database: { healthy: boolean; message?: string };
-  };
-  metrics: {
-    activeWorkspaces: number;
-    totalPolicies: number;
-    cachedEnforcers: number;
-    deadLetterCount: number;
-  };
-};
-
-const METRICS_KEY = 'rbac-seeder:metrics:checks';
-const METRICS_RETENTION_MS = 3600000; // 1 hour
-const MAX_METRICS_ENTRIES = 10000;
 
 /**
  * RBAC Metrics Service
@@ -92,7 +54,7 @@ export class RbacMetricsService {
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.RbacPolicy)
     private readonly cacheStorage: CacheStorageService,
-    private readonly casbinRuleRepository: CasbinRuleRepository,
+    private readonly casbinRuleRepository: WorkspaceCasbinRuleRepository,
     private readonly policyVersionRepository: PolicyVersionRepository,
     private readonly enforcerService: CasbinEnforcerService,
   ) {
@@ -235,6 +197,9 @@ export class RbacMetricsService {
 
   /**
    * Get system health status
+   *
+   * Note: In workspace-per-schema model, this returns health for current workspace context.
+   * For cross-workspace health monitoring, use admin endpoints with workspace iteration.
    */
   async getHealth(): Promise<HealthStatus> {
     const components = {
@@ -246,29 +211,19 @@ export class RbacMetricsService {
 
     const healthy = Object.values(components).every((c) => c.healthy);
 
-    // Get system metrics
-    const [activeWorkspaces, deadLetterEntries, enforcerStats] =
-      await Promise.all([
-        this.casbinRuleRepository.getActiveWorkspaces(),
-        this.policyVersionRepository.getDeadLetterEntries(),
-        this.getEnforcerStats(),
-      ]);
-
-    // Count total policies across workspaces
-    let totalPolicies = 0;
-
-    for (const wsId of activeWorkspaces) {
-      const count = await this.casbinRuleRepository.countByWorkspace(wsId);
-
-      totalPolicies += count;
-    }
+    // Get workspace-scoped metrics
+    const [policyCount, deadLetterEntries, enforcerStats] = await Promise.all([
+      this.casbinRuleRepository.count(),
+      this.policyVersionRepository.getDeadLetterEntries(),
+      this.getEnforcerStats(),
+    ]);
 
     return {
       healthy,
       components,
       metrics: {
-        activeWorkspaces: activeWorkspaces.length,
-        totalPolicies,
+        activeWorkspaces: 1, // Current workspace only
+        totalPolicies: policyCount,
         cachedEnforcers: enforcerStats.cachedEnforcers,
         deadLetterCount: deadLetterEntries.length,
       },
@@ -367,12 +322,12 @@ export class RbacMetricsService {
     message?: string;
   }> {
     try {
-      // Try to get workspace count
-      const workspaces = await this.casbinRuleRepository.getActiveWorkspaces();
+      // Check database connectivity by counting policies in current workspace
+      const policyCount = await this.casbinRuleRepository.count();
 
       return {
         healthy: true,
-        message: `${workspaces.length} active workspaces`,
+        message: `${policyCount} policies in current workspace`,
       };
     } catch (error) {
       return {

@@ -1403,3 +1403,27 @@ export const MKT_WEBHOOK_LOG_FIELD_IDS = {
   position: 'f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c',
   createdBy: 'a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d',
 };
+
+// Casbin RBAC - Authorization policy rules
+export const MKT_CASBIN_RULE_FIELD_IDS = {
+  // policy fields
+  ptype: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  subject: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+  object: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+  action: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+  effect: '7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d',
+  condition: '8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e',
+  // standard fields
+  position: '9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f',
+};
+
+// Casbin RBAC - Policy version tracking
+export const MKT_POLICY_VERSION_FIELD_IDS = {
+  // version fields
+  version: 'a0b1c2d3-e4f5-6789-0abc-def123456789',
+  policyHash: 'b1c2d3e4-f567-890a-bcde-f01234567890',
+  policyCount: 'c2d3e4f5-6789-0abc-def0-123456789012',
+  syncedAt: 'd3e4f5a6-7890-abcd-ef01-234567890123',
+  // standard fields
+  position: 'e4f5a6b7-890a-bcde-f012-345678901234',
+};

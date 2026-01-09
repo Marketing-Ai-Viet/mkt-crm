@@ -5,7 +5,7 @@ import { Command, CommandRunner, Option } from 'nest-commander';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
 
 /**
- * Options for rbac:check command
+ * Options for rbac-seeder:check command
  */
 type CheckCommandOptions = {
   user?: string;
@@ -23,19 +23,19 @@ type CheckCommandOptions = {
  * Usage:
  * ```bash
  * # Check permission
- * npx nx run twenty-server:command rbac:check -- \
+ * npx nx run twenty-server:command rbac-seeder:check -- \
  *   --user=550e8400-e29b-41d4-a716-446655440000 \
  *   --workspace=123e4567-e89b-12d3-a456-426614174000 \
  *   --resource=mktCustomer \
  *   --action=read
  *
  * # Verbose mode
- * npx nx run twenty-server:command rbac:check -- \
+ * npx nx run twenty-server:command rbac-seeder:check -- \
  *   --user=... --workspace=... --resource=... --action=... --verbose
  * ```
  */
 @Command({
-  name: 'rbac:check',
+  name: 'rbac-seeder:check',
   description: 'Check RBAC permission for user on resource/action',
 })
 export class RbacCheckCommand extends CommandRunner {
@@ -62,7 +62,7 @@ export class RbacCheckCommand extends CommandRunner {
       this.logger.log('');
       this.logger.log('Example:');
       this.logger.log(
-        '  rbac:check --user=550e8400-... --workspace=123e4567-... --resource=mktCustomer --action=read',
+        '  rbac-seeder:check --user=550e8400-... --workspace=123e4567-... --resource=mktCustomer --action=read',
       );
 
       return;

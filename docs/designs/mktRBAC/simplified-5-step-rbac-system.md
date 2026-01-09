@@ -518,7 +518,7 @@ RBAC_ENABLE_PARALLEL_STEPS=true
 ### Constants
 
 ```typescript
-// File: enterprise-rbac.constants.ts
+// File: enterprise-rbac-seeder.constants.ts
 export const ENTERPRISE_RBAC_CONFIG = {
   VALIDATION_MODE: 'SIMPLIFIED',  // 5 steps only
   ENABLE_CACHING: true,
@@ -685,7 +685,7 @@ Giải pháp:
 Nguyên nhân: Cache user context chưa expire
 Giải pháp:
 - Đợi 15 phút (TTL)
-- Hoặc invalidate cache: DELETE rbac:user:context:{memberId}
+- Hoặc invalidate cache: DELETE rbac-seeder:user:context:{memberId}
 ```
 
 ---

@@ -173,29 +173,29 @@ export class RbacCacheWarmedEvent {
 
 export const RBAC_EVENTS = {
   // Permission template events
-  PERMISSION_TEMPLATE_CREATED: 'rbac.permission-template.created',
-  PERMISSION_TEMPLATE_UPDATED: 'rbac.permission-template.updated',
-  PERMISSION_TEMPLATE_DELETED: 'rbac.permission-template.deleted',
+  PERMISSION_TEMPLATE_CREATED: 'rbac-seeder.permission-template.created',
+  PERMISSION_TEMPLATE_UPDATED: 'rbac-seeder.permission-template.updated',
+  PERMISSION_TEMPLATE_DELETED: 'rbac-seeder.permission-template.deleted',
 
   // User role events
-  USER_ROLE_ASSIGNED: 'rbac.user-role.assigned',
-  USER_ROLE_REVOKED: 'rbac.user-role.revoked',
+  USER_ROLE_ASSIGNED: 'rbac-seeder.user-role.assigned',
+  USER_ROLE_REVOKED: 'rbac-seeder.user-role.revoked',
 
   // Policy events
-  POLICY_CREATED: 'rbac.policy.created',
-  POLICY_UPDATED: 'rbac.policy.updated',
-  POLICY_DELETED: 'rbac.policy.deleted',
+  POLICY_CREATED: 'rbac-seeder.policy.created',
+  POLICY_UPDATED: 'rbac-seeder.policy.updated',
+  POLICY_DELETED: 'rbac-seeder.policy.deleted',
 
   // Permission check events
-  PERMISSION_GRANTED: 'rbac.permission.granted',
-  PERMISSION_DENIED: 'rbac.permission.denied',
+  PERMISSION_GRANTED: 'rbac-seeder.permission.granted',
+  PERMISSION_DENIED: 'rbac-seeder.permission.denied',
 
   // Temporary permission events
-  TEMPORARY_PERMISSION_GRANTED: 'rbac.temporary-permission.granted',
-  TEMPORARY_PERMISSION_REVOKED: 'rbac.temporary-permission.revoked',
-  TEMPORARY_PERMISSION_EXPIRED: 'rbac.temporary-permission.expired',
+  TEMPORARY_PERMISSION_GRANTED: 'rbac-seeder.temporary-permission.granted',
+  TEMPORARY_PERMISSION_REVOKED: 'rbac-seeder.temporary-permission.revoked',
+  TEMPORARY_PERMISSION_EXPIRED: 'rbac-seeder.temporary-permission.expired',
 
   // Cache events
-  CACHE_INVALIDATED: 'rbac.cache.invalidated',
-  CACHE_WARMED: 'rbac.cache.warmed',
+  CACHE_INVALIDATED: 'rbac-seeder.cache.invalidated',
+  CACHE_WARMED: 'rbac-seeder.cache.warmed',
 } as const;

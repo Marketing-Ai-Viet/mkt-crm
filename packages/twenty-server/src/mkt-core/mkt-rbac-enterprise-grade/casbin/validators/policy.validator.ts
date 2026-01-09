@@ -6,12 +6,12 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-resources.constant';
 import { CASBIN_ACTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-actions.constant';
-import { PolicyValidationResult } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/policy-sync.types';
 import {
+  PolicyValidationResult,
   CasbinPolicy,
   GroupingPolicy,
   CasbinPolicyType,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/types/casbin.types';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 
 /**
  * Regex patterns cho validation

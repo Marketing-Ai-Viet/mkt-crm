@@ -97,9 +97,10 @@ export type BatchPermissionResult = {
 
 /**
  * Casbin rule row (from database)
+ * Supports both core (number id) and workspace (string id) schemas
  */
 export type CasbinRuleRow = {
-  id: number;
+  id: string | number;
   ptype: string;
   v0: string;
   v1: string;
@@ -107,8 +108,8 @@ export type CasbinRuleRow = {
   v3: string;
   v4: string;
   v5: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 /**
@@ -118,7 +119,7 @@ export type PolicyStatistics = {
   totalPolicies: number;
   roleAssignments: number;
   resourceGroups: number;
-  workspaceId: string;
+  workspaceId?: string;
 };
 
 /**
@@ -129,4 +130,86 @@ export type DiscrepancyRecord = {
   action: string;
   casbinResult: boolean;
   legacyResult: boolean;
+};
+
+// ==================== Policy Version Types ====================
+
+/**
+ * Policy version entry stored in cache
+ */
+export type PolicyVersionEntry = {
+  version: number;
+  hash: string;
+  updatedAt: string;
+  policyCount: number;
+};
+
+/**
+ * Dead letter entry for failed syncs (internal cache format)
+ */
+export type DeadLetterEntry = {
+  workspaceId: string;
+  failedAt: string;
+  lastError: string;
+  retryCount: number;
+  resolvedAt?: string;
+};
+
+// ==================== Metrics Types ====================
+
+/**
+ * Metrics entry for permission check
+ */
+export type PermissionCheckMetric = {
+  timestamp: number;
+  workspaceId: string;
+  latencyMs: number;
+  allowed: boolean;
+  cached: boolean;
+};
+
+/**
+ * Aggregated metrics
+ */
+export type AggregatedMetrics = {
+  totalChecks: number;
+  allowedCount: number;
+  deniedCount: number;
+  avgLatencyMs: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+  p99LatencyMs: number;
+  cacheHitRate: number;
+};
+
+/**
+ * System health status
+ */
+export type HealthStatus = {
+  healthy: boolean;
+  components: {
+    enforcer: { healthy: boolean; message?: string };
+    watcher: { healthy: boolean; message?: string };
+    cache: { healthy: boolean; message?: string };
+    database: { healthy: boolean; message?: string };
+  };
+  metrics: {
+    activeWorkspaces: number;
+    totalPolicies: number;
+    cachedEnforcers: number;
+    deadLetterCount: number;
+  };
+};
+
+// ==================== Cache Warmer Types ====================
+
+/**
+ * Warm cache result
+ */
+export type WarmResult = {
+  totalWorkspaces: number;
+  warmed: number;
+  failed: number;
+  latencyMs: number;
+  errors: Array<{ workspaceId: string; error: string }>;
 };

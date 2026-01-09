@@ -25,5 +25,9 @@ export { MktPermissionPriorityConfigWorkspaceEntity } from './mkt-permission-pri
 // Temporary Permission Entities
 export { MktTemporaryPermissionWorkspaceEntity } from './mkt-temporary-permission.workspace-entity';
 
+// Casbin RBAC Entities
+export { MktCasbinRuleWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-casbin-rule.workspace-entity';
+export { MktPolicyVersionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-version.workspace-entity';
+
 // Constants and Enums
 export * from './constants';

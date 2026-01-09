@@ -1,4 +1,4 @@
-// All entities have been moved to mkt-rbac-enterprise-grade/workspace-entities
+// All entities have been moved to mkt-rbac-seeder-enterprise-grade/workspace-entities
 // Re-export from new location for backward compatibility
 export {
   MktPermissionTemplateWorkspaceEntity,

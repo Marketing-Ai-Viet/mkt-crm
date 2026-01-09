@@ -138,11 +138,11 @@ Khi event xảy ra, các cache patterns sau sẽ bị invalidate:
 ```typescript
 // Example: TEMPLATE_UPDATED
 [
-  'rbac:template:permissions:{templateId}*',
-  'rbac:simplified:validation:*',
-  'rbac:permission:result:*',
-  'rbac:step:result:4:*',  // Step 4: Template Check
-  'rbac:action:validation:*'
+  'rbac-seeder:template:permissions:{templateId}*',
+  'rbac-seeder:simplified:validation:*',
+  'rbac-seeder:permission:result:*',
+  'rbac-seeder:step:result:4:*',  // Step 4: Template Check
+  'rbac-seeder:action:validation:*'
 ]
 ```
 
@@ -250,7 +250,7 @@ await this.cacheInvalidation.flush();
 ### 1. **Cache Hit Rate Monitoring**
 
 ```typescript
-import { RbacCacheManagerService } from '../services/rbac-cache-manager.service';
+import { RbacCacheManagerService } from '../services/rbac-seeder-cache-manager.service';
 
 const metrics = this.cacheManager.getPerformanceMetrics();
 

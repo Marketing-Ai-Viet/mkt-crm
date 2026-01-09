@@ -32,7 +32,7 @@ export const CASBIN_RESOURCES = {
   MKT_KPI_TEMPLATE: 'mktKpiTemplate',
 
   // ===== System Resources =====
-  RBAC_POLICY: 'rbac:policy',
+  RBAC_POLICY: 'rbac-seeder:policy',
   AUDIT_LOG: 'auditLog',
   SYSTEM_CONFIG: 'systemConfig',
 

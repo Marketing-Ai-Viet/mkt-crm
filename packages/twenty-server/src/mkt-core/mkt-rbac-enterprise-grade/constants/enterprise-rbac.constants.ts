@@ -704,14 +704,14 @@ export const MONITORING_METRICS = {
  * Cache Key Prefixes
  */
 export const CACHE_KEY_PREFIXES = {
-  USER_CONTEXT: 'rbac:user:',
-  RESOURCE_INFO: 'rbac:resource:',
-  PERMISSION_TEMPLATE: 'rbac:template:',
-  HIERARCHY_DATA: 'rbac:hierarchy:',
-  POLICY_RESULT: 'rbac:policy:',
-  PERMISSION_RESULT: 'rbac:permission:',
-  DEPARTMENT_DATA: 'rbac:department:',
-  AUDIT_DATA: 'rbac:audit:',
+  USER_CONTEXT: 'rbac-seeder:user:',
+  RESOURCE_INFO: 'rbac-seeder:resource:',
+  PERMISSION_TEMPLATE: 'rbac-seeder:template:',
+  HIERARCHY_DATA: 'rbac-seeder:hierarchy:',
+  POLICY_RESULT: 'rbac-seeder:policy:',
+  PERMISSION_RESULT: 'rbac-seeder:permission:',
+  DEPARTMENT_DATA: 'rbac-seeder:department:',
+  AUDIT_DATA: 'rbac-seeder:audit:',
 } as const;
 
 /**

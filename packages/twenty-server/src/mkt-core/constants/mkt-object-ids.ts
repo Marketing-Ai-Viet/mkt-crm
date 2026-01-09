@@ -92,4 +92,7 @@ export const MKT_OBJECT_IDS = {
   mktPromotionAudit: '550e8400-e29b-41d4-a716-446655440105',
   // webhook logs
   mktWebhookLog: 'a3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e',
+  // casbin RBAC
+  mktCasbinRule: '1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+  mktPolicyVersion: '2b3c4d5e-f6a7-8901-bcde-f01234567891',
 };

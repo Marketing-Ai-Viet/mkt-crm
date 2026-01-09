@@ -4,28 +4,28 @@ import { VALIDATION_STEPS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constan
  * Cache key patterns for RBAC system
  */
 export const RBAC_CACHE_KEYS = {
-  PERMISSION_RESULT: 'rbac:permission:result',
-  USER_CONTEXT: 'rbac:user:context',
-  TEMPLATE_PERMISSIONS: 'rbac:template:permissions',
-  RESOURCE_ACCESS: 'rbac:resource:access',
-  HIERARCHY_CACHE: 'rbac:hierarchy:cache',
-  POLICY_RESULTS: 'rbac:policy:results',
-  DEPARTMENT_RESTRICTIONS: 'rbac:department:restrictions',
-  SENSITIVE_DATA_ACCESS: 'rbac:sensitive:access',
-  DYNAMIC_CONDITIONS: 'rbac:dynamic:conditions',
-  PERFORMANCE_METRICS: 'rbac:performance:metrics',
+  PERMISSION_RESULT: 'rbac-seeder:permission:result',
+  USER_CONTEXT: 'rbac-seeder:user:context',
+  TEMPLATE_PERMISSIONS: 'rbac-seeder:template:permissions',
+  RESOURCE_ACCESS: 'rbac-seeder:resource:access',
+  HIERARCHY_CACHE: 'rbac-seeder:hierarchy:cache',
+  POLICY_RESULTS: 'rbac-seeder:policy:results',
+  DEPARTMENT_RESTRICTIONS: 'rbac-seeder:department:restrictions',
+  SENSITIVE_DATA_ACCESS: 'rbac-seeder:sensitive:access',
+  DYNAMIC_CONDITIONS: 'rbac-seeder:dynamic:conditions',
+  PERFORMANCE_METRICS: 'rbac-seeder:performance:metrics',
 
   // Simplified 6-step validation cache keys
-  STEP_RESULT: 'rbac:step:result', // Cache individual step results
-  SIMPLIFIED_VALIDATION: 'rbac:simplified:validation', // Cache full simplified validation
-  RESOURCE_METADATA: 'rbac:resource:metadata', // Cache resource metadata
-  ACTION_VALIDATION: 'rbac:action:validation', // Cache action validation
+  STEP_RESULT: 'rbac-seeder:step:result', // Cache individual step results
+  SIMPLIFIED_VALIDATION: 'rbac-seeder:simplified:validation', // Cache full simplified validation
+  RESOURCE_METADATA: 'rbac-seeder:resource:metadata', // Cache resource metadata
+  ACTION_VALIDATION: 'rbac-seeder:action:validation', // Cache action validation
 
   // Config tables cache keys (static/rarely-changed data)
-  CONFIG_PRIORITY: 'rbac:config:priority', // Permission priority configs
-  CONFIG_ACTIONS: 'rbac:config:actions', // Permission actions
-  CONFIG_RESOURCES: 'rbac:config:resources', // Permission resources
-  CONFIG_CONTEXTS: 'rbac:config:contexts', // Permission contexts
+  CONFIG_PRIORITY: 'rbac-seeder:config:priority', // Permission priority configs
+  CONFIG_ACTIONS: 'rbac-seeder:config:actions', // Permission actions
+  CONFIG_RESOURCES: 'rbac-seeder:config:resources', // Permission resources
+  CONFIG_CONTEXTS: 'rbac-seeder:config:contexts', // Permission contexts
 } as const;
 
 /**

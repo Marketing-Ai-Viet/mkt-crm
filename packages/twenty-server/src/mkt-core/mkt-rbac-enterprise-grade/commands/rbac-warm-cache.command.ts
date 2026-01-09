@@ -7,7 +7,7 @@ import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/ca
 import { RbacMetricsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/rbac-metrics.service';
 
 /**
- * Options for rbac:warm-cache command
+ * Options for rbac-seeder:warm-cache command
  */
 type WarmCacheCommandOptions = {
   workspace?: string;
@@ -23,17 +23,17 @@ type WarmCacheCommandOptions = {
  * Usage:
  * ```bash
  * # Warm cache for specific workspace
- * npx nx run twenty-server:command rbac:warm-cache -- --workspace=550e8400-...
+ * npx nx run twenty-server:command rbac-seeder:warm-cache -- --workspace=550e8400-...
  *
  * # Warm cache for all workspaces
- * npx nx run twenty-server:command rbac:warm-cache -- --all
+ * npx nx run twenty-server:command rbac-seeder:warm-cache -- --all
  *
  * # Show cache stats
- * npx nx run twenty-server:command rbac:warm-cache -- --stats
+ * npx nx run twenty-server:command rbac-seeder:warm-cache -- --stats
  * ```
  */
 @Command({
-  name: 'rbac:warm-cache',
+  name: 'rbac-seeder:warm-cache',
   description: 'Warm RBAC enforcer cache for workspaces',
 })
 export class RbacWarmCacheCommand extends CommandRunner {
@@ -67,9 +67,9 @@ export class RbacWarmCacheCommand extends CommandRunner {
       this.logger.error('Either --workspace=<id> or --all is required');
       this.logger.log('');
       this.logger.log('Examples:');
-      this.logger.log('  rbac:warm-cache --workspace=550e8400-...');
-      this.logger.log('  rbac:warm-cache --all');
-      this.logger.log('  rbac:warm-cache --stats');
+      this.logger.log('  rbac-seeder:warm-cache --workspace=550e8400-...');
+      this.logger.log('  rbac-seeder:warm-cache --all');
+      this.logger.log('  rbac-seeder:warm-cache --stats');
 
       return;
     }

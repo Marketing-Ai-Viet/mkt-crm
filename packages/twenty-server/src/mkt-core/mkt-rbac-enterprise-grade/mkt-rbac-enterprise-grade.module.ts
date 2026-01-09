@@ -53,7 +53,7 @@ const DEFAULT_CONFIG = {
     // Repositories for permission template entities
     ...RBAC_REPOSITORIES,
 
-    // CLI Commands (rbac:sync, rbac:check, rbac:warm-cache)
+    // CLI Commands (rbac-seeder:sync, rbac-seeder:check, rbac-seeder:warm-cache)
     ...RBAC_COMMANDS,
   ],
   exports: [

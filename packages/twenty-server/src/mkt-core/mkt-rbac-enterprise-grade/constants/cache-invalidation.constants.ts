@@ -63,146 +63,146 @@ export const CACHE_INVALIDATION_PATTERNS: Record<
 > = {
   // User events - invalidate user-specific caches
   [CacheInvalidationEvent.USER_CREATED]: [
-    'rbac:user:context:*',
-    'rbac:simplified:validation:*',
+    'rbac-seeder:user:context:*',
+    'rbac-seeder:simplified:validation:*',
   ],
   [CacheInvalidationEvent.USER_UPDATED]: [
-    'rbac:user:context:${userId}*',
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:permission:result:*:${workspaceMemberId}:*',
-    'rbac:step:result:*:*:${workspaceMemberId}:*',
+    'rbac-seeder:user:context:${userId}*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:permission:result:*:${workspaceMemberId}:*',
+    'rbac-seeder:step:result:*:*:${workspaceMemberId}:*',
   ],
   [CacheInvalidationEvent.USER_DELETED]: [
-    'rbac:user:context:${userId}*',
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:permission:result:*:${workspaceMemberId}:*',
+    'rbac-seeder:user:context:${userId}*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:permission:result:*:${workspaceMemberId}:*',
   ],
   [CacheInvalidationEvent.USER_DEPARTMENT_CHANGED]: [
-    'rbac:user:context:${userId}*',
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:department:restrictions:*',
-    'rbac:step:result:2:*', // Step 2: User Context
-    'rbac:step:result:11:*', // Step 11: Department Restrictions
+    'rbac-seeder:user:context:${userId}*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:department:restrictions:*',
+    'rbac-seeder:step:result:2:*', // Step 2: User Context
+    'rbac-seeder:step:result:11:*', // Step 11: Department Restrictions
   ],
   [CacheInvalidationEvent.USER_ROLE_CHANGED]: [
-    'rbac:user:context:${userId}*',
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:template:permissions:*',
+    'rbac-seeder:user:context:${userId}*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:template:permissions:*',
   ],
 
   // Permission Template events - invalidate template and validation caches
   [CacheInvalidationEvent.TEMPLATE_CREATED]: [
-    'rbac:template:permissions:*',
-    'rbac:simplified:validation:*',
+    'rbac-seeder:template:permissions:*',
+    'rbac-seeder:simplified:validation:*',
   ],
   [CacheInvalidationEvent.TEMPLATE_UPDATED]: [
-    'rbac:template:permissions:${templateId}*',
-    'rbac:simplified:validation:*',
-    'rbac:permission:result:*',
-    'rbac:step:result:4:*', // Step 4: Template Check
-    'rbac:action:validation:*',
+    'rbac-seeder:template:permissions:${templateId}*',
+    'rbac-seeder:simplified:validation:*',
+    'rbac-seeder:permission:result:*',
+    'rbac-seeder:step:result:4:*', // Step 4: Template Check
+    'rbac-seeder:action:validation:*',
   ],
   [CacheInvalidationEvent.TEMPLATE_DELETED]: [
-    'rbac:template:permissions:${templateId}*',
-    'rbac:simplified:validation:*',
-    'rbac:permission:result:*',
+    'rbac-seeder:template:permissions:${templateId}*',
+    'rbac-seeder:simplified:validation:*',
+    'rbac-seeder:permission:result:*',
   ],
   [CacheInvalidationEvent.TEMPLATE_ASSIGNED]: [
-    'rbac:user:context:${userId}*',
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:template:permissions:${templateId}*',
-    'rbac:step:result:2:*:${workspaceMemberId}:*', // Step 2: User Context
+    'rbac-seeder:user:context:${userId}*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:template:permissions:${templateId}*',
+    'rbac-seeder:step:result:2:*:${workspaceMemberId}:*', // Step 2: User Context
   ],
   [CacheInvalidationEvent.TEMPLATE_UNASSIGNED]: [
-    'rbac:user:context:${userId}*',
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:template:permissions:${templateId}*',
+    'rbac-seeder:user:context:${userId}*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:template:permissions:${templateId}*',
   ],
 
   // Permission Override events
   [CacheInvalidationEvent.OVERRIDE_CREATED]: [
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:step:result:9:*', // Step 9: Special Permissions
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:step:result:9:*', // Step 9: Special Permissions
   ],
   [CacheInvalidationEvent.OVERRIDE_UPDATED]: [
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:step:result:9:*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:step:result:9:*',
   ],
   [CacheInvalidationEvent.OVERRIDE_DELETED]: [
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:step:result:9:*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:step:result:9:*',
   ],
   [CacheInvalidationEvent.OVERRIDE_EXPIRED]: [
-    'rbac:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac:step:result:9:*',
+    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
+    'rbac-seeder:step:result:9:*',
   ],
 
   // Policy events
   [CacheInvalidationEvent.POLICY_CREATED]: [
-    'rbac:policy:results:*',
-    'rbac:simplified:validation:*',
-    'rbac:step:result:8:*', // Step 8: Policy Check
+    'rbac-seeder:policy:results:*',
+    'rbac-seeder:simplified:validation:*',
+    'rbac-seeder:step:result:8:*', // Step 8: Policy Check
   ],
   [CacheInvalidationEvent.POLICY_UPDATED]: [
-    'rbac:policy:results:${policyId}*',
-    'rbac:simplified:validation:*',
-    'rbac:step:result:8:*',
+    'rbac-seeder:policy:results:${policyId}*',
+    'rbac-seeder:simplified:validation:*',
+    'rbac-seeder:step:result:8:*',
   ],
   [CacheInvalidationEvent.POLICY_DELETED]: [
-    'rbac:policy:results:${policyId}*',
-    'rbac:simplified:validation:*',
+    'rbac-seeder:policy:results:${policyId}*',
+    'rbac-seeder:simplified:validation:*',
   ],
   [CacheInvalidationEvent.POLICY_ACTIVATED]: [
-    'rbac:policy:results:${policyId}*',
-    'rbac:simplified:validation:*',
+    'rbac-seeder:policy:results:${policyId}*',
+    'rbac-seeder:simplified:validation:*',
   ],
   [CacheInvalidationEvent.POLICY_DEACTIVATED]: [
-    'rbac:policy:results:${policyId}*',
-    'rbac:simplified:validation:*',
+    'rbac-seeder:policy:results:${policyId}*',
+    'rbac-seeder:simplified:validation:*',
   ],
 
   // Department/Hierarchy events
   [CacheInvalidationEvent.DEPARTMENT_CREATED]: [
-    'rbac:department:restrictions:*',
-    'rbac:hierarchy:cache:*',
+    'rbac-seeder:department:restrictions:*',
+    'rbac-seeder:hierarchy:cache:*',
   ],
   [CacheInvalidationEvent.DEPARTMENT_UPDATED]: [
-    'rbac:department:restrictions:${departmentId}*',
-    'rbac:hierarchy:cache:*',
-    'rbac:step:result:11:*', // Step 11: Department Restrictions
+    'rbac-seeder:department:restrictions:${departmentId}*',
+    'rbac-seeder:hierarchy:cache:*',
+    'rbac-seeder:step:result:11:*', // Step 11: Department Restrictions
   ],
   [CacheInvalidationEvent.DEPARTMENT_DELETED]: [
-    'rbac:department:restrictions:${departmentId}*',
-    'rbac:hierarchy:cache:*',
-    'rbac:simplified:validation:*',
+    'rbac-seeder:department:restrictions:${departmentId}*',
+    'rbac-seeder:hierarchy:cache:*',
+    'rbac-seeder:simplified:validation:*',
   ],
   [CacheInvalidationEvent.HIERARCHY_CHANGED]: [
-    'rbac:hierarchy:cache:*',
-    'rbac:step:result:7:*', // Step 7: Hierarchy Validation
-    'rbac:simplified:validation:*',
+    'rbac-seeder:hierarchy:cache:*',
+    'rbac-seeder:step:result:7:*', // Step 7: Hierarchy Validation
+    'rbac-seeder:simplified:validation:*',
   ],
 
   // Resource events
   [CacheInvalidationEvent.RESOURCE_CREATED]: [
-    'rbac:resource:metadata:${resourceType}*',
+    'rbac-seeder:resource:metadata:${resourceType}*',
   ],
   [CacheInvalidationEvent.RESOURCE_UPDATED]: [
-    'rbac:resource:metadata:${resourceType}:${recordId}*',
-    'rbac:simplified:validation:*:*:${resourceType}:*:${recordId}',
+    'rbac-seeder:resource:metadata:${resourceType}:${recordId}*',
+    'rbac-seeder:simplified:validation:*:*:${resourceType}:*:${recordId}',
   ],
   [CacheInvalidationEvent.RESOURCE_DELETED]: [
-    'rbac:resource:metadata:${resourceType}:${recordId}*',
-    'rbac:simplified:validation:*:*:${resourceType}:*:${recordId}',
+    'rbac-seeder:resource:metadata:${resourceType}:${recordId}*',
+    'rbac-seeder:simplified:validation:*:*:${resourceType}:*:${recordId}',
   ],
   [CacheInvalidationEvent.RESOURCE_OWNERSHIP_CHANGED]: [
-    'rbac:resource:access:*:${resourceType}:${recordId}',
-    'rbac:step:result:6:*', // Step 6: Resource Permission Check
+    'rbac-seeder:resource:access:*:${resourceType}:${recordId}',
+    'rbac-seeder:step:result:6:*', // Step 6: Resource Permission Check
   ],
 
   // System events
-  [CacheInvalidationEvent.WORKSPACE_SETTINGS_CHANGED]: ['rbac:*'],
-  [CacheInvalidationEvent.RBAC_CONFIG_CHANGED]: ['rbac:*'],
-  [CacheInvalidationEvent.MANUAL_INVALIDATION]: ['rbac:*'],
+  [CacheInvalidationEvent.WORKSPACE_SETTINGS_CHANGED]: ['rbac-seeder:*'],
+  [CacheInvalidationEvent.RBAC_CONFIG_CHANGED]: ['rbac-seeder:*'],
+  [CacheInvalidationEvent.MANUAL_INVALIDATION]: ['rbac-seeder:*'],
 };
 
 /**

@@ -16,31 +16,13 @@ import {
 import {
   PolicyVersion,
   SyncDeadLetterEntry,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/types/policy-sync.types';
-
-/**
- * Policy version entry stored in cache
- */
-type PolicyVersionEntry = {
-  version: number;
-  hash: string;
-  updatedAt: string;
-  policyCount: number;
-};
-
-/**
- * Dead letter entry for failed syncs
- */
-type DeadLetterEntry = {
-  workspaceId: string;
-  failedAt: string;
-  lastError: string;
-  retryCount: number;
-  resolvedAt?: string;
-};
-
-const DEAD_LETTER_KEY = 'rbac-seeder:sync:dead_letter';
-const DEAD_LETTER_TTL = 86400 * 7; // 7 days
+  PolicyVersionEntry,
+  DeadLetterEntry,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
+import {
+  DEAD_LETTER_KEY,
+  DEAD_LETTER_TTL,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
 
 /**
  * Repository cho Policy Versions

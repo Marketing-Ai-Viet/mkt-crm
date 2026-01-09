@@ -5,7 +5,7 @@ import { Command, CommandRunner, Option } from 'nest-commander';
 import { PolicySyncService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/policy-sync.service';
 
 /**
- * Options for rbac:sync command
+ * Options for rbac-seeder:sync command
  */
 type SyncCommandOptions = {
   workspace?: string;
@@ -21,17 +21,17 @@ type SyncCommandOptions = {
  * Usage:
  * ```bash
  * # Sync for workspace
- * npx nx run twenty-server:command rbac:sync -- --workspace=550e8400-e29b-41d4-a716-446655440000
+ * npx nx run twenty-server:command rbac-seeder:sync -- --workspace=550e8400-e29b-41d4-a716-446655440000
  *
  * # Dry-run (preview changes)
- * npx nx run twenty-server:command rbac:sync -- --workspace=550e8400-e29b-41d4-a716-446655440000 --dry-run
+ * npx nx run twenty-server:command rbac-seeder:sync -- --workspace=550e8400-e29b-41d4-a716-446655440000 --dry-run
  *
  * # Force sync (ignore hash check)
- * npx nx run twenty-server:command rbac:sync -- --workspace=550e8400-e29b-41d4-a716-446655440000 --force
+ * npx nx run twenty-server:command rbac-seeder:sync -- --workspace=550e8400-e29b-41d4-a716-446655440000 --force
  * ```
  */
 @Command({
-  name: 'rbac:sync',
+  name: 'rbac-seeder:sync',
   description: 'Sync RBAC policies for workspace from permission templates',
 })
 export class RbacSyncCommand extends CommandRunner {
@@ -52,7 +52,7 @@ export class RbacSyncCommand extends CommandRunner {
     if (!workspaceId) {
       this.logger.error('Workspace ID is required. Use --workspace=<id>');
       this.logger.log(
-        'Example: rbac:sync --workspace=550e8400-e29b-41d4-a716-446655440000',
+        'Example: rbac-seeder:sync --workspace=550e8400-e29b-41d4-a716-446655440000',
       );
 
       return;

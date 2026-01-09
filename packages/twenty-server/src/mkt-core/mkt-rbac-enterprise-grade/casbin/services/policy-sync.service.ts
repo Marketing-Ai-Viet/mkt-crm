@@ -11,29 +11,18 @@ import {
   PolicyDiff,
   ManualSyncResult,
   PermissionChangeEvent,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/types/policy-sync.types';
-import {
   CasbinPolicy,
   GroupingPolicy,
   CasbinPolicyType,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/types/casbin.types';
-import { CasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/casbin-rule.repository';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
+import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
 import { MktPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories/mkt-permission-template.repository';
 import { MktUserPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories/mkt-user-permission-template.repository';
+import { SYNC_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
-
-/**
- * Sync configuration
- */
-const SYNC_CONFIG = {
-  maxRetries: 3,
-  retryDelayMs: 1000,
-  debounceMs: 500,
-  maxPoliciesPerWorkspace: 10000,
-};
 
 /**
  * Policy Sync Service
@@ -67,7 +56,7 @@ export class PolicySyncService {
   private readonly activeSyncs = new Set<string>();
 
   constructor(
-    private readonly casbinRuleRepository: CasbinRuleRepository,
+    private readonly casbinRuleRepository: WorkspaceCasbinRuleRepository,
     private readonly policyVersionRepository: PolicyVersionRepository,
     private readonly policyValidator: PolicyValidator,
     private readonly enforcerService: CasbinEnforcerService,
@@ -198,10 +187,8 @@ export class PolicySyncService {
         rule: this.policyToRule(p),
       }));
 
-      const count = await this.casbinRuleRepository.bulkReplace(
-        rules,
-        workspaceId,
-      );
+      // Note: Workspace context is handled by TwentyORMManager
+      const count = await this.casbinRuleRepository.bulkReplace(rules);
 
       // Update version
       const newVersion = await this.policyVersionRepository.incrementVersion(
@@ -309,9 +296,8 @@ export class PolicySyncService {
    * Dry run - preview changes without applying
    */
   async dryRunSync(workspaceId: string): Promise<ManualSyncResult> {
-    // Get current rules
-    const currentRules =
-      await this.casbinRuleRepository.findByWorkspace(workspaceId);
+    // Get current rules (workspace context handled by TwentyORMManager)
+    const currentRules = await this.casbinRuleRepository.findAll();
     const current = currentRules.map((r) => [
       r.ptype,
       r.v0,
@@ -497,13 +483,19 @@ export class PolicySyncService {
 
   /**
    * Sync all active workspaces
+   *
+   * @deprecated This method needs redesign for workspace-per-schema model.
+   * Workspace list should be obtained from core workspace repository.
+   * Use CacheWarmerService.warmAllCaches() which handles this properly.
    */
-  async syncAllWorkspaces(): Promise<Map<string, SyncResult>> {
+  async syncAllWorkspaces(
+    workspaceIds: string[],
+  ): Promise<Map<string, SyncResult>> {
     const results = new Map<string, SyncResult>();
 
-    const workspaces = await this.casbinRuleRepository.getActiveWorkspaces();
-
-    for (const workspaceId of workspaces) {
+    // Note: In workspace-per-schema model, workspace list must be provided
+    // by caller (e.g., from core WorkspaceRepository)
+    for (const workspaceId of workspaceIds) {
       const result = await this.syncWithRetry(workspaceId);
 
       results.set(workspaceId, result);

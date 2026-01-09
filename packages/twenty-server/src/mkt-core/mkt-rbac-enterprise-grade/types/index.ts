@@ -93,7 +93,5 @@ export {
 // Note: hierarchy.types, policy.types, service.types have overlapping exports
 // with other files. Import them directly if needed.
 
-// Casbin-specific types
-export * from './casbin.types';
-export * from './policy-sync.types';
-export * from './rbac-config.types';
+// Casbin-specific types (re-export from casbin/types for backward compatibility)
+export * from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';

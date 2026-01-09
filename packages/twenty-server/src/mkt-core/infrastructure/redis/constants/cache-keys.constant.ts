@@ -303,29 +303,29 @@ export const LOCK_CACHE_PREFIX = {
 // ============================================
 
 export const RBAC_CACHE_PREFIX = {
-  /** Permission template: mkt:rbac:permission-template:{templateId} */
-  PERMISSION_TEMPLATE: 'mkt:rbac:permission-template',
+  /** Permission template: mkt:rbac-seeder:permission-template:{templateId} */
+  PERMISSION_TEMPLATE: 'mkt:rbac-seeder:permission-template',
 
-  /** User permissions: mkt:rbac:user-permissions:{userId} */
-  USER_PERMISSIONS: 'mkt:rbac:user-permissions',
+  /** User permissions: mkt:rbac-seeder:user-permissions:{userId} */
+  USER_PERMISSIONS: 'mkt:rbac-seeder:user-permissions',
 
-  /** Policy: mkt:rbac:policy:{policyId} */
-  POLICY: 'mkt:rbac:policy',
+  /** Policy: mkt:rbac-seeder:policy:{policyId} */
+  POLICY: 'mkt:rbac-seeder:policy',
 
-  /** Hierarchy: mkt:rbac:hierarchy:{userId} */
-  HIERARCHY: 'mkt:rbac:hierarchy',
+  /** Hierarchy: mkt:rbac-seeder:hierarchy:{userId} */
+  HIERARCHY: 'mkt:rbac-seeder:hierarchy',
 
-  /** Validation result: mkt:rbac:validation:{userId}:{action}:{resource} */
-  VALIDATION: 'mkt:rbac:validation',
+  /** Validation result: mkt:rbac-seeder:validation:{userId}:{action}:{resource} */
+  VALIDATION: 'mkt:rbac-seeder:validation',
 
-  /** Audit log: mkt:rbac:audit-log:{logId} */
-  AUDIT_LOG: 'mkt:rbac:audit-log',
+  /** Audit log: mkt:rbac-seeder:audit-log:{logId} */
+  AUDIT_LOG: 'mkt:rbac-seeder:audit-log',
 
-  /** Data access policy: mkt:rbac:data-access-policy:{policyId} */
-  DATA_ACCESS_POLICY: 'mkt:rbac:data-access-policy',
+  /** Data access policy: mkt:rbac-seeder:data-access-policy:{policyId} */
+  DATA_ACCESS_POLICY: 'mkt:rbac-seeder:data-access-policy',
 
-  /** User context: mkt:rbac:user-context:{userId} */
-  USER_CONTEXT: 'mkt:rbac:user-context',
+  /** User context: mkt:rbac-seeder:user-context:{userId} */
+  USER_CONTEXT: 'mkt:rbac-seeder:user-context',
 } as const;
 
 // ============================================

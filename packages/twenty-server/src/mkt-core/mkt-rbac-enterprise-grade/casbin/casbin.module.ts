@@ -4,8 +4,9 @@ import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
-import { CasbinRuleEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/casbin-rule.entity';
-import { CasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/casbin-rule.repository';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
+import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
@@ -50,11 +51,13 @@ import { RbacHealthIndicator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casb
     ConfigModule,
     TerminusModule,
     CacheStorageModule,
-    TypeOrmModule.forFeature([CasbinRuleEntity], 'core'),
+    TwentyORMModule,
+    // For CacheWarmerService to access workspace list from core schema
+    TypeOrmModule.forFeature([Workspace], 'core'),
   ],
   providers: [
-    // Repositories
-    CasbinRuleRepository,
+    // Repositories (workspace-aware)
+    WorkspaceCasbinRuleRepository,
     PolicyVersionRepository,
     // Validators
     PolicyValidator,
@@ -71,7 +74,7 @@ import { RbacHealthIndicator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casb
   ],
   exports: [
     // Repositories
-    CasbinRuleRepository,
+    WorkspaceCasbinRuleRepository,
     PolicyVersionRepository,
     // Validators
     PolicyValidator,

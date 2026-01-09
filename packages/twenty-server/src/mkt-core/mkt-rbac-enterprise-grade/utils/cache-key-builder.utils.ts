@@ -111,13 +111,13 @@ export const RBAC_CACHE_KEYS = {
  * RBAC Cache Tags for invalidation
  */
 export const RBAC_CACHE_TAGS = {
-  PERMISSION_TEMPLATE: 'rbac:permission-template',
-  USER: 'rbac:user',
-  POLICY: 'rbac:policy',
-  HIERARCHY: 'rbac:hierarchy',
-  VALIDATION: 'rbac:validation',
-  DATA_ACCESS_POLICY: 'rbac:data-access-policy',
-  AUDIT_LOG: 'rbac:audit-log',
+  PERMISSION_TEMPLATE: 'rbac-seeder:permission-template',
+  USER: 'rbac-seeder:user',
+  POLICY: 'rbac-seeder:policy',
+  HIERARCHY: 'rbac-seeder:hierarchy',
+  VALIDATION: 'rbac-seeder:validation',
+  DATA_ACCESS_POLICY: 'rbac-seeder:data-access-policy',
+  AUDIT_LOG: 'rbac-seeder:audit-log',
 } as const;
 
 /**

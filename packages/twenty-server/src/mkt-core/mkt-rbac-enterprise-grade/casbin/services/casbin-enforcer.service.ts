@@ -4,63 +4,32 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
 
 import { newEnforcer, Enforcer, newModelFromString } from 'casbin';
-import { DataSource } from 'typeorm';
 
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
 import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CASBIN_CACHE_TTL } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-cache-keys.constant';
 import {
   PermissionCheckInput,
   PermissionCheckResult,
   EnforcerWithMeta,
   BatchPermissionRequest,
   BatchPermissionResult,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/types/casbin.types';
-import { TwentyTypeORMAdapter } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/adapters/twenty-typeorm.adapter';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
+import { WorkspaceCasbinAdapter } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/adapters/workspace-casbin.adapter';
+import { MktCasbinRuleWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { PgNotifyWatcher } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/watchers/pg-notify.watcher';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
-import { CasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/casbin-rule.repository';
+import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
-
-/**
- * RBAC model với domain support
- * Format: request(sub, dom, obj, act)
- */
-const RBAC_MODEL = `
-[request_definition]
-r = sub, dom, obj, act
-
-[policy_definition]
-p = sub, dom, obj, act, eft
-
-[role_definition]
-g = _, _, _
-g2 = _, _
-
-[policy_effect]
-e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
-
-[matchers]
-m = g(r.sub, p.sub, r.dom) && r.dom == p.dom && (g2(r.obj, p.obj) || r.obj == p.obj) && (r.act == p.act || p.act == "*")
-`;
-
-/**
- * Default configuration
- */
-const DEFAULT_CONFIG = {
-  failClosed: true,
-  cacheEnabled: true,
-  maxEnforcersInMemory: 100,
-  enforcerTtlMs: CASBIN_CACHE_TTL.ENFORCER * 1000,
-};
+import { RBAC_MODEL } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants';
+import { ENFORCER_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
 
 /**
  * Casbin Enforcer Service
@@ -95,15 +64,14 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
   private watcher: PgNotifyWatcher | null = null;
 
   // Config
-  private readonly config = DEFAULT_CONFIG;
+  private readonly config = ENFORCER_CONFIG;
 
   constructor(
-    @InjectDataSource('core')
-    private readonly dataSource: DataSource,
+    private readonly twentyORMManager: TwentyORMManager,
     @InjectCacheStorage(CacheStorageNamespace.RbacPolicy)
     private readonly cacheStorage: CacheStorageService,
     private readonly policyVersionRepository: PolicyVersionRepository,
-    private readonly casbinRuleRepository: CasbinRuleRepository,
+    private readonly casbinRuleRepository: WorkspaceCasbinRuleRepository,
     private readonly policyValidator: PolicyValidator,
   ) {}
 
@@ -184,14 +152,20 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
     const startTime = Date.now();
 
     try {
-      // Create model
+      // Create model (workspace-isolated, no domain needed)
       const model = newModelFromString(RBAC_MODEL);
 
-      // Create adapter
-      const adapter = await TwentyTypeORMAdapter.newAdapter(this.dataSource, {
+      // Get workspace repository
+      const repository =
+        await this.twentyORMManager.getRepository<MktCasbinRuleWorkspaceEntity>(
+          'mktCasbinRule',
+        );
+
+      // Create workspace adapter
+      const adapter = await WorkspaceCasbinAdapter.newAdapter(
+        repository,
         workspaceId,
-        tableName: 'casbin_rule',
-      });
+      );
 
       // Create enforcer
       const enforcer = await newEnforcer(model, adapter);
@@ -278,6 +252,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Check permission for user on resource/action
+   * Note: No domain needed - workspace isolation via schema
    */
   async checkPermission(
     input: PermissionCheckInput,
@@ -286,7 +261,6 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const enforcer = await this.getEnforcer(input.workspaceId);
-      const domain = `ws:${input.workspaceId}`;
       const subject = `user:${input.userId}`;
 
       this.logger.debug(
@@ -297,10 +271,9 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
         ),
       );
 
-      // Check permission
+      // Check permission (sub, obj, act - no domain)
       const allowed = await enforcer.enforce(
         subject,
-        domain,
         input.resource,
         input.action,
       );
@@ -350,6 +323,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Batch permission check
+   * Note: No domain needed - workspace isolation via schema
    */
   async checkPermissionBatch(
     request: BatchPermissionRequest,
@@ -358,7 +332,6 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const enforcer = await this.getEnforcer(request.workspaceId);
-      const domain = `ws:${request.workspaceId}`;
       const subject = `user:${request.userId}`;
 
       const results = new Map<string, boolean>();
@@ -370,12 +343,8 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
         const key = `${check.resource}:${check.resourceId ?? '*'}:${check.action}`;
 
-        const allowed = await enforcer.enforce(
-          subject,
-          domain,
-          resource,
-          check.action,
-        );
+        // Enforce without domain (sub, obj, act)
+        const allowed = await enforcer.enforce(subject, resource, check.action);
 
         results.set(key, allowed);
       }
@@ -412,6 +381,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Check if user has any of the given roles
+   * Note: No domain needed - workspace isolation via schema
    */
   async hasRole(
     userId: string,
@@ -420,11 +390,11 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
   ): Promise<boolean> {
     try {
       const enforcer = await this.getEnforcer(workspaceId);
-      const domain = `ws:${workspaceId}`;
       const subject = `user:${userId}`;
       const role = `role:${roleName}`;
 
-      return enforcer.hasRoleForUser(subject, role, domain);
+      // No domain parameter in workspace-isolated model
+      return enforcer.hasRoleForUser(subject, role);
     } catch (error) {
       this.logger.error(`Failed to check role: ${error}`);
 
@@ -434,14 +404,15 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Get all roles for user
+   * Note: No domain needed - workspace isolation via schema
    */
   async getUserRoles(userId: string, workspaceId: string): Promise<string[]> {
     try {
       const enforcer = await this.getEnforcer(workspaceId);
-      const domain = `ws:${workspaceId}`;
       const subject = `user:${userId}`;
 
-      const roles = await enforcer.getRolesForUser(subject, domain);
+      // No domain parameter in workspace-isolated model
+      const roles = await enforcer.getRolesForUser(subject);
 
       // Remove 'role:' prefix
       return roles.map((r) => r.replace('role:', ''));

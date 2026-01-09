@@ -609,7 +609,7 @@ export class CreateCasbinRule20260109 implements MigrationInterface {
 ### 5.2 Feature Flag Configuration
 
 ```typescript
-// config/rbac.config.ts
+// config/rbac-seeder.config.ts
 export const RBAC_CONFIG = {
   /**
    * RBAC Engine mode:
@@ -834,7 +834,7 @@ export class PolicySyncService {
       this.logger.error(`Sync failed for ${workspaceId}`, error);
 
       // Emit for dead-letter queue / alerting
-      this.eventEmitter.emit('rbac.sync.failed', {
+      this.eventEmitter.emit('rbac-seeder.sync.failed', {
         workspaceId,
         error: error.message,
         timestamp: new Date(),
@@ -908,7 +908,7 @@ export class SyncRetryService {
   private readonly MAX_RETRIES = 5;
   private readonly BASE_DELAY_MS = 1000;
 
-  @OnEvent('rbac.sync.failed')
+  @OnEvent('rbac-seeder.sync.failed')
   async handleSyncFailure(payload: SyncFailedEvent): Promise<void> {
     const { workspaceId, retryCount = 0 } = payload;
 
@@ -937,7 +937,7 @@ export class SyncRetryService {
       try {
         await this.policySyncService.syncWorkspacePolicies(workspaceId);
       } catch {
-        this.eventEmitter.emit('rbac.sync.failed', {
+        this.eventEmitter.emit('rbac-seeder.sync.failed', {
           ...payload,
           retryCount: retryCount + 1,
         });
@@ -1205,7 +1205,7 @@ export class PgNotifyWatcher implements Watcher {
         });
 
         const enforcer = await newEnforcer(
-          'casbin/models/rbac-domains.conf',
+          'casbin/models/rbac-seeder-domains.conf',
           adapter,
         );
 
@@ -1272,7 +1272,7 @@ export class PolicyMonitorService {
 ### 8.1 Metrics
 
 ```typescript
-// casbin/services/rbac-metrics.service.ts
+// casbin/services/rbac-seeder-metrics.service.ts
 @Injectable()
 export class RbacMetricsService {
   private readonly metrics = {
@@ -1361,7 +1361,7 @@ export class RbacTracingInterceptor implements NestInterceptor {
 
     if (!permission) return next.handle();
 
-    const span = this.tracer.startSpan('rbac.enforce', {
+    const span = this.tracer.startSpan('rbac-seeder.enforce', {
       attributes: {
         'rbac.resource': permission.resource,
         'rbac.action': permission.action,
@@ -1390,7 +1390,7 @@ export class RbacTracingInterceptor implements NestInterceptor {
 ### 8.3 Health Check
 
 ```typescript
-// casbin/health/rbac-health.indicator.ts
+// casbin/health/rbac-seeder-health.indicator.ts
 @Injectable()
 export class RbacHealthIndicator extends HealthIndicator {
   constructor(
@@ -1575,7 +1575,7 @@ export class EscalationPreventionGuard implements CanActivate {
     const canManagePolicies = await this.enforcer.checkPermission({
       userId: user.id,
       workspaceId,
-      resource: 'rbac:policy',
+      resource: 'rbac-seeder:policy',
       action: 'manage',
     });
 
@@ -1624,7 +1624,7 @@ export class EscalationPreventionGuard implements CanActivate {
 ### 10.1 Test Matrix
 
 ```typescript
-// casbin/__tests__/rbac-test-matrix.ts
+// casbin/__tests__/rbac-seeder-test-matrix.ts
 export const RBAC_TEST_MATRIX = {
   // RBAC Tests
   rbac: [
@@ -1694,7 +1694,7 @@ describe('Casbin Matcher Golden Tests', () => {
 
   beforeAll(async () => {
     enforcer = await newEnforcer(
-      'casbin/models/rbac-domains.conf',
+      'casbin/models/rbac-seeder-domains.conf',
       'casbin/__tests__/golden/policies.csv',
     );
   });
@@ -1928,7 +1928,7 @@ export class CasbinEnforcerService {
 ### 11.3 Recovery Playbook
 
 ```yaml
-# playbooks/rbac-recovery.yaml
+# playbooks/rbac-seeder-recovery.yaml
 name: RBAC Recovery Playbook
 
 scenarios:
@@ -1941,7 +1941,7 @@ scenarios:
       - Verify network connectivity to database
       - System operates in fail-closed mode (deny all)
       - Once PostgreSQL restored, enforcer auto-reconnects
-      - Trigger manual resync: npx nx run twenty-server:command rbac:sync
+      - Trigger manual resync: npx nx run twenty-server:command rbac-seeder:sync
       - Verify metrics: rbac_policy_count returns to normal
     rollback: null  # Automatic recovery via PgNotifyWatcher reconnect
 
@@ -1957,7 +1957,7 @@ scenarios:
       - Hourly cron will perform full resync
     rollback:
       - Manual restart: pm2 restart twenty-server
-      - Force resync: npx nx run twenty-server:command rbac:sync --force
+      - Force resync: npx nx run twenty-server:command rbac-seeder:sync --force
 
   policy_sync_failure:
     detection:
@@ -1966,8 +1966,8 @@ scenarios:
     steps:
       - Check dead-letter queue in database: SELECT * FROM rbac_sync_dlq
       - Identify failed workspace from logs
-      - Manual sync with dry-run: npx nx run twenty-server:command rbac:sync -- --workspace=<id> --dry-run
-      - Review diff and apply: npx nx run twenty-server:command rbac:sync -- --workspace=<id>
+      - Manual sync with dry-run: npx nx run twenty-server:command rbac-seeder:sync -- --workspace=<id> --dry-run
+      - Review diff and apply: npx nx run twenty-server:command rbac-seeder:sync -- --workspace=<id>
       - Clear DLQ entry: DELETE FROM rbac_sync_dlq WHERE workspace_id = '<id>'
     rollback:
       - Restore from casbin_policy_version backup
@@ -1982,7 +1982,7 @@ scenarios:
       - Backup current state: pg_dump -t casbin_rule > backup.sql
       - Clear affected workspace policies: DELETE FROM casbin_rule WHERE v1 = 'ws:<id>'
       - Trigger full resync from workspace entities
-      - Verify integrity: npx nx run twenty-server:command rbac:verify-integrity -- --workspace=<id>
+      - Verify integrity: npx nx run twenty-server:command rbac-seeder:verify-integrity -- --workspace=<id>
     rollback:
       - Restore from backup: psql < backup.sql
       - Switch to legacy mode: RBAC_ENGINE=legacy
@@ -2067,29 +2067,29 @@ export const PERMISSION_ERROR_CODES = {
 
 ```bash
 # Sync policies for workspace
-npx nx run twenty-server:command rbac:sync -- --workspace=<id>
+npx nx run twenty-server:command rbac-seeder:sync -- --workspace=<id>
 
 # Dry-run sync (show diff)
-npx nx run twenty-server:command rbac:sync -- --workspace=<id> --dry-run
+npx nx run twenty-server:command rbac-seeder:sync -- --workspace=<id> --dry-run
 
 # Warm cache for all workspaces
-npx nx run twenty-server:command rbac:warm-cache
+npx nx run twenty-server:command rbac-seeder:warm-cache
 
 # Check permission (debugging)
-npx nx run twenty-server:command rbac:check -- \
+npx nx run twenty-server:command rbac-seeder:check -- \
   --user=user:123 \
   --workspace=ws:456 \
   --resource=mktCustomer \
   --action=read
 
 # Verify policy integrity
-npx nx run twenty-server:command rbac:verify-integrity -- --workspace=<id>
+npx nx run twenty-server:command rbac-seeder:verify-integrity -- --workspace=<id>
 
 # Export policies for workspace
-npx nx run twenty-server:command rbac:export -- --workspace=<id> --format=csv
+npx nx run twenty-server:command rbac-seeder:export -- --workspace=<id> --format=csv
 
 # Import policies
-npx nx run twenty-server:command rbac:import -- --file=policies.csv --workspace=<id>
+npx nx run twenty-server:command rbac-seeder:import -- --file=policies.csv --workspace=<id>
 ```
 
 ### 12.4 Developer Documentation

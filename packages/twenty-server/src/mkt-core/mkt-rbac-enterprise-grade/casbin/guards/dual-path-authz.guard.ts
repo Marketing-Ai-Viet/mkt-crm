@@ -14,7 +14,7 @@ import {
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { PermissionMetadata } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/decorators/require-permission.decorator';
-import { RbacEngineMode } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/rbac-config.types';
+import { RbacEngineMode } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
 import { RbacMetricsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/rbac-metrics.service';
 import { PermissionDeniedError } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/errors/permission-denied.error';
