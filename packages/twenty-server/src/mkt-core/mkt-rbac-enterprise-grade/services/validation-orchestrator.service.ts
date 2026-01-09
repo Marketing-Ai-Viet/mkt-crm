@@ -11,8 +11,7 @@ import {
   PermissionValidationStep,
   StepValidationResult,
   ValidationExecutionPlan,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/interfaces/validation-step.interface';
-
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 import {
   EnhancedPermissionContext,
   EnhancedPermissionResult,
@@ -220,7 +219,8 @@ export class ValidationOrchestratorService
       const result =
         finalDecisionExecution?.completed &&
         finalDecisionExecution.result?.stepData
-          ? (finalDecisionExecution.result.stepData as EnhancedPermissionResult)
+          ? (finalDecisionExecution.result
+              .stepData as unknown as EnhancedPermissionResult)
           : this.aggregateStepResults(session);
 
       session.finalResult = result;
@@ -473,7 +473,7 @@ export class ValidationOrchestratorService
       ) {
         // Step 15 has made the final decision - use its result
         return finalDecisionExecution.result
-          .stepData as EnhancedPermissionResult;
+          .stepData as unknown as EnhancedPermissionResult;
       }
 
       // Fallback to orchestrator aggregation if Step 15 wasn't executed

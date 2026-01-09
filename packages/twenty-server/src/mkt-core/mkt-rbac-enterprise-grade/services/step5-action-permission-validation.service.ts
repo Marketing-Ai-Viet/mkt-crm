@@ -12,8 +12,7 @@ import { DateTime } from 'luxon';
 import {
   PermissionValidationStep,
   StepValidationResult,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/interfaces/validation-step.interface';
-
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 import {
   ActionPermissionContext,
   EnhancedPermissionContext,

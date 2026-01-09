@@ -7,6 +7,11 @@
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
 /**
+ * Log context for RBAC module
+ */
+export const RBAC_LOG_CONTEXT = 'MktRbac';
+
+/**
  * Check Results for validation steps
  */
 export enum CheckResult {

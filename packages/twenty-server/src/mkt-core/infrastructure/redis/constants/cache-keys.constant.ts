@@ -299,6 +299,36 @@ export const LOCK_CACHE_PREFIX = {
 } as const;
 
 // ============================================
+// RBAC DOMAIN
+// ============================================
+
+export const RBAC_CACHE_PREFIX = {
+  /** Permission template: mkt:rbac:permission-template:{templateId} */
+  PERMISSION_TEMPLATE: 'mkt:rbac:permission-template',
+
+  /** User permissions: mkt:rbac:user-permissions:{userId} */
+  USER_PERMISSIONS: 'mkt:rbac:user-permissions',
+
+  /** Policy: mkt:rbac:policy:{policyId} */
+  POLICY: 'mkt:rbac:policy',
+
+  /** Hierarchy: mkt:rbac:hierarchy:{userId} */
+  HIERARCHY: 'mkt:rbac:hierarchy',
+
+  /** Validation result: mkt:rbac:validation:{userId}:{action}:{resource} */
+  VALIDATION: 'mkt:rbac:validation',
+
+  /** Audit log: mkt:rbac:audit-log:{logId} */
+  AUDIT_LOG: 'mkt:rbac:audit-log',
+
+  /** Data access policy: mkt:rbac:data-access-policy:{policyId} */
+  DATA_ACCESS_POLICY: 'mkt:rbac:data-access-policy',
+
+  /** User context: mkt:rbac:user-context:{userId} */
+  USER_CONTEXT: 'mkt:rbac:user-context',
+} as const;
+
+// ============================================
 // COMBINED EXPORT
 // ============================================
 
@@ -323,6 +353,7 @@ export const MKT_CACHE_PREFIX = {
   TAG_INDEX: TAG_INDEX_CACHE_PREFIX,
   SYNC_LOCK: SYNC_LOCK_CACHE_PREFIX,
   LOCK: LOCK_CACHE_PREFIX,
+  RBAC: RBAC_CACHE_PREFIX,
 } as const;
 
 /**
@@ -342,4 +373,5 @@ export type MktCachePrefix =
   | (typeof KPI_CACHE_PREFIX)[keyof typeof KPI_CACHE_PREFIX]
   | (typeof PROMOTION_CACHE_PREFIX)[keyof typeof PROMOTION_CACHE_PREFIX]
   | (typeof COMBO_CACHE_PREFIX)[keyof typeof COMBO_CACHE_PREFIX]
-  | (typeof EXTERNAL_PRODUCT_CACHE_PREFIX)[keyof typeof EXTERNAL_PRODUCT_CACHE_PREFIX];
+  | (typeof EXTERNAL_PRODUCT_CACHE_PREFIX)[keyof typeof EXTERNAL_PRODUCT_CACHE_PREFIX]
+  | (typeof RBAC_CACHE_PREFIX)[keyof typeof RBAC_CACHE_PREFIX];
