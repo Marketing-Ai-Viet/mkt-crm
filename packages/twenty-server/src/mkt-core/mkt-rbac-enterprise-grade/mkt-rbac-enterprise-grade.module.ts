@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 // import { ScheduleModule } from '@nestjs/schedule'; // Enable when jobs are activated
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
+// Casbin Module
+import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 // Guards & Interceptors
 import { EnterpriseRbacGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/enterprise-rbac.guard';
 import { AuditLoggingInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/audit-logging.interceptor';
@@ -84,6 +86,7 @@ const DEFAULT_CONFIG = {
   imports: [
     TwentyORMModule,
     CacheStorageModule,
+    CasbinModule,
     // ScheduleModule.forRoot(), // Enable when jobs are activated
   ],
   providers: [
@@ -140,6 +143,9 @@ const DEFAULT_CONFIG = {
     // ...RBAC_RESOLVERS,
   ],
   exports: [
+    // Export Casbin module
+    CasbinModule,
+
     // Export config
     'ENTERPRISE_RBAC_CONFIG',
 
