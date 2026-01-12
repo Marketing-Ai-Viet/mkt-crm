@@ -1,65 +1,8 @@
 /**
  * RBAC Configuration types
+ *
+ * Casbin-only RBAC engine configuration.
  */
-
-/**
- * RBAC Engine mode
- * - legacy: Use existing 15-step validation (default)
- * - casbin: Use Casbin enforcer only
- * - shadow: Run both, log discrepancies, use legacy result
- * - shadow_casbin: Run both, log discrepancies, use casbin result
- */
-export type RbacEngineMode = 'legacy' | 'casbin' | 'shadow' | 'shadow_casbin';
-
-/**
- * Shadow mode configuration
- */
-export type ShadowModeConfig = {
-  /**
-   * Enable shadow mode comparison
-   */
-  enabled: boolean;
-
-  /**
-   * Log discrepancies between legacy and casbin
-   */
-  logDiscrepancies: boolean;
-
-  /**
-   * Send alert on discrepancy
-   */
-  alertOnDiscrepancy: boolean;
-
-  /**
-   * Sample rate for shadow checks (0.0 - 1.0)
-   */
-  sampleRate: number;
-};
-
-/**
- * Main RBAC Configuration
- */
-export type RbacConfig = {
-  /**
-   * Engine mode
-   */
-  engine: RbacEngineMode;
-
-  /**
-   * List of resolvers enabled for Casbin (for gradual rollout)
-   */
-  enabledResolvers: string[];
-
-  /**
-   * Shadow mode configuration
-   */
-  shadowMode: ShadowModeConfig;
-
-  /**
-   * Fail-closed on error (deny if enforcement fails)
-   */
-  failClosed: boolean;
-};
 
 /**
  * Cache configuration for Casbin
@@ -154,14 +97,4 @@ export type SyncConfig = {
    * Cron expression for scheduled resync
    */
   scheduledResyncCron: string;
-};
-
-/**
- * Complete Casbin module configuration
- */
-export type CasbinModuleConfig = {
-  rbac: RbacConfig;
-  cache: CasbinCacheConfig;
-  watcher: WatcherConfig;
-  sync: SyncConfig;
 };

@@ -20,7 +20,6 @@ import { CacheWarmerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbi
 import { PolicyApprovalService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/policy-approval.service';
 import { CrossRegionInvalidationPubSub } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/pubsub';
 import { CasbinAuthzGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/guards/casbin-authz.guard';
-import { DualPathAuthzGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/guards/dual-path-authz.guard';
 import { RbacHealthIndicator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/health/rbac-health.indicator';
 import {
   CacheWarmerJob,
@@ -37,14 +36,13 @@ import {
  * - Policy sync từ workspace entities
  * - Permission checks với caching
  * - Health monitoring
- * - Shadow mode cho migration
+ * - Cross-region cache invalidation
  *
  * Exports:
  * - CasbinEnforcerService: Main permission check service
  * - PolicySyncService: Sync templates to policies
  * - RbacMetricsService: Metrics và monitoring
  * - CasbinAuthzGuard: Authorization guard
- * - DualPathAuthzGuard: Shadow mode guard
  * - RbacHealthIndicator: Health check
  *
  * Usage:
@@ -83,7 +81,6 @@ import {
     CrossRegionInvalidationPubSub,
     // Guards
     CasbinAuthzGuard,
-    DualPathAuthzGuard,
     // Health
     RbacHealthIndicator,
     // Jobs (Cron)
@@ -106,7 +103,6 @@ import {
     CrossRegionInvalidationPubSub,
     // Guards
     CasbinAuthzGuard,
-    DualPathAuthzGuard,
     // Health
     RbacHealthIndicator,
   ],

@@ -127,16 +127,6 @@ export type PolicyStatistics = {
   workspaceId?: string;
 };
 
-/**
- * Discrepancy record for shadow mode
- */
-export type DiscrepancyRecord = {
-  resource: string;
-  action: string;
-  casbinResult: boolean;
-  legacyResult: boolean;
-};
-
 // ==================== Policy Version Types ====================
 
 /**

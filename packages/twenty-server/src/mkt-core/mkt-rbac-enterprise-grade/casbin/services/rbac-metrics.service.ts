@@ -434,27 +434,4 @@ export class RbacMetricsService {
     await this.cacheStorage.del(RBAC_METRICS_KEY);
     this.logger.log('Metrics cleared');
   }
-
-  /**
-   * Record discrepancy between Casbin and legacy engines
-   * Used in shadow mode for migration validation
-   */
-  recordDiscrepancy(record: {
-    resource: string;
-    action: string;
-    casbinResult: boolean;
-    legacyResult: boolean;
-  }): void {
-    // Log discrepancy for analysis
-    this.logger.warn('RBAC Engine Discrepancy', {
-      resource: record.resource,
-      action: record.action,
-      casbin: record.casbinResult ? 'ALLOW' : 'DENY',
-      legacy: record.legacyResult ? 'ALLOW' : 'DENY',
-      timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
-
-    // TODO: Store in Redis or emit event for aggregation
-    // This can be used to track discrepancy trends before full migration
-  }
 }

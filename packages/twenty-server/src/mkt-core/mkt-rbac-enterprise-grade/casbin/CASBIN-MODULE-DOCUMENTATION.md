@@ -29,7 +29,7 @@ Module Casbin RBAC cung cấp hệ thống phân quyền enterprise-grade cho Tw
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CasbinAuthzGuard / DualPathAuthzGuard                    │
+│                            CasbinAuthzGuard                                  │
 │                                                                              │
 │  - Extract user context từ request                                          │
 │  - Gọi CasbinEnforcerService.checkPermission()                             │
@@ -108,7 +108,6 @@ casbin/
 │
 ├── guards/                      # Authorization guards
 │   ├── casbin-authz.guard.ts
-│   ├── dual-path-authz.guard.ts
 │   └── index.ts
 │
 ├── health/                      # Health indicators
@@ -394,21 +393,6 @@ async customers(): Promise<MktCustomer[]> {
 }
 ```
 
-#### DualPathAuthzGuard
-
-Shadow mode guard cho gradual migration.
-
-**Modes:**
-- `legacy`: Chỉ legacy validation
-- `casbin`: Chỉ Casbin validation
-- `shadow`: Cả hai, dùng legacy result, log discrepancies
-- `shadow_casbin`: Cả hai, dùng Casbin result, log discrepancies
-
-```bash
-# Set mode via env
-RBAC_ENGINE=shadow
-```
-
 ---
 
 ### 4. Decorators
@@ -527,9 +511,6 @@ await pubsub.publishInvalidation(workspaceId, 'policy_updated');
 ### Environment Variables
 
 ```bash
-# Engine mode
-RBAC_ENGINE=casbin|legacy|shadow|shadow_casbin
-
 # Enforcer
 RBAC_ENFORCER_FAIL_CLOSED=true
 RBAC_ENFORCER_CACHE_ENABLED=true
