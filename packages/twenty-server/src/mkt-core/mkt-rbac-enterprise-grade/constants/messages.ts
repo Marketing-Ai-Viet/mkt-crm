@@ -1,4 +1,4 @@
-import { VALIDATION_STEPS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
+import { VALIDATION_STEPS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 /**
  * Step Names for Logging and Monitoring

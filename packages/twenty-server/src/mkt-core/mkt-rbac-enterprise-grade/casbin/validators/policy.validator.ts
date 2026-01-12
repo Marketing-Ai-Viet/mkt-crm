@@ -4,8 +4,8 @@ import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-resources.constant';
-import { CASBIN_ACTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-actions.constant';
+import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
+import { CASBIN_ACTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/actions.constant';
 import {
   PolicyValidationResult,
   CasbinPolicy,

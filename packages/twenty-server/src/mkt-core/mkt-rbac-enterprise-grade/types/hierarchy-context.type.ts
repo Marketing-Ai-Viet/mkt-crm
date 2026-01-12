@@ -4,7 +4,7 @@ import {
   HierarchyLevel,
   DepartmentType,
   ReportingRelationship,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/hierarchy.constants';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/hierarchy.constants';
 
 /**
  * Organization Level Structure

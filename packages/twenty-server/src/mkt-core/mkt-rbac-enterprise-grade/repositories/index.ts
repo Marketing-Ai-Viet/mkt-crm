@@ -1,37 +1,60 @@
 /**
  * Repositories barrel export
  *
- * Repositories for 13 workspace entities
+ * Organized by domain:
+ * - template/: Permission template and related repositories
+ * - permission/: Permission action and resource repositories
+ * - policy/: Data access policy repositories
+ * - override/: User permission override and temporary permission repositories
+ * - audit/: Permission audit repositories
+ * - config/: Permission priority config and context repositories
  */
 
-export { MktPermissionTemplateRepository } from './mkt-permission-template.repository';
-export { MktPermissionActionRepository } from './mkt-permission-action.repository';
-export { MktPermissionResourceRepository } from './mkt-permission-resource.repository';
-export { MktPermissionAuditRepository } from './mkt-permission-audit.repository';
-export { MktDataAccessPolicyRepository } from './mkt-data-access-policy.repository';
-export { MktUserPermissionTemplateRepository } from './mkt-user-permission-template.repository';
-export { MktUserPermissionOverrideRepository } from './mkt-user-permission-override.repository';
-export { MktTemplateResourcePermissionRepository } from './mkt-template-resource-permission.repository';
-export { MktTemplateSystemActionRepository } from './mkt-template-system-action.repository';
-export { MktTemplateAccessLimitationRepository } from './mkt-template-access-limitation.repository';
-export { MktPermissionContextRepository } from './mkt-permission-context.repository';
-export { MktPermissionPriorityConfigRepository } from './mkt-permission-priority-config.repository';
-export { MktTemporaryPermissionRepository } from './mkt-temporary-permission.repository';
+// Import for RBAC_REPOSITORIES array and re-export
+import {
+  MktPermissionTemplateRepository,
+  MktUserPermissionTemplateRepository,
+  MktTemplateResourcePermissionRepository,
+  MktTemplateSystemActionRepository,
+  MktTemplateAccessLimitationRepository,
+} from './template';
+import {
+  MktPermissionActionRepository,
+  MktPermissionResourceRepository,
+} from './permission';
+import { MktPermissionAuditRepository } from './audit';
+import { MktDataAccessPolicyRepository } from './policy';
+import {
+  MktUserPermissionOverrideRepository,
+  MktTemporaryPermissionRepository,
+} from './override';
+import {
+  MktPermissionContextRepository,
+  MktPermissionPriorityConfigRepository,
+} from './config';
 
-// Import for RBAC_REPOSITORIES array
-import { MktPermissionTemplateRepository } from './mkt-permission-template.repository';
-import { MktPermissionActionRepository } from './mkt-permission-action.repository';
-import { MktPermissionResourceRepository } from './mkt-permission-resource.repository';
-import { MktPermissionAuditRepository } from './mkt-permission-audit.repository';
-import { MktDataAccessPolicyRepository } from './mkt-data-access-policy.repository';
-import { MktUserPermissionTemplateRepository } from './mkt-user-permission-template.repository';
-import { MktUserPermissionOverrideRepository } from './mkt-user-permission-override.repository';
-import { MktTemplateResourcePermissionRepository } from './mkt-template-resource-permission.repository';
-import { MktTemplateSystemActionRepository } from './mkt-template-system-action.repository';
-import { MktTemplateAccessLimitationRepository } from './mkt-template-access-limitation.repository';
-import { MktPermissionContextRepository } from './mkt-permission-context.repository';
-import { MktPermissionPriorityConfigRepository } from './mkt-permission-priority-config.repository';
-import { MktTemporaryPermissionRepository } from './mkt-temporary-permission.repository';
+// Re-export all repositories
+export {
+  // Template
+  MktPermissionTemplateRepository,
+  MktUserPermissionTemplateRepository,
+  MktTemplateResourcePermissionRepository,
+  MktTemplateSystemActionRepository,
+  MktTemplateAccessLimitationRepository,
+  // Permission
+  MktPermissionActionRepository,
+  MktPermissionResourceRepository,
+  // Audit
+  MktPermissionAuditRepository,
+  // Policy
+  MktDataAccessPolicyRepository,
+  // Override
+  MktUserPermissionOverrideRepository,
+  MktTemporaryPermissionRepository,
+  // Config
+  MktPermissionContextRepository,
+  MktPermissionPriorityConfigRepository,
+};
 
 /**
  * Array of all RBAC repositories for module registration

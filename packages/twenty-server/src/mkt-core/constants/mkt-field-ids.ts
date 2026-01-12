@@ -1433,6 +1433,8 @@ export const MKT_POLICY_VERSION_FIELD_IDS = {
 
 // Casbin RBAC - Policy change request (approval workflow)
 export const MKT_POLICY_CHANGE_REQUEST_FIELD_IDS = {
+  // title (label identifier)
+  title: 'e4f5a6b7-8019-abcd-ef01-234567890134',
   // status and type
   status: 'f5a6b7c8-901a-bcde-f012-345678901235',
   changeType: 'a6b7c8d9-012b-cdef-0123-456789012346',
@@ -1453,6 +1455,8 @@ export const MKT_POLICY_CHANGE_REQUEST_FIELD_IDS = {
 
 // Casbin RBAC - Policy approval
 export const MKT_POLICY_APPROVAL_FIELD_IDS = {
+  // title (label identifier)
+  title: 'd4e5f6a7-8013-4567-8901-234567890134',
   // approval details
   decision: 'd5e6f7a8-9014-5678-9012-345678901235',
   reason: 'e6f7a8b9-0125-6789-0123-456789012346',

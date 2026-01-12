@@ -177,6 +177,23 @@ import {
   MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
   MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS,
 } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seeds.constants';
+// Casbin seeder configs
+import {
+  MKT_CASBIN_RULE_DATA_SEED_COLUMNS,
+  MKT_CASBIN_RULE_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/mkt-casbin-rule-data-seeds.constants';
+import {
+  MKT_POLICY_VERSION_DATA_SEED_COLUMNS,
+  MKT_POLICY_VERSION_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/mkt-policy-version-data-seeds.constants';
+import {
+  MKT_POLICY_CHANGE_REQUEST_DATA_SEED_COLUMNS,
+  MKT_POLICY_CHANGE_REQUEST_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/mkt-policy-change-request-data-seeds.constants';
+import {
+  MKT_POLICY_APPROVAL_DATA_SEED_COLUMNS,
+  MKT_POLICY_APPROVAL_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/mkt-policy-approval-data-seeds.constants';
 
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
@@ -421,5 +438,26 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktUserPermissionTemplate',
     pgColumns: MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS,
+  },
+  // Casbin configs (order matters: policy version -> casbin rules -> change requests -> approvals)
+  {
+    tableName: 'mktPolicyVersion',
+    pgColumns: MKT_POLICY_VERSION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_POLICY_VERSION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktCasbinRule',
+    pgColumns: MKT_CASBIN_RULE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_CASBIN_RULE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPolicyChangeRequest',
+    pgColumns: MKT_POLICY_CHANGE_REQUEST_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_POLICY_CHANGE_REQUEST_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPolicyApproval',
+    pgColumns: MKT_POLICY_APPROVAL_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_POLICY_APPROVAL_DATA_SEEDS,
   },
 ];

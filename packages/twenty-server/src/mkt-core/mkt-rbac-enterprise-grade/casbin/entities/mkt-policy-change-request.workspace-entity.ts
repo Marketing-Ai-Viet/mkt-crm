@@ -69,9 +69,18 @@ export type PolicyChangeType =
   description: msg`High-risk policy change requests requiring approval`,
   icon: 'IconShieldCheck',
   shortcut: 'PCR',
-  labelIdentifierStandardId: MKT_POLICY_CHANGE_REQUEST_FIELD_IDS.status,
+  labelIdentifierStandardId: MKT_POLICY_CHANGE_REQUEST_FIELD_IDS.title,
 })
 export class MktPolicyChangeRequestWorkspaceEntity extends BaseWorkspaceEntity {
+  @WorkspaceField({
+    standardId: MKT_POLICY_CHANGE_REQUEST_FIELD_IDS.title,
+    type: FieldMetadataType.TEXT,
+    label: msg`Title`,
+    description: msg`Request title for identification`,
+    icon: 'IconTextCaption',
+  })
+  title: string;
+
   @WorkspaceField({
     standardId: MKT_POLICY_CHANGE_REQUEST_FIELD_IDS.status,
     type: FieldMetadataType.SELECT,

@@ -5,7 +5,7 @@
 
 import { SetMetadata } from '@nestjs/common';
 
-import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
+import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 /**
  * Permission metadata interface

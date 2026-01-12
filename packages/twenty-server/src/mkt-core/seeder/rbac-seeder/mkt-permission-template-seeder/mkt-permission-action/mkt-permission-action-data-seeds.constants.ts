@@ -8,7 +8,7 @@
 import {
   PERMISSION_ACTION_CATEGORY,
   PERMISSION_RISK_LEVEL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
 
 type MktPermissionActionDataSeed = {
   id: string;

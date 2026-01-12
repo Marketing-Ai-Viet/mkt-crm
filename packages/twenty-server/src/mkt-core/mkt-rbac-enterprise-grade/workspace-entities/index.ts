@@ -1,33 +1,35 @@
-// Data Access & Policy Entities
-export { MktDataAccessPolicyWorkspaceEntity } from './mkt-data-access-policy.workspace-entity';
+/**
+ * Workspace Entities barrel export
+ *
+ * Organized by domain:
+ * - template/: Permission template and related workspace entities
+ * - permission/: Permission action and resource workspace entities
+ * - policy/: Data access policy workspace entities
+ * - override/: User permission override and temporary permission workspace entities
+ * - audit/: Permission audit workspace entities
+ * - config/: Permission priority config and context workspace entities
+ */
 
-// Audit Entities
-export { MktPermissionAuditWorkspaceEntity } from './mkt-permission-audit.workspace-entity';
+// Template workspace entities
+export * from './template';
 
-// Permission Template Core Entities
-export { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
-export { MktPermissionActionWorkspaceEntity } from './mkt-permission-action.workspace-entity';
-export { MktPermissionResourceWorkspaceEntity } from './mkt-permission-resource.workspace-entity';
+// Permission workspace entities
+export * from './permission';
 
-// User Permission Assignment Entities
-export { MktUserPermissionTemplateWorkspaceEntity } from './mkt-user-permission-template.workspace-entity';
-export { MktUserPermissionOverrideWorkspaceEntity } from './mkt-user-permission-override.workspace-entity';
+// Policy workspace entities
+export * from './policy';
 
-// Template Configuration Entities
-export { MktTemplateResourcePermissionWorkspaceEntity } from './mkt-template-resource-permission.workspace-entity';
-export { MktTemplateSystemActionWorkspaceEntity } from './mkt-template-system-action.workspace-entity';
-export { MktTemplateAccessLimitationWorkspaceEntity } from './mkt-template-access-limitation.workspace-entity';
+// Override workspace entities
+export * from './override';
 
-// Permission Context & Configuration Entities
-export { MktPermissionContextWorkspaceEntity } from './mkt-permission-context.workspace-entity';
-export { MktPermissionPriorityConfigWorkspaceEntity } from './mkt-permission-priority-config.workspace-entity';
+// Audit workspace entities
+export * from './audit';
 
-// Temporary Permission Entities
-export { MktTemporaryPermissionWorkspaceEntity } from './mkt-temporary-permission.workspace-entity';
+// Config workspace entities
+export * from './config';
 
-// Casbin RBAC Entities
+// Casbin RBAC Entities (from casbin module)
 export { MktCasbinRuleWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-casbin-rule.workspace-entity';
 export { MktPolicyVersionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-version.workspace-entity';
-
-// Constants and Enums
-export * from './constants';
+export { MktPolicyChangeRequestWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-change-request.workspace-entity';
+export { MktPolicyApprovalWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-approval.workspace-entity';

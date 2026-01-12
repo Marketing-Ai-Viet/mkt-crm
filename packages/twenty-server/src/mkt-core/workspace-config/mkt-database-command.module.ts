@@ -44,6 +44,11 @@ import { MktPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/s
 import { MktTemplateResourcePermissionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-data-seed-dev-workspace.command';
 import { MktTemplateSystemActionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-data-seed-dev-workspace.command';
 import { MktUserPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seed-dev-workspace.command';
+// Casbin seeder command imports
+import { MktCasbinRuleDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/mkt-casbin-rule-data-seed-dev-workspace.command';
+import { MktPolicyVersionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/mkt-policy-version-data-seed-dev-workspace.command';
+import { MktPolicyChangeRequestDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/mkt-policy-change-request-data-seed-dev-workspace.command';
+import { MktPolicyApprovalDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/mkt-policy-approval-data-seed-dev-workspace.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
   // core commands
@@ -108,4 +113,9 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   MktTemplateResourcePermissionDataSeedDevWorkspaceCommand,
   MktTemplateSystemActionDataSeedDevWorkspaceCommand,
   MktUserPermissionTemplateDataSeedDevWorkspaceCommand,
+  // casbin commands (order matters: policy version -> casbin rules -> change requests -> approvals)
+  MktPolicyVersionDataSeedDevWorkspaceCommand,
+  MktCasbinRuleDataSeedDevWorkspaceCommand,
+  MktPolicyChangeRequestDataSeedDevWorkspaceCommand,
+  MktPolicyApprovalDataSeedDevWorkspaceCommand,
 ];

@@ -205,3 +205,43 @@ export const RBAC_GRAPHQL_DESCRIPTIONS = {
   GRANT_TEMPORARY_PERMISSION_MUTATION: 'Grant temporary permission to user',
   REVOKE_TEMPORARY_PERMISSION_MUTATION: 'Revoke temporary permission from user',
 } as const;
+
+/**
+ * RBAC Messages for hooks, services, and error handling
+ */
+export const RBAC_MESSAGES = {
+  ERRORS: {
+    INVALID_INPUT_OR_WORKSPACE: 'Invalid input data or workspace context',
+    TEMPLATE_CODE_REQUIRED: 'Template code is required',
+    TEMPLATE_CODE_EXISTS: (code: string) =>
+      `Permission template with code '${code}' already exists`,
+    TEMPLATE_NOT_FOUND: (id: string) =>
+      `Permission template with ID '${id}' not found`,
+    PRIORITY_OUT_OF_RANGE: 'Priority must be between 0 and 1000',
+    CANNOT_MODIFY_SYSTEM_TEMPLATE:
+      'Cannot modify core properties of system templates',
+    CANNOT_DELETE_SYSTEM_TEMPLATE: 'Cannot delete system templates',
+    TEMPLATE_HAS_ACTIVE_ASSIGNMENTS: (count: number) =>
+      `Cannot delete template with ${count} active user assignments`,
+    USER_NOT_FOUND: (id: string) => `User with ID '${id}' not found`,
+    PERMISSION_DENIED: 'Permission denied',
+    INVALID_ACTION: 'Invalid action specified',
+    INVALID_RESOURCE_TYPE: 'Invalid resource type specified',
+    CACHE_ERROR: 'Cache operation failed',
+  },
+  SUCCESS: {
+    TEMPLATE_CREATED: 'Permission template created successfully',
+    TEMPLATE_UPDATED: 'Permission template updated successfully',
+    TEMPLATE_DELETED: 'Permission template deleted successfully',
+    ROLE_ASSIGNED: 'Role assigned successfully',
+    ROLE_REVOKED: 'Role revoked successfully',
+    PERMISSION_GRANTED: 'Temporary permission granted successfully',
+    PERMISSION_REVOKED: 'Temporary permission revoked successfully',
+  },
+  INFO: {
+    VALIDATING_TEMPLATE: 'Validating permission template data',
+    CHECKING_UNIQUENESS: 'Checking template code uniqueness',
+    CHECKING_ASSIGNMENTS: 'Checking active user assignments',
+    CACHE_INVALIDATED: 'Cache invalidated successfully',
+  },
+} as const;

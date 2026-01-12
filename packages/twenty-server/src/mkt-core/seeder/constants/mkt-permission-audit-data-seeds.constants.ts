@@ -5,7 +5,7 @@ import {
   PermissionAction,
   PermissionSource,
   CheckResult,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 type MktPermissionAuditDataSeed = {
   id: string;

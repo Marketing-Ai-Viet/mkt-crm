@@ -3,7 +3,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { DateTime } from 'luxon';
 import { Request } from 'express';
 
-import { RESOURCE_TYPES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/enterprise-rbac.constants';
+import { RESOURCE_TYPES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import {
   CheckResult,
   GraphQLOperationType,

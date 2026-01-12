@@ -8,7 +8,7 @@ import {
   PolicyType,
   ConditionOperator,
   LogicalOperator,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/policy.constants';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/policy.constants';
 
 /**
  * Policy Condition Structure

@@ -4,7 +4,7 @@
  * Default values for RBAC module configuration
  */
 
-import { CASBIN_CACHE_TTL } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-cache-keys.constant';
+import { CASBIN_CACHE_TTL } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
 
 // Re-export pub/sub constants from infrastructure (single source of truth)
 export {

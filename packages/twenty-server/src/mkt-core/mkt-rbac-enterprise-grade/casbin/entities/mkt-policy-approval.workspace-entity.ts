@@ -54,9 +54,18 @@ export type ApprovalDecision =
   description: msg`Approval records for policy change requests`,
   icon: 'IconUserCheck',
   shortcut: 'PA',
-  labelIdentifierStandardId: MKT_POLICY_APPROVAL_FIELD_IDS.decision,
+  labelIdentifierStandardId: MKT_POLICY_APPROVAL_FIELD_IDS.title,
 })
 export class MktPolicyApprovalWorkspaceEntity extends BaseWorkspaceEntity {
+  @WorkspaceField({
+    standardId: MKT_POLICY_APPROVAL_FIELD_IDS.title,
+    type: FieldMetadataType.TEXT,
+    label: msg`Title`,
+    description: msg`Approval title for identification`,
+    icon: 'IconTextCaption',
+  })
+  title: string;
+
   @WorkspaceField({
     standardId: MKT_POLICY_APPROVAL_FIELD_IDS.decision,
     type: FieldMetadataType.SELECT,

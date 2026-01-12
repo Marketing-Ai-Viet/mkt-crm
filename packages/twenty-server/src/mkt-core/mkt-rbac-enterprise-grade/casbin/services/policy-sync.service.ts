@@ -9,7 +9,7 @@ import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-resources.constant';
+import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
 import {
   SyncResult,
   PolicyDiff,
@@ -22,8 +22,10 @@ import {
 import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
 import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
-import { MktPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories/mkt-permission-template.repository';
-import { MktUserPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories/mkt-user-permission-template.repository';
+import {
+  MktPermissionTemplateRepository,
+  MktUserPermissionTemplateRepository,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import {
   CasbinRbacConfig,
   rbacConfig,

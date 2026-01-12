@@ -1,6 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 
-import { CASBIN_ERROR_CODES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-error-codes.constant';
+import { CASBIN_ERROR_CODES } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/error-codes.constant';
 
 /**
  * Permission denied error details

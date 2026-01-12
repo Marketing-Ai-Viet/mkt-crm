@@ -14,7 +14,7 @@ import {
 import {
   CASBIN_CACHE_KEYS,
   CASBIN_CACHE_TTL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/casbin-cache-keys.constant';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
 import {
   PolicyVersion,
   SyncDeadLetterEntry,

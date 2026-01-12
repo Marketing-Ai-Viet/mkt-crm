@@ -84,6 +84,18 @@ npx nx command twenty-server -- mkt-invoice-data-seed-dev-workspace
 npx nx run twenty-front:graphql:generate
 ```
 
+### Troubleshooting
+```bash
+# Reset Nx cache khi bị treo hoặc lỗi project graph
+npx nx reset
+
+# Các trường hợp cần chạy nx reset:
+# - Nx daemon bị treo (command chạy mãi không xong)
+# - Lỗi "Failed to process project graph"
+# - Lỗi cache không đồng bộ sau khi thay đổi cấu trúc thư mục
+# - Lỗi "Cannot find module" sau khi di chuyển files
+```
+
 ## Architecture Overview
 
 ### Tech Stack
