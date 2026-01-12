@@ -18,6 +18,7 @@ import { PolicySyncService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin
 import { RbacMetricsService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/rbac-metrics.service';
 import { CacheWarmerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/cache-warmer.service';
 import { PolicyApprovalService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/policy-approval.service';
+import { RoleInheritanceCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/role-inheritance-cache.service';
 import { CrossRegionInvalidationPubSub } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/pubsub';
 import { CasbinAuthzGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/guards/casbin-authz.guard';
 import { RbacHealthIndicator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/health/rbac-health.indicator';
@@ -75,6 +76,7 @@ import {
     // Services (order matters for dependencies)
     CasbinEnforcerService,
     RbacMetricsService,
+    RoleInheritanceCacheService, // Must be before PolicySyncService
     PolicySyncService,
     CacheWarmerService,
     PolicyApprovalService,
@@ -100,6 +102,7 @@ import {
     RbacMetricsService,
     CacheWarmerService,
     PolicyApprovalService,
+    RoleInheritanceCacheService,
     CrossRegionInvalidationPubSub,
     // Guards
     CasbinAuthzGuard,

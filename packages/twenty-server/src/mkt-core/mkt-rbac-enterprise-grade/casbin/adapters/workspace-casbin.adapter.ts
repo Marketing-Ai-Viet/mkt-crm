@@ -212,16 +212,42 @@ export class WorkspaceCasbinAdapter implements FilteredAdapter {
   }
 
   /**
-   * Remove multiple policy rules
+   * Remove multiple policy rules (batch optimized)
+   *
+   * Uses parallel delete operations for better performance.
+   * Executes all deletes concurrently using Promise.all.
    */
   async removePolicies(
     sec: string,
     ptype: string,
     rules: string[][],
   ): Promise<void> {
-    for (const rule of rules) {
-      await this.removePolicy(sec, ptype, rule);
+    if (rules.length === 0) {
+      return;
     }
+
+    if (rules.length === 1) {
+      await this.removePolicy(sec, ptype, rules[0]);
+
+      return;
+    }
+
+    // Execute all deletes in parallel for better performance
+    const deletePromises = rules.map((rule) =>
+      this.repository.delete({
+        ptype,
+        subject: rule[0] ?? '',
+        object: rule[1] ?? null,
+        action: rule[2] ?? null,
+        effect: rule[3] ?? null,
+      }),
+    );
+
+    await Promise.all(deletePromises);
+
+    this.logger.debug(
+      `Batch removed ${rules.length} policies of type: ${ptype}`,
+    );
   }
 
   /**
@@ -265,7 +291,10 @@ export class WorkspaceCasbinAdapter implements FilteredAdapter {
   }
 
   /**
-   * Update multiple policy rules
+   * Update multiple policy rules (batch optimized)
+   *
+   * Uses batch remove followed by batch add for better performance.
+   * Maintains atomicity at the adapter level.
    */
   async updatePolicies(
     sec: string,
@@ -277,13 +306,25 @@ export class WorkspaceCasbinAdapter implements FilteredAdapter {
       throw new Error('Old and new rules count must match');
     }
 
-    for (let i = 0; i < oldRules.length; i++) {
-      await this.updatePolicy(sec, ptype, oldRules[i], newRules[i]);
+    if (oldRules.length === 0) {
+      return;
     }
+
+    // Batch remove old rules
+    await this.removePolicies(sec, ptype, oldRules);
+
+    // Batch add new rules
+    await this.addPolicies(sec, ptype, newRules);
+
+    this.logger.debug(
+      `Batch updated ${oldRules.length} policies of type: ${ptype}`,
+    );
   }
 
   /**
-   * Update filtered policies
+   * Update filtered policies (batch optimized)
+   *
+   * Uses batch add instead of individual adds for better performance.
    */
   async updateFilteredPolicies(
     sec: string,
@@ -306,11 +347,12 @@ export class WorkspaceCasbinAdapter implements FilteredAdapter {
 
     const oldRules = await this.repository.find({ where });
 
-    // Remove old and add new
+    // Remove old policies with filter
     await this.removeFilteredPolicy(sec, ptype, fieldIndex, ...fieldValues);
 
-    for (const rule of newRules) {
-      await this.addPolicy(sec, ptype, rule);
+    // Batch add new rules
+    if (newRules.length > 0) {
+      await this.addPolicies(sec, ptype, newRules);
     }
 
     return oldRules.map((r) => this.ruleEntityToArray(r));

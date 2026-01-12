@@ -68,6 +68,21 @@ export const CASBIN_CACHE_KEYS = {
   USER_TEMP_PERMISSIONS: (workspaceId: string, userId: string) =>
     `rbac:user:temp:${workspaceId}:${userId}` as const,
 
+  // ===== Role Inheritance Cache =====
+  /**
+   * Role inheritance graph cache per workspace
+   * Format: rbac:inheritance:{workspaceId}
+   */
+  ROLE_INHERITANCE: (workspaceId: string) =>
+    `rbac:inheritance:${workspaceId}` as const,
+
+  /**
+   * User effective roles cache (includes inherited roles)
+   * Format: rbac:effective:roles:{workspaceId}:{userId}
+   */
+  USER_EFFECTIVE_ROLES: (workspaceId: string, userId: string) =>
+    `rbac:effective:roles:${workspaceId}:${userId}` as const,
+
   // ===== Template Cache =====
   /**
    * Permission template cache
@@ -102,6 +117,12 @@ export const CASBIN_CACHE_TTL = {
 
   // Department hierarchy: 1 hour
   DEPT_HIERARCHY: 3600,
+
+  // Role inheritance graph: 24 hours
+  ROLE_INHERITANCE: 86400,
+
+  // User effective roles: 15 minutes
+  USER_EFFECTIVE_ROLES: 900,
 
   // User roles: 15 minutes
   USER_ROLES: 900,

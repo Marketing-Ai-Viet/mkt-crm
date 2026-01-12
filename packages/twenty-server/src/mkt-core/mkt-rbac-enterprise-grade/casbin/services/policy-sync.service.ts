@@ -33,6 +33,7 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
+import { RoleInheritanceCacheService } from './role-inheritance-cache.service';
 
 /**
  * Policy Sync Service
@@ -75,6 +76,7 @@ export class PolicySyncService {
     private readonly policyVersionRepository: PolicyVersionRepository,
     private readonly policyValidator: PolicyValidator,
     private readonly enforcerService: CasbinEnforcerService,
+    private readonly roleInheritanceCacheService: RoleInheritanceCacheService,
     private readonly templateRepository: MktPermissionTemplateRepository,
     private readonly userTemplateRepository: MktUserPermissionTemplateRepository,
   ) {
@@ -216,6 +218,9 @@ export class PolicySyncService {
 
       // Invalidate enforcer cache
       await this.enforcerService.invalidateCache(workspaceId);
+
+      // Invalidate role inheritance cache
+      await this.roleInheritanceCacheService.invalidateWorkspace(workspaceId);
 
       // Notify other instances
       await this.enforcerService.notifyPolicyUpdate();
