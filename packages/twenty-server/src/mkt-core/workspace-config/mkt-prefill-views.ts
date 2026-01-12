@@ -39,6 +39,13 @@ import { mktPromotionRulesAllView } from 'src/mkt-core/seeder/promotion-seeder/m
 import { mktPromotionUsagesAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-usage-all.view';
 import { mktPromotionsAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-all.view';
 import { mktOptionsAllView } from 'src/mkt-core/seeder/mkt-option-seeder/mkt-option-all.view';
+// Permission template seeder view imports
+import { mktPermissionActionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/mkt-permission-action-all.view';
+import { mktPermissionResourcesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/mkt-permission-resource-all.view';
+import { mktPermissionTemplatesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/mkt-permission-template-all.view';
+import { mktTemplateResourcePermissionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-all.view';
+import { mktTemplateSystemActionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-all.view';
+import { mktUserPermissionTemplatesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-all.view';
 
 export const MKT_ALL_VIEWS = [
   // core views
@@ -95,4 +102,11 @@ export const MKT_ALL_VIEWS = [
   mktDepartmentHierarchiesAllView,
   mktDataAccessPoliciesAllView,
   mktPermissionAuditsAllView,
+  // permission template views
+  mktPermissionActionsAllView,
+  mktPermissionResourcesAllView,
+  mktPermissionTemplatesAllView,
+  mktTemplateResourcePermissionsAllView,
+  mktTemplateSystemActionsAllView,
+  mktUserPermissionTemplatesAllView,
 ];

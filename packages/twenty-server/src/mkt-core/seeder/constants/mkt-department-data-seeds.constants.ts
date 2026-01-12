@@ -1,4 +1,3 @@
-import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import {
   DEPARTMENT,
   DEPARTMENT_TYPE,
@@ -48,7 +47,7 @@ export const DEPARTMENT_DATA_SEEDS = [
     isActive: true,
     position: 1,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -69,7 +68,7 @@ export const DEPARTMENT_DATA_SEEDS = [
     isActive: true,
     position: 2,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -90,7 +89,7 @@ export const DEPARTMENT_DATA_SEEDS = [
     isActive: true,
     position: 3,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -111,7 +110,7 @@ export const DEPARTMENT_DATA_SEEDS = [
     isActive: true,
     position: 4,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -132,7 +131,7 @@ export const DEPARTMENT_DATA_SEEDS = [
     isActive: true,
     position: 5,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
 ];
@@ -157,7 +156,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 1,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -178,7 +177,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 2,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -199,7 +198,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 3,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -220,7 +219,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 4,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   // Level 2 of SUPPORT
@@ -242,7 +241,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 5,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -263,7 +262,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 6,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -284,7 +283,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 7,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   // Level 2 of ACCOUNTING
@@ -306,7 +305,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 8,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -327,7 +326,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 9,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -348,7 +347,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 10,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -369,7 +368,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 11,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   // Level 2 of HR
@@ -391,7 +390,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 12,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -412,7 +411,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 13,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -433,7 +432,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 14,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   // Level 2 of TECH
@@ -455,7 +454,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 15,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -476,7 +475,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 16,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -497,7 +496,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 17,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -518,7 +517,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 18,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
   {
@@ -540,7 +539,7 @@ export const TEAM_DATA_SEEDS = [
     isActive: true,
     position: 19,
     createdBySource: 'API',
-    createdByWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    createdByWorkspaceMemberId: null,
     createdByName: 'Tim',
   },
 ];

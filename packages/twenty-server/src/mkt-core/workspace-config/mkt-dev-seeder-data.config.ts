@@ -152,6 +152,31 @@ import {
   MKT_PROMOTION_USAGE_DATA_SEED_COLUMNS,
   MKT_PROMOTION_USAGE_DATA_SEEDS,
 } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-usage-data-seeds.constants';
+// Permission template seeder configs
+import {
+  MKT_PERMISSION_ACTION_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_ACTION_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/mkt-permission-action-data-seeds.constants';
+import {
+  MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_RESOURCE_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/mkt-permission-resource-data-seeds.constants';
+import {
+  MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/mkt-permission-template-data-seeds.constants';
+import {
+  MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEED_COLUMNS,
+  MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-data-seeds.constants';
+import {
+  MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEED_COLUMNS,
+  MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-data-seeds.constants';
+import {
+  MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+  MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seeds.constants';
 
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
@@ -365,5 +390,36 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktPromotionUsage',
     pgColumns: MKT_PROMOTION_USAGE_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PROMOTION_USAGE_DATA_SEEDS,
+  },
+  // Permission template configs (order matters: actions -> resources -> templates -> mappings)
+  {
+    tableName: 'mktPermissionAction',
+    pgColumns: MKT_PERMISSION_ACTION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_ACTION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPermissionResource',
+    pgColumns: MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_RESOURCE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktPermissionTemplate',
+    pgColumns: MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_TEMPLATE_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktTemplateResourcePermission',
+    pgColumns: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktTemplateSystemAction',
+    pgColumns: MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_TEMPLATE_SYSTEM_ACTION_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktUserPermissionTemplate',
+    pgColumns: MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS,
   },
 ];

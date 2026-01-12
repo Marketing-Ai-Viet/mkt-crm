@@ -31,7 +31,7 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
   description: msg`Tracks RBAC policy sync versions for cache invalidation`,
   icon: 'IconHistory',
   shortcut: 'PV',
-  labelIdentifierStandardId: MKT_POLICY_VERSION_FIELD_IDS.version,
+  labelIdentifierStandardId: MKT_POLICY_VERSION_FIELD_IDS.policyHash,
 })
 export class MktPolicyVersionWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceField({

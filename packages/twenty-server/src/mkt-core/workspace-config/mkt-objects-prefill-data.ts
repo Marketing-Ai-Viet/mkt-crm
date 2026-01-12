@@ -36,6 +36,13 @@ import { prefillMktPromotionRules } from 'src/mkt-core/seeder/promotion-seeder/p
 import { prefillMktPromotionUsages } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-usages';
 import { prefillMktPromotions } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotions';
 import { prefillMktOptions } from 'src/mkt-core/seeder/mkt-option-seeder/prefill-mkt-options';
+// Permission template seeder imports
+import { prefillMktPermissionActions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/prefill-mkt-permission-actions';
+import { prefillMktPermissionResources } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/prefill-mkt-permission-resources';
+import { prefillMktPermissionTemplates } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/prefill-mkt-permission-templates';
+import { prefillMktTemplateResourcePermissions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/prefill-mkt-template-resource-permissions';
+import { prefillMktTemplateSystemActions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/prefill-mkt-template-system-actions';
+import { prefillMktUserPermissionTemplates } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/prefill-mkt-user-permission-templates';
 
 export const MKT_PREFILLS = [
   // core prefills
@@ -92,4 +99,11 @@ export const MKT_PREFILLS = [
   prefillMktDepartmentHierarchies,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
+  // permission template prefills (order matters: actions -> resources -> templates -> resource permissions -> system actions -> user templates)
+  prefillMktPermissionActions,
+  prefillMktPermissionResources,
+  prefillMktPermissionTemplates,
+  prefillMktTemplateResourcePermissions,
+  prefillMktTemplateSystemActions,
+  prefillMktUserPermissionTemplates,
 ];

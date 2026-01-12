@@ -37,6 +37,13 @@ import { MktPromotionRuleDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder
 import { MktCouponDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/promotion-seeder/mkt-coupon-data-seed-dev-workspace.command';
 import { MktPromotionAuditDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-audit-data-seed-dev-workspace.command';
 import { MktPromotionUsageDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-usage-data-seed-dev-workspace.command';
+// Permission template seeder command imports
+import { MktPermissionActionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/mkt-permission-action-data-seed-dev-workspace.command';
+import { MktPermissionResourceDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/mkt-permission-resource-data-seed-dev-workspace.command';
+import { MktPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/mkt-permission-template-data-seed-dev-workspace.command';
+import { MktTemplateResourcePermissionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-data-seed-dev-workspace.command';
+import { MktTemplateSystemActionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-data-seed-dev-workspace.command';
+import { MktUserPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seed-dev-workspace.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
   // core commands
@@ -94,4 +101,11 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   MktCouponDataSeedDevWorkspaceCommand,
   MktPromotionAuditDataSeedDevWorkspaceCommand,
   MktPromotionUsageDataSeedDevWorkspaceCommand,
+  // permission template commands (order matters: actions -> resources -> templates -> resource permissions -> system actions -> user templates)
+  MktPermissionActionDataSeedDevWorkspaceCommand,
+  MktPermissionResourceDataSeedDevWorkspaceCommand,
+  MktPermissionTemplateDataSeedDevWorkspaceCommand,
+  MktTemplateResourcePermissionDataSeedDevWorkspaceCommand,
+  MktTemplateSystemActionDataSeedDevWorkspaceCommand,
+  MktUserPermissionTemplateDataSeedDevWorkspaceCommand,
 ];

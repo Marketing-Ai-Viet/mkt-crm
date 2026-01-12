@@ -16,7 +16,20 @@ import {
   MktDataAccessPolicyWorkspaceEntity,
   MktPermissionAuditWorkspaceEntity,
   MktTemporaryPermissionWorkspaceEntity,
+  MktPermissionActionWorkspaceEntity,
+  MktPermissionResourceWorkspaceEntity,
+  MktPermissionTemplateWorkspaceEntity,
+  MktTemplateResourcePermissionWorkspaceEntity,
+  MktTemplateSystemActionWorkspaceEntity,
+  MktUserPermissionTemplateWorkspaceEntity,
+  MktUserPermissionOverrideWorkspaceEntity,
+  MktTemplateAccessLimitationWorkspaceEntity,
+  MktPermissionContextWorkspaceEntity,
+  MktPermissionPriorityConfigWorkspaceEntity,
+  MktCasbinRuleWorkspaceEntity,
+  MktPolicyVersionWorkspaceEntity,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
@@ -105,6 +118,21 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   // Temporary Permission
   MktTemporaryPermissionWorkspaceEntity,
   MktDepartmentHierarchyWorkspaceEntity,
+  MktDepartmentAncestryWorkspaceEntity,
   MktDataAccessPolicyWorkspaceEntity,
   MktPermissionAuditWorkspaceEntity,
+  // Permission Template System (order matters: actions -> resources -> templates -> mappings)
+  MktPermissionActionWorkspaceEntity,
+  MktPermissionResourceWorkspaceEntity,
+  MktPermissionTemplateWorkspaceEntity,
+  MktTemplateResourcePermissionWorkspaceEntity,
+  MktTemplateSystemActionWorkspaceEntity,
+  MktUserPermissionTemplateWorkspaceEntity,
+  MktUserPermissionOverrideWorkspaceEntity,
+  MktTemplateAccessLimitationWorkspaceEntity,
+  MktPermissionContextWorkspaceEntity,
+  MktPermissionPriorityConfigWorkspaceEntity,
+  // Casbin RBAC
+  MktCasbinRuleWorkspaceEntity,
+  MktPolicyVersionWorkspaceEntity,
 ];
