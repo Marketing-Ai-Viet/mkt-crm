@@ -1,11 +1,14 @@
 /**
  * Validators barrel export
  *
- * Add validators here as they are created
+ * Re-exports Casbin validators for convenience
  */
 
-// Export validators here
-// export * from './permission-input.validator';
-
-// Placeholder export to make this a valid module
-export {};
+// Re-export Casbin validators
+export {
+  PolicyValidator,
+  HighRiskPolicyValidator,
+  type PolicyRiskLevel,
+  type RiskPattern,
+  type HighRiskAssessment,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators';

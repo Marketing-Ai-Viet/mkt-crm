@@ -5,6 +5,7 @@ import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { RBAC_COMMANDS } from 'src/mkt-core/mkt-rbac-enterprise-grade/commands';
 import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
 
 /**
  * Default configuration for Enterprise RBAC
@@ -52,6 +53,9 @@ const DEFAULT_CONFIG = {
 
     // Repositories for permission template entities
     ...RBAC_REPOSITORIES,
+
+    // GraphQL Resolvers
+    ...RBAC_RESOLVERS,
 
     // CLI Commands (rbac-seeder:sync, rbac-seeder:check, rbac-seeder:warm-cache)
     ...RBAC_COMMANDS,

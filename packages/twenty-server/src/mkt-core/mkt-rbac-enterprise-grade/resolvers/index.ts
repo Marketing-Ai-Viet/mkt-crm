@@ -3,24 +3,25 @@
  *
  * GraphQL resolvers for RBAC module
  *
- * Note: Resolvers are temporarily disabled until services are fully implemented.
- * To enable:
- * 1. Implement ValidationOrchestratorService.validatePermission() method
- * 2. Implement missing repository methods
- * 3. Uncomment the exports and array below
+ * Resolvers:
+ * - PermissionCheckResolver: Permission checking queries and mutations
+ * - PolicyManagementResolver: Policy CRUD and approval workflow
+ * - AuditLogResolver: Audit log queries for compliance
  */
 
-// TODO: Enable when service methods are implemented
-// export { PermissionCheckResolver } from './permission-check.resolver';
-// export { PermissionAdminResolver } from './permission-admin.resolver';
-// export { AuditLogResolver } from './audit-log.resolver';
+export { PermissionCheckResolver } from './permission-check.resolver';
+export { PolicyManagementResolver } from './policy-management.resolver';
+export { AuditLogResolver } from './audit-log.resolver';
+
+import { PermissionCheckResolver } from './permission-check.resolver';
+import { PolicyManagementResolver } from './policy-management.resolver';
+import { AuditLogResolver } from './audit-log.resolver';
 
 /**
  * Array of all RBAC resolvers for module registration
- * Note: Currently empty - resolvers require additional service methods
  */
-export const RBAC_RESOLVERS: unknown[] = [
-  // PermissionCheckResolver,
-  // PermissionAdminResolver,
-  // AuditLogResolver,
+export const RBAC_RESOLVERS = [
+  PermissionCheckResolver,
+  PolicyManagementResolver,
+  AuditLogResolver,
 ];
