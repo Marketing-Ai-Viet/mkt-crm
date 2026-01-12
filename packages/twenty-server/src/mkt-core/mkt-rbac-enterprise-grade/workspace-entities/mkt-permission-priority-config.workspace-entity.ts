@@ -11,7 +11,7 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import {
   SOURCE_TYPE_OPTIONS,
   SOURCE_SUBTYPE_OPTIONS,
-} from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
 
 @WorkspaceIndex(['sourceType', 'sourceSubType'], {
   indexWhereClause: '"deletedAt" IS NULL AND "isActive" = true',

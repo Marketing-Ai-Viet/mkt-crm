@@ -10,7 +10,7 @@ import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import { MKT_PERMISSION_CONTEXT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { CONTEXT_TYPE_OPTIONS } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+import { CONTEXT_TYPE_OPTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 
 import { MktTemplateResourcePermissionWorkspaceEntity } from './mkt-template-resource-permission.workspace-entity';

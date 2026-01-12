@@ -11,7 +11,7 @@ import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { MKT_PERMISSION_RESOURCE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { PERMISSION_RESOURCE_CATEGORY_OPTIONS } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+import { PERMISSION_RESOURCE_CATEGORY_OPTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import {
   MktTemplateResourcePermissionWorkspaceEntity,

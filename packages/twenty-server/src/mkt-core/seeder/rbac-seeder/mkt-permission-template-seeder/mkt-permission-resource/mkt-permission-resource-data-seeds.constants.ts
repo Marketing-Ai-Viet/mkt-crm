@@ -5,7 +5,7 @@
  * Resources: CUSTOMERS, ORDERS, PRODUCTS, LICENSES, etc.
  */
 
-import { PERMISSION_RESOURCE_CATEGORY } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+import { PERMISSION_RESOURCE_CATEGORY } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
 
 type MktPermissionResourceDataSeed = {
   id: string;

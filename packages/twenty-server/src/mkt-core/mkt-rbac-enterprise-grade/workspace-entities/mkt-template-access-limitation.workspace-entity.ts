@@ -15,7 +15,7 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import {
   ACCESS_LIMITATION_TYPE_OPTIONS,
   LIMITATION_SEVERITY_OPTIONS,
-} from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
 
 import { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
 

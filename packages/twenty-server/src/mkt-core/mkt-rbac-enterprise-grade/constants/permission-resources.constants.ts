@@ -1,5 +1,5 @@
 // Permission Resource Categories
-import { PermissionResourceSeed } from 'src/mkt-core/mkt-permission-template/types/permissions.type';
+import { PermissionResourceSeed } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/permissions.type';
 
 export const PERMISSION_RESOURCE_CATEGORIES = {
   BUSINESS_DATA: 'BUSINESS_DATA',

@@ -12,7 +12,7 @@ import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-re
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { MKT_USER_PERMISSION_OVERRIDE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { OVERRIDE_REASON_OPTIONS } from 'src/mkt-core/mkt-permission-template/constants/permission-template-options.constants';
+import { OVERRIDE_REASON_OPTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template-options.constants';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
