@@ -3,6 +3,36 @@ import { z } from 'zod';
 import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
 
 // ============================================
+// INJECTION TOKENS (Symbol-based for type safety)
+// ============================================
+
+/**
+ * Injection token for Enterprise RBAC Configuration
+ *
+ * Usage:
+ * ```typescript
+ * constructor(
+ *   @Inject(ENTERPRISE_RBAC_CONFIG_TOKEN)
+ *   private readonly config: EnterpriseRbacConfigType,
+ * ) {}
+ * ```
+ */
+export const ENTERPRISE_RBAC_CONFIG_TOKEN = Symbol('ENTERPRISE_RBAC_CONFIG');
+
+/**
+ * Injection token for MKT RBAC Configuration
+ *
+ * Usage:
+ * ```typescript
+ * constructor(
+ *   @Inject(MKT_RBAC_CONFIG_TOKEN)
+ *   private readonly config: MktRbacConfigType,
+ * ) {}
+ * ```
+ */
+export const MKT_RBAC_CONFIG_TOKEN = Symbol('MKT_RBAC_CONFIG');
+
+// ============================================
 // DEFAULTS (using centralized cache TTL)
 // ============================================
 
@@ -162,3 +192,65 @@ export const MKT_RBAC_CONFIG = {
 } as const;
 
 export type MktRbacConfigType = typeof MKT_RBAC_CONFIG;
+
+// ============================================
+// ENTERPRISE RBAC CONFIGURATION
+// ============================================
+
+/**
+ * Enterprise RBAC Configuration Schema
+ *
+ * Feature flags and settings for the Enterprise RBAC module.
+ *
+ * Environment variables:
+ * - RBAC_ENABLE_CASBIN_AUTHORIZATION: Enable Casbin authorization (default: true)
+ * - RBAC_ENABLE_METRICS: Enable RBAC metrics (default: true)
+ * - RBAC_DEBUG_MODE: Enable debug mode (default: false)
+ */
+const enterpriseRbacConfigSchema = z.object({
+  /** Enable Casbin-based authorization */
+  enableCasbinAuthorization: z.boolean().default(true),
+
+  /** Enable audit logging */
+  enableAuditLogging: z.boolean().default(true),
+
+  /** Enable metrics collection */
+  enableMetrics: z.boolean().default(true),
+
+  /** Enable caching */
+  enableCaching: z.boolean().default(true),
+
+  /** Enable debug mode */
+  enableDebugMode: z.boolean().default(false),
+});
+
+/**
+ * Build Enterprise RBAC config from environment variables
+ */
+const buildEnterpriseRbacConfig = () => {
+  const envConfig = {
+    enableCasbinAuthorization:
+      process.env.RBAC_ENABLE_CASBIN_AUTHORIZATION !== 'false',
+    enableAuditLogging: process.env.RBAC_ENABLE_AUDIT_LOGGING !== 'false',
+    enableMetrics: process.env.RBAC_ENABLE_METRICS !== 'false',
+    enableCaching: process.env.RBAC_ENABLE_CACHING !== 'false',
+    enableDebugMode: process.env.RBAC_DEBUG_MODE === 'true',
+  };
+
+  return enterpriseRbacConfigSchema.parse(envConfig);
+};
+
+/**
+ * Enterprise RBAC Configuration
+ *
+ * Use with ENTERPRISE_RBAC_CONFIG_TOKEN for injection:
+ * ```typescript
+ * @Inject(ENTERPRISE_RBAC_CONFIG_TOKEN)
+ * private readonly config: EnterpriseRbacConfigType,
+ * ```
+ */
+export const ENTERPRISE_RBAC_CONFIG = buildEnterpriseRbacConfig();
+
+export type EnterpriseRbacConfigType = z.infer<
+  typeof enterpriseRbacConfigSchema
+>;

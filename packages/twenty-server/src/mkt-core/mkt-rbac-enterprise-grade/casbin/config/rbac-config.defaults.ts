@@ -2,6 +2,8 @@
  * RBAC Configuration Defaults
  *
  * Default values for RBAC module configuration
+ *
+ * Note: Types are now inferred from Zod schemas in rbac-config.schema.ts
  */
 
 import { CASBIN_CACHE_TTL } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';

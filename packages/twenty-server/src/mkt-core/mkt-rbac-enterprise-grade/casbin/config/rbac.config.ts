@@ -1,149 +1,15 @@
 import { registerAs } from '@nestjs/config';
 
 import {
-  RBAC_CACHE_WARMER_DEFAULTS,
-  RBAC_ENFORCER_DEFAULTS,
-  RBAC_PUBSUB_DEFAULTS,
-  RBAC_PUBSUB_ENV,
-  RBAC_SYNC_DEFAULTS,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config/rbac-config.defaults';
-import {
+  buildRbacConfig,
   CasbinRbacConfig,
-  RbacCacheWarmerConfig,
-  RbacEnforcerConfig,
-  RbacPubSubConfig,
-  RbacSyncConfig,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config/rbac-config.types';
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-const getEnvBoolean = (key: string, defaultValue: boolean): boolean => {
-  const value = process.env[key];
-
-  if (value === undefined) {
-    return defaultValue;
-  }
-
-  return value.toLowerCase() === 'true';
-};
-
-const getEnvNumber = (key: string, defaultValue: number): number => {
-  const value = process.env[key];
-
-  if (value === undefined) {
-    return defaultValue;
-  }
-
-  const parsed = parseInt(value, 10);
-
-  return isNaN(parsed) ? defaultValue : parsed;
-};
-
-const getEnvStringArray = (key: string, defaultValue: string[]): string[] => {
-  const value = process.env[key];
-
-  if (value === undefined || value.trim() === '') {
-    return defaultValue;
-  }
-
-  return value.split(',').map((s) => s.trim());
-};
-
-// ============================================
-// CONFIG BUILDERS
-// ============================================
-
-const buildCacheWarmerConfig = (): RbacCacheWarmerConfig => ({
-  enabled: getEnvBoolean(
-    'RBAC_CACHE_WARM_ENABLED',
-    RBAC_CACHE_WARMER_DEFAULTS.ENABLED,
-  ),
-  warmOnStartup: getEnvBoolean(
-    'RBAC_CACHE_WARM_ON_STARTUP',
-    RBAC_CACHE_WARMER_DEFAULTS.WARM_ON_STARTUP,
-  ),
-  concurrency: getEnvNumber(
-    'RBAC_CACHE_WARM_CONCURRENCY',
-    RBAC_CACHE_WARMER_DEFAULTS.CONCURRENCY,
-  ),
-  priorityWorkspaces: getEnvStringArray('RBAC_PRIORITY_WORKSPACES', []),
-});
-
-const buildSyncConfig = (): RbacSyncConfig => ({
-  maxRetries: getEnvNumber(
-    'RBAC_SYNC_MAX_RETRIES',
-    RBAC_SYNC_DEFAULTS.MAX_RETRIES,
-  ),
-  retryDelayMs: getEnvNumber(
-    'RBAC_SYNC_RETRY_DELAY_MS',
-    RBAC_SYNC_DEFAULTS.RETRY_DELAY_MS,
-  ),
-  debounceMs: getEnvNumber(
-    'RBAC_SYNC_DEBOUNCE_MS',
-    RBAC_SYNC_DEFAULTS.DEBOUNCE_MS,
-  ),
-  maxPoliciesPerWorkspace: getEnvNumber(
-    'RBAC_MAX_POLICIES_PER_WORKSPACE',
-    RBAC_SYNC_DEFAULTS.MAX_POLICIES_PER_WORKSPACE,
-  ),
-});
-
-const buildEnforcerConfig = (): RbacEnforcerConfig => ({
-  failClosed: getEnvBoolean(
-    'RBAC_FAIL_CLOSED',
-    RBAC_ENFORCER_DEFAULTS.FAIL_CLOSED,
-  ),
-  cacheEnabled: getEnvBoolean(
-    'RBAC_CACHE_ENABLED',
-    RBAC_ENFORCER_DEFAULTS.CACHE_ENABLED,
-  ),
-  maxEnforcersInMemory: getEnvNumber(
-    'RBAC_MAX_ENFORCERS_IN_MEMORY',
-    RBAC_ENFORCER_DEFAULTS.MAX_ENFORCERS_IN_MEMORY,
-  ),
-  enforcerTtlMs: getEnvNumber(
-    'RBAC_ENFORCER_TTL_MS',
-    RBAC_ENFORCER_DEFAULTS.ENFORCER_TTL_MS,
-  ),
-});
-
-const buildPubSubConfig = (): RbacPubSubConfig => ({
-  enabled: getEnvBoolean(
-    RBAC_PUBSUB_ENV.MULTI_REGION_ENABLED,
-    RBAC_PUBSUB_DEFAULTS.ENABLED,
-  ),
-  fallbackReloadIntervalMs: getEnvNumber(
-    RBAC_PUBSUB_ENV.FALLBACK_RELOAD_INTERVAL_MS,
-    RBAC_PUBSUB_DEFAULTS.FALLBACK_RELOAD_INTERVAL_MS,
-  ),
-  debounceMs: getEnvNumber(
-    RBAC_PUBSUB_ENV.INVALIDATION_DEBOUNCE_MS,
-    RBAC_PUBSUB_DEFAULTS.DEBOUNCE_MS,
-  ),
-  maxMessageAgeMs: getEnvNumber(
-    'RBAC_PUBSUB_MAX_MESSAGE_AGE_MS',
-    RBAC_PUBSUB_DEFAULTS.MAX_MESSAGE_AGE_MS,
-  ),
-  reconnectDelayMs: getEnvNumber(
-    'RBAC_PUBSUB_RECONNECT_DELAY_MS',
-    RBAC_PUBSUB_DEFAULTS.RECONNECT_DELAY_MS,
-  ),
-  maxReconnectAttempts: getEnvNumber(
-    'RBAC_PUBSUB_MAX_RECONNECT_ATTEMPTS',
-    RBAC_PUBSUB_DEFAULTS.MAX_RECONNECT_ATTEMPTS,
-  ),
-});
-
-// ============================================
-// MAIN CONFIG
-// ============================================
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config/rbac-config.schema';
 
 /**
  * RBAC module configuration
  *
  * Registered with NestJS ConfigModule as 'rbac'
+ * Uses Zod schemas for validation and type safety
  *
  * Environment variables:
  * - RBAC_CACHE_WARM_ENABLED: Enable cache warming (default: true)
@@ -180,12 +46,7 @@ const buildPubSubConfig = (): RbacPubSubConfig => ({
  */
 export const rbacConfig = registerAs(
   'rbac',
-  (): CasbinRbacConfig => ({
-    cacheWarmer: buildCacheWarmerConfig(),
-    sync: buildSyncConfig(),
-    enforcer: buildEnforcerConfig(),
-    pubsub: buildPubSubConfig(),
-  }),
+  (): CasbinRbacConfig => buildRbacConfig(process.env),
 );
 
 /**

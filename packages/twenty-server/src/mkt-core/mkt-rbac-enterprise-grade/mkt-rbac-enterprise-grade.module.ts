@@ -4,24 +4,12 @@ import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { RBAC_COMMANDS } from 'src/mkt-core/mkt-rbac-enterprise-grade/commands';
+import {
+  ENTERPRISE_RBAC_CONFIG,
+  ENTERPRISE_RBAC_CONFIG_TOKEN,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
 import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
-
-/**
- * Default configuration for Enterprise RBAC
- */
-const DEFAULT_CONFIG = {
-  // Feature flags
-  enableCasbinAuthorization: true,
-  enableAuditLogging: true,
-  enableMetrics: true,
-
-  // Performance settings
-  enableCaching: true,
-
-  // Development settings
-  enableDebugMode: false,
-} as const;
 
 /**
  * Enterprise RBAC Module
@@ -35,6 +23,15 @@ const DEFAULT_CONFIG = {
  * - Audit logging and metrics
  * - CLI commands for management
  *
+ * Configuration:
+ * Uses ENTERPRISE_RBAC_CONFIG_TOKEN (Symbol) for type-safe injection:
+ * ```typescript
+ * constructor(
+ *   @Inject(ENTERPRISE_RBAC_CONFIG_TOKEN)
+ *   private readonly config: EnterpriseRbacConfigType,
+ * ) {}
+ * ```
+ *
  * Usage:
  * ```typescript
  * // In resolver
@@ -45,10 +42,10 @@ const DEFAULT_CONFIG = {
 @Module({
   imports: [TwentyORMModule, CacheStorageModule, CasbinModule],
   providers: [
-    // Configuration provider
+    // Configuration provider (Symbol token for type safety)
     {
-      provide: 'ENTERPRISE_RBAC_CONFIG',
-      useValue: DEFAULT_CONFIG,
+      provide: ENTERPRISE_RBAC_CONFIG_TOKEN,
+      useValue: ENTERPRISE_RBAC_CONFIG,
     },
 
     // Repositories for permission template entities
@@ -64,8 +61,8 @@ const DEFAULT_CONFIG = {
     // Export Casbin module (guards, decorators, services)
     CasbinModule,
 
-    // Export config
-    'ENTERPRISE_RBAC_CONFIG',
+    // Export config token
+    ENTERPRISE_RBAC_CONFIG_TOKEN,
 
     // Export repositories
     ...RBAC_REPOSITORIES,

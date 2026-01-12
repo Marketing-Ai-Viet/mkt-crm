@@ -757,9 +757,11 @@ export const VALIDATION_PATTERNS = {
 } as const;
 
 /**
- * Configuration defaults
+ * RBAC Validation Configuration defaults
+ *
+ * Note: For module-level config, use ENTERPRISE_RBAC_CONFIG from configs/mkt-rbac.config.ts
  */
-export const ENTERPRISE_RBAC_CONFIG = {
+export const RBAC_VALIDATION_CONFIG = {
   // Validation Mode
   // 'SIMPLIFIED' = 6-step validation (CRUD only: Pre-validation, User Context, Resource ID, Template Check, Action Validation, Final Decision)
   // 'FULL' = Full 15-step validation (Enterprise-grade with all features)
