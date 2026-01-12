@@ -8,10 +8,10 @@ import { SetMetadata } from '@nestjs/common';
 import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 /**
- * Permission metadata interface
+ * Permission metadata type
  * Designed for SIMPLIFIED mode: module + CRUD actions
  */
-export interface PermissionMetadata {
+export type PermissionMetadata = {
   // ========== CORE (Required) ==========
   /**
    * Resource/Module name (e.g., 'ORDERS', 'CUSTOMERS', 'PRODUCTS')
@@ -86,12 +86,6 @@ export interface PermissionMetadata {
 
   // ========== ADVANCED (Optional - for FULL mode or future features) ==========
   /**
-   * @deprecated Use 'resource' instead
-   * Kept for backward compatibility
-   */
-  objectName?: string;
-
-  /**
    * Skip permission validation entirely
    * Use with caution - only for internal/system endpoints
    * Default: false
@@ -99,17 +93,11 @@ export interface PermissionMetadata {
   skipValidation?: boolean;
 
   /**
-   * Require ownership check (Step 6 in FULL mode)
+   * Require ownership check
    * Only applicable in FULL validation mode
    * Default: false
    */
   requireOwnership?: boolean;
-
-  /**
-   * Allowed roles (legacy support)
-   * @deprecated Use permission templates instead
-   */
-  allowedRoles?: string[];
 
   /**
    * Minimum hierarchy level required (1-11, where 1=CEO, 11=Intern)
@@ -123,7 +111,7 @@ export interface PermissionMetadata {
    * For field-level permission control (future feature)
    */
   requiredFields?: string[];
-}
+};
 
 /**
  * Permission metadata decorator key
@@ -218,23 +206,9 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * })
  * async updateOrder(@Args('id') id: string) { }
  *
- * ## Backward Compatibility
- *
- * @example
- * // Old format (still supported)
- * @Permission({
- *   action: PermissionAction.READ,
- *   objectName: 'ORDERS'  // Will use 'resource' internally
- * })
- *
  * @param metadata Permission metadata configuration
  */
 export const Permission = (metadata: PermissionMetadata) => {
-  // Backward compatibility: objectName → resource
-  if (metadata.objectName && !metadata.resource) {
-    metadata.resource = metadata.objectName;
-  }
-
   // Validation: Ensure required fields
   // Note: resource can be optional at method-level (inherited from class-level)
   // The Guard will merge class-level and method-level metadata

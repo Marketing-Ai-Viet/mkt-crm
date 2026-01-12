@@ -1,7 +1,6 @@
 /**
  * Enterprise RBAC Constants
- * Independent module - contains all constants for 15-step validation process
- * No dependencies on legacy RBAC modules
+ * Contains constants for Casbin-based authorization system
  */
 
 import { TagColor } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
@@ -367,38 +366,6 @@ export const RISK_LEVELS = {
   MEDIUM: 'MEDIUM',
   HIGH: 'HIGH',
   CRITICAL: 'CRITICAL',
-} as const;
-
-/**
- * Permission Sources (Enhanced)
- */
-export const ENHANCED_PERMISSION_SOURCES = {
-  ...PermissionSource,
-  PERMISSION_TEMPLATE: 'PERMISSION_TEMPLATE',
-  HIERARCHY_INHERITANCE: 'HIERARCHY_INHERITANCE',
-  DEPARTMENT_POLICY: 'DEPARTMENT_POLICY',
-  SPECIAL_OVERRIDE: 'SPECIAL_OVERRIDE',
-  DYNAMIC_CONDITION: 'DYNAMIC_CONDITION',
-} as const;
-
-/**
- * Action Categories (Enhanced from Permission Template)
- */
-export const ENHANCED_ACTION_CATEGORIES = {
-  ...PERMISSION_ACTION_CATEGORIES,
-  SECURITY: 'SECURITY',
-  COMPLIANCE: 'COMPLIANCE',
-  EMERGENCY: 'EMERGENCY',
-} as const;
-
-/**
- * Resource Categories (Enhanced from Permission Template)
- */
-export const ENHANCED_RESOURCE_CATEGORIES = {
-  ...PERMISSION_RESOURCE_CATEGORIES,
-  AUDIT_DATA: 'AUDIT_DATA',
-  SECURITY_CONFIG: 'SECURITY_CONFIG',
-  COMPLIANCE_DATA: 'COMPLIANCE_DATA',
 } as const;
 
 /**

@@ -1,13 +1,12 @@
 /**
  * Resource Identification Types
- * Step 3 of 15-step permission validation
- * Contains all interfaces and types for resource identification and classification
+ * Types for resource identification and classification in RBAC
  */
 
 /**
  * Resource metadata for permission validation
  */
-export interface ResourceMetadata {
+export type ResourceMetadata = {
   objectName: string;
   objectId?: string;
   resourceType: string;
@@ -26,22 +25,22 @@ export interface ResourceMetadata {
   crossReferences: string[];
   dependencies: ResourceDependency[];
   customAttributes: Record<string, string | number | boolean | Date>;
-}
+};
 
 /**
  * Resource dependency information
  */
-export interface ResourceDependency {
+export type ResourceDependency = {
   dependentResource: string;
   dependencyType: 'PARENT' | 'CHILD' | 'RELATED' | 'LINKED';
   accessRequirement: 'REQUIRED' | 'OPTIONAL' | 'RESTRICTED';
   cascadePermissions: boolean;
-}
+};
 
 /**
  * Resource classification configuration
  */
-export interface ResourceClassificationConfig {
+export type ResourceClassificationConfig = {
   systemObjects: string[];
   configObjects: string[];
   auditObjects: string[];
@@ -51,24 +50,24 @@ export interface ResourceClassificationConfig {
   sensitivePatterns: string[];
   retentionMapping: Record<string, number>;
   complianceFrameworks: Record<string, string[]>;
-}
+};
 
 /**
  * Ownership inheritance chain
  */
-export interface OwnershipInheritanceChain {
+export type OwnershipInheritanceChain = {
   ownerId: string;
   userDepartment?: string;
   parentDepartments: string[];
   workspaceId: string;
   inheritanceOrder: string[];
   permissionCascade: boolean;
-}
+};
 
 /**
  * Resource sensitivity analysis result
  */
-export interface SensitivityAnalysisResult {
+export type SensitivityAnalysisResult = {
   sensitivityScore: number;
   sensitivityLevel:
     | 'PUBLIC'
@@ -84,22 +83,22 @@ export interface SensitivityAnalysisResult {
   }[];
   recommendedRestrictions: string[];
   complianceFrameworks: string[];
-}
+};
 
 /**
  * Cross-reference analysis result
  */
-export interface CrossReferenceAnalysis {
+export type CrossReferenceAnalysis = {
   referencingObjects: string[];
   relationshipTypes: Record<string, string>;
   dependencyStrength: Record<string, 'WEAK' | 'MODERATE' | 'STRONG'>;
   cascadeRisk: 'LOW' | 'MEDIUM' | 'HIGH';
-}
+};
 
 /**
  * Custom attribute extraction configuration
  */
-export interface CustomAttributeConfig {
+export type CustomAttributeConfig = {
   metadataFields: string[];
   businessLogicChecks: {
     checkName: string;
@@ -111,12 +110,12 @@ export interface CustomAttributeConfig {
     analyzeRelations: boolean;
     trackUsageMetrics: boolean;
   };
-}
+};
 
 /**
  * Resource identification cache entry
  */
-export interface ResourceIdentificationCache {
+export type ResourceIdentificationCache = {
   resourceMetadata: ResourceMetadata;
   sensitivityAnalysis: SensitivityAnalysisResult;
   crossReferences: CrossReferenceAnalysis;
@@ -124,12 +123,12 @@ export interface ResourceIdentificationCache {
   lastUpdated: Date;
   expiresAt: Date;
   version: string;
-}
+};
 
 /**
  * Resource identification performance metrics
  */
-export interface ResourceIdentificationMetrics {
+export type ResourceIdentificationMetrics = {
   totalExecutionTime: number;
   ownershipResolutionTime: number;
   sensitivityAnalysisTime: number;
@@ -138,12 +137,12 @@ export interface ResourceIdentificationMetrics {
   cacheHitRate: number;
   errorRate: number;
   averageComplexityScore: number;
-}
+};
 
 /**
  * Resource identification configuration
  */
-export interface ResourceIdentificationConfig {
+export type ResourceIdentificationConfig = {
   enableCaching: boolean;
   cacheExpiration: number; // seconds
   maxRecursionDepth: number;
@@ -155,4 +154,4 @@ export interface ResourceIdentificationConfig {
     enableTracking: boolean;
     metricsRetention: number; // days
   };
-}
+};

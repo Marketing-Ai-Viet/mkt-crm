@@ -35,63 +35,45 @@ export {
   type AuditNotification,
 } from './audit.types';
 
-// Export from validation-step.types (excluding duplicates)
+// Export from validation-step.types (data types only)
 export {
-  // Base validation step types
-  type PermissionValidationStep,
+  // Validation result types
   type StepValidationResult,
-  type PermissionValidationOrchestrator,
-  type ValidationExecutionPlan,
-  // Step types
-  type PreValidationStep,
-  type UserContextResolutionStep,
-  type ResourceIdentificationStep,
-  type PermissionTemplateCheckStep,
-  type ActionPermissionValidationStep,
-  type ResourcePermissionCheckStep,
-  type HierarchyValidationStep,
-  type DataAccessPolicyCheckStep,
-  type SpecialPermissionsStep,
-  type SensitiveDataCheckStep,
-  type DepartmentRestrictionsStep,
-  type DynamicConditionsStep,
-  type CachePerformanceStep,
-  type AuditLoggingStep,
-  type FinalDecisionStep,
-  // Factory and middleware types
-  type ValidationStepFactory,
-  type ValidationMiddleware,
-  type PermissionValidationMonitor,
   type StepExecutionMetrics,
   type PermissionValidationStatistics,
-  // Specific types (migrated from interfaces)
+  // User and organization types
   type UserHierarchyInfo,
   type DepartmentInfo,
   type PermissionTemplate,
   type ResourceOwnership,
   type AccessControlEntry,
   type ReportingRelationship,
+  // Template and policy types
   type TemplateConflictResolution,
+  type PolicyEvaluationResult as ValidationPolicyEvaluationResult,
   type DataFilter,
   type TimeRestriction,
+  // Emergency access types
   type EmergencyAccess,
   type EmergencyAccessLog,
+  // Performance types
   type PerformanceCacheData,
+  // Business rule types
   type BusinessRuleEvaluationResult,
   type ApprovalRequirement,
   type ResourceRestriction,
   type HierarchyFilteringResult,
+  // Compliance types
   type ComplianceRequirementResult,
   type ComplianceRule,
+  // Dynamic condition types
   type DynamicConditionResult,
   type PerformanceOptimizationResult,
   type ComplianceReportData,
+  // Final decision types
   type FinalDecisionResult,
   type ConflictResolutionResult,
 } from './validation-step.types';
-
-// Note: hierarchy.types, policy.types, service.types have overlapping exports
-// with other files. Import them directly if needed.
 
 // Casbin-specific types (re-export from casbin/types for backward compatibility)
 export * from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';

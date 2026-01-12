@@ -37,12 +37,10 @@ export const MKT_RBAC_CONFIG_TOKEN = Symbol('MKT_RBAC_CONFIG');
 // ============================================
 
 const DEFAULT_CACHE_TTL_SECONDS = CACHE_TTL.MEDIUM; // 10 minutes
-const DEFAULT_ENABLE_15_STEP_VALIDATION = true;
 const DEFAULT_ENABLE_HIERARCHY_VALIDATION = true;
 const DEFAULT_ENABLE_POLICY_ENGINE = true;
 const DEFAULT_ENABLE_AUDIT_LOGGING = true;
 const DEFAULT_ENABLE_CACHING = true;
-const DEFAULT_MAX_VALIDATION_STEPS = 15;
 const DEFAULT_AUDIT_LOG_RETENTION_DAYS = 90;
 const DEFAULT_CACHE_WARMUP_CRON = '0 0 * * * *'; // Every hour
 const DEFAULT_AUDIT_CLEANUP_CRON = '0 0 2 * * *'; // Every day at 2 AM
@@ -86,12 +84,10 @@ const cronEnvSchema = (defaultValue: string) =>
  *
  * Environment variables:
  * - RBAC_CACHE_TTL_SECONDS: Cache TTL in seconds (default: 600 - 10 minutes)
- * - RBAC_ENABLE_15_STEP_VALIDATION: Enable 15-step validation (default: true)
  * - RBAC_ENABLE_HIERARCHY_VALIDATION: Enable hierarchy validation (default: true)
  * - RBAC_ENABLE_POLICY_ENGINE: Enable policy engine (default: true)
  * - RBAC_ENABLE_AUDIT_LOGGING: Enable audit logging (default: true)
  * - RBAC_ENABLE_CACHING: Enable caching (default: true)
- * - RBAC_MAX_VALIDATION_STEPS: Maximum validation steps (default: 15)
  * - RBAC_AUDIT_LOG_RETENTION_DAYS: Audit log retention days (default: 90)
  * - RBAC_CACHE_WARMUP_CRON: Cache warmup cron expression (default: every hour)
  * - RBAC_AUDIT_CLEANUP_CRON: Audit log cleanup cron (default: every day at 2 AM)
@@ -99,16 +95,12 @@ const cronEnvSchema = (defaultValue: string) =>
  */
 const rbacConfigSchema = z.object({
   RBAC_CACHE_TTL_SECONDS: positiveIntEnvSchema(DEFAULT_CACHE_TTL_SECONDS),
-  RBAC_ENABLE_15_STEP_VALIDATION: booleanEnvSchema(
-    DEFAULT_ENABLE_15_STEP_VALIDATION,
-  ),
   RBAC_ENABLE_HIERARCHY_VALIDATION: booleanEnvSchema(
     DEFAULT_ENABLE_HIERARCHY_VALIDATION,
   ),
   RBAC_ENABLE_POLICY_ENGINE: booleanEnvSchema(DEFAULT_ENABLE_POLICY_ENGINE),
   RBAC_ENABLE_AUDIT_LOGGING: booleanEnvSchema(DEFAULT_ENABLE_AUDIT_LOGGING),
   RBAC_ENABLE_CACHING: booleanEnvSchema(DEFAULT_ENABLE_CACHING),
-  RBAC_MAX_VALIDATION_STEPS: positiveIntEnvSchema(DEFAULT_MAX_VALIDATION_STEPS),
   RBAC_AUDIT_LOG_RETENTION_DAYS: positiveIntEnvSchema(
     DEFAULT_AUDIT_LOG_RETENTION_DAYS,
   ),
@@ -125,13 +117,11 @@ const rbacConfigSchema = z.object({
 
 const parsedEnv = rbacConfigSchema.safeParse({
   RBAC_CACHE_TTL_SECONDS: process.env.RBAC_CACHE_TTL_SECONDS,
-  RBAC_ENABLE_15_STEP_VALIDATION: process.env.RBAC_ENABLE_15_STEP_VALIDATION,
   RBAC_ENABLE_HIERARCHY_VALIDATION:
     process.env.RBAC_ENABLE_HIERARCHY_VALIDATION,
   RBAC_ENABLE_POLICY_ENGINE: process.env.RBAC_ENABLE_POLICY_ENGINE,
   RBAC_ENABLE_AUDIT_LOGGING: process.env.RBAC_ENABLE_AUDIT_LOGGING,
   RBAC_ENABLE_CACHING: process.env.RBAC_ENABLE_CACHING,
-  RBAC_MAX_VALIDATION_STEPS: process.env.RBAC_MAX_VALIDATION_STEPS,
   RBAC_AUDIT_LOG_RETENTION_DAYS: process.env.RBAC_AUDIT_LOG_RETENTION_DAYS,
   RBAC_CACHE_WARMUP_CRON: process.env.RBAC_CACHE_WARMUP_CRON,
   RBAC_AUDIT_CLEANUP_CRON: process.env.RBAC_AUDIT_CLEANUP_CRON,
@@ -159,9 +149,6 @@ export const MKT_RBAC_CONFIG = {
   /** Cache TTL in seconds (default: 10 minutes) */
   CACHE_TTL_SECONDS: validatedEnv.RBAC_CACHE_TTL_SECONDS,
 
-  /** Enable 15-step validation */
-  ENABLE_15_STEP_VALIDATION: validatedEnv.RBAC_ENABLE_15_STEP_VALIDATION,
-
   /** Enable hierarchy validation */
   ENABLE_HIERARCHY_VALIDATION: validatedEnv.RBAC_ENABLE_HIERARCHY_VALIDATION,
 
@@ -173,9 +160,6 @@ export const MKT_RBAC_CONFIG = {
 
   /** Enable caching */
   ENABLE_CACHING: validatedEnv.RBAC_ENABLE_CACHING,
-
-  /** Maximum validation steps */
-  MAX_VALIDATION_STEPS: validatedEnv.RBAC_MAX_VALIDATION_STEPS,
 
   /** Audit log retention days */
   AUDIT_LOG_RETENTION_DAYS: validatedEnv.RBAC_AUDIT_LOG_RETENTION_DAYS,

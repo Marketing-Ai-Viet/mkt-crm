@@ -12,8 +12,8 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 /**
- * Enhanced User Context for Step 2: User Context Resolution
- * Contains comprehensive user information for 15-step validation
+ * Enhanced User Context
+ * Contains comprehensive user information for permission validation
  */
 export type EnhancedUserContext = {
   // Basic identifiers
@@ -23,7 +23,7 @@ export type EnhancedUserContext = {
   email?: string;
   disabled: boolean;
 
-  // Hierarchy information (Critical for Step 7)
+  // Hierarchy information
   hierarchyLevel: number; // 1-11 levels (1=CEO, 11=Intern)
   departmentId?: string;
   departmentName?: string;
@@ -34,7 +34,7 @@ export type EnhancedUserContext = {
   roles?: string[];
   jobTitle?: string;
 
-  // Reporting relationships (Step 7: Hierarchy Validation)
+  // Reporting relationships
   managerId?: string;
   subordinateIds?: string[];
   reportingChain?: string[]; // Array of manager IDs up the chain
@@ -56,7 +56,7 @@ export type EnhancedUserContext = {
   contextLoadedAt?: DateTime;
   contextSource?: 'CACHE' | 'DATABASE' | 'HYBRID';
 
-  // User enrichment fields (Step 2: User Context Resolution)
+  // User enrichment fields
   userEmail?: string;
   firstName?: string;
   lastName?: string;
@@ -81,7 +81,7 @@ export type EnhancedUserContext = {
 };
 
 /**
- * Temporary Elevation for emergency access (Step 9: Special Permissions)
+ * Temporary Elevation for emergency access
  */
 export type TemporaryElevation = {
   id: string;
@@ -96,7 +96,7 @@ export type TemporaryElevation = {
 };
 
 /**
- * Resource Context for Step 3: Resource Identification
+ * Resource Context for resource identification
  * Contains comprehensive resource information
  */
 export type ResourceContext = {
@@ -117,7 +117,7 @@ export type ResourceContext = {
   organizationLevelId?: string;
   teamId?: string;
 
-  // Security classification (Step 10: Sensitive Data)
+  // Security classification
   isSystemResource?: boolean;
   isSensitive?: boolean;
   confidentialityLevel?:
@@ -156,7 +156,7 @@ export type ResourceContext = {
 };
 
 /**
- * Dynamic Conditions for Step 12: Dynamic Conditions
+ * Dynamic Conditions
  * Contains time, location, and business rule conditions
  */
 export type DynamicConditions = {
@@ -215,7 +215,7 @@ export type DynamicConditions = {
 };
 
 /**
- * Permission Template Context for Step 4: Permission Template Check
+ * Permission Template Context
  * Contains template resolution and hierarchy information
  */
 export type PermissionTemplateContext = {
@@ -272,7 +272,7 @@ export type TemplateConflict = {
 };
 
 /**
- * Permission Template interface for Step 4
+ * Permission Template interface
  */
 export type PermissionTemplateInterface = {
   id: string;
@@ -312,7 +312,7 @@ export type TemplateRestriction = {
 };
 
 /**
- * Action Permission Context for Step 5: Action Permission Validation
+ * Action Permission Context
  * Contains action-specific validation information
  */
 export type ActionPermissionContext = {
@@ -362,7 +362,7 @@ export type ApprovalEscalation = {
 };
 
 /**
- * Organizational Hierarchy Context for Step 7: Hierarchy-based Validation
+ * Organizational Hierarchy Context
  * Contains organizational hierarchy validation information
  */
 export type OrganizationalHierarchyContext = {
@@ -409,7 +409,7 @@ export type HierarchyInheritance = {
 };
 
 /**
- * Sensitive Data Context for Step 10: Financial/Sensitive Data Checks
+ * Sensitive Data Context
  * Contains sensitive data access control information
  */
 export type SensitiveDataContext = {
@@ -452,7 +452,7 @@ export type SensitiveDataContext = {
 };
 
 /**
- * Department & Team Context for Step 11: Department & Team Restrictions
+ * Department & Team Context
  * Contains department and team-based access control information
  */
 export type DepartmentTeamContext = {
@@ -493,32 +493,32 @@ export type DepartmentTeamContext = {
 };
 
 /**
- * Enhanced Permission Context supporting all 15 validation steps
- * This is the main context object used throughout the validation process
+ * Enhanced Permission Context
+ * Main context object used throughout the Casbin-based authorization process
  */
 export type EnhancedPermissionContext = {
-  // Step 1: Basic validation data
+  // Basic validation data
   action: PermissionAction;
   operationType?: GraphQLOperationType;
   operationName?: string;
   requestId?: string; // For tracking
 
-  // Step 2: Enhanced user context
+  // User context
   userContext: EnhancedUserContext;
 
-  // Step 3: Resource context
+  // Resource context
   resourceContext: ResourceContext;
 
-  // Step 4: Permission template context
+  // Permission template context
   templateContext?: PermissionTemplateContext;
 
-  // Step 5: Action permission context
+  // Action permission context
   actionContext?: ActionPermissionContext;
 
-  // Step 7: Hierarchy validation context
+  // Hierarchy validation context
   hierarchyContext?: OrganizationalHierarchyContext;
 
-  // Step 8: Data access policy context
+  // Data access policy context
   policyContext?: {
     applicablePolicies?: string[];
     filterConditions?: Record<string, string | number | boolean | Date>;
@@ -527,7 +527,7 @@ export type EnhancedPermissionContext = {
     evaluationMode?: 'STRICT' | 'PERMISSIVE' | 'BALANCED';
   };
 
-  // Step 9: Special permissions context
+  // Special permissions context
   specialPermissions?: {
     hasEmergencyAccess?: boolean;
     hasSystemMaintenance?: boolean;
@@ -537,16 +537,16 @@ export type EnhancedPermissionContext = {
     bypassRestrictions?: string[];
   };
 
-  // Step 10: Sensitive data context
+  // Sensitive data context
   sensitiveDataContext?: SensitiveDataContext;
 
-  // Step 11: Department & team context
+  // Department & team context
   departmentTeamContext?: DepartmentTeamContext;
 
-  // Step 12: Dynamic conditions
+  // Dynamic conditions
   dynamicConditions?: DynamicConditions;
 
-  // Step 13: Cache context
+  // Cache context
   cacheContext?: {
     enabled: boolean;
     ttl?: number;
@@ -556,7 +556,7 @@ export type EnhancedPermissionContext = {
     cacheLevel?: 'MEMORY' | 'REDIS' | 'DATABASE';
   };
 
-  // Step 14: Audit context
+  // Audit context
   auditContext?: {
     forceAudit?: boolean;
     skipAudit?: boolean;
@@ -589,13 +589,13 @@ export type EnhancedPermissionContext = {
   failFast?: boolean; // Stop at first failure
   continueOnError?: boolean; // Continue validation even on errors
 
-  // Step results for final decision (Step 15)
+  // Step results for final decision
   stepResults?: ValidationStepResult[];
 };
 
 /**
- * Enhanced Permission Result with detailed step-by-step information
- * Contains comprehensive result data from 15-step validation
+ * Enhanced Permission Result
+ * Contains comprehensive result data from Casbin-based authorization
  */
 export type EnhancedPermissionResult = {
   // Final result
