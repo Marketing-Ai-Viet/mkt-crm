@@ -64,6 +64,14 @@ export {
   BaseWarningMessageValue,
 } from './base-messages.constant';
 
+// Repository messages
+export {
+  REPOSITORY_ERROR_MESSAGES,
+  REPOSITORY_LOG_MESSAGES,
+  REPOSITORY_MESSAGES,
+  REPOSITORY_WARNING_MESSAGES,
+} from './repository-messages.constant';
+
 // Message builder utilities
 export {
   createErrorResponse,
