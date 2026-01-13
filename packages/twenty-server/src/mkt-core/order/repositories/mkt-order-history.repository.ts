@@ -1,14 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
 import { ORDER_HISTORY_ACTION } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { CreateOrderHistoryData } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 const LOG_CONTEXT = 'MktOrderHistory:Repository';
 
@@ -26,6 +28,7 @@ export class MktOrderHistoryRepository {
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   // ============================================
@@ -34,12 +37,22 @@ export class MktOrderHistoryRepository {
 
   /**
    * Get repository for specific workspace
+   * Thread-safe: Uses TwentyORMGlobalManager directly
    */
   async getRepository(
-    workspaceId: string,
+    workspaceId?: string,
   ): Promise<WorkspaceRepository<MktOrderHistoryWorkspaceEntity>> {
+    const wsId =
+      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!wsId) {
+      throw new NotFoundException(
+        REPOSITORY_MESSAGES.ERROR.WORKSPACE_NOT_FOUND,
+      );
+    }
+
     return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+      wsId,
       MktOrderHistoryWorkspaceEntity,
       { shouldBypassPermissionChecks: true },
     );

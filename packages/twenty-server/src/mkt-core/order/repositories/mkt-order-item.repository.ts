@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { FindOptionsWhere, In, QueryRunner } from 'typeorm';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
 import {
   MKT_ORDER_ITEM_LOG_CONTEXT,
   MKT_ORDER_ITEM_LOG_MESSAGES,
@@ -16,6 +17,7 @@ import {
   FindOrderItemOptions,
   UpdateOrderItemData,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktOrderItemRepository - Data access layer for OrderItem entity
@@ -39,6 +41,7 @@ export class MktOrderItemRepository {
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   // ============================================
@@ -406,10 +409,19 @@ export class MktOrderItemRepository {
    * Useful for complex queries not covered by this repository
    */
   async getRepository(
-    workspaceId: string,
+    workspaceId?: string,
   ): Promise<WorkspaceRepository<MktOrderItemWorkspaceEntity>> {
+    const wsId =
+      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!wsId) {
+      throw new NotFoundException(
+        REPOSITORY_MESSAGES.ERROR.WORKSPACE_NOT_FOUND,
+      );
+    }
+
     return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+      wsId,
       MktOrderItemWorkspaceEntity,
       { shouldBypassPermissionChecks: true },
     );

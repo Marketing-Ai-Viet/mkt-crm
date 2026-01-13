@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { FindOptionsWhere, QueryRunner } from 'typeorm';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   MKT_ORDER_LOG_CONTEXT,
@@ -38,6 +40,7 @@ export class MktOrderRepository {
 
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   // ============================================
@@ -538,10 +541,19 @@ export class MktOrderRepository {
    * Useful for complex queries not covered by this repository
    */
   async getRepository(
-    workspaceId: string,
+    workspaceId?: string,
   ): Promise<WorkspaceRepository<MktOrderWorkspaceEntity>> {
+    const wsId =
+      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!wsId) {
+      throw new NotFoundException(
+        REPOSITORY_MESSAGES.ERROR.WORKSPACE_NOT_FOUND,
+      );
+    }
+
     return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+      wsId,
       MktOrderWorkspaceEntity,
       { shouldBypassPermissionChecks: true },
     );
