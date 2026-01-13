@@ -12,6 +12,7 @@ import {
   CasbinRbacConfig,
   rbacConfig,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
 
@@ -81,6 +82,63 @@ export class RoleInheritanceCacheService {
     private readonly cacheStorage: CacheStorageService,
     private readonly enforcerService: CasbinEnforcerService,
   ) {}
+
+  // ============================================
+  // Helper Methods
+  // ============================================
+
+  /**
+   * Get or create a role node in the nodes map
+   */
+  private getOrCreateNode(
+    nodes: Map<string, RoleNode>,
+    role: string,
+  ): RoleNode {
+    const existingNode = nodes.get(role);
+
+    if (existingNode) {
+      return existingNode;
+    }
+
+    const newNode: RoleNode = {
+      role,
+      parents: [],
+      children: [],
+    };
+
+    nodes.set(role, newNode);
+
+    return newNode;
+  }
+
+  /**
+   * Add parent-child relationship between nodes
+   */
+  private addRelationship(
+    childNode: RoleNode,
+    parentNode: RoleNode,
+    childRole: string,
+    parentRole: string,
+  ): void {
+    if (!childNode.parents.includes(parentRole)) {
+      childNode.parents.push(parentRole);
+    }
+
+    if (!parentNode.children.includes(childRole)) {
+      parentNode.children.push(childRole);
+    }
+  }
+
+  /**
+   * Get current timestamp in milliseconds
+   */
+  private getCurrentTimestamp(): number {
+    return DateTimeUtils.toMillis(DateTimeUtils.now());
+  }
+
+  // ============================================
+  // Public Methods
+  // ============================================
 
   /**
    * Get effective roles for user (includes inherited roles)
@@ -263,83 +321,84 @@ export class RoleInheritanceCacheService {
    * Build inheritance graph from Casbin policies
    */
   private async buildGraph(workspaceId: string): Promise<RoleInheritanceGraph> {
-    const startTime = Date.now();
-
+    const startTime = this.getCurrentTimestamp();
     const enforcer = await this.enforcerService.getEnforcer(workspaceId);
-
-    // Get all grouping policies (g policies = role assignments)
-    // Format: [subject, role] e.g., ["user:123", "role:admin"]
     const allGroupingPolicies = await enforcer.getGroupingPolicy();
 
-    // Build graph nodes
-    const nodes = new Map<string, RoleNode>();
-
-    // Process grouping policies to build inheritance relationships
-    for (const policy of allGroupingPolicies) {
-      const [subject, role] = policy;
-
-      // Only process role-to-role inheritance (roles inheriting from other roles)
-      // Skip user-to-role assignments (handled separately)
-      if (subject.startsWith('role:') && role.startsWith('role:')) {
-        const childRole = subject.replace('role:', '');
-        const parentRole = role.replace('role:', '');
-
-        // Ensure child node exists
-        if (!nodes.has(childRole)) {
-          nodes.set(childRole, {
-            role: childRole,
-            parents: [],
-            children: [],
-          });
-        }
-
-        // Ensure parent node exists
-        if (!nodes.has(parentRole)) {
-          nodes.set(parentRole, {
-            role: parentRole,
-            parents: [],
-            children: [],
-          });
-        }
-
-        // Add relationships
-        const childNode = nodes.get(childRole)!;
-        const parentNode = nodes.get(parentRole)!;
-
-        if (!childNode.parents.includes(parentRole)) {
-          childNode.parents.push(parentRole);
-        }
-
-        if (!parentNode.children.includes(childRole)) {
-          parentNode.children.push(childRole);
-        }
-      } else if (role.startsWith('role:')) {
-        // Add role node even if it has no parent relationships
-        const roleName = role.replace('role:', '');
-
-        if (!nodes.has(roleName)) {
-          nodes.set(roleName, {
-            role: roleName,
-            parents: [],
-            children: [],
-          });
-        }
-      }
-    }
+    const nodes = this.buildNodesFromPolicies(allGroupingPolicies);
+    const currentTime = this.getCurrentTimestamp();
 
     const graph: RoleInheritanceGraph = {
       nodes,
-      version: Date.now(),
-      buildAt: Date.now(),
+      version: currentTime,
+      buildAt: currentTime,
     };
 
-    const buildTimeMs = Date.now() - startTime;
+    const buildTimeMs = this.getCurrentTimestamp() - startTime;
 
     this.logger.debug(
       `Built inheritance graph for workspace ${workspaceId}: ${nodes.size} roles, ${buildTimeMs}ms`,
     );
 
     return graph;
+  }
+
+  /**
+   * Build nodes map from grouping policies
+   */
+  private buildNodesFromPolicies(policies: string[][]): Map<string, RoleNode> {
+    const nodes = new Map<string, RoleNode>();
+
+    for (const policy of policies) {
+      this.processSinglePolicy(nodes, policy);
+    }
+
+    return nodes;
+  }
+
+  /**
+   * Process a single grouping policy
+   */
+  private processSinglePolicy(
+    nodes: Map<string, RoleNode>,
+    policy: string[],
+  ): void {
+    const [subject, role] = policy;
+    const ROLE_PREFIX = 'role:';
+
+    const isRoleToRoleInheritance =
+      subject.startsWith(ROLE_PREFIX) && role.startsWith(ROLE_PREFIX);
+
+    if (isRoleToRoleInheritance) {
+      this.processRoleInheritance(nodes, subject, role, ROLE_PREFIX);
+
+      return;
+    }
+
+    // Add role node even if it has no parent relationships
+    if (role.startsWith(ROLE_PREFIX)) {
+      const roleName = role.replace(ROLE_PREFIX, '');
+
+      this.getOrCreateNode(nodes, roleName);
+    }
+  }
+
+  /**
+   * Process role-to-role inheritance relationship
+   */
+  private processRoleInheritance(
+    nodes: Map<string, RoleNode>,
+    subject: string,
+    role: string,
+    prefix: string,
+  ): void {
+    const childRole = subject.replace(prefix, '');
+    const parentRole = role.replace(prefix, '');
+
+    const childNode = this.getOrCreateNode(nodes, childRole);
+    const parentNode = this.getOrCreateNode(nodes, parentRole);
+
+    this.addRelationship(childNode, parentNode, childRole, parentRole);
   }
 
   /**
@@ -420,8 +479,9 @@ export class RoleInheritanceCacheService {
     workspaceId: string,
   ): RoleInheritanceGraph | undefined {
     const timestamp = this.localCacheTimestamps.get(workspaceId);
+    const currentTime = this.getCurrentTimestamp();
 
-    if (!timestamp || Date.now() - timestamp > this.localCacheTtlMs) {
+    if (!timestamp || currentTime - timestamp > this.localCacheTtlMs) {
       this.localCache.delete(workspaceId);
       this.localCacheTimestamps.delete(workspaceId);
 
@@ -439,7 +499,7 @@ export class RoleInheritanceCacheService {
     graph: RoleInheritanceGraph,
   ): void {
     this.localCache.set(workspaceId, graph);
-    this.localCacheTimestamps.set(workspaceId, Date.now());
+    this.localCacheTimestamps.set(workspaceId, this.getCurrentTimestamp());
   }
 
   /**

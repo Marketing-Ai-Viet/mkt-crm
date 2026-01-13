@@ -3,6 +3,129 @@
  * Defines when and how to invalidate RBAC cache based on data changes
  */
 
+// ============================================================================
+// Constants & Builders
+// ============================================================================
+
+/**
+ * Cache key prefix
+ */
+const CACHE_PREFIX = 'rbac-seeder' as const;
+
+/**
+ * Entity types for cache events
+ */
+const CACHE_ENTITY = {
+  USER: 'user',
+  TEMPLATE: 'template',
+  OVERRIDE: 'override',
+  POLICY: 'policy',
+  DEPARTMENT: 'department',
+  HIERARCHY: 'hierarchy',
+  RESOURCE: 'resource',
+  WORKSPACE: 'workspace',
+  RBAC: 'rbac',
+  MANUAL: 'manual',
+} as const;
+
+/**
+ * Actions for cache events
+ */
+const CACHE_ACTION = {
+  CREATED: 'created',
+  UPDATED: 'updated',
+  DELETED: 'deleted',
+  CHANGED: 'changed',
+  ASSIGNED: 'assigned',
+  UNASSIGNED: 'unassigned',
+  EXPIRED: 'expired',
+  ACTIVATED: 'activated',
+  DEACTIVATED: 'deactivated',
+  INVALIDATION: 'invalidation',
+} as const;
+
+/**
+ * Cache key segments for pattern building
+ */
+const CACHE_SEGMENT = {
+  USER_CONTEXT: 'user:context',
+  SIMPLIFIED_VALIDATION: 'simplified:validation',
+  PERMISSION_RESULT: 'permission:result',
+  STEP_RESULT: 'step:result',
+  TEMPLATE_PERMISSIONS: 'template:permissions',
+  DEPARTMENT_RESTRICTIONS: 'department:restrictions',
+  ACTION_VALIDATION: 'action:validation',
+  POLICY_RESULTS: 'policy:results',
+  HIERARCHY_CACHE: 'hierarchy:cache',
+  RESOURCE_METADATA: 'resource:metadata',
+  RESOURCE_ACCESS: 'resource:access',
+} as const;
+
+/**
+ * Validation step numbers for cache invalidation
+ */
+const VALIDATION_STEP = {
+  USER_CONTEXT: 2,
+  RESOURCE_PERMISSION: 6,
+  HIERARCHY_VALIDATION: 7,
+  POLICY_CHECK: 8,
+  SPECIAL_PERMISSIONS: 9,
+  DEPARTMENT_RESTRICTIONS: 11,
+} as const;
+
+type CacheEntityType = (typeof CACHE_ENTITY)[keyof typeof CACHE_ENTITY];
+
+type CacheActionType = (typeof CACHE_ACTION)[keyof typeof CACHE_ACTION];
+
+/**
+ * Build event name from entity and action
+ */
+const BUILD_EVENT = (
+  entity: CacheEntityType,
+  action: CacheActionType,
+  subEntity?: string,
+): string => {
+  if (subEntity) {
+    return `${entity}:${subEntity}:${action}`;
+  }
+
+  return `${entity}:${action}`;
+};
+
+/**
+ * Build cache key pattern
+ */
+const BUILD_PATTERN = (...segments: (string | number)[]): string => {
+  return `${CACHE_PREFIX}:${segments.join(':')}`;
+};
+
+/**
+ * Build step result pattern
+ */
+const BUILD_STEP_PATTERN = (step: number, suffix = '*'): string => {
+  return BUILD_PATTERN(CACHE_SEGMENT.STEP_RESULT, step, suffix);
+};
+
+/**
+ * Build pattern with variable placeholder
+ */
+const BUILD_PATTERN_WITH_VAR = (
+  segment: string,
+  varName: string,
+  suffix = '*',
+): string => {
+  return BUILD_PATTERN(segment, `\${${varName}}${suffix}`);
+};
+
+/**
+ * Build all patterns wildcard
+ */
+const BUILD_WILDCARD = (): string => `${CACHE_PREFIX}:*`;
+
+// ============================================================================
+// Cache Invalidation Events Enum
+// ============================================================================
+
 /**
  * Cache Invalidation Events
  * These events trigger automatic cache invalidation
@@ -53,6 +176,147 @@ export enum CacheInvalidationEvent {
   MANUAL_INVALIDATION = 'manual:invalidation',
 }
 
+// ============================================================================
+// Event Builder (for dynamic event creation)
+// ============================================================================
+
+/**
+ * Event builder for creating cache invalidation event names dynamically
+ */
+export const CACHE_EVENT_BUILDER = {
+  entity: CACHE_ENTITY,
+  action: CACHE_ACTION,
+
+  /**
+   * Build a custom event name
+   */
+  build: BUILD_EVENT,
+
+  /**
+   * Pre-built event builders by entity
+   */
+  user: {
+    created: () => BUILD_EVENT(CACHE_ENTITY.USER, CACHE_ACTION.CREATED),
+    updated: () => BUILD_EVENT(CACHE_ENTITY.USER, CACHE_ACTION.UPDATED),
+    deleted: () => BUILD_EVENT(CACHE_ENTITY.USER, CACHE_ACTION.DELETED),
+    departmentChanged: () =>
+      BUILD_EVENT(CACHE_ENTITY.USER, CACHE_ACTION.CHANGED, 'department'),
+    roleChanged: () =>
+      BUILD_EVENT(CACHE_ENTITY.USER, CACHE_ACTION.CHANGED, 'role'),
+  },
+
+  template: {
+    created: () => BUILD_EVENT(CACHE_ENTITY.TEMPLATE, CACHE_ACTION.CREATED),
+    updated: () => BUILD_EVENT(CACHE_ENTITY.TEMPLATE, CACHE_ACTION.UPDATED),
+    deleted: () => BUILD_EVENT(CACHE_ENTITY.TEMPLATE, CACHE_ACTION.DELETED),
+    assigned: () => BUILD_EVENT(CACHE_ENTITY.TEMPLATE, CACHE_ACTION.ASSIGNED),
+    unassigned: () =>
+      BUILD_EVENT(CACHE_ENTITY.TEMPLATE, CACHE_ACTION.UNASSIGNED),
+  },
+
+  override: {
+    created: () => BUILD_EVENT(CACHE_ENTITY.OVERRIDE, CACHE_ACTION.CREATED),
+    updated: () => BUILD_EVENT(CACHE_ENTITY.OVERRIDE, CACHE_ACTION.UPDATED),
+    deleted: () => BUILD_EVENT(CACHE_ENTITY.OVERRIDE, CACHE_ACTION.DELETED),
+    expired: () => BUILD_EVENT(CACHE_ENTITY.OVERRIDE, CACHE_ACTION.EXPIRED),
+  },
+
+  policy: {
+    created: () => BUILD_EVENT(CACHE_ENTITY.POLICY, CACHE_ACTION.CREATED),
+    updated: () => BUILD_EVENT(CACHE_ENTITY.POLICY, CACHE_ACTION.UPDATED),
+    deleted: () => BUILD_EVENT(CACHE_ENTITY.POLICY, CACHE_ACTION.DELETED),
+    activated: () => BUILD_EVENT(CACHE_ENTITY.POLICY, CACHE_ACTION.ACTIVATED),
+    deactivated: () =>
+      BUILD_EVENT(CACHE_ENTITY.POLICY, CACHE_ACTION.DEACTIVATED),
+  },
+
+  department: {
+    created: () => BUILD_EVENT(CACHE_ENTITY.DEPARTMENT, CACHE_ACTION.CREATED),
+    updated: () => BUILD_EVENT(CACHE_ENTITY.DEPARTMENT, CACHE_ACTION.UPDATED),
+    deleted: () => BUILD_EVENT(CACHE_ENTITY.DEPARTMENT, CACHE_ACTION.DELETED),
+  },
+
+  hierarchy: {
+    changed: () => BUILD_EVENT(CACHE_ENTITY.HIERARCHY, CACHE_ACTION.CHANGED),
+  },
+
+  resource: {
+    created: () => BUILD_EVENT(CACHE_ENTITY.RESOURCE, CACHE_ACTION.CREATED),
+    updated: () => BUILD_EVENT(CACHE_ENTITY.RESOURCE, CACHE_ACTION.UPDATED),
+    deleted: () => BUILD_EVENT(CACHE_ENTITY.RESOURCE, CACHE_ACTION.DELETED),
+    ownershipChanged: () =>
+      BUILD_EVENT(CACHE_ENTITY.RESOURCE, CACHE_ACTION.CHANGED, 'ownership'),
+  },
+
+  system: {
+    workspaceSettingsChanged: () =>
+      BUILD_EVENT(CACHE_ENTITY.WORKSPACE, CACHE_ACTION.CHANGED, 'settings'),
+    rbacConfigChanged: () =>
+      BUILD_EVENT(CACHE_ENTITY.RBAC, CACHE_ACTION.CHANGED, 'config'),
+    manualInvalidation: () =>
+      BUILD_EVENT(CACHE_ENTITY.MANUAL, CACHE_ACTION.INVALIDATION),
+  },
+} as const;
+
+// ============================================================================
+// Cache Pattern Builder
+// ============================================================================
+
+/**
+ * Pattern builder for creating cache key patterns dynamically
+ */
+export const CACHE_PATTERN_BUILDER = {
+  segment: CACHE_SEGMENT,
+  step: VALIDATION_STEP,
+
+  /**
+   * Build a pattern with prefix
+   */
+  pattern: BUILD_PATTERN,
+
+  /**
+   * Build step result pattern
+   */
+  stepPattern: BUILD_STEP_PATTERN,
+
+  /**
+   * Build pattern with variable
+   */
+  withVar: BUILD_PATTERN_WITH_VAR,
+
+  /**
+   * Build wildcard pattern (invalidate all)
+   */
+  wildcard: BUILD_WILDCARD,
+
+  /**
+   * Common patterns
+   */
+  common: {
+    userContext: (varName = '*') =>
+      BUILD_PATTERN(CACHE_SEGMENT.USER_CONTEXT, varName),
+    simplifiedValidation: (...parts: string[]) =>
+      BUILD_PATTERN(CACHE_SEGMENT.SIMPLIFIED_VALIDATION, ...parts),
+    permissionResult: (...parts: string[]) =>
+      BUILD_PATTERN(CACHE_SEGMENT.PERMISSION_RESULT, ...parts),
+    templatePermissions: (varName = '*') =>
+      BUILD_PATTERN(CACHE_SEGMENT.TEMPLATE_PERMISSIONS, varName),
+    departmentRestrictions: (varName = '*') =>
+      BUILD_PATTERN(CACHE_SEGMENT.DEPARTMENT_RESTRICTIONS, varName),
+    policyResults: (varName = '*') =>
+      BUILD_PATTERN(CACHE_SEGMENT.POLICY_RESULTS, varName),
+    hierarchyCache: () => BUILD_PATTERN(CACHE_SEGMENT.HIERARCHY_CACHE, '*'),
+    resourceMetadata: (...parts: string[]) =>
+      BUILD_PATTERN(CACHE_SEGMENT.RESOURCE_METADATA, ...parts),
+    resourceAccess: (...parts: string[]) =>
+      BUILD_PATTERN(CACHE_SEGMENT.RESOURCE_ACCESS, ...parts),
+    actionValidation: () => BUILD_PATTERN(CACHE_SEGMENT.ACTION_VALIDATION, '*'),
+  },
+} as const;
+
+// Shorthand alias
+const P = CACHE_PATTERN_BUILDER;
+
 /**
  * Cache Invalidation Patterns
  * Maps events to cache key patterns that should be invalidated
@@ -63,146 +327,164 @@ export const CACHE_INVALIDATION_PATTERNS: Record<
 > = {
   // User events - invalidate user-specific caches
   [CacheInvalidationEvent.USER_CREATED]: [
-    'rbac-seeder:user:context:*',
-    'rbac-seeder:simplified:validation:*',
+    P.common.userContext(),
+    P.common.simplifiedValidation('*'),
   ],
   [CacheInvalidationEvent.USER_UPDATED]: [
-    'rbac-seeder:user:context:${userId}*',
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:permission:result:*:${workspaceMemberId}:*',
-    'rbac-seeder:step:result:*:*:${workspaceMemberId}:*',
+    P.common.userContext('${userId}*'),
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.common.permissionResult('*', '${workspaceMemberId}', '*'),
+    P.pattern(CACHE_SEGMENT.STEP_RESULT, '*', '*', '${workspaceMemberId}', '*'),
   ],
   [CacheInvalidationEvent.USER_DELETED]: [
-    'rbac-seeder:user:context:${userId}*',
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:permission:result:*:${workspaceMemberId}:*',
+    P.common.userContext('${userId}*'),
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.common.permissionResult('*', '${workspaceMemberId}', '*'),
   ],
   [CacheInvalidationEvent.USER_DEPARTMENT_CHANGED]: [
-    'rbac-seeder:user:context:${userId}*',
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:department:restrictions:*',
-    'rbac-seeder:step:result:2:*', // Step 2: User Context
-    'rbac-seeder:step:result:11:*', // Step 11: Department Restrictions
+    P.common.userContext('${userId}*'),
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.common.departmentRestrictions(),
+    P.stepPattern(VALIDATION_STEP.USER_CONTEXT), // Step 2: User Context
+    P.stepPattern(VALIDATION_STEP.DEPARTMENT_RESTRICTIONS), // Step 11: Department Restrictions
   ],
   [CacheInvalidationEvent.USER_ROLE_CHANGED]: [
-    'rbac-seeder:user:context:${userId}*',
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:template:permissions:*',
+    P.common.userContext('${userId}*'),
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.common.templatePermissions(),
   ],
 
   // Permission Template events - invalidate template and validation caches
   [CacheInvalidationEvent.TEMPLATE_CREATED]: [
-    'rbac-seeder:template:permissions:*',
-    'rbac-seeder:simplified:validation:*',
+    P.common.templatePermissions(),
+    P.common.simplifiedValidation('*'),
   ],
   [CacheInvalidationEvent.TEMPLATE_UPDATED]: [
-    'rbac-seeder:template:permissions:${templateId}*',
-    'rbac-seeder:simplified:validation:*',
-    'rbac-seeder:permission:result:*',
-    'rbac-seeder:step:result:4:*', // Step 4: Template Check
-    'rbac-seeder:action:validation:*',
+    P.common.templatePermissions('${templateId}*'),
+    P.common.simplifiedValidation('*'),
+    P.common.permissionResult('*'),
+    P.stepPattern(4), // Step 4: Template Check
+    P.common.actionValidation(),
   ],
   [CacheInvalidationEvent.TEMPLATE_DELETED]: [
-    'rbac-seeder:template:permissions:${templateId}*',
-    'rbac-seeder:simplified:validation:*',
-    'rbac-seeder:permission:result:*',
+    P.common.templatePermissions('${templateId}*'),
+    P.common.simplifiedValidation('*'),
+    P.common.permissionResult('*'),
   ],
   [CacheInvalidationEvent.TEMPLATE_ASSIGNED]: [
-    'rbac-seeder:user:context:${userId}*',
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:template:permissions:${templateId}*',
-    'rbac-seeder:step:result:2:*:${workspaceMemberId}:*', // Step 2: User Context
+    P.common.userContext('${userId}*'),
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.common.templatePermissions('${templateId}*'),
+    P.pattern(
+      CACHE_SEGMENT.STEP_RESULT,
+      VALIDATION_STEP.USER_CONTEXT,
+      '*',
+      '${workspaceMemberId}',
+      '*',
+    ), // Step 2: User Context
   ],
   [CacheInvalidationEvent.TEMPLATE_UNASSIGNED]: [
-    'rbac-seeder:user:context:${userId}*',
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:template:permissions:${templateId}*',
+    P.common.userContext('${userId}*'),
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.common.templatePermissions('${templateId}*'),
   ],
 
   // Permission Override events
   [CacheInvalidationEvent.OVERRIDE_CREATED]: [
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:step:result:9:*', // Step 9: Special Permissions
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.stepPattern(VALIDATION_STEP.SPECIAL_PERMISSIONS), // Step 9: Special Permissions
   ],
   [CacheInvalidationEvent.OVERRIDE_UPDATED]: [
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:step:result:9:*',
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.stepPattern(VALIDATION_STEP.SPECIAL_PERMISSIONS),
   ],
   [CacheInvalidationEvent.OVERRIDE_DELETED]: [
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:step:result:9:*',
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.stepPattern(VALIDATION_STEP.SPECIAL_PERMISSIONS),
   ],
   [CacheInvalidationEvent.OVERRIDE_EXPIRED]: [
-    'rbac-seeder:simplified:validation:*:${workspaceMemberId}:*',
-    'rbac-seeder:step:result:9:*',
+    P.common.simplifiedValidation('*', '${workspaceMemberId}', '*'),
+    P.stepPattern(VALIDATION_STEP.SPECIAL_PERMISSIONS),
   ],
 
   // Policy events
   [CacheInvalidationEvent.POLICY_CREATED]: [
-    'rbac-seeder:policy:results:*',
-    'rbac-seeder:simplified:validation:*',
-    'rbac-seeder:step:result:8:*', // Step 8: Policy Check
+    P.common.policyResults(),
+    P.common.simplifiedValidation('*'),
+    P.stepPattern(VALIDATION_STEP.POLICY_CHECK), // Step 8: Policy Check
   ],
   [CacheInvalidationEvent.POLICY_UPDATED]: [
-    'rbac-seeder:policy:results:${policyId}*',
-    'rbac-seeder:simplified:validation:*',
-    'rbac-seeder:step:result:8:*',
+    P.common.policyResults('${policyId}*'),
+    P.common.simplifiedValidation('*'),
+    P.stepPattern(VALIDATION_STEP.POLICY_CHECK),
   ],
   [CacheInvalidationEvent.POLICY_DELETED]: [
-    'rbac-seeder:policy:results:${policyId}*',
-    'rbac-seeder:simplified:validation:*',
+    P.common.policyResults('${policyId}*'),
+    P.common.simplifiedValidation('*'),
   ],
   [CacheInvalidationEvent.POLICY_ACTIVATED]: [
-    'rbac-seeder:policy:results:${policyId}*',
-    'rbac-seeder:simplified:validation:*',
+    P.common.policyResults('${policyId}*'),
+    P.common.simplifiedValidation('*'),
   ],
   [CacheInvalidationEvent.POLICY_DEACTIVATED]: [
-    'rbac-seeder:policy:results:${policyId}*',
-    'rbac-seeder:simplified:validation:*',
+    P.common.policyResults('${policyId}*'),
+    P.common.simplifiedValidation('*'),
   ],
 
   // Department/Hierarchy events
   [CacheInvalidationEvent.DEPARTMENT_CREATED]: [
-    'rbac-seeder:department:restrictions:*',
-    'rbac-seeder:hierarchy:cache:*',
+    P.common.departmentRestrictions(),
+    P.common.hierarchyCache(),
   ],
   [CacheInvalidationEvent.DEPARTMENT_UPDATED]: [
-    'rbac-seeder:department:restrictions:${departmentId}*',
-    'rbac-seeder:hierarchy:cache:*',
-    'rbac-seeder:step:result:11:*', // Step 11: Department Restrictions
+    P.common.departmentRestrictions('${departmentId}*'),
+    P.common.hierarchyCache(),
+    P.stepPattern(VALIDATION_STEP.DEPARTMENT_RESTRICTIONS), // Step 11: Department Restrictions
   ],
   [CacheInvalidationEvent.DEPARTMENT_DELETED]: [
-    'rbac-seeder:department:restrictions:${departmentId}*',
-    'rbac-seeder:hierarchy:cache:*',
-    'rbac-seeder:simplified:validation:*',
+    P.common.departmentRestrictions('${departmentId}*'),
+    P.common.hierarchyCache(),
+    P.common.simplifiedValidation('*'),
   ],
   [CacheInvalidationEvent.HIERARCHY_CHANGED]: [
-    'rbac-seeder:hierarchy:cache:*',
-    'rbac-seeder:step:result:7:*', // Step 7: Hierarchy Validation
-    'rbac-seeder:simplified:validation:*',
+    P.common.hierarchyCache(),
+    P.stepPattern(VALIDATION_STEP.HIERARCHY_VALIDATION), // Step 7: Hierarchy Validation
+    P.common.simplifiedValidation('*'),
   ],
 
   // Resource events
   [CacheInvalidationEvent.RESOURCE_CREATED]: [
-    'rbac-seeder:resource:metadata:${resourceType}*',
+    P.common.resourceMetadata('${resourceType}*'),
   ],
   [CacheInvalidationEvent.RESOURCE_UPDATED]: [
-    'rbac-seeder:resource:metadata:${resourceType}:${recordId}*',
-    'rbac-seeder:simplified:validation:*:*:${resourceType}:*:${recordId}',
+    P.common.resourceMetadata('${resourceType}', '${recordId}*'),
+    P.common.simplifiedValidation(
+      '*',
+      '*',
+      '${resourceType}',
+      '*',
+      '${recordId}',
+    ),
   ],
   [CacheInvalidationEvent.RESOURCE_DELETED]: [
-    'rbac-seeder:resource:metadata:${resourceType}:${recordId}*',
-    'rbac-seeder:simplified:validation:*:*:${resourceType}:*:${recordId}',
+    P.common.resourceMetadata('${resourceType}', '${recordId}*'),
+    P.common.simplifiedValidation(
+      '*',
+      '*',
+      '${resourceType}',
+      '*',
+      '${recordId}',
+    ),
   ],
   [CacheInvalidationEvent.RESOURCE_OWNERSHIP_CHANGED]: [
-    'rbac-seeder:resource:access:*:${resourceType}:${recordId}',
-    'rbac-seeder:step:result:6:*', // Step 6: Resource Permission Check
+    P.common.resourceAccess('*', '${resourceType}', '${recordId}'),
+    P.stepPattern(VALIDATION_STEP.RESOURCE_PERMISSION), // Step 6: Resource Permission Check
   ],
 
   // System events
-  [CacheInvalidationEvent.WORKSPACE_SETTINGS_CHANGED]: ['rbac-seeder:*'],
-  [CacheInvalidationEvent.RBAC_CONFIG_CHANGED]: ['rbac-seeder:*'],
-  [CacheInvalidationEvent.MANUAL_INVALIDATION]: ['rbac-seeder:*'],
+  [CacheInvalidationEvent.WORKSPACE_SETTINGS_CHANGED]: [P.wildcard()],
+  [CacheInvalidationEvent.RBAC_CONFIG_CHANGED]: [P.wildcard()],
+  [CacheInvalidationEvent.MANUAL_INVALIDATION]: [P.wildcard()],
 };
 
 /**
@@ -277,22 +559,65 @@ export const EVENT_PRIORITY_MAP: Record<
   [CacheInvalidationEvent.MANUAL_INVALIDATION]: InvalidationPriority.CRITICAL,
 };
 
+// ============================================================================
+// Invalidation Strategy Configuration
+// ============================================================================
+
+/**
+ * Time constants (in milliseconds)
+ */
+const TIME_MS = {
+  SECOND: 1000,
+  MINUTE: 60 * 1000,
+} as const;
+
+/**
+ * Default TTL values for different validation modes
+ */
+const INVALIDATION_TTL = {
+  SIMPLIFIED: 10 * TIME_MS.MINUTE, // 10 minutes
+  FULL: 30 * TIME_MS.MINUTE, // 30 minutes
+} as const;
+
+/**
+ * Delay values for batching
+ */
+const INVALIDATION_DELAY = {
+  IMMEDIATE: 0,
+  BATCH: 1 * TIME_MS.SECOND, // 1 second
+} as const;
+
 /**
  * Invalidation Strategy per Validation Mode
  */
 export const INVALIDATION_STRATEGY = {
   SIMPLIFIED: {
     // For SIMPLIFIED mode, invalidate more aggressively for consistency
-    defaultTTL: 10 * 60 * 1000, // 10 minutes
+    defaultTTL: INVALIDATION_TTL.SIMPLIFIED,
     invalidateOnWrite: true,
     batchInvalidation: true,
-    delayMs: 0, // Immediate
+    delayMs: INVALIDATION_DELAY.IMMEDIATE,
   },
   FULL: {
     // For FULL mode, can use longer TTL and batch invalidation
-    defaultTTL: 30 * 60 * 1000, // 30 minutes
+    defaultTTL: INVALIDATION_TTL.FULL,
     invalidateOnWrite: true,
     batchInvalidation: true,
-    delayMs: 1000, // 1 second delay for batching
+    delayMs: INVALIDATION_DELAY.BATCH,
   },
 } as const;
+
+// ============================================================================
+// Exports for external use
+// ============================================================================
+
+export {
+  CACHE_PREFIX,
+  CACHE_ENTITY,
+  CACHE_ACTION,
+  CACHE_SEGMENT,
+  VALIDATION_STEP,
+  TIME_MS,
+  INVALIDATION_TTL,
+  INVALIDATION_DELAY,
+};
