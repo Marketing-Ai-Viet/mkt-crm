@@ -2,8 +2,8 @@ import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
-import { Repository } from 'typeorm';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import { Repository } from 'typeorm';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
@@ -11,18 +11,22 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { prefillMktPermissionAudits } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/prefill-mkt-permission-audits';
+import { prefillMktDepartmentAncestries } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/prefill-mkt-department-ancestries';
 
-interface SeedPermissionAuditModuleOptions {
+type SeedModuleOptions = {
   workspaceId?: string;
-}
+};
+
+const TABLE_NAME = 'mktDepartmentAncestry';
+const NAME_SINGULAR = 'mktDepartmentAncestry';
 
 @Command({
-  name: 'workspace:seed:permission-audit-module',
-  description: 'Seed permission audit module data for existing workspace',
+  name: 'mkt-department-ancestry-data-seed-dev-workspace',
+  description:
+    'Seed department ancestry data for RBAC hierarchy in existing workspace',
 })
-export class SeedMktPermissionAuditCommand extends CommandRunner {
-  private readonly logger = new Logger(SeedMktPermissionAuditCommand.name);
+export class SeedDepartmentAncestryCommand extends CommandRunner {
+  private readonly logger = new Logger(SeedDepartmentAncestryCommand.name);
 
   constructor(
     @InjectRepository(Workspace, 'core')
@@ -36,16 +40,13 @@ export class SeedMktPermissionAuditCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed permission audit module for',
+    description: 'workspace id to seed module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
   }
 
-  async run(
-    passedParam: string[],
-    options: SeedPermissionAuditModuleOptions,
-  ): Promise<void> {
+  async run(_passedParam: string[], options: SeedModuleOptions): Promise<void> {
     let workspaces: Workspace[] = [];
 
     if (options.workspaceId) {
@@ -71,25 +72,23 @@ export class SeedMktPermissionAuditCommand extends CommandRunner {
 
     for (const workspace of workspaces) {
       try {
-        await this.seedPermissionAuditModuleForWorkspace(workspace.id);
+        await this.seedModuleForWorkspace(workspace.id);
         this.logger.log(
-          `✅ Permission audit module seeded for workspace: ${workspace.id}`,
+          `Department ancestry data seeded for workspace: ${workspace.id}`,
         );
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed permission audit module for workspace ${workspace.id}:`,
+          `Failed to seed department ancestry data for workspace ${workspace.id}:`,
           error,
         );
       }
     }
   }
 
-  private async seedPermissionAuditModuleForWorkspace(
-    workspaceId: string,
-  ): Promise<void> {
+  private async seedModuleForWorkspace(workspaceId: string): Promise<void> {
     this.logger.log(
-      `🚀 Starting permission audit module seeding for workspace ${workspaceId}`,
+      `Starting department ancestry seeding for workspace ${workspaceId}`,
     );
 
     const mainDataSource =
@@ -102,14 +101,13 @@ export class SeedMktPermissionAuditCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find permission audit object metadata
-    const permissionAuditObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktPermissionAudit',
+    const objectMetadata = objectMetadataItems.find(
+      (item) => item.nameSingular === NAME_SINGULAR,
     );
 
-    if (!permissionAuditObjectMetadata) {
+    if (!objectMetadata) {
       this.logger.log(
-        `Permission audit object not found in workspace ${workspaceId}, skipping...`,
+        `${NAME_SINGULAR} object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -119,8 +117,35 @@ export class SeedMktPermissionAuditCommand extends CommandRunner {
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Seed permission audit data
-        await prefillMktPermissionAudits(entityManager, schemaName);
+        // Check if data already exists
+        const existingData = await entityManager
+          .createQueryBuilder(undefined, undefined, undefined, {
+            shouldBypassPermissionChecks: true,
+          })
+          .select('id')
+          .from(`${schemaName}.${TABLE_NAME}`, 'ancestry')
+          .limit(1)
+          .getRawOne();
+
+        if (existingData) {
+          this.logger.log(
+            `Data already exists for ${TABLE_NAME} in workspace ${workspaceId}. Deleting and recreating...`,
+          );
+
+          await entityManager
+            .createQueryBuilder(undefined, undefined, undefined, {
+              shouldBypassPermissionChecks: true,
+            })
+            .delete()
+            .from(`${schemaName}.${TABLE_NAME}`)
+            .execute();
+        }
+
+        await prefillMktDepartmentAncestries(entityManager, schemaName);
+
+        this.logger.log(
+          `Department ancestry data created for workspace ${workspaceId}`,
+        );
       },
     );
   }

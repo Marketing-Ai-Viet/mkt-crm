@@ -15,10 +15,12 @@ import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-p
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
 import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-all.view';
 import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-data-access-policy-all.view';
-import { mktDepartmentsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-department-all.view';
+import { mktDepartmentsAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-all.view';
 import { mktGenericCombosAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-all.view';
 import { mktGenericComboItemsAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-all.view';
-import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-department-hierarchy-all.view';
+import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/mkt-department-hierarchy-all.view';
+import { mktDepartmentSubManagersAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/mkt-department-sub-manager-all.view';
+import { mktDepartmentAncestriesAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/mkt-department-ancestry-all.view';
 import { mktEmploymentStatusesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-employment-status-all.view';
 import { mktI18nAllView } from 'src/mkt-core/seeder/prefill-view/mkt-i18n-all.view';
 import { mktKpisAllView } from 'src/mkt-core/seeder/prefill-view/mkt-kpi-all.view';
@@ -26,7 +28,7 @@ import { mktKpisAllView } from 'src/mkt-core/seeder/prefill-view/mkt-kpi-all.vie
 // import { mktLicenseHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-organization-level-all.view';
 import { mktPaymentHistoriesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-payment-history-all.view';
-import { mktPermissionAuditsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-permission-audit-all.view';
+import { mktPermissionAuditsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-all.view';
 import { mktStaffStatusHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-staff-status-history-all.view';
 import { mktTagsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-tag-all.view';
 import { mktTemplatesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-template-all.view';
@@ -105,6 +107,8 @@ export const MKT_ALL_VIEWS = [
   // temporary permission views
   mktTemporaryPermissionsAllView,
   mktDepartmentHierarchiesAllView,
+  mktDepartmentSubManagersAllView,
+  mktDepartmentAncestriesAllView,
   mktDataAccessPoliciesAllView,
   mktPermissionAuditsAllView,
   // permission template views

@@ -1,26 +1,27 @@
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
-import { MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
+import { BASE_OBJECT_STANDARD_FIELD_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-field-ids';
+import { MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { ViewOpenRecordInType } from 'src/modules/view/standard-objects/view.workspace-entity';
 
-export const mktCustomerTierHistoriesAllView = (
+export const mktDepartmentSubManagersAllView = (
   objectMetadataItems: ObjectMetadataEntity[],
 ) => {
   const itemObjectMetadata = objectMetadataItems.find(
-    (object) => object.standardId === MKT_OBJECT_IDS.mktCustomerTierHistory,
+    (object) => object.standardId === MKT_OBJECT_IDS.mktDepartmentSubManager,
   );
 
   if (!itemObjectMetadata) {
-    throw new Error('Customer Tier History object metadata not found');
+    throw new Error('Department Sub Manager object metadata not found');
   }
 
   return {
-    name: 'All Tier Histories',
+    name: 'All Department Sub Managers',
     objectMetadataId: itemObjectMetadata.id ?? '',
     type: 'table',
     key: 'INDEX',
-    position: 0,
-    icon: 'IconHistory',
+    position: 21,
+    icon: 'IconUserStar',
     kanbanFieldMetadataId: '',
     openRecordIn: ViewOpenRecordInType.SIDE_PANEL,
     filters: [],
@@ -29,7 +30,8 @@ export const mktCustomerTierHistoriesAllView = (
         fieldMetadataId:
           itemObjectMetadata.fields.find(
             (field) =>
-              field.standardId === MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS.customer,
+              field.standardId ===
+              MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS.department,
           )?.id ?? '',
         position: 0,
         isVisible: true,
@@ -40,27 +42,29 @@ export const mktCustomerTierHistoriesAllView = (
           itemObjectMetadata.fields.find(
             (field) =>
               field.standardId ===
-              MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS.previousTier,
+              MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS.workspaceMember,
           )?.id ?? '',
         position: 1,
         isVisible: true,
-        size: 120,
+        size: 180,
       },
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
             (field) =>
-              field.standardId === MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS.newTier,
+              field.standardId ===
+              MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS.isPrimary,
           )?.id ?? '',
         position: 2,
         isVisible: true,
-        size: 120,
+        size: 100,
       },
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
             (field) =>
-              field.standardId === MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS.reason,
+              field.standardId ===
+              MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS.assignedAt,
           )?.id ?? '',
         position: 3,
         isVisible: true,
@@ -70,23 +74,32 @@ export const mktCustomerTierHistoriesAllView = (
         fieldMetadataId:
           itemObjectMetadata.fields.find(
             (field) =>
-              field.standardId ===
-              MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS.orderValueAtChange,
+              field.standardId === MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS.note,
           )?.id ?? '',
         position: 4,
         isVisible: true,
-        size: 140,
+        size: 200,
       },
       {
         fieldMetadataId:
           itemObjectMetadata.fields.find(
             (field) =>
               field.standardId ===
-              MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS.orderCountAtChange,
+              MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS.isActive,
           )?.id ?? '',
         position: 5,
         isVisible: true,
-        size: 120,
+        size: 80,
+      },
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === BASE_OBJECT_STANDARD_FIELD_IDS.createdAt,
+          )?.id ?? '',
+        position: 6,
+        isVisible: false,
+        size: 150,
       },
     ],
   };

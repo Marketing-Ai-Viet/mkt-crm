@@ -24,7 +24,7 @@ import {
   EVALUATION_MODE_OPTIONS,
   RISK_LEVEL_OPTIONS,
   CONFLICT_RESOLUTION_OPTIONS,
-  PolicyType,
+  DataAccessPolicyType,
   EvaluationMode,
   RiskLevel,
   ConflictResolution,
@@ -179,9 +179,9 @@ export class MktDataAccessPolicyWorkspaceEntity extends BaseWorkspaceEntity {
     description: msg`Type of policy (ROW_LEVEL, FIELD_LEVEL, COLUMN_LEVEL)`,
     icon: 'IconLayersSubtract',
     options: POLICY_TYPE_OPTIONS,
-    defaultValue: `'${PolicyType.ROW_LEVEL}'`,
+    defaultValue: `'${DataAccessPolicyType.ROW_LEVEL}'`,
   })
-  policyType: PolicyType;
+  policyType: DataAccessPolicyType;
 
   // Phase 2: Evaluation Mode
   @WorkspaceField({

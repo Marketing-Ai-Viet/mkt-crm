@@ -1,0 +1,134 @@
+/**
+ * Enterprise RBAC Core Constants
+ * Core enums and constants for the RBAC system
+ */
+
+/**
+ * Permission Source - Where the permission originates from
+ */
+export enum PermissionSource {
+  ROLE = 'ROLE',
+  USER = 'USER',
+  WORKSPACE = 'WORKSPACE',
+  SYSTEM = 'SYSTEM',
+  PERMISSION_TEMPLATE = 'PERMISSION_TEMPLATE',
+  HIERARCHY_INHERITANCE = 'HIERARCHY_INHERITANCE',
+  DEPARTMENT_POLICY = 'DEPARTMENT_POLICY',
+  SPECIAL_OVERRIDE = 'SPECIAL_OVERRIDE',
+  DYNAMIC_CONDITION = 'DYNAMIC_CONDITION',
+  EMERGENCY_ACCESS = 'EMERGENCY_ACCESS',
+  TEMPORARY_ELEVATION = 'TEMPORARY_ELEVATION',
+}
+
+/**
+ * Permission Action - CRUD and additional actions
+ */
+export enum PermissionAction {
+  READ = 'READ',
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  EXPORT = 'EXPORT',
+  IMPORT = 'IMPORT',
+  SHARE = 'SHARE',
+  PUBLISH = 'PUBLISH',
+  ARCHIVE = 'ARCHIVE',
+  RESTORE = 'RESTORE',
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  ESCALATE = 'ESCALATE',
+  CONFIGURE = 'CONFIGURE',
+  MONITOR = 'MONITOR',
+  AUDIT = 'AUDIT',
+  MANAGE = 'MANAGE',
+}
+
+/**
+ * Check Result - Result of permission check
+ */
+export enum CheckResult {
+  PASS = 'PASS',
+  FAIL = 'FAIL',
+  SKIP = 'SKIP',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+}
+
+/**
+ * GraphQL Operation Type
+ */
+export enum GraphQLOperationType {
+  QUERY = 'QUERY',
+  MUTATION = 'MUTATION',
+  SUBSCRIPTION = 'SUBSCRIPTION',
+}
+
+/**
+ * Resource Types for RBAC
+ * Categories of resources that can be protected
+ */
+export const RESOURCE_TYPES = {
+  // Core CRM resources
+  CUSTOMER: 'CUSTOMER',
+  ORDER: 'ORDER',
+  PAYMENT: 'PAYMENT',
+  INVOICE: 'INVOICE',
+  CONTRACT: 'CONTRACT',
+  PRODUCT: 'PRODUCT',
+
+  // Organization resources
+  DEPARTMENT: 'DEPARTMENT',
+  WORKSPACE_MEMBER: 'WORKSPACE_MEMBER',
+  ORGANIZATION_LEVEL: 'ORGANIZATION_LEVEL',
+
+  // RBAC resources
+  PERMISSION_TEMPLATE: 'PERMISSION_TEMPLATE',
+  DATA_ACCESS_POLICY: 'DATA_ACCESS_POLICY',
+  TEMPORARY_PERMISSION: 'TEMPORARY_PERMISSION',
+  PERMISSION_AUDIT: 'PERMISSION_AUDIT',
+
+  // System resources
+  SYSTEM_CONFIG: 'SYSTEM_CONFIG',
+  AUDIT_LOG: 'AUDIT_LOG',
+  REPORT: 'REPORT',
+
+  // Financial resources (sensitive)
+  SALARY: 'SALARY',
+  FINANCIAL_DATA: 'FINANCIAL_DATA',
+  KPI: 'KPI',
+
+  // Communication resources
+  EMAIL: 'EMAIL',
+  TEMPLATE: 'TEMPLATE',
+
+  // Generic
+  GENERIC: 'GENERIC',
+} as const;
+
+/**
+ * Validation Steps for permission checking pipeline
+ * Order of execution in the 15-step validation process
+ */
+export const VALIDATION_STEPS = {
+  PRE_VALIDATION: 'PRE_VALIDATION',
+  USER_CONTEXT_RESOLUTION: 'USER_CONTEXT_RESOLUTION',
+  RESOURCE_IDENTIFICATION: 'RESOURCE_IDENTIFICATION',
+  PERMISSION_TEMPLATE_CHECK: 'PERMISSION_TEMPLATE_CHECK',
+  ACTION_PERMISSION_VALIDATION: 'ACTION_PERMISSION_VALIDATION',
+  RESOURCE_PERMISSION_CHECK: 'RESOURCE_PERMISSION_CHECK',
+  HIERARCHY_VALIDATION: 'HIERARCHY_VALIDATION',
+  DATA_ACCESS_POLICY_CHECK: 'DATA_ACCESS_POLICY_CHECK',
+  SPECIAL_PERMISSIONS: 'SPECIAL_PERMISSIONS',
+  SENSITIVE_DATA_CHECKS: 'SENSITIVE_DATA_CHECKS',
+  DEPARTMENT_RESTRICTIONS: 'DEPARTMENT_RESTRICTIONS',
+  DYNAMIC_CONDITIONS: 'DYNAMIC_CONDITIONS',
+  CACHE_PERFORMANCE: 'CACHE_PERFORMANCE',
+  AUDIT_LOGGING: 'AUDIT_LOGGING',
+  FINAL_DECISION: 'FINAL_DECISION',
+} as const;
+
+/**
+ * Type definitions for resource and validation step keys
+ */
+export type ResourceType = keyof typeof RESOURCE_TYPES;
+export type ValidationStep = keyof typeof VALIDATION_STEPS;

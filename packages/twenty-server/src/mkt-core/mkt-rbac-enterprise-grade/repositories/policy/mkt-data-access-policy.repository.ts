@@ -7,7 +7,7 @@ import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import {
-  PolicyType,
+  DataAccessPolicyType,
   RiskLevel,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
@@ -106,8 +106,8 @@ export class MktDataAccessPolicyRepository {
     });
   }
 
-  async findByPolicyType(
-    policyType: PolicyType,
+  async findByDataAccessPolicyType(
+    policyType: DataAccessPolicyType,
     workspaceId?: string,
   ): Promise<MktDataAccessPolicyWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);

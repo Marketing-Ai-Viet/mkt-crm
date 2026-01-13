@@ -2,10 +2,12 @@ import { SeedContractModuleCommand } from 'src/mkt-core/seeder/commands/mkt-cont
 import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-data-seed-dev-workspace.command';
 import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seed-dev-workspace.command';
 import { SeedMktDataAccessPolicyCommand } from 'src/mkt-core/seeder/commands/mkt-data-access-policy-data-seed-dev-workspace.command';
-import { SeedDepartmentModuleCommand } from 'src/mkt-core/seeder/commands/mkt-department-data-seed-dev-workspace.command';
+import { SeedDepartmentModuleCommand } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-data-seed-dev-workspace.command';
 import { MktGenericComboDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-data-seed-dev-workspace.command';
 import { MktGenericComboItemDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-data-seed-dev-workspace.command';
-import { SeedMktDepartmentHierarchyCommand } from 'src/mkt-core/seeder/commands/mkt-department-hierarchy-data-seed-dev-workspace.command';
+import { SeedMktDepartmentHierarchyCommand } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/mkt-department-hierarchy-data-seed-dev-workspace.command';
+import { SeedDepartmentSubManagerCommand } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/mkt-department-sub-manager-data-seed-dev-workspace.command';
+import { SeedDepartmentAncestryCommand } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/mkt-department-ancestry-data-seed-dev-workspace.command';
 import { SeedEmploymentStatusModuleCommand } from 'src/mkt-core/seeder/commands/mkt-employment-status-data-seed-dev-workspace.command';
 import { SeedI18nModuleCommand } from 'src/mkt-core/seeder/commands/mkt-i18n-data-seed-dev-workspace.command';
 import { SeedMktKpiCommand } from 'src/mkt-core/seeder/commands/mkt-kpi-data-seed-dev-workspace.command';
@@ -18,7 +20,7 @@ import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/comma
 import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/seeder/commands/mkt-payment-history-data-seed-dev-workspace.command';
 import { MktWebhookLogDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-webhook-log-data-seed-dev-workspace.command';
 import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-payment-method-data-seed-dev-workspace.command';
-import { SeedMktPermissionAuditCommand } from 'src/mkt-core/seeder/commands/mkt-permission-audit-data-seed-dev-workspace.command';
+import { SeedMktPermissionAuditCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-data-seed-dev-workspace.command';
 import { SeedTagModuleCommand } from 'src/mkt-core/seeder/commands/mkt-tag-data-seed-dev-workspace.command';
 import { SeedTemplateModuleCommand } from 'src/mkt-core/seeder/commands/mkt-template-data-seed-dev-workspace.command';
 import { SeedMktTemporaryPermissionCommand } from 'src/mkt-core/seeder/commands/mkt-temporary-permission-data-seed-dev-workspace.command';
@@ -98,6 +100,8 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   // temporary permission commands
   SeedMktTemporaryPermissionCommand,
   SeedMktDepartmentHierarchyCommand,
+  SeedDepartmentSubManagerCommand,
+  SeedDepartmentAncestryCommand,
   SeedMktDataAccessPolicyCommand,
   SeedMktPermissionAuditCommand,
   // promotion commands (order matters: Promotion -> Rule -> Coupon -> Audit -> Usage)

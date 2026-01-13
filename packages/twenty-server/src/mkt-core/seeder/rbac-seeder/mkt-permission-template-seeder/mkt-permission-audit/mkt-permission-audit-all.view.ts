@@ -173,6 +173,61 @@ export const mktPermissionAuditsAllView = (
         isVisible: false,
         size: 150,
       },
+      // Phase 2: Cache Hit
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.cacheHit,
+          )?.id ?? '',
+        position: 13,
+        isVisible: false,
+        size: 80,
+      },
+      // Phase 2: Request ID
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.requestId,
+          )?.id ?? '',
+        position: 14,
+        isVisible: false,
+        size: 150,
+      },
+      // Phase 2: Execution Path
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.executionPath,
+          )?.id ?? '',
+        position: 15,
+        isVisible: false,
+        size: 300,
+      },
+      // Phase 2: Step Results
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.stepResults,
+          )?.id ?? '',
+        position: 16,
+        isVisible: false,
+        size: 200,
+      },
+      // Phase 2: Metadata
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.metadata,
+          )?.id ?? '',
+        position: 17,
+        isVisible: false,
+        size: 200,
+      },
     ],
   };
 };
@@ -463,6 +518,50 @@ export const mktPermissionAuditsPerformanceView = (
         position: 8,
         isVisible: false,
         size: 180,
+      },
+      // Phase 2: Cache Hit (VISIBLE - important for performance)
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.cacheHit,
+          )?.id ?? '',
+        position: 9,
+        isVisible: true,
+        size: 80,
+      },
+      // Phase 2: Execution Path (VISIBLE - shows validation path)
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.executionPath,
+          )?.id ?? '',
+        position: 10,
+        isVisible: true,
+        size: 350,
+      },
+      // Phase 2: Step Results (detailed timing breakdown)
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.stepResults,
+          )?.id ?? '',
+        position: 11,
+        isVisible: true,
+        size: 250,
+      },
+      // Phase 2: Request ID (for tracing)
+      {
+        fieldMetadataId:
+          itemObjectMetadata.fields.find(
+            (field) =>
+              field.standardId === MKT_PERMISSION_AUDIT_FIELD_IDS.requestId,
+          )?.id ?? '',
+        position: 12,
+        isVisible: false,
+        size: 150,
       },
     ],
   };

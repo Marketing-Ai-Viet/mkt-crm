@@ -22,7 +22,7 @@ import {
 import {
   MKT_DEPARTMENT_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-department-data-seeds.constants';
+} from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-data-seeds.constants';
 import {
   MKT_PAYMENT_METHOD_DATA_SEED_COLUMNS,
   MKT_PAYMENT_METHOD_DATA_SEEDS,
@@ -50,7 +50,7 @@ import {
 import {
   MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-department-hierarchy-data-seeds.constants';
+} from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/mkt-department-hierarchy-data-seeds.constants';
 import {
   MKT_CUSTOMER_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_DATA_SEEDS,
@@ -142,7 +142,7 @@ import {
 import {
   MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
   MKT_PERMISSION_AUDIT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-permission-audit-data-seeds.constants';
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-data-seeds.constants';
 import {
   MKT_PROMOTION_DATA_SEED_COLUMNS,
   MKT_PROMOTION_DATA_SEEDS,

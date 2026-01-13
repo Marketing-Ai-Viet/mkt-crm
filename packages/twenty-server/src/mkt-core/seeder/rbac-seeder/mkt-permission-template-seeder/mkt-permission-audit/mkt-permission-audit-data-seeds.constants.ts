@@ -7,6 +7,13 @@ import {
   CheckResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
+type MktPermissionAuditMetadata = {
+  validationMode?: string;
+  schemaVersion?: number;
+  customFields?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
 type MktPermissionAuditDataSeed = {
   id: string;
   workspaceMemberId: string;
@@ -21,6 +28,12 @@ type MktPermissionAuditDataSeed = {
   ipAddress?: string | null;
   userAgent?: string | null;
   checkDurationMs?: number | null;
+  // Phase 2 fields
+  stepResults?: object | null;
+  cacheHit?: boolean;
+  executionPath?: string | null;
+  requestId?: string | null;
+  metadata?: MktPermissionAuditMetadata | null;
   position: number;
   createdAt: string;
 };
@@ -40,6 +53,12 @@ export const MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS: (keyof MktPermissionAuditDa
     'ipAddress',
     'userAgent',
     'checkDurationMs',
+    // Phase 2 fields
+    'stepResults',
+    'cacheHit',
+    'executionPath',
+    'requestId',
+    'metadata',
     'position',
     'createdAt',
   ];
@@ -84,12 +103,31 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
       endpoint: '/api/customers/customer-001',
       method: 'GET',
       sessionId: 'sess-12345',
-      requestId: 'req-67890',
     },
     ipAddress: '192.168.1.100',
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0',
     checkDurationMs: 15,
+    // Phase 2 fields
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 2 },
+      userContextResolution: { status: 'PASS', durationMs: 5 },
+      resourceIdentification: { status: 'PASS', durationMs: 3 },
+      permissionTemplateCheck: { status: 'PASS', durationMs: 4 },
+      actionPermissionValidation: { status: 'PASS', durationMs: 1 },
+    },
+    cacheHit: true,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> TEMPLATE_CHECK -> ACTION_VALIDATION',
+    requestId: 'req-67890',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        source: 'GraphQL',
+        clientVersion: '2.0.0',
+      },
+    },
     position: 1,
     createdAt: DateTime.now().minus({ hours: 2 }).toISO(),
   },
@@ -115,6 +153,14 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Safari/537.36',
     checkDurationMs: 23,
+    stepResults: null,
+    cacheHit: false,
+    executionPath: null,
+    requestId: 'req-support-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+    },
     position: 2,
     createdAt: DateTime.now().minus({ hours: 1, minutes: 30 }).toISO(),
   },
@@ -140,6 +186,29 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Edge/120.0.0.0',
     checkDurationMs: 8,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 1 },
+      userContextResolution: { status: 'PASS', durationMs: 2 },
+      resourceIdentification: { status: 'PASS', durationMs: 1 },
+      permissionTemplateCheck: {
+        status: 'FAIL',
+        durationMs: 3,
+        reason: 'Missing Super Admin role',
+      },
+      actionPermissionValidation: { status: 'SKIP', durationMs: 0 },
+    },
+    cacheHit: false,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> TEMPLATE_CHECK (DENIED)',
+    requestId: 'req-admin-del-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        securityAlert: true,
+        alertLevel: 'medium',
+      },
+    },
     position: 3,
     createdAt: DateTime.now().minus({ hours: 1, minutes: 15 }).toISO(),
   },
@@ -166,6 +235,29 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0',
     checkDurationMs: 42,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 3 },
+      userContextResolution: { status: 'PASS', durationMs: 8 },
+      resourceIdentification: { status: 'PASS', durationMs: 5 },
+      temporaryPermissionCheck: {
+        status: 'PASS',
+        durationMs: 20,
+        tempPermId: 'temp-perm-001',
+      },
+      actionPermissionValidation: { status: 'PASS', durationMs: 6 },
+    },
+    cacheHit: false,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> TEMP_PERMISSION_CHECK -> ACTION_VALIDATION',
+    requestId: 'req-temp-kpi-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        temporaryAccess: true,
+        grantReason: 'Quarterly review preparation',
+      },
+    },
     position: 4,
     createdAt: DateTime.now().minus({ hours: 1 }).toISO(),
   },
@@ -196,6 +288,31 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0',
     checkDurationMs: 156,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 5 },
+      userContextResolution: { status: 'PASS', durationMs: 12 },
+      resourceIdentification: { status: 'PASS', durationMs: 8 },
+      permissionTemplateCheck: { status: 'PASS', durationMs: 45 },
+      dataAccessPolicyCheck: {
+        status: 'PASS',
+        durationMs: 50,
+        policyId: 'policy-sales-export',
+      },
+      actionPermissionValidation: { status: 'PASS', durationMs: 36 },
+    },
+    cacheHit: true,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> TEMPLATE_CHECK -> DATA_ACCESS_POLICY -> ACTION_VALIDATION',
+    requestId: 'req-export-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        exportType: 'bulk',
+        recordCount: 1250,
+        dataClassification: 'internal',
+      },
+    },
     position: 5,
     createdAt: DateTime.now().minus({ minutes: 45 }).toISO(),
   },
@@ -222,6 +339,31 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     ipAddress: '203.0.113.45', // External IP
     userAgent: 'curl/7.81.0',
     checkDurationMs: 5,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 1 },
+      userContextResolution: { status: 'PASS', durationMs: 1 },
+      resourceIdentification: { status: 'PASS', durationMs: 1 },
+      roleCheck: {
+        status: 'FAIL',
+        durationMs: 2,
+        reason: 'Support role cannot delete Contract',
+      },
+      actionPermissionValidation: { status: 'SKIP', durationMs: 0 },
+    },
+    cacheHit: true,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> ROLE_CHECK (DENIED)',
+    requestId: 'req-unauth-del-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        securityIncident: true,
+        riskScore: 8.5,
+        externalIp: true,
+        alertGenerated: true,
+      },
+    },
     position: 6,
     createdAt: DateTime.now().minus({ minutes: 30 }).toISO(),
   },
@@ -248,6 +390,25 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0',
     checkDurationMs: 28,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 3 },
+      userContextResolution: { status: 'PASS', durationMs: 6 },
+      resourceIdentification: { status: 'PASS', durationMs: 4 },
+      roleCheck: { status: 'PASS', durationMs: 8, role: 'Sales Manager' },
+      actionPermissionValidation: { status: 'PASS', durationMs: 7 },
+    },
+    cacheHit: true,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> ROLE_CHECK -> ACTION_VALIDATION',
+    requestId: 'req-create-order-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        orderValue: 45000,
+        vipCustomer: true,
+      },
+    },
     position: 7,
     createdAt: DateTime.now().minus({ minutes: 15 }).toISO(),
   },
@@ -280,6 +441,26 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0',
     checkDurationMs: 12,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 2 },
+      userContextResolution: { status: 'PASS', durationMs: 3 },
+      resourceIdentification: { status: 'PASS', durationMs: 2 },
+      roleCheck: { status: 'PASS', durationMs: 3 },
+      actionPermissionValidation: { status: 'PASS', durationMs: 2 },
+    },
+    cacheHit: true,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> ROLE_CHECK -> ACTION_VALIDATION',
+    requestId: 'req-high-vol-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        listQuery: true,
+        totalRecords: 2847,
+        performanceOptimized: true,
+      },
+    },
     position: 8,
     createdAt: DateTime.now().minus({ minutes: 10 }).toISO(),
   },
@@ -306,6 +487,31 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Edge/120.0.0.0',
     checkDurationMs: 89,
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 5 },
+      userContextResolution: { status: 'PASS', durationMs: 10 },
+      resourceIdentification: { status: 'PASS', durationMs: 8 },
+      specialOverrideCheck: {
+        status: 'PASS',
+        durationMs: 35,
+        overrideType: 'audit_compliance',
+      },
+      auditTrailValidation: { status: 'PASS', durationMs: 25 },
+      actionPermissionValidation: { status: 'PASS', durationMs: 6 },
+    },
+    cacheHit: false,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> SPECIAL_OVERRIDE -> AUDIT_TRAIL -> ACTION_VALIDATION',
+    requestId: 'req-audit-comp-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        complianceReview: true,
+        caseNumber: 'AUDIT-2024-Q1-001',
+        externalAuditor: true,
+      },
+    },
     position: 9,
     createdAt: DateTime.now().minus({ minutes: 5 }).toISO(),
   },
@@ -333,6 +539,38 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     userAgent:
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Safari/537.36',
     checkDurationMs: 347, // Slow performance flagged
+    stepResults: {
+      preValidation: { status: 'PASS', durationMs: 15 },
+      userContextResolution: { status: 'PASS', durationMs: 45 },
+      resourceIdentification: { status: 'PASS', durationMs: 28 },
+      hierarchyResolution: { status: 'PASS', durationMs: 85, levels: 4 },
+      policyRulesEvaluation: {
+        status: 'PASS',
+        durationMs: 120,
+        rulesEvaluated: 12,
+      },
+      temporaryPermissionCheck: {
+        status: 'PASS',
+        durationMs: 35,
+        permissionsChecked: 3,
+      },
+      actionPermissionValidation: { status: 'PASS', durationMs: 19 },
+    },
+    cacheHit: false,
+    executionPath:
+      'PRE_VALIDATION -> USER_CONTEXT -> RESOURCE_ID -> HIERARCHY -> POLICY_RULES -> TEMP_PERMISSION -> ACTION_VALIDATION',
+    requestId: 'req-slow-perf-001',
+    metadata: {
+      validationMode: 'SIMPLIFIED',
+      schemaVersion: 1,
+      customFields: {
+        performanceWarning: true,
+        complexEvaluation: true,
+        hierarchyDepth: 4,
+        policyRulesCount: 12,
+        slowThresholdMs: 200,
+      },
+    },
     position: 10,
     createdAt: DateTime.now().minus({ minutes: 2 }).toISO(),
   },

@@ -94,3 +94,49 @@ export const MKT_DEPARTMENT_DATA_SEEDS_IDS = {
   [TEAM.TECH_QA]: 'f9577f42-498d-471f-a401-2b5959287a01',
   [TEAM.TECH_DATA]: '5e2748cc-0276-4fed-b8b2-df47fc1d1414',
 };
+
+// Sub-manager assignment seed IDs
+export const MKT_DEPARTMENT_SUB_MANAGER_DATA_SEEDS_IDS = {
+  // SALES department sub-managers
+  SALES_SUB_MANAGER_1: 'a1b2c3d4-e5f6-7890-abcd-ef0123456001',
+  SALES_SUB_MANAGER_2: 'a1b2c3d4-e5f6-7890-abcd-ef0123456002',
+  // SUPPORT department sub-managers
+  SUPPORT_SUB_MANAGER_1: 'a1b2c3d4-e5f6-7890-abcd-ef0123456003',
+  // ACCOUNTING department sub-managers
+  ACCOUNTING_SUB_MANAGER_1: 'a1b2c3d4-e5f6-7890-abcd-ef0123456004',
+  ACCOUNTING_SUB_MANAGER_2: 'a1b2c3d4-e5f6-7890-abcd-ef0123456005',
+  // HR department sub-managers
+  HR_SUB_MANAGER_1: 'a1b2c3d4-e5f6-7890-abcd-ef0123456006',
+  // TECH department sub-managers
+  TECH_SUB_MANAGER_1: 'a1b2c3d4-e5f6-7890-abcd-ef0123456007',
+  TECH_SUB_MANAGER_2: 'a1b2c3d4-e5f6-7890-abcd-ef0123456008',
+  TECH_SUB_MANAGER_3: 'a1b2c3d4-e5f6-7890-abcd-ef0123456009',
+};
+
+// Department ancestry seed IDs (for RBAC hierarchy)
+export const MKT_DEPARTMENT_ANCESTRY_DATA_SEEDS_IDS = {
+  // SALES team ancestries (teams -> SALES department)
+  SALES_DOMESTIC_TO_SALES: 'b2c3d4e5-f6a7-8901-bcde-f01234567101',
+  SALES_INTERNATIONAL_TO_SALES: 'b2c3d4e5-f6a7-8901-bcde-f01234567102',
+  SALES_PARTNER_TO_SALES: 'b2c3d4e5-f6a7-8901-bcde-f01234567103',
+  SALES_ONLINE_TO_SALES: 'b2c3d4e5-f6a7-8901-bcde-f01234567104',
+  // SUPPORT team ancestries (teams -> SUPPORT department)
+  SUPPORT_CUSTOMER_TO_SUPPORT: 'b2c3d4e5-f6a7-8901-bcde-f01234567105',
+  SUPPORT_TECHNICAL_TO_SUPPORT: 'b2c3d4e5-f6a7-8901-bcde-f01234567106',
+  SUPPORT_INTERNAL_TO_SUPPORT: 'b2c3d4e5-f6a7-8901-bcde-f01234567107',
+  // ACCOUNTING team ancestries (teams -> ACCOUNTING department)
+  ACCOUNTING_PAYABLE_TO_ACCOUNTING: 'b2c3d4e5-f6a7-8901-bcde-f01234567108',
+  ACCOUNTING_RECEIVABLE_TO_ACCOUNTING: 'b2c3d4e5-f6a7-8901-bcde-f01234567109',
+  ACCOUNTING_AUDIT_TO_ACCOUNTING: 'b2c3d4e5-f6a7-8901-bcde-f01234567110',
+  ACCOUNTING_TAX_TO_ACCOUNTING: 'b2c3d4e5-f6a7-8901-bcde-f01234567111',
+  // HR team ancestries (teams -> HR department)
+  HR_RECRUITMENT_TO_HR: 'b2c3d4e5-f6a7-8901-bcde-f01234567112',
+  HR_TRAINING_TO_HR: 'b2c3d4e5-f6a7-8901-bcde-f01234567113',
+  HR_PAYROLL_TO_HR: 'b2c3d4e5-f6a7-8901-bcde-f01234567114',
+  // TECH team ancestries (teams -> TECH department)
+  TECH_BACKEND_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567115',
+  TECH_FRONTEND_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567116',
+  TECH_DEVOPS_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567117',
+  TECH_QA_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567118',
+  TECH_DATA_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567119',
+};

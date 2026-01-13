@@ -24,10 +24,6 @@ import {
   CheckResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import {
-  VALIDATION_MODE_OPTIONS,
-  ValidationMode,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
-import {
   PERMISSION_SOURCE_OPTIONS,
   PERMISSION_ACTION_OPTIONS,
   CHECK_RESULT_OPTIONS,
@@ -186,18 +182,6 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   checkDurationMs?: number;
 
-  // Phase 2: Validation Mode
-  @WorkspaceField({
-    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.validationMode,
-    type: FieldMetadataType.SELECT,
-    label: msg`Validation Mode`,
-    description: msg`Mode used for this permission check (SIMPLIFIED or FULL)`,
-    icon: 'IconAdjustments',
-    options: VALIDATION_MODE_OPTIONS,
-    defaultValue: `'${ValidationMode.SIMPLIFIED}'`,
-  })
-  validationMode: ValidationMode;
-
   // Phase 2: Step Results (detailed breakdown of validation steps)
   @WorkspaceField({
     standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.stepResults,
@@ -230,6 +214,33 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   executionPath?: string;
+
+  // Phase 2: Request ID for tracing
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.requestId,
+    type: FieldMetadataType.TEXT,
+    label: msg`Request ID`,
+    description: msg`Unique identifier for the request (for tracing/debugging)`,
+    icon: 'IconFingerprint',
+  })
+  @WorkspaceIsNullable()
+  requestId?: string;
+
+  // Extensible metadata for future requirements
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Extensible metadata for future requirements (validationMode, schemaVersion, customFields, etc.)`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  metadata?: {
+    validationMode?: string;
+    schemaVersion?: number;
+    customFields?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
 
   @WorkspaceField({
     standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.position,

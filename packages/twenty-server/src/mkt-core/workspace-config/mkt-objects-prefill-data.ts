@@ -8,8 +8,10 @@ import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mk
 import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
 import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
-import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-department-hierarchies';
-import { prefillMktDepartments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-departments';
+import { prefillMktDepartmentAncestries } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/prefill-mkt-department-ancestries';
+import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/prefill-mkt-department-hierarchies';
+import { prefillMktDepartmentSubManagers } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/prefill-mkt-department-sub-managers';
+import { prefillMktDepartments } from 'src/mkt-core/seeder/department-seeder/mkt-department/prefill-mkt-departments';
 import { prefillMktGenericComboItems } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combo-items';
 import { prefillMktGenericCombos } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combos';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-employment-statuses';
@@ -23,7 +25,7 @@ import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/p
 import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-methods';
 import { prefillMktPayments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payments';
-import { prefillMktPermissionAudits } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-permission-audits';
+import { prefillMktPermissionAudits } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/prefill-mkt-permission-audits';
 import { prefillMktStaffStatusHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-staff-status-histories';
 import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-templates';
@@ -102,6 +104,8 @@ export const MKT_PREFILLS = [
   // temporary permission prefills (should be last to ensure all dependencies exist)
   prefillMktTemporaryPermissions,
   prefillMktDepartmentHierarchies,
+  prefillMktDepartmentSubManagers,
+  prefillMktDepartmentAncestries,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
   // permission template prefills (order matters: actions -> resources -> templates -> resource permissions -> system actions -> user templates)

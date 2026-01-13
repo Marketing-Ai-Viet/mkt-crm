@@ -73,7 +73,7 @@ export const RESOLUTION_STRATEGY_OPTIONS = [
 // Data Access Policy Types (Step 2.2)
 // ============================================
 
-export enum PolicyType {
+export enum DataAccessPolicyType {
   ROW_LEVEL = 'ROW_LEVEL',
   FIELD_LEVEL = 'FIELD_LEVEL',
   COLUMN_LEVEL = 'COLUMN_LEVEL',
@@ -81,19 +81,19 @@ export enum PolicyType {
 
 export const POLICY_TYPE_OPTIONS = [
   {
-    value: PolicyType.ROW_LEVEL,
+    value: DataAccessPolicyType.ROW_LEVEL,
     label: 'Row Level',
     color: 'blue' as TagColor,
     position: 0,
   },
   {
-    value: PolicyType.FIELD_LEVEL,
+    value: DataAccessPolicyType.FIELD_LEVEL,
     label: 'Field Level',
     color: 'green' as TagColor,
     position: 1,
   },
   {
-    value: PolicyType.COLUMN_LEVEL,
+    value: DataAccessPolicyType.COLUMN_LEVEL,
     label: 'Column Level',
     color: 'purple' as TagColor,
     position: 2,

@@ -99,4 +99,6 @@ export const MKT_OBJECT_IDS = {
   mktPolicyApproval: '4d5e6f7a-b8c9-0123-def0-123456789013',
   // department ancestry
   mktDepartmentAncestry: '5e6f7a8b-c9d0-1234-ef01-234567890124',
+  // department sub-manager (join table for multiple sub-managers)
+  mktDepartmentSubManager: '6f7a8b9c-d0e1-2345-f012-345678901235',
 };

@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
   MKT_PERMISSION_AUDIT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-permission-audit-data-seeds.constants';
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-data-seeds.constants';
 
 export const prefillMktPermissionAudits = async (
   entityManager: WorkspaceEntityManager,
@@ -23,10 +23,12 @@ export const prefillMktPermissionAudits = async (
     // Prepare data with JSON stringification for complex fields
     const seedData = MKT_PERMISSION_AUDIT_DATA_SEEDS.map((audit) => ({
       ...audit,
-      // Stringify requestContext object field for database insertion
+      // Stringify object fields for database insertion
       requestContext: audit.requestContext
         ? JSON.stringify(audit.requestContext)
         : null,
+      stepResults: audit.stepResults ? JSON.stringify(audit.stepResults) : null,
+      metadata: audit.metadata ? JSON.stringify(audit.metadata) : null,
     }));
 
     // Insert permission audits

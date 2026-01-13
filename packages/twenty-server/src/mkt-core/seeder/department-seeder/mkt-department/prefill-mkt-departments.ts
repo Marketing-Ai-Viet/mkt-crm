@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_DEPARTMENT_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-department-data-seeds.constants';
+} from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-data-seeds.constants';
 
 export const prefillMktDepartments = async (
   entityManager: WorkspaceEntityManager,

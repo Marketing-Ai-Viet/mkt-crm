@@ -18,11 +18,19 @@ import {
 import {
   MKT_DEPARTMENT_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-department-data-seeds.constants';
+} from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-data-seeds.constants';
+import {
+  MKT_DEPARTMENT_ANCESTRY_DATA_SEED_COLUMNS,
+  MKT_DEPARTMENT_ANCESTRY_DATA_SEEDS,
+} from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/mkt-department-ancestry-data-seeds.constants';
 import {
   MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-department-hierarchy-data-seeds.constants';
+} from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/mkt-department-hierarchy-data-seeds.constants';
+import {
+  MKT_DEPARTMENT_SUB_MANAGER_DATA_SEED_COLUMNS,
+  MKT_DEPARTMENT_SUB_MANAGER_DATA_SEEDS,
+} from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/mkt-department-sub-manager-data-seeds.constants';
 import {
   MKT_EMAIL_DATA_SEED_COLUMNS,
   MKT_EMAIL_DATA_SEEDS,
@@ -78,7 +86,7 @@ import {
 import {
   MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
   MKT_PERMISSION_AUDIT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-permission-audit-data-seeds.constants';
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-data-seeds.constants';
 import {
   MKT_REPORT_DATA_SEED_COLUMNS,
   MKT_REPORT_DATA_SEEDS,
@@ -371,6 +379,16 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktDepartmentHierarchy',
     pgColumns: MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS,
     recordSeeds: MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktDepartmentSubManager',
+    pgColumns: MKT_DEPARTMENT_SUB_MANAGER_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_DEPARTMENT_SUB_MANAGER_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktDepartmentAncestry',
+    pgColumns: MKT_DEPARTMENT_ANCESTRY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_DEPARTMENT_ANCESTRY_DATA_SEEDS,
   },
   {
     tableName: 'mktDataAccessPolicy',

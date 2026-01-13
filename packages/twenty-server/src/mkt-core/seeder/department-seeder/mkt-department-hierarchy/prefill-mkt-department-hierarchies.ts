@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_DEPARTMENT_HIERARCHY_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_HIERARCHY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-department-hierarchy-data-seeds.constants';
+} from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/mkt-department-hierarchy-data-seeds.constants';
 
 export const prefillMktDepartmentHierarchies = async (
   entityManager: WorkspaceEntityManager,

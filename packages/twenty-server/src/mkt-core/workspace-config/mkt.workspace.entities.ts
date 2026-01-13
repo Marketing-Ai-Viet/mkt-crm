@@ -61,6 +61,7 @@ import {
   MktPromotionUsageWorkspaceEntity,
   MktPromotionAuditWorkspaceEntity,
 } from 'src/mkt-core/mkt-promotion/workspace-entities';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity';
 
 export const MKT_WORKSPACE_ENTITIES = [
   //core
@@ -121,6 +122,7 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   MktTemporaryPermissionWorkspaceEntity,
   MktDepartmentHierarchyWorkspaceEntity,
   MktDepartmentAncestryWorkspaceEntity,
+  MktDepartmentSubManagerWorkspaceEntity,
   MktDataAccessPolicyWorkspaceEntity,
   MktPermissionAuditWorkspaceEntity,
   // Permission Template System (order matters: actions -> resources -> templates -> mappings)
