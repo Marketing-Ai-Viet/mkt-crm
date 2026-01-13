@@ -2,9 +2,10 @@ import { DateTime } from 'luxon';
 
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import {
-  PermissionAction,
   PermissionSource,
   CheckResult,
+  RBAC_ACTION,
+  RbacAction,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 type MktPermissionAuditMetadata = {
@@ -18,7 +19,7 @@ type MktPermissionAuditDataSeed = {
   id: string;
   workspaceMemberId: string;
   userId?: string | null;
-  action: PermissionAction;
+  action: RbacAction;
   objectName: string;
   recordId?: string | null;
   permissionSource?: PermissionSource | null;
@@ -93,7 +94,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.SALES_READ_CUSTOMER_GRANTED,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
     userId: 'user-sales-001',
-    action: PermissionAction.READ,
+    action: RBAC_ACTION.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_CUSTOMER,
     recordId: 'customer-001',
     permissionSource: PermissionSource.ROLE,
@@ -137,7 +138,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.SUPPORT_READ_TICKET_GRANTED,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Support member
     userId: 'user-support-001',
-    action: PermissionAction.READ,
+    action: RBAC_ACTION.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_CUSTOMER,
     recordId: 'customer-002',
     permissionSource: PermissionSource.DEPARTMENT_POLICY,
@@ -170,7 +171,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.ADMIN_DELETE_USER_DENIED,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Admin member
     userId: 'user-admin-001',
-    action: PermissionAction.DELETE,
+    action: RBAC_ACTION.DELETE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.WORKSPACE_MEMBER,
     recordId: 'member-003',
     permissionSource: PermissionSource.ROLE,
@@ -218,7 +219,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.TEMP_PERMISSION_READ_KPI,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, // Tech member
     userId: 'user-tech-001',
-    action: PermissionAction.READ,
+    action: RBAC_ACTION.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_KPI,
     recordId: 'kpi-quarterly-001',
     permissionSource: PermissionSource.TEMPORARY_ELEVATION,
@@ -267,7 +268,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.DEPT_POLICY_EXPORT_DATA,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
     userId: 'user-sales-001',
-    action: PermissionAction.EXPORT,
+    action: RBAC_ACTION.EXPORT,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_ORDER,
     recordId: null, // Bulk export
     permissionSource: PermissionSource.PERMISSION_TEMPLATE,
@@ -322,7 +323,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.UNAUTHORIZED_DELETE_ATTEMPT,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Support member
     userId: 'user-support-001',
-    action: PermissionAction.DELETE,
+    action: RBAC_ACTION.DELETE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_CONTRACT,
     recordId: 'contract-important-001',
     permissionSource: PermissionSource.ROLE,
@@ -373,7 +374,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.ROLE_BASED_CREATE_ORDER,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
     userId: 'user-sales-001',
-    action: PermissionAction.CREATE,
+    action: RBAC_ACTION.CREATE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_ORDER,
     recordId: null, // Not yet created
     permissionSource: PermissionSource.ROLE,
@@ -418,7 +419,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.HIGH_VOLUME_READ_ACCESS,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, // Tech member
     userId: 'user-tech-001',
-    action: PermissionAction.READ,
+    action: RBAC_ACTION.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_PRODUCT,
     recordId: null, // List view
     permissionSource: PermissionSource.ROLE,
@@ -470,7 +471,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.AUDIT_TRAIL_COMPLIANCE,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Admin member
     userId: 'user-admin-001',
-    action: PermissionAction.READ,
+    action: RBAC_ACTION.READ,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_INVOICE,
     recordId: 'invoice-audit-001',
     permissionSource: PermissionSource.SPECIAL_OVERRIDE,
@@ -521,7 +522,7 @@ export const MKT_PERMISSION_AUDIT_DATA_SEEDS: MktPermissionAuditDataSeed[] = [
     id: MKT_PERMISSION_AUDIT_DATA_SEED_IDS.PERFORMANCE_SLOW_CHECK,
     workspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Support member
     userId: 'user-support-001',
-    action: PermissionAction.UPDATE,
+    action: RBAC_ACTION.UPDATE,
     objectName: MKT_PERMISSION_AUDIT_OBJECT_NAMES.MKT_LICENSE,
     recordId: 'license-complex-001',
     permissionSource: PermissionSource.PERMISSION_TEMPLATE,

@@ -135,8 +135,8 @@ export class AuditLogResolver {
     };
 
     const { items, total } = await this.auditRepository.query(
-      queryOptions,
       workspace.id,
+      queryOptions,
     );
 
     const totalPages = Math.ceil(total / pageSize);
@@ -185,9 +185,9 @@ export class AuditLogResolver {
     @AuthWorkspace() workspace: Workspace,
   ): Promise<AuditStatisticsOutput> {
     const [totalEntries, grantedCount, deniedCount] = await Promise.all([
-      this.auditRepository.count(undefined, workspace.id),
-      this.auditRepository.countByCheckResult(CheckResult.PASS, workspace.id),
-      this.auditRepository.countByCheckResult(CheckResult.FAIL, workspace.id),
+      this.auditRepository.count(workspace.id),
+      this.auditRepository.countByCheckResult(workspace.id, CheckResult.PASS),
+      this.auditRepository.countByCheckResult(workspace.id, CheckResult.FAIL),
     ]);
 
     const grantRate =
@@ -213,13 +213,10 @@ export class AuditLogResolver {
     @Args('fromDate', { nullable: true }) fromDate: string | undefined,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<AuditLogEntryOutput[]> {
-    const items = await this.auditRepository.findDeniedAccess(
-      {
-        limit: Math.min(limit, MAX_PAGE_SIZE),
-        fromDate: fromDate ? new Date(fromDate) : undefined,
-      },
-      workspace.id,
-    );
+    const items = await this.auditRepository.findDeniedAccess(workspace.id, {
+      limit: Math.min(limit, MAX_PAGE_SIZE),
+      fromDate: fromDate ? new Date(fromDate) : undefined,
+    });
 
     return items.map((item) => ({
       id: item.id,

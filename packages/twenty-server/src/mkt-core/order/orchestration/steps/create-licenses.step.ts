@@ -145,7 +145,7 @@ export class CreateLicensesStep extends SagaStep<
       }
 
       // Get order with items from repository
-      const order = await this.orderRepository.findById(
+      const order = await this.orderRepository.findByIdWithOptions(
         context.workspaceId,
         context.orderId,
         { relations: { orderItems: true } },

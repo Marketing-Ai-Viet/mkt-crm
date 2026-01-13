@@ -3,12 +3,12 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { DateTime } from 'luxon';
 import { Request } from 'express';
 
-import { RESOURCE_TYPES } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import {
   CheckResult,
   GraphQLOperationType,
-  PermissionAction,
   PermissionSource,
+  RBAC_RESOURCE_KEY,
+  RbacAction,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants';
 
 /**
@@ -106,7 +106,7 @@ export type ResourceContext = {
   fieldName?: string;
 
   // Resource classification
-  resourceType: keyof typeof RESOURCE_TYPES;
+  resourceType: keyof typeof RBAC_RESOURCE_KEY;
   resourceCategory: string;
   resourceSubcategory?: string;
 
@@ -317,7 +317,7 @@ export type TemplateRestriction = {
  */
 export type ActionPermissionContext = {
   // Action classification
-  actionType: PermissionAction;
+  actionType: RbacAction;
   actionCategory:
     | 'BASIC_CRUD'
     | 'ADVANCED'
@@ -340,7 +340,7 @@ export type ActionPermissionContext = {
     maxRecords?: number;
     maxAmount?: number; // for financial actions
     timeWindows?: { start: number; end: number }[];
-    prerequisiteActions?: PermissionAction[];
+    prerequisiteActions?: RbacAction[];
     requiredRole?: string;
     requiredLevel?: number;
   };
@@ -498,7 +498,7 @@ export type DepartmentTeamContext = {
  */
 export type EnhancedPermissionContext = {
   // Basic validation data
-  action: PermissionAction;
+  action: RbacAction;
   operationType?: GraphQLOperationType;
   operationName?: string;
   requestId?: string; // For tracking

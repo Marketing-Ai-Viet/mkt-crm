@@ -1,11 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, QueryRunner } from 'typeorm';
+import { DeepPartial, FindOptionsWhere, QueryRunner } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   MKT_ORDER_LOG_CONTEXT,
@@ -13,17 +12,17 @@ import {
 } from 'src/mkt-core/order/messages';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
-  CreateOrderData,
   DEFAULT_ORDER_RELATIONS,
   FindOrderOptions,
   PAYMENT_SUMMARY_RELATIONS,
-  UpdateOrderData,
   UpdatePaymentAmountsData,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktOrderRepository - Data access layer for Order entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktOrder entity
@@ -35,22 +34,27 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * - Validation (handled by Service layer)
  */
 @Injectable()
-export class MktOrderRepository {
-  private readonly logger = new Logger(`${MKT_ORDER_LOG_CONTEXT}:Repository`);
-
+export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktOrderWorkspaceEntity,
+      `${MKT_ORDER_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find order by ID
+   * Find order by ID with options (logging included)
    */
-  async findById(
+  async findByIdWithOptions(
     workspaceId: string,
     orderId: string,
     options?: FindOrderOptions,
@@ -82,7 +86,7 @@ export class MktOrderRepository {
     workspaceId: string,
     orderId: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.findById(workspaceId, orderId, {
+    return this.findByIdWithOptions(workspaceId, orderId, {
       relations: DEFAULT_ORDER_RELATIONS,
     });
   }
@@ -99,7 +103,7 @@ export class MktOrderRepository {
       `Finding order ${orderId} with payment summary relations`,
     );
 
-    return this.findById(workspaceId, orderId, {
+    return this.findByIdWithOptions(workspaceId, orderId, {
       relations: PAYMENT_SUMMARY_RELATIONS,
     });
   }
@@ -190,9 +194,9 @@ export class MktOrderRepository {
   }
 
   /**
-   * Find orders with custom where clause
+   * Find orders with custom where clause and options
    */
-  async findMany(
+  async findManyWithOptions(
     workspaceId: string,
     where: FindOptionsWhere<MktOrderWorkspaceEntity>,
     options?: FindOrderOptions,
@@ -205,19 +209,6 @@ export class MktOrderRepository {
     });
   }
 
-  /**
-   * Check if order exists
-   */
-  async exists(workspaceId: string, orderId: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { id: orderId },
-    });
-
-    return count > 0;
-  }
-
   // ============================================
   // CREATE OPERATIONS
   // ============================================
@@ -228,7 +219,7 @@ export class MktOrderRepository {
    */
   async create(
     workspaceId: string,
-    data: CreateOrderData,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
     _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_START());
@@ -260,7 +251,7 @@ export class MktOrderRepository {
   async update(
     workspaceId: string,
     orderId: string,
-    data: UpdateOrderData,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
     _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_START(orderId));
@@ -268,7 +259,7 @@ export class MktOrderRepository {
     const repository = await this.getRepository(workspaceId);
 
     // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
-    await repository.update(orderId, data);
+    await repository.update(orderId, data as never);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_SUCCESS(orderId));
   }
@@ -296,15 +287,15 @@ export class MktOrderRepository {
   /**
    * Update and return the updated order
    */
-  async updateAndReturn(
+  async updateAndReturnWithRunner(
     workspaceId: string,
     orderId: string,
-    data: UpdateOrderData,
-    queryRunner?: QueryRunner,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
+    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    await this.update(workspaceId, orderId, data, queryRunner);
+    await this.update(workspaceId, orderId, data);
 
-    return this.findById(workspaceId, orderId);
+    return this.findByIdWithOptions(workspaceId, orderId);
   }
 
   /**
@@ -332,7 +323,7 @@ export class MktOrderRepository {
       remainingAmount: data.remainingAmount,
       paymentStatus: data.paymentStatus,
       updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    } as never);
 
     this.logger.debug(`Payment amounts updated for order ${orderId}`);
   }
@@ -356,7 +347,7 @@ export class MktOrderRepository {
 
     await repository.update(orderId, {
       deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    } as never);
 
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_SUCCESS(orderId));
   }
@@ -471,7 +462,7 @@ export class MktOrderRepository {
   async updateWhere(
     workspaceId: string,
     where: FindOptionsWhere<MktOrderWorkspaceEntity>,
-    data: UpdateOrderData,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
   ): Promise<{ affected: number }> {
     this.logger.debug(
       `Conditional update with where: ${JSON.stringify(where)}`,
@@ -479,16 +470,12 @@ export class MktOrderRepository {
 
     const repository = await this.getRepository(workspaceId);
 
-    const result = await repository.update(where, data);
+    const result = await repository.update(where, data as never);
 
     this.logger.debug(`Conditional update affected: ${result.affected ?? 0}`);
 
     return { affected: result.affected ?? 0 };
   }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
 
   /**
    * Get completed order statistics aggregated by customer IDs
@@ -534,28 +521,5 @@ export class MktOrderRepository {
       orderCount: parseInt(s.orderCount, 10) || 0,
       totalValue: parseFloat(s.totalValue) || 0,
     }));
-  }
-
-  /**
-   * Get the underlying TypeORM repository
-   * Useful for complex queries not covered by this repository
-   */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktOrderWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException(
-        REPOSITORY_MESSAGES.ERROR.WORKSPACE_NOT_FOUND,
-      );
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
-      MktOrderWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
   }
 }

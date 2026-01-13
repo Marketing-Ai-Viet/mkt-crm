@@ -9,7 +9,7 @@ import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
+import { RBAC_RESOURCE_KEY } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
 import {
   SyncResult,
   PolicyDiff,
@@ -412,7 +412,7 @@ export class PolicySyncService {
             policies.push({
               ptype: 'p',
               subject: roleName,
-              object: CASBIN_RESOURCES.SYSTEM_CONFIG,
+              object: RBAC_RESOURCE_KEY.SYSTEM_CONFIG,
               action: sa.actionKey,
               effect: 'allow',
             });

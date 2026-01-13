@@ -19,7 +19,6 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MKT_PERMISSION_AUDIT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import {
-  PermissionAction,
   PermissionSource,
   CheckResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
@@ -90,7 +89,7 @@ export class MktPermissionAuditWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconPlayerPlay',
     options: PERMISSION_ACTION_OPTIONS,
   })
-  action: PermissionAction;
+  action: string;
 
   @WorkspaceField({
     standardId: MKT_PERMISSION_AUDIT_FIELD_IDS.objectName,

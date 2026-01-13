@@ -1,6 +1,17 @@
-// Permission Resource Categories
+/**
+ * Permission Template Resources
+ *
+ * Source of Truth for Resource Keys: constants/core/enterprise-rbac.constants.ts
+ */
 import { PermissionResourceSeed } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/permissions.type';
+import { RBAC_RESOURCE_KEY } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
+// Re-export for convenience
+export { RBAC_RESOURCE_KEY };
+
+/**
+ * Permission Resource Categories
+ */
 export const PERMISSION_RESOURCE_CATEGORIES = {
   BUSINESS_DATA: 'BUSINESS_DATA',
   SYSTEM_CONFIG: 'SYSTEM_CONFIG',
@@ -9,43 +20,9 @@ export const PERMISSION_RESOURCE_CATEGORIES = {
   REPORTING: 'REPORTING',
 } as const;
 
-// Permission Resource Keys (expanded for 11-level hierarchy)
-export const PERMISSION_RESOURCE_KEYS = {
-  // Core business data
-  CUSTOMERS: 'CUSTOMERS',
-  ORDERS: 'ORDERS',
-  PRODUCTS: 'PRODUCTS',
-
-  // Organizational resources
-  USERS: 'USERS',
-  DEPARTMENTS: 'DEPARTMENTS',
-  ORGANIZATION_LEVELS: 'ORGANIZATION_LEVELS',
-  TEAM_MANAGEMENT: 'TEAM_MANAGEMENT',
-
-  // Financial and sensitive data
-  FINANCIAL_DATA: 'FINANCIAL_DATA',
-  SALARY_DATA: 'SALARY_DATA',
-  BUDGET_DATA: 'BUDGET_DATA',
-  TRANSACTIONS: 'TRANSACTIONS',
-
-  // Reports and analytics
-  REPORTS: 'REPORTS',
-  ANALYTICS: 'ANALYTICS',
-  KPIS: 'KPIS',
-  PERFORMANCE_REVIEWS: 'PERFORMANCE_REVIEWS',
-
-  // System configuration
-  SETTINGS: 'SETTINGS',
-  WORKFLOWS: 'WORKFLOWS',
-  INTEGRATIONS: 'INTEGRATIONS',
-  PERMISSIONS: 'PERMISSIONS',
-
-  // Confidential resources
-  CONFIDENTIAL_INFO: 'CONFIDENTIAL_INFO',
-  AUDIT_LOGS: 'AUDIT_LOGS',
-} as const;
-
-// Pre-generated UUIDs for consistent seeding (expanded for 11-level hierarchy)
+/**
+ * Pre-generated UUIDs for consistent seeding
+ */
 export const PERMISSION_RESOURCE_IDS = {
   CUSTOMERS: 'f6e3f5dd-8c2a-4d15-8a0f-2ff3a7d9c4c1',
   ORDERS: '0b5f9d28-2e8d-4d52-9c5f-6a3cb2ad7e11',
@@ -83,12 +60,14 @@ export const PERMISSION_RESOURCE_IDS = {
   AUDIT_LOGS: '8e1f2a3b-4d5c-4a7e-9b8d-6c5a4f3e2d22',
 } as const;
 
-// Permission Resources Seed Data (updated for 11-level hierarchy)
+/**
+ * Permission Resources Seed Data
+ */
 export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
-  // Core business data (accessible by most levels)
+  // Core business data
   {
     id: PERMISSION_RESOURCE_IDS.CUSTOMERS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.CUSTOMERS,
+    resourceKey: RBAC_RESOURCE_KEY.CUSTOMER,
     resourceName: 'Customers',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.BUSINESS_DATA,
     description: 'Customer records, profiles, and contact information',
@@ -96,11 +75,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 1,
     icon: 'IconUsers',
-    colorCode: '#3B82F6', // Blue
+    colorCode: '#3B82F6',
   },
   {
     id: PERMISSION_RESOURCE_IDS.ORDERS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.ORDERS,
+    resourceKey: RBAC_RESOURCE_KEY.ORDER,
     resourceName: 'Orders',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.BUSINESS_DATA,
     description: 'Order records, transactions, and order management',
@@ -108,11 +87,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 2,
     icon: 'IconShoppingCart',
-    colorCode: '#10B981', // Green
+    colorCode: '#10B981',
   },
   {
     id: PERMISSION_RESOURCE_IDS.PRODUCTS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.PRODUCTS,
+    resourceKey: RBAC_RESOURCE_KEY.PRODUCT,
     resourceName: 'Products',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.BUSINESS_DATA,
     description: 'Product catalog, inventory, and product information',
@@ -120,13 +99,13 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 3,
     icon: 'IconPackage',
-    colorCode: '#F59E0B', // Amber
+    colorCode: '#F59E0B',
   },
 
-  // Organizational resources (hierarchy-based access)
+  // Organizational resources
   {
     id: PERMISSION_RESOURCE_IDS.USERS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.USERS,
+    resourceKey: RBAC_RESOURCE_KEY.WORKSPACE_MEMBER,
     resourceName: 'Users',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.USER_MGMT,
     description: 'User accounts, profiles, and user management',
@@ -134,11 +113,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 4,
     icon: 'IconUser',
-    colorCode: '#EF4444', // Red
+    colorCode: '#EF4444',
   },
   {
     id: PERMISSION_RESOURCE_IDS.DEPARTMENTS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.DEPARTMENTS,
+    resourceKey: RBAC_RESOURCE_KEY.DEPARTMENT,
     resourceName: 'Departments',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.USER_MGMT,
     description: 'Department structure, organization, and management',
@@ -146,11 +125,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 5,
     icon: 'IconBuildingBank',
-    colorCode: '#06B6D4', // Cyan
+    colorCode: '#06B6D4',
   },
   {
     id: PERMISSION_RESOURCE_IDS.ORGANIZATION_LEVELS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.ORGANIZATION_LEVELS,
+    resourceKey: RBAC_RESOURCE_KEY.ORGANIZATION_LEVEL,
     resourceName: 'Organization Levels',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.USER_MGMT,
     description: 'Organizational hierarchy levels and management',
@@ -158,11 +137,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 6,
     icon: 'IconHierarchy',
-    colorCode: '#8B5CF6', // Purple
+    colorCode: '#8B5CF6',
   },
   {
     id: PERMISSION_RESOURCE_IDS.TEAM_MANAGEMENT,
-    resourceKey: PERMISSION_RESOURCE_KEYS.TEAM_MANAGEMENT,
+    resourceKey: RBAC_RESOURCE_KEY.TEAM_MANAGEMENT,
     resourceName: 'Team Management',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.USER_MGMT,
     description: 'Team assignment, task management, and team coordination',
@@ -170,13 +149,13 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 7,
     icon: 'IconUsers',
-    colorCode: '#14B8A6', // Teal
+    colorCode: '#14B8A6',
   },
 
-  // Financial and sensitive data (high-level access only)
+  // Financial and sensitive data
   {
     id: PERMISSION_RESOURCE_IDS.FINANCIAL_DATA,
-    resourceKey: PERMISSION_RESOURCE_KEYS.FINANCIAL_DATA,
+    resourceKey: RBAC_RESOURCE_KEY.FINANCIAL_DATA,
     resourceName: 'Financial Data',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.FINANCIAL,
     description: 'General financial records and business financial information',
@@ -184,11 +163,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 8,
     icon: 'IconCurrencyDollar',
-    colorCode: '#F97316', // Orange
+    colorCode: '#F97316',
   },
   {
     id: PERMISSION_RESOURCE_IDS.SALARY_DATA,
-    resourceKey: PERMISSION_RESOURCE_KEYS.SALARY_DATA,
+    resourceKey: RBAC_RESOURCE_KEY.SALARY,
     resourceName: 'Salary Data',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.FINANCIAL,
     description:
@@ -197,11 +176,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 9,
     icon: 'IconMoney',
-    colorCode: '#DC2626', // Red
+    colorCode: '#DC2626',
   },
   {
     id: PERMISSION_RESOURCE_IDS.BUDGET_DATA,
-    resourceKey: PERMISSION_RESOURCE_KEYS.BUDGET_DATA,
+    resourceKey: RBAC_RESOURCE_KEY.BUDGET,
     resourceName: 'Budget Data',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.FINANCIAL,
     description: 'Department and project budget information',
@@ -209,11 +188,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 10,
     icon: 'IconChartPie',
-    colorCode: '#F59E0B', // Amber
+    colorCode: '#F59E0B',
   },
   {
     id: PERMISSION_RESOURCE_IDS.TRANSACTIONS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.TRANSACTIONS,
+    resourceKey: RBAC_RESOURCE_KEY.TRANSACTION,
     resourceName: 'Transactions',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.FINANCIAL,
     description: 'Financial transactions requiring approval',
@@ -221,13 +200,13 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 11,
     icon: 'IconCreditCard',
-    colorCode: '#10B981', // Green
+    colorCode: '#10B981',
   },
 
-  // Reports and analytics (level-based access)
+  // Reports and analytics
   {
     id: PERMISSION_RESOURCE_IDS.REPORTS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.REPORTS,
+    resourceKey: RBAC_RESOURCE_KEY.REPORT,
     resourceName: 'Reports',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.REPORTING,
     description: 'Business reports, analytics, and data visualization',
@@ -235,11 +214,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 12,
     icon: 'IconChartBar',
-    colorCode: '#8B5CF6', // Purple
+    colorCode: '#8B5CF6',
   },
   {
     id: PERMISSION_RESOURCE_IDS.ANALYTICS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.ANALYTICS,
+    resourceKey: RBAC_RESOURCE_KEY.ANALYTICS,
     resourceName: 'Analytics',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.REPORTING,
     description: 'Advanced analytics, data mining, and business intelligence',
@@ -247,11 +226,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 13,
     icon: 'IconChartLine',
-    colorCode: '#A855F7', // Violet
+    colorCode: '#A855F7',
   },
   {
     id: PERMISSION_RESOURCE_IDS.KPIS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.KPIS,
+    resourceKey: RBAC_RESOURCE_KEY.KPI,
     resourceName: 'KPIs',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.REPORTING,
     description: 'Key Performance Indicators and metrics tracking',
@@ -259,11 +238,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 14,
     icon: 'IconTarget',
-    colorCode: '#84CC16', // Lime
+    colorCode: '#84CC16',
   },
   {
     id: PERMISSION_RESOURCE_IDS.PERFORMANCE_REVIEWS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.PERFORMANCE_REVIEWS,
+    resourceKey: RBAC_RESOURCE_KEY.PERFORMANCE_REVIEW,
     resourceName: 'Performance Reviews',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.REPORTING,
     description: 'Employee performance reviews and evaluations',
@@ -271,13 +250,13 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 15,
     icon: 'IconStar',
-    colorCode: '#F59E0B', // Amber
+    colorCode: '#F59E0B',
   },
 
-  // System configuration (admin and high-level access)
+  // System configuration
   {
     id: PERMISSION_RESOURCE_IDS.SETTINGS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.SETTINGS,
+    resourceKey: RBAC_RESOURCE_KEY.SETTING,
     resourceName: 'Settings',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.SYSTEM_CONFIG,
     description: 'System settings, configurations, and preferences',
@@ -285,11 +264,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 16,
     icon: 'IconSettings',
-    colorCode: '#6B7280', // Gray
+    colorCode: '#6B7280',
   },
   {
     id: PERMISSION_RESOURCE_IDS.WORKFLOWS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.WORKFLOWS,
+    resourceKey: RBAC_RESOURCE_KEY.WORKFLOW,
     resourceName: 'Workflows',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.SYSTEM_CONFIG,
     description: 'Business process workflows and automation',
@@ -297,11 +276,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 17,
     icon: 'IconGitBranch',
-    colorCode: '#EC4899', // Pink
+    colorCode: '#EC4899',
   },
   {
     id: PERMISSION_RESOURCE_IDS.INTEGRATIONS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.INTEGRATIONS,
+    resourceKey: RBAC_RESOURCE_KEY.INTEGRATION,
     resourceName: 'Integrations',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.SYSTEM_CONFIG,
     description: 'Third-party integrations and API connections',
@@ -309,11 +288,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 18,
     icon: 'IconPlug',
-    colorCode: '#14B8A6', // Teal
+    colorCode: '#14B8A6',
   },
   {
     id: PERMISSION_RESOURCE_IDS.PERMISSIONS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.PERMISSIONS,
+    resourceKey: RBAC_RESOURCE_KEY.PERMISSION_TEMPLATE,
     resourceName: 'Permissions',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.SYSTEM_CONFIG,
     description: 'Permission management and access control configuration',
@@ -321,13 +300,13 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 19,
     icon: 'IconShield',
-    colorCode: '#DC2626', // Red
+    colorCode: '#DC2626',
   },
 
-  // Confidential resources (executive level only)
+  // Confidential resources
   {
     id: PERMISSION_RESOURCE_IDS.CONFIDENTIAL_INFO,
-    resourceKey: PERMISSION_RESOURCE_KEYS.CONFIDENTIAL_INFO,
+    resourceKey: RBAC_RESOURCE_KEY.CONFIDENTIAL_INFO,
     resourceName: 'Confidential Information',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.SYSTEM_CONFIG,
     description: 'Highly confidential business information and documents',
@@ -335,11 +314,11 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 20,
     icon: 'IconEyeOff',
-    colorCode: '#991B1B', // Dark Red
+    colorCode: '#991B1B',
   },
   {
     id: PERMISSION_RESOURCE_IDS.AUDIT_LOGS,
-    resourceKey: PERMISSION_RESOURCE_KEYS.AUDIT_LOGS,
+    resourceKey: RBAC_RESOURCE_KEY.AUDIT_LOG,
     resourceName: 'Audit Logs',
     resourceCategory: PERMISSION_RESOURCE_CATEGORIES.SYSTEM_CONFIG,
     description: 'System audit logs and security monitoring information',
@@ -347,6 +326,6 @@ export const PERMISSION_RESOURCES_SEED: PermissionResourceSeed[] = [
     isActive: true,
     displayOrder: 21,
     icon: 'IconFileText',
-    colorCode: '#374151', // Dark Gray
+    colorCode: '#374151',
   },
 ];

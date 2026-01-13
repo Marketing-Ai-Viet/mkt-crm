@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
-import { CASBIN_ACTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/actions.constant';
+import { RBAC_RESOURCE_KEY } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
+import { RBAC_ACTION } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/actions.constant';
 import {
   CasbinPolicy,
   GroupingPolicy,
@@ -67,20 +67,20 @@ const APPROVAL_REQUIREMENTS: Record<PolicyRiskLevel, number> = {
  * Sensitive resources that require extra scrutiny
  */
 const SENSITIVE_RESOURCES = new Set<string>([
-  CASBIN_RESOURCES.RBAC_POLICY,
-  CASBIN_RESOURCES.MKT_PERMISSION_TEMPLATE,
-  CASBIN_RESOURCES.SYSTEM_CONFIG,
-  CASBIN_RESOURCES.WORKSPACE_MEMBER,
-  CASBIN_RESOURCES.MKT_USER_TEMPLATE,
+  RBAC_RESOURCE_KEY.RBAC_POLICY,
+  RBAC_RESOURCE_KEY.PERMISSION_TEMPLATE,
+  RBAC_RESOURCE_KEY.SYSTEM_CONFIG,
+  RBAC_RESOURCE_KEY.WORKSPACE_MEMBER,
+  RBAC_RESOURCE_KEY.USER_TEMPLATE,
 ]);
 
 /**
  * Admin-level actions
  */
 const ADMIN_ACTIONS = new Set<string>([
-  CASBIN_ACTIONS.MANAGE,
-  CASBIN_ACTIONS.CONFIGURE,
-  CASBIN_ACTIONS.ASSIGN,
+  RBAC_ACTION.MANAGE,
+  RBAC_ACTION.CONFIGURE,
+  RBAC_ACTION.ASSIGN,
 ]);
 
 /**
@@ -143,8 +143,8 @@ export class HighRiskPolicyValidator {
       pattern: 'RBAC_MANAGE',
       detector: (p) =>
         this.isPPolicy(p) &&
-        p.object.startsWith(CASBIN_RESOURCES.RBAC_POLICY) &&
-        p.action === CASBIN_ACTIONS.MANAGE,
+        p.object.startsWith(RBAC_RESOURCE_KEY.RBAC_POLICY) &&
+        p.action === RBAC_ACTION.MANAGE,
       riskLevel: 'CRITICAL',
       description: 'Full RBAC management access',
     },
@@ -152,7 +152,7 @@ export class HighRiskPolicyValidator {
       pattern: 'PERMISSION_TEMPLATE_MODIFY',
       detector: (p) =>
         this.isPPolicy(p) &&
-        p.object.startsWith(CASBIN_RESOURCES.MKT_PERMISSION_TEMPLATE) &&
+        p.object.startsWith(RBAC_RESOURCE_KEY.PERMISSION_TEMPLATE) &&
         ADMIN_ACTIONS.has(p.action),
       riskLevel: 'HIGH',
       description: 'Permission template modification',

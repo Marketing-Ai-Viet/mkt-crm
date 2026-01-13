@@ -516,7 +516,7 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Get trial order with items
-    const trialOrder = await this.orderRepository.findById(
+    const trialOrder = await this.orderRepository.findByIdWithOptions(
       context.workspaceId,
       input.trialOrderId,
       { relations: { orderItems: true } },

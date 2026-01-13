@@ -5,7 +5,7 @@
 
 import { SetMetadata } from '@nestjs/common';
 
-import { PermissionAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
+import { RbacAction } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 /**
  * Permission metadata type
@@ -25,7 +25,7 @@ export type PermissionMetadata = {
   /**
    * CRUD Action: READ | CREATE | UPDATE | DELETE
    */
-  action: PermissionAction;
+  action: RbacAction;
 
   // ========== RECORD IDENTIFICATION (Optional) ==========
   /**
@@ -128,7 +128,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * // Class-level: Default READ permission
  * @Permission({
  *   resource: 'ORDERS',
- *   action: PermissionAction.READ
+ *   action: RbacAction.READ
  * })
  * export class MktOrderResolver { }
  *
@@ -137,7 +137,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Mutation(() => Order)
  * @Permission({
  *   resource: 'ORDERS',
- *   action: PermissionAction.CREATE
+ *   action: RbacAction.CREATE
  * })
  * async createOrder(@Args('input') input: CreateOrderInput) { }
  *
@@ -148,7 +148,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Mutation(() => Order)
  * @Permission({
  *   resource: 'ORDERS',
- *   action: PermissionAction.UPDATE,
+ *   action: RbacAction.UPDATE,
  *   recordIdParam: 'id'  // Extract from @Args('id')
  * })
  * async updateOrder(@Args('id') id: string, @Args('input') input: UpdateOrderInput) { }
@@ -158,7 +158,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Mutation(() => Order)
  * @Permission({
  *   resource: 'ORDERS',
- *   action: PermissionAction.UPDATE,
+ *   action: RbacAction.UPDATE,
  *   recordIdPath: 'input.id'  // Extract from input.id
  * })
  * async updateOrder(@Args('input') input: UpdateOrderInput) { }
@@ -168,7 +168,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Mutation(() => Order)
  * @Permission({
  *   resource: 'ORDERS',
- *   action: PermissionAction.DELETE,
+ *   action: RbacAction.DELETE,
  *   recordIdParam: 'id',
  *   errorMessage: 'Bạn không có quyền xóa đơn hàng này'
  * })
@@ -179,7 +179,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Query(() => SalaryOutput)
  * @Permission({
  *   resource: 'SALARY_DATA',
- *   action: PermissionAction.READ,
+ *   action: RbacAction.READ,
  *   enableCache: false  // Real-time permission check
  * })
  * async getSalary(@Args('userId') userId: string) { }
@@ -189,7 +189,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Query(() => Product)
  * @Permission({
  *   resource: 'PRODUCTS',
- *   action: PermissionAction.READ,
+ *   action: RbacAction.READ,
  *   allowAnonymous: true
  * })
  * async getPublicProduct(@Args('id') id: string) { }
@@ -199,7 +199,7 @@ export const PERMISSION_KEY = 'enterprise_rbac_permission';
  * @Mutation(() => Order)
  * @Permission({
  *   resource: 'ORDERS',
- *   action: PermissionAction.UPDATE,
+ *   action: RbacAction.UPDATE,
  *   recordIdParam: 'id',
  *   requireOwnership: true,  // Only owner can update
  *   minimumLevel: 7  // Minimum level: Manager
@@ -215,7 +215,7 @@ export const Permission = (metadata: PermissionMetadata) => {
 
   if (!metadata.action) {
     throw new Error(
-      '@Permission decorator requires "action" field (e.g., action: PermissionAction.READ)',
+      '@Permission decorator requires "action" field (e.g., action: RbacAction.READ)',
     );
   }
 
@@ -241,7 +241,7 @@ export class PermissionBuilder {
   /**
    * Set CRUD action
    */
-  withAction(action: PermissionAction): this {
+  withAction(action: RbacAction): this {
     this.metadata.action = action;
 
     return this;
@@ -327,7 +327,7 @@ export class PermissionBuilder {
  * @example
  * @PermissionBuilder
  *   .forResource('ORDERS')
- *   .withAction(PermissionAction.UPDATE)
+ *   .withAction(RbacAction.UPDATE)
  *   .withRecordIdParam('id')
  *   .withErrorMessage('Cannot update order')
  *   .build()

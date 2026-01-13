@@ -38,7 +38,7 @@ export class MktPaymentListenerService {
   async handleMktPaymentEvent(payload: MktPaymentCustomEventPayload) {
     for (const event of payload.events) {
       try {
-        const updatedOrder = await this.mktOrderRepository.findById(
+        const updatedOrder = await this.mktOrderRepository.findByIdWithOptions(
           payload.workspaceId,
           event.orderId,
           { relations: { mktPayments: true } },

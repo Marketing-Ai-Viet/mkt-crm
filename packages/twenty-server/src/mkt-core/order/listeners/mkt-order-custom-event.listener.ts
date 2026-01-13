@@ -98,7 +98,7 @@ export class MktOrderCustomEventListener {
       return;
     }
 
-    const updatedOrder = await this.orderRepository.findById(
+    const updatedOrder = await this.orderRepository.findByIdWithOptions(
       event.workspaceId,
       event.orderId,
       {

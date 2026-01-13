@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { DeepPartial } from 'typeorm';
+
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 import { safeJsonParse } from 'src/mkt-core/utils/json.util';
 
@@ -10,55 +13,30 @@ const LOG_CONTEXT = 'MktOption:Repository';
 /**
  * MktOptionRepository - Data access layer for Option entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktOptionWorkspaceEntity
  * - System configuration management
  * - Thread-safe workspace context handling
  */
 @Injectable()
-export class MktOptionRepository {
-  private readonly logger = new Logger(LOG_CONTEXT);
-
+export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktOptionWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktOptionWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      LOG_CONTEXT,
     );
   }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
-
-  /**
-   * Find option by ID
-   */
-  async findById(
-    workspaceId: string,
-    optionId: string,
-  ): Promise<MktOptionWorkspaceEntity | null> {
-    this.logger.debug(`Finding option by ID: ${optionId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { id: optionId },
-    });
-  }
 
   /**
    * Find option by key
@@ -70,11 +48,7 @@ export class MktOptionRepository {
   ): Promise<MktOptionWorkspaceEntity | null> {
     this.logger.debug(`Finding option by key: ${key}`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { key },
-    });
+    return this.findOne(workspaceId, { key });
   }
 
   /**
@@ -152,9 +126,11 @@ export class MktOptionRepository {
   }
 
   /**
-   * Find all options
+   * Find all options with ordering
    */
-  async findAll(workspaceId: string): Promise<MktOptionWorkspaceEntity[]> {
+  async findAllOrdered(
+    workspaceId: string,
+  ): Promise<MktOptionWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
     return repository.find({
@@ -187,7 +163,7 @@ export class MktOptionRepository {
    */
   async create(
     workspaceId: string,
-    data: Partial<MktOptionWorkspaceEntity>,
+    data: DeepPartial<MktOptionWorkspaceEntity>,
   ): Promise<MktOptionWorkspaceEntity> {
     this.logger.log(`Creating option: ${data.key}`);
 
@@ -195,21 +171,6 @@ export class MktOptionRepository {
     const option = repository.create(data);
 
     return repository.save(option);
-  }
-
-  /**
-   * Update option by ID
-   */
-  async update(
-    workspaceId: string,
-    optionId: string,
-    data: Partial<MktOptionWorkspaceEntity>,
-  ): Promise<void> {
-    this.logger.log(`Updating option: ${optionId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(optionId, data);
   }
 
   /**
@@ -267,17 +228,6 @@ export class MktOptionRepository {
     await repository.delete({ key });
   }
 
-  /**
-   * Soft delete option
-   */
-  async softDelete(workspaceId: string, optionId: string): Promise<void> {
-    this.logger.warn(`Soft deleting option: ${optionId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.softDelete(optionId);
-  }
-
   // ============================================
   // EXISTENCE CHECKS
   // ============================================
@@ -285,13 +235,7 @@ export class MktOptionRepository {
   /**
    * Check if option exists by key
    */
-  async exists(workspaceId: string, key: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { key },
-    });
-
-    return count > 0;
+  async existsByKey(workspaceId: string, key: string): Promise<boolean> {
+    return this.existsWhere(workspaceId, { key });
   }
 }

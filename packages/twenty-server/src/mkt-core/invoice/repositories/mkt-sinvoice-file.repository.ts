@@ -1,13 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+
+import { DeepPartial } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MKT_INVOICE_LOG_CONTEXT } from 'src/mkt-core/invoice/messages';
 import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-file.workspace-entity';
 
 /**
  * MktSInvoiceFileRepository - Data access layer for SInvoiceFile entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktSInvoiceFile entity
@@ -15,37 +19,16 @@ import { MktSInvoiceFileWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt
  * - Thread-safe workspace context handling
  */
 @Injectable()
-export class MktSInvoiceFileRepository {
-  private readonly logger = new Logger(
-    `${MKT_INVOICE_LOG_CONTEXT}:SInvoiceFileRepository`,
-  );
-
+export class MktSInvoiceFileRepository extends BaseWorkspaceRepository<MktSInvoiceFileWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktSInvoiceFileWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new Error('Workspace ID not found');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktSInvoiceFileWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      `${MKT_INVOICE_LOG_CONTEXT}:SInvoiceFileRepository`,
     );
   }
 
@@ -54,9 +37,9 @@ export class MktSInvoiceFileRepository {
   // ============================================
 
   /**
-   * Find SInvoiceFile by ID
+   * Find SInvoiceFile by ID with optional workspace context
    */
-  async findById(
+  async findByIdWithContext(
     id: string,
     workspaceId?: string,
   ): Promise<MktSInvoiceFileWorkspaceEntity | null> {
@@ -101,18 +84,18 @@ export class MktSInvoiceFileRepository {
   // ============================================
 
   /**
-   * Update SInvoiceFile by ID
+   * Update SInvoiceFile by ID with optional workspace context
    */
-  async update(
+  async updateWithContext(
     id: string,
-    data: Partial<MktSInvoiceFileWorkspaceEntity>,
+    data: DeepPartial<MktSInvoiceFileWorkspaceEntity>,
     workspaceId?: string,
   ): Promise<void> {
     this.logger.debug(`Updating SInvoiceFile ${id}`);
 
     const repository = await this.getRepository(workspaceId);
 
-    await repository.update(id, data);
+    await repository.update(id, data as never);
 
     this.logger.debug(`SInvoiceFile ${id} updated successfully`);
   }
@@ -120,14 +103,14 @@ export class MktSInvoiceFileRepository {
   /**
    * Update and return the updated SInvoiceFile
    */
-  async updateAndReturn(
+  async updateAndReturnWithContext(
     id: string,
-    data: Partial<MktSInvoiceFileWorkspaceEntity>,
+    data: DeepPartial<MktSInvoiceFileWorkspaceEntity>,
     workspaceId?: string,
   ): Promise<MktSInvoiceFileWorkspaceEntity | null> {
-    await this.update(id, data, workspaceId);
+    await this.updateWithContext(id, data, workspaceId);
 
-    return this.findById(id, workspaceId);
+    return this.findByIdWithContext(id, workspaceId);
   }
 
   // ============================================

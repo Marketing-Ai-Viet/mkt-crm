@@ -154,13 +154,12 @@ export class OrderCrudService {
     workspaceId: string,
     orderId: string,
     data: Partial<MktOrderWorkspaceEntity>,
-    queryRunner?: QueryRunner,
+    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.orderRepository.updateAndReturn(
+    return this.orderRepository.updateAndReturnWithRunner(
       workspaceId,
       orderId,
       data,
-      queryRunner,
     );
   }
 

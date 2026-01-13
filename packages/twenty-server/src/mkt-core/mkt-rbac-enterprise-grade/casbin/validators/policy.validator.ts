@@ -4,8 +4,8 @@ import {
   CASBIN_LOG_CONTEXT,
   CASBIN_MESSAGES,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
-import { CASBIN_RESOURCES } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
-import { CASBIN_ACTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/actions.constant';
+import { RBAC_RESOURCE_KEY } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/resources.constant';
+import { RBAC_ACTION } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/actions.constant';
 import {
   PolicyValidationResult,
   CasbinPolicy,
@@ -64,8 +64,8 @@ export class PolicyValidator {
 
   constructor() {
     // Build valid resources and actions sets
-    this.validResources = new Set(Object.values(CASBIN_RESOURCES));
-    this.validActions = new Set(Object.values(CASBIN_ACTIONS));
+    this.validResources = new Set(Object.values(RBAC_RESOURCE_KEY));
+    this.validActions = new Set(Object.values(RBAC_ACTION));
   }
 
   /**
@@ -309,9 +309,9 @@ export class PolicyValidator {
     if (policy.subject === actorSubject && policy.effect === 'allow') {
       // Check sensitive resources
       const sensitiveResources: string[] = [
-        CASBIN_RESOURCES.RBAC_POLICY,
-        CASBIN_RESOURCES.MKT_PERMISSION_TEMPLATE,
-        CASBIN_RESOURCES.SYSTEM_CONFIG,
+        RBAC_RESOURCE_KEY.RBAC_POLICY,
+        RBAC_RESOURCE_KEY.PERMISSION_TEMPLATE,
+        RBAC_RESOURCE_KEY.SYSTEM_CONFIG,
       ];
 
       const resourceBase = policy.object.split(':')[0];
@@ -340,15 +340,15 @@ export class PolicyValidator {
 
     // Full access to RBAC policies
     if (
-      policy.object.startsWith(CASBIN_RESOURCES.RBAC_POLICY) &&
-      policy.action === CASBIN_ACTIONS.MANAGE
+      policy.object.startsWith(RBAC_RESOURCE_KEY.RBAC_POLICY) &&
+      policy.action === RBAC_ACTION.MANAGE
     ) {
       return 'Full RBAC management access - high privilege';
     }
 
     // Full access to permission templates
     if (
-      policy.object.startsWith(CASBIN_RESOURCES.MKT_PERMISSION_TEMPLATE) &&
+      policy.object.startsWith(RBAC_RESOURCE_KEY.PERMISSION_TEMPLATE) &&
       ['create', 'update', 'delete'].includes(policy.action)
     ) {
       return 'Permission template modification - review required';

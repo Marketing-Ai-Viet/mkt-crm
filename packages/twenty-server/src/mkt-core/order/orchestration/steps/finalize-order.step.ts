@@ -70,7 +70,7 @@ export class FinalizeOrderStep extends SagaStep<
       this.logger.log(`Finalizing order: ${context.orderId}`);
 
       // Get order for contract creation
-      const order = await this.orderRepository.findById(
+      const order = await this.orderRepository.findByIdWithOptions(
         context.workspaceId,
         context.orderId,
         { relations: { orderItems: true } },

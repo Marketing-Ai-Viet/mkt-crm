@@ -7,7 +7,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   CheckResult,
-  PermissionAction,
+  RbacAction,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
@@ -15,7 +15,7 @@ export type AuditQueryOptions = {
   workspaceMemberId?: string;
   userId?: string;
   objectName?: string;
-  action?: PermissionAction;
+  action?: RbacAction;
   checkResult?: CheckResult;
   fromDate?: Date;
   toDate?: Date;

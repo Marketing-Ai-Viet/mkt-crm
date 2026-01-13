@@ -156,7 +156,7 @@ export class UpdateOrderSaga {
     input: UpdateOrderStatusInput,
   ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
     try {
-      const order = await this.mktOrderRepository.findById(
+      const order = await this.mktOrderRepository.findByIdWithOptions(
         context.workspaceId,
         input.orderId,
         { relations: { orderItems: true } },

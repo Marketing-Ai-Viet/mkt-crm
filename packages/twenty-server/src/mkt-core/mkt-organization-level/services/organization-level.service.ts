@@ -155,7 +155,7 @@ export class OrganizationLevelService {
     workspaceId: string,
   ): Promise<OrganizationLevelStatistics> {
     // Get all organization levels
-    const allLevels = await this.repository.findAll(workspaceId, {
+    const allLevels = await this.repository.findAllWithOptions(workspaceId, {
       includeInactive: true,
       orderBy: 'hierarchyLevel',
     });
@@ -250,9 +250,12 @@ export class OrganizationLevelService {
     }
 
     // 2. Get existing levels for validation
-    const existingLevels = await this.repository.findAll(workspaceId, {
-      includeInactive: true,
-    });
+    const existingLevels = await this.repository.findAllWithOptions(
+      workspaceId,
+      {
+        includeInactive: true,
+      },
+    );
 
     // 3. Validate input - transform data to match validator interface
     const validationResult = this.hierarchyValidator.validateOrganizationLevel(
@@ -327,7 +330,7 @@ export class OrganizationLevelService {
         throw new BadRequestException(rangeError);
       }
 
-      const allLevels = await this.repository.findAll(workspaceId, {
+      const allLevels = await this.repository.findAllWithOptions(workspaceId, {
         includeInactive: true,
       });
 

@@ -1,24 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { FindOptionsWhere, In } from 'typeorm';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { WorkspaceMemberMktEntity } from 'src/mkt-core/mkt-entities-extends/workspace-member.mkt-entity';
 
 /**
- * Type định nghĩa dữ liệu tạo organization level
- */
-type CreateOrganizationLevelData = Partial<MktOrganizationLevelWorkspaceEntity>;
-
-/**
- * Type định nghĩa dữ liệu cập nhật organization level
- */
-type UpdateOrganizationLevelData = Partial<MktOrganizationLevelWorkspaceEntity>;
-
-/**
- * Type định nghĩa options cho find operations
+ * Type for find operations options
  */
 type FindOrganizationLevelOptions = {
   includeInactive?: boolean;
@@ -27,72 +19,36 @@ type FindOrganizationLevelOptions = {
 };
 
 /**
- * MktOrganizationLevelRepository - Data access layer cho Organization Level entity
+ * MktOrganizationLevelRepository - Data access layer for Organization Level entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
- * - Database operations cho MktOrganizationLevel entity
- * - Query building và execution
+ * - Database operations for MktOrganizationLevel entity
+ * - Query building and execution
  * - Thread-safe workspace context handling
  *
  * Does NOT handle:
  * - Business logic (handled by Service layer)
- * - Validation (handled by Service layer và Hooks)
+ * - Validation (handled by Service layer and Hooks)
  */
 @Injectable()
-export class MktOrganizationLevelRepository {
-  private readonly logger = new Logger('MktOrganizationLevel:Repository');
-
+export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktOrganizationLevelWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository cho specific workspace
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktOrganizationLevelWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktOrganizationLevelWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
-  }
-
-  /**
-   * Get workspace member repository
-   */
-  async getWorkspaceMemberRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<WorkspaceMemberMktEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      'workspaceMember',
-      { shouldBypassPermissionChecks: true },
+      MktOrganizationLevelRepository.name,
     );
   }
 
   // ============================================
-  // FIND OPERATIONS
+  // SPECIALIZED FIND OPERATIONS
   // ============================================
-
-  /**
-   * Find organization level by ID
-   */
-  async findById(
-    workspaceId: string,
-    levelId: string,
-  ): Promise<MktOrganizationLevelWorkspaceEntity | null> {
-    this.logger.debug(`Finding organization level by ID: ${levelId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id: levelId } });
-  }
 
   /**
    * Find organization level by code
@@ -103,19 +59,17 @@ export class MktOrganizationLevelRepository {
   ): Promise<MktOrganizationLevelWorkspaceEntity | null> {
     this.logger.debug(`Finding organization level by code: ${levelCode}`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { levelCode } });
+    return this.findOne(workspaceId, { levelCode });
   }
 
   /**
-   * Find all organization levels
+   * Find all organization levels with options
    */
-  async findAll(
+  async findAllWithOptions(
     workspaceId: string,
     options?: FindOrganizationLevelOptions,
   ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
-    this.logger.debug('Finding all organization levels');
+    this.logger.debug('Finding all organization levels with options');
 
     const repository = await this.getRepository(workspaceId);
 
@@ -222,14 +176,9 @@ export class MktOrganizationLevelRepository {
     });
   }
 
-  /**
-   * Check if organization level exists
-   */
-  async exists(workspaceId: string, levelId: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.existsBy({ id: levelId });
-  }
+  // ============================================
+  // EXISTS OPERATIONS
+  // ============================================
 
   /**
    * Check if level code exists
@@ -239,18 +188,13 @@ export class MktOrganizationLevelRepository {
     levelCode: string,
     excludeId?: string,
   ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const existing = await repository.findOne({
-      where: { levelCode },
-      select: ['id'],
-    });
+    const existing = await this.findOne(workspaceId, { levelCode });
 
     if (!existing) {
       return false;
     }
 
-    // Nếu excludeId được cung cấp, kiểm tra xem có phải là cùng record không
+    // If excludeId is provided, check if it's the same record
     if (excludeId && existing.id === excludeId) {
       return false;
     }
@@ -258,17 +202,9 @@ export class MktOrganizationLevelRepository {
     return true;
   }
 
-  /**
-   * Count organization levels
-   */
-  async count(
-    workspaceId: string,
-    where?: FindOptionsWhere<MktOrganizationLevelWorkspaceEntity>,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where });
-  }
+  // ============================================
+  // COUNT OPERATIONS
+  // ============================================
 
   /**
    * Count active organization levels
@@ -292,6 +228,19 @@ export class MktOrganizationLevelRepository {
   // ============================================
 
   /**
+   * Get workspace member repository
+   */
+  private async getWorkspaceMemberRepository(
+    workspaceId: string,
+  ): Promise<WorkspaceRepository<WorkspaceMemberMktEntity>> {
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
+      workspaceId,
+      'workspaceMember',
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
    * Count employees at a specific level
    */
   async countEmployeesAtLevel(
@@ -307,7 +256,7 @@ export class MktOrganizationLevelRepository {
       });
     } catch (error) {
       this.logger.warn(
-        `Could not count employees at level ${levelId}: ${error.message}`,
+        `Could not count employees at level ${levelId}: ${(error as Error).message}`,
       );
 
       return 0;
@@ -347,7 +296,7 @@ export class MktOrganizationLevelRepository {
       return result;
     } catch (error) {
       this.logger.warn(
-        `Could not get employee counts by levels: ${error.message}`,
+        `Could not get employee counts by levels: ${(error as Error).message}`,
       );
 
       return new Map();
@@ -355,55 +304,8 @@ export class MktOrganizationLevelRepository {
   }
 
   // ============================================
-  // CREATE OPERATIONS
-  // ============================================
-
-  /**
-   * Create new organization level
-   */
-  async create(
-    workspaceId: string,
-    data: CreateOrganizationLevelData,
-  ): Promise<MktOrganizationLevelWorkspaceEntity> {
-    this.logger.debug(`Creating organization level: ${data.levelCode}`);
-
-    const repository = await this.getRepository(workspaceId);
-    const level = repository.create(data);
-
-    return repository.save(level);
-  }
-
-  // ============================================
   // UPDATE OPERATIONS
   // ============================================
-
-  /**
-   * Update organization level by ID
-   */
-  async update(
-    workspaceId: string,
-    levelId: string,
-    data: UpdateOrganizationLevelData,
-  ): Promise<void> {
-    this.logger.debug(`Updating organization level: ${levelId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(levelId, data);
-  }
-
-  /**
-   * Update and return the updated organization level
-   */
-  async updateAndReturn(
-    workspaceId: string,
-    levelId: string,
-    data: UpdateOrganizationLevelData,
-  ): Promise<MktOrganizationLevelWorkspaceEntity | null> {
-    await this.update(workspaceId, levelId, data);
-
-    return this.findById(workspaceId, levelId);
-  }
 
   /**
    * Update display order for multiple levels
@@ -416,10 +318,8 @@ export class MktOrganizationLevelRepository {
       `Updating display orders for ${levelOrders.length} levels`,
     );
 
-    const repository = await this.getRepository(workspaceId);
-
     for (const { levelId, displayOrder } of levelOrders) {
-      await repository.update(levelId, { displayOrder });
+      await this.update(workspaceId, levelId, { displayOrder });
     }
   }
 
@@ -454,9 +354,10 @@ export class MktOrganizationLevelRepository {
 
   /**
    * Soft delete organization level (set isActive = false)
+   * Note: This is different from base class softDelete which sets deletedAt
    */
-  async softDelete(workspaceId: string, levelId: string): Promise<void> {
-    this.logger.debug(`Soft deleting organization level: ${levelId}`);
+  async deactivateLevel(workspaceId: string, levelId: string): Promise<void> {
+    this.logger.debug(`Deactivating organization level: ${levelId}`);
 
     await this.deactivate(workspaceId, levelId);
   }

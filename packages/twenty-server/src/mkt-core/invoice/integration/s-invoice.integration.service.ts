@@ -909,10 +909,10 @@ export class SInvoiceIntegrationService {
    * Find SInvoice by ID
    */
   private async findSInvoiceById(
-    _workspaceId: string,
+    workspaceId: string,
     sInvoiceId: string,
   ): Promise<MktSInvoiceWorkspaceEntity | null> {
-    return this.sInvoiceRepository.findById(sInvoiceId);
+    return this.sInvoiceRepository.findByIdWithContext(sInvoiceId, workspaceId);
   }
 
   /**
@@ -939,7 +939,7 @@ export class SInvoiceIntegrationService {
    * Update SInvoice record
    */
   private async updateSInvoiceRecord(
-    _workspaceId: string,
+    workspaceId: string,
     sInvoiceId: string,
     sInvoiceUpdate: SInvoiceUpdate,
   ): Promise<void> {
@@ -955,7 +955,11 @@ export class SInvoiceIntegrationService {
       errorData: sInvoiceUpdate.errorData,
     };
 
-    await this.sInvoiceRepository.update(sInvoiceId, updateData);
+    await this.sInvoiceRepository.updateWithContext(
+      sInvoiceId,
+      updateData as never,
+      workspaceId,
+    );
 
     this.logger.log(
       `[S-INVOICE SERVICE] Updated data: ${JSON.stringify(updateData)}`,

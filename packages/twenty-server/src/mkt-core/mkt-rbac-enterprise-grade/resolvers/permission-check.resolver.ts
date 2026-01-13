@@ -209,9 +209,8 @@ export class PermissionCheckResolver {
     // Get active temporary permissions
     const tempPermissions =
       await this.temporaryPermissionRepository.findActiveByGranteeId(
-        targetId,
-        undefined,
         workspace.id,
+        targetId,
       );
 
     const temporaryPermissions: ActiveTemporaryPermissionOutput[] =

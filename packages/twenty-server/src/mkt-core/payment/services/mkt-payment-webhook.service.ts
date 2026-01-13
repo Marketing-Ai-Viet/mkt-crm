@@ -1,14 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
 import {
   ActorMetadata,
   FieldActorSource,
 } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
 import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
@@ -19,10 +15,10 @@ import {
   MktWebhookLogRepository,
 } from 'src/mkt-core/payment/repositories';
 import {
+  PaymentStatus,
   SepayWebhookPayload,
   SepayWebhookResponse,
 } from 'src/mkt-core/payment/types';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
@@ -33,14 +29,17 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
  * This service is responsible for:
  * - Processing SePay webhook payments
  * - Managing webhook logs
- * - Transaction management for payment updates
+ * - Payment and order status updates
+ *
+ * Note: Transaction support removed - repositories use their own connections
+ * via TwentyORMGlobalManager. For critical operations, implement idempotency
+ * checks and compensation patterns instead.
  */
 @Injectable()
 export class MktPaymentWebhookService {
   private readonly logger = new Logger(MktPaymentWebhookService.name);
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktWebhookLogRepository: MktWebhookLogRepository,
     private readonly mktOrderRepository: MktOrderRepository,
@@ -48,14 +47,15 @@ export class MktPaymentWebhookService {
   ) {}
 
   /**
-   * Process SePay webhook payment with database transaction
+   * Process SePay webhook payment
    *
-   * This method wraps all payment processing operations in a single transaction:
+   * Flow:
    * 1. Log webhook to WebhookLog entity
-   * 2. Find order and payment
-   * 3. Validate amount
-   * 4. Update payment status
-   * 5. Commit or rollback
+   * 2. Idempotency check by transaction ID
+   * 3. Find order and payment
+   * 4. Validate amount
+   * 5. Update payment status
+   * 6. Update order status
    */
   async processWebhookPayment(
     workspaceId: string,
@@ -65,30 +65,16 @@ export class MktPaymentWebhookService {
   ): Promise<SepayWebhookResponse> {
     const startTime = DateTimeUtils.now();
 
-    // Get DataSource and create QueryRunner for transaction
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    const queryRunner: QueryRunner = dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    // Create initial webhook log
-    let webhookLogId: string | null = null;
+    // Step 1: Create webhook log entry
+    const webhookLog = await this.createWebhookLog(workspaceId, {
+      sepayTransactionId: payload.id,
+      gateway: payload.gateway,
+      requestBody: payload as unknown as object,
+      ipAddress,
+      status: 'PROCESSING',
+    });
 
     try {
-      // Step 1: Create webhook log entry
-      webhookLogId = await this.createWebhookLog(queryRunner, workspaceId, {
-        sepayTransactionId: payload.id,
-        gateway: payload.gateway,
-        requestBody: payload as unknown as object,
-        ipAddress,
-        status: 'PROCESSING',
-      });
-
       // Step 2: Idempotency check
       const existingPayment = await this.findBySepayTransactionId(
         workspaceId,
@@ -100,8 +86,8 @@ export class MktPaymentWebhookService {
           `Transaction ${payload.id} already processed, skipping`,
         );
         await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
+          workspaceId,
+          webhookLog.id,
           'SUCCESS',
           {
             responseStatus: 200,
@@ -109,7 +95,6 @@ export class MktPaymentWebhookService {
             matchedOrderCode: existingPayment.mktOrderId,
           },
         );
-        await queryRunner.commitTransaction();
 
         return {
           success: true,
@@ -122,15 +107,14 @@ export class MktPaymentWebhookService {
       if (!payload.code) {
         this.logger.warn('Webhook payload has no code');
         await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
+          workspaceId,
+          webhookLog.id,
           'SUCCESS',
           {
             responseStatus: 200,
             responseBody: { status: 'UNMATCHED' },
           },
         );
-        await queryRunner.commitTransaction();
 
         return {
           success: true,
@@ -145,15 +129,14 @@ export class MktPaymentWebhookService {
       if (!order) {
         this.logger.error(`Order not found for code: ${payload.code}`);
         await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
+          workspaceId,
+          webhookLog.id,
           'SUCCESS',
           {
             responseStatus: 200,
             responseBody: { status: 'UNMATCHED' },
           },
         );
-        await queryRunner.commitTransaction();
 
         return {
           success: true,
@@ -178,8 +161,8 @@ export class MktPaymentWebhookService {
       if (payments.length === 0) {
         this.logger.warn(`No payments found for order ${order.id}`);
         await this.updateWebhookLogStatus(
-          queryRunner,
-          webhookLogId,
+          workspaceId,
+          webhookLog.id,
           'SUCCESS',
           {
             responseStatus: 200,
@@ -187,7 +170,6 @@ export class MktPaymentWebhookService {
             matchedOrderCode: order.orderCode,
           },
         );
-        await queryRunner.commitTransaction();
 
         return {
           success: true,
@@ -200,25 +182,20 @@ export class MktPaymentWebhookService {
         };
       }
 
-      // Step 7: Update payment with transaction
+      // Step 7: Update payment
       const [primaryPayment] = payments;
 
-      await this.updatePaymentWithRunner(
-        queryRunner,
-        workspaceId,
-        primaryPayment.id,
-        {
-          status: MKT_PAYMENT_STATUS.COMPLETED,
-          paymentDate: payload.transactionDate,
-          amount: payload.transferAmount,
-          description: payload.content || payload.description,
-          sepayTransactionId: String(payload.id),
-        },
-        authContext,
-      );
+      await this.updatePayment(workspaceId, primaryPayment.id, {
+        status: 'COMPLETED',
+        paymentDate: payload.transactionDate,
+        amount: payload.transferAmount,
+        description: payload.content || payload.description,
+        sepayTransactionId: String(payload.id),
+        createdBy: await this.buildActorMetadata(workspaceId, authContext),
+      });
 
       // Step 8: Update order status to CONFIRMED after payment
-      await this.updateOrderStatusAfterPayment(queryRunner, order.id);
+      await this.updateOrderStatusAfterPayment(workspaceId, order.id);
       this.logger.log(`Order ${order.orderCode} status updated to CONFIRMED`);
 
       // Step 9: Update webhook log as success
@@ -227,15 +204,12 @@ export class MktPaymentWebhookService {
         DateTimeUtils.now(),
       );
 
-      await this.updateWebhookLogStatus(queryRunner, webhookLogId, 'SUCCESS', {
+      await this.updateWebhookLogStatus(workspaceId, webhookLog.id, 'SUCCESS', {
         responseStatus: 200,
         responseBody: { status: 'MATCHED' },
         matchedOrderCode: order.orderCode,
         processingTimeMs,
       });
-
-      // Commit transaction
-      await queryRunner.commitTransaction();
 
       this.logger.log(
         `Payment ${primaryPayment.id} completed for order ${order.orderCode}`,
@@ -251,35 +225,15 @@ export class MktPaymentWebhookService {
         },
       };
     } catch (error) {
-      // Rollback transaction on error
-      await queryRunner.rollbackTransaction();
       this.logger.error('Error processing webhook payment:', error);
 
-      // Try to update webhook log status to failed
-      if (webhookLogId) {
-        try {
-          const errorQueryRunner = dataSource.createQueryRunner();
-
-          await errorQueryRunner.connect();
-          await this.updateWebhookLogStatus(
-            errorQueryRunner,
-            webhookLogId,
-            'FAILED',
-            {
-              responseStatus: 500,
-              errorMessage:
-                error instanceof Error ? error.message : 'Unknown error',
-            },
-          );
-          await errorQueryRunner.release();
-        } catch (logError) {
-          this.logger.error('Failed to update webhook log status:', logError);
-        }
-      }
+      // Update webhook log status to failed
+      await this.updateWebhookLogStatus(workspaceId, webhookLog.id, 'FAILED', {
+        responseStatus: 500,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
 
       throw error;
-    } finally {
-      await queryRunner.release();
     }
   }
 
@@ -288,10 +242,9 @@ export class MktPaymentWebhookService {
   // ============================================
 
   /**
-   * Create webhook log entry within transaction
+   * Create webhook log entry
    */
   private async createWebhookLog(
-    queryRunner: QueryRunner,
     workspaceId: string,
     data: {
       sepayTransactionId: number;
@@ -300,27 +253,21 @@ export class MktPaymentWebhookService {
       ipAddress?: string;
       status: WebhookLogStatus;
     },
-  ): Promise<string> {
-    const webhookLog = await this.mktWebhookLogRepository.create(
-      workspaceId,
-      {
-        sepayTransactionId: data.sepayTransactionId,
-        gateway: data.gateway,
-        requestBody: data.requestBody,
-        ipAddress: data.ipAddress,
-        status: data.status,
-      },
-      queryRunner,
-    );
-
-    return webhookLog.id;
+  ) {
+    return this.mktWebhookLogRepository.create(workspaceId, {
+      sepayTransactionId: data.sepayTransactionId,
+      gateway: data.gateway,
+      requestBody: data.requestBody,
+      ipAddress: data.ipAddress,
+      status: data.status,
+    });
   }
 
   /**
-   * Update webhook log status within transaction
+   * Update webhook log status
    */
   private async updateWebhookLogStatus(
-    queryRunner: QueryRunner,
+    workspaceId: string,
     webhookLogId: string,
     status: WebhookLogStatus,
     data?: {
@@ -331,13 +278,11 @@ export class MktPaymentWebhookService {
       errorMessage?: string;
     },
   ): Promise<void> {
-    await queryRunner.manager.update(
-      'mktWebhookLog',
-      { id: webhookLogId },
-      {
-        status,
-        ...data,
-      },
+    await this.mktWebhookLogRepository.updateStatus(
+      workspaceId,
+      webhookLogId,
+      status,
+      data,
     );
   }
 
@@ -379,19 +324,16 @@ export class MktPaymentWebhookService {
   }
 
   // ============================================
-  // UPDATE METHODS WITH TRANSACTION
+  // UPDATE METHODS
   // ============================================
 
   /**
-   * Update payment by ID using QueryRunner (within transaction)
+   * Build actor metadata from auth context
    */
-  private async updatePaymentWithRunner(
-    queryRunner: QueryRunner,
+  private async buildActorMetadata(
     workspaceId: string,
-    paymentId: string,
-    updateData: Partial<MktPaymentWorkspaceEntity>,
     authContext: RequestSepayJWT,
-  ): Promise<void> {
+  ): Promise<ActorMetadata> {
     let createdByName = 'system';
 
     if (authContext.workspaceMemberId) {
@@ -405,34 +347,42 @@ export class MktPaymentWebhookService {
       }
     }
 
-    const createdBy: ActorMetadata = {
+    return {
       source: FieldActorSource.MANUAL,
       workspaceMemberId: authContext.workspaceMemberId || null,
       name: createdByName,
       context: {},
     };
+  }
 
-    await queryRunner.manager.update(
-      MktPaymentWorkspaceEntity,
-      { id: paymentId },
-      { ...updateData, createdBy },
-    );
+  /**
+   * Update payment by ID using repository
+   */
+  private async updatePayment(
+    workspaceId: string,
+    paymentId: string,
+    updateData: {
+      status: PaymentStatus;
+      paymentDate?: string;
+      amount?: number;
+      description?: string;
+      sepayTransactionId: string;
+      createdBy: ActorMetadata;
+    },
+  ): Promise<void> {
+    await this.mktPaymentRepository.update(workspaceId, paymentId, updateData);
   }
 
   /**
    * Update order status to CONFIRMED after payment is completed
    */
   private async updateOrderStatusAfterPayment(
-    queryRunner: QueryRunner,
+    workspaceId: string,
     orderId: string,
   ): Promise<void> {
-    await queryRunner.manager.update(
-      MktOrderWorkspaceEntity,
-      { id: orderId },
-      {
-        status: ORDER_STATUS.CONFIRMED,
-        accountingConfirmed: true,
-      },
-    );
+    await this.mktOrderRepository.update(workspaceId, orderId, {
+      status: ORDER_STATUS.CONFIRMED,
+      accountingConfirmed: true,
+    });
   }
 }

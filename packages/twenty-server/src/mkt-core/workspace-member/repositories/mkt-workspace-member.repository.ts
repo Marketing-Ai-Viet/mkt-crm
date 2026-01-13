@@ -1,24 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, IsNull, QueryRunner } from 'typeorm';
+import { FindOptionsWhere, IsNull, DeepPartial } from 'typeorm';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MKT_WORKSPACE_MEMBER_LOG_CONTEXT,
   MKT_WORKSPACE_MEMBER_LOG_MESSAGES,
 } from 'src/mkt-core/workspace-member/messages';
 import {
-  CreateWorkspaceMemberData,
   DEFAULT_WORKSPACE_MEMBER_RELATIONS,
   FindWorkspaceMemberOptions,
-  UpdateWorkspaceMemberData,
 } from 'src/mkt-core/workspace-member/types';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktWorkspaceMemberRepository - Data access layer for WorkspaceMember entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for WorkspaceMember entity
@@ -30,21 +31,25 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * - Validation (handled by Service layer)
  */
 @Injectable()
-export class MktWorkspaceMemberRepository {
-  private readonly logger = new Logger(
-    `${MKT_WORKSPACE_MEMBER_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<WorkspaceMemberWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      WorkspaceMemberWorkspaceEntity,
+      `${MKT_WORKSPACE_MEMBER_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find workspace member by ID
+   * Find workspace member by ID (override for logging)
    */
   async findById(
     workspaceId: string,
@@ -368,16 +373,13 @@ export class MktWorkspaceMemberRepository {
    */
   async create(
     workspaceId: string,
-    data: CreateWorkspaceMemberData,
-    _queryRunner?: QueryRunner,
+    data: DeepPartial<WorkspaceMemberWorkspaceEntity>,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
     this.logger.debug(MKT_WORKSPACE_MEMBER_LOG_MESSAGES.CREATE_START());
 
     const repository = await this.getRepository(workspaceId);
 
-    const member = repository.create(
-      data as Partial<WorkspaceMemberWorkspaceEntity>,
-    );
+    const member = repository.create(data);
 
     const savedMember = await repository.save(member);
 
@@ -394,30 +396,17 @@ export class MktWorkspaceMemberRepository {
 
   /**
    * Update workspace member by ID
-   * Supports QueryRunner for transaction context
    */
   async update(
     workspaceId: string,
     memberId: string,
-    data: UpdateWorkspaceMemberData,
-    queryRunner?: QueryRunner,
+    data: DeepPartial<WorkspaceMemberWorkspaceEntity>,
   ): Promise<void> {
     this.logger.debug(MKT_WORKSPACE_MEMBER_LOG_MESSAGES.UPDATE_START(memberId));
 
-    const updateData = data as Partial<WorkspaceMemberWorkspaceEntity>;
+    const repository = await this.getRepository(workspaceId);
 
-    // Use queryRunner for transaction context if provided
-    if (queryRunner) {
-      await queryRunner.manager.update(
-        WorkspaceMemberWorkspaceEntity,
-        { id: memberId },
-        updateData,
-      );
-    } else {
-      const repository = await this.getRepository(workspaceId);
-
-      await repository.update(memberId, updateData);
-    }
+    await repository.update(memberId, data as never);
 
     this.logger.debug(
       MKT_WORKSPACE_MEMBER_LOG_MESSAGES.UPDATE_SUCCESS(memberId),
@@ -431,13 +420,12 @@ export class MktWorkspaceMemberRepository {
     workspaceId: string,
     memberId: string,
     status: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(
       MKT_WORKSPACE_MEMBER_LOG_MESSAGES.STATUS_UPDATE_START(memberId, status),
     );
 
-    await this.update(workspaceId, memberId, { status }, queryRunner);
+    await this.update(workspaceId, memberId, { status });
 
     this.logger.debug(
       MKT_WORKSPACE_MEMBER_LOG_MESSAGES.STATUS_UPDATE_SUCCESS(memberId, status),
@@ -450,10 +438,9 @@ export class MktWorkspaceMemberRepository {
   async updateAndReturn(
     workspaceId: string,
     memberId: string,
-    data: UpdateWorkspaceMemberData,
-    queryRunner?: QueryRunner,
+    data: DeepPartial<WorkspaceMemberWorkspaceEntity>,
   ): Promise<WorkspaceMemberWorkspaceEntity | null> {
-    await this.update(workspaceId, memberId, data, queryRunner);
+    await this.update(workspaceId, memberId, data);
 
     return this.findById(workspaceId, memberId);
   }
@@ -465,9 +452,8 @@ export class MktWorkspaceMemberRepository {
     workspaceId: string,
     memberId: string,
     departmentId: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    await this.update(workspaceId, memberId, { departmentId }, queryRunner);
+    await this.update(workspaceId, memberId, { departmentId });
   }
 
   /**
@@ -477,9 +463,8 @@ export class MktWorkspaceMemberRepository {
     workspaceId: string,
     memberId: string,
     teamId: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    await this.update(workspaceId, memberId, { teamId }, queryRunner);
+    await this.update(workspaceId, memberId, { teamId });
   }
 
   // ============================================
@@ -489,18 +474,14 @@ export class MktWorkspaceMemberRepository {
   /**
    * Soft delete workspace member by setting deletedAt timestamp
    */
-  async softDelete(
-    workspaceId: string,
-    memberId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDelete(workspaceId: string, memberId: string): Promise<void> {
     this.logger.warn(MKT_WORKSPACE_MEMBER_LOG_MESSAGES.DELETE_START(memberId));
 
     const repository = await this.getRepository(workspaceId);
 
     await repository.update(memberId, {
       deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    } as never);
 
     this.logger.warn(
       MKT_WORKSPACE_MEMBER_LOG_MESSAGES.DELETE_SUCCESS(memberId),
@@ -554,22 +535,5 @@ export class MktWorkspaceMemberRepository {
     const repository = await this.getRepository(workspaceId);
 
     return repository.count();
-  }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get the underlying TypeORM repository
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<WorkspaceMemberWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      WorkspaceMemberWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
   }
 }
