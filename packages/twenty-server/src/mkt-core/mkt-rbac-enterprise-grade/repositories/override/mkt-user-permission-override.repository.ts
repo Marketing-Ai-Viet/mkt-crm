@@ -1,52 +1,39 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, In } from 'typeorm';
+import { In } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktUserPermissionOverrideWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
+/**
+ * MktUserPermissionOverrideRepository - Data access layer for User Permission Override entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Provides specialized methods for permission override queries.
+ */
 @Injectable()
-export class MktUserPermissionOverrideRepository {
-  private readonly logger = new Logger(
-    MktUserPermissionOverrideRepository.name,
-  );
-
+export class MktUserPermissionOverrideRepository extends BaseWorkspaceRepository<MktUserPermissionOverrideWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  private async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktUserPermissionOverrideWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException('Workspace not found');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktUserPermissionOverrideWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      MktUserPermissionOverrideRepository.name,
     );
   }
 
-  async findById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktUserPermissionOverrideWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
-  }
+  // ============================================
+  // SPECIALIZED FIND OPERATIONS
+  // ============================================
 
   async findByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -57,9 +44,9 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findActiveByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
     referenceDate?: Date,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const now = referenceDate ?? new Date();
     const repository = await this.getRepository(workspaceId);
@@ -79,8 +66,8 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findByResourceId(
+    workspaceId: string,
     resourceId: string,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -91,8 +78,8 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findByActionId(
+    workspaceId: string,
     actionId: string,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -103,10 +90,10 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findByWorkspaceMemberResourceAction(
+    workspaceId: string,
     workspaceMemberId: string,
     resourceId: string,
     actionId: string,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity | null> {
     const repository = await this.getRepository(workspaceId);
 
@@ -117,9 +104,9 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findAllowedOverrides(
+    workspaceId: string,
     workspaceMemberId: string,
     referenceDate?: Date,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const now = referenceDate ?? new Date();
     const repository = await this.getRepository(workspaceId);
@@ -140,9 +127,9 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findDeniedOverrides(
+    workspaceId: string,
     workspaceMemberId: string,
     referenceDate?: Date,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const now = referenceDate ?? new Date();
     const repository = await this.getRepository(workspaceId);
@@ -163,8 +150,8 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findExpired(
+    workspaceId: string,
     referenceDate?: Date,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     const now = referenceDate ?? new Date();
     const repository = await this.getRepository(workspaceId);
@@ -178,8 +165,8 @@ export class MktUserPermissionOverrideRepository {
   }
 
   async findWithRelations(
+    workspaceId: string,
     id: string,
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity | null> {
     const repository = await this.getRepository(workspaceId);
 
@@ -189,9 +176,9 @@ export class MktUserPermissionOverrideRepository {
     });
   }
 
-  async findByIds(
+  async findByIdsOverride(
+    workspaceId: string,
     ids: string[],
-    workspaceId?: string,
   ): Promise<MktUserPermissionOverrideWorkspaceEntity[]> {
     if (ids.length === 0) {
       return [];
@@ -204,37 +191,32 @@ export class MktUserPermissionOverrideRepository {
     });
   }
 
-  async save(
-    entity: Partial<MktUserPermissionOverrideWorkspaceEntity>,
-    workspaceId?: string,
-  ): Promise<MktUserPermissionOverrideWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.save(entity);
-  }
+  // ============================================
+  // SPECIALIZED UPDATE OPERATIONS
+  // ============================================
 
   async updateIsActive(
+    workspaceId: string,
     id: string,
     isActive: boolean,
-    workspaceId?: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update({ id }, { isActive });
+    await this.update(workspaceId, id, { isActive });
   }
 
   async deactivateByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
-    workspaceId?: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update({ workspaceMemberId }, { isActive: false });
+    await this.updateWhere(
+      workspaceId,
+      { workspaceMemberId },
+      { isActive: false },
+    );
   }
 
   async deactivateExpired(
+    workspaceId: string,
     referenceDate?: Date,
-    workspaceId?: string,
   ): Promise<number> {
     const now = referenceDate ?? new Date();
     const repository = await this.getRepository(workspaceId);
@@ -251,24 +233,13 @@ export class MktUserPermissionOverrideRepository {
     return result.affected ?? 0;
   }
 
-  async delete(id: string, workspaceId?: string): Promise<void> {
+  // ============================================
+  // SPECIALIZED DELETE OPERATIONS
+  // ============================================
+
+  async hardDelete(workspaceId: string, id: string): Promise<void> {
     const repository = await this.getRepository(workspaceId);
 
     await repository.delete({ id });
-  }
-
-  async softDelete(id: string, workspaceId?: string): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.softDelete({ id });
-  }
-
-  async count(
-    where?: FindOptionsWhere<MktUserPermissionOverrideWorkspaceEntity>,
-    workspaceId?: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where });
   }
 }

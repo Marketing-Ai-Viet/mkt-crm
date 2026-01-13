@@ -1,61 +1,46 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, In } from 'typeorm';
+import { In } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktTemplateSystemActionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
+/**
+ * MktTemplateSystemActionRepository - Data access layer for Template System Action entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Provides specialized methods for system action queries.
+ */
 @Injectable()
-export class MktTemplateSystemActionRepository {
-  private readonly logger = new Logger(MktTemplateSystemActionRepository.name);
-
+export class MktTemplateSystemActionRepository extends BaseWorkspaceRepository<MktTemplateSystemActionWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  private async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktTemplateSystemActionWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException('Workspace not found');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktTemplateSystemActionWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      MktTemplateSystemActionRepository.name,
     );
   }
 
-  async findById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktTemplateSystemActionWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
-  }
+  // ============================================
+  // SPECIALIZED FIND OPERATIONS
+  // ============================================
 
   async findByTemplateId(
+    workspaceId: string,
     templateId: string,
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.find({
-      where: { templateId, isActive: true },
-    });
+    return this.findMany(workspaceId, { templateId, isActive: true });
   }
 
   async findByActionKey(
+    workspaceId: string,
     actionKey: string,
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -66,31 +51,27 @@ export class MktTemplateSystemActionRepository {
   }
 
   async findByTemplateAndActionKey(
+    workspaceId: string,
     templateId: string,
     actionKey: string,
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { templateId, actionKey, isActive: true },
-    });
+    return this.findOne(workspaceId, { templateId, actionKey, isActive: true });
   }
 
   async findAllowedByTemplateId(
+    workspaceId: string,
     templateId: string,
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.find({
-      where: { templateId, isActive: true, isAllowed: true },
+    return this.findMany(workspaceId, {
+      templateId,
+      isActive: true,
+      isAllowed: true,
     });
   }
 
   async findAllowedByTemplateIds(
+    workspaceId: string,
     templateIds: string[],
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
     if (templateIds.length === 0) {
       return [];
@@ -104,19 +85,19 @@ export class MktTemplateSystemActionRepository {
   }
 
   async findDeniedByTemplateId(
+    workspaceId: string,
     templateId: string,
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.find({
-      where: { templateId, isActive: true, isAllowed: false },
+    return this.findMany(workspaceId, {
+      templateId,
+      isActive: true,
+      isAllowed: false,
     });
   }
 
   async findWithRelations(
+    workspaceId: string,
     id: string,
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity | null> {
     const repository = await this.getRepository(workspaceId);
 
@@ -126,9 +107,9 @@ export class MktTemplateSystemActionRepository {
     });
   }
 
-  async findByIds(
+  async findByIdsSystemAction(
+    workspaceId: string,
     ids: string[],
-    workspaceId?: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
     if (ids.length === 0) {
       return [];
@@ -142,7 +123,7 @@ export class MktTemplateSystemActionRepository {
   }
 
   async findActive(
-    workspaceId?: string,
+    workspaceId: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -152,71 +133,49 @@ export class MktTemplateSystemActionRepository {
     });
   }
 
-  async save(
-    entity: Partial<MktTemplateSystemActionWorkspaceEntity>,
-    workspaceId?: string,
-  ): Promise<MktTemplateSystemActionWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.save(entity);
-  }
+  // ============================================
+  // SPECIALIZED UPDATE OPERATIONS
+  // ============================================
 
   async updateIsActive(
+    workspaceId: string,
     id: string,
     isActive: boolean,
-    workspaceId?: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update({ id }, { isActive });
+    await this.update(workspaceId, id, { isActive });
   }
 
   async updateIsAllowed(
+    workspaceId: string,
     id: string,
     isAllowed: boolean,
-    workspaceId?: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update({ id }, { isAllowed });
+    await this.update(workspaceId, id, { isAllowed });
   }
 
   async deactivateByTemplateId(
+    workspaceId: string,
     templateId: string,
-    workspaceId?: string,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update({ templateId }, { isActive: false });
+    await this.updateWhere(workspaceId, { templateId }, { isActive: false });
   }
 
-  async delete(id: string, workspaceId?: string): Promise<void> {
+  // ============================================
+  // SPECIALIZED DELETE OPERATIONS
+  // ============================================
+
+  async hardDelete(workspaceId: string, id: string): Promise<void> {
     const repository = await this.getRepository(workspaceId);
 
     await repository.delete({ id });
   }
 
-  async softDelete(id: string, workspaceId?: string): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.softDelete({ id });
-  }
-
   async deleteByTemplateId(
+    workspaceId: string,
     templateId: string,
-    workspaceId?: string,
   ): Promise<void> {
     const repository = await this.getRepository(workspaceId);
 
     await repository.delete({ templateId });
-  }
-
-  async count(
-    where?: FindOptionsWhere<MktTemplateSystemActionWorkspaceEntity>,
-    workspaceId?: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where });
   }
 }

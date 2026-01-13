@@ -1,78 +1,39 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { In, IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktDepartmentAncestryRepository - Data access layer for Department Ancestry entity
  *
- * Responsibilities:
- * - Database operations for MktDepartmentAncestry entity
- * - Manage materialized ancestry data for RBAC hierarchy checks
- * - Query building and execution for ancestor/descendant lookups
- * - Thread-safe workspace context handling
- *
- * Key features:
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Provides specialized methods for RBAC hierarchy checks:
  * - O(1) ancestor lookup via pre-computed relationships
  * - Distance-based hierarchy queries
  * - Staleness detection via computedAt timestamp
  */
 @Injectable()
-export class MktDepartmentAncestryRepository {
-  private readonly logger = new Logger('MktDepartmentAncestry:Repository');
-
+export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<MktDepartmentAncestryWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktDepartmentAncestryWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException(
-        REPOSITORY_MESSAGES.ERROR.WORKSPACE_NOT_FOUND,
-      );
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktDepartmentAncestryWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      MktDepartmentAncestryRepository.name,
     );
   }
 
   // ============================================
-  // FIND OPERATIONS
+  // ANCESTOR OPERATIONS
   // ============================================
-
-  /**
-   * Find ancestry record by ID
-   */
-  async findById(
-    workspaceId: string,
-    id: string,
-  ): Promise<MktDepartmentAncestryWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
-  }
 
   /**
    * Find all ancestors of a department
@@ -115,6 +76,42 @@ export class MktDepartmentAncestryRepository {
   }
 
   /**
+   * Find ancestors at a specific distance
+   * e.g., distance=1 returns direct parent
+   */
+  async findAncestorsAtDistance(
+    workspaceId: string,
+    departmentId: string,
+    distance: number,
+  ): Promise<MktDepartmentAncestryWorkspaceEntity[]> {
+    return this.findMany(workspaceId, {
+      departmentId,
+      distance,
+      deletedAt: IsNull(),
+    });
+  }
+
+  /**
+   * Find direct parent (distance = 1)
+   */
+  async findDirectParent(
+    workspaceId: string,
+    departmentId: string,
+  ): Promise<string | null> {
+    const record = await this.findOne(workspaceId, {
+      departmentId,
+      distance: 1,
+      deletedAt: IsNull(),
+    });
+
+    return record?.ancestorId ?? null;
+  }
+
+  // ============================================
+  // DESCENDANT OPERATIONS
+  // ============================================
+
+  /**
    * Find all descendants of a department
    * Returns descendants ordered by distance (closest first)
    */
@@ -155,87 +152,6 @@ export class MktDepartmentAncestryRepository {
   }
 
   /**
-   * Check if departmentA is an ancestor of departmentB
-   * O(1) lookup using pre-computed ancestry
-   */
-  async isAncestor(
-    workspaceId: string,
-    ancestorId: string,
-    descendantId: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.existsBy({
-      departmentId: descendantId,
-      ancestorId,
-    });
-  }
-
-  /**
-   * Get distance between two departments
-   * Returns null if no relationship exists
-   */
-  async getDistance(
-    workspaceId: string,
-    ancestorId: string,
-    descendantId: string,
-  ): Promise<number | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    const record = await repository.findOne({
-      where: {
-        departmentId: descendantId,
-        ancestorId,
-        deletedAt: IsNull(),
-      },
-      select: ['distance'],
-    });
-
-    return record?.distance ?? null;
-  }
-
-  /**
-   * Find ancestors at a specific distance
-   * e.g., distance=1 returns direct parent
-   */
-  async findAncestorsAtDistance(
-    workspaceId: string,
-    departmentId: string,
-    distance: number,
-  ): Promise<MktDepartmentAncestryWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.find({
-      where: {
-        departmentId,
-        distance,
-        deletedAt: IsNull(),
-      },
-    });
-  }
-
-  /**
-   * Find direct parent (distance = 1)
-   */
-  async findDirectParent(
-    workspaceId: string,
-    departmentId: string,
-  ): Promise<string | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    const record = await repository.findOne({
-      where: {
-        departmentId,
-        distance: 1,
-        deletedAt: IsNull(),
-      },
-      select: ['ancestorId'],
-    });
-
-    return record?.ancestorId ?? null;
-  }
-
-  /**
    * Find direct children (descendants at distance = 1)
    */
   async findDirectChildrenIds(
@@ -256,31 +172,63 @@ export class MktDepartmentAncestryRepository {
   }
 
   // ============================================
-  // CREATE OPERATIONS
+  // HIERARCHY CHECK OPERATIONS
   // ============================================
 
   /**
-   * Create new ancestry record
+   * Check if departmentA is an ancestor of departmentB
+   * O(1) lookup using pre-computed ancestry
    */
-  async create(
+  async isAncestor(
+    workspaceId: string,
+    ancestorId: string,
+    descendantId: string,
+  ): Promise<boolean> {
+    return this.existsWhere(workspaceId, {
+      departmentId: descendantId,
+      ancestorId,
+    });
+  }
+
+  /**
+   * Get distance between two departments
+   * Returns null if no relationship exists
+   */
+  async getDistance(
+    workspaceId: string,
+    ancestorId: string,
+    descendantId: string,
+  ): Promise<number | null> {
+    const record = await this.findOne(workspaceId, {
+      departmentId: descendantId,
+      ancestorId,
+      deletedAt: IsNull(),
+    });
+
+    return record?.distance ?? null;
+  }
+
+  // ============================================
+  // SPECIALIZED CREATE OPERATIONS
+  // ============================================
+
+  /**
+   * Create ancestry record with computedAt timestamp
+   */
+  async createAncestry(
     workspaceId: string,
     data: Partial<MktDepartmentAncestryWorkspaceEntity>,
   ): Promise<MktDepartmentAncestryWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    const record = repository.create({
+    return this.create(workspaceId, {
       ...data,
       computedAt: data.computedAt ?? DateTimeUtils.now().toJSDate(),
     });
-
-    return repository.save(record);
   }
 
   /**
    * Bulk create ancestry records
-   * Used when refreshing ancestry for a department
    */
-  async bulkCreate(
+  async bulkCreateAncestries(
     workspaceId: string,
     records: Array<Partial<MktDepartmentAncestryWorkspaceEntity>>,
   ): Promise<MktDepartmentAncestryWorkspaceEntity[]> {
@@ -288,34 +236,14 @@ export class MktDepartmentAncestryRepository {
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
     const now = DateTimeUtils.now().toJSDate();
 
-    const entities = records.map((data) =>
-      repository.create({
-        ...data,
-        computedAt: data.computedAt ?? now,
-      }),
-    );
+    const items = records.map((data) => ({
+      ...data,
+      computedAt: data.computedAt ?? now,
+    }));
 
-    return repository.save(entities);
-  }
-
-  // ============================================
-  // UPDATE OPERATIONS
-  // ============================================
-
-  /**
-   * Update ancestry record
-   */
-  async update(
-    workspaceId: string,
-    id: string,
-    data: Partial<MktDepartmentAncestryWorkspaceEntity>,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(id, data);
+    return this.bulkCreate(workspaceId, items);
   }
 
   /**
@@ -353,17 +281,8 @@ export class MktDepartmentAncestryRepository {
   }
 
   // ============================================
-  // DELETE OPERATIONS
+  // SPECIALIZED DELETE OPERATIONS
   // ============================================
-
-  /**
-   * Soft delete ancestry record
-   */
-  async softDelete(workspaceId: string, id: string): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.softDelete(id);
-  }
 
   /**
    * Remove all ancestry records for a department (as descendant)
@@ -372,15 +291,13 @@ export class MktDepartmentAncestryRepository {
     workspaceId: string,
     departmentId: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    const result = await repository.softDelete({ departmentId });
+    const affected = await this.softDeleteWhere(workspaceId, { departmentId });
 
     this.logger.log(
-      `Removed ${result.affected ?? 0} ancestry records for department ${departmentId}`,
+      `Removed ${affected} ancestry records for department ${departmentId}`,
     );
 
-    return result.affected ?? 0;
+    return affected;
   }
 
   /**
@@ -390,15 +307,13 @@ export class MktDepartmentAncestryRepository {
     workspaceId: string,
     ancestorId: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    const result = await repository.softDelete({ ancestorId });
+    const affected = await this.softDeleteWhere(workspaceId, { ancestorId });
 
     this.logger.log(
-      `Removed ${result.affected ?? 0} ancestry records where ${ancestorId} is ancestor`,
+      `Removed ${affected} ancestry records where ${ancestorId} is ancestor`,
     );
 
-    return result.affected ?? 0;
+    return affected;
   }
 
   // ============================================
@@ -412,13 +327,9 @@ export class MktDepartmentAncestryRepository {
     workspaceId: string,
     departmentId: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: {
-        departmentId,
-        deletedAt: IsNull(),
-      },
+    return this.count(workspaceId, {
+      departmentId,
+      deletedAt: IsNull(),
     });
   }
 
@@ -429,13 +340,9 @@ export class MktDepartmentAncestryRepository {
     workspaceId: string,
     ancestorId: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: {
-        ancestorId,
-        deletedAt: IsNull(),
-      },
+    return this.count(workspaceId, {
+      ancestorId,
+      deletedAt: IsNull(),
     });
   }
 
@@ -483,13 +390,13 @@ export class MktDepartmentAncestryRepository {
       return true; // No records = stale
     }
 
-    const ageInMinutes = DateTimeUtils.subtract(DateTimeUtils.now(), {
+    const cutoffTime = DateTimeUtils.subtract(DateTimeUtils.now(), {
       minutes: maxAgeMinutes,
     });
 
     return (
       DateTimeUtils.toMillis(DateTimeUtils.fromDate(record.computedAt)) <
-      DateTimeUtils.toMillis(ageInMinutes)
+      DateTimeUtils.toMillis(cutoffTime)
     );
   }
 

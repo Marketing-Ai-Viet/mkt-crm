@@ -1,15 +1,15 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, In } from 'typeorm';
+import { In } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   CheckResult,
   PermissionAction,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
+import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 
 export type AuditQueryOptions = {
   workspaceMemberId?: string;
@@ -23,45 +23,34 @@ export type AuditQueryOptions = {
   offset?: number;
 };
 
+/**
+ * MktPermissionAuditRepository - Data access layer for Permission Audit entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Provides specialized methods for audit log queries.
+ */
 @Injectable()
-export class MktPermissionAuditRepository {
-  private readonly logger = new Logger(MktPermissionAuditRepository.name);
-
+export class MktPermissionAuditRepository extends BaseWorkspaceRepository<MktPermissionAuditWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  private async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktPermissionAuditWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException('Workspace not found');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktPermissionAuditWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      MktPermissionAuditRepository.name,
     );
   }
 
-  async findById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktPermissionAuditWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
-  }
+  // ============================================
+  // SPECIALIZED FIND OPERATIONS
+  // ============================================
 
   async findByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
     options?: { limit?: number; offset?: number },
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -74,9 +63,9 @@ export class MktPermissionAuditRepository {
   }
 
   async findByUserId(
+    workspaceId: string,
     userId: string,
     options?: { limit?: number; offset?: number },
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -89,9 +78,9 @@ export class MktPermissionAuditRepository {
   }
 
   async findByObjectName(
+    workspaceId: string,
     objectName: string,
     options?: { limit?: number; offset?: number },
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -104,9 +93,9 @@ export class MktPermissionAuditRepository {
   }
 
   async findByCheckResult(
+    workspaceId: string,
     checkResult: CheckResult,
     options?: { limit?: number; offset?: number },
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -119,10 +108,10 @@ export class MktPermissionAuditRepository {
   }
 
   async findByDateRange(
+    workspaceId: string,
     fromDate: Date,
     toDate: Date,
     options?: { limit?: number; offset?: number },
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -137,12 +126,8 @@ export class MktPermissionAuditRepository {
   }
 
   async findDeniedAccess(
-    options?: {
-      limit?: number;
-      offset?: number;
-      fromDate?: Date;
-    },
-    workspaceId?: string,
+    workspaceId: string,
+    options?: { limit?: number; offset?: number; fromDate?: Date },
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
@@ -166,8 +151,8 @@ export class MktPermissionAuditRepository {
   }
 
   async query(
+    workspaceId: string,
     queryOptions: AuditQueryOptions,
-    workspaceId?: string,
   ): Promise<{ items: MktPermissionAuditWorkspaceEntity[]; total: number }> {
     const repository = await this.getRepository(workspaceId);
 
@@ -216,9 +201,9 @@ export class MktPermissionAuditRepository {
     return { items, total };
   }
 
-  async findByIds(
+  async findByIdsAudit(
+    workspaceId: string,
     ids: string[],
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
     if (ids.length === 0) {
       return [];
@@ -231,43 +216,33 @@ export class MktPermissionAuditRepository {
     });
   }
 
-  async create(
-    entity: Partial<MktPermissionAuditWorkspaceEntity>,
-    workspaceId?: string,
-  ): Promise<MktPermissionAuditWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.save(entity);
-  }
+  // ============================================
+  // SPECIALIZED CREATE OPERATIONS
+  // ============================================
 
   async createBatch(
+    workspaceId: string,
     entities: Partial<MktPermissionAuditWorkspaceEntity>[],
-    workspaceId?: string,
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.save(entities);
+    return this.bulkCreate(workspaceId, entities);
   }
 
-  async count(
-    where?: FindOptionsWhere<MktPermissionAuditWorkspaceEntity>,
-    workspaceId?: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where });
-  }
+  // ============================================
+  // SPECIALIZED COUNT OPERATIONS
+  // ============================================
 
   async countByCheckResult(
+    workspaceId: string,
     checkResult: CheckResult,
-    workspaceId?: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where: { checkResult } });
+    return this.count(workspaceId, { checkResult });
   }
 
-  async deleteOlderThan(date: Date, workspaceId?: string): Promise<number> {
+  // ============================================
+  // SPECIALIZED DELETE OPERATIONS
+  // ============================================
+
+  async deleteOlderThan(workspaceId: string, date: Date): Promise<number> {
     const repository = await this.getRepository(workspaceId);
 
     const result = await repository

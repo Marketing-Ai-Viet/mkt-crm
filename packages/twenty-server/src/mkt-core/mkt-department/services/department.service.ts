@@ -255,13 +255,16 @@ export class DepartmentService {
     const allDepartments = await this.departmentRepository.findAll(workspaceId);
 
     // Get all hierarchies based on filters
-    const hierarchies = await this.hierarchyRepository.findAll(workspaceId, {
-      isActive: !includeInactive ? true : undefined,
-      relationshipTypes:
-        relationshipTypes && relationshipTypes.length > 0
-          ? relationshipTypes
-          : [DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD],
-    });
+    const hierarchies = await this.hierarchyRepository.findAllWithFilters(
+      workspaceId,
+      {
+        isActive: !includeInactive ? true : undefined,
+        relationshipTypes:
+          relationshipTypes && relationshipTypes.length > 0
+            ? relationshipTypes
+            : [DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD],
+      },
+    );
 
     // Collect all department IDs that are children (have parents)
     const childDepartmentIds = new Set<string>();
