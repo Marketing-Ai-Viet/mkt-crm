@@ -24,8 +24,9 @@ import {
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-sub-manager.workspace-entity';
 import {
   DEPARTMENT_TYPE,
   DEPARTMENT_TYPE_OPTIONS,
@@ -243,30 +244,29 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   people: Relation<WorkspaceMemberWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId: MKT_DEPARTMENT_FIELD_IDS.leader,
+    standardId: MKT_DEPARTMENT_FIELD_IDS.manager,
     type: RelationType.MANY_TO_ONE,
-    label: msg`Leader`,
-    description: msg`The leader of this department`,
+    label: msg`Manager`,
+    description: msg`The manager of this department`,
     icon: 'IconCrown',
     inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-    inverseSideFieldKey: 'leaderForMktDepartments',
+    inverseSideFieldKey: 'managerForMktDepartments',
   })
-  leader: Relation<WorkspaceMemberWorkspaceEntity>;
-  @WorkspaceJoinColumn('leader')
-  leaderId: string | null;
+  manager: Relation<WorkspaceMemberWorkspaceEntity>;
+  @WorkspaceJoinColumn('manager')
+  managerId: string | null;
 
   @WorkspaceRelation({
-    standardId: MKT_DEPARTMENT_FIELD_IDS.subLeader,
-    type: RelationType.MANY_TO_ONE,
-    label: msg`Sub Leader`,
-    description: msg`The sub-leader of this department`,
-    icon: 'IconCrown',
-    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-    inverseSideFieldKey: 'subLeaderForMktDepartments',
+    standardId: MKT_DEPARTMENT_FIELD_IDS.subManagers,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Sub Managers`,
+    description: msg`The sub-managers of this department`,
+    icon: 'IconUserStar',
+    inverseSideTarget: () => MktDepartmentSubManagerWorkspaceEntity,
+    inverseSideFieldKey: 'department',
   })
-  subLeader: Relation<WorkspaceMemberWorkspaceEntity>;
-  @WorkspaceJoinColumn('subLeader')
-  subLeaderId: string | null;
+  @WorkspaceIsNullable()
+  subManagers: Relation<MktDepartmentSubManagerWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_DEPARTMENT_FIELD_IDS.childHierarchies,

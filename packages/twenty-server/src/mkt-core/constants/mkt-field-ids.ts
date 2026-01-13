@@ -716,8 +716,8 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   supportForMemberId: '19278821-d3a2-4158-8056-fe6610e8690a',
   endDate: '81b70197-38b8-4ec4-bc87-eb9a63d9c61a',
   status: '6f656294-ce00-499a-b8e5-bd9c4be9bde9',
-  leaderForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
-  subLeaderForMktDepartments: '43ef504c-9e23-431e-993c-b31c0199252c',
+  managerForMktDepartments: 'f1f28a95-06e6-4685-a09b-9a51819941c8',
+  subManagerAssignments: '43ef504c-9e23-431e-993c-b31c0199252c', // Changed from subLeaderForMktDepartments
   grade: '5ffe14ec-94b9-4c49-b61e-e99493b18f5f',
   address: 'a2312a29-32d9-4ea7-b411-7df882d3562d',
   memberCode: 'bdcdd342-8d54-4686-9725-4c18df2f4977',
@@ -897,8 +897,8 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   isActive: 'd6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1a',
   // relations
   staffMembers: 'e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b',
-  leader: 'c64c55df-a9c8-4607-84d2-a914f1bff0db',
-  subLeader: '3507df29-4966-4116-8be1-ee2e19b25af5',
+  manager: 'c64c55df-a9c8-4607-84d2-a914f1bff0db',
+  subManagers: '3507df29-4966-4116-8be1-ee2e19b25af5', // Changed from subLeader to support multiple sub-managers
   childHierarchies: 'a1d2c3b4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
   parentHierarchies: 'b2c3d4e5-f6a7-8b9c-0d1e-f2a3b4c5d6e7',
   dataAccessPolicies: '6742dde7-8567-4e8f-a30d-e6b6c70ede0a',
@@ -1371,10 +1371,13 @@ export const MKT_PERMISSION_AUDIT_FIELD_IDS = {
   position: 'e3f4a5b6-7c8d-9eaf-ba0b-1c2d3e4f5a6b',
 
   // Phase 2: New fields per authorization-design-v2.md
-  validationMode: 'f4a5b6c7-8d9e-0fab-1c2d-3e4f5a6b7c8d',
   stepResults: 'a5b6c7d8-9e0f-1ab2-3c4d-5e6f7a8b9c0d',
   cacheHit: 'b6c7d8e9-0f1a-2bc3-4d5e-6f7a8b9c0d1e',
   executionPath: 'c7d8e9f0-1a2b-3cd4-5e6f-7a8b9c0d1e2f',
+  requestId: 'd8e9f0a1-2b3c-4de5-6f7a-8b9c0d1e2f3a',
+
+  // Extensible metadata for future requirements
+  metadata: 'e9f0a1b2-3c4d-5ef6-7a8b-9c0d1e2f3a4b',
 };
 
 export const MKT_CUSTOMER_TIER_HISTORY_FIELD_IDS = {
@@ -1479,4 +1482,15 @@ export const MKT_DEPARTMENT_ANCESTRY_FIELD_IDS = {
   ancestor: 'b5c6d7e8-9014-5678-9012-345678901235',
   // standard fields
   position: 'c6d7e8f9-0125-6789-0123-456789012346',
+};
+
+export const MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS = {
+  // assignment fields
+  isPrimary: 'd7e8f9a0-1236-7890-1234-567890123457',
+  assignedAt: 'e8f9a0b1-2347-8901-2345-678901234568',
+  note: 'f9a0b1c2-3458-9012-3456-789012345679',
+  isActive: 'a0b1c2d3-4569-0123-4567-890123456780',
+  // relations
+  department: 'b1c2d3e4-5670-1234-5678-901234567891',
+  workspaceMember: 'c2d3e4f5-6781-2345-6789-012345678902',
 };

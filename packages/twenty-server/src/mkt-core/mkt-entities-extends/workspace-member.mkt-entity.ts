@@ -34,6 +34,7 @@ import {
   MktPermissionTemplateWorkspaceEntity,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-sub-manager.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
 import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
 import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
@@ -410,28 +411,28 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   // accountOwnerForMktKpiTemplates: Relation<MktKpiTemplateWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.leaderForMktDepartments,
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.managerForMktDepartments,
     type: RelationType.ONE_TO_MANY,
-    label: msg`Leader For Departments`,
-    description: msg`Leader for departments`,
+    label: msg`Manager For Departments`,
+    description: msg`Manager for departments`,
     icon: 'IconBox',
     inverseSideTarget: () => MktDepartmentWorkspaceEntity,
-    inverseSideFieldKey: 'leader',
+    inverseSideFieldKey: 'manager',
     onDelete: RelationOnDeleteAction.SET_NULL,
   })
-  leaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
+  managerForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
 
   @WorkspaceRelation({
-    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.subLeaderForMktDepartments,
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.subManagerAssignments,
     type: RelationType.ONE_TO_MANY,
-    label: msg`Sub Leader For Departments`,
-    description: msg`Sub leader for departments`,
-    icon: 'IconBox',
-    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
-    inverseSideFieldKey: 'subLeader',
-    onDelete: RelationOnDeleteAction.SET_NULL,
+    label: msg`Sub Manager Assignments`,
+    description: msg`Sub-manager assignments for this workspace member`,
+    icon: 'IconUserStar',
+    inverseSideTarget: () => MktDepartmentSubManagerWorkspaceEntity,
+    inverseSideFieldKey: 'workspaceMember',
+    onDelete: RelationOnDeleteAction.CASCADE,
   })
-  subLeaderForMktDepartments: Relation<MktDepartmentWorkspaceEntity[]>;
+  subManagerAssignments: Relation<MktDepartmentSubManagerWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.staffStatusHistories,
