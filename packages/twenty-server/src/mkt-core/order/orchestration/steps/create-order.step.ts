@@ -18,7 +18,7 @@ import {
   CreateOrderStepOutput,
   CreateOrderWithItemsInput,
 } from 'src/mkt-core/order/types';
-import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
+import { buildOwnershipFields } from 'src/mkt-core/common/repositories/base-workspace.repository';
 
 /**
  * CreateOrderStep - Step 1: Tạo order entity
@@ -75,7 +75,7 @@ export class CreateOrderStep extends SagaStep<
       const isTrialLicense = false;
 
       // Build ownership fields (createdById, accountOwnerId)
-      const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+      const ownershipFields = buildOwnershipFields({
         workspaceMemberId: context.workspaceMemberId,
       });
 

@@ -18,7 +18,6 @@ import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-cu
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
 
 /**
  * MktContractService - Business logic layer for Contract entity
@@ -44,7 +43,7 @@ export class MktContractService {
    * Format: CT + YYYYMMDD + 3-digit sequence
    * Example: CT20241201001
    */
-  async generateContractNumber(workspaceId: string): Promise<string> {
+  async generateContractNumber(): Promise<string> {
     try {
       const now = DateTimeUtils.now();
       const year = now.year;
@@ -56,7 +55,6 @@ export class MktContractService {
       const lastContractNumber =
         await this.contractRepository.findLastNumberWithPrefix(
           `${CONTRACT_NUMBER_PREFIX}${datePrefix}`,
-          workspaceId,
         );
 
       let nextNumber = 1;
@@ -79,10 +77,7 @@ export class MktContractService {
       // Kiểm tra trùng lặp
       // TODO : Cải thiện hiệu suất
       const existingContract =
-        await this.contractRepository.isContractNumberExists(
-          contractNumber,
-          workspaceId,
-        );
+        await this.contractRepository.isContractNumberExists(contractNumber);
 
       if (existingContract) {
         // Nếu trùng, sử dụng timestamp
@@ -119,7 +114,7 @@ export class MktContractService {
       this.logger.log(`Creating contract for order: ${order.id}`);
 
       // Generate contract data
-      const contractNumber = await this.generateContractNumber(workspaceId);
+      const contractNumber = await this.generateContractNumber();
 
       const contractName = await this.generateContractName(
         workspaceId,
@@ -134,25 +129,20 @@ export class MktContractService {
         years: DEFAULT_CONTRACT_DURATION_YEARS,
       });
 
-      // Build ownership fields from order's ownership
-      const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
-        workspaceMemberId: order.createdById ?? undefined,
-        accountOwnerId: order.accountOwnerId ?? undefined,
-      });
-
-      // Create the contract using repository
-      const savedContract = await this.contractRepository.create(
-        {
-          name: contractName,
-          contractNumber,
-          startDate: DateTimeUtils.toDate(now),
-          endDate: DateTimeUtils.toDate(endDateTime),
-          status: MKT_CONTRACT_STATUS.ACTIVE,
-          customerId: mktCustomerId,
-          ...ownershipFields,
-        },
-        workspaceId,
-      );
+      // Create the contract with ownership fields
+      const savedContract =
+        await this.contractRepository.createContractWithOwnership(
+          {
+            name: contractName,
+            contractNumber,
+            startDate: DateTimeUtils.toDate(now),
+            endDate: DateTimeUtils.toDate(endDateTime),
+            status: MKT_CONTRACT_STATUS.ACTIVE,
+            customerId: mktCustomerId,
+          },
+          order.createdById ?? undefined,
+          order.accountOwnerId ?? undefined,
+        );
 
       this.logger.log(
         `Successfully created contract ${contractNumber} for order ${order.id}`,
@@ -239,12 +229,11 @@ export class MktContractService {
   async updateContract(
     contractId: string,
     updateData: UpdateContractData,
-    workspaceId: string,
   ): Promise<void> {
     try {
       this.logger.log(`Updating contract ${contractId}`);
 
-      await this.contractRepository.update(contractId, updateData, workspaceId);
+      await this.contractRepository.updateContract(contractId, updateData);
 
       this.logger.log(CONTRACT_MESSAGES.LOG.UPDATE_SUCCESS(contractId));
     } catch (error) {
@@ -259,14 +248,11 @@ export class MktContractService {
    */
   async findContractById(
     contractId: string,
-    workspaceId: string,
   ): Promise<MktContractWorkspaceEntity | null> {
     try {
-      return await this.contractRepository.findByIdWithRelations(
-        contractId,
-        ['mktOrders'],
-        workspaceId,
-      );
+      return await this.contractRepository.findByIdWithRelations(contractId, [
+        'mktOrders',
+      ]);
     } catch (error) {
       this.logger.error(`Failed to find contract ${contractId}:`, error);
 

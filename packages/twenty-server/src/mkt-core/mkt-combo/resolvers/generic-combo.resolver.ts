@@ -26,7 +26,7 @@ import {
   CreateGenericComboData,
   CreateGenericComboItemData,
 } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
-import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
+import { buildOwnershipFields } from 'src/mkt-core/common/repositories/base-workspace.repository';
 import {
   GenericComboPricingType,
   ComboItemType,
@@ -223,7 +223,7 @@ export class GenericComboResolver {
     @Args('input') input: CreateGenericComboInput,
   ): Promise<GenericComboOutput> {
     // Build ownership fields
-    const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+    const ownershipFields = buildOwnershipFields({
       workspaceMemberId,
     });
 
