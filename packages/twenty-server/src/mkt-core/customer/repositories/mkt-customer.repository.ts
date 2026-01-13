@@ -1,10 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { IsNull, QueryRunner } from 'typeorm';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories/base-workspace.repository';
 import {
   ACCOUNT_PROVIDER,
   LINKED_ACCOUNT_STATUS,
@@ -21,37 +21,33 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 /**
  * MktCustomerRepository - Data access layer for Customer entity
  *
- * Responsibilities:
- * - Database operations for MktCustomer entity
- * - Query building and execution
- * - Thread-safe workspace context handling
- *
- * Does NOT handle:
- * - Business logic (handled by Service layer)
- * - Validation (handled by Hook layer)
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * WorkspaceId can be:
+ * - Omitted: resolved from scoped context (for request handlers)
+ * - Provided explicitly: for batch jobs running outside request context
  */
 @Injectable()
-export class MktCustomerRepository {
-  private readonly logger = new Logger(
-    `${MKT_CUSTOMER_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktCustomerWorkspaceEntity,
+      `${MKT_CUSTOMER_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
-  // REPOSITORY ACCESS
+  // WORKSPACE ID HELPER
   // ============================================
 
   /**
-   * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
+   * Resolve workspace ID from provided value or scoped context
    */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktCustomerWorkspaceEntity>> {
+  private resolveWorkspaceId(workspaceId?: string): string {
     const wsId =
       workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
 
@@ -59,11 +55,7 @@ export class MktCustomerRepository {
       throw new NotFoundException(CUSTOMER_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
     }
 
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
-      MktCustomerWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
+    return wsId;
   }
 
   // ============================================
@@ -72,15 +64,16 @@ export class MktCustomerRepository {
 
   /**
    * Find customer by ID
+   * @throws NotFoundException if customer not found
    */
-  async findById(
+  async findCustomerById(
     id: string,
     workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity> {
     this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_BY_ID_START(id));
 
-    const repository = await this.getRepository(workspaceId);
-    const customer = await repository.findOne({ where: { id } });
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const customer = await this.findById(wsId, id);
 
     if (!customer) {
       this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_BY_ID_NOT_FOUND(id));
@@ -101,9 +94,9 @@ export class MktCustomerRepository {
     id: string,
     workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
 
-    return repository.findOne({ where: { id } });
+    return this.findById(wsId, id);
   }
 
   /**
@@ -113,24 +106,23 @@ export class MktCustomerRepository {
     email: string,
     workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
 
-    return repository.findOne({ where: { email } });
+    return this.findOne(wsId, { email } as never);
   }
 
   /**
    * Find all customers with pagination
    */
-  async findAll(
+  async findAllCustomers(
     workspaceId?: string,
     options?: FindCustomerOptions,
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.resolveWorkspaceId(workspaceId);
 
-    this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_ALL_START(wsId ?? 'unknown'));
+    this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_ALL_START(wsId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const customers = await repository.find({
       where: { deletedAt: IsNull() },
@@ -148,7 +140,8 @@ export class MktCustomerRepository {
    * Find all customer IDs (lightweight operation)
    */
   async findAllIds(workspaceId?: string): Promise<string[]> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const results = await repository
       .createQueryBuilder('customer')
@@ -167,7 +160,8 @@ export class MktCustomerRepository {
     workspaceId?: string,
     options?: { limit?: number; offset?: number },
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const queryBuilder = repository
       .createQueryBuilder('customer')
@@ -188,26 +182,22 @@ export class MktCustomerRepository {
 
   /**
    * Find customer by linked account (searches JSONB array)
-   * @param provider - Account provider (MKT_SERVER, GOOGLE, etc.)
-   * @param externalId - External account ID on the provider
    */
   async findByLinkedAccount(
     provider: string,
     externalId: string,
     workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
-    // Use JSONB query to find customer with matching linked account
-    const customer = await repository
+    return repository
       .createQueryBuilder('customer')
       .where('customer.deletedAt IS NULL')
       .andWhere(`customer."linkedAccounts" @> :accountFilter::jsonb`, {
         accountFilter: JSON.stringify([{ provider, externalId }]),
       })
       .getOne();
-
-    return customer;
   }
 
   // ============================================
@@ -216,15 +206,15 @@ export class MktCustomerRepository {
 
   /**
    * Update customer by ID
-   * Pattern: Follow mkt-promotion repository pattern with manager.update()
    */
-  async update(
+  async updateCustomer(
     id: string,
     data: Partial<MktCustomerWorkspaceEntity>,
     workspaceId?: string,
     queryRunner?: QueryRunner,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
     const manager = queryRunner?.manager ?? repository.manager;
 
     await manager.update(
@@ -240,25 +230,26 @@ export class MktCustomerRepository {
   /**
    * Update and return the updated customer
    */
-  async updateAndReturn(
+  async updateCustomerAndReturn(
     id: string,
     data: Partial<MktCustomerWorkspaceEntity>,
     workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity> {
-    await this.update(id, data, workspaceId);
+    await this.updateCustomer(id, data, workspaceId);
 
-    return this.findById(id, workspaceId);
+    return this.findCustomerById(id, workspaceId);
   }
 
   /**
    * Soft delete customer
    */
-  async softDelete(
+  async softDeleteCustomer(
     id: string,
     workspaceId?: string,
     queryRunner?: QueryRunner,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
     const manager = queryRunner?.manager ?? repository.manager;
 
     await manager.softDelete('MktCustomerWorkspaceEntity', id);
@@ -273,8 +264,9 @@ export class MktCustomerRepository {
   /**
    * Count all customers
    */
-  async count(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countCustomers(workspaceId?: string): Promise<number> {
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     return repository.count({ where: { deletedAt: IsNull() } });
   }
@@ -286,22 +278,23 @@ export class MktCustomerRepository {
     accountOwnerId: string,
     workspaceId?: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     return repository.count({
-      where: { accountOwnerId, deletedAt: IsNull() },
+      where: { accountOwnerId, deletedAt: IsNull() } as never,
     });
   }
 
   /**
    * Count customers by createdBy workspaceMemberId
-   * Used for auto-assign load balancing
    */
   async countByCreatedByMember(
     workspaceMemberId: string,
     workspaceId?: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     return repository
       .createQueryBuilder('customer')
@@ -314,8 +307,6 @@ export class MktCustomerRepository {
 
   /**
    * Batch count customers by multiple createdBy workspaceMemberIds
-   * Returns a Map of memberId -> count
-   * Used for auto-assign load balancing (prevents N+1 queries)
    */
   async countByCreatedByMemberIds(
     workspaceMemberIds: string[],
@@ -325,7 +316,8 @@ export class MktCustomerRepository {
       return new Map();
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const results = await repository
       .createQueryBuilder('customer')
@@ -340,12 +332,10 @@ export class MktCustomerRepository {
 
     const countMap = new Map<string, number>();
 
-    // Initialize all member IDs with 0
     for (const memberId of workspaceMemberIds) {
       countMap.set(memberId, 0);
     }
 
-    // Set actual counts from results
     for (const result of results) {
       countMap.set(result.memberId, parseInt(result.count, 10));
     }
@@ -357,7 +347,8 @@ export class MktCustomerRepository {
    * Count assigned customers (customers with createdBy set)
    */
   async countAssigned(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     return repository
       .createQueryBuilder('customer')
@@ -377,7 +368,8 @@ export class MktCustomerRepository {
     customerCode: string,
     workspaceId?: string,
   ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const count = await repository
       .createQueryBuilder('customer')
@@ -394,7 +386,8 @@ export class MktCustomerRepository {
     prefix: string,
     workspaceId?: string,
   ): Promise<string | null> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const customer = await repository
       .createQueryBuilder('customer')
@@ -411,12 +404,12 @@ export class MktCustomerRepository {
 
   /**
    * Get tier distribution statistics
-   * Single query for all tier counts
    */
   async getTierDistribution(
     workspaceId?: string,
   ): Promise<Array<{ tier: string; count: number }>> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const results = await repository
       .createQueryBuilder('customer')
@@ -436,7 +429,8 @@ export class MktCustomerRepository {
    * Get total order value sum for all customers
    */
   async getTotalOrderValueSum(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(wsId);
 
     const result = await repository
       .createQueryBuilder('customer')
@@ -448,23 +442,17 @@ export class MktCustomerRepository {
   }
 
   // ============================================
-  // BULK TIER UPDATE OPERATIONS
+  // BULK OPERATIONS
   // ============================================
 
   /**
    * Find customers with pagination for batch processing
-   * Returns customers ordered by createdAt for consistent batch processing
    */
   async findAllWithPagination(
     workspaceId: string,
     options: { take: number; skip: number },
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    const repository = await this.getRepository(workspaceId);
 
     return repository
       .createQueryBuilder('customer')
@@ -477,11 +465,6 @@ export class MktCustomerRepository {
 
   /**
    * Bulk update customer tier data
-   * Uses single update statement per customer for safety
-   *
-   * @param workspaceId - Workspace ID
-   * @param updates - Array of tier updates { customerId, tier, totalOrderValue, totalOrderCount }
-   * @returns Number of successfully updated customers
    */
   async bulkUpdateTiers(
     workspaceId: string,
@@ -496,27 +479,22 @@ export class MktCustomerRepository {
       return 0;
     }
 
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    const repository = await this.getRepository(workspaceId);
 
     let successCount = 0;
 
-    for (const update of updates) {
+    for (const updateItem of updates) {
       try {
-        await repository.update(update.customerId, {
-          tier: update.tier,
-          totalOrderValue: update.totalOrderValue,
-          totalOrderCount: update.totalOrderCount,
+        await repository.update(updateItem.customerId, {
+          tier: updateItem.tier,
+          totalOrderValue: updateItem.totalOrderValue,
+          totalOrderCount: updateItem.totalOrderCount,
         });
 
         successCount++;
       } catch (error) {
         this.logger.error(
-          `Failed to update tier for customer ${update.customerId}:`,
+          `Failed to update tier for customer ${updateItem.customerId}:`,
           error,
         );
       }
@@ -531,7 +509,6 @@ export class MktCustomerRepository {
 
   /**
    * Get customer names by IDs
-   * Lightweight operation for bulk tier calculation
    */
   async getCustomerNamesByIds(
     workspaceId: string,
@@ -541,12 +518,7 @@ export class MktCustomerRepository {
       return new Map();
     }
 
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    const repository = await this.getRepository(workspaceId);
 
     const customers = await repository
       .createQueryBuilder('customer')
@@ -557,15 +529,10 @@ export class MktCustomerRepository {
     return new Map(customers.map((c) => [c.id, c.name ?? '']));
   }
 
-  // ============================================
-  // BULK UPDATE OPERATIONS (DOWNGRADE POLICY)
-  // ============================================
-
   /**
    * Bulk update customers by IDs with same data
-   * Used for batch operations like updating lastTierUpgradeAt
    */
-  async bulkUpdate(
+  async bulkUpdateCustomers(
     workspaceId: string,
     customerIds: string[],
     data: Partial<MktCustomerWorkspaceEntity>,
@@ -574,18 +541,12 @@ export class MktCustomerRepository {
       return 0;
     }
 
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    const repository = await this.getRepository(workspaceId);
 
     let successCount = 0;
 
     for (const customerId of customerIds) {
       try {
-        // Convert Date fields to ISO strings for TypeORM compatibility
         const updateData: Record<string, unknown> = { ...data };
 
         for (const [key, value] of Object.entries(updateData)) {
@@ -629,12 +590,7 @@ export class MktCustomerRepository {
       return [];
     }
 
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
+    const repository = await this.getRepository(workspaceId);
 
     const customers = await repository
       .createQueryBuilder('customer')
@@ -661,16 +617,6 @@ export class MktCustomerRepository {
 
   /**
    * Extract MKT_SERVER email from linkedAccounts
-   * Throws error if no valid MKT_SERVER account found
-   *
-   * Priority:
-   * 1. Primary + ACTIVE MKT_SERVER account email
-   * 2. Any ACTIVE MKT_SERVER account with email
-   *
-   * @param linkedAccounts - Array of linked accounts from customer
-   * @param customerId - Customer ID for error messages
-   * @throws Error if no valid MKT_SERVER email found
-   * @returns Email string from valid MKT_SERVER account
    */
   extractMktServerEmail(
     linkedAccounts: LinkedAccount[] | null | undefined,
@@ -682,7 +628,6 @@ export class MktCustomerRepository {
       );
     }
 
-    // Find primary + ACTIVE MKT_SERVER account first
     const primaryMktAccount = linkedAccounts.find(
       (account) =>
         account.provider === ACCOUNT_PROVIDER.MKT_SERVER &&
@@ -694,7 +639,6 @@ export class MktCustomerRepository {
       return primaryMktAccount.email;
     }
 
-    // Fall back to any ACTIVE MKT_SERVER account with email
     const anyActiveMktAccount = linkedAccounts.find(
       (account) =>
         account.provider === ACCOUNT_PROVIDER.MKT_SERVER &&
@@ -706,7 +650,6 @@ export class MktCustomerRepository {
       return anyActiveMktAccount.email;
     }
 
-    // No valid MKT_SERVER email found - throw error
     throw new Error(
       CUSTOMER_MESSAGES.ERROR.MKT_SERVER_EMAIL_NOT_FOUND(customerId),
     );

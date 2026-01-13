@@ -325,7 +325,7 @@ export class MktCustomerDowngradePolicyService {
   ): Promise<void> {
     const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
 
-    await this.customerRepository.update(
+    await this.customerRepository.updateCustomer(
       customerId,
       { lastTierUpgradeAt: now },
       workspaceId,
@@ -349,9 +349,13 @@ export class MktCustomerDowngradePolicyService {
 
     const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
 
-    await this.customerRepository.bulkUpdate(workspaceId, customerIds, {
-      lastTierUpgradeAt: now,
-    });
+    await this.customerRepository.bulkUpdateCustomers(
+      workspaceId,
+      customerIds,
+      {
+        lastTierUpgradeAt: now,
+      },
+    );
 
     this.logger.debug(
       `Bulk updated lastTierUpgradeAt for ${customerIds.length} customers`,

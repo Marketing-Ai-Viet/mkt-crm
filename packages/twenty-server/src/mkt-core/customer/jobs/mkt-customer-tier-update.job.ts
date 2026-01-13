@@ -37,7 +37,7 @@ export class MktCustomerTierUpdateJob {
 
     try {
       // Get customer's current tier before update
-      const customer = await this.customerRepository.findById(
+      const customer = await this.customerRepository.findCustomerById(
         customerId,
         workspaceId,
       );

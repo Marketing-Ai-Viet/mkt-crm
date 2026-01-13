@@ -123,7 +123,7 @@ export class MktCustomerAccountService {
     existingAccounts.push(newAccount);
 
     // Primary is tracked via isPrimary field in linkedAccounts array
-    await this.customerRepository.update(
+    await this.customerRepository.updateCustomer(
       customerId,
       { linkedAccounts: existingAccounts },
       workspaceId,
@@ -204,7 +204,7 @@ export class MktCustomerAccountService {
     }
 
     // Primary is tracked via isPrimary field in linkedAccounts array
-    await this.customerRepository.update(
+    await this.customerRepository.updateCustomer(
       customerId,
       { linkedAccounts: accounts },
       workspaceId,
@@ -351,7 +351,7 @@ export class MktCustomerAccountService {
     }
 
     // Primary is tracked via isPrimary field in linkedAccounts array
-    await this.customerRepository.update(
+    await this.customerRepository.updateCustomer(
       customerId,
       { linkedAccounts: accounts },
       workspaceId,
@@ -416,7 +416,7 @@ export class MktCustomerAccountService {
     if (account) {
       account.lastSyncAt = DateTimeUtils.toISO(DateTimeUtils.now());
 
-      await this.customerRepository.update(
+      await this.customerRepository.updateCustomer(
         customerId,
         { linkedAccounts: accounts },
         workspaceId,
@@ -446,7 +446,7 @@ export class MktCustomerAccountService {
     if (account) {
       account.status = status;
 
-      await this.customerRepository.update(
+      await this.customerRepository.updateCustomer(
         customerId,
         { linkedAccounts: accounts },
         workspaceId,
@@ -496,7 +496,7 @@ export class MktCustomerAccountService {
     }
     account.lastSyncAt = DateTimeUtils.toISO(DateTimeUtils.now());
 
-    await this.customerRepository.update(
+    await this.customerRepository.updateCustomer(
       customerId,
       { linkedAccounts: accounts },
       workspaceId,

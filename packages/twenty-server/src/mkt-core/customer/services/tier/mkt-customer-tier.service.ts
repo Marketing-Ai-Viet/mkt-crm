@@ -46,7 +46,7 @@ export class MktCustomerTierService {
         customerId,
       );
 
-    await this.customerRepository.update(customerId, {
+    await this.customerRepository.updateCustomer(customerId, {
       tier: tierResult.customerTier,
       totalOrderValue: tierResult.totalOrderValue,
       totalOrderCount: tierResult.totalOrderCount,
@@ -68,11 +68,14 @@ export class MktCustomerTierService {
     let batchNumber = 0;
 
     while (hasMore) {
-      const customers = await this.customerRepository.findAll(undefined, {
-        take: batchSize,
-        skip: offset,
-        order: { createdAt: 'ASC' },
-      });
+      const customers = await this.customerRepository.findAllCustomers(
+        undefined,
+        {
+          take: batchSize,
+          skip: offset,
+          order: { createdAt: 'ASC' },
+        },
+      );
 
       if (customers.length === 0) {
         hasMore = false;
@@ -114,7 +117,7 @@ export class MktCustomerTierService {
           }
 
           try {
-            await this.customerRepository.update(customerId, {
+            await this.customerRepository.updateCustomer(customerId, {
               tier: tierResult.customerTier,
               totalOrderValue: tierResult.totalOrderValue,
               totalOrderCount: tierResult.totalOrderCount,
@@ -424,7 +427,8 @@ export class MktCustomerTierService {
     this.logger.log(CUSTOMER_MESSAGES.LOG.TIER_STATS_START(workspaceId));
 
     // Single query to get all customers
-    const customers = await this.customerRepository.findAll(workspaceId);
+    const customers =
+      await this.customerRepository.findAllCustomers(workspaceId);
 
     if (customers.length === 0) {
       return {

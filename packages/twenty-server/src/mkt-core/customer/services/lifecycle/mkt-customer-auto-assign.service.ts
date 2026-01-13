@@ -68,7 +68,7 @@ export class MktCustomerAutoAssignService {
     );
 
     // Update customer with assigned sales member
-    await this.customerRepository.update(
+    await this.customerRepository.updateCustomer(
       customer.id,
       {
         createdBy: {
@@ -207,7 +207,8 @@ export class MktCustomerAutoAssignService {
     unassignedCustomers: number;
     byMember: Array<{ memberId: string; memberName: string; count: number }>;
   }> {
-    const totalCustomers = await this.customerRepository.count(workspaceId);
+    const totalCustomers =
+      await this.customerRepository.countCustomers(workspaceId);
     const assignedCustomers =
       await this.customerRepository.countAssigned(workspaceId);
     const members =
