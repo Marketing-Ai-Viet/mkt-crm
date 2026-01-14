@@ -419,7 +419,8 @@ export class PolicyManagementResolver {
     description: 'Get all Casbin policies in the workspace',
   })
   async getPolicies(
-    @Args('filter', { nullable: true }) filter: PolicyFilterInput | undefined,
+    @Args('filter', { type: () => PolicyFilterInput, nullable: true })
+    filter: PolicyFilterInput | undefined,
     @AuthWorkspace() _workspace: Workspace,
   ): Promise<CasbinPolicyOutput[]> {
     let rules = await this.casbinRuleRepository.findAll();

@@ -14,7 +14,7 @@ import {
   ChangeRequestQueryOptions,
   CreateChangeRequestData,
   DEFAULT_EXPIRATION_HOURS,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types/policy-change-request.types';
 
 /**
  * Repository for Policy Change Requests

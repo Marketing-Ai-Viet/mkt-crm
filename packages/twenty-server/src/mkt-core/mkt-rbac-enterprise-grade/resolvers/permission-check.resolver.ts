@@ -143,7 +143,7 @@ export class PermissionCheckResolver {
     description: 'Get all roles assigned to the user',
   })
   async getUserRoles(
-    @Args('workspaceMemberId', { nullable: true })
+    @Args('workspaceMemberId', { type: () => String, nullable: true })
     targetWorkspaceMemberId: string | undefined,
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string,
@@ -161,7 +161,7 @@ export class PermissionCheckResolver {
     description: 'Get all effective permissions for the user',
   })
   async getUserPermissions(
-    @Args('workspaceMemberId', { nullable: true })
+    @Args('workspaceMemberId', { type: () => String, nullable: true })
     targetWorkspaceMemberId: string | undefined,
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string,
@@ -179,7 +179,7 @@ export class PermissionCheckResolver {
     description: 'Get comprehensive permission summary for a user',
   })
   async getUserPermissionSummary(
-    @Args('workspaceMemberId', { nullable: true })
+    @Args('workspaceMemberId', { type: () => String, nullable: true })
     targetWorkspaceMemberId: string | undefined,
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string,
@@ -240,7 +240,7 @@ export class PermissionCheckResolver {
   })
   async hasRole(
     @Args('roleName') roleName: string,
-    @Args('workspaceMemberId', { nullable: true })
+    @Args('workspaceMemberId', { type: () => String, nullable: true })
     targetWorkspaceMemberId: string | undefined,
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string,

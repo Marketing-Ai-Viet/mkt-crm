@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import omit from 'lodash.omit';
 import { IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
@@ -19,6 +20,9 @@ import {
   StatusDistributionItem,
 } from 'src/mkt-core/invoice/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+// Relation fields to omit when updating (prevents TypeORM type errors)
+const INVOICE_RELATION_FIELDS = ['mktTemplate'] as const;
 
 /**
  * MktInvoiceRepository - Data access layer for Invoice entity
@@ -227,10 +231,16 @@ export class MktInvoiceRepository extends BaseWorkspaceRepository<MktInvoiceWork
   ): Promise<void> {
     const repository = await this.getRepository();
 
-    await repository.update(id, {
-      ...data,
-      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    // Strip relation fields to prevent TypeORM type errors
+    const updateData = omit(
+      {
+        ...data,
+        updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+      },
+      INVOICE_RELATION_FIELDS,
+    );
+
+    await repository.update(id, updateData);
 
     this.logger.debug(INVOICE_MESSAGES.LOG.UPDATE_SUCCESS(id));
   }

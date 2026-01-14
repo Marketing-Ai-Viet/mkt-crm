@@ -1,14 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import omit from 'lodash.omit';
 import { Between, IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
-import {
-  EMAIL_MESSAGES,
-  MKT_EMAIL_LOG_CONTEXT,
-} from 'src/mkt-core/email/messages';
+import { EMAIL_MESSAGES } from 'src/mkt-core/email/messages';
 import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import {
   FindEmailOptions,
@@ -16,6 +14,9 @@ import {
   StatusDistributionItem,
 } from 'src/mkt-core/email/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+// Relation fields to omit when updating (prevents TypeORM type errors)
+const EMAIL_RELATION_FIELDS = ['accountOwner', 'timelineActivities'] as const;
 
 /**
  * MktEmailRepository - Data access layer for Email entity
@@ -41,7 +42,7 @@ export class MktEmailRepository extends BaseWorkspaceRepository<MktEmailWorkspac
       twentyORMGlobalManager,
       scopedWorkspaceContextFactory,
       MktEmailWorkspaceEntity,
-      `${MKT_EMAIL_LOG_CONTEXT}:Repository`,
+      MktEmailRepository.name,
     );
   }
 
@@ -205,10 +206,16 @@ export class MktEmailRepository extends BaseWorkspaceRepository<MktEmailWorkspac
   ): Promise<void> {
     const repository = await this.getRepository();
 
-    await repository.update(id, {
-      ...data,
-      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    // Strip relation fields to prevent TypeORM type errors
+    const updateData = omit(
+      {
+        ...data,
+        updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+      },
+      EMAIL_RELATION_FIELDS,
+    );
+
+    await repository.update(id, updateData);
 
     this.logger.debug(EMAIL_MESSAGES.LOG.UPDATE_SUCCESS(id));
   }

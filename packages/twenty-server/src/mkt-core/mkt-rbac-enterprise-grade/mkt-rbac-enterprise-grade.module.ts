@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
+import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
@@ -17,6 +19,7 @@ import {
   RbacContextService,
   RbacEnforcerService,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/services';
+import { DepartmentAuthorizationGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/department-authorization.guard';
 import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
 import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/department-tree.service';
 
@@ -52,6 +55,8 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
   imports: [
     TwentyORMModule,
     CacheStorageModule,
+    WorkspaceCacheStorageModule, // For JwtAuthGuard (WorkspaceCacheStorageService)
+    TokenModule, // For JwtAuthGuard (AccessTokenService)
     CasbinModule,
     MktDepartmentModule,
     MktOrganizationLevelModule,
@@ -72,6 +77,9 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     RbacCacheService,
     RbacContextService,
     RbacEnforcerService,
+
+    // Guards
+    DepartmentAuthorizationGuard,
 
     // GraphQL Resolvers
     ...RBAC_RESOLVERS,
@@ -94,6 +102,9 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     RbacCacheService,
     RbacContextService,
     RbacEnforcerService,
+
+    // Export guards
+    DepartmentAuthorizationGuard,
   ],
 })
 export class MktRbacEnterpriseGradeModule {}

@@ -19,19 +19,6 @@ import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
  */
 export const ENTERPRISE_RBAC_CONFIG_TOKEN = Symbol('ENTERPRISE_RBAC_CONFIG');
 
-/**
- * Injection token for MKT RBAC Configuration
- *
- * Usage:
- * ```typescript
- * constructor(
- *   @Inject(MKT_RBAC_CONFIG_TOKEN)
- *   private readonly config: MktRbacConfigType,
- * ) {}
- * ```
- */
-export const MKT_RBAC_CONFIG_TOKEN = Symbol('MKT_RBAC_CONFIG');
-
 // ============================================
 // DEFAULTS (using centralized cache TTL)
 // ============================================

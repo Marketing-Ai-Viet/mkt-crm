@@ -9,8 +9,12 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis/redis-infrastructure.module';
 import { rbacConfig } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
-import { WorkspaceCasbinRuleRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/workspace-casbin-rule.repository';
-import { PolicyVersionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories/policy-version.repository';
+import {
+  WorkspaceCasbinRuleRepository,
+  PolicyVersionRepository,
+  PolicyChangeRequestRepository,
+  PolicyApprovalRepository,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/repositories';
 import { PolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/policy.validator';
 import { HighRiskPolicyValidator } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/validators/high-risk-policy.validator';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
@@ -26,6 +30,10 @@ import {
   CacheWarmerJob,
   CrossRegionReloadJob,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/jobs';
+import {
+  MktPermissionTemplateRepository,
+  MktUserPermissionTemplateRepository,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 
 /**
  * Casbin Module
@@ -70,6 +78,11 @@ import {
     // Repositories (workspace-aware)
     WorkspaceCasbinRuleRepository,
     PolicyVersionRepository,
+    PolicyChangeRequestRepository,
+    PolicyApprovalRepository,
+    // Template repositories (needed by PolicySyncService)
+    MktPermissionTemplateRepository,
+    MktUserPermissionTemplateRepository,
     // Validators
     PolicyValidator,
     HighRiskPolicyValidator,

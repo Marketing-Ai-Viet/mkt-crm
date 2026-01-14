@@ -594,6 +594,77 @@ const config = parseJsonOrDefault<ConfigType>(jsonString, defaultConfig);
 
 ---
 
+## 9. Repository Operations Pattern
+
+### Use `save()` instead of `insert()` for entity creation
+
+```typescript
+// ❌ KHÔNG dùng insert() - gây lỗi TypeORM type
+const entity = repository.create({ name: 'Test', customerId: '123' });
+await repository.insert(entity);  // Error: relation fields type mismatch
+
+// ✅ Dùng save() thay thế
+const entity = repository.create({ name: 'Test', customerId: '123' });
+await repository.save(entity);    // OK
+```
+
+**Lý do**: Từ commit `88a6913217`, `insert()` yêu cầu `QueryDeepPartialEntityWithNestedRelationFields<T>` - không chấp nhận full entity objects với relation fields.
+
+### So sánh `save()` vs `insert()`
+
+| Aspect | `save()` | `insert()` |
+|--------|----------|------------|
+| Entity type | Full entity (có relations) | Partial entity (không relations) |
+| Upsert | Có (update nếu ID tồn tại) | Không (chỉ insert mới) |
+| Return | Entity đầy đủ | InsertResult |
+| Cascade | Có thể cascade relations | Không |
+| Performance | Chậm hơn (check exists) | Nhanh hơn |
+
+### Khi nào dùng `insert()` vẫn OK
+
+```typescript
+// OK: Truyền plain object trực tiếp (không có relation fields)
+await repository.insert({
+  id: uuid(),
+  name: 'Test',
+  status: 'ACTIVE',
+  // Không có relation object như: customer, order, etc.
+});
+
+// OK: Dùng omit để loại bỏ relation fields
+import omit from 'lodash.omit';
+
+const RELATION_FIELDS = ['customer', 'orderItems'] as const;
+const updateData = omit(data, RELATION_FIELDS);
+await repository.update(id, updateData);
+```
+
+### Pattern cho update với relation fields
+
+```typescript
+// Trong repository, dùng omit để strip relation fields
+import omit from 'lodash.omit';
+
+const ENTITY_RELATION_FIELDS = ['customer', 'items', 'template'] as const;
+
+async updateEntity(id: string, data: Partial<EntityWorkspaceEntity>): Promise<void> {
+  const repository = await this.getRepository();
+
+  // Strip relation fields để tránh TypeORM type errors
+  const updateData = omit(
+    {
+      ...data,
+      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    },
+    ENTITY_RELATION_FIELDS,
+  );
+
+  await repository.update(id, updateData);
+}
+```
+
+---
+
 ## Best Practices
 
 ### DO
@@ -607,6 +678,8 @@ const config = parseJsonOrDefault<ConfigType>(jsonString, defaultConfig);
 - Use `DateTimeUtils` for all date/time operations
 - Use `MoneyUtils` for all financial calculations
 - Use `safeJsonStringify`/`safeJsonParse` for JSON operations
+- Use `repository.save()` instead of `repository.insert()` for entity creation
+- Use `omit` from lodash to strip relation fields before `update()`
 
 ### DON'T
 
@@ -618,6 +691,7 @@ const config = parseJsonOrDefault<ConfigType>(jsonString, defaultConfig);
 - Use `new Date()` or `Date.now()` directly
 - Use manual arithmetic for money calculations
 - Use `JSON.stringify()` or `JSON.parse()` directly
+- Use `repository.insert()` with entities containing relation fields
 
 ---
 
@@ -629,5 +703,5 @@ const config = parseJsonOrDefault<ConfigType>(jsonString, defaultConfig);
 
 ---
 
-**Version**: 1.1
-**Last Updated**: 2025-12-20
+**Version**: 1.2
+**Last Updated**: 2026-01-14

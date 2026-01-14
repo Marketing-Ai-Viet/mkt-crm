@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import omit from 'lodash.omit';
 import { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
@@ -238,7 +239,13 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
     if (hierarchy) {
       const repository = await this.getRepository();
 
-      await repository.update(hierarchy.id, data);
+      // Strip relation fields to prevent TypeORM type errors
+      const updateData = omit(data, [
+        ...HIERARCHY_PARENT_RELATION,
+        ...HIERARCHY_CHILD_RELATION,
+      ]);
+
+      await repository.update(hierarchy.id, updateData);
     }
   }
 }

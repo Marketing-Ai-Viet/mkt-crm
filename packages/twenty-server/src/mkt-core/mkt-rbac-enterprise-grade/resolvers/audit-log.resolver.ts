@@ -112,7 +112,8 @@ export class AuditLogResolver {
     description: 'Get paginated permission audit logs',
   })
   async getAuditLogs(
-    @Args('input', { nullable: true }) input: QueryAuditLogInput | undefined,
+    @Args('input', { type: () => QueryAuditLogInput, nullable: true })
+    input: QueryAuditLogInput | undefined,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<PaginatedAuditLogOutput> {
     const page = input?.page ?? 1;
@@ -209,8 +210,10 @@ export class AuditLogResolver {
     description: 'Get recent denied access attempts',
   })
   async getDeniedAccess(
-    @Args('limit', { nullable: true, defaultValue: 50 }) limit: number,
-    @Args('fromDate', { nullable: true }) fromDate: string | undefined,
+    @Args('limit', { type: () => Int, nullable: true, defaultValue: 50 })
+    limit: number,
+    @Args('fromDate', { type: () => String, nullable: true })
+    fromDate: string | undefined,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<AuditLogEntryOutput[]> {
     const items = await this.auditRepository.findDeniedAccess(workspace.id, {
@@ -245,10 +248,14 @@ export class AuditLogResolver {
     description: 'Get policy change audit trail for SOC2 compliance',
   })
   async getPolicyAuditTrail(
-    @Args('limit', { nullable: true, defaultValue: 100 }) limit: number,
-    @Args('requesterId', { nullable: true }) requesterId: string | undefined,
-    @Args('fromDate', { nullable: true }) fromDate: string | undefined,
-    @Args('toDate', { nullable: true }) toDate: string | undefined,
+    @Args('limit', { type: () => Int, nullable: true, defaultValue: 100 })
+    limit: number,
+    @Args('requesterId', { type: () => String, nullable: true })
+    requesterId: string | undefined,
+    @Args('fromDate', { type: () => String, nullable: true })
+    fromDate: string | undefined,
+    @Args('toDate', { type: () => String, nullable: true })
+    toDate: string | undefined,
   ): Promise<PolicyAuditEntryOutput[]> {
     const auditEntries = await this.policyApprovalService.getAuditTrail({
       requesterId,
@@ -277,8 +284,10 @@ export class AuditLogResolver {
     description: 'Export policy change audit trail for compliance reporting',
   })
   async exportPolicyAudit(
-    @Args('fromDate', { nullable: true }) fromDate: string | undefined,
-    @Args('toDate', { nullable: true }) toDate: string | undefined,
+    @Args('fromDate', { type: () => String, nullable: true })
+    fromDate: string | undefined,
+    @Args('toDate', { type: () => String, nullable: true })
+    toDate: string | undefined,
   ): Promise<AuditExportOutput> {
     return this.policyApprovalService.exportAuditTrail({
       fromDate: fromDate ? new Date(fromDate) : undefined,

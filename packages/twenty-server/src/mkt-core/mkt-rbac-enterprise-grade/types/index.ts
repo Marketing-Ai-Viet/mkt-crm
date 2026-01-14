@@ -98,3 +98,6 @@ export {
   type SecurityAlertType,
   type SecurityAlertSeverity,
 } from './rbac-audit.types';
+
+// Department authorization types
+export * from './department-authorization.types';

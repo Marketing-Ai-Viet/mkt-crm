@@ -10,7 +10,7 @@ import {
 import {
   ApprovalQueryOptions,
   CreateApprovalData,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin';
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types/policy-sync.types';
 
 /**
  * Repository for Policy Approvals

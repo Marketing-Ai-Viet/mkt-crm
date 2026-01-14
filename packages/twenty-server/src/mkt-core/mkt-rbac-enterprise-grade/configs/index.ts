@@ -1,7 +1,6 @@
 export {
   // Injection tokens
   ENTERPRISE_RBAC_CONFIG_TOKEN,
-  MKT_RBAC_CONFIG_TOKEN,
   // Configs
   MKT_RBAC_CONFIG,
   ENTERPRISE_RBAC_CONFIG,
