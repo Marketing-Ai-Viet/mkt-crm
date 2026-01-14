@@ -63,10 +63,8 @@ export class MktSInvoiceFileUpdateOnePreQueryHook
     try {
       // Get current file data to check if we have required information
       // Uses MktSInvoiceFileRepository for thread-safe access
-      const currentFile = await this.sInvoiceFileRepository.findById(
-        fileId,
-        workspaceId,
-      );
+      const currentFile =
+        await this.sInvoiceFileRepository.findByIdWithContext(fileId);
 
       if (!currentFile) {
         this.logger.warn(`SInvoiceFile not found with ID: ${fileId}`);

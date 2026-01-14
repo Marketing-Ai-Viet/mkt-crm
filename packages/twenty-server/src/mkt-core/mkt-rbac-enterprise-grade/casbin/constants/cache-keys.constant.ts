@@ -103,6 +103,39 @@ export const CASBIN_CACHE_KEYS = {
    * Format: rbac-seeder:sync:lock:{workspaceId}
    */
   SYNC_LOCK: (workspaceId: string) => `rbac:sync:lock:${workspaceId}` as const,
+
+  // ===== User Context Cache =====
+  /**
+   * User context cache
+   * Format: rbac:context:{workspaceId}:{userId}
+   */
+  USER_CONTEXT: (workspaceId: string, userId: string) =>
+    `rbac:context:${workspaceId}:${userId}` as const,
+
+  /**
+   * Permission check result cache
+   * Format: rbac:check:{workspaceId}:{userId}:{resource}:{action}
+   */
+  PERMISSION_CHECK: (
+    workspaceId: string,
+    userId: string,
+    resource: string,
+    action: string,
+  ) => `rbac:check:${workspaceId}:${userId}:${resource}:${action}` as const,
+
+  /**
+   * Permission summary cache
+   * Format: rbac:summary:{workspaceId}:{userId}
+   */
+  PERMISSION_SUMMARY: (workspaceId: string, userId: string) =>
+    `rbac:summary:${workspaceId}:${userId}` as const,
+
+  /**
+   * Data filter cache per resource
+   * Format: rbac:filter:{workspaceId}:{userId}:{resource}
+   */
+  DATA_FILTER: (workspaceId: string, userId: string, resource: string) =>
+    `rbac:filter:${workspaceId}:${userId}:${resource}` as const,
 } as const;
 
 /**

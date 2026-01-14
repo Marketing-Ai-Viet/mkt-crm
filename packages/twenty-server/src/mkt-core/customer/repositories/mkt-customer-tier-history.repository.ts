@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MKT_TIER_HISTORY_LOG_CONTEXT,
   TierChangeReason,
@@ -42,6 +42,8 @@ export type TierChangeStatsByReason = {
 /**
  * MktCustomerTierHistoryRepository - Data access layer for Tier History entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktCustomerTierHistory entity
  * - Query building and execution
@@ -52,38 +54,16 @@ export type TierChangeStatsByReason = {
  * - Validation (handled by Service layer)
  */
 @Injectable()
-export class MktCustomerTierHistoryRepository {
-  private readonly logger = new Logger(
-    `${MKT_TIER_HISTORY_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktCustomerTierHistoryRepository extends BaseWorkspaceRepository<MktCustomerTierHistoryWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
-   */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktCustomerTierHistoryWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new Error('Workspace ID is required');
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktCustomerTierHistoryWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      `${MKT_TIER_HISTORY_LOG_CONTEXT}:Repository`,
     );
   }
 
@@ -94,11 +74,10 @@ export class MktCustomerTierHistoryRepository {
   /**
    * Create tier history record
    */
-  async create(
-    workspaceId: string,
+  async createTierHistory(
     data: CreateTierHistoryData,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const historyRecord = repository.create({
       customerId: data.customerId,
@@ -121,15 +100,14 @@ export class MktCustomerTierHistoryRepository {
   /**
    * Bulk create tier history records
    */
-  async bulkCreate(
-    workspaceId: string,
+  async bulkCreateTierHistory(
     records: CreateTierHistoryData[],
   ): Promise<number> {
     if (records.length === 0) {
       return 0;
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const historyRecords = records.map((data) =>
       repository.create({
@@ -157,11 +135,10 @@ export class MktCustomerTierHistoryRepository {
    * Get tier history for a customer
    */
   async findByCustomerId(
-    workspaceId: string,
     customerId: string,
     options?: TierHistoryQueryOptions,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { customerId },
@@ -175,10 +152,9 @@ export class MktCustomerTierHistoryRepository {
    * Get latest tier change for a customer
    */
   async findLatestByCustomerId(
-    workspaceId: string,
     customerId: string,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.findOne({
       where: { customerId },
@@ -189,17 +165,36 @@ export class MktCustomerTierHistoryRepository {
   /**
    * Get all tier history with pagination
    */
-  async findAll(
-    workspaceId: string,
+  async findAllHistory(
     options?: TierHistoryQueryOptions,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       take: options?.limit ?? TIER_HISTORY_DEFAULT_LIMIT,
       skip: options?.offset ?? 0,
       order: { createdAt: 'DESC' },
     });
+  }
+
+  /**
+   * Get tier change history within a date range
+   */
+  async findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    options?: TierHistoryQueryOptions,
+  ): Promise<MktCustomerTierHistoryWorkspaceEntity[]> {
+    const repository = await this.getRepository();
+
+    return repository
+      .createQueryBuilder('history')
+      .where('history.createdAt >= :startDate', { startDate })
+      .andWhere('history.createdAt <= :endDate', { endDate })
+      .orderBy('history.createdAt', 'DESC')
+      .take(options?.limit ?? TIER_HISTORY_DEFAULT_LIMIT)
+      .skip(options?.offset ?? 0)
+      .getMany();
   }
 
   // ============================================
@@ -209,20 +204,17 @@ export class MktCustomerTierHistoryRepository {
   /**
    * Count tier changes for a customer
    */
-  async countByCustomerId(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByCustomerId(customerId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({ where: { customerId } });
   }
 
   /**
-   * Count total tier changes in workspace
+   * Count total tier changes
    */
-  async count(workspaceId: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countAll(): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count();
   }
@@ -234,10 +226,8 @@ export class MktCustomerTierHistoryRepository {
   /**
    * Get tier change statistics by reason
    */
-  async getStatsByReason(
-    workspaceId: string,
-  ): Promise<TierChangeStatsByReason[]> {
-    const repository = await this.getRepository(workspaceId);
+  async getStatsByReason(): Promise<TierChangeStatsByReason[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('history')
@@ -256,10 +246,11 @@ export class MktCustomerTierHistoryRepository {
    * Get upgrade/downgrade counts
    * Returns counts of tier changes that resulted in upgrades vs downgrades
    */
-  async getUpgradeDowngradeCounts(
-    workspaceId: string,
-  ): Promise<{ upgradeCount: number; downgradeCount: number }> {
-    const repository = await this.getRepository(workspaceId);
+  async getUpgradeDowngradeCounts(): Promise<{
+    upgradeCount: number;
+    downgradeCount: number;
+  }> {
+    const repository = await this.getRepository();
 
     // Define tier order for comparison
     const tierOrder: MKT_CUSTOMER_TIER[] = [
@@ -292,26 +283,5 @@ export class MktCustomerTierHistoryRepository {
     }
 
     return { upgradeCount, downgradeCount };
-  }
-
-  /**
-   * Get tier change history within a date range
-   */
-  async findByDateRange(
-    workspaceId: string,
-    startDate: Date,
-    endDate: Date,
-    options?: TierHistoryQueryOptions,
-  ): Promise<MktCustomerTierHistoryWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository
-      .createQueryBuilder('history')
-      .where('history.createdAt >= :startDate', { startDate })
-      .andWhere('history.createdAt <= :endDate', { endDate })
-      .orderBy('history.createdAt', 'DESC')
-      .take(options?.limit ?? TIER_HISTORY_DEFAULT_LIMIT)
-      .skip(options?.offset ?? 0)
-      .getMany();
   }
 }

@@ -152,7 +152,6 @@ export class OrderOverdueMigrationService implements OnApplicationBootstrap {
     workspaceId: string,
   ): Promise<MigrationWorkspaceResult> {
     const orders = await this.mktOrderRepository.findByStatus(
-      workspaceId,
       ORDER_STATUS.PENDING_PAYMENT,
     );
 

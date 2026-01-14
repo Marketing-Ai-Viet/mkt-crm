@@ -86,8 +86,7 @@ export class OrderOverdueWorkerService implements OnModuleInit {
 
     try {
       // Conditional update: chỉ update nếu status vẫn là PENDING_PAYMENT
-      const updateResult = await this.mktOrderRepository.updateWhere(
-        workspaceId,
+      const updateResult = await this.mktOrderRepository.updateOrderWhere(
         { id: orderId, status: ORDER_STATUS.PENDING_PAYMENT },
         {
           status: ORDER_STATUS.OVERDUE,
@@ -97,10 +96,7 @@ export class OrderOverdueWorkerService implements OnModuleInit {
 
       if (updateResult.affected === 0) {
         // Order đã được thanh toán, huỷ, hoặc xử lý bởi process khác
-        const order = await this.mktOrderRepository.findById(
-          workspaceId,
-          orderId,
-        );
+        const order = await this.mktOrderRepository.findById(orderId);
 
         const result: OrderOverdueCheckResult = {
           orderId,

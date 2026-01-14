@@ -76,7 +76,7 @@ export class PromotionApplicationService {
     workspaceId: string,
     promotionId: string,
   ): Promise<PromotionWithRules | null> {
-    return this.promotionRepository.findByIdWithRules(workspaceId, promotionId);
+    return this.promotionRepository.findByIdWithRules(promotionId);
   }
 
   /**
@@ -93,8 +93,7 @@ export class PromotionApplicationService {
     }
 
     // Fetch from DB
-    const promotions =
-      await this.promotionRepository.findActiveAutoApply(workspaceId);
+    const promotions = await this.promotionRepository.findActiveAutoApply();
 
     // Cache result
     await this.cacheService.setActivePromotions(workspaceId, promotions);
@@ -116,14 +115,11 @@ export class PromotionApplicationService {
     );
 
     if (cached) {
-      return this.promotionRepository.findByIdWithRules(workspaceId, cached.id);
+      return this.promotionRepository.findByIdWithRules(cached.id);
     }
 
     // Fetch from DB
-    const promotion = await this.promotionRepository.findByCode(
-      workspaceId,
-      code,
-    );
+    const promotion = await this.promotionRepository.findByCode(code);
 
     if (!promotion) {
       return null;
@@ -132,10 +128,7 @@ export class PromotionApplicationService {
     // Cache result
     await this.cacheService.setPromotionByCode(workspaceId, code, promotion);
 
-    return this.promotionRepository.findByIdWithRules(
-      workspaceId,
-      promotion.id,
-    );
+    return this.promotionRepository.findByIdWithRules(promotion.id);
   }
 
   /**
@@ -146,11 +139,7 @@ export class PromotionApplicationService {
     filter: PromotionFilter,
     pagination: { limit: number; offset: number },
   ): Promise<PaginatedResult<MktPromotionWorkspaceEntity>> {
-    return this.promotionRepository.findAllPaginated(
-      workspaceId,
-      pagination,
-      filter,
-    );
+    return this.promotionRepository.findAllPaginated(pagination, filter);
   }
 
   /**
@@ -226,24 +215,20 @@ export class PromotionApplicationService {
     }
 
     // Check code uniqueness
-    const codeExists = await this.promotionRepository.codeExists(
-      workspaceId,
-      data.code,
-    );
+    const codeExists = await this.promotionRepository.codeExists(data.code);
 
     if (codeExists) {
       throw new PromotionCodeDuplicateError(data.code);
     }
 
     // Create promotion
-    const promotion = await this.promotionRepository.create(workspaceId, data);
+    const promotion = await this.promotionRepository.createPromotion(data);
 
     // Create rules if provided
     let rules: MktPromotionRuleWorkspaceEntity[] = [];
 
     if (data.rules && data.rules.length > 0) {
-      rules = await this.ruleRepository.createMany(
-        workspaceId,
+      rules = await this.ruleRepository.createManyRules(
         promotion.id,
         data.rules,
       );
@@ -283,17 +268,14 @@ export class PromotionApplicationService {
   ): Promise<PromotionWithRules> {
     const { id: promotionId } = data;
 
-    const existing = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const existing = await this.promotionRepository.findById(promotionId);
 
     if (!existing) {
       throw new PromotionNotFoundError(promotionId);
     }
 
     // Update promotion
-    await this.promotionRepository.update(workspaceId, data);
+    await this.promotionRepository.updatePromotion(data);
 
     this.logger.log('Updated promotion', {
       workspaceId,
@@ -305,10 +287,8 @@ export class PromotionApplicationService {
     await this.cacheService.invalidatePromotion(workspaceId, promotionId);
     await this.cacheService.invalidateActivePromotions(workspaceId);
 
-    const result = await this.promotionRepository.findByIdWithRules(
-      workspaceId,
-      promotionId,
-    );
+    const result =
+      await this.promotionRepository.findByIdWithRules(promotionId);
 
     return result ?? { promotion: existing, rules: [] };
   }
@@ -321,17 +301,13 @@ export class PromotionApplicationService {
     promotionId: string,
     activatedBy: string,
   ): Promise<MktPromotionWorkspaceEntity> {
-    const existing = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const existing = await this.promotionRepository.findById(promotionId);
 
     if (!existing) {
       throw new PromotionNotFoundError(promotionId);
     }
 
     await this.promotionRepository.updateStatus(
-      workspaceId,
       promotionId,
       PROMOTION_STATUS.ACTIVE,
     );
@@ -352,10 +328,7 @@ export class PromotionApplicationService {
     await this.cacheService.invalidatePromotion(workspaceId, promotionId);
     await this.cacheService.invalidateActivePromotions(workspaceId);
 
-    const updated = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const updated = await this.promotionRepository.findById(promotionId);
 
     return updated ?? existing;
   }
@@ -368,17 +341,13 @@ export class PromotionApplicationService {
     promotionId: string,
     pausedBy: string,
   ): Promise<MktPromotionWorkspaceEntity> {
-    const existing = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const existing = await this.promotionRepository.findById(promotionId);
 
     if (!existing) {
       throw new PromotionNotFoundError(promotionId);
     }
 
     await this.promotionRepository.updateStatus(
-      workspaceId,
       promotionId,
       PROMOTION_STATUS.PAUSED,
     );
@@ -399,10 +368,7 @@ export class PromotionApplicationService {
     await this.cacheService.invalidatePromotion(workspaceId, promotionId);
     await this.cacheService.invalidateActivePromotions(workspaceId);
 
-    const updated = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const updated = await this.promotionRepository.findById(promotionId);
 
     return updated ?? existing;
   }
@@ -415,17 +381,13 @@ export class PromotionApplicationService {
     promotionId: string,
     cancelledBy: string,
   ): Promise<MktPromotionWorkspaceEntity> {
-    const existing = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const existing = await this.promotionRepository.findById(promotionId);
 
     if (!existing) {
       throw new PromotionNotFoundError(promotionId);
     }
 
     await this.promotionRepository.updateStatus(
-      workspaceId,
       promotionId,
       PROMOTION_STATUS.CANCELLED,
     );
@@ -446,10 +408,7 @@ export class PromotionApplicationService {
     await this.cacheService.invalidatePromotion(workspaceId, promotionId);
     await this.cacheService.invalidateActivePromotions(workspaceId);
 
-    const updated = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const updated = await this.promotionRepository.findById(promotionId);
 
     return updated ?? existing;
   }
@@ -550,10 +509,7 @@ export class PromotionApplicationService {
     });
 
     // Increment usage count
-    await this.promotionRepository.incrementUsageCount(
-      workspaceId,
-      promotionId,
-    );
+    await this.promotionRepository.incrementUsageCount(promotionId);
 
     return {
       applicable: true,
@@ -591,20 +547,13 @@ export class PromotionApplicationService {
     ruleData: CreatePromotionRuleData,
   ): Promise<MktPromotionRuleWorkspaceEntity> {
     // Verify promotion exists
-    const promotion = await this.promotionRepository.findById(
-      workspaceId,
-      promotionId,
-    );
+    const promotion = await this.promotionRepository.findById(promotionId);
 
     if (!promotion) {
       throw new PromotionNotFoundError(promotionId);
     }
 
-    const rule = await this.ruleRepository.create(
-      workspaceId,
-      promotionId,
-      ruleData,
-    );
+    const rule = await this.ruleRepository.createRule(promotionId, ruleData);
 
     this.logger.log('Added rule to promotion', {
       workspaceId,
@@ -627,20 +576,13 @@ export class PromotionApplicationService {
     ruleData: Partial<CreatePromotionRuleData>,
   ): Promise<MktPromotionRuleWorkspaceEntity> {
     // Find existing rule to get promotionId
-    const existingRule = await this.ruleRepository.findById(
-      workspaceId,
-      ruleId,
-    );
+    const existingRule = await this.ruleRepository.findById(ruleId);
 
     if (!existingRule) {
       throw new Error(`Rule not found: ${ruleId}`);
     }
 
-    const rule = await this.ruleRepository.update(
-      workspaceId,
-      ruleId,
-      ruleData,
-    );
+    const rule = await this.ruleRepository.updateRule(ruleId, ruleData);
 
     this.logger.log('Updated rule', {
       workspaceId,
@@ -661,16 +603,13 @@ export class PromotionApplicationService {
    */
   async removeRule(workspaceId: string, ruleId: string): Promise<void> {
     // Find existing rule to get promotionId
-    const existingRule = await this.ruleRepository.findById(
-      workspaceId,
-      ruleId,
-    );
+    const existingRule = await this.ruleRepository.findById(ruleId);
 
     if (!existingRule) {
       throw new Error(`Rule not found: ${ruleId}`);
     }
 
-    await this.ruleRepository.softDelete(workspaceId, ruleId);
+    await this.ruleRepository.softDeleteRule(ruleId);
 
     this.logger.log('Removed rule', {
       workspaceId,

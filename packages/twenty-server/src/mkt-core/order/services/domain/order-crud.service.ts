@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -39,140 +37,104 @@ export class OrderCrudService {
   // ============================================
 
   /**
-   * Tạo order mới
+   * Tao order moi
    */
   async createOrder(
-    workspaceId: string,
     data: Partial<MktOrderWorkspaceEntity>,
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity> {
-    return this.orderRepository.create(workspaceId, data, queryRunner);
+    return this.orderRepository.createOrder(data);
   }
 
   /**
-   * Tìm order theo ID
+   * Tim order theo ID
    */
   async findOrderById(
-    workspaceId: string,
     orderId: string,
-    relations?: string[],
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.orderRepository.findById(workspaceId, orderId, {
-      relations: relations as never,
-    });
+    return this.orderRepository.findById(orderId);
   }
 
   /**
-   * Tìm order với đầy đủ relations
+   * Tim order voi day du relations
    */
   async findOrderWithRelations(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.orderRepository.findByIdWithRelations(workspaceId, orderId);
+    return this.orderRepository.findByIdWithRelations(orderId);
   }
 
   /**
-   * Tìm order theo order code
+   * Tim order theo order code
    */
   async findOrderByCode(
-    workspaceId: string,
     orderCode: string,
-    relations?: string[],
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.orderRepository.findByOrderCode(workspaceId, orderCode, {
-      relations: relations as never,
-    });
+    return this.orderRepository.findByOrderCode(orderCode);
   }
 
   /**
-   * Tìm orders theo customer ID
+   * Tim orders theo customer ID
    */
   async findOrdersByCustomerId(
-    workspaceId: string,
     customerId: string,
-    relations?: string[],
   ): Promise<MktOrderWorkspaceEntity[]> {
-    return this.orderRepository.findByCustomerId(workspaceId, customerId, {
-      relations: relations as never,
-    });
+    return this.orderRepository.findByCustomerId(customerId);
   }
 
   /**
-   * Tìm orders theo status
+   * Tim orders theo status
    */
   async findOrdersByStatus(
-    workspaceId: string,
     status: ORDER_STATUS,
-    relations?: string[],
   ): Promise<MktOrderWorkspaceEntity[]> {
-    return this.orderRepository.findByStatus(workspaceId, status, {
-      relations: relations as never,
-    });
+    return this.orderRepository.findByStatus(status);
   }
 
   /**
-   * Kiểm tra order tồn tại
+   * Kiem tra order ton tai
    */
-  async orderExists(workspaceId: string, orderId: string): Promise<boolean> {
-    return this.orderRepository.exists(workspaceId, orderId);
+  async orderExists(orderId: string): Promise<boolean> {
+    const order = await this.orderRepository.findById(orderId);
+
+    return order !== null;
   }
 
   /**
    * Update order
    */
   async updateOrder(
-    workspaceId: string,
     orderId: string,
     data: Partial<MktOrderWorkspaceEntity>,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    await this.orderRepository.update(workspaceId, orderId, data, queryRunner);
+    await this.orderRepository.updateOrder(orderId, data);
   }
 
   /**
    * Update order status
    */
   async updateOrderStatus(
-    workspaceId: string,
     orderId: string,
     status: ORDER_STATUS,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    await this.orderRepository.updateStatus(
-      workspaceId,
-      orderId,
-      status,
-      queryRunner,
-    );
+    await this.orderRepository.updateStatus(orderId, status);
   }
 
   /**
-   * Update order và trả về order đã update
+   * Update order va tra ve order da update
    */
   async updateOrderAndReturn(
-    workspaceId: string,
     orderId: string,
     data: Partial<MktOrderWorkspaceEntity>,
-    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.orderRepository.updateAndReturnWithRunner(
-      workspaceId,
-      orderId,
-      data,
-    );
+    return this.orderRepository.updateOrderAndReturn(orderId, data);
   }
 
   /**
-   * Hard delete order (dùng trong compensate)
+   * Hard delete order (dung trong compensate)
    */
-  async hardDeleteOrder(
-    workspaceId: string,
-    orderId: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async hardDeleteOrder(orderId: string): Promise<void> {
     this.logger.warn(`Hard deleting order: ${orderId}`);
-    await this.orderRepository.softDelete(workspaceId, orderId, queryRunner);
+    await this.orderRepository.softDeleteOrder(orderId);
   }
 
   // ============================================
@@ -180,170 +142,123 @@ export class OrderCrudService {
   // ============================================
 
   /**
-   * Tạo order item
+   * Tao order item
    */
   async createOrderItem(
-    workspaceId: string,
     data: Partial<MktOrderItemWorkspaceEntity>,
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderItemWorkspaceEntity> {
-    return this.orderItemRepository.create(workspaceId, data, queryRunner);
+    return this.orderItemRepository.createOrderItem(data);
   }
 
   /**
-   * Tạo nhiều order items
+   * Tao nhieu order items
    */
   async createOrderItems(
-    workspaceId: string,
     items: Partial<MktOrderItemWorkspaceEntity>[],
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    return this.orderItemRepository.createMany(workspaceId, items, queryRunner);
+    return this.orderItemRepository.createManyOrderItems(items);
   }
 
   /**
-   * Tìm order item theo ID
+   * Tim order item theo ID
    */
   async findOrderItemById(
-    workspaceId: string,
     itemId: string,
-    relations?: string[],
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    return this.orderItemRepository.findById(workspaceId, itemId, {
-      relations: relations as never,
-    });
+    return this.orderItemRepository.findByIdWithOptions(itemId);
   }
 
   /**
-   * Tìm order item với đầy đủ relations
+   * Tim order item voi day du relations
    */
   async findOrderItemWithRelations(
-    workspaceId: string,
     itemId: string,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    return this.orderItemRepository.findByIdWithRelations(workspaceId, itemId);
+    return this.orderItemRepository.findByIdWithRelations(itemId);
   }
 
   /**
-   * Tìm order items theo order ID
+   * Tim order items theo order ID
    */
   async findOrderItemsByOrderId(
-    workspaceId: string,
     orderId: string,
-    relations?: string[],
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    return this.orderItemRepository.findByOrderId(workspaceId, orderId, {
-      relations: relations as never,
-    });
+    return this.orderItemRepository.findByOrderId(orderId);
   }
 
   /**
-   * Tìm order items theo external product ID
+   * Tim order items theo external product ID
    */
   async findOrderItemsByExternalProductId(
-    workspaceId: string,
     externalProductId: string,
-    relations?: string[],
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    return this.orderItemRepository.findByExternalProductId(
-      workspaceId,
-      externalProductId,
-      { relations: relations as never },
-    );
+    return this.orderItemRepository.findByExternalProductId(externalProductId);
   }
 
   /**
-   * Tìm order items theo variant ID
+   * Tim order items theo variant ID
+   * @deprecated Variant module has been removed
    */
   async findOrderItemsByVariantId(
-    workspaceId: string,
     variantId: string,
-    relations?: string[],
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    return this.orderItemRepository.findByVariantId(workspaceId, variantId, {
-      relations: relations as never,
-    });
+    return this.orderItemRepository.findByVariantId(variantId);
   }
 
   /**
-   * Kiểm tra order item tồn tại
+   * Kiem tra order item ton tai
    */
-  async orderItemExists(workspaceId: string, itemId: string): Promise<boolean> {
-    return this.orderItemRepository.exists(workspaceId, itemId);
+  async orderItemExists(itemId: string): Promise<boolean> {
+    const item = await this.orderItemRepository.findByIdWithOptions(itemId);
+
+    return item !== null;
   }
 
   /**
-   * Đếm order items trong order
+   * Dem order items trong order
    */
-  async countOrderItems(workspaceId: string, orderId: string): Promise<number> {
-    return this.orderItemRepository.countByOrderId(workspaceId, orderId);
+  async countOrderItems(orderId: string): Promise<number> {
+    return this.orderItemRepository.countByOrderId(orderId);
   }
 
   /**
    * Update order item
    */
   async updateOrderItem(
-    workspaceId: string,
     itemId: string,
     data: Partial<MktOrderItemWorkspaceEntity>,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    await this.orderItemRepository.update(
-      workspaceId,
-      itemId,
-      data,
-      queryRunner,
-    );
+    await this.orderItemRepository.updateOrderItem(itemId, data);
   }
 
   /**
-   * Update order item và trả về item đã update
+   * Update order item va tra ve item da update
    */
   async updateOrderItemAndReturn(
-    workspaceId: string,
     itemId: string,
     data: Partial<MktOrderItemWorkspaceEntity>,
-    relations?: string[],
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    return this.orderItemRepository.updateAndReturn(workspaceId, itemId, data, {
-      relations: relations as never,
-    });
+    return this.orderItemRepository.updateAndReturnWithOptions(itemId, data);
   }
 
   /**
-   * Hard delete order items (dùng trong compensate)
+   * Hard delete order items (dung trong compensate)
    */
-  async hardDeleteOrderItems(
-    workspaceId: string,
-    orderItemIds: string[],
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async hardDeleteOrderItems(orderItemIds: string[]): Promise<void> {
     if (orderItemIds.length === 0) {
       return;
     }
 
     this.logger.warn(`Hard deleting order items: ${orderItemIds.join(', ')}`);
-    await this.orderItemRepository.softDeleteMany(
-      workspaceId,
-      orderItemIds,
-      queryRunner,
-    );
+    await this.orderItemRepository.softDeleteManyOrderItems(orderItemIds);
   }
 
   /**
    * Hard delete order items theo order ID
    */
-  async hardDeleteOrderItemsByOrderId(
-    workspaceId: string,
-    orderId: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async hardDeleteOrderItemsByOrderId(orderId: string): Promise<void> {
     this.logger.warn(`Hard deleting order items for order: ${orderId}`);
-    await this.orderItemRepository.softDeleteByOrderId(
-      workspaceId,
-      orderId,
-      queryRunner,
-    );
+    await this.orderItemRepository.softDeleteByOrderId(orderId);
   }
 
   // ============================================

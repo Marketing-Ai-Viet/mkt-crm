@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { IsNull } from 'typeorm';
+import { FindOptionsWhere, IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -36,11 +36,10 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find all sub-managers for a department
    */
   async findByDepartmentId(
-    workspaceId: string,
     departmentId: string,
     options?: { activeOnly?: boolean },
   ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const whereClause: Record<string, unknown> = {
       departmentId,
@@ -61,11 +60,10 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find all department assignments for a workspace member
    */
   async findByWorkspaceMemberId(
-    workspaceId: string,
     workspaceMemberId: string,
     options?: { activeOnly?: boolean },
   ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const whereClause: Record<string, unknown> = {
       workspaceMemberId,
@@ -86,11 +84,10 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find specific assignment by department and workspace member
    */
   async findByDepartmentAndMember(
-    workspaceId: string,
     departmentId: string,
     workspaceMemberId: string,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity | null> {
-    return this.findOne(workspaceId, {
+    return this.findOne({
       departmentId,
       workspaceMemberId,
       deletedAt: IsNull(),
@@ -101,10 +98,9 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find primary sub-manager for a department
    */
   async findPrimaryByDepartmentId(
-    workspaceId: string,
     departmentId: string,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity | null> {
-    return this.findOne(workspaceId, {
+    return this.findOne({
       departmentId,
       isPrimary: true,
       isActive: true,
@@ -116,11 +112,10 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Check if assignment exists
    */
   async assignmentExists(
-    workspaceId: string,
     departmentId: string,
     workspaceMemberId: string,
   ): Promise<boolean> {
-    return this.existsWhere(workspaceId, {
+    return this.existsWhere({
       departmentId,
       workspaceMemberId,
     });
@@ -134,10 +129,9 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Create new sub-manager assignment with defaults
    */
   async createAssignment(
-    workspaceId: string,
     data: Partial<MktDepartmentSubManagerWorkspaceEntity>,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity> {
-    return this.create(workspaceId, {
+    return this.create({
       ...data,
       assignedAt: data.assignedAt ?? DateTimeUtils.now().toJSDate(),
       isActive: data.isActive ?? true,
@@ -149,7 +143,6 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Bulk create sub-manager assignments
    */
   async bulkCreateAssignments(
-    workspaceId: string,
     assignments: Array<Partial<MktDepartmentSubManagerWorkspaceEntity>>,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
     if (assignments.length === 0) {
@@ -165,7 +158,7 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
       isPrimary: data.isPrimary ?? false,
     }));
 
-    return this.bulkCreate(workspaceId, items);
+    return this.bulkCreate(items);
   }
 
   // ============================================
@@ -176,12 +169,8 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Set primary sub-manager for a department
    * Unsets any existing primary first
    */
-  async setPrimary(
-    workspaceId: string,
-    departmentId: string,
-    subManagerId: string,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+  async setPrimary(departmentId: string, subManagerId: string): Promise<void> {
+    const repository = await this.getRepository();
 
     // Unset existing primary
     await repository.update(
@@ -196,15 +185,15 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
   /**
    * Deactivate sub-manager assignment
    */
-  async deactivate(workspaceId: string, id: string): Promise<void> {
-    await this.update(workspaceId, id, { isActive: false });
+  async deactivate(id: string): Promise<void> {
+    await this.update(id, { isActive: false });
   }
 
   /**
    * Activate sub-manager assignment
    */
-  async activate(workspaceId: string, id: string): Promise<void> {
-    await this.update(workspaceId, id, { isActive: true });
+  async activate(id: string): Promise<void> {
+    await this.update(id, { isActive: true });
   }
 
   // ============================================
@@ -214,11 +203,8 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
   /**
    * Remove all sub-manager assignments for a department
    */
-  async removeAllByDepartmentId(
-    workspaceId: string,
-    departmentId: string,
-  ): Promise<number> {
-    const affected = await this.softDeleteWhere(workspaceId, { departmentId });
+  async removeAllByDepartmentId(departmentId: string): Promise<number> {
+    const affected = await this.softDeleteWhere({ departmentId });
 
     this.logger.log(
       `Removed ${affected} sub-manager assignments for department ${departmentId}`,
@@ -231,10 +217,9 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Remove all sub-manager assignments for a workspace member
    */
   async removeAllByWorkspaceMemberId(
-    workspaceId: string,
     workspaceMemberId: string,
   ): Promise<number> {
-    const affected = await this.softDeleteWhere(workspaceId, {
+    const affected = await this.softDeleteWhere({
       workspaceMemberId,
     });
 
@@ -253,7 +238,6 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Count sub-managers for a department
    */
   async countByDepartmentId(
-    workspaceId: string,
     departmentId: string,
     options?: { activeOnly?: boolean },
   ): Promise<number> {
@@ -266,14 +250,15 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
       whereClause.isActive = true;
     }
 
-    return this.count(workspaceId, whereClause);
+    return this.count(
+      whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
+    );
   }
 
   /**
    * Count department assignments for a workspace member
    */
   async countByWorkspaceMemberId(
-    workspaceId: string,
     workspaceMemberId: string,
     options?: { activeOnly?: boolean },
   ): Promise<number> {
@@ -286,6 +271,8 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
       whereClause.isActive = true;
     }
 
-    return this.count(workspaceId, whereClause);
+    return this.count(
+      whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
+    );
   }
 }

@@ -31,7 +31,6 @@ export class DepartmentLookupService {
 
       const hierarchy =
         await this.departmentHierarchyRepository.findByChildDepartmentId(
-          workspaceId,
           teamId,
         );
 

@@ -276,28 +276,25 @@ export class MktPaymentService {
   // QUERY METHODS
   // ============================================
 
-  async findOneByOrderCode(workspaceId: string, orderCode: string) {
-    return this.mktOrderRepository.findByOrderCode(workspaceId, orderCode);
+  async findOneByOrderCode(orderCode: string) {
+    return this.mktOrderRepository.findByOrderCode(orderCode);
   }
 
   /**
    * Find payment by SePay transaction ID
    */
   async findBySepayTransactionId(
-    workspaceId: string,
     sepayTransactionId: number,
   ): Promise<MktPaymentWorkspaceEntity | null> {
     return this.mktPaymentRepository.findBySepayTransactionId(
-      workspaceId,
       String(sepayTransactionId),
     );
   }
 
   async findPaymentsByOrderId(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktPaymentWorkspaceEntity[]> {
-    return this.mktPaymentRepository.findByOrderId(workspaceId, orderId);
+    return this.mktPaymentRepository.findByOrderId(orderId);
   }
 
   // ============================================
@@ -305,7 +302,6 @@ export class MktPaymentService {
   // ============================================
 
   async updatePaymentById(
-    workspaceId: string,
     paymentId: string,
     updateData: Partial<MktPaymentWorkspaceEntity>,
     authContext: RequestSepayJWT,
@@ -314,7 +310,6 @@ export class MktPaymentService {
 
     if (authContext.workspaceMemberId) {
       const workspaceMember = await this.mktWorkspaceMemberRepository.findById(
-        workspaceId,
         authContext.workspaceMemberId,
       );
 
@@ -330,7 +325,7 @@ export class MktPaymentService {
       context: {},
     };
 
-    await this.mktPaymentRepository.update(workspaceId, paymentId, {
+    await this.mktPaymentRepository.updatePayment(paymentId, {
       ...updateData,
       createdBy,
     });
@@ -356,7 +351,6 @@ export class MktPaymentService {
    * Create a new payment via GraphQL mutation
    */
   async createPaymentMutation(
-    workspaceId: string,
     input: CreatePaymentInputDto,
   ): Promise<CreatePaymentResponseDto> {
     try {
@@ -374,7 +368,7 @@ export class MktPaymentService {
         });
 
       // Create payment using repository
-      const payment = await this.mktPaymentRepository.create(workspaceId, {
+      const payment = await this.mktPaymentRepository.createPayment({
         name: preparedData.name ?? 'Payment',
         amount: preparedData.amount ?? 0,
         currency: preparedData.currency,
@@ -409,16 +403,12 @@ export class MktPaymentService {
    * Update a payment via GraphQL mutation
    */
   async updatePaymentMutation(
-    workspaceId: string,
     input: UpdatePaymentInputDto,
   ): Promise<UpdatePaymentResponseDto> {
     try {
       // Get current payment
       const currentPayment =
-        await this.mktPaymentRepository.findByIdWithRelations(
-          workspaceId,
-          input.paymentId,
-        );
+        await this.mktPaymentRepository.findByIdWithRelations(input.paymentId);
 
       if (!currentPayment) {
         return {
@@ -446,26 +436,20 @@ export class MktPaymentService {
       }
 
       // Handle QR code logic
-      const qrCodeResult = await this.handleQrCodeLogic(
-        workspaceId,
-        currentPayment,
-        input,
-      );
+      const qrCodeResult = await this.handleQrCodeLogic(currentPayment, input);
 
       if (qrCodeResult.qrCodeUrl !== undefined) {
         updateData.qrCodeUrl = qrCodeResult.qrCodeUrl;
       }
 
       // Update payment
-      await this.mktPaymentRepository.update(
-        workspaceId,
+      await this.mktPaymentRepository.updatePayment(
         input.paymentId,
         updateData,
       );
 
       // Fetch updated payment
       const updatedPayment = await this.mktPaymentRepository.findById(
-        workspaceId,
         input.paymentId,
       );
 
@@ -497,7 +481,6 @@ export class MktPaymentService {
    * Handle QR code generation logic for payment updates
    */
   private async handleQrCodeLogic(
-    workspaceId: string,
     currentPayment: MktPaymentWorkspaceEntity,
     input: UpdatePaymentInputDto,
   ): Promise<{ qrCodeUrl?: string }> {
@@ -509,10 +492,8 @@ export class MktPaymentService {
 
       // Case 1: Payment method is being changed
       if (newPaymentMethodId && newPaymentMethodId !== currentPaymentMethodId) {
-        const newPaymentMethod = await this.mktPaymentMethodRepository.findById(
-          workspaceId,
-          newPaymentMethodId,
-        );
+        const newPaymentMethod =
+          await this.mktPaymentMethodRepository.findById(newPaymentMethodId);
 
         if (newPaymentMethod) {
           if (newPaymentMethod.name === SEPAY_QR_METHOD_NAME) {

@@ -51,7 +51,7 @@ export class PromotionUsageListener {
       for (const applied of event.appliedPromotions) {
         try {
           // Ghi lại usage record
-          await this.usageRepository.create(event.workspaceId, {
+          await this.usageRepository.createUsage({
             promotionId: applied.promotionId,
             couponId: applied.couponCode ? undefined : null,
             orderId: event.orderId,
@@ -69,13 +69,11 @@ export class PromotionUsageListener {
 
           // Increment usage count cho promotion
           await this.promotionRepository.incrementUsageCount(
-            event.workspaceId,
             applied.promotionId,
           );
 
           // Lấy promotion data để check limit
           const promotion = await this.promotionRepository.findById(
-            event.workspaceId,
             applied.promotionId,
           );
 
@@ -93,7 +91,6 @@ export class PromotionUsageListener {
 
           if (usageLimit && currentUsageCount >= usageLimit) {
             await this.promotionRepository.updateStatus(
-              event.workspaceId,
               applied.promotionId,
               PROMOTION_STATUS.PAUSED,
             );

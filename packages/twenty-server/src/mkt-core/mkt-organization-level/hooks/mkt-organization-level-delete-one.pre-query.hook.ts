@@ -39,16 +39,16 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
     );
 
     // Get current record
-    const recordToDelete = await this.getCurrentRecord(recordId, workspaceId);
+    const recordToDelete = await this.getCurrentRecord(recordId);
 
     // 1. Check if level has child levels
-    await this.validateNoChildLevels(recordId, workspaceId);
+    await this.validateNoChildLevels(recordId);
 
     // 2. Check if level is assigned to any workspace members
-    await this.validateNoAssignedMembers(recordId, workspaceId);
+    await this.validateNoAssignedMembers(recordId);
 
     // 3. Check if this is the last active level
-    await this.validateNotLastActiveLevel(recordToDelete, workspaceId);
+    await this.validateNotLastActiveLevel(recordToDelete);
 
     this.logger.log(
       'Organization level deletion validation completed successfully',
@@ -59,9 +59,8 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
 
   private async getCurrentRecord(
     recordId: string,
-    workspaceId: string,
   ): Promise<MktOrganizationLevelWorkspaceEntity> {
-    const record = await this.repository.findById(workspaceId, recordId);
+    const record = await this.repository.findById(recordId);
 
     if (!record) {
       throw new BadRequestException(
@@ -72,14 +71,8 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
     return record;
   }
 
-  private async validateNoChildLevels(
-    recordId: string,
-    workspaceId: string,
-  ): Promise<void> {
-    const childLevels = await this.repository.findByParentId(
-      workspaceId,
-      recordId,
-    );
+  private async validateNoChildLevels(recordId: string): Promise<void> {
+    const childLevels = await this.repository.findByParentId(recordId);
 
     if (childLevels.length > 0) {
       const childNames = childLevels.map((child) => child.levelName).join(', ');
@@ -91,15 +84,10 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
     }
   }
 
-  private async validateNoAssignedMembers(
-    recordId: string,
-    workspaceId: string,
-  ): Promise<void> {
+  private async validateNoAssignedMembers(recordId: string): Promise<void> {
     try {
-      const employeeCount = await this.repository.countEmployeesAtLevel(
-        workspaceId,
-        recordId,
-      );
+      const employeeCount =
+        await this.repository.countEmployeesAtLevel(recordId);
 
       if (employeeCount > 0) {
         throw new BadRequestException(
@@ -122,13 +110,12 @@ export class MktOrganizationLevelDeleteOnePreQueryHook
 
   private async validateNotLastActiveLevel(
     recordToDelete: MktOrganizationLevelWorkspaceEntity,
-    workspaceId: string,
   ): Promise<void> {
     if (!recordToDelete.isActive) {
       return; // If already inactive, deletion is allowed
     }
 
-    const activeCount = await this.repository.countActive(workspaceId);
+    const activeCount = await this.repository.countActive();
 
     if (activeCount <= 1) {
       throw new BadRequestException(

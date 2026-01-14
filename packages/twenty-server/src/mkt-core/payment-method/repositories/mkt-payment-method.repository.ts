@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, QueryRunner } from 'typeorm';
+import { FindOptionsWhere } from 'typeorm';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MKT_PAYMENT_METHOD_LOG_CONTEXT,
   MKT_PAYMENT_METHOD_LOG_MESSAGES,
@@ -20,6 +21,8 @@ import {
 /**
  * MktPaymentMethodRepository - Data access layer for PaymentMethod entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktPaymentMethod entity
  * - Query building and execution
@@ -30,24 +33,27 @@ import {
  * - Validation (handled by Service layer)
  */
 @Injectable()
-export class MktPaymentMethodRepository {
-  private readonly logger = new Logger(
-    `${MKT_PAYMENT_METHOD_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktPaymentMethodRepository extends BaseWorkspaceRepository<MktPaymentMethodWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktPaymentMethodWorkspaceEntity,
+      `${MKT_PAYMENT_METHOD_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find payment method by ID
+   * Find payment method by ID with options (logging included)
    */
-  async findById(
-    workspaceId: string,
+  async findByIdWithOptions(
     paymentMethodId: string,
     options?: FindPaymentMethodOptions,
   ): Promise<MktPaymentMethodWorkspaceEntity | null> {
@@ -55,7 +61,7 @@ export class MktPaymentMethodRepository {
       MKT_PAYMENT_METHOD_LOG_MESSAGES.FIND_BY_ID_START(paymentMethodId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const paymentMethod = await repository.findOne({
       where: { id: paymentMethodId },
@@ -81,10 +87,9 @@ export class MktPaymentMethodRepository {
    * Find payment method by ID with default relations
    */
   async findByIdWithRelations(
-    workspaceId: string,
     paymentMethodId: string,
   ): Promise<MktPaymentMethodWorkspaceEntity | null> {
-    return this.findById(workspaceId, paymentMethodId, {
+    return this.findByIdWithOptions(paymentMethodId, {
       relations: [...DEFAULT_PAYMENT_METHOD_RELATIONS],
     });
   }
@@ -93,13 +98,12 @@ export class MktPaymentMethodRepository {
    * Find payment method by name
    */
   async findByName(
-    workspaceId: string,
     name: string,
     options?: FindPaymentMethodOptions,
   ): Promise<MktPaymentMethodWorkspaceEntity | null> {
     this.logger.debug(MKT_PAYMENT_METHOD_LOG_MESSAGES.FIND_BY_NAME_START(name));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const paymentMethod = await repository.findOne({
       where: { name },
@@ -125,13 +129,12 @@ export class MktPaymentMethodRepository {
    * Find payment methods by type
    */
   async findByType(
-    workspaceId: string,
     type: PaymentMethodType,
     options?: FindPaymentMethodOptions,
   ): Promise<MktPaymentMethodWorkspaceEntity[]> {
     this.logger.debug(MKT_PAYMENT_METHOD_LOG_MESSAGES.FIND_BY_TYPE_START(type));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const paymentMethods = await repository.find({
       where: { type },
@@ -153,12 +156,11 @@ export class MktPaymentMethodRepository {
    * Find all active payment methods
    */
   async findActive(
-    workspaceId: string,
     options?: FindPaymentMethodOptions,
   ): Promise<MktPaymentMethodWorkspaceEntity[]> {
     this.logger.debug(MKT_PAYMENT_METHOD_LOG_MESSAGES.FIND_ACTIVE_START());
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const paymentMethods = await repository.find({
       where: { isActive: true },
@@ -178,11 +180,10 @@ export class MktPaymentMethodRepository {
   /**
    * Find all payment methods
    */
-  async findAll(
-    workspaceId: string,
+  async findAllMethods(
     options?: FindPaymentMethodOptions,
   ): Promise<MktPaymentMethodWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       relations: options?.relations,
@@ -193,12 +194,11 @@ export class MktPaymentMethodRepository {
   /**
    * Find payment methods with custom where clause
    */
-  async findMany(
-    workspaceId: string,
+  async findManyWithOptions(
     where: FindOptionsWhere<MktPaymentMethodWorkspaceEntity>,
     options?: FindPaymentMethodOptions,
   ): Promise<MktPaymentMethodWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where,
@@ -211,8 +211,7 @@ export class MktPaymentMethodRepository {
    * Find payment methods by IDs (batch operation)
    * Returns a Map for efficient lookup
    */
-  async findManyByIds(
-    workspaceId: string,
+  async findManyByIdsAsMap(
     ids: string[],
   ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
     if (ids.length === 0) {
@@ -221,7 +220,7 @@ export class MktPaymentMethodRepository {
 
     this.logger.debug(`Finding ${ids.length} payment methods by IDs`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const paymentMethods = await repository.find({
       where: ids.map((id) => ({ id })),
@@ -241,29 +240,10 @@ export class MktPaymentMethodRepository {
   }
 
   /**
-   * Check if payment method exists
-   */
-  async exists(workspaceId: string, paymentMethodId: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { id: paymentMethodId },
-    });
-
-    return count > 0;
-  }
-
-  /**
    * Check if payment method exists by name
    */
-  async existsByName(workspaceId: string, name: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { name },
-    });
-
-    return count > 0;
+  async existsByName(name: string): Promise<boolean> {
+    return this.existsWhere({ name });
   }
 
   // ============================================
@@ -273,14 +253,12 @@ export class MktPaymentMethodRepository {
   /**
    * Create new payment method
    */
-  async create(
-    workspaceId: string,
+  async createPaymentMethod(
     data: CreatePaymentMethodData,
-    _queryRunner?: QueryRunner,
   ): Promise<MktPaymentMethodWorkspaceEntity> {
     this.logger.debug(MKT_PAYMENT_METHOD_LOG_MESSAGES.CREATE_START());
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const paymentMethod = repository.create({
       ...data,
@@ -302,30 +280,18 @@ export class MktPaymentMethodRepository {
 
   /**
    * Update payment method by ID
-   * Supports QueryRunner for transaction context
    */
-  async update(
-    workspaceId: string,
+  async updatePaymentMethod(
     paymentMethodId: string,
     data: UpdatePaymentMethodData,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(
       MKT_PAYMENT_METHOD_LOG_MESSAGES.UPDATE_START(paymentMethodId),
     );
 
-    // Use queryRunner for transaction context if provided
-    if (queryRunner) {
-      await queryRunner.manager.update(
-        MktPaymentMethodWorkspaceEntity,
-        { id: paymentMethodId },
-        data,
-      );
-    } else {
-      const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
-      await repository.update(paymentMethodId, data);
-    }
+    await repository.update(paymentMethodId, data);
 
     this.logger.debug(
       MKT_PAYMENT_METHOD_LOG_MESSAGES.UPDATE_SUCCESS(paymentMethodId),
@@ -336,10 +302,8 @@ export class MktPaymentMethodRepository {
    * Update payment method active status
    */
   async updateActiveStatus(
-    workspaceId: string,
     paymentMethodId: string,
     isActive: boolean,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(
       MKT_PAYMENT_METHOD_LOG_MESSAGES.STATUS_UPDATE_START(
@@ -348,7 +312,7 @@ export class MktPaymentMethodRepository {
       ),
     );
 
-    await this.update(workspaceId, paymentMethodId, { isActive }, queryRunner);
+    await this.updatePaymentMethod(paymentMethodId, { isActive });
 
     this.logger.debug(
       MKT_PAYMENT_METHOD_LOG_MESSAGES.STATUS_UPDATE_SUCCESS(
@@ -361,15 +325,13 @@ export class MktPaymentMethodRepository {
   /**
    * Update and return the updated payment method
    */
-  async updateAndReturn(
-    workspaceId: string,
+  async updatePaymentMethodAndReturn(
     paymentMethodId: string,
     data: UpdatePaymentMethodData,
-    queryRunner?: QueryRunner,
   ): Promise<MktPaymentMethodWorkspaceEntity | null> {
-    await this.update(workspaceId, paymentMethodId, data, queryRunner);
+    await this.updatePaymentMethod(paymentMethodId, data);
 
-    return this.findById(workspaceId, paymentMethodId);
+    return this.findById(paymentMethodId);
   }
 
   // ============================================
@@ -379,16 +341,12 @@ export class MktPaymentMethodRepository {
   /**
    * Hard delete payment method (use with caution)
    */
-  async hardDelete(
-    workspaceId: string,
-    paymentMethodId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async hardDeletePaymentMethod(paymentMethodId: string): Promise<void> {
     this.logger.warn(
       MKT_PAYMENT_METHOD_LOG_MESSAGES.DELETE_START(paymentMethodId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     await repository.delete(paymentMethodId);
 
@@ -404,42 +362,14 @@ export class MktPaymentMethodRepository {
   /**
    * Count payment methods by type
    */
-  async countByType(
-    workspaceId: string,
-    type: PaymentMethodType,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: { type },
-    });
+  async countByType(type: PaymentMethodType): Promise<number> {
+    return this.count({ type });
   }
 
   /**
    * Count active payment methods
    */
-  async countActive(workspaceId: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: { isActive: true },
-    });
-  }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get the underlying TypeORM repository
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktPaymentMethodWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      MktPaymentMethodWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
+  async countActive(): Promise<number> {
+    return this.count({ isActive: true });
   }
 }

@@ -1,4 +1,4 @@
-import { FindOptionsRelations, QueryRunner } from 'typeorm';
+import { FindOptionsRelations } from 'typeorm';
 
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -32,7 +32,6 @@ export type UpdatePaymentAmountsData = {
  */
 export type FindOrderOptions = {
   relations?: FindOptionsRelations<MktOrderWorkspaceEntity>;
-  queryRunner?: QueryRunner;
 };
 
 /**
@@ -73,7 +72,6 @@ export type UpdateOrderItemData = Partial<MktOrderItemWorkspaceEntity>;
  */
 export type FindOrderItemOptions = {
   relations?: FindOptionsRelations<MktOrderItemWorkspaceEntity>;
-  queryRunner?: QueryRunner;
 };
 
 /**

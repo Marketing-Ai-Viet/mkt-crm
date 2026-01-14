@@ -93,10 +93,8 @@ export class MktCustomerEventListener {
     workspaceId: string,
     customer: MktCustomerWorkspaceEntity,
   ): Promise<void> {
-    const template = await this.templateRepository.findByKey(
-      workspaceId,
-      'welcome_customers',
-    );
+    const template =
+      await this.templateRepository.findByKey('welcome_customers');
 
     if (!template) {
       this.logger.warn(CUSTOMER_MESSAGES.WARN.TEMPLATE_NOT_FOUND);

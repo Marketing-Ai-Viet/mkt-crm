@@ -21,7 +21,7 @@ Hướng dẫn triển khai Repository pattern trong mkt-core module, sử dụn
 - **Giảm code duplication**: Các CRUD operations cơ bản được tái sử dụng
 - **Consistency**: Tất cả repositories tuân theo cùng pattern
 - **Type-safe**: Generic type đảm bảo type safety
-- **Workspace-aware**: Tự động xử lý workspace context
+- **Workspace-aware**: Tự động xử lý workspace context từ request scope
 
 ### 1.2 Khi nào sử dụng
 
@@ -57,9 +57,16 @@ export abstract class BaseWorkspaceRepository<T extends BaseWorkspaceEntityLike>
 | Parameter | Mô tả |
 |-----------|-------|
 | `twentyORMGlobalManager` | Manager để lấy repository cho workspace |
-| `scopedWorkspaceContextFactory` | Factory để lấy workspace context khi không có workspaceId |
+| `scopedWorkspaceContextFactory` | Factory để lấy workspace context từ request scope |
 | `entityClass` | Class của entity (dùng cho getRepository) |
 | `logContext` | Tên để ghi log, nên dùng `ClassName.name` |
+
+### 2.2 Workspace Context Resolution
+
+BaseWorkspaceRepository tự động lấy workspaceId từ request scope thông qua `ScopedWorkspaceContextFactory`. Các method không cần truyền workspaceId trừ khi:
+
+- Chạy trong batch job/cron job (không có request context)
+- Cần truy vấn workspace khác với workspace hiện tại
 
 ---
 
@@ -123,6 +130,7 @@ export class MyModule {}
 
 ```typescript
 // Lấy TypeORM repository
+// workspaceId là optional - nếu không truyền sẽ lấy từ request scope
 async getRepository(workspaceId?: string): Promise<WorkspaceRepository<T>>
 ```
 
@@ -130,68 +138,68 @@ async getRepository(workspaceId?: string): Promise<WorkspaceRepository<T>>
 
 ```typescript
 // Tìm theo ID
-async findById(workspaceId: string, id: string, options?: BaseRepositoryOptions): Promise<T | null>
+async findById(id: string, options?: BaseRepositoryOptions): Promise<T | null>
 
 // Tìm nhiều theo IDs
-async findByIds(workspaceId: string, ids: string[], options?: BaseRepositoryOptions): Promise<T[]>
+async findByIds(ids: string[], options?: BaseRepositoryOptions): Promise<T[]>
 
 // Lấy tất cả
-async findAll(workspaceId: string, options?: BaseRepositoryOptions): Promise<T[]>
+async findAll(options?: BaseRepositoryOptions): Promise<T[]>
 
 // Tìm với where clause
-async findMany(workspaceId: string, where: FindOptionsWhere<T>, options?: BaseRepositoryOptions): Promise<T[]>
+async findMany(where: FindOptionsWhere<T>, options?: BaseRepositoryOptions): Promise<T[]>
 
 // Tìm một với where clause
-async findOne(workspaceId: string, where: FindOptionsWhere<T>, options?: BaseRepositoryOptions): Promise<T | null>
+async findOne(where: FindOptionsWhere<T>, options?: BaseRepositoryOptions): Promise<T | null>
 ```
 
 ### 4.3 Create Operations
 
 ```typescript
 // Tạo mới
-async create(workspaceId: string, data: DeepPartial<T>): Promise<T>
+async create(data: DeepPartial<T>): Promise<T>
 
 // Tạo nhiều
-async bulkCreate(workspaceId: string, items: DeepPartial<T>[]): Promise<T[]>
+async bulkCreate(items: DeepPartial<T>[]): Promise<T[]>
 ```
 
 ### 4.4 Update Operations
 
 ```typescript
 // Cập nhật theo ID
-async update(workspaceId: string, id: string, data: DeepPartial<T>): Promise<void>
+async update(id: string, data: DeepPartial<T>): Promise<void>
 
 // Cập nhật và trả về entity
-async updateAndReturn(workspaceId: string, id: string, data: DeepPartial<T>, options?: BaseRepositoryOptions): Promise<T | null>
+async updateAndReturn(id: string, data: DeepPartial<T>, options?: BaseRepositoryOptions): Promise<T | null>
 
 // Cập nhật theo where clause
-async updateWhere(workspaceId: string, where: FindOptionsWhere<T>, data: DeepPartial<T>): Promise<{ affected: number }>
+async updateWhere(where: FindOptionsWhere<T>, data: DeepPartial<T>): Promise<{ affected: number }>
 ```
 
 ### 4.5 Delete Operations
 
 ```typescript
 // Kiểm tra tồn tại
-async exists(workspaceId: string, id: string): Promise<boolean>
+async exists(id: string): Promise<boolean>
 
 // Kiểm tra tồn tại theo where
-async existsWhere(workspaceId: string, where: FindOptionsWhere<T>): Promise<boolean>
+async existsWhere(where: FindOptionsWhere<T>): Promise<boolean>
 
 // Soft delete theo ID
-async softDelete(workspaceId: string, id: string): Promise<void>
+async softDelete(id: string): Promise<void>
 
 // Soft delete nhiều
-async softDeleteMany(workspaceId: string, ids: string[]): Promise<void>
+async softDeleteMany(ids: string[]): Promise<void>
 
 // Soft delete theo where
-async softDeleteWhere(workspaceId: string, where: FindOptionsWhere<T>): Promise<number>
+async softDeleteWhere(where: FindOptionsWhere<T>): Promise<number>
 ```
 
 ### 4.6 Count Operations
 
 ```typescript
 // Đếm entities
-async count(workspaceId: string, where?: FindOptionsWhere<T>): Promise<number>
+async count(where?: FindOptionsWhere<T>): Promise<number>
 ```
 
 ---
@@ -209,20 +217,18 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
    * Find department by code
    */
   async findByCode(
-    workspaceId: string,
     departmentCode: string,
   ): Promise<MktDepartmentWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { departmentCode });
+    return this.findOne({ departmentCode });
   }
 
   /**
    * Find departments by manager ID
    */
   async findByManagerId(
-    workspaceId: string,
     managerId: string,
   ): Promise<MktDepartmentWorkspaceEntity[]> {
-    return this.findMany(workspaceId, { managerId });
+    return this.findMany({ managerId });
   }
 }
 ```
@@ -231,11 +237,10 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
 
 ```typescript
 async findByDepartmentId(
-  workspaceId: string,
   departmentId: string,
   options?: { activeOnly?: boolean },
 ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
-  const repository = await this.getRepository(workspaceId);
+  const repository = await this.getRepository();
 
   const whereClause: Record<string, unknown> = {
     departmentId,
@@ -256,6 +261,7 @@ async findByDepartmentId(
 ### 5.3 Complex queries with QueryBuilder
 
 ```typescript
+// Sử dụng workspaceId cho batch jobs hoặc khi cần explicit workspace
 async findAncestorIds(
   workspaceId: string,
   departmentId: string,
@@ -278,10 +284,9 @@ async findAncestorIds(
 
 ```typescript
 async createAssignment(
-  workspaceId: string,
   data: Partial<MktDepartmentSubManagerWorkspaceEntity>,
 ): Promise<MktDepartmentSubManagerWorkspaceEntity> {
-  return this.create(workspaceId, {
+  return this.create({
     ...data,
     assignedAt: data.assignedAt ?? DateTimeUtils.now().toJSDate(),
     isActive: data.isActive ?? true,
@@ -290,9 +295,10 @@ async createAssignment(
 }
 ```
 
-### 5.5 Batch operations
+### 5.5 Batch operations with explicit workspaceId
 
 ```typescript
+// Batch operations thường cần explicit workspaceId
 async findAncestorIdsForMany(
   workspaceId: string,
   departmentIds: string[],
@@ -328,6 +334,27 @@ async findAncestorIdsForMany(
 }
 ```
 
+### 5.6 Tránh xung đột tên với base class
+
+Khi tạo method có tên trùng với base class, sử dụng tên khác:
+
+```typescript
+// Sai: trùng tên với base class method create()
+async create(data: Partial<MyEntity>): Promise<MyEntity>
+
+// Đúng: sử dụng tên khác
+async createEntity(data: Partial<MyEntity>): Promise<MyEntity> {
+  return this.create({
+    ...data,
+    createdAt: DateTimeUtils.now().toJSDate(),
+  });
+}
+
+// Đúng: sử dụng tên mô tả rõ hơn
+async createAssignment(data: Partial<MyEntity>): Promise<MyEntity>
+async createMember(data: Partial<MyEntity>): Promise<MyEntity>
+```
+
 ---
 
 ## 6. Patterns và Best Practices
@@ -340,23 +367,32 @@ async findAncestorIdsForMany(
 | Log context | `ClassName.name` |
 | Find single | `findBy[Field]` |
 | Find multiple | `findBy[Field]` hoặc `findAll[Entity]` |
-| Find with options | `findBy[Field](workspaceId, value, options?)` |
+| Find with options | `findBy[Field](value, options?)` |
+| Create specialized | `create[Entity]` hoặc `createEntity` |
+| Update specialized | `update[Entity]` hoặc `updateEntity` |
 
-### 6.2 Parameter Order
+### 6.2 Khi nào cần truyền workspaceId
 
 ```typescript
-// Đúng: workspaceId luôn là parameter đầu tiên
-async findByCode(workspaceId: string, code: string): Promise<T | null>
+// Không cần workspaceId - sử dụng request scope
+async findByCode(departmentCode: string): Promise<T | null> {
+  return this.findOne({ departmentCode });
+}
 
-// Sai: workspaceId ở cuối
-async findByCode(code: string, workspaceId?: string): Promise<T | null>
+// Cần workspaceId - batch jobs, cron jobs, explicit workspace
+async processAllWorkspaces(workspaceIds: string[]): Promise<void> {
+  for (const workspaceId of workspaceIds) {
+    const repository = await this.getRepository(workspaceId);
+    // ... process
+  }
+}
 ```
 
 ### 6.3 Use Early Return
 
 ```typescript
 // Đúng
-async findByIds(workspaceId: string, ids: string[]): Promise<T[]> {
+async findByIds(ids: string[]): Promise<T[]> {
   if (ids.length === 0) {
     return [];
   }
@@ -364,7 +400,7 @@ async findByIds(workspaceId: string, ids: string[]): Promise<T[]> {
 }
 
 // Sai
-async findByIds(workspaceId: string, ids: string[]): Promise<T[]> {
+async findByIds(ids: string[]): Promise<T[]> {
   if (ids.length > 0) {
     // ... logic
   } else {
@@ -428,17 +464,15 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
   }
 
   async findByCode(
-    workspaceId: string,
     departmentCode: string,
   ): Promise<MktDepartmentWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { departmentCode });
+    return this.findOne({ departmentCode });
   }
 
   async findByManagerId(
-    workspaceId: string,
     managerId: string,
   ): Promise<MktDepartmentWorkspaceEntity[]> {
-    return this.findMany(workspaceId, { managerId });
+    return this.findMany({ managerId });
   }
 }
 ```
@@ -460,7 +494,8 @@ Xem file: `src/mkt-core/mkt-department/repositories/mkt-department-sub-manager.r
 - [ ] Sử dụng `ClassName.name` cho log context
 - [ ] Export từ `index.ts`
 - [ ] Register trong module
-- [ ] workspaceId là parameter đầu tiên
+- [ ] Không trùng tên method với base class (dùng `createEntity`, `updateEntity`, etc.)
+- [ ] Chỉ truyền workspaceId khi cần (batch jobs, explicit workspace)
 - [ ] Sử dụng `DateTimeUtils` cho date/time
 - [ ] Sử dụng `REPOSITORY_MESSAGES` cho error messages
 - [ ] Early return cho empty arrays

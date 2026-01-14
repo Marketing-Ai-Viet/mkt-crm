@@ -68,14 +68,11 @@ export class MktCustomerTierService {
     let batchNumber = 0;
 
     while (hasMore) {
-      const customers = await this.customerRepository.findAllCustomers(
-        undefined,
-        {
-          take: batchSize,
-          skip: offset,
-          order: { createdAt: 'ASC' },
-        },
-      );
+      const customers = await this.customerRepository.findAllCustomers({
+        take: batchSize,
+        skip: offset,
+        order: { createdAt: 'ASC' },
+      });
 
       if (customers.length === 0) {
         hasMore = false;
@@ -187,7 +184,10 @@ export class MktCustomerTierService {
       // Get customers using repository with explicit workspaceId
       const customers = await this.customerRepository.findAllWithPagination(
         workspaceId,
-        { take: batchSize, skip: offset },
+        {
+          take: batchSize,
+          skip: offset,
+        },
       );
 
       if (customers.length === 0) {
@@ -208,7 +208,6 @@ export class MktCustomerTierService {
       // Bulk aggregation query using repository
       const orderStats =
         await this.orderRepository.getCompletedOrderStatsByCustomers(
-          workspaceId,
           customerIds,
           COMPLETED_ORDER_STATUSES,
         );
@@ -427,8 +426,7 @@ export class MktCustomerTierService {
     this.logger.log(CUSTOMER_MESSAGES.LOG.TIER_STATS_START(workspaceId));
 
     // Single query to get all customers
-    const customers =
-      await this.customerRepository.findAllCustomers(workspaceId);
+    const customers = await this.customerRepository.findAllCustomers();
 
     if (customers.length === 0) {
       return {
@@ -441,10 +439,8 @@ export class MktCustomerTierService {
 
     // Single aggregation query for all order stats - FIXES N+1
     const customerIds = customers.map((c) => c.id);
-    const orderStats = await this.orderRepository.getOrderStatsByCustomers(
-      workspaceId,
-      customerIds,
-    );
+    const orderStats =
+      await this.orderRepository.getOrderStatsByCustomers(customerIds);
 
     // Create lookup map for O(1) access
     const orderStatsMap = keyBy(orderStats, 'customerId');
@@ -506,10 +502,7 @@ export class MktCustomerTierService {
     limit?: number,
     offset?: number,
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    return this.customerRepository.findByTier(tier, undefined, {
-      limit,
-      offset,
-    });
+    return this.customerRepository.findByTier(tier, { limit, offset });
   }
 
   async checkCustomerUpgradeEligibility(customerId: string): Promise<{

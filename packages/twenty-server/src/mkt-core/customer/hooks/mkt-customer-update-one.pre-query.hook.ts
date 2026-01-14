@@ -48,10 +48,8 @@ export class MktCustomerUpdateOnePreQueryHook
 
     // 1. Prevent mktCustomerCode from being changed
     if (data.mktCustomerCode !== undefined) {
-      const existingCustomer = await this.customerRepository.findByIdOrNull(
-        customerId,
-        workspaceId,
-      );
+      const existingCustomer =
+        await this.customerRepository.findByIdOrNull(customerId);
 
       if (
         existingCustomer?.mktCustomerCode &&
@@ -124,12 +122,9 @@ export class MktCustomerUpdateOnePreQueryHook
   private async validateEmailUniqueness(
     email: string,
     currentCustomerId: string,
-    workspaceId?: string,
+    _workspaceId?: string,
   ): Promise<void> {
-    const existingCustomer = await this.customerRepository.findByEmail(
-      email,
-      workspaceId,
-    );
+    const existingCustomer = await this.customerRepository.findByEmail(email);
 
     // Email exists and belongs to a different customer
     if (existingCustomer && existingCustomer.id !== currentCustomerId) {

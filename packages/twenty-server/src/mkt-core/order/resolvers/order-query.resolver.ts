@@ -42,7 +42,7 @@ export class OrderQueryResolver {
     @AuthWorkspace() workspace: Workspace,
     @Args('orderId', { type: () => String }) orderId: string,
   ): Promise<OrderPaymentSummaryOutput | null> {
-    const order = await this.orderRepository.findById(workspace.id, orderId);
+    const order = await this.orderRepository.findById(orderId);
 
     if (!order) {
       return null;

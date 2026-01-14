@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
+import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
+import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { RBAC_COMMANDS } from 'src/mkt-core/mkt-rbac-enterprise-grade/commands';
 import {
@@ -10,6 +12,13 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
 import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
+import {
+  DepartmentTreeService,
+  RbacCacheService,
+  RbacContextService,
+  RbacEnforcerService,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/services';
+import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
 
 /**
  * Enterprise RBAC Module
@@ -40,7 +49,14 @@ import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers
  * ```
  */
 @Module({
-  imports: [TwentyORMModule, CacheStorageModule, CasbinModule],
+  imports: [
+    TwentyORMModule,
+    CacheStorageModule,
+    CasbinModule,
+    MktDepartmentModule,
+    MktOrganizationLevelModule,
+    UserManagementModule,
+  ],
   providers: [
     // Configuration provider (Symbol token for type safety)
     {
@@ -50,6 +66,12 @@ import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers
 
     // Repositories for permission template entities
     ...RBAC_REPOSITORIES,
+
+    // Core Services
+    DepartmentTreeService,
+    RbacCacheService,
+    RbacContextService,
+    RbacEnforcerService,
 
     // GraphQL Resolvers
     ...RBAC_RESOLVERS,
@@ -66,6 +88,12 @@ import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers
 
     // Export repositories
     ...RBAC_REPOSITORIES,
+
+    // Export core services
+    DepartmentTreeService,
+    RbacCacheService,
+    RbacContextService,
+    RbacEnforcerService,
   ],
 })
 export class MktRbacEnterpriseGradeModule {}

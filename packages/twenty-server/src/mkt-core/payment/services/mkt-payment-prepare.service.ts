@@ -6,10 +6,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { CreateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 
+import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import { paymentConfig } from 'src/mkt-core/payment/config';
-import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import {
@@ -25,8 +23,7 @@ export class MktPaymentPrepareService {
   constructor(
     @Inject(paymentConfig.KEY)
     private readonly config: ConfigType<typeof paymentConfig>,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+    private readonly orderRepository: MktOrderRepository,
     private readonly httpService: HttpService,
   ) {}
 
@@ -34,26 +31,15 @@ export class MktPaymentPrepareService {
     payload: CreateOneResolverArgs<MktPaymentWorkspaceEntity>,
   ): Promise<CreateOneResolverArgs<MktPaymentWorkspaceEntity>> {
     const input = payload?.data;
-    const workspaceId =
-      this.scopedWorkspaceContextFactory.create().workspaceId || '';
 
-    if (!workspaceId || !input?.mktOrderId) {
-      this.logger.warn('Missing workspaceId or mktOrderId in payment creation');
+    if (!input?.mktOrderId) {
+      this.logger.warn('Missing mktOrderId in payment creation');
 
       return payload;
     }
 
     try {
-      const orderRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-          workspaceId,
-          'mktOrder',
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const order = await orderRepository.findOne({
-        where: { id: input.mktOrderId },
-      });
+      const order = await this.orderRepository.findById(input.mktOrderId);
 
       if (!order) {
         this.logger.warn(`Order not found with id: ${input.mktOrderId}`);

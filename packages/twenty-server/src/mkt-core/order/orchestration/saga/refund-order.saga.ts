@@ -165,7 +165,6 @@ export class RefundOrderSaga {
   ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
     try {
       const order = await this.mktOrderRepository.findByIdWithOptions(
-        context.workspaceId,
         input.orderId,
         { relations: { orderItems: true } },
       );
@@ -244,7 +243,7 @@ export class RefundOrderSaga {
         reason: input.reason,
       };
 
-      await this.mktOrderRepository.update(context.workspaceId, input.orderId, {
+      await this.mktOrderRepository.update(input.orderId, {
         status: newStatus,
         refundAmount,
         updatedAt: nowISO,

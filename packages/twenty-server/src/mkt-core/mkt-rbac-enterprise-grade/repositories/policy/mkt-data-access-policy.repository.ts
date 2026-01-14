@@ -201,12 +201,8 @@ export class MktDataAccessPolicyRepository extends BaseWorkspaceRepository<MktDa
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   // ============================================

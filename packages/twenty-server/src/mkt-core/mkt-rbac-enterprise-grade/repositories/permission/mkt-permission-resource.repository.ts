@@ -32,10 +32,9 @@ export class MktPermissionResourceRepository extends BaseWorkspaceRepository<Mkt
   // ============================================
 
   async findByResourceKey(
-    workspaceId: string,
     resourceKey: string,
   ): Promise<MktPermissionResourceWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { resourceKey, isActive: true });
+    return this.findOne({ resourceKey, isActive: true });
   }
 
   async findByResourceKeys(
@@ -118,12 +117,8 @@ export class MktPermissionResourceRepository extends BaseWorkspaceRepository<Mkt
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   // ============================================

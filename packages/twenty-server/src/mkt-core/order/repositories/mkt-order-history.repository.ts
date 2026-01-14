@@ -1,21 +1,20 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-
-import { QueryRunner } from 'typeorm';
+import { Injectable } from '@nestjs/common';
 
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { ORDER_HISTORY_ACTION } from 'src/mkt-core/order/constants';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { CreateOrderHistoryData } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
-const LOG_CONTEXT = 'MktOrderHistory:Repository';
+const LOG_CONTEXT = 'MktOrderHistory';
 
 /**
  * MktOrderHistoryRepository - Data access layer for Order History entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktOrderHistoryWorkspaceEntity
@@ -23,38 +22,16 @@ const LOG_CONTEXT = 'MktOrderHistory:Repository';
  * - Thread-safe workspace context handling
  */
 @Injectable()
-export class MktOrderHistoryRepository {
-  private readonly logger = new Logger(LOG_CONTEXT);
-
+export class MktOrderHistoryRepository extends BaseWorkspaceRepository<MktOrderHistoryWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
-   */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktOrderHistoryWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException(
-        REPOSITORY_MESSAGES.ERROR.WORKSPACE_NOT_FOUND,
-      );
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktOrderHistoryWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      `${LOG_CONTEXT}:Repository`,
     );
   }
 
@@ -63,32 +40,32 @@ export class MktOrderHistoryRepository {
   // ============================================
 
   /**
-   * Find history by ID
+   * Find history by ID with logging
    */
-  async findById(
-    workspaceId: string,
+  async findHistoryById(
     historyId: string,
   ): Promise<MktOrderHistoryWorkspaceEntity | null> {
     this.logger.debug(`Finding order history by ID: ${historyId}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const history = await this.findById(historyId);
 
-    return repository.findOne({
-      where: { id: historyId },
-    });
+    if (history) {
+      this.logger.debug(`Found order history: ${historyId}`);
+    }
+
+    return history;
   }
 
   /**
    * Find all history records for an order
    */
   async findByOrderId(
-    workspaceId: string,
     orderId: string,
     options?: { limit?: number; offset?: number },
   ): Promise<MktOrderHistoryWorkspaceEntity[]> {
     this.logger.debug(`Finding order history for order: ${orderId}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { mktOrderId: orderId },
@@ -102,11 +79,10 @@ export class MktOrderHistoryRepository {
    * Find history by action type for an order
    */
   async findByOrderIdAndAction(
-    workspaceId: string,
     orderId: string,
     action: ORDER_HISTORY_ACTION,
   ): Promise<MktOrderHistoryWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { mktOrderId: orderId, action },
@@ -118,10 +94,9 @@ export class MktOrderHistoryRepository {
    * Get latest history entry for an order
    */
   async findLatestByOrderId(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktOrderHistoryWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.findOne({
       where: { mktOrderId: orderId },
@@ -136,16 +111,14 @@ export class MktOrderHistoryRepository {
   /**
    * Create new order history record
    */
-  async create(
-    workspaceId: string,
+  async createOrderHistory(
     data: CreateOrderHistoryData,
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderHistoryWorkspaceEntity> {
     this.logger.log(
       `Creating order history: ${data.action} for order ${data.orderId}`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const history = repository.create({
       name: data.name,
@@ -166,10 +139,6 @@ export class MktOrderHistoryRepository {
       },
     });
 
-    if (queryRunner) {
-      return queryRunner.manager.save(history);
-    }
-
     return repository.save(history);
   }
 
@@ -177,83 +146,65 @@ export class MktOrderHistoryRepository {
    * Create status change history
    */
   async createStatusChange(
-    workspaceId: string,
     orderId: string,
     oldStatus: string,
     newStatus: string,
     note?: string,
     workspaceMemberId?: string,
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderHistoryWorkspaceEntity> {
-    return this.create(
-      workspaceId,
-      {
-        orderId,
-        action: ORDER_HISTORY_ACTION.STATUS_CHANGED,
-        name: `Status changed from ${oldStatus} to ${newStatus}`,
-        fieldName: 'status',
-        oldValue: oldStatus,
-        newValue: newStatus,
-        note,
-        workspaceMemberId,
-        metadata: {
-          changedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-        },
+    return this.createOrderHistory({
+      orderId,
+      action: ORDER_HISTORY_ACTION.STATUS_CHANGED,
+      name: `Status changed from ${oldStatus} to ${newStatus}`,
+      fieldName: 'status',
+      oldValue: oldStatus,
+      newValue: newStatus,
+      note,
+      workspaceMemberId,
+      metadata: {
+        changedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       },
-      queryRunner,
-    );
+    });
   }
 
   /**
    * Create order creation history
    */
   async createOrderCreated(
-    workspaceId: string,
     orderId: string,
     orderCode: string,
     workspaceMemberId?: string,
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderHistoryWorkspaceEntity> {
-    return this.create(
-      workspaceId,
-      {
-        orderId,
-        action: ORDER_HISTORY_ACTION.CREATED,
-        name: `Order ${orderCode} created`,
-        workspaceMemberId,
-        metadata: {
-          orderCode,
-          createdAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-        },
+    return this.createOrderHistory({
+      orderId,
+      action: ORDER_HISTORY_ACTION.CREATED,
+      name: `Order ${orderCode} created`,
+      workspaceMemberId,
+      metadata: {
+        orderCode,
+        createdAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       },
-      queryRunner,
-    );
+    });
   }
 
   /**
    * Create payment added history
    */
   async createPaymentAdded(
-    workspaceId: string,
     orderId: string,
     amount: number,
     paymentMethod?: string,
-    queryRunner?: QueryRunner,
   ): Promise<MktOrderHistoryWorkspaceEntity> {
-    return this.create(
-      workspaceId,
-      {
-        orderId,
-        action: ORDER_HISTORY_ACTION.PAYMENT_ADDED,
-        name: `Payment added: ${amount}`,
-        metadata: {
-          amount,
-          paymentMethod,
-          addedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-        },
+    return this.createOrderHistory({
+      orderId,
+      action: ORDER_HISTORY_ACTION.PAYMENT_ADDED,
+      name: `Payment added: ${amount}`,
+      metadata: {
+        amount,
+        paymentMethod,
+        addedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       },
-      queryRunner,
-    );
+    });
   }
 
   // ============================================
@@ -263,12 +214,8 @@ export class MktOrderHistoryRepository {
   /**
    * Count history records for an order
    */
-  async countByOrderId(workspaceId: string, orderId: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: { mktOrderId: orderId },
-    });
+  async countByOrderId(orderId: string): Promise<number> {
+    return this.count({ mktOrderId: orderId });
   }
 
   // ============================================
@@ -278,18 +225,9 @@ export class MktOrderHistoryRepository {
   /**
    * Soft delete all history for an order by setting deletedAt timestamp
    */
-  async softDeleteByOrderId(
-    workspaceId: string,
-    orderId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeleteByOrderId(orderId: string): Promise<void> {
     this.logger.warn(`Soft deleting all history for order: ${orderId}`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(
-      { mktOrderId: orderId },
-      { deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()) },
-    );
+    await this.softDeleteWhere({ mktOrderId: orderId });
   }
 }

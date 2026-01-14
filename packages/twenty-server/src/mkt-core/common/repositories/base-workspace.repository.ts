@@ -183,11 +183,10 @@ export abstract class BaseWorkspaceRepository<
    * Find entity by ID
    */
   async findById(
-    workspaceId: string,
     id: string,
     options?: BaseRepositoryOptions,
   ): Promise<T | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.findOne({
       where: { id } as FindOptionsWhere<T>,
@@ -199,7 +198,6 @@ export abstract class BaseWorkspaceRepository<
    * Find entities by IDs
    */
   async findByIds(
-    workspaceId: string,
     ids: string[],
     options?: BaseRepositoryOptions,
   ): Promise<T[]> {
@@ -207,7 +205,7 @@ export abstract class BaseWorkspaceRepository<
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: ids.map((id) => ({ id }) as FindOptionsWhere<T>),
@@ -218,11 +216,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Find all entities
    */
-  async findAll(
-    workspaceId: string,
-    options?: BaseRepositoryOptions,
-  ): Promise<T[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findAll(options?: BaseRepositoryOptions): Promise<T[]> {
+    const repository = await this.getRepository();
 
     return repository.find({
       relations: options?.relations,
@@ -233,11 +228,10 @@ export abstract class BaseWorkspaceRepository<
    * Find entities with custom where clause
    */
   async findMany(
-    workspaceId: string,
     where: FindOptionsWhere<T>,
     options?: BaseRepositoryOptions,
   ): Promise<T[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where,
@@ -249,11 +243,10 @@ export abstract class BaseWorkspaceRepository<
    * Find one entity with custom where clause
    */
   async findOne(
-    workspaceId: string,
     where: FindOptionsWhere<T>,
     options?: BaseRepositoryOptions,
   ): Promise<T | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.findOne({
       where,
@@ -268,8 +261,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Create new entity
    */
-  async create(workspaceId: string, data: DeepPartial<T>): Promise<T> {
-    const repository = await this.getRepository(workspaceId);
+  async create(data: DeepPartial<T>): Promise<T> {
+    const repository = await this.getRepository();
     const entity = repository.create(data);
 
     return repository.save(entity);
@@ -278,12 +271,12 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Bulk create entities
    */
-  async bulkCreate(workspaceId: string, items: DeepPartial<T>[]): Promise<T[]> {
+  async bulkCreate(items: DeepPartial<T>[]): Promise<T[]> {
     if (items.length === 0) {
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const entities = items.map((item) => repository.create(item));
 
     return repository.save(entities);
@@ -296,12 +289,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Update entity by ID
    */
-  async update(
-    workspaceId: string,
-    id: string,
-    data: DeepPartial<T>,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+  async update(id: string, data: DeepPartial<T>): Promise<void> {
+    const repository = await this.getRepository();
 
     await repository.update(id, data as never);
   }
@@ -310,25 +299,23 @@ export abstract class BaseWorkspaceRepository<
    * Update and return the updated entity
    */
   async updateAndReturn(
-    workspaceId: string,
     id: string,
     data: DeepPartial<T>,
     options?: BaseRepositoryOptions,
   ): Promise<T | null> {
-    await this.update(workspaceId, id, data);
+    await this.update(id, data);
 
-    return this.findById(workspaceId, id, options);
+    return this.findById(id, options);
   }
 
   /**
    * Update entities matching where clause
    */
   async updateWhere(
-    workspaceId: string,
     where: FindOptionsWhere<T>,
     data: DeepPartial<T>,
   ): Promise<{ affected: number }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository.update(where, data as never);
 
@@ -342,8 +329,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Check if entity exists
    */
-  async exists(workspaceId: string, id: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async exists(id: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     return repository.existsBy({ id } as FindOptionsWhere<T>);
   }
@@ -351,11 +338,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Check if entity exists by where clause
    */
-  async existsWhere(
-    workspaceId: string,
-    where: FindOptionsWhere<T>,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async existsWhere(where: FindOptionsWhere<T>): Promise<boolean> {
+    const repository = await this.getRepository();
 
     return repository.existsBy(where);
   }
@@ -363,8 +347,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Soft delete entity by setting deletedAt timestamp
    */
-  async softDelete(workspaceId: string, id: string): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
+  async softDelete(id: string): Promise<void> {
+    const repository = await this.getRepository();
 
     await repository.update(id, {
       deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
@@ -376,12 +360,12 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Soft delete multiple entities by IDs
    */
-  async softDeleteMany(workspaceId: string, ids: string[]): Promise<void> {
+  async softDeleteMany(ids: string[]): Promise<void> {
     if (ids.length === 0) {
       return;
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     await repository.update(ids, {
       deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
@@ -393,11 +377,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Soft delete entities matching where clause
    */
-  async softDeleteWhere(
-    workspaceId: string,
-    where: FindOptionsWhere<T>,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async softDeleteWhere(where: FindOptionsWhere<T>): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository.update(where, {
       deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
@@ -415,11 +396,8 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Count all entities
    */
-  async count(
-    workspaceId: string,
-    where?: FindOptionsWhere<T>,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async count(where?: FindOptionsWhere<T>): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({ where });
   }
@@ -465,14 +443,12 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Create entity with ownership fields automatically set
    *
-   * @param workspaceId - Workspace ID
    * @param data - Entity data (without ownership fields)
    * @param workspaceMemberId - The workspace member ID for ownership
    * @param accountOwnerId - Optional: explicit account owner ID
    * @returns Created entity with ownership fields
    */
   async createWithOwnership(
-    workspaceId: string,
     data: DeepPartial<T>,
     workspaceMemberId: string | undefined,
     accountOwnerId?: string,
@@ -482,7 +458,7 @@ export abstract class BaseWorkspaceRepository<
       accountOwnerId,
     });
 
-    return this.create(workspaceId, {
+    return this.create({
       ...data,
       ...ownershipFields,
     } as DeepPartial<T>);
@@ -491,14 +467,12 @@ export abstract class BaseWorkspaceRepository<
   /**
    * Bulk create entities with ownership fields automatically set
    *
-   * @param workspaceId - Workspace ID
    * @param items - Entity data items (without ownership fields)
    * @param workspaceMemberId - The workspace member ID for ownership
    * @param accountOwnerId - Optional: explicit account owner ID
    * @returns Created entities with ownership fields
    */
   async bulkCreateWithOwnership(
-    workspaceId: string,
     items: DeepPartial<T>[],
     workspaceMemberId: string | undefined,
     accountOwnerId?: string,
@@ -517,6 +491,6 @@ export abstract class BaseWorkspaceRepository<
       ...ownershipFields,
     })) as DeepPartial<T>[];
 
-    return this.bulkCreate(workspaceId, itemsWithOwnership);
+    return this.bulkCreate(itemsWithOwnership);
   }
 }

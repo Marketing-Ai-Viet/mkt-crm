@@ -299,7 +299,7 @@ export class UserService {
     email: string,
     input: CreateUserInput,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
-    return this.workspaceMemberService.createWorkspaceMember(workspaceId, {
+    return this.workspaceMemberService.createWorkspaceMember({
       name: {
         firstName: input.firstName ?? '',
         lastName: input.lastName ?? '',

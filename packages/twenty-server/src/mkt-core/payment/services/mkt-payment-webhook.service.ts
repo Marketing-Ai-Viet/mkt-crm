@@ -58,7 +58,6 @@ export class MktPaymentWebhookService {
    * 6. Update order status
    */
   async processWebhookPayment(
-    workspaceId: string,
     payload: SepayWebhookPayload,
     authContext: RequestSepayJWT,
     ipAddress?: string,
@@ -66,7 +65,7 @@ export class MktPaymentWebhookService {
     const startTime = DateTimeUtils.now();
 
     // Step 1: Create webhook log entry
-    const webhookLog = await this.createWebhookLog(workspaceId, {
+    const webhookLog = await this.createWebhookLog({
       sepayTransactionId: payload.id,
       gateway: payload.gateway,
       requestBody: payload as unknown as object,
@@ -76,25 +75,17 @@ export class MktPaymentWebhookService {
 
     try {
       // Step 2: Idempotency check
-      const existingPayment = await this.findBySepayTransactionId(
-        workspaceId,
-        payload.id,
-      );
+      const existingPayment = await this.findBySepayTransactionId(payload.id);
 
       if (existingPayment) {
         this.logger.log(
           `Transaction ${payload.id} already processed, skipping`,
         );
-        await this.updateWebhookLogStatus(
-          workspaceId,
-          webhookLog.id,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'ALREADY_PROCESSED' },
-            matchedOrderCode: existingPayment.mktOrderId,
-          },
-        );
+        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+          responseStatus: 200,
+          responseBody: { status: 'ALREADY_PROCESSED' },
+          matchedOrderCode: existingPayment.mktOrderId,
+        });
 
         return {
           success: true,
@@ -106,15 +97,10 @@ export class MktPaymentWebhookService {
       // Step 3: Validate code
       if (!payload.code) {
         this.logger.warn('Webhook payload has no code');
-        await this.updateWebhookLogStatus(
-          workspaceId,
-          webhookLog.id,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'UNMATCHED' },
-          },
-        );
+        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+          responseStatus: 200,
+          responseBody: { status: 'UNMATCHED' },
+        });
 
         return {
           success: true,
@@ -124,19 +110,14 @@ export class MktPaymentWebhookService {
       }
 
       // Step 4: Find order
-      const order = await this.findOneByOrderCode(workspaceId, payload.code);
+      const order = await this.findOneByOrderCode(payload.code);
 
       if (!order) {
         this.logger.error(`Order not found for code: ${payload.code}`);
-        await this.updateWebhookLogStatus(
-          workspaceId,
-          webhookLog.id,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'UNMATCHED' },
-          },
-        );
+        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+          responseStatus: 200,
+          responseBody: { status: 'UNMATCHED' },
+        });
 
         return {
           success: true,
@@ -156,20 +137,15 @@ export class MktPaymentWebhookService {
       }
 
       // Step 6: Find payments
-      const payments = await this.findPaymentsByOrderId(workspaceId, order.id);
+      const payments = await this.findPaymentsByOrderId(order.id);
 
       if (payments.length === 0) {
         this.logger.warn(`No payments found for order ${order.id}`);
-        await this.updateWebhookLogStatus(
-          workspaceId,
-          webhookLog.id,
-          'SUCCESS',
-          {
-            responseStatus: 200,
-            responseBody: { status: 'NO_PAYMENT' },
-            matchedOrderCode: order.orderCode,
-          },
-        );
+        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+          responseStatus: 200,
+          responseBody: { status: 'NO_PAYMENT' },
+          matchedOrderCode: order.orderCode,
+        });
 
         return {
           success: true,
@@ -185,17 +161,17 @@ export class MktPaymentWebhookService {
       // Step 7: Update payment
       const [primaryPayment] = payments;
 
-      await this.updatePayment(workspaceId, primaryPayment.id, {
+      await this.updatePayment(primaryPayment.id, {
         status: 'COMPLETED',
         paymentDate: payload.transactionDate,
         amount: payload.transferAmount,
         description: payload.content || payload.description,
         sepayTransactionId: String(payload.id),
-        createdBy: await this.buildActorMetadata(workspaceId, authContext),
+        createdBy: await this.buildActorMetadata(authContext),
       });
 
       // Step 8: Update order status to CONFIRMED after payment
-      await this.updateOrderStatusAfterPayment(workspaceId, order.id);
+      await this.updateOrderStatusAfterPayment(order.id);
       this.logger.log(`Order ${order.orderCode} status updated to CONFIRMED`);
 
       // Step 9: Update webhook log as success
@@ -204,7 +180,7 @@ export class MktPaymentWebhookService {
         DateTimeUtils.now(),
       );
 
-      await this.updateWebhookLogStatus(workspaceId, webhookLog.id, 'SUCCESS', {
+      await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
         responseStatus: 200,
         responseBody: { status: 'MATCHED' },
         matchedOrderCode: order.orderCode,
@@ -228,7 +204,7 @@ export class MktPaymentWebhookService {
       this.logger.error('Error processing webhook payment:', error);
 
       // Update webhook log status to failed
-      await this.updateWebhookLogStatus(workspaceId, webhookLog.id, 'FAILED', {
+      await this.updateWebhookLogStatus(webhookLog.id, 'FAILED', {
         responseStatus: 500,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -244,17 +220,14 @@ export class MktPaymentWebhookService {
   /**
    * Create webhook log entry
    */
-  private async createWebhookLog(
-    workspaceId: string,
-    data: {
-      sepayTransactionId: number;
-      gateway: string;
-      requestBody: object;
-      ipAddress?: string;
-      status: WebhookLogStatus;
-    },
-  ) {
-    return this.mktWebhookLogRepository.create(workspaceId, {
+  private async createWebhookLog(data: {
+    sepayTransactionId: number;
+    gateway: string;
+    requestBody: object;
+    ipAddress?: string;
+    status: WebhookLogStatus;
+  }) {
+    return this.mktWebhookLogRepository.createWebhookLog({
       sepayTransactionId: data.sepayTransactionId,
       gateway: data.gateway,
       requestBody: data.requestBody,
@@ -267,7 +240,6 @@ export class MktPaymentWebhookService {
    * Update webhook log status
    */
   private async updateWebhookLogStatus(
-    workspaceId: string,
     webhookLogId: string,
     status: WebhookLogStatus,
     data?: {
@@ -278,12 +250,7 @@ export class MktPaymentWebhookService {
       errorMessage?: string;
     },
   ): Promise<void> {
-    await this.mktWebhookLogRepository.updateStatus(
-      workspaceId,
-      webhookLogId,
-      status,
-      data,
-    );
+    await this.mktWebhookLogRepository.updateStatus(webhookLogId, status, data);
   }
 
   // ============================================
@@ -294,11 +261,9 @@ export class MktPaymentWebhookService {
    * Find payment by SePay transaction ID
    */
   private async findBySepayTransactionId(
-    workspaceId: string,
     sepayTransactionId: number,
   ): Promise<MktPaymentWorkspaceEntity | null> {
     return this.mktPaymentRepository.findBySepayTransactionId(
-      workspaceId,
       String(sepayTransactionId),
     );
   }
@@ -307,20 +272,18 @@ export class MktPaymentWebhookService {
    * Find order by code
    */
   private async findOneByOrderCode(
-    workspaceId: string,
     orderCode: string,
   ): Promise<{ id: string; orderCode: string; totalAmount?: number } | null> {
-    return this.mktOrderRepository.findByOrderCode(workspaceId, orderCode);
+    return this.mktOrderRepository.findByOrderCode(orderCode);
   }
 
   /**
    * Find payments by order ID
    */
   private async findPaymentsByOrderId(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktPaymentWorkspaceEntity[]> {
-    return this.mktPaymentRepository.findByOrderId(workspaceId, orderId);
+    return this.mktPaymentRepository.findByOrderId(orderId);
   }
 
   // ============================================
@@ -331,14 +294,12 @@ export class MktPaymentWebhookService {
    * Build actor metadata from auth context
    */
   private async buildActorMetadata(
-    workspaceId: string,
     authContext: RequestSepayJWT,
   ): Promise<ActorMetadata> {
     let createdByName = 'system';
 
     if (authContext.workspaceMemberId) {
       const workspaceMember = await this.mktWorkspaceMemberRepository.findById(
-        workspaceId,
         authContext.workspaceMemberId,
       );
 
@@ -359,7 +320,6 @@ export class MktPaymentWebhookService {
    * Update payment by ID using repository
    */
   private async updatePayment(
-    workspaceId: string,
     paymentId: string,
     updateData: {
       status: PaymentStatus;
@@ -370,17 +330,14 @@ export class MktPaymentWebhookService {
       createdBy: ActorMetadata;
     },
   ): Promise<void> {
-    await this.mktPaymentRepository.update(workspaceId, paymentId, updateData);
+    await this.mktPaymentRepository.updatePayment(paymentId, updateData);
   }
 
   /**
    * Update order status to CONFIRMED after payment is completed
    */
-  private async updateOrderStatusAfterPayment(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<void> {
-    await this.mktOrderRepository.update(workspaceId, orderId, {
+  private async updateOrderStatusAfterPayment(orderId: string): Promise<void> {
+    await this.mktOrderRepository.updateOrder(orderId, {
       status: ORDER_STATUS.CONFIRMED,
       accountingConfirmed: true,
     });

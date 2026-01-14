@@ -163,9 +163,7 @@ export class MktCustomerTierHistoryResolver {
       `Getting tier change statistics for workspace ${workspace.id}`,
     );
 
-    const stats = await this.tierHistoryService.getTierChangeStats(
-      workspace.id,
-    );
+    const stats = await this.tierHistoryService.getTierChangeStats();
 
     return {
       totalChanges: stats.totalChanges,

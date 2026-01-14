@@ -39,18 +39,13 @@ export class MktPaymentListenerService {
     for (const event of payload.events) {
       try {
         const updatedOrder = await this.mktOrderRepository.findByIdWithOptions(
-          payload.workspaceId,
           event.orderId,
           { relations: { mktPayments: true } },
         );
 
         const paymentType = event.eventType as PAYMENT_HISTORY_TYPE;
 
-        await this.pushLicenseHistory(
-          payload.workspaceId,
-          updatedOrder,
-          paymentType,
-        );
+        await this.pushLicenseHistory(updatedOrder, paymentType);
         this.logger.log(
           `Successfully processed order custom event: ${event.orderId}`,
         );
@@ -64,7 +59,6 @@ export class MktPaymentListenerService {
   }
 
   private async pushLicenseHistory(
-    workspaceId: string,
     order: MktOrderWorkspaceEntity | null,
     paymentType: PAYMENT_HISTORY_TYPE,
   ): Promise<void> {
@@ -93,7 +87,7 @@ export class MktPaymentListenerService {
       note += `Ghi chú đơn hàng: ${order.note}`;
     }
 
-    await this.mktPaymentHistoryRepository.create(workspaceId, {
+    await this.mktPaymentHistoryRepository.create({
       name: `Payment ${paymentType} recorded for order ${order.orderCode}`,
       paymentType,
       amount: payment.amount ?? order.totalAmount ?? 0,

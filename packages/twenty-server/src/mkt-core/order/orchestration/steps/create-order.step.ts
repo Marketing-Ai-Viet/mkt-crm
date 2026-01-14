@@ -80,30 +80,27 @@ export class CreateOrderStep extends SagaStep<
       });
 
       // Create order using repository
-      const savedOrder = await this.orderRepository.create(
-        context.workspaceId,
-        {
-          name: `Đơn hàng ${orderCode}`,
-          orderCode,
-          status: initialStatus,
-          mktCustomerId: input.customerId,
-          currency: input.currency ?? 'VND',
-          note: input.note,
-          requireContract: input.requireContract ?? false,
-          trialLicense: isTrialLicense,
-          // Initialize amounts (will be updated in CreateOrderItemsStep)
-          subtotal: 0,
-          tax: 0,
-          discount: 0,
-          totalAmount: 0,
-          // Initialize payment fields (remainingAmount will be set = totalAmount in CreateOrderItemsStep)
-          paidAmount: 0,
-          remainingAmount: 0,
-          paymentStatus: PAYMENT_STATUS.PENDING,
-          // Set ownership fields
-          ...ownershipFields,
-        },
-      );
+      const savedOrder = await this.orderRepository.createOrder({
+        name: `Đơn hàng ${orderCode}`,
+        orderCode,
+        status: initialStatus,
+        mktCustomerId: input.customerId,
+        currency: input.currency ?? 'VND',
+        note: input.note,
+        requireContract: input.requireContract ?? false,
+        trialLicense: isTrialLicense,
+        // Initialize amounts (will be updated in CreateOrderItemsStep)
+        subtotal: 0,
+        tax: 0,
+        discount: 0,
+        totalAmount: 0,
+        // Initialize payment fields (remainingAmount will be set = totalAmount in CreateOrderItemsStep)
+        paidAmount: 0,
+        remainingAmount: 0,
+        paymentStatus: PAYMENT_STATUS.PENDING,
+        // Set ownership fields
+        ...ownershipFields,
+      });
 
       this.logger.log(
         `Created order: ${savedOrder.id} with code: ${orderCode}`,
@@ -153,7 +150,7 @@ export class CreateOrderStep extends SagaStep<
       this.logger.warn(`Hard deleting order: ${data.orderId}`);
 
       // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderRepository.softDelete(context.workspaceId, data.orderId);
+      await this.orderRepository.softDeleteOrder(data.orderId);
 
       this.logger.log(`Order ${data.orderId} deleted successfully`);
     } catch (error) {

@@ -33,19 +33,17 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
    * Find department by code
    */
   async findByCode(
-    workspaceId: string,
     departmentCode: string,
   ): Promise<MktDepartmentWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { departmentCode });
+    return this.findOne({ departmentCode });
   }
 
   /**
    * Find departments by manager ID
    */
   async findByManagerId(
-    workspaceId: string,
     managerId: string,
   ): Promise<MktDepartmentWorkspaceEntity[]> {
-    return this.findMany(workspaceId, { managerId });
+    return this.findMany({ managerId });
   }
 }

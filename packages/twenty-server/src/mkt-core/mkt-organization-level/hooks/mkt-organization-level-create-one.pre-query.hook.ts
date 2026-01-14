@@ -46,10 +46,10 @@ export class MktOrganizationLevelCreateOnePreQueryHook
     );
 
     // 2. Validate level code uniqueness
-    await this.validateLevelCodeUniqueness(validatedDto.levelCode, workspaceId);
+    await this.validateLevelCodeUniqueness(validatedDto.levelCode);
 
     // 3. Validate parent level relationship
-    await this.validateParentLevel(validatedDto, workspaceId);
+    await this.validateParentLevel(validatedDto);
 
     // 4. Transform to entity format
     const sanitizedData = this.transformDtoToEntity(validatedDto);
@@ -62,11 +62,8 @@ export class MktOrganizationLevelCreateOnePreQueryHook
     };
   }
 
-  private async validateLevelCodeUniqueness(
-    levelCode: string,
-    workspaceId: string,
-  ): Promise<void> {
-    const exists = await this.repository.existsByCode(workspaceId, levelCode);
+  private async validateLevelCodeUniqueness(levelCode: string): Promise<void> {
+    const exists = await this.repository.existsByCode(levelCode);
 
     if (exists) {
       throw new BadRequestException(
@@ -75,10 +72,10 @@ export class MktOrganizationLevelCreateOnePreQueryHook
     }
   }
 
-  private async validateParentLevel(
-    input: { hierarchyLevel: number; parentLevelId?: string },
-    workspaceId: string,
-  ): Promise<void> {
+  private async validateParentLevel(input: {
+    hierarchyLevel: number;
+    parentLevelId?: string;
+  }): Promise<void> {
     const { hierarchyLevel, parentLevelId } = input;
 
     // Validate parent exists and has correct hierarchy
@@ -86,10 +83,7 @@ export class MktOrganizationLevelCreateOnePreQueryHook
       return;
     }
 
-    const parentLevel = await this.repository.findById(
-      workspaceId,
-      parentLevelId,
-    );
+    const parentLevel = await this.repository.findById(parentLevelId);
 
     if (!parentLevel) {
       throw new BadRequestException(

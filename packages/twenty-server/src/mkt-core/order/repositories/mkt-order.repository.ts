@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { DeepPartial, FindOptionsWhere, QueryRunner } from 'typeorm';
+import { DeepPartial, FindOptionsWhere } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -55,13 +55,12 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Find order by ID with options (logging included)
    */
   async findByIdWithOptions(
-    workspaceId: string,
     orderId: string,
     options?: FindOrderOptions,
   ): Promise<MktOrderWorkspaceEntity | null> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.FIND_BY_ID_START(orderId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const order = await repository.findOne({
       where: { id: orderId },
@@ -83,10 +82,9 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Find order by ID with full relations
    */
   async findByIdWithRelations(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.findByIdWithOptions(workspaceId, orderId, {
+    return this.findByIdWithOptions(orderId, {
       relations: DEFAULT_ORDER_RELATIONS,
     });
   }
@@ -96,14 +94,13 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Used for payment summary calculations
    */
   async findByIdWithPaymentSummary(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
     this.logger.debug(
       `Finding order ${orderId} with payment summary relations`,
     );
 
-    return this.findByIdWithOptions(workspaceId, orderId, {
+    return this.findByIdWithOptions(orderId, {
       relations: PAYMENT_SUMMARY_RELATIONS,
     });
   }
@@ -112,13 +109,12 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Find order by order code
    */
   async findByOrderCode(
-    workspaceId: string,
     orderCode: string,
     options?: FindOrderOptions,
   ): Promise<MktOrderWorkspaceEntity | null> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.FIND_BY_CODE_START(orderCode));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const order = await repository.findOne({
       where: { orderCode },
@@ -142,7 +138,6 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Find orders by customer ID
    */
   async findByCustomerId(
-    workspaceId: string,
     customerId: string,
     options?: FindOrderOptions,
   ): Promise<MktOrderWorkspaceEntity[]> {
@@ -150,7 +145,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       MKT_ORDER_LOG_MESSAGES.FIND_BY_CUSTOMER_START(customerId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const orders = await repository.find({
       where: { mktCustomerId: customerId },
@@ -172,13 +167,12 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Find orders by status
    */
   async findByStatus(
-    workspaceId: string,
     status: ORDER_STATUS,
     options?: FindOrderOptions,
   ): Promise<MktOrderWorkspaceEntity[]> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.FIND_BY_STATUS_START(status));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const orders = await repository.find({
       where: { status },
@@ -197,11 +191,10 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Find orders with custom where clause and options
    */
   async findManyWithOptions(
-    workspaceId: string,
     where: FindOptionsWhere<MktOrderWorkspaceEntity>,
     options?: FindOrderOptions,
   ): Promise<MktOrderWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where,
@@ -215,16 +208,13 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
   /**
    * Create new order
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async create(
-    workspaceId: string,
+  async createOrder(
     data: DeepPartial<MktOrderWorkspaceEntity>,
-    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_START());
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const order = repository.create({
       ...data,
@@ -232,7 +222,6 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       currency: data.currency ?? 'VND',
     });
 
-    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
     const savedOrder = await repository.save(order);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_SUCCESS(savedOrder.id));
@@ -246,19 +235,15 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
   /**
    * Update order by ID
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async update(
-    workspaceId: string,
+  async updateOrder(
     orderId: string,
     data: DeepPartial<MktOrderWorkspaceEntity>,
-    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_START(orderId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
-    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
     await repository.update(orderId, data as never);
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_SUCCESS(orderId));
@@ -267,17 +252,12 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   /**
    * Update order status
    */
-  async updateStatus(
-    workspaceId: string,
-    orderId: string,
-    status: ORDER_STATUS,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async updateStatus(orderId: string, status: ORDER_STATUS): Promise<void> {
     this.logger.debug(
       MKT_ORDER_LOG_MESSAGES.STATUS_UPDATE_START(orderId, status),
     );
 
-    await this.update(workspaceId, orderId, { status }, queryRunner);
+    await this.updateOrder(orderId, { status });
 
     this.logger.debug(
       MKT_ORDER_LOG_MESSAGES.STATUS_UPDATE_SUCCESS(orderId, status),
@@ -287,27 +267,23 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   /**
    * Update and return the updated order
    */
-  async updateAndReturnWithRunner(
-    workspaceId: string,
+  async updateOrderAndReturn(
     orderId: string,
     data: DeepPartial<MktOrderWorkspaceEntity>,
-    _queryRunner?: QueryRunner,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    await this.update(workspaceId, orderId, data);
+    await this.updateOrder(orderId, data);
 
-    return this.findByIdWithOptions(workspaceId, orderId);
+    return this.findByIdWithOptions(orderId);
   }
 
   /**
    * Update payment amounts for an order
    * Used when payment status changes (new payment, refund, etc.)
    *
-   * @param workspaceId - Workspace ID
    * @param orderId - Order ID
    * @param data - Payment amounts data (paidAmount, remainingAmount, paymentStatus)
    */
   async updatePaymentAmounts(
-    workspaceId: string,
     orderId: string,
     data: UpdatePaymentAmountsData,
   ): Promise<void> {
@@ -316,7 +292,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
         `paid=${data.paidAmount}, remaining=${data.remainingAmount}, status=${data.paymentStatus}`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     await repository.update(orderId, {
       paidAmount: data.paidAmount,
@@ -334,20 +310,11 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
   /**
    * Soft delete order by setting deletedAt timestamp
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async softDelete(
-    workspaceId: string,
-    orderId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeleteOrder(orderId: string): Promise<void> {
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_START(orderId));
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(orderId, {
-      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    } as never);
+    await this.softDelete(orderId);
 
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_SUCCESS(orderId));
   }
@@ -360,12 +327,10 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Get order statistics aggregated by customer IDs
    * Single query with GROUP BY to avoid N+1 problem
    *
-   * @param workspaceId - Workspace ID
    * @param customerIds - Array of customer IDs to aggregate
    * @returns Array of { customerId, orderCount, totalValue }
    */
   async getOrderStatsByCustomers(
-    workspaceId: string,
     customerIds: string[],
   ): Promise<
     Array<{ customerId: string; orderCount: number; totalValue: number }>
@@ -378,7 +343,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       `Fetching order stats for ${customerIds.length} customers`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const stats = await repository
       .createQueryBuilder('order')
@@ -399,21 +364,17 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   /**
    * Get order statistics for a single customer
    *
-   * @param workspaceId - Workspace ID
    * @param customerId - Customer ID
    * @returns Order statistics including counts, totals, and dates
    */
-  async getCustomerOrderStats(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<{
+  async getCustomerOrderStats(customerId: string): Promise<{
     orderCount: number;
     totalValue: number;
     firstOrderDate: string | null;
     lastOrderDate: string | null;
     averageOrderInterval: number;
   }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('order')
@@ -454,13 +415,11 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Conditional update - only updates if conditions are met
    * Returns affected row count for idempotency check
    *
-   * @param workspaceId - Workspace ID
    * @param where - Conditions that must be met for update
    * @param data - Data to update
    * @returns Object with affected row count
    */
-  async updateWhere(
-    workspaceId: string,
+  async updateOrderWhere(
     where: FindOptionsWhere<MktOrderWorkspaceEntity>,
     data: DeepPartial<MktOrderWorkspaceEntity>,
   ): Promise<{ affected: number }> {
@@ -468,7 +427,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       `Conditional update with where: ${JSON.stringify(where)}`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository.update(where, data as never);
 
@@ -482,13 +441,11 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * Single query with GROUP BY to avoid N+1 problem
    * Only counts orders with COMPLETED status for tier calculation
    *
-   * @param workspaceId - Workspace ID
    * @param customerIds - Array of customer IDs to aggregate
    * @param completedStatuses - Array of order statuses to count (default: ['COMPLETED'])
    * @returns Array of { customerId, orderCount, totalValue }
    */
   async getCompletedOrderStatsByCustomers(
-    workspaceId: string,
     customerIds: string[],
     completedStatuses: ORDER_STATUS[] = [ORDER_STATUS.COMPLETED],
   ): Promise<
@@ -502,7 +459,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       `Fetching completed order stats for ${customerIds.length} customers with statuses: ${completedStatuses.join(', ')}`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const stats = await repository
       .createQueryBuilder('order')

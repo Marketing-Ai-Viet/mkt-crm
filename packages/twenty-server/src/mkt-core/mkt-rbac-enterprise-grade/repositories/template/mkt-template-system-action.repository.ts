@@ -32,10 +32,9 @@ export class MktTemplateSystemActionRepository extends BaseWorkspaceRepository<M
   // ============================================
 
   async findByTemplateId(
-    workspaceId: string,
     templateId: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
-    return this.findMany(workspaceId, { templateId, isActive: true });
+    return this.findMany({ templateId, isActive: true });
   }
 
   async findByActionKey(
@@ -51,18 +50,16 @@ export class MktTemplateSystemActionRepository extends BaseWorkspaceRepository<M
   }
 
   async findByTemplateAndActionKey(
-    workspaceId: string,
     templateId: string,
     actionKey: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { templateId, actionKey, isActive: true });
+    return this.findOne({ templateId, actionKey, isActive: true });
   }
 
   async findAllowedByTemplateId(
-    workspaceId: string,
     templateId: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
-    return this.findMany(workspaceId, {
+    return this.findMany({
       templateId,
       isActive: true,
       isAllowed: true,
@@ -85,10 +82,9 @@ export class MktTemplateSystemActionRepository extends BaseWorkspaceRepository<M
   }
 
   async findDeniedByTemplateId(
-    workspaceId: string,
     templateId: string,
   ): Promise<MktTemplateSystemActionWorkspaceEntity[]> {
-    return this.findMany(workspaceId, {
+    return this.findMany({
       templateId,
       isActive: true,
       isAllowed: false,
@@ -137,27 +133,16 @@ export class MktTemplateSystemActionRepository extends BaseWorkspaceRepository<M
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
-  async updateIsAllowed(
-    workspaceId: string,
-    id: string,
-    isAllowed: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isAllowed });
+  async updateIsAllowed(id: string, isAllowed: boolean): Promise<void> {
+    await this.update(id, { isAllowed });
   }
 
-  async deactivateByTemplateId(
-    workspaceId: string,
-    templateId: string,
-  ): Promise<void> {
-    await this.updateWhere(workspaceId, { templateId }, { isActive: false });
+  async deactivateByTemplateId(templateId: string): Promise<void> {
+    await this.updateWhere({ templateId }, { isActive: false });
   }
 
   // ============================================

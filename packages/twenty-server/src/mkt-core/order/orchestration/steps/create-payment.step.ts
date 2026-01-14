@@ -147,10 +147,7 @@ export class CreatePaymentStep extends SagaStep<
       this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
 
       // Uses MktPaymentRepository for thread-safe access
-      await this.paymentRepository.softDeleteMany(
-        context.workspaceId,
-        data.paymentIds,
-      );
+      await this.paymentRepository.softDeleteManyPayments(data.paymentIds);
 
       this.logger.log('Payments deleted successfully');
     } catch (error) {
@@ -195,10 +192,7 @@ export class CreatePaymentStep extends SagaStep<
   ): Promise<Map<string, MktPaymentMethodWorkspaceEntity>> {
     const paymentMethodIds = paymentMethodInputs.map((p) => p.paymentMethodId);
 
-    return this.paymentMethodRepository.findManyByIds(
-      workspaceId,
-      paymentMethodIds,
-    );
+    return this.paymentMethodRepository.findManyByIdsAsMap(paymentMethodIds);
   }
 
   /**
@@ -293,7 +287,7 @@ export class CreatePaymentStep extends SagaStep<
     });
 
     // Uses MktPaymentRepository for thread-safe access
-    return this.paymentRepository.create(context.workspaceId, paymentData);
+    return this.paymentRepository.createPayment(paymentData);
   }
 
   private calculatePaymentDetails(

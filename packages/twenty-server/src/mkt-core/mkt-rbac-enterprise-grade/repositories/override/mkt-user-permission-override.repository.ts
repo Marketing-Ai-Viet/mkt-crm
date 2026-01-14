@@ -195,23 +195,14 @@ export class MktUserPermissionOverrideRepository extends BaseWorkspaceRepository
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   async deactivateByWorkspaceMemberId(
-    workspaceId: string,
     workspaceMemberId: string,
   ): Promise<void> {
-    await this.updateWhere(
-      workspaceId,
-      { workspaceMemberId },
-      { isActive: false },
-    );
+    await this.updateWhere({ workspaceMemberId }, { isActive: false });
   }
 
   async deactivateExpired(

@@ -44,11 +44,10 @@ export class MktPermissionPriorityConfigRepository extends BaseWorkspaceReposito
   }
 
   async findBySourceTypeAndSubType(
-    workspaceId: string,
     sourceType: string,
     sourceSubType?: string,
   ): Promise<MktPermissionPriorityConfigWorkspaceEntity | null> {
-    return this.findOne(workspaceId, {
+    return this.findOne({
       sourceType,
       sourceSubType,
       isActive: true,
@@ -131,16 +130,11 @@ export class MktPermissionPriorityConfigRepository extends BaseWorkspaceReposito
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   async updatePriority(
-    workspaceId: string,
     id: string,
     basePriority: number,
     priorityBoost?: number,
@@ -153,7 +147,7 @@ export class MktPermissionPriorityConfigRepository extends BaseWorkspaceReposito
       updateData.priorityBoost = priorityBoost;
     }
 
-    await this.update(workspaceId, id, updateData);
+    await this.update(id, updateData);
   }
 
   // ============================================

@@ -148,10 +148,7 @@ export class OrderPromotionListener {
 
     try {
       // Lấy danh sách usage records cho order
-      const usages = await this.usageRepository.findByOrderId(
-        event.workspaceId,
-        event.orderId,
-      );
+      const usages = await this.usageRepository.findByOrderId(event.orderId);
 
       if (usages.length === 0) {
         this.logger.debug('No promotion usages found for order', {
@@ -167,10 +164,8 @@ export class OrderPromotionListener {
           const promotionId = usage.promotionId as string;
 
           // Decrement usage count cho promotion thông qua repository method
-          const promotion = await this.promotionRepository.findById(
-            event.workspaceId,
-            promotionId,
-          );
+          const promotion =
+            await this.promotionRepository.findById(promotionId);
 
           if (promotion) {
             const currentCount = promotion.currentUsageCount ?? 0;
@@ -186,10 +181,7 @@ export class OrderPromotionListener {
           }
 
           // Soft delete usage record
-          await this.usageRepository.softDelete(
-            event.workspaceId,
-            usage.id as string,
-          );
+          await this.usageRepository.softDeleteUsage(usage.id as string);
 
           this.logger.debug('Rolled back promotion usage', {
             promotionId,

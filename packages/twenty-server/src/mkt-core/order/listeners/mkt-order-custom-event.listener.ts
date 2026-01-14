@@ -99,7 +99,6 @@ export class MktOrderCustomEventListener {
     }
 
     const updatedOrder = await this.orderRepository.findByIdWithOptions(
-      event.workspaceId,
       event.orderId,
       {
         relations: {
@@ -127,7 +126,7 @@ export class MktOrderCustomEventListener {
     );
 
     // Use repository to create order history
-    await this.orderHistoryRepository.create(event.workspaceId, {
+    await this.orderHistoryRepository.createOrderHistory({
       orderId: event.orderId,
       action: orderHistoryData.action,
       name: orderHistoryData.name,

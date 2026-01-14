@@ -42,8 +42,7 @@ export class OrganizationLevelService {
   ): Promise<OrganizationLevelHierarchyNode[]> {
     this.logger.debug('Getting organization level hierarchy');
 
-    const organizationLevelRepository =
-      await this.repository.getRepository(workspaceId);
+    const organizationLevelRepository = await this.repository.getRepository();
 
     // Build query conditions
     const whereConditions: Record<string, unknown> = {};
@@ -71,7 +70,7 @@ export class OrganizationLevelService {
     // Get employee counts in one query to avoid N+1
     const levelIds = organizationLevels.map((l) => l.id);
     const employeeCounts = options.includeStatistics
-      ? await this.repository.getEmployeeCountsByLevels(workspaceId, levelIds)
+      ? await this.repository.getEmployeeCountsByLevels(levelIds)
       : new Map<string, number>();
 
     // Build hierarchy tree
@@ -126,10 +125,7 @@ export class OrganizationLevelService {
     levelId: string,
     options: OrganizationLevelQueryOptions = {},
   ): Promise<OrganizationLevelHierarchyNode> {
-    const organizationLevel = await this.repository.findById(
-      workspaceId,
-      levelId,
-    );
+    const organizationLevel = await this.repository.findById(levelId);
 
     if (!organizationLevel) {
       throw new NotFoundException(
@@ -138,7 +134,7 @@ export class OrganizationLevelService {
     }
 
     const employeeCount = options.includeStatistics
-      ? await this.repository.countEmployeesAtLevel(workspaceId, levelId)
+      ? await this.repository.countEmployeesAtLevel(levelId)
       : 0;
 
     return this.buildHierarchyNode(
@@ -151,11 +147,9 @@ export class OrganizationLevelService {
   /**
    * Get organization level statistics
    */
-  async getOrganizationLevelStatistics(
-    workspaceId: string,
-  ): Promise<OrganizationLevelStatistics> {
+  async getOrganizationLevelStatistics(): Promise<OrganizationLevelStatistics> {
     // Get all organization levels
-    const allLevels = await this.repository.findAllWithOptions(workspaceId, {
+    const allLevels = await this.repository.findAllWithOptions({
       includeInactive: true,
       orderBy: 'hierarchyLevel',
     });
@@ -164,10 +158,8 @@ export class OrganizationLevelService {
 
     // Get employee counts in one query to avoid N+1
     const levelIds = allLevels.map((l) => l.id);
-    const employeeCounts = await this.repository.getEmployeeCountsByLevels(
-      workspaceId,
-      levelIds,
-    );
+    const employeeCounts =
+      await this.repository.getEmployeeCountsByLevels(levelIds);
 
     // Build employee stats by level
     const employeesByLevel: LevelEmployeeCount[] = [];
@@ -250,12 +242,9 @@ export class OrganizationLevelService {
     }
 
     // 2. Get existing levels for validation
-    const existingLevels = await this.repository.findAllWithOptions(
-      workspaceId,
-      {
-        includeInactive: true,
-      },
-    );
+    const existingLevels = await this.repository.findAllWithOptions({
+      includeInactive: true,
+    });
 
     // 3. Validate input - transform data to match validator interface
     const validationResult = this.hierarchyValidator.validateOrganizationLevel(
@@ -275,10 +264,7 @@ export class OrganizationLevelService {
     }
 
     // Check for unique level code
-    const codeExists = await this.repository.existsByCode(
-      workspaceId,
-      input.levelCode,
-    );
+    const codeExists = await this.repository.existsByCode(input.levelCode);
 
     if (codeExists) {
       throw new BadRequestException(
@@ -287,7 +273,7 @@ export class OrganizationLevelService {
     }
 
     // Create the organization level
-    const newLevel = await this.repository.create(workspaceId, {
+    const newLevel = await this.repository.create({
       levelCode: input.levelCode,
       levelName: input.levelName,
       levelNameEn: input.levelNameEn,
@@ -311,7 +297,7 @@ export class OrganizationLevelService {
   ): Promise<OrganizationLevelHierarchyNode> {
     this.logger.debug(`Updating organization level: ${levelId}`);
 
-    const existingLevel = await this.repository.findById(workspaceId, levelId);
+    const existingLevel = await this.repository.findById(levelId);
 
     if (!existingLevel) {
       throw new NotFoundException(
@@ -330,7 +316,7 @@ export class OrganizationLevelService {
         throw new BadRequestException(rangeError);
       }
 
-      const allLevels = await this.repository.findAllWithOptions(workspaceId, {
+      const allLevels = await this.repository.findAllWithOptions({
         includeInactive: true,
       });
 
@@ -355,11 +341,7 @@ export class OrganizationLevelService {
     }
 
     // Update the level
-    const updatedLevel = await this.repository.updateAndReturn(
-      workspaceId,
-      levelId,
-      input,
-    );
+    const updatedLevel = await this.repository.updateAndReturn(levelId, input);
 
     if (!updatedLevel) {
       throw new NotFoundException(
@@ -367,10 +349,7 @@ export class OrganizationLevelService {
       );
     }
 
-    const employeeCount = await this.repository.countEmployeesAtLevel(
-      workspaceId,
-      levelId,
-    );
+    const employeeCount = await this.repository.countEmployeesAtLevel(levelId);
 
     return this.buildHierarchyNode(updatedLevel, employeeCount, true);
   }
@@ -384,7 +363,7 @@ export class OrganizationLevelService {
   ): Promise<boolean> {
     this.logger.debug(`Deleting organization level: ${levelId}`);
 
-    const existingLevel = await this.repository.findById(workspaceId, levelId);
+    const existingLevel = await this.repository.findById(levelId);
 
     if (!existingLevel) {
       throw new NotFoundException(
@@ -393,22 +372,16 @@ export class OrganizationLevelService {
     }
 
     // Check if there are employees assigned to this level
-    const employeeCount = await this.repository.countEmployeesAtLevel(
-      workspaceId,
-      levelId,
-    );
+    const empCount = await this.repository.countEmployeesAtLevel(levelId);
 
-    if (employeeCount > 0) {
+    if (empCount > 0) {
       throw new BadRequestException(
-        `Cannot delete organization level. There are ${employeeCount} employees assigned to this level.`,
+        `Cannot delete organization level. There are ${empCount} employees assigned to this level.`,
       );
     }
 
     // Check if there are child levels
-    const childrenCount = await this.repository.countChildren(
-      workspaceId,
-      levelId,
-    );
+    const childrenCount = await this.repository.countChildren(levelId);
 
     if (childrenCount > 0) {
       throw new BadRequestException(
@@ -416,7 +389,7 @@ export class OrganizationLevelService {
       );
     }
 
-    await this.repository.delete(workspaceId, levelId);
+    await this.repository.deleteLevel(levelId);
 
     return true;
   }

@@ -57,7 +57,6 @@ export class PromotionListener implements OnModuleInit {
     try {
       // Lấy promotion data để warm up cache
       const promotion = await this.promotionRepository.findById(
-        event.workspaceId,
         event.promotionId,
       );
 
@@ -123,7 +122,6 @@ export class PromotionListener implements OnModuleInit {
 
       // Lấy promotion để thêm vào cache
       const promotion = await this.promotionRepository.findById(
-        event.workspaceId,
         event.promotionId,
       );
 
@@ -220,7 +218,6 @@ export class PromotionListener implements OnModuleInit {
 
       // Lấy promotion data để gửi thông báo
       const promotion = await this.promotionRepository.findById(
-        event.workspaceId,
         event.promotionId,
       );
 

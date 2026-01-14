@@ -332,10 +332,8 @@ export class OrderConfirmUtilsService {
     const orderCode = `${this.orderCodePrefix}${datePrefix}${String(nextNumber).padStart(ORDER_CODE_FORMAT.SEQUENCE_LENGTH, '0')}`;
 
     // Double-check uniqueness (defensive)
-    const existingOrder = await this.mktOrderRepository.findByOrderCode(
-      workspaceId,
-      orderCode,
-    );
+    const existingOrder =
+      await this.mktOrderRepository.findByOrderCode(orderCode);
 
     if (existingOrder) {
       this.logger.warn(
@@ -486,7 +484,7 @@ export class OrderConfirmUtilsService {
     }
 
     // Update order with all costs set to 0 and refund note
-    await this.mktOrderRepository.update(workspaceId, refundOrder.id, {
+    await this.mktOrderRepository.updateOrder(refundOrder.id, {
       subtotal: 0,
       tax: 0,
       discount: 0,
@@ -507,7 +505,7 @@ export class OrderConfirmUtilsService {
     orderId: string,
     refundDetails?: string,
   ): Promise<void> {
-    const order = await this.mktOrderRepository.findById(workspaceId, orderId);
+    const order = await this.mktOrderRepository.findById(orderId);
 
     if (!order) {
       throw new Error(`Order with ID ${orderId} not found`);
@@ -526,7 +524,7 @@ export class OrderConfirmUtilsService {
       ? `${existingNote}\n\n${fullConfirmationNote}`
       : fullConfirmationNote;
 
-    await this.mktOrderRepository.update(workspaceId, orderId, {
+    await this.mktOrderRepository.updateOrder(orderId, {
       note: updatedNote,
     });
 
@@ -801,7 +799,7 @@ Sản phẩm mới: -> ${this.changeVariantData.newVariantName}.\n
 Thời gian: ${DateTimeUtils.toISO(DateTimeUtils.now())}
 `;
     }
-    await this.mktOrderRepository.update(workspaceId, orderId, {
+    await this.mktOrderRepository.updateOrder(orderId, {
       mktCustomerId: updateOrderInfo.mktCustomerId || null,
       orderCode: updateOrderInfo.orderCode ?? '',
       subtotal: updateOrderInfo.subtotal,

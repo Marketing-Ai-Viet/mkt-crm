@@ -50,7 +50,6 @@ export class ValidateOrderStep extends SagaStep<
 
       // Use repository to find order with relations
       const order = await this.orderRepository.findByIdWithOptions(
-        context.workspaceId,
         input.orderId,
         { relations: { orderItems: true } },
       );

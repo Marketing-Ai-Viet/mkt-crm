@@ -32,10 +32,9 @@ export class MktPermissionTemplateRepository extends BaseWorkspaceRepository<Mkt
   // ============================================
 
   async findByTemplateKey(
-    workspaceId: string,
     templateKey: string,
   ): Promise<MktPermissionTemplateWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { templateKey, isActive: true });
+    return this.findOne({ templateKey, isActive: true });
   }
 
   async findByHierarchyLevel(
@@ -155,12 +154,8 @@ export class MktPermissionTemplateRepository extends BaseWorkspaceRepository<Mkt
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   // ============================================

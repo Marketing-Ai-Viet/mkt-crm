@@ -80,11 +80,10 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
    * e.g., distance=1 returns direct parent
    */
   async findAncestorsAtDistance(
-    workspaceId: string,
     departmentId: string,
     distance: number,
   ): Promise<MktDepartmentAncestryWorkspaceEntity[]> {
-    return this.findMany(workspaceId, {
+    return this.findMany({
       departmentId,
       distance,
       deletedAt: IsNull(),
@@ -94,11 +93,8 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
   /**
    * Find direct parent (distance = 1)
    */
-  async findDirectParent(
-    workspaceId: string,
-    departmentId: string,
-  ): Promise<string | null> {
-    const record = await this.findOne(workspaceId, {
+  async findDirectParent(departmentId: string): Promise<string | null> {
+    const record = await this.findOne({
       departmentId,
       distance: 1,
       deletedAt: IsNull(),
@@ -179,12 +175,8 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
    * Check if departmentA is an ancestor of departmentB
    * O(1) lookup using pre-computed ancestry
    */
-  async isAncestor(
-    workspaceId: string,
-    ancestorId: string,
-    descendantId: string,
-  ): Promise<boolean> {
-    return this.existsWhere(workspaceId, {
+  async isAncestor(ancestorId: string, descendantId: string): Promise<boolean> {
+    return this.existsWhere({
       departmentId: descendantId,
       ancestorId,
     });
@@ -195,11 +187,10 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
    * Returns null if no relationship exists
    */
   async getDistance(
-    workspaceId: string,
     ancestorId: string,
     descendantId: string,
   ): Promise<number | null> {
-    const record = await this.findOne(workspaceId, {
+    const record = await this.findOne({
       departmentId: descendantId,
       ancestorId,
       deletedAt: IsNull(),
@@ -216,10 +207,9 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
    * Create ancestry record with computedAt timestamp
    */
   async createAncestry(
-    workspaceId: string,
     data: Partial<MktDepartmentAncestryWorkspaceEntity>,
   ): Promise<MktDepartmentAncestryWorkspaceEntity> {
-    return this.create(workspaceId, {
+    return this.create({
       ...data,
       computedAt: data.computedAt ?? DateTimeUtils.now().toJSDate(),
     });
@@ -229,7 +219,6 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
    * Bulk create ancestry records
    */
   async bulkCreateAncestries(
-    workspaceId: string,
     records: Array<Partial<MktDepartmentAncestryWorkspaceEntity>>,
   ): Promise<MktDepartmentAncestryWorkspaceEntity[]> {
     if (records.length === 0) {
@@ -243,7 +232,7 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
       computedAt: data.computedAt ?? now,
     }));
 
-    return this.bulkCreate(workspaceId, items);
+    return this.bulkCreate(items);
   }
 
   /**
@@ -287,11 +276,8 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
   /**
    * Remove all ancestry records for a department (as descendant)
    */
-  async removeAllForDepartment(
-    workspaceId: string,
-    departmentId: string,
-  ): Promise<number> {
-    const affected = await this.softDeleteWhere(workspaceId, { departmentId });
+  async removeAllForDepartment(departmentId: string): Promise<number> {
+    const affected = await this.softDeleteWhere({ departmentId });
 
     this.logger.log(
       `Removed ${affected} ancestry records for department ${departmentId}`,
@@ -303,11 +289,8 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
   /**
    * Remove all ancestry records where department is an ancestor
    */
-  async removeAllWhereAncestor(
-    workspaceId: string,
-    ancestorId: string,
-  ): Promise<number> {
-    const affected = await this.softDeleteWhere(workspaceId, { ancestorId });
+  async removeAllWhereAncestor(ancestorId: string): Promise<number> {
+    const affected = await this.softDeleteWhere({ ancestorId });
 
     this.logger.log(
       `Removed ${affected} ancestry records where ${ancestorId} is ancestor`,
@@ -323,11 +306,8 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
   /**
    * Count ancestors for a department
    */
-  async countAncestors(
-    workspaceId: string,
-    departmentId: string,
-  ): Promise<number> {
-    return this.count(workspaceId, {
+  async countAncestors(departmentId: string): Promise<number> {
+    return this.count({
       departmentId,
       deletedAt: IsNull(),
     });
@@ -336,11 +316,8 @@ export class MktDepartmentAncestryRepository extends BaseWorkspaceRepository<Mkt
   /**
    * Count descendants for a department
    */
-  async countDescendants(
-    workspaceId: string,
-    ancestorId: string,
-  ): Promise<number> {
-    return this.count(workspaceId, {
+  async countDescendants(ancestorId: string): Promise<number> {
+    return this.count({
       ancestorId,
       deletedAt: IsNull(),
     });

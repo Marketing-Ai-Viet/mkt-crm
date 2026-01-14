@@ -221,21 +221,34 @@ export class MktPermissionAuditRepository extends BaseWorkspaceRepository<MktPer
   // ============================================
 
   async createBatch(
-    workspaceId: string,
     entities: Partial<MktPermissionAuditWorkspaceEntity>[],
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
-    return this.bulkCreate(workspaceId, entities);
+    return this.bulkCreate(entities);
   }
 
   // ============================================
   // SPECIALIZED COUNT OPERATIONS
   // ============================================
 
+  /**
+   * Count all audit entries for a workspace
+   */
+  async countWithWorkspace(workspaceId: string): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.count();
+  }
+
+  /**
+   * Count audit entries by check result
+   */
   async countByCheckResult(
     workspaceId: string,
     checkResult: CheckResult,
   ): Promise<number> {
-    return this.count(workspaceId, { checkResult });
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.count({ where: { checkResult } });
   }
 
   // ============================================

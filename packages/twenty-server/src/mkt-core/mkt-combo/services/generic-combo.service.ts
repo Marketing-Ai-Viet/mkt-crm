@@ -56,11 +56,8 @@ export class GenericComboService {
   /**
    * Lấy combo theo ID với items
    */
-  async getComboById(
-    workspaceId: string,
-    comboId: string,
-  ): Promise<GenericComboWithItems | null> {
-    return this.comboRepository.findByIdWithItems(workspaceId, comboId);
+  async getComboById(comboId: string): Promise<GenericComboWithItems | null> {
+    return this.comboRepository.findByIdWithItems(comboId);
   }
 
   /**
@@ -77,14 +74,11 @@ export class GenericComboService {
     );
 
     if (cachedId) {
-      return this.comboRepository.findByIdWithItems(workspaceId, cachedId);
+      return this.comboRepository.findByIdWithItems(cachedId);
     }
 
     // Fetch from DB
-    const result = await this.comboRepository.findActiveByCode(
-      workspaceId,
-      comboCode,
-    );
+    const result = await this.comboRepository.findActiveByCode(comboCode);
 
     if (result) {
       // Cache code mapping
@@ -102,15 +96,10 @@ export class GenericComboService {
    * Lấy danh sách combos với phân trang
    */
   async getCombosPaginated(
-    workspaceId: string,
     options: { limit: number; offset: number },
     filter?: GenericComboFilter,
   ): Promise<PaginatedGenericComboResult<MktGenericComboWorkspaceEntity>> {
-    return this.comboRepository.findAllActivePaginated(
-      workspaceId,
-      options,
-      filter,
-    );
+    return this.comboRepository.findAllActivePaginated(options, filter);
   }
 
   // ============================================
@@ -121,14 +110,10 @@ export class GenericComboService {
    * Tạo combo mới
    */
   async createCombo(
-    workspaceId: string,
     data: CreateGenericComboData,
   ): Promise<MktGenericComboWorkspaceEntity> {
     // Validate dữ liệu
-    const validation = await this.validationService.validateCreateData(
-      workspaceId,
-      data,
-    );
+    const validation = await this.validationService.validateCreateData(data);
 
     if (!validation.valid) {
       throw new GenericComboValidationException(
@@ -138,7 +123,7 @@ export class GenericComboService {
     }
 
     // Tạo combo
-    const combo = await this.comboRepository.create(workspaceId, data);
+    const combo = await this.comboRepository.createCombo(data);
 
     this.logger.log(`Created generic combo ${combo.id} (${combo.comboCode})`);
 
@@ -153,17 +138,13 @@ export class GenericComboService {
     comboId: string,
     data: UpdateGenericComboData,
   ): Promise<MktGenericComboWorkspaceEntity> {
-    const existing = await this.comboRepository.findById(workspaceId, comboId);
+    const existing = await this.comboRepository.findById(comboId);
 
     if (!existing) {
       throw new GenericComboNotFoundError(comboId);
     }
 
-    const updated = await this.comboRepository.update(
-      workspaceId,
-      comboId,
-      data,
-    );
+    const updated = await this.comboRepository.updateCombo(comboId, data);
 
     if (!updated) {
       throw new GenericComboNotFoundError(comboId);
@@ -188,13 +169,13 @@ export class GenericComboService {
    * Xóa combo (soft delete)
    */
   async deleteCombo(workspaceId: string, comboId: string): Promise<void> {
-    const existing = await this.comboRepository.findById(workspaceId, comboId);
+    const existing = await this.comboRepository.findById(comboId);
 
     if (!existing) {
       throw new GenericComboNotFoundError(comboId);
     }
 
-    await this.comboRepository.softDelete(workspaceId, comboId);
+    await this.comboRepository.softDeleteCombo(comboId);
 
     // Invalidate cache
     await this.cacheService.invalidateCombo(workspaceId, comboId);
@@ -221,13 +202,13 @@ export class GenericComboService {
     comboId: string,
     items: CreateGenericComboItemData[],
   ): Promise<void> {
-    const existing = await this.comboRepository.findById(workspaceId, comboId);
+    const existing = await this.comboRepository.findById(comboId);
 
     if (!existing) {
       throw new GenericComboNotFoundError(comboId);
     }
 
-    await this.itemRepository.createMany(workspaceId, comboId, items);
+    await this.itemRepository.createManyItems(comboId, items);
 
     // Invalidate cache
     await this.cacheService.invalidateCombo(workspaceId, comboId);
@@ -243,7 +224,7 @@ export class GenericComboService {
     comboId: string,
     itemId: string,
   ): Promise<void> {
-    await this.itemRepository.delete(workspaceId, itemId);
+    await this.itemRepository.deleteItem(itemId);
 
     // Invalidate cache
     await this.cacheService.invalidateCombo(workspaceId, comboId);
@@ -271,10 +252,8 @@ export class GenericComboService {
     }
 
     // Lấy combo với items
-    const comboWithItems = await this.comboRepository.findByIdWithItems(
-      workspaceId,
-      comboId,
-    );
+    const comboWithItems =
+      await this.comboRepository.findByIdWithItems(comboId);
 
     if (!comboWithItems) {
       throw new GenericComboNotFoundError(comboId);
@@ -300,10 +279,9 @@ export class GenericComboService {
    * Validate combo cho order
    */
   async validateForOrder(
-    workspaceId: string,
     comboId: string,
   ): Promise<GenericComboValidationResult> {
-    return this.validationService.validateForOrder(workspaceId, comboId);
+    return this.validationService.validateForOrder(comboId);
   }
 
   // ============================================
@@ -319,7 +297,7 @@ export class GenericComboService {
     language: MktSupportedLanguage = 'vi',
   ): Promise<GenericComboSnapshot> {
     // Validate trước
-    const validation = await this.validateForOrder(workspaceId, comboId);
+    const validation = await this.validateForOrder(comboId);
 
     if (!validation.valid) {
       throw new GenericComboValidationException(

@@ -185,7 +185,7 @@ export class AuditLogResolver {
     @AuthWorkspace() workspace: Workspace,
   ): Promise<AuditStatisticsOutput> {
     const [totalEntries, grantedCount, deniedCount] = await Promise.all([
-      this.auditRepository.count(workspace.id),
+      this.auditRepository.countWithWorkspace(workspace.id),
       this.auditRepository.countByCheckResult(workspace.id, CheckResult.PASS),
       this.auditRepository.countByCheckResult(workspace.id, CheckResult.FAIL),
     ]);

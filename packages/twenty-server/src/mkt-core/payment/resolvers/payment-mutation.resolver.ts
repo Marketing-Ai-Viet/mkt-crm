@@ -41,11 +41,11 @@ export class PaymentMutationResolver {
     description: 'Create a new payment with auto-prepared data from order',
   })
   async createPayment(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() _workspace: Workspace,
     @AuthWorkspaceMemberId() _workspaceMemberId: string | undefined,
     @Args('input') input: CreatePaymentInputDto,
   ): Promise<CreatePaymentResponseDto> {
-    return this.mktPaymentService.createPaymentMutation(workspace.id, input);
+    return this.mktPaymentService.createPaymentMutation(input);
   }
 
   /**
@@ -56,10 +56,10 @@ export class PaymentMutationResolver {
     description: 'Update a payment with QR code regeneration logic',
   })
   async updatePayment(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() _workspace: Workspace,
     @AuthWorkspaceMemberId() _workspaceMemberId: string | undefined,
     @Args('input') input: UpdatePaymentInputDto,
   ): Promise<UpdatePaymentResponseDto> {
-    return this.mktPaymentService.updatePaymentMutation(workspace.id, input);
+    return this.mktPaymentService.updatePaymentMutation(input);
   }
 }

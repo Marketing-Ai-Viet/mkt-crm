@@ -111,12 +111,11 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
    * Find template by template key
    */
   async findByKey(
-    workspaceId: string,
     templateKey: string,
   ): Promise<MktTemplateWorkspaceEntity | null> {
     this.logger.debug(`Finding template by key: ${templateKey}`);
 
-    return this.findOne(workspaceId, { templateKey });
+    return this.findOne({ templateKey });
   }
 
   /**
@@ -140,13 +139,12 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
    * Find template by type and locale
    */
   async findByTypeAndLocale(
-    workspaceId: string,
     type: string,
     locale: string,
   ): Promise<MktTemplateWorkspaceEntity | null> {
     this.logger.debug(`Finding template by type: ${type}, locale: ${locale}`);
 
-    return this.findOne(workspaceId, { type, locale });
+    return this.findOne({ type, locale });
   }
 
   /**
@@ -179,13 +177,12 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
   /**
    * Create new template
    */
-  async create(
-    workspaceId: string,
+  async createEntity(
     data: DeepPartial<MktTemplateWorkspaceEntity>,
   ): Promise<MktTemplateWorkspaceEntity> {
     this.logger.log(`Creating template: ${data.name}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const template = repository.create({
       ...data,
       isActive: data.isActive ?? true,
@@ -200,20 +197,19 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
    * Migrated from MktSendmailTemplateRepository.upsert
    */
   async upsertByTypeAndLocale(
-    workspaceId: string,
     type: string,
     locale: string,
     data: DeepPartial<MktTemplateWorkspaceEntity>,
   ): Promise<MktTemplateWorkspaceEntity> {
-    const existing = await this.findByTypeAndLocale(workspaceId, type, locale);
+    const existing = await this.findByTypeAndLocale(type, locale);
 
     if (existing) {
-      await this.update(workspaceId, existing.id, data);
+      await this.update(existing.id, data);
 
       return { ...existing, ...data } as MktTemplateWorkspaceEntity;
     }
 
-    return this.create(workspaceId, { ...data, type, locale });
+    return this.createEntity({ ...data, type, locale });
   }
 
   // ============================================
@@ -223,19 +219,19 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
   /**
    * Deactivate template (set isActive to false)
    */
-  async deactivate(workspaceId: string, templateId: string): Promise<void> {
+  async deactivate(templateId: string): Promise<void> {
     this.logger.log(`Deactivating template: ${templateId}`);
 
-    await this.update(workspaceId, templateId, { isActive: false });
+    await this.update(templateId, { isActive: false });
   }
 
   /**
    * Activate template (set isActive to true)
    */
-  async activate(workspaceId: string, templateId: string): Promise<void> {
+  async activate(templateId: string): Promise<void> {
     this.logger.log(`Activating template: ${templateId}`);
 
-    await this.update(workspaceId, templateId, { isActive: true });
+    await this.update(templateId, { isActive: true });
   }
 
   // ============================================
@@ -246,18 +242,14 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
    * Check if template exists by type and locale
    * Migrated from MktSendmailTemplateRepository.exists
    */
-  async existsByTypeAndLocale(
-    workspaceId: string,
-    type: string,
-    locale: string,
-  ): Promise<boolean> {
-    return this.existsWhere(workspaceId, { type, locale });
+  async existsByTypeAndLocale(type: string, locale: string): Promise<boolean> {
+    return this.existsWhere({ type, locale });
   }
 
   /**
    * Count templates by type
    */
-  async countByType(workspaceId: string, type: string): Promise<number> {
-    return this.count(workspaceId, { type });
+  async countByType(type: string): Promise<number> {
+    return this.count({ type });
   }
 }

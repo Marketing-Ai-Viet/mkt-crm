@@ -1,12 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 const MKT_PAYMENT_HISTORY_LOG_CONTEXT = 'MktPaymentHistory';
 
@@ -55,6 +53,8 @@ type FindPaymentHistoryOptions = {
 /**
  * MktPaymentHistoryRepository - Data access layer for PaymentHistory entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktPaymentHistory entity
  * - Query building and execution
@@ -66,24 +66,27 @@ type FindPaymentHistoryOptions = {
  * - Reporting payment activities
  */
 @Injectable()
-export class MktPaymentHistoryRepository {
-  private readonly logger = new Logger(
-    `${MKT_PAYMENT_HISTORY_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktPaymentHistoryRepository extends BaseWorkspaceRepository<MktPaymentHistoryWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktPaymentHistoryWorkspaceEntity,
+      `${MKT_PAYMENT_HISTORY_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find payment history by ID
+   * Find payment history by ID with options (logging included)
    */
-  async findById(
-    workspaceId: string,
+  async findByIdWithOptions(
     historyId: string,
     options?: FindPaymentHistoryOptions,
   ): Promise<MktPaymentHistoryWorkspaceEntity | null> {
@@ -91,7 +94,7 @@ export class MktPaymentHistoryRepository {
       MKT_PAYMENT_HISTORY_LOG_MESSAGES.FIND_BY_ID_START(historyId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const history = await repository.findOne({
       where: { id: historyId },
@@ -117,7 +120,6 @@ export class MktPaymentHistoryRepository {
    * Find payment histories by order ID
    */
   async findByOrderId(
-    workspaceId: string,
     orderId: string,
     options?: FindPaymentHistoryOptions,
   ): Promise<MktPaymentHistoryWorkspaceEntity[]> {
@@ -125,7 +127,7 @@ export class MktPaymentHistoryRepository {
       MKT_PAYMENT_HISTORY_LOG_MESSAGES.FIND_BY_ORDER_START(orderId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const histories = await repository.find({
       where: { mktOrderId: orderId },
@@ -147,7 +149,6 @@ export class MktPaymentHistoryRepository {
    * Find payment histories by payment ID
    */
   async findByPaymentId(
-    workspaceId: string,
     paymentId: string,
     options?: FindPaymentHistoryOptions,
   ): Promise<MktPaymentHistoryWorkspaceEntity[]> {
@@ -155,7 +156,7 @@ export class MktPaymentHistoryRepository {
       MKT_PAYMENT_HISTORY_LOG_MESSAGES.FIND_BY_PAYMENT_START(paymentId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const histories = await repository.find({
       where: { mktPaymentId: paymentId },
@@ -177,11 +178,10 @@ export class MktPaymentHistoryRepository {
    * Find payment histories by type
    */
   async findByType(
-    workspaceId: string,
     paymentType: PAYMENT_HISTORY_TYPE,
     options?: FindPaymentHistoryOptions,
   ): Promise<MktPaymentHistoryWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { paymentType },
@@ -196,16 +196,13 @@ export class MktPaymentHistoryRepository {
 
   /**
    * Create new payment history
-   * Supports QueryRunner for transaction context
    */
-  async create(
-    workspaceId: string,
+  async createPaymentHistory(
     data: CreatePaymentHistoryData,
-    queryRunner?: QueryRunner,
   ): Promise<MktPaymentHistoryWorkspaceEntity> {
     this.logger.debug(MKT_PAYMENT_HISTORY_LOG_MESSAGES.CREATE_START());
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const history = repository.create({
       name: data.name,
@@ -218,10 +215,7 @@ export class MktPaymentHistoryRepository {
       position: data.position,
     });
 
-    // Use queryRunner for transaction context if provided
-    const savedHistory = queryRunner
-      ? await queryRunner.manager.save(history)
-      : await repository.save(history);
+    const savedHistory = await repository.save(history);
 
     this.logger.debug(
       MKT_PAYMENT_HISTORY_LOG_MESSAGES.CREATE_SUCCESS(savedHistory.id),
@@ -237,15 +231,13 @@ export class MktPaymentHistoryRepository {
   /**
    * Update payment history by ID
    */
-  async update(
-    workspaceId: string,
+  async updatePaymentHistory(
     historyId: string,
     data: UpdatePaymentHistoryData,
-    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_PAYMENT_HISTORY_LOG_MESSAGES.UPDATE_START(historyId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     await repository.update(historyId, data);
 
@@ -261,18 +253,10 @@ export class MktPaymentHistoryRepository {
   /**
    * Soft delete payment history by setting deletedAt timestamp
    */
-  async softDelete(
-    workspaceId: string,
-    historyId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeletePaymentHistory(historyId: string): Promise<void> {
     this.logger.warn(MKT_PAYMENT_HISTORY_LOG_MESSAGES.DELETE_START(historyId));
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(historyId, {
-      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    await this.softDelete(historyId);
 
     this.logger.warn(
       MKT_PAYMENT_HISTORY_LOG_MESSAGES.DELETE_SUCCESS(historyId),
@@ -286,15 +270,12 @@ export class MktPaymentHistoryRepository {
   /**
    * Get payment history statistics by order
    */
-  async getStatsByOrder(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<{
+  async getStatsByOrder(orderId: string): Promise<{
     totalCount: number;
     totalAmount: number;
     paymentTypes: { type: PAYMENT_HISTORY_TYPE; count: number }[];
   }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('history')
@@ -319,22 +300,5 @@ export class MktPaymentHistoryRepository {
         count: parseInt(s.count, 10) || 0,
       })),
     };
-  }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get the underlying TypeORM repository
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktPaymentHistoryWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      MktPaymentHistoryWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
   }
 }

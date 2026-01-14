@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { IsNull, QueryRunner } from 'typeorm';
+import { IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -41,24 +41,6 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   }
 
   // ============================================
-  // WORKSPACE ID HELPER
-  // ============================================
-
-  /**
-   * Resolve workspace ID from provided value or scoped context
-   */
-  private resolveWorkspaceId(workspaceId?: string): string {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException(CUSTOMER_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
-    }
-
-    return wsId;
-  }
-
-  // ============================================
   // FIND OPERATIONS
   // ============================================
 
@@ -66,14 +48,10 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
    * Find customer by ID
    * @throws NotFoundException if customer not found
    */
-  async findCustomerById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktCustomerWorkspaceEntity> {
+  async findCustomerById(id: string): Promise<MktCustomerWorkspaceEntity> {
     this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_BY_ID_START(id));
 
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const customer = await this.findById(wsId, id);
+    const customer = await this.findById(id);
 
     if (!customer) {
       this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_BY_ID_NOT_FOUND(id));
@@ -90,13 +68,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Find customer by ID (returns null if not found)
    */
-  async findByIdOrNull(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktCustomerWorkspaceEntity | null> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-
-    return this.findById(wsId, id);
+  async findByIdOrNull(id: string): Promise<MktCustomerWorkspaceEntity | null> {
+    return this.findById(id);
   }
 
   /**
@@ -106,23 +79,22 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
     email: string,
     workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity | null> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
+    const repository = await this.getRepository(workspaceId);
 
-    return this.findOne(wsId, { email } as never);
+    return repository.findOne({
+      where: { email } as never,
+    });
   }
 
   /**
    * Find all customers with pagination
    */
   async findAllCustomers(
-    workspaceId?: string,
     options?: FindCustomerOptions,
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
+    this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_ALL_START('current'));
 
-    this.logger.debug(CUSTOMER_MESSAGES.LOG.FIND_ALL_START(wsId));
-
-    const repository = await this.getRepository(wsId);
+    const repository = await this.getRepository();
 
     const customers = await repository.find({
       where: { deletedAt: IsNull() },
@@ -139,9 +111,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Find all customer IDs (lightweight operation)
    */
-  async findAllIds(workspaceId?: string): Promise<string[]> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async findAllIds(): Promise<string[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('customer')
@@ -157,11 +128,9 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
    */
   async findByTier(
     tier: string,
-    workspaceId?: string,
     options?: { limit?: number; offset?: number },
   ): Promise<MktCustomerWorkspaceEntity[]> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('customer')
@@ -186,10 +155,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   async findByLinkedAccount(
     provider: string,
     externalId: string,
-    workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity | null> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('customer')
@@ -210,21 +177,13 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   async updateCustomer(
     id: string,
     data: Partial<MktCustomerWorkspaceEntity>,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
-    await manager.update(
-      'MktCustomerWorkspaceEntity',
-      { id },
-      {
-        ...data,
-        updatedAt: DateTimeUtils.now().toJSDate(),
-      },
-    );
+    await repository.update(id, {
+      ...data,
+      updatedAt: DateTimeUtils.now().toJSDate(),
+    } as never);
   }
 
   /**
@@ -233,26 +192,17 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   async updateCustomerAndReturn(
     id: string,
     data: Partial<MktCustomerWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktCustomerWorkspaceEntity> {
-    await this.updateCustomer(id, data, workspaceId);
+    await this.updateCustomer(id, data);
 
-    return this.findCustomerById(id, workspaceId);
+    return this.findCustomerById(id);
   }
 
   /**
    * Soft delete customer
    */
-  async softDeleteCustomer(
-    id: string,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktCustomerWorkspaceEntity', id);
+  async softDeleteCustomer(id: string): Promise<void> {
+    await this.softDelete(id);
 
     this.logger.log(`Soft deleted customer ${id}`);
   }
@@ -264,9 +214,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Count all customers
    */
-  async countCustomers(workspaceId?: string): Promise<number> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async countCustomers(): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({ where: { deletedAt: IsNull() } });
   }
@@ -274,12 +223,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Count customers by account owner
    */
-  async countByAccountOwner(
-    accountOwnerId: string,
-    workspaceId?: string,
-  ): Promise<number> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async countByAccountOwner(accountOwnerId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
       where: { accountOwnerId, deletedAt: IsNull() } as never,
@@ -289,12 +234,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Count customers by createdBy workspaceMemberId
    */
-  async countByCreatedByMember(
-    workspaceMemberId: string,
-    workspaceId?: string,
-  ): Promise<number> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async countByCreatedByMember(workspaceMemberId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('customer')
@@ -310,14 +251,12 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
    */
   async countByCreatedByMemberIds(
     workspaceMemberIds: string[],
-    workspaceId?: string,
   ): Promise<Map<string, number>> {
     if (workspaceMemberIds.length === 0) {
       return new Map();
     }
 
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('customer')
@@ -346,9 +285,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Count assigned customers (customers with createdBy set)
    */
-  async countAssigned(workspaceId?: string): Promise<number> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async countAssigned(): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('customer')
@@ -364,12 +302,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Check if customer code exists
    */
-  async isCodeExists(
-    customerCode: string,
-    workspaceId?: string,
-  ): Promise<boolean> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async isCodeExists(customerCode: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const count = await repository
       .createQueryBuilder('customer')
@@ -382,12 +316,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Find last customer code with prefix
    */
-  async findLastCodeWithPrefix(
-    prefix: string,
-    workspaceId?: string,
-  ): Promise<string | null> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async findLastCodeWithPrefix(prefix: string): Promise<string | null> {
+    const repository = await this.getRepository();
 
     const customer = await repository
       .createQueryBuilder('customer')
@@ -405,11 +335,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Get tier distribution statistics
    */
-  async getTierDistribution(
-    workspaceId?: string,
-  ): Promise<Array<{ tier: string; count: number }>> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async getTierDistribution(): Promise<Array<{ tier: string; count: number }>> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('customer')
@@ -428,9 +355,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Get total order value sum for all customers
    */
-  async getTotalOrderValueSum(workspaceId?: string): Promise<number> {
-    const wsId = this.resolveWorkspaceId(workspaceId);
-    const repository = await this.getRepository(wsId);
+  async getTotalOrderValueSum(): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('customer')

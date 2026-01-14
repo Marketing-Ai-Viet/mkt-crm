@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 import {
   ConfirmOrderInput,
@@ -40,7 +38,6 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
   async execute(
     context: SagaContext,
     input: ConfirmOrderInput,
-    queryRunner: QueryRunner,
   ): Promise<SagaStepResult<void>> {
     const typedContext = context as ConfirmOrderSagaContext;
 
@@ -106,12 +103,7 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
       });
 
       // Use repository - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderRepository.update(
-        context.workspaceId,
-        typedContext.orderId,
-        updateData,
-        queryRunner,
-      );
+      await this.orderRepository.update(typedContext.orderId, updateData);
 
       this.logger.log(
         `Order ${typedContext.orderId} updated: ${typedContext.previousStatus} -> ${typedContext.targetStatus}`,
@@ -131,10 +123,7 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
     }
   }
 
-  async compensate(
-    context: SagaContext,
-    queryRunner: QueryRunner,
-  ): Promise<void> {
+  async compensate(context: SagaContext): Promise<void> {
     const typedContext = context as ConfirmOrderSagaContext;
 
     if (!typedContext.orderId || !typedContext.rollbackOrder) {
@@ -151,25 +140,20 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
       const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
 
       // Use repository - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderRepository.update(
-        context.workspaceId,
-        typedContext.orderId,
-        {
-          status: typedContext.rollbackOrder.status,
-          accountingConfirmed: typedContext.rollbackOrder.accountingConfirmed,
-          note: typedContext.rollbackOrder.note,
-          // Restore payment fields
-          paymentStatus: typedContext.rollbackOrder.paymentStatus,
-          paidAmount: typedContext.rollbackOrder.paidAmount,
-          remainingAmount: typedContext.rollbackOrder.remainingAmount,
-          updatedAt: nowISO,
-          metadata: safeJsonStringify({
-            rolledBackAt: nowISO,
-            rolledBackFrom: typedContext.targetStatus,
-          }) as unknown as JSON,
-        },
-        queryRunner,
-      );
+      await this.orderRepository.update(typedContext.orderId, {
+        status: typedContext.rollbackOrder.status,
+        accountingConfirmed: typedContext.rollbackOrder.accountingConfirmed,
+        note: typedContext.rollbackOrder.note,
+        // Restore payment fields
+        paymentStatus: typedContext.rollbackOrder.paymentStatus,
+        paidAmount: typedContext.rollbackOrder.paidAmount,
+        remainingAmount: typedContext.rollbackOrder.remainingAmount,
+        updatedAt: nowISO,
+        metadata: safeJsonStringify({
+          rolledBackAt: nowISO,
+          rolledBackFrom: typedContext.targetStatus,
+        }) as unknown as JSON,
+      });
 
       this.logger.log(
         `Order ${typedContext.orderId} rolled back to: ${typedContext.rollbackOrder.status}`,

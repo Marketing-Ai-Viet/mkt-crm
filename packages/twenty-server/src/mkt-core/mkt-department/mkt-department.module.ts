@@ -6,6 +6,8 @@ import { MktDepartmentUpdateOnePostQueryHook } from 'src/mkt-core/mkt-department
 import {
   MktDepartmentRepository,
   MktDepartmentHierarchyRepository,
+  MktDepartmentSubManagerRepository,
+  MktDepartmentAncestryRepository,
 } from 'src/mkt-core/mkt-department/repositories';
 import { DepartmentTreeResolver } from 'src/mkt-core/mkt-department/resolvers/department-tree.resolver';
 import { DepartmentService } from 'src/mkt-core/mkt-department/services/department.service';
@@ -17,6 +19,8 @@ import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/servi
     // Repositories
     MktDepartmentRepository,
     MktDepartmentHierarchyRepository,
+    MktDepartmentSubManagerRepository,
+    MktDepartmentAncestryRepository,
     // Services
     DepartmentService,
     MktDepartmentHierarchyService,
@@ -30,6 +34,8 @@ import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/servi
     // Repositories
     MktDepartmentRepository,
     MktDepartmentHierarchyRepository,
+    MktDepartmentSubManagerRepository,
+    MktDepartmentAncestryRepository,
     // Services
     DepartmentService,
     MktDepartmentHierarchyService,

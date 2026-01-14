@@ -152,26 +152,16 @@ export class MktTemplateResourcePermissionRepository extends BaseWorkspaceReposi
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
-  async deactivateByTemplateId(
-    workspaceId: string,
-    templateId: string,
-  ): Promise<void> {
-    await this.updateWhere(workspaceId, { templateId }, { isActive: false });
+  async deactivateByTemplateId(templateId: string): Promise<void> {
+    await this.updateWhere({ templateId }, { isActive: false });
   }
 
-  async deactivateByResourceId(
-    workspaceId: string,
-    resourceId: string,
-  ): Promise<void> {
-    await this.updateWhere(workspaceId, { resourceId }, { isActive: false });
+  async deactivateByResourceId(resourceId: string): Promise<void> {
+    await this.updateWhere({ resourceId }, { isActive: false });
   }
 
   // ============================================

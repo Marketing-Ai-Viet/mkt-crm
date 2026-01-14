@@ -166,12 +166,11 @@ export class MktContractService {
   async linkContractToOrder(
     contractId: string,
     orderId: string,
-    workspaceId: string,
   ): Promise<void> {
     try {
       this.logger.log(`Linking contract ${contractId} to order ${orderId}`);
 
-      await this.orderRepository.update(workspaceId, orderId, {
+      await this.orderRepository.update(orderId, {
         mktContractId: contractId,
       });
 
@@ -201,10 +200,8 @@ export class MktContractService {
       let customerName = 'Unknown Customer';
 
       if (mktCustomerId) {
-        const customer = await this.customerRepository.findByIdOrNull(
-          mktCustomerId,
-          workspaceId,
-        );
+        const customer =
+          await this.customerRepository.findByIdOrNull(mktCustomerId);
 
         if (customer?.name) {
           customerName = customer.name;

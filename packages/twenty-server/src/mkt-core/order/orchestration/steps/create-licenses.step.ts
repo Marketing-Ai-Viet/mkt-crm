@@ -146,7 +146,6 @@ export class CreateLicensesStep extends SagaStep<
 
       // Get order with items from repository
       const order = await this.orderRepository.findByIdWithOptions(
-        context.workspaceId,
         context.orderId,
         { relations: { orderItems: true } },
       );
@@ -344,7 +343,7 @@ export class CreateLicensesStep extends SagaStep<
       const updatedLicenses = [...existingLicenses, orderItemLicense];
 
       // Update order item with license info
-      await this.orderItemRepository.update(workspaceId, item.id, {
+      await this.orderItemRepository.updateOrderItem(item.id, {
         licenses: updatedLicenses,
       });
 

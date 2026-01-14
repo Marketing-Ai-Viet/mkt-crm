@@ -144,30 +144,18 @@ export class MktUserPermissionTemplateRepository extends BaseWorkspaceRepository
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   async deactivateByWorkspaceMemberId(
-    workspaceId: string,
     workspaceMemberId: string,
   ): Promise<void> {
-    await this.updateWhere(
-      workspaceId,
-      { workspaceMemberId },
-      { isActive: false },
-    );
+    await this.updateWhere({ workspaceMemberId }, { isActive: false });
   }
 
-  async deactivateByTemplateId(
-    workspaceId: string,
-    templateId: string,
-  ): Promise<void> {
-    await this.updateWhere(workspaceId, { templateId }, { isActive: false });
+  async deactivateByTemplateId(templateId: string): Promise<void> {
+    await this.updateWhere({ templateId }, { isActive: false });
   }
 
   async deactivateExpired(
@@ -203,10 +191,7 @@ export class MktUserPermissionTemplateRepository extends BaseWorkspaceRepository
   // SPECIALIZED COUNT OPERATIONS
   // ============================================
 
-  async countByTemplateId(
-    workspaceId: string,
-    templateId: string,
-  ): Promise<number> {
-    return this.count(workspaceId, { templateId, isActive: true });
+  async countByTemplateId(templateId: string): Promise<number> {
+    return this.count({ templateId, isActive: true });
   }
 }

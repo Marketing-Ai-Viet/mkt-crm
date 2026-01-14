@@ -42,24 +42,17 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
    * Find option by key
    * Primary lookup method for configuration values
    */
-  async findByKey(
-    workspaceId: string,
-    key: string,
-  ): Promise<MktOptionWorkspaceEntity | null> {
+  async findByKey(key: string): Promise<MktOptionWorkspaceEntity | null> {
     this.logger.debug(`Finding option by key: ${key}`);
 
-    return this.findOne(workspaceId, { key });
+    return this.findOne({ key });
   }
 
   /**
    * Get value by key with optional default
    */
-  async getValue(
-    workspaceId: string,
-    key: string,
-    defaultValue?: string,
-  ): Promise<string | null> {
-    const option = await this.findByKey(workspaceId, key);
+  async getValue(key: string, defaultValue?: string): Promise<string | null> {
+    const option = await this.findByKey(key);
 
     return option?.value ?? defaultValue ?? null;
   }
@@ -67,12 +60,8 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
   /**
    * Get value as number
    */
-  async getNumberValue(
-    workspaceId: string,
-    key: string,
-    defaultValue?: number,
-  ): Promise<number> {
-    const value = await this.getValue(workspaceId, key);
+  async getNumberValue(key: string, defaultValue?: number): Promise<number> {
+    const value = await this.getValue(key);
 
     if (value === null) {
       return defaultValue ?? 0;
@@ -86,12 +75,8 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
   /**
    * Get value as boolean
    */
-  async getBooleanValue(
-    workspaceId: string,
-    key: string,
-    defaultValue = false,
-  ): Promise<boolean> {
-    const value = await this.getValue(workspaceId, key);
+  async getBooleanValue(key: string, defaultValue = false): Promise<boolean> {
+    const value = await this.getValue(key);
 
     if (value === null) {
       return defaultValue;
@@ -103,12 +88,8 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
   /**
    * Get value as JSON object
    */
-  async getJsonValue<T>(
-    workspaceId: string,
-    key: string,
-    defaultValue?: T,
-  ): Promise<T | null> {
-    const value = await this.getValue(workspaceId, key);
+  async getJsonValue<T>(key: string, defaultValue?: T): Promise<T | null> {
+    const value = await this.getValue(key);
 
     if (value === null) {
       return defaultValue ?? null;
@@ -161,13 +142,12 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
   /**
    * Create new option
    */
-  async create(
-    workspaceId: string,
+  async createEntity(
     data: DeepPartial<MktOptionWorkspaceEntity>,
   ): Promise<MktOptionWorkspaceEntity> {
     this.logger.log(`Creating option: ${data.key}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const option = repository.create(data);
 
     return repository.save(option);
@@ -178,20 +158,19 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
    * Creates if not exists, updates if exists
    */
   async setValue(
-    workspaceId: string,
     key: string,
     value: string,
     options?: { name?: string; description?: string },
   ): Promise<MktOptionWorkspaceEntity> {
-    const existing = await this.findByKey(workspaceId, key);
+    const existing = await this.findByKey(key);
 
     if (existing) {
-      await this.update(workspaceId, existing.id, { value });
+      await this.update(existing.id, { value });
 
       return { ...existing, value } as MktOptionWorkspaceEntity;
     }
 
-    return this.create(workspaceId, {
+    return this.createEntity({
       key,
       value,
       name: options?.name ?? key,
@@ -203,11 +182,10 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
    * Bulk set options
    */
   async setValues(
-    workspaceId: string,
     options: Array<{ key: string; value: string; name?: string }>,
   ): Promise<void> {
     for (const option of options) {
-      await this.setValue(workspaceId, option.key, option.value, {
+      await this.setValue(option.key, option.value, {
         name: option.name,
       });
     }
@@ -235,7 +213,7 @@ export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorksp
   /**
    * Check if option exists by key
    */
-  async existsByKey(workspaceId: string, key: string): Promise<boolean> {
-    return this.existsWhere(workspaceId, { key });
+  async existsByKey(key: string): Promise<boolean> {
+    return this.existsWhere({ key });
   }
 }

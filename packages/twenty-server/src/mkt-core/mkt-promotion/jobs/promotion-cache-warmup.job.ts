@@ -62,7 +62,7 @@ export class PromotionCacheWarmupJob {
   private async warmupCacheForWorkspace(workspaceId: string): Promise<number> {
     // Load tất cả active promotions với các relations cần thiết
     const activePromotions =
-      await this.promotionRepository.findActiveWithRules(workspaceId);
+      await this.promotionRepository.findActiveWithRules();
 
     if (activePromotions.length === 0) {
       this.logger.debug(

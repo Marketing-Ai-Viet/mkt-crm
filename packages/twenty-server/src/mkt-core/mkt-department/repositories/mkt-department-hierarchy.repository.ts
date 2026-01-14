@@ -41,11 +41,10 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
    * Returns hierarchy entry where this department is child
    */
   async findParentHierarchy(
-    workspaceId: string,
     childDepartmentId: string,
     relationshipTypes?: string[],
   ): Promise<MktDepartmentHierarchyWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const where: FindOptionsWhere<MktDepartmentHierarchyWorkspaceEntity> = {
       childDepartmentId,
@@ -74,7 +73,6 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
    * Returns hierarchy entries where this department is parent
    */
   async findChildHierarchies(
-    workspaceId: string,
     parentDepartmentId: string,
     options?: {
       includeInactive?: boolean;
@@ -83,7 +81,7 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
       sortDirection?: 'ASC' | 'DESC';
     },
   ): Promise<MktDepartmentHierarchyWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const {
       includeInactive = false,
@@ -122,13 +120,10 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
   /**
    * Find all hierarchies (with optional filters)
    */
-  async findAllWithFilters(
-    workspaceId: string,
-    options?: {
-      isActive?: boolean;
-      relationshipTypes?: string[];
-    },
-  ): Promise<MktDepartmentHierarchyWorkspaceEntity[]> {
+  async findAllWithFilters(options?: {
+    isActive?: boolean;
+    relationshipTypes?: string[];
+  }): Promise<MktDepartmentHierarchyWorkspaceEntity[]> {
     const where: FindOptionsWhere<MktDepartmentHierarchyWorkspaceEntity> = {};
 
     if (options?.isActive !== undefined) {
@@ -140,28 +135,26 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
         options.relationshipTypes as unknown as typeof where.relationshipType;
     }
 
-    return this.findMany(workspaceId, where);
+    return this.findMany(where);
   }
 
   /**
    * Find hierarchy by child department ID
    */
   async findByChildDepartmentId(
-    workspaceId: string,
     childDepartmentId: string,
   ): Promise<MktDepartmentHierarchyWorkspaceEntity | null> {
-    return this.findOne(workspaceId, { childDepartmentId });
+    return this.findOne({ childDepartmentId });
   }
 
   /**
    * Find hierarchies by level
    */
   async findByLevel(
-    workspaceId: string,
     level: number,
     isActive = true,
   ): Promise<MktDepartmentHierarchyWorkspaceEntity[]> {
-    return this.findMany(workspaceId, { hierarchyLevel: level, isActive });
+    return this.findMany({ hierarchyLevel: level, isActive });
   }
 
   // ============================================
@@ -171,8 +164,8 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
   /**
    * Get max hierarchy level
    */
-  async getMaxLevel(workspaceId: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async getMaxLevel(): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('h')
@@ -185,8 +178,8 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
   /**
    * Get average hierarchy level
    */
-  async getAverageLevel(workspaceId: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async getAverageLevel(): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('h')
@@ -221,14 +214,13 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
    * Update hierarchy by child department ID
    */
   async updateByChildDepartmentId(
-    workspaceId: string,
     childDepartmentId: string,
     data: Partial<MktDepartmentHierarchyWorkspaceEntity>,
   ): Promise<void> {
-    const hierarchy = await this.findOne(workspaceId, { childDepartmentId });
+    const hierarchy = await this.findOne({ childDepartmentId });
 
     if (hierarchy) {
-      await this.update(workspaceId, hierarchy.id, data);
+      await this.update(hierarchy.id, data);
     }
   }
 
@@ -239,7 +231,7 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
     childDepartmentId: string,
     data: Partial<MktDepartmentHierarchyWorkspaceEntity>,
   ): Promise<void> {
-    const hierarchy = await this.findOne(undefined as unknown as string, {
+    const hierarchy = await this.findOne({
       childDepartmentId,
     });
 

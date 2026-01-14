@@ -231,12 +231,8 @@ export class MktTemporaryPermissionRepository extends BaseWorkspaceRepository<Mk
     );
   }
 
-  async updateIsActive(
-    workspaceId: string,
-    id: string,
-    isActive: boolean,
-  ): Promise<void> {
-    await this.update(workspaceId, id, { isActive });
+  async updateIsActive(id: string, isActive: boolean): Promise<void> {
+    await this.update(id, { isActive });
   }
 
   async deactivateExpired(

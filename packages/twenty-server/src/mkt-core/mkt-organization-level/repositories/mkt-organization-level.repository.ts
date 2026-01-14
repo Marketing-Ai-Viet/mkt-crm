@@ -54,24 +54,22 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Find organization level by code
    */
   async findByCode(
-    workspaceId: string,
     levelCode: string,
   ): Promise<MktOrganizationLevelWorkspaceEntity | null> {
     this.logger.debug(`Finding organization level by code: ${levelCode}`);
 
-    return this.findOne(workspaceId, { levelCode });
+    return this.findOne({ levelCode });
   }
 
   /**
    * Find all organization levels with options
    */
   async findAllWithOptions(
-    workspaceId: string,
     options?: FindOrganizationLevelOptions,
   ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
     this.logger.debug('Finding all organization levels with options');
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const whereConditions: FindOptionsWhere<MktOrganizationLevelWorkspaceEntity> =
       {};
@@ -93,14 +91,13 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Find organization levels by hierarchy level
    */
   async findByHierarchyLevel(
-    workspaceId: string,
     hierarchyLevel: number,
   ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
     this.logger.debug(
       `Finding organization levels by hierarchy level: ${hierarchyLevel}`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { hierarchyLevel },
@@ -112,14 +109,13 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Find organization levels by multiple hierarchy levels
    */
   async findByHierarchyLevels(
-    workspaceId: string,
     hierarchyLevels: number[],
   ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
     if (hierarchyLevels.length === 0) {
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { hierarchyLevel: In(hierarchyLevels) },
@@ -131,14 +127,13 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Find organization levels by parent ID
    */
   async findByParentId(
-    workspaceId: string,
     parentLevelId: string,
   ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
     this.logger.debug(
       `Finding organization levels by parent ID: ${parentLevelId}`,
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { parentLevelId },
@@ -149,12 +144,10 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
   /**
    * Find root organization levels (level 1 or no parent)
    */
-  async findRootLevels(
-    workspaceId: string,
-  ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
+  async findRootLevels(): Promise<MktOrganizationLevelWorkspaceEntity[]> {
     this.logger.debug('Finding root organization levels');
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { hierarchyLevel: 1 },
@@ -165,10 +158,8 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
   /**
    * Find active organization levels
    */
-  async findActive(
-    workspaceId: string,
-  ): Promise<MktOrganizationLevelWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findActive(): Promise<MktOrganizationLevelWorkspaceEntity[]> {
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { isActive: true },
@@ -183,12 +174,8 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
   /**
    * Check if level code exists
    */
-  async existsByCode(
-    workspaceId: string,
-    levelCode: string,
-    excludeId?: string,
-  ): Promise<boolean> {
-    const existing = await this.findOne(workspaceId, { levelCode });
+  async existsByCode(levelCode: string, excludeId?: string): Promise<boolean> {
+    const existing = await this.findOne({ levelCode });
 
     if (!existing) {
       return false;
@@ -209,18 +196,15 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
   /**
    * Count active organization levels
    */
-  async countActive(workspaceId: string): Promise<number> {
-    return this.count(workspaceId, { isActive: true });
+  async countActive(): Promise<number> {
+    return this.count({ isActive: true });
   }
 
   /**
    * Count child levels
    */
-  async countChildren(
-    workspaceId: string,
-    parentLevelId: string,
-  ): Promise<number> {
-    return this.count(workspaceId, { parentLevelId });
+  async countChildren(parentLevelId: string): Promise<number> {
+    return this.count({ parentLevelId });
   }
 
   // ============================================
@@ -243,11 +227,15 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
   /**
    * Count employees at a specific level
    */
-  async countEmployeesAtLevel(
-    workspaceId: string,
-    levelId: string,
-  ): Promise<number> {
+  async countEmployeesAtLevel(levelId: string): Promise<number> {
     try {
+      const workspaceId =
+        this.scopedWorkspaceContextFactory.create().workspaceId;
+
+      if (!workspaceId) {
+        return 0;
+      }
+
       const memberRepository =
         await this.getWorkspaceMemberRepository(workspaceId);
 
@@ -268,7 +256,6 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Single query with GROUP BY to avoid N+1 problem
    */
   async getEmployeeCountsByLevels(
-    workspaceId: string,
     levelIds: string[],
   ): Promise<Map<string, number>> {
     if (levelIds.length === 0) {
@@ -276,6 +263,13 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
     }
 
     try {
+      const workspaceId =
+        this.scopedWorkspaceContextFactory.create().workspaceId;
+
+      if (!workspaceId) {
+        return new Map();
+      }
+
       const memberRepository =
         await this.getWorkspaceMemberRepository(workspaceId);
 
@@ -311,7 +305,6 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Update display order for multiple levels
    */
   async updateDisplayOrders(
-    workspaceId: string,
     levelOrders: Array<{ levelId: string; displayOrder: number }>,
   ): Promise<void> {
     this.logger.debug(
@@ -319,22 +312,22 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
     );
 
     for (const { levelId, displayOrder } of levelOrders) {
-      await this.update(workspaceId, levelId, { displayOrder });
+      await this.update(levelId, { displayOrder });
     }
   }
 
   /**
    * Activate organization level
    */
-  async activate(workspaceId: string, levelId: string): Promise<void> {
-    await this.update(workspaceId, levelId, { isActive: true });
+  async activate(levelId: string): Promise<void> {
+    await this.update(levelId, { isActive: true });
   }
 
   /**
    * Deactivate organization level
    */
-  async deactivate(workspaceId: string, levelId: string): Promise<void> {
-    await this.update(workspaceId, levelId, { isActive: false });
+  async deactivate(levelId: string): Promise<void> {
+    await this.update(levelId, { isActive: false });
   }
 
   // ============================================
@@ -344,10 +337,10 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
   /**
    * Delete organization level by ID
    */
-  async delete(workspaceId: string, levelId: string): Promise<void> {
+  async deleteLevel(levelId: string): Promise<void> {
     this.logger.warn(`Deleting organization level: ${levelId}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     await repository.delete(levelId);
   }
@@ -356,9 +349,9 @@ export class MktOrganizationLevelRepository extends BaseWorkspaceRepository<MktO
    * Soft delete organization level (set isActive = false)
    * Note: This is different from base class softDelete which sets deletedAt
    */
-  async deactivateLevel(workspaceId: string, levelId: string): Promise<void> {
+  async deactivateLevel(levelId: string): Promise<void> {
     this.logger.debug(`Deactivating organization level: ${levelId}`);
 
-    await this.deactivate(workspaceId, levelId);
+    await this.deactivate(levelId);
   }
 }

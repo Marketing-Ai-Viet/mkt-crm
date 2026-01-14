@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import {
   ORDER_ACTION,
   ORDER_STATUS,
   VALID_ACTIONS_BY_STATUS,
   VALID_CREATE_ACTIONS,
 } from 'src/mkt-core/order/constants';
+import { ORDER_VALIDATION_ERROR_CODES } from 'src/mkt-core/order/messages';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import {
   CreateOrderWithItemsInput,
   ConfirmOrderInput,
@@ -17,8 +18,7 @@ import {
   ValidationError,
   ValidationResult,
 } from 'src/mkt-core/order/types';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
-import { ORDER_VALIDATION_ERROR_CODES } from 'src/mkt-core/order/messages';
+import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories/mkt-payment-method.repository';
 
 /**
  * Service để validate order data trước khi xử lý
@@ -29,7 +29,9 @@ import { ORDER_VALIDATION_ERROR_CODES } from 'src/mkt-core/order/messages';
 @Injectable()
 export class OrderValidationService {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly customerRepository: MktCustomerRepository,
+    private readonly orderRepository: MktOrderRepository,
+    private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly mktProductProxy: MktProductProxyService,
   ) {}
 
@@ -43,20 +45,19 @@ export class OrderValidationService {
    * Validates external MKT Server products (required)
    */
   async validateCreateOrderInput(
-    workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationResult> {
     // Early return cho TRIAL_TO_PAID action
     if (input.action === ORDER_ACTION.TRIAL_TO_PAID) {
-      return this.validateTrialToPaidInput(workspaceId, input);
+      return this.validateTrialToPaidInput(input);
     }
 
     // Run all validations in parallel where possible
     const [customerErrors, itemErrors, paymentErrors, actionErrors] =
       await Promise.all([
-        this.validateCustomer(workspaceId, input.customerId),
-        this.validateOrderItems(workspaceId, input),
-        this.validatePaymentMethodsForAction(workspaceId, input),
+        this.validateCustomer(input.customerId),
+        this.validateOrderItems(input),
+        this.validatePaymentMethodsForAction(input),
         Promise.resolve(this.validateAction(input.action)),
       ]);
 
@@ -77,7 +78,6 @@ export class OrderValidationService {
    * Validate customer exists
    */
   private async validateCustomer(
-    workspaceId: string,
     customerId: string | undefined,
   ): Promise<ValidationError[]> {
     if (!customerId) {
@@ -90,7 +90,7 @@ export class OrderValidationService {
       ];
     }
 
-    const exists = await this.customerExists(workspaceId, customerId);
+    const exists = await this.customerExists(customerId);
 
     if (!exists) {
       return [
@@ -109,7 +109,6 @@ export class OrderValidationService {
    * Validate order items (external MKT products only)
    */
   private async validateOrderItems(
-    _workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationError[]> {
     const hasExternalProducts =
@@ -136,7 +135,6 @@ export class OrderValidationService {
    * and payments can be recorded later.
    */
   private async validatePaymentMethodsForAction(
-    workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationError[]> {
     // Payment methods are optional - order starts with paymentStatus = PENDING
@@ -146,7 +144,6 @@ export class OrderValidationService {
 
     // If payment methods provided, validate they exist
     return this.validatePaymentMethods(
-      workspaceId,
       input.paymentMethods.map((p) => p.paymentMethodId),
     );
   }
@@ -175,7 +172,6 @@ export class OrderValidationService {
    * The converted order starts with paymentStatus = PENDING.
    */
   async validateTrialToPaidInput(
-    workspaceId: string,
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
@@ -187,7 +183,7 @@ export class OrderValidationService {
         code: ORDER_VALIDATION_ERROR_CODES.TRIAL_ORDER_REQUIRED,
       });
     } else {
-      const trialOrder = await this.findOrder(workspaceId, input.trialOrderId);
+      const trialOrder = await this.findOrder(input.trialOrderId);
 
       if (!trialOrder) {
         errors.push({
@@ -208,7 +204,6 @@ export class OrderValidationService {
     // If provided, validate they exist
     if (input.paymentMethods && input.paymentMethods.length > 0) {
       const paymentErrors = await this.validatePaymentMethods(
-        workspaceId,
         input.paymentMethods.map((p) => p.paymentMethodId),
       );
 
@@ -229,13 +224,12 @@ export class OrderValidationService {
    * Validate input để confirm order
    */
   async validateConfirmOrderInput(
-    workspaceId: string,
     input: ConfirmOrderInput,
   ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
     // Check order exists
-    const order = await this.findOrder(workspaceId, input.orderId);
+    const order = await this.findOrder(input.orderId);
 
     if (!order) {
       errors.push({
@@ -271,23 +265,8 @@ export class OrderValidationService {
   /**
    * Kiểm tra customer tồn tại
    */
-  private async customerExists(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<boolean> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktCustomerWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const customer = await repository.findOne({
-      where: { id: customerId },
-      select: ['id'],
-    });
-
-    return !!customer;
+  private async customerExists(customerId: string): Promise<boolean> {
+    return this.customerRepository.exists(customerId);
   }
 
   /**
@@ -357,23 +336,12 @@ export class OrderValidationService {
    * Validate danh sách payment methods
    */
   private async validatePaymentMethods(
-    workspaceId: string,
     paymentMethodIds: string[],
   ): Promise<ValidationError[]> {
     const errors: ValidationError[] = [];
 
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktPaymentMethodWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    const methods = await repository.find({
-      where: paymentMethodIds.map((id) => ({ id })),
-      select: ['id', 'name'],
-    });
-
+    const methods =
+      await this.paymentMethodRepository.findByIds(paymentMethodIds);
     const foundIds = new Set(methods.map((m) => m.id));
 
     for (const methodId of paymentMethodIds) {
@@ -393,19 +361,9 @@ export class OrderValidationService {
    * Tìm order
    */
   private async findOrder(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    const repository =
-      await this.twentyORMGlobalManager.getRepositoryForWorkspace(
-        workspaceId,
-        MktOrderWorkspaceEntity,
-        { shouldBypassPermissionChecks: true },
-      );
-
-    return repository.findOne({
-      where: { id: orderId },
-    });
+    return this.orderRepository.findById(orderId);
   }
 
   /**

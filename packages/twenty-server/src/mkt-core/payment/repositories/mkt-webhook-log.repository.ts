@@ -1,9 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MKT_WEBHOOK_LOG_CONTEXT,
   MKT_WEBHOOK_LOG_LOG_MESSAGES,
@@ -21,6 +20,8 @@ import {
 /**
  * MktWebhookLogRepository - Data access layer for WebhookLog entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktWebhookLog entity
  * - Query building and execution
@@ -32,28 +33,33 @@ import {
  * - Debugging and monitoring
  */
 @Injectable()
-export class MktWebhookLogRepository {
-  private readonly logger = new Logger(`${MKT_WEBHOOK_LOG_CONTEXT}:Repository`);
-
+export class MktWebhookLogRepository extends BaseWorkspaceRepository<MktWebhookLogWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktWebhookLogWorkspaceEntity,
+      `${MKT_WEBHOOK_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find webhook log by ID
+   * Find webhook log by ID with options (logging included)
    */
-  async findById(
-    workspaceId: string,
+  async findByIdWithOptions(
     logId: string,
     options?: FindWebhookLogOptions,
   ): Promise<MktWebhookLogWorkspaceEntity | null> {
     this.logger.debug(MKT_WEBHOOK_LOG_LOG_MESSAGES.FIND_BY_ID_START(logId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const log = await repository.findOne({
       where: { id: logId },
@@ -77,7 +83,6 @@ export class MktWebhookLogRepository {
    * Find webhook log by SePay transaction ID
    */
   async findBySepayTransactionId(
-    workspaceId: string,
     transactionId: number,
     options?: FindWebhookLogOptions,
   ): Promise<MktWebhookLogWorkspaceEntity | null> {
@@ -85,7 +90,7 @@ export class MktWebhookLogRepository {
       MKT_WEBHOOK_LOG_LOG_MESSAGES.FIND_BY_TRANSACTION_ID_START(transactionId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const log = await repository.findOne({
       where: { sepayTransactionId: transactionId },
@@ -115,7 +120,6 @@ export class MktWebhookLogRepository {
    * Find webhook logs by matched order code
    */
   async findByOrderCode(
-    workspaceId: string,
     orderCode: string,
     options?: FindWebhookLogOptions,
   ): Promise<MktWebhookLogWorkspaceEntity[]> {
@@ -123,7 +127,7 @@ export class MktWebhookLogRepository {
       MKT_WEBHOOK_LOG_LOG_MESSAGES.FIND_BY_ORDER_CODE_START(orderCode),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const logs = await repository.find({
       where: { matchedOrderCode: orderCode },
@@ -145,11 +149,10 @@ export class MktWebhookLogRepository {
    * Find webhook logs by status
    */
   async findByStatus(
-    workspaceId: string,
     status: WebhookLogStatus,
     options?: FindWebhookLogOptions,
   ): Promise<MktWebhookLogWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { status },
@@ -162,11 +165,10 @@ export class MktWebhookLogRepository {
    * Find webhook logs by gateway
    */
   async findByGateway(
-    workspaceId: string,
     gateway: string,
     options?: FindWebhookLogOptions,
   ): Promise<MktWebhookLogWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { gateway },
@@ -178,11 +180,8 @@ export class MktWebhookLogRepository {
   /**
    * Check if webhook log exists by transaction ID
    */
-  async existsByTransactionId(
-    workspaceId: string,
-    transactionId: number,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async existsByTransactionId(transactionId: number): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const count = await repository.count({
       where: { sepayTransactionId: transactionId },
@@ -197,28 +196,22 @@ export class MktWebhookLogRepository {
 
   /**
    * Create new webhook log
-   * Supports QueryRunner for transaction context
    */
-  async create(
-    workspaceId: string,
+  async createWebhookLog(
     data: CreateWebhookLogData,
-    queryRunner?: QueryRunner,
   ): Promise<MktWebhookLogWorkspaceEntity> {
     this.logger.debug(
       MKT_WEBHOOK_LOG_LOG_MESSAGES.CREATE_START(data.sepayTransactionId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const log = repository.create({
       ...data,
       status: data.status ?? 'RECEIVED',
     });
 
-    // Use queryRunner for transaction context if provided
-    const savedLog = queryRunner
-      ? await queryRunner.manager.save(log)
-      : await repository.save(log);
+    const savedLog = await repository.save(log);
 
     this.logger.debug(MKT_WEBHOOK_LOG_LOG_MESSAGES.CREATE_SUCCESS(savedLog.id));
 
@@ -232,11 +225,9 @@ export class MktWebhookLogRepository {
   /**
    * Update webhook log by ID
    */
-  async update(
-    workspaceId: string,
+  async updateWebhookLog(
     logId: string,
     data: UpdateWebhookLogData,
-    _queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(
       MKT_WEBHOOK_LOG_LOG_MESSAGES.UPDATE_STATUS_START(
@@ -245,7 +236,7 @@ export class MktWebhookLogRepository {
       ),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     await repository.update(logId, data);
 
@@ -261,19 +252,17 @@ export class MktWebhookLogRepository {
    * Update webhook log status
    */
   async updateStatus(
-    workspaceId: string,
     logId: string,
     status: WebhookLogStatus,
     additionalData?: Omit<UpdateWebhookLogData, 'status'>,
   ): Promise<void> {
-    await this.update(workspaceId, logId, { status, ...additionalData });
+    await this.updateWebhookLog(logId, { status, ...additionalData });
   }
 
   /**
    * Mark webhook log as success
    */
   async markAsSuccess(
-    workspaceId: string,
     logId: string,
     data: {
       responseStatus: number;
@@ -282,7 +271,7 @@ export class MktWebhookLogRepository {
       matchedOrderCode?: string;
     },
   ): Promise<void> {
-    await this.update(workspaceId, logId, {
+    await this.updateWebhookLog(logId, {
       status: 'SUCCESS',
       ...data,
     });
@@ -292,7 +281,6 @@ export class MktWebhookLogRepository {
    * Mark webhook log as failed
    */
   async markAsFailed(
-    workspaceId: string,
     logId: string,
     data: {
       responseStatus: number;
@@ -301,7 +289,7 @@ export class MktWebhookLogRepository {
       errorMessage: string;
     },
   ): Promise<void> {
-    await this.update(workspaceId, logId, {
+    await this.updateWebhookLog(logId, {
       status: 'FAILED',
       ...data,
     });
@@ -314,16 +302,13 @@ export class MktWebhookLogRepository {
   /**
    * Get webhook statistics by gateway
    */
-  async getStatsByGateway(
-    workspaceId: string,
-    gateway: string,
-  ): Promise<{
+  async getStatsByGateway(gateway: string): Promise<{
     totalCount: number;
     successCount: number;
     failedCount: number;
     avgProcessingTimeMs: number;
   }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('log')
@@ -351,32 +336,12 @@ export class MktWebhookLogRepository {
   /**
    * Get recent webhook logs for monitoring
    */
-  async getRecentLogs(
-    workspaceId: string,
-    limit = 50,
-  ): Promise<MktWebhookLogWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+  async getRecentLogs(limit = 50): Promise<MktWebhookLogWorkspaceEntity[]> {
+    const repository = await this.getRepository();
 
     return repository.find({
       order: { createdAt: 'DESC' },
       take: limit,
     });
-  }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get the underlying TypeORM repository
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktWebhookLogWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      MktWebhookLogWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
   }
 }

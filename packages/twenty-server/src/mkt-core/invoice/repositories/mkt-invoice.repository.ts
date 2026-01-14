@@ -1,10 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { IsNull, QueryRunner } from 'typeorm';
+import { IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   INVOICE_MESSAGES,
   MKT_INVOICE_LOG_CONTEXT,
@@ -23,6 +23,8 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 /**
  * MktInvoiceRepository - Data access layer for Invoice entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktInvoice entity
  * - Query building and execution
@@ -33,36 +35,16 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * - S-Invoice integration (handled by Integration layer)
  */
 @Injectable()
-export class MktInvoiceRepository {
-  private readonly logger = new Logger(`${MKT_INVOICE_LOG_CONTEXT}:Repository`);
-
+export class MktInvoiceRepository extends BaseWorkspaceRepository<MktInvoiceWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
-   */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktInvoiceWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException(INVOICE_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktInvoiceWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      `${MKT_INVOICE_LOG_CONTEXT}:Repository`,
     );
   }
 
@@ -72,15 +54,12 @@ export class MktInvoiceRepository {
 
   /**
    * Find invoice by ID
+   * @throws NotFoundException if invoice not found
    */
-  async findById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktInvoiceWorkspaceEntity> {
+  async findInvoiceById(id: string): Promise<MktInvoiceWorkspaceEntity> {
     this.logger.debug(INVOICE_MESSAGES.LOG.FIND_BY_ID_START(id));
 
-    const repository = await this.getRepository(workspaceId);
-    const invoice = await repository.findOne({ where: { id } });
+    const invoice = await this.findById(id);
 
     if (!invoice) {
       this.logger.debug(INVOICE_MESSAGES.LOG.FIND_BY_ID_NOT_FOUND(id));
@@ -95,13 +74,8 @@ export class MktInvoiceRepository {
   /**
    * Find invoice by ID (returns null if not found)
    */
-  async findByIdOrNull(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktInvoiceWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
+  async findByIdOrNull(id: string): Promise<MktInvoiceWorkspaceEntity | null> {
+    return this.findById(id);
   }
 
   /**
@@ -109,11 +83,8 @@ export class MktInvoiceRepository {
    */
   async findByInvoiceNo(
     invoiceNo: string,
-    workspaceId?: string,
   ): Promise<MktInvoiceWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { invoiceNo } });
+    return this.findOne({ invoiceNo });
   }
 
   /**
@@ -121,11 +92,8 @@ export class MktInvoiceRepository {
    */
   async findBySInvoiceCode(
     sInvoiceCode: string,
-    workspaceId?: string,
   ): Promise<MktInvoiceWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { sInvoiceCode } });
+    return this.findOne({ sInvoiceCode });
   }
 
   /**
@@ -133,26 +101,19 @@ export class MktInvoiceRepository {
    */
   async findByTransactionUuid(
     transactionUuid: string,
-    workspaceId?: string,
   ): Promise<MktInvoiceWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { transactionUuid } });
+    return this.findOne({ transactionUuid });
   }
 
   /**
    * Find all invoices with pagination
    */
-  async findAll(
-    workspaceId?: string,
+  async findAllInvoices(
     options?: FindInvoiceOptions,
   ): Promise<MktInvoiceWorkspaceEntity[]> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+    this.logger.debug(INVOICE_MESSAGES.LOG.FIND_ALL_START('current'));
 
-    this.logger.debug(INVOICE_MESSAGES.LOG.FIND_ALL_START(wsId ?? 'unknown'));
-
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const invoices = await repository.find({
       where: { deletedAt: IsNull() },
@@ -169,8 +130,8 @@ export class MktInvoiceRepository {
   /**
    * Find all invoice IDs (lightweight operation)
    */
-  async findAllIds(workspaceId?: string): Promise<string[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findAllIds(): Promise<string[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('invoice')
@@ -186,10 +147,9 @@ export class MktInvoiceRepository {
    */
   async findByStatus(
     status: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktInvoiceWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('invoice')
@@ -213,10 +173,9 @@ export class MktInvoiceRepository {
    */
   async findBySupplierTaxCode(
     supplierTaxCode: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktInvoiceWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('invoice')
@@ -242,11 +201,10 @@ export class MktInvoiceRepository {
   /**
    * Create a new invoice
    */
-  async create(
+  async createInvoice(
     data: Partial<MktInvoiceWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktInvoiceWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const invoice = repository.create(data);
     const savedInvoice = await repository.save(invoice);
@@ -263,23 +221,16 @@ export class MktInvoiceRepository {
   /**
    * Update invoice by ID
    */
-  async update(
+  async updateInvoice(
     id: string,
     data: Partial<MktInvoiceWorkspaceEntity>,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
-    await manager.update(
-      'MktInvoiceWorkspaceEntity',
-      { id },
-      {
-        ...data,
-        updatedAt: DateTimeUtils.now().toJSDate(),
-      },
-    );
+    await repository.update(id, {
+      ...data,
+      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
 
     this.logger.debug(INVOICE_MESSAGES.LOG.UPDATE_SUCCESS(id));
   }
@@ -287,28 +238,20 @@ export class MktInvoiceRepository {
   /**
    * Update and return the updated invoice
    */
-  async updateAndReturn(
+  async updateInvoiceAndReturn(
     id: string,
     data: Partial<MktInvoiceWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktInvoiceWorkspaceEntity> {
-    await this.update(id, data, workspaceId);
+    await this.updateInvoice(id, data);
 
-    return this.findById(id, workspaceId);
+    return this.findInvoiceById(id);
   }
 
   /**
    * Soft delete invoice
    */
-  async softDelete(
-    id: string,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktInvoiceWorkspaceEntity', id);
+  async softDeleteInvoice(id: string): Promise<void> {
+    await this.softDelete(id);
 
     this.logger.log(INVOICE_MESSAGES.LOG.SOFT_DELETE_SUCCESS(id));
   }
@@ -320,17 +263,15 @@ export class MktInvoiceRepository {
   /**
    * Count all invoices
    */
-  async count(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where: { deletedAt: IsNull() } });
+  async countInvoices(): Promise<number> {
+    return this.count({ deletedAt: IsNull() } as never);
   }
 
   /**
    * Count invoices by status
    */
-  async countByStatus(status: string, workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByStatus(status: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
       where: { status: status as MKT_INVOICE_STATUS, deletedAt: IsNull() },
@@ -344,10 +285,8 @@ export class MktInvoiceRepository {
   /**
    * Get status distribution statistics
    */
-  async getStatusDistribution(
-    workspaceId?: string,
-  ): Promise<StatusDistributionItem[]> {
-    const repository = await this.getRepository(workspaceId);
+  async getStatusDistribution(): Promise<StatusDistributionItem[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('invoice')
@@ -366,8 +305,8 @@ export class MktInvoiceRepository {
   /**
    * Get total amount sum for all invoices
    */
-  async getTotalAmountSum(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async getTotalAmountSum(): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('invoice')
@@ -384,9 +323,8 @@ export class MktInvoiceRepository {
   async findByIssueDateRange(
     startDate: string,
     endDate: string,
-    workspaceId?: string,
   ): Promise<MktInvoiceWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('invoice')
@@ -404,34 +342,14 @@ export class MktInvoiceRepository {
   /**
    * Check if invoice number exists
    */
-  async isInvoiceNoExists(
-    invoiceNo: string,
-    workspaceId?: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository
-      .createQueryBuilder('invoice')
-      .where('invoice.invoiceNo = :invoiceNo', { invoiceNo })
-      .getCount();
-
-    return count > 0;
+  async isInvoiceNoExists(invoiceNo: string): Promise<boolean> {
+    return this.existsWhere({ invoiceNo });
   }
 
   /**
    * Check if S-Invoice code exists
    */
-  async isSInvoiceCodeExists(
-    sInvoiceCode: string,
-    workspaceId?: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository
-      .createQueryBuilder('invoice')
-      .where('invoice.sInvoiceCode = :sInvoiceCode', { sInvoiceCode })
-      .getCount();
-
-    return count > 0;
+  async isSInvoiceCodeExists(sInvoiceCode: string): Promise<boolean> {
+    return this.existsWhere({ sInvoiceCode });
   }
 }

@@ -199,16 +199,12 @@ export class CalculatePromotionStep extends SagaStep<
       );
 
       // Reset promotion fields using repository
-      await this.orderRepository.update(
-        context.workspaceId,
-        rollbackData.orderId,
-        {
-          couponCode: null,
-          promotionDiscount: 0,
-          appliedPromotions: null,
-          totalAmount: rollbackData.originalTotalAmount,
-        },
-      );
+      await this.orderRepository.updateOrder(rollbackData.orderId, {
+        couponCode: null,
+        promotionDiscount: 0,
+        appliedPromotions: null,
+        totalAmount: rollbackData.originalTotalAmount,
+      });
 
       // Clear metadata
       context.metadata.delete('promotionResult');
@@ -275,7 +271,7 @@ export class CalculatePromotionStep extends SagaStep<
     }
 
     // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
-    await this.orderRepository.update(context.workspaceId, context.orderId, {
+    await this.orderRepository.updateOrder(context.orderId, {
       couponCode: couponCode ?? null,
       promotionDiscount: result.totalDiscount,
       appliedPromotions:
