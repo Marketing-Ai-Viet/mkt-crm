@@ -7,48 +7,15 @@ import { DepartmentService } from 'src/mkt-core/mkt-department/services/departme
 import {
   CASBIN_CACHE_KEYS,
   CASBIN_CACHE_TTL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
+} from 'src/mkt-core/infrastructure/redis/constants/rbac';
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-
-/**
- * Department tree node (simplified for RBAC)
- */
-export type RbacDepartmentNode = {
-  id: string;
-  code: string;
-  name: string;
-  level: number;
-  children: RbacDepartmentNode[];
-};
-
-/**
- * Department tree structure for workspace
- */
-export type WorkspaceDepartmentTree = {
-  roots: RbacDepartmentNode[];
-  flatMap: Map<string, RbacDepartmentNode>;
-  buildAt: number;
-  version: number;
-};
-
-/**
- * Serializable tree for cache storage
- */
-type SerializedDepartmentTree = {
-  roots: RbacDepartmentNode[];
-  flatMapEntries: Array<[string, RbacDepartmentNode]>;
-  buildAt: number;
-  version: number;
-};
-
-/**
- * Local cache entry with timestamp
- */
-type LocalCacheEntry<T> = {
-  data: T;
-  timestamp: number;
-};
+import {
+  LocalCacheEntry,
+  RbacDepartmentNode,
+  SerializedDepartmentTree,
+  WorkspaceDepartmentTree,
+} from 'src/mkt-core/mkt-department/types';
 
 /**
  * Cache TTL constants

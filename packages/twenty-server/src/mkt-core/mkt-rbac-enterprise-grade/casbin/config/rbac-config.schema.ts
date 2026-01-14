@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 
-import { CASBIN_CACHE_TTL } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
+import { CASBIN_CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants/rbac';
 
 // ============================================
 // HELPER SCHEMAS

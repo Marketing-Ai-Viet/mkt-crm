@@ -20,8 +20,3 @@ export {
   ActivePolicy,
 } from './rbac-enforcer.service';
 export { RbacCacheService } from './rbac-cache.service';
-export {
-  DepartmentTreeService,
-  RbacDepartmentNode,
-  WorkspaceDepartmentTree,
-} from './department-tree.service';

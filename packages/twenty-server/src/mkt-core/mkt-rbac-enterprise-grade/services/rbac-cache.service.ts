@@ -6,7 +6,7 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import {
   CASBIN_CACHE_KEYS,
   CASBIN_CACHE_TTL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
+} from 'src/mkt-core/infrastructure/redis/constants/rbac';
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 

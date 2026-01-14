@@ -10,4 +10,4 @@ export {
   RBAC_METRICS,
   RBAC_METRICS_KEY,
   RBAC_METRICS_RETENTION_MS,
-} from 'src/mkt-core/infrastructure/redis/constants/rbac.constant';
+} from 'src/mkt-core/infrastructure/redis/constants/rbac/rbac.constant';

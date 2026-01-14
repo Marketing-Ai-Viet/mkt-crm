@@ -7,7 +7,7 @@ import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/const
 import {
   CASBIN_CACHE_KEYS,
   CASBIN_CACHE_TTL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
+} from 'src/mkt-core/infrastructure/redis/constants/rbac';
 import {
   CasbinRbacConfig,
   rbacConfig,

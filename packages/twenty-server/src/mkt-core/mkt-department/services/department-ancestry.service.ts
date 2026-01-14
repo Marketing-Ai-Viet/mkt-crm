@@ -9,6 +9,12 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
+import {
+  AncestorData,
+  AncestryStaleResult,
+  FullRebuildAncestryResult,
+  RebuildAncestryResult,
+} from 'src/mkt-core/mkt-department/types';
 
 /**
  * Ancestry cache TTL in seconds (1 hour)
@@ -24,44 +30,6 @@ const STALENESS_THRESHOLD_MS = 5 * 60 * 1000;
  * Cache key prefix for ancestry data
  */
 const ANCESTRY_CACHE_KEY_PREFIX = 'rbac:dept:ancestors:';
-
-/**
- * Ancestor data with distance
- */
-export type AncestorData = {
-  ancestorId: string;
-  distance: number;
-  departmentCode?: string;
-  departmentName?: string;
-};
-
-/**
- * Ancestry staleness result
- */
-export type AncestryStaleResult = {
-  stale: boolean;
-  ageMs: number;
-  computedAt?: Date;
-};
-
-/**
- * Rebuild result
- */
-export type RebuildResult = {
-  departmentId: string;
-  ancestorsCount: number;
-  durationMs: number;
-};
-
-/**
- * Full rebuild result
- */
-export type FullRebuildResult = {
-  totalDepartments: number;
-  totalAncestryRecords: number;
-  durationMs: number;
-  errors: Array<{ departmentId: string; error: string }>;
-};
 
 /**
  * Department Ancestry Service
@@ -265,7 +233,7 @@ export class DepartmentAncestryService {
    */
   async rebuildAncestryForDepartment(
     departmentId: string,
-  ): Promise<RebuildResult> {
+  ): Promise<RebuildAncestryResult> {
     const startTime = DateTimeUtils.now();
 
     const repository = await this.getAncestryRepository();
@@ -318,8 +286,8 @@ export class DepartmentAncestryService {
    */
   async rebuildAncestryForSubtree(
     departmentId: string,
-  ): Promise<RebuildResult[]> {
-    const results: RebuildResult[] = [];
+  ): Promise<RebuildAncestryResult[]> {
+    const results: RebuildAncestryResult[] = [];
 
     // Rebuild for this department
     const result = await this.rebuildAncestryForDepartment(departmentId);
@@ -349,7 +317,7 @@ export class DepartmentAncestryService {
    * Full rebuild of all ancestry data
    * Use during deployment or data repair
    */
-  async rebuildAllAncestry(): Promise<FullRebuildResult> {
+  async rebuildAllAncestry(): Promise<FullRebuildAncestryResult> {
     const startTime = DateTimeUtils.now();
     const errors: Array<{ departmentId: string; error: string }> = [];
 

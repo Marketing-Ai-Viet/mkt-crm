@@ -13,12 +13,12 @@ import {
 import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
 import {
-  DepartmentTreeService,
   RbacCacheService,
   RbacContextService,
   RbacEnforcerService,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/services';
 import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
+import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/department-tree.service';
 
 /**
  * Enterprise RBAC Module

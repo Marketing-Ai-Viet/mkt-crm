@@ -14,7 +14,7 @@ import {
 import {
   CASBIN_CACHE_KEYS,
   CASBIN_CACHE_TTL,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/constants/cache-keys.constant';
+} from 'src/mkt-core/infrastructure/redis/constants/rbac';
 import {
   PolicyVersion,
   SyncDeadLetterEntry,
@@ -24,7 +24,7 @@ import {
 import {
   RBAC_DEAD_LETTER_KEY,
   RBAC_DEAD_LETTER_TTL,
-} from 'src/mkt-core/infrastructure/redis/constants/rbac.constant';
+} from 'src/mkt-core/infrastructure/redis/constants/rbac/rbac.constant';
 import { MktPolicyVersionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-version.workspace-entity';
 
 /**
