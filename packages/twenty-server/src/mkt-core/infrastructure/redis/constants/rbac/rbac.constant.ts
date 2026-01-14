@@ -65,3 +65,44 @@ export const RBAC_SYNC = {
   POLICY_VERSION_KEY: RBAC_POLICY_VERSION_KEY,
   POLICY_HASH_KEY: RBAC_POLICY_HASH_KEY,
 } as const;
+
+// ============================================
+// CIRCUIT BREAKER CONSTANTS
+// ============================================
+
+/**
+ * Circuit breaker configuration for adapter failures
+ *
+ * States:
+ * - CLOSED: Normal operation, requests pass through
+ * - OPEN: Too many failures, requests blocked
+ * - HALF_OPEN: Testing if service recovered
+ */
+export const RBAC_CIRCUIT_BREAKER = {
+  /** Number of failures before opening circuit */
+  FAILURE_THRESHOLD: 5,
+  /** Time to wait before attempting recovery (30 seconds) */
+  RESET_TIMEOUT_MS: 30000,
+  /** Successful requests needed to close circuit */
+  HALF_OPEN_SUCCESS_THRESHOLD: 2,
+} as const;
+
+// ============================================
+// HEALTH INDICATOR THRESHOLDS
+// ============================================
+
+/**
+ * Health indicator thresholds for RBAC system monitoring
+ */
+export const RBAC_HEALTH_THRESHOLDS = {
+  /** Maximum P95 latency in milliseconds before warning */
+  MAX_P95_LATENCY_MS: 100,
+  /** Minimum acceptable cache hit rate percentage */
+  MIN_CACHE_HIT_RATE: 50,
+  /** Minimum acceptable sync success rate percentage */
+  MIN_SYNC_SUCCESS_RATE: 80,
+  /** Warning threshold for dead letter queue size */
+  MAX_DEAD_LETTER_SIZE: 100,
+  /** Maximum acceptable number of open circuit breakers */
+  MAX_OPEN_CIRCUIT_BREAKERS: 3,
+} as const;

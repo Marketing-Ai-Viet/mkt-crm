@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
 import {
@@ -55,7 +55,7 @@ import { RoleInheritanceCacheService } from './role-inheritance-cache.service';
  * - Dry-run for previewing changes
  */
 @Injectable()
-export class PolicySyncService {
+export class PolicySyncService implements OnModuleDestroy {
   private readonly logger = new Logger(
     `${CASBIN_LOG_CONTEXT}:PolicySyncService`,
   );
@@ -65,6 +65,9 @@ export class PolicySyncService {
 
   // Active syncs tracking
   private readonly activeSyncs = new Set<string>();
+
+  // Shutdown flag
+  private isShuttingDown = false;
 
   // Config
   private readonly syncConfig: RbacSyncConfig;
@@ -120,6 +123,14 @@ export class PolicySyncService {
    * Sync policies for workspace
    */
   async syncWorkspace(workspaceId: string): Promise<SyncResult> {
+    // Check if shutting down
+    if (this.isShuttingDown) {
+      return {
+        status: 'skipped',
+        reason: 'Service is shutting down',
+      };
+    }
+
     const startTime = DateTimeUtils.now();
 
     // Check if already syncing
@@ -636,5 +647,54 @@ export class PolicySyncService {
       isInDeadLetter: deadLetter !== null,
       isSyncing: this.activeSyncs.has(workspaceId),
     };
+  }
+
+  // ============================================
+  // LIFECYCLE HOOKS
+  // ============================================
+
+  /**
+   * Cleanup on module destroy
+   *
+   * - Clears all debounce timers
+   * - Releases all sync locks
+   * - Prevents new syncs from starting
+   */
+  async onModuleDestroy(): Promise<void> {
+    this.logger.log('PolicySyncService shutting down...');
+    this.isShuttingDown = true;
+
+    // Clear all debounce timers
+    for (const [workspaceId, timer] of this.debounceTimers.entries()) {
+      clearTimeout(timer);
+      this.logger.debug(`Cleared debounce timer for workspace: ${workspaceId}`);
+    }
+    this.debounceTimers.clear();
+
+    // Release all sync locks for active syncs
+    const activeWorkspaces = Array.from(this.activeSyncs);
+
+    for (const workspaceId of activeWorkspaces) {
+      try {
+        await this.policyVersionRepository.releaseSyncLock(workspaceId);
+        this.logger.debug(`Released sync lock for workspace: ${workspaceId}`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to release sync lock for ${workspaceId}: ${error}`,
+        );
+      }
+    }
+    this.activeSyncs.clear();
+
+    this.logger.log(
+      `PolicySyncService shutdown complete (cleared ${activeWorkspaces.length} locks)`,
+    );
+  }
+
+  /**
+   * Check if service is shutting down
+   */
+  isServiceShuttingDown(): boolean {
+    return this.isShuttingDown;
   }
 }

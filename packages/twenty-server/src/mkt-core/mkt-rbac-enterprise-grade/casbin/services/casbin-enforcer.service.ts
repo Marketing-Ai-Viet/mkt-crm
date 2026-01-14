@@ -30,6 +30,8 @@ import {
   rbacConfig,
   RbacEnforcerConfig,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/config';
+import { RBAC_CIRCUIT_BREAKER } from 'src/mkt-core/infrastructure/redis/constants/rbac';
+import { RBAC_PUBSUB_DEFAULTS } from 'src/mkt-core/infrastructure/redis/constants/pubsub.constant';
 
 /**
  * Casbin Enforcer Service
@@ -53,6 +55,15 @@ import {
  * });
  * ```
  */
+/**
+ * Circuit breaker state
+ */
+type CircuitBreakerState = {
+  failures: number;
+  lastFailure: number;
+  state: 'closed' | 'open' | 'half-open';
+};
+
 @Injectable()
 export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:EnforcerService`);
@@ -62,6 +73,12 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   // Watcher for policy updates
   private watcher: PgNotifyWatcher | null = null;
+
+  // Fallback periodic reload interval
+  private fallbackReloadInterval: NodeJS.Timeout | null = null;
+
+  // Circuit breaker per workspace
+  private readonly circuitBreakers = new Map<string, CircuitBreakerState>();
 
   // Config
   private readonly enforcerConfig: RbacEnforcerConfig;
@@ -94,6 +111,7 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
       if (!connectionString) {
         this.logger.warn('PG_DATABASE_URL not set, watcher disabled');
+        this.startFallbackReload();
 
         return;
       }
@@ -117,7 +135,61 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(
         CASBIN_MESSAGES.ERROR.WATCHER_CONNECTION_FAILED(errorMessage),
       );
-      // Continue without watcher - rely on polling fallback
+      // Start fallback periodic reload when watcher fails
+      this.startFallbackReload();
+    }
+  }
+
+  /**
+   * Start fallback periodic reload when watcher is disabled
+   *
+   * This ensures stale policies are eventually refreshed even if
+   * watcher/invalidation mechanisms fail.
+   */
+  private startFallbackReload(): void {
+    if (this.fallbackReloadInterval) {
+      return; // Already running
+    }
+
+    this.logger.log(
+      `Starting fallback periodic reload (interval: ${RBAC_PUBSUB_DEFAULTS.FALLBACK_RELOAD_INTERVAL_MS}ms)`,
+    );
+
+    this.fallbackReloadInterval = setInterval(async () => {
+      this.logger.debug('Fallback reload: checking for stale enforcers');
+      await this.checkAndInvalidateStaleEnforcers();
+    }, RBAC_PUBSUB_DEFAULTS.FALLBACK_RELOAD_INTERVAL_MS);
+  }
+
+  /**
+   * Stop fallback periodic reload
+   */
+  private stopFallbackReload(): void {
+    if (this.fallbackReloadInterval) {
+      clearInterval(this.fallbackReloadInterval);
+      this.fallbackReloadInterval = null;
+    }
+  }
+
+  /**
+   * Check and invalidate stale enforcers across all cached workspaces
+   */
+  private async checkAndInvalidateStaleEnforcers(): Promise<void> {
+    const invalidatedWorkspaces: string[] = [];
+
+    for (const [workspaceId, meta] of this.enforcers.entries()) {
+      const isStale = await this.isEnforcerStale(workspaceId, meta);
+
+      if (isStale) {
+        this.enforcers.delete(workspaceId);
+        invalidatedWorkspaces.push(workspaceId);
+      }
+    }
+
+    if (invalidatedWorkspaces.length > 0) {
+      this.logger.log(
+        `Fallback reload: invalidated ${invalidatedWorkspaces.length} stale enforcers`,
+      );
     }
   }
 
@@ -132,13 +204,28 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Get or create enforcer for workspace
+   *
+   * Multi-tier validation:
+   * 1. TTL check (synchronous, fast)
+   * 2. Version check (async, checks DB version)
    */
   async getEnforcer(workspaceId: string): Promise<Enforcer> {
     // Check in-memory cache
     const cached = this.enforcers.get(workspaceId);
 
     if (cached && this.isEnforcerValid(cached)) {
-      return cached.enforcer;
+      // Check for version staleness (async)
+      const isStale = await this.isEnforcerStale(workspaceId, cached);
+
+      if (!isStale) {
+        return cached.enforcer;
+      }
+
+      // Stale - remove from cache
+      this.enforcers.delete(workspaceId);
+      this.logger.debug(
+        `Evicted stale enforcer for workspace: ${workspaceId} (version mismatch)`,
+      );
     }
 
     // Create new enforcer
@@ -147,8 +234,20 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Create new enforcer for workspace
+   *
+   * Includes circuit breaker pattern to prevent cascading failures
+   * when adapter/database has repeated errors.
    */
   private async createEnforcer(workspaceId: string): Promise<Enforcer> {
+    // Check circuit breaker
+    if (this.isCircuitOpen(workspaceId)) {
+      const circuitState = this.circuitBreakers.get(workspaceId);
+
+      throw new Error(
+        `Circuit breaker open for workspace ${workspaceId} (${circuitState?.failures} failures)`,
+      );
+    }
+
     const startTime = DateTimeUtils.now();
 
     try {
@@ -186,6 +285,9 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
       this.cacheEnforcer(workspaceId, meta);
 
+      // Record success for circuit breaker
+      this.recordCircuitSuccess(workspaceId);
+
       const latencyMs = DateTimeUtils.diffInMillis(
         startTime,
         DateTimeUtils.now(),
@@ -201,11 +303,115 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
+      // Record failure for circuit breaker
+      this.recordCircuitFailure(workspaceId);
+
       this.logger.error(
         CASBIN_MESSAGES.ERROR.ENFORCER_CREATE_FAILED(workspaceId, errorMessage),
       );
       throw error;
     }
+  }
+
+  // ============================================
+  // CIRCUIT BREAKER METHODS
+  // ============================================
+
+  /**
+   * Check if circuit breaker is open for workspace
+   */
+  private isCircuitOpen(workspaceId: string): boolean {
+    const state = this.circuitBreakers.get(workspaceId);
+
+    if (!state) {
+      return false;
+    }
+
+    if (state.state === 'closed') {
+      return false;
+    }
+
+    if (state.state === 'open') {
+      // Check if reset timeout has passed
+      const now = DateTimeUtils.toMillis(DateTimeUtils.now());
+
+      if (now - state.lastFailure > RBAC_CIRCUIT_BREAKER.RESET_TIMEOUT_MS) {
+        // Transition to half-open
+        state.state = 'half-open';
+        this.logger.log(
+          `Circuit breaker half-open for workspace: ${workspaceId}`,
+        );
+
+        return false;
+      }
+
+      return true;
+    }
+
+    // half-open - allow request
+    return false;
+  }
+
+  /**
+   * Record circuit breaker failure
+   */
+  private recordCircuitFailure(workspaceId: string): void {
+    const now = DateTimeUtils.toMillis(DateTimeUtils.now());
+    const state = this.circuitBreakers.get(workspaceId) ?? {
+      failures: 0,
+      lastFailure: now,
+      state: 'closed' as const,
+    };
+
+    state.failures++;
+    state.lastFailure = now;
+
+    if (state.failures >= RBAC_CIRCUIT_BREAKER.FAILURE_THRESHOLD) {
+      state.state = 'open';
+      this.logger.warn(
+        `Circuit breaker opened for workspace: ${workspaceId} (${state.failures} failures)`,
+      );
+    }
+
+    this.circuitBreakers.set(workspaceId, state);
+  }
+
+  /**
+   * Record circuit breaker success
+   */
+  private recordCircuitSuccess(workspaceId: string): void {
+    const state = this.circuitBreakers.get(workspaceId);
+
+    if (!state) {
+      return;
+    }
+
+    if (state.state === 'half-open') {
+      // Reset after success in half-open state
+      state.failures = 0;
+      state.state = 'closed';
+      this.logger.log(`Circuit breaker closed for workspace: ${workspaceId}`);
+    } else if (state.state === 'closed' && state.failures > 0) {
+      // Decay failures on success
+      state.failures = Math.max(0, state.failures - 1);
+    }
+
+    this.circuitBreakers.set(workspaceId, state);
+  }
+
+  /**
+   * Get circuit breaker stats
+   */
+  getCircuitBreakerStats(): Map<string, CircuitBreakerState> {
+    return new Map(this.circuitBreakers);
+  }
+
+  /**
+   * Reset circuit breaker for workspace
+   */
+  resetCircuitBreaker(workspaceId: string): void {
+    this.circuitBreakers.delete(workspaceId);
+    this.logger.log(`Circuit breaker reset for workspace: ${workspaceId}`);
   }
 
   /**
@@ -244,12 +450,52 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Check if cached enforcer is still valid
+   *
+   * Validates both:
+   * - TTL (time-based expiration)
+   * - Version (policy version must match DB)
    */
   private isEnforcerValid(meta: EnforcerWithMeta): boolean {
     const loadedAt = DateTimeUtils.fromDate(meta.loadedAt);
     const age = DateTimeUtils.diffInMillis(loadedAt, DateTimeUtils.now());
 
-    return age < this.enforcerConfig.enforcerTtlMs;
+    // TTL check
+    if (age >= this.enforcerConfig.enforcerTtlMs) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if cached enforcer is stale (version mismatch)
+   *
+   * Called asynchronously to avoid blocking getEnforcer() on every call.
+   * If stale, invalidates cache and returns false.
+   */
+  private async isEnforcerStale(
+    workspaceId: string,
+    meta: EnforcerWithMeta,
+  ): Promise<boolean> {
+    try {
+      const currentVersion =
+        await this.policyVersionRepository.getVersionNumber(workspaceId);
+
+      if (currentVersion !== meta.version) {
+        this.logger.debug(
+          `Enforcer version mismatch for ${workspaceId}: cached=${meta.version}, current=${currentVersion}`,
+        );
+
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      // On error, assume not stale (fail-safe)
+      this.logger.debug(`Failed to check enforcer staleness: ${error}`);
+
+      return false;
+    }
   }
 
   /**
@@ -517,10 +763,18 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
   getStats(): {
     cachedEnforcers: number;
     watcherConnected: boolean;
+    fallbackReloadActive: boolean;
+    circuitBreakersOpen: number;
   } {
+    const openCircuits = Array.from(this.circuitBreakers.values()).filter(
+      (s) => s.state === 'open',
+    ).length;
+
     return {
       cachedEnforcers: this.enforcers.size,
       watcherConnected: this.watcher?.isConnected() ?? false,
+      fallbackReloadActive: this.fallbackReloadInterval !== null,
+      circuitBreakersOpen: openCircuits,
     };
   }
 
@@ -541,11 +795,18 @@ export class CasbinEnforcerService implements OnModuleInit, OnModuleDestroy {
    * Shutdown service
    */
   async shutdown(): Promise<void> {
+    // Stop fallback reload
+    this.stopFallbackReload();
+
+    // Close watcher
     if (this.watcher) {
       await this.watcher.close();
     }
 
+    // Clear caches
     this.enforcers.clear();
+    this.circuitBreakers.clear();
+
     this.logger.log('Casbin enforcer service shut down');
   }
 }

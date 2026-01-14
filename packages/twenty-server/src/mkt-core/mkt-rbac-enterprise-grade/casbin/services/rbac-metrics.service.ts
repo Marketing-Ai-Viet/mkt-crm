@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -19,6 +19,67 @@ import {
 } from 'src/mkt-core/infrastructure/redis/constants/rbac/rbac.constant';
 
 import { CasbinEnforcerService } from './casbin-enforcer.service';
+
+// ============================================
+// STRUCTURED METRICS TYPES
+// ============================================
+
+/**
+ * Histogram bucket for latency distribution
+ */
+type HistogramBucket = {
+  le: number; // less than or equal
+  count: number;
+};
+
+/**
+ * Policy operation metric
+ */
+type PolicyOperationMetric = {
+  operation: 'load' | 'save' | 'sync';
+  workspaceId: string;
+  latencyMs: number;
+  success: boolean;
+  policyCount?: number;
+  timestamp: number;
+};
+
+/**
+ * Sync retry metric
+ */
+type SyncRetryMetric = {
+  workspaceId: string;
+  attempt: number;
+  success: boolean;
+  error?: string;
+  timestamp: number;
+};
+
+/**
+ * Structured metrics summary
+ */
+type StructuredMetricsSummary = {
+  counters: {
+    permissionChecks: { total: number; allowed: number; denied: number };
+    cacheHits: number;
+    cacheMisses: number;
+    policyLoads: { total: number; success: number; failed: number };
+    policySaves: { total: number; success: number; failed: number };
+    syncRetries: { total: number; success: number; failed: number };
+    circuitBreakerTrips: number;
+  };
+  histograms: {
+    permissionCheckLatency: HistogramBucket[];
+    policyLoadLatency: HistogramBucket[];
+    policySaveLatency: HistogramBucket[];
+  };
+  gauges: {
+    cachedEnforcers: number;
+    openCircuitBreakers: number;
+    deadLetterQueueSize: number;
+    activeSyncs: number;
+  };
+};
 
 /**
  * RBAC Metrics Service
@@ -44,13 +105,43 @@ import { CasbinEnforcerService } from './casbin-enforcer.service';
  * const metrics = await metricsService.getMetrics();
  * ```
  */
+/**
+ * Default histogram buckets for latency (in ms)
+ */
+const DEFAULT_LATENCY_BUCKETS = [
+  1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000,
+];
+
 @Injectable()
-export class RbacMetricsService {
+export class RbacMetricsService implements OnModuleDestroy {
   private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:MetricsService`);
 
   // In-memory metrics buffer (flushed periodically to Redis)
   private metricsBuffer: PermissionCheckMetric[] = [];
   private lastFlush = DateTimeUtils.toMillis(DateTimeUtils.now());
+
+  // Flush interval reference for cleanup
+  private flushInterval: NodeJS.Timeout | null = null;
+
+  // Structured metrics - in-memory counters
+  private readonly counters = {
+    cacheHits: 0,
+    cacheMisses: 0,
+    policyLoadsTotal: 0,
+    policyLoadsSuccess: 0,
+    policyLoadsFailed: 0,
+    policySavesTotal: 0,
+    policySavesSuccess: 0,
+    policySavesFailed: 0,
+    syncRetriesTotal: 0,
+    syncRetriesSuccess: 0,
+    syncRetriesFailed: 0,
+    circuitBreakerTrips: 0,
+  };
+
+  // Policy operation metrics buffer
+  private policyOperationBuffer: PolicyOperationMetric[] = [];
+  private syncRetryBuffer: SyncRetryMetric[] = [];
 
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.RbacPolicy)
@@ -60,7 +151,21 @@ export class RbacMetricsService {
     private readonly enforcerService: CasbinEnforcerService,
   ) {
     // Schedule periodic flush
-    setInterval(() => this.flushMetrics(), 60000); // Every minute
+    this.flushInterval = setInterval(() => this.flushMetrics(), 60000); // Every minute
+  }
+
+  /**
+   * Cleanup on module destroy
+   */
+  async onModuleDestroy(): Promise<void> {
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+      this.flushInterval = null;
+    }
+
+    // Final flush
+    await this.flushMetrics();
+    this.logger.log('RbacMetricsService shutdown complete');
   }
 
   /**
@@ -431,7 +536,332 @@ export class RbacMetricsService {
    */
   async clearMetrics(): Promise<void> {
     this.metricsBuffer = [];
+    this.policyOperationBuffer = [];
+    this.syncRetryBuffer = [];
+
+    // Reset counters
+    this.counters.cacheHits = 0;
+    this.counters.cacheMisses = 0;
+    this.counters.policyLoadsTotal = 0;
+    this.counters.policyLoadsSuccess = 0;
+    this.counters.policyLoadsFailed = 0;
+    this.counters.policySavesTotal = 0;
+    this.counters.policySavesSuccess = 0;
+    this.counters.policySavesFailed = 0;
+    this.counters.syncRetriesTotal = 0;
+    this.counters.syncRetriesSuccess = 0;
+    this.counters.syncRetriesFailed = 0;
+    this.counters.circuitBreakerTrips = 0;
+
     await this.cacheStorage.del(RBAC_METRICS_KEY);
     this.logger.log('Metrics cleared');
+  }
+
+  // ============================================
+  // STRUCTURED METRICS - RECORD METHODS
+  // ============================================
+
+  /**
+   * Record cache hit
+   */
+  recordCacheHit(): void {
+    this.counters.cacheHits++;
+  }
+
+  /**
+   * Record cache miss
+   */
+  recordCacheMiss(): void {
+    this.counters.cacheMisses++;
+  }
+
+  /**
+   * Record policy load operation
+   */
+  recordPolicyLoad(
+    workspaceId: string,
+    latencyMs: number,
+    success: boolean,
+    policyCount?: number,
+  ): void {
+    this.counters.policyLoadsTotal++;
+
+    if (success) {
+      this.counters.policyLoadsSuccess++;
+    } else {
+      this.counters.policyLoadsFailed++;
+    }
+
+    this.policyOperationBuffer.push({
+      operation: 'load',
+      workspaceId,
+      latencyMs,
+      success,
+      policyCount,
+      timestamp: DateTimeUtils.toMillis(DateTimeUtils.now()),
+    });
+
+    // Trim buffer if too large
+    if (this.policyOperationBuffer.length > 1000) {
+      this.policyOperationBuffer = this.policyOperationBuffer.slice(-500);
+    }
+  }
+
+  /**
+   * Record policy save operation
+   */
+  recordPolicySave(
+    workspaceId: string,
+    latencyMs: number,
+    success: boolean,
+    policyCount?: number,
+  ): void {
+    this.counters.policySavesTotal++;
+
+    if (success) {
+      this.counters.policySavesSuccess++;
+    } else {
+      this.counters.policySavesFailed++;
+    }
+
+    this.policyOperationBuffer.push({
+      operation: 'save',
+      workspaceId,
+      latencyMs,
+      success,
+      policyCount,
+      timestamp: DateTimeUtils.toMillis(DateTimeUtils.now()),
+    });
+
+    // Trim buffer if too large
+    if (this.policyOperationBuffer.length > 1000) {
+      this.policyOperationBuffer = this.policyOperationBuffer.slice(-500);
+    }
+  }
+
+  /**
+   * Record sync retry
+   */
+  recordSyncRetry(
+    workspaceId: string,
+    attempt: number,
+    success: boolean,
+    error?: string,
+  ): void {
+    this.counters.syncRetriesTotal++;
+
+    if (success) {
+      this.counters.syncRetriesSuccess++;
+    } else {
+      this.counters.syncRetriesFailed++;
+    }
+
+    this.syncRetryBuffer.push({
+      workspaceId,
+      attempt,
+      success,
+      error,
+      timestamp: DateTimeUtils.toMillis(DateTimeUtils.now()),
+    });
+
+    // Trim buffer if too large
+    if (this.syncRetryBuffer.length > 500) {
+      this.syncRetryBuffer = this.syncRetryBuffer.slice(-250);
+    }
+  }
+
+  /**
+   * Record circuit breaker trip
+   */
+  recordCircuitBreakerTrip(): void {
+    this.counters.circuitBreakerTrips++;
+  }
+
+  // ============================================
+  // STRUCTURED METRICS - QUERY METHODS
+  // ============================================
+
+  /**
+   * Get structured metrics summary
+   */
+  async getStructuredMetrics(): Promise<StructuredMetricsSummary> {
+    await this.flushMetrics();
+    const metrics = await this.getStoredMetrics();
+
+    // Permission check stats
+    const allowedCount = metrics.filter((m) => m.allowed).length;
+
+    // Build histograms
+    const permCheckLatencies = metrics.map((m) => m.latencyMs);
+    const policyLoadLatencies = this.policyOperationBuffer
+      .filter((m) => m.operation === 'load')
+      .map((m) => m.latencyMs);
+    const policySaveLatencies = this.policyOperationBuffer
+      .filter((m) => m.operation === 'save')
+      .map((m) => m.latencyMs);
+
+    // Get gauge values
+    const enforcerStats = this.enforcerService.getStats();
+    const deadLetterEntries =
+      await this.policyVersionRepository.getDeadLetterEntries();
+
+    return {
+      counters: {
+        permissionChecks: {
+          total: metrics.length,
+          allowed: allowedCount,
+          denied: metrics.length - allowedCount,
+        },
+        cacheHits: this.counters.cacheHits,
+        cacheMisses: this.counters.cacheMisses,
+        policyLoads: {
+          total: this.counters.policyLoadsTotal,
+          success: this.counters.policyLoadsSuccess,
+          failed: this.counters.policyLoadsFailed,
+        },
+        policySaves: {
+          total: this.counters.policySavesTotal,
+          success: this.counters.policySavesSuccess,
+          failed: this.counters.policySavesFailed,
+        },
+        syncRetries: {
+          total: this.counters.syncRetriesTotal,
+          success: this.counters.syncRetriesSuccess,
+          failed: this.counters.syncRetriesFailed,
+        },
+        circuitBreakerTrips: this.counters.circuitBreakerTrips,
+      },
+      histograms: {
+        permissionCheckLatency: this.buildHistogram(permCheckLatencies),
+        policyLoadLatency: this.buildHistogram(policyLoadLatencies),
+        policySaveLatency: this.buildHistogram(policySaveLatencies),
+      },
+      gauges: {
+        cachedEnforcers: enforcerStats.cachedEnforcers,
+        openCircuitBreakers: enforcerStats.circuitBreakersOpen,
+        deadLetterQueueSize: deadLetterEntries.length,
+        activeSyncs: 0, // Would need PolicySyncService reference
+      },
+    };
+  }
+
+  /**
+   * Build histogram from latency values
+   */
+  private buildHistogram(
+    latencies: number[],
+    buckets: number[] = DEFAULT_LATENCY_BUCKETS,
+  ): HistogramBucket[] {
+    const histogram: HistogramBucket[] = buckets.map((le) => ({
+      le,
+      count: 0,
+    }));
+
+    // Add infinity bucket
+    histogram.push({ le: Infinity, count: 0 });
+
+    for (const latency of latencies) {
+      for (const bucket of histogram) {
+        if (latency <= bucket.le) {
+          bucket.count++;
+          break;
+        }
+      }
+    }
+
+    return histogram;
+  }
+
+  /**
+   * Get sync retry health metrics
+   */
+  getSyncRetryHealth(): {
+    totalRetries: number;
+    successRate: number;
+    recentFailures: SyncRetryMetric[];
+    workspacesWithFailures: string[];
+  } {
+    const total = this.counters.syncRetriesTotal;
+    const successRate =
+      total > 0 ? (this.counters.syncRetriesSuccess / total) * 100 : 100;
+
+    // Recent failures (last 10)
+    const recentFailures = this.syncRetryBuffer
+      .filter((m) => !m.success)
+      .slice(-10);
+
+    // Unique workspaces with failures
+    const workspacesWithFailures = [
+      ...new Set(
+        this.syncRetryBuffer
+          .filter((m) => !m.success)
+          .map((m) => m.workspaceId),
+      ),
+    ];
+
+    return {
+      totalRetries: total,
+      successRate,
+      recentFailures,
+      workspacesWithFailures,
+    };
+  }
+
+  /**
+   * Get cache effectiveness metrics
+   */
+  getCacheEffectiveness(): {
+    hitRate: number;
+    totalHits: number;
+    totalMisses: number;
+    efficiency: 'excellent' | 'good' | 'fair' | 'poor';
+  } {
+    const total = this.counters.cacheHits + this.counters.cacheMisses;
+    const hitRate = total > 0 ? (this.counters.cacheHits / total) * 100 : 0;
+
+    let efficiency: 'excellent' | 'good' | 'fair' | 'poor';
+
+    if (hitRate >= 90) {
+      efficiency = 'excellent';
+    } else if (hitRate >= 70) {
+      efficiency = 'good';
+    } else if (hitRate >= 50) {
+      efficiency = 'fair';
+    } else {
+      efficiency = 'poor';
+    }
+
+    return {
+      hitRate,
+      totalHits: this.counters.cacheHits,
+      totalMisses: this.counters.cacheMisses,
+      efficiency,
+    };
+  }
+
+  /**
+   * Get policy operation metrics by type
+   */
+  getPolicyOperationMetrics(operation: 'load' | 'save'): {
+    total: number;
+    successRate: number;
+    avgLatencyMs: number;
+    p95LatencyMs: number;
+    recentOperations: PolicyOperationMetric[];
+  } {
+    const ops = this.policyOperationBuffer.filter(
+      (m) => m.operation === operation,
+    );
+
+    const successCount = ops.filter((m) => m.success).length;
+    const latencies = ops.map((m) => m.latencyMs).sort((a, b) => a - b);
+
+    return {
+      total: ops.length,
+      successRate: ops.length > 0 ? (successCount / ops.length) * 100 : 100,
+      avgLatencyMs: this.average(latencies),
+      p95LatencyMs: this.percentile(latencies, 95),
+      recentOperations: ops.slice(-10),
+    };
   }
 }

@@ -7,6 +7,7 @@
 import { z } from 'zod';
 
 import { CASBIN_CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants/rbac';
+import { RBAC_PUBSUB_DEFAULTS } from 'src/mkt-core/infrastructure/redis/constants/pubsub.constant';
 
 // ============================================
 // HELPER SCHEMAS
@@ -98,12 +99,32 @@ export const rbacEnforcerConfigSchema = z.object({
  * Pub/Sub configuration schema
  */
 export const rbacPubSubConfigSchema = z.object({
-  enabled: z.boolean().default(true),
-  fallbackReloadIntervalMs: z.number().int().positive().default(3600000),
-  debounceMs: z.number().int().nonnegative().default(100),
-  maxMessageAgeMs: z.number().int().positive().default(300000),
-  reconnectDelayMs: z.number().int().positive().default(1000),
-  maxReconnectAttempts: z.number().int().positive().default(10),
+  enabled: z.boolean().default(RBAC_PUBSUB_DEFAULTS.ENABLED),
+  fallbackReloadIntervalMs: z
+    .number()
+    .int()
+    .positive()
+    .default(RBAC_PUBSUB_DEFAULTS.FALLBACK_RELOAD_INTERVAL_MS),
+  debounceMs: z
+    .number()
+    .int()
+    .nonnegative()
+    .default(RBAC_PUBSUB_DEFAULTS.DEBOUNCE_MS),
+  maxMessageAgeMs: z
+    .number()
+    .int()
+    .positive()
+    .default(RBAC_PUBSUB_DEFAULTS.MAX_MESSAGE_AGE_MS),
+  reconnectDelayMs: z
+    .number()
+    .int()
+    .positive()
+    .default(RBAC_PUBSUB_DEFAULTS.RECONNECT_DELAY_MS),
+  maxReconnectAttempts: z
+    .number()
+    .int()
+    .positive()
+    .default(RBAC_PUBSUB_DEFAULTS.MAX_RECONNECT_ATTEMPTS),
 });
 
 /**

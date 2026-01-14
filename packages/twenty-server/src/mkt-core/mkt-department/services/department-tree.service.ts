@@ -6,7 +6,7 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { DepartmentService } from 'src/mkt-core/mkt-department/services/department.service';
 import {
   CASBIN_CACHE_KEYS,
-  CASBIN_CACHE_TTL,
+  CASBIN_CACHE_TTL_MS,
 } from 'src/mkt-core/infrastructure/redis/constants/rbac';
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
@@ -18,10 +18,10 @@ import {
 } from 'src/mkt-core/mkt-department/types';
 
 /**
- * Cache TTL constants
+ * Cache TTL constants - imported from centralized location
  */
-const TREE_CACHE_TTL_MS = CASBIN_CACHE_TTL.DEPT_HIERARCHY * 1000; // 1 hour
-const LOCAL_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TREE_CACHE_TTL_MS = CASBIN_CACHE_TTL_MS.DEPT_TREE;
+const LOCAL_CACHE_TTL_MS = CASBIN_CACHE_TTL_MS.LOCAL_CACHE;
 
 /**
  * Department Tree Service for RBAC

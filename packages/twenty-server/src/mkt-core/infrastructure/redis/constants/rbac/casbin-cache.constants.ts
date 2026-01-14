@@ -218,8 +218,40 @@ export const CASBIN_CACHE_TTL = {
 } as const;
 
 // ============================================
+// CACHE TTL CONFIGURATIONS (in milliseconds)
+// ============================================
+
+/**
+ * Cache TTL configurations in milliseconds
+ *
+ * For use cases requiring milliseconds (e.g., setInterval, setTimeout, in-memory caches)
+ */
+export const CASBIN_CACHE_TTL_MS = {
+  // ===== Department Tree (1 hour) =====
+  // Tree structure cached in Redis
+  DEPT_TREE: CASBIN_CACHE_TTL.DEPT_HIERARCHY * 1000,
+
+  // ===== Local In-Memory Cache (5 minutes) =====
+  // Short-lived local cache for hot data (ancestors, descendants)
+  LOCAL_CACHE: 5 * 60 * 1000,
+
+  // ===== Enforcer (1 hour) =====
+  // Enforcer instance TTL in memory
+  ENFORCER: CASBIN_CACHE_TTL.ENFORCER * 1000,
+
+  // ===== User Context (15 minutes) =====
+  // User context TTL
+  USER_CONTEXT: CASBIN_CACHE_TTL.USER_CONTEXT * 1000,
+
+  // ===== Permission Check (5 minutes) =====
+  // Permission check result TTL
+  PERMISSION_CHECK: CASBIN_CACHE_TTL.PERMISSION_CHECK * 1000,
+} as const;
+
+// ============================================
 // TYPE EXPORTS
 // ============================================
 
 export type CasbinCacheKey = keyof typeof CASBIN_CACHE_KEYS;
 export type CasbinCacheTTL = keyof typeof CASBIN_CACHE_TTL;
+export type CasbinCacheTTLMs = keyof typeof CASBIN_CACHE_TTL_MS;
