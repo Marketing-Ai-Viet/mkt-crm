@@ -186,6 +186,109 @@ export const TEMPORARY_PERMISSION_MESSAGES = createModuleMessages({
 });
 
 // ============================================
+// PERMISSION TEMPLATE SERVICE MESSAGES
+// ============================================
+
+export const TEMPLATE_SERVICE_MESSAGES = {
+  CREATED: (key: string) => `Template created: ${key}`,
+  UPDATED: (id: string) => `Template updated: ${id}`,
+  DELETED: (id: string) => `Template deleted: ${id}`,
+  ACTIVATED: (id: string) => `Template activated: ${id}`,
+  DEACTIVATED: (id: string) => `Template deactivated: ${id}`,
+  NOT_FOUND: (id: string) => `Template not found: ${id}`,
+  DUPLICATE_KEY: (key: string) => `Template key already exists: ${key}`,
+  SYSTEM_TEMPLATE_IMMUTABLE: 'System templates cannot be modified',
+  CACHE_INVALIDATED: (workspaceId: string) =>
+    `Template cache invalidated for workspace: ${workspaceId}`,
+} as const;
+
+// ============================================
+// USER PERMISSION TEMPLATE SERVICE MESSAGES
+// ============================================
+
+export const USER_ASSIGNMENT_MESSAGES = {
+  ASSIGNED: (memberId: string, templateKey: string) =>
+    `Template ${templateKey} assigned to member ${memberId}`,
+  REVOKED: (id: string) => `Assignment revoked: ${id}`,
+  UPDATED: (id: string) => `Assignment updated: ${id}`,
+  EXPIRED_DEACTIVATED: (count: number) =>
+    `Deactivated ${count} expired assignments`,
+  NOT_FOUND: (id: string) => `Assignment not found: ${id}`,
+  ALREADY_ASSIGNED: (memberId: string, templateId: string) =>
+    `Template ${templateId} already assigned to member ${memberId}`,
+  TEMPLATE_NOT_FOUND: (templateId: string) =>
+    `Template not found: ${templateId}`,
+  INVALID_EXPIRY: 'Expiry date must be in the future',
+  CACHE_INVALIDATED: (workspaceId: string, memberId: string) =>
+    `Cache invalidated for member ${memberId} in workspace ${workspaceId}`,
+} as const;
+
+// ============================================
+// DATA ACCESS POLICY SERVICE MESSAGES
+// ============================================
+
+export const DATA_ACCESS_POLICY_MESSAGES = {
+  CREATED: (name: string) => `Policy created: ${name}`,
+  UPDATED: (id: string) => `Policy updated: ${id}`,
+  DELETED: (id: string) => `Policy deleted: ${id}`,
+  ACTIVATED: (id: string) => `Policy activated: ${id}`,
+  DEACTIVATED: (id: string) => `Policy deactivated: ${id}`,
+  NOT_FOUND: (id: string) => `Policy not found: ${id}`,
+  DUPLICATE_NAME: (name: string, objectName: string) =>
+    `Policy with name "${name}" already exists for object "${objectName}"`,
+  INVALID_FILTER: 'Invalid filter conditions',
+  CACHE_INVALIDATED: (workspaceId: string) =>
+    `Policy cache invalidated for workspace: ${workspaceId}`,
+} as const;
+
+// ============================================
+// TEMPLATE RESOURCE PERMISSION SERVICE MESSAGES
+// ============================================
+
+export const RESOURCE_PERMISSION_MESSAGES = {
+  CREATED: (templateId: string, resourceId: string) =>
+    `Resource permission created: template=${templateId}, resource=${resourceId}`,
+  UPDATED: (id: string) => `Resource permission updated: ${id}`,
+  DELETED: (id: string) => `Resource permission deleted: ${id}`,
+  ACTIVATED: (id: string) => `Resource permission activated: ${id}`,
+  DEACTIVATED: (id: string) => `Resource permission deactivated: ${id}`,
+  NOT_FOUND: (id: string) => `Resource permission not found: ${id}`,
+  TEMPLATE_NOT_FOUND: (id: string) => `Template not found: ${id}`,
+  RESOURCE_NOT_FOUND: (id: string) => `Resource not found: ${id}`,
+  DUPLICATE_PERMISSION: (templateId: string, resourceId: string) =>
+    `Permission already exists for template=${templateId}, resource=${resourceId}`,
+  BULK_CREATED: (count: number, templateId: string) =>
+    `${count} resource permissions created for template ${templateId}`,
+  CACHE_INVALIDATED: (workspaceId: string) =>
+    `Permission cache invalidated for workspace: ${workspaceId}`,
+  NO_ALLOWED_ACTIONS: 'At least one allowed action is required',
+} as const;
+
+// ============================================
+// TEMPORARY PERMISSION SERVICE MESSAGES
+// ============================================
+
+export const TEMP_PERMISSION_SERVICE_MESSAGES = {
+  CREATED: (grantee: string, object: string) =>
+    `Temporary permission created for ${grantee} on ${object}`,
+  REVOKED: (id: string, reason: string) =>
+    `Temporary permission ${id} revoked: ${reason}`,
+  EXTENDED: (id: string, newExpiry: string) =>
+    `Temporary permission ${id} extended to ${newExpiry}`,
+  NOT_FOUND: (id: string) => `Temporary permission not found: ${id}`,
+  ALREADY_REVOKED: (id: string) => `Permission ${id} is already revoked`,
+  ALREADY_EXPIRED: (id: string) => `Permission ${id} is already expired`,
+  EXPIRED_DEACTIVATED: (count: number) =>
+    `${count} expired permissions deactivated`,
+  INVALID_DURATION: (maxHours: number) =>
+    `Duration must be between 1 and ${maxHours} hours`,
+  NO_PERMISSIONS_GRANTED:
+    'At least one permission (read, update, delete) must be granted',
+  CACHE_INVALIDATED: (workspaceId: string) =>
+    `Temporary permission cache invalidated for workspace: ${workspaceId}`,
+} as const;
+
+// ============================================
 // GRAPHQL DESCRIPTIONS
 // ============================================
 

@@ -81,3 +81,20 @@ export * from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
 // Permission template types
 export * from './mkt-template-access-limitation.type';
 export * from './permissions.type';
+
+// Service types - centralized type definitions for RBAC services
+export * from './permission-template.types';
+export * from './user-permission-template.types';
+export * from './data-access-policy.types';
+export * from './template-resource-permission.types';
+export * from './temporary-permission.types';
+export {
+  type CreateAuditLogInput,
+  type AuditQueryOptions,
+  type PaginatedAuditLogResult,
+  type AuditStatistics,
+  type UserAuditSummary,
+  type SecurityAlert as ServiceSecurityAlert,
+  type SecurityAlertType,
+  type SecurityAlertSeverity,
+} from './rbac-audit.types';
