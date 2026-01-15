@@ -5,6 +5,8 @@
  * Templates: CEO, VP, DIRECTOR, MANAGER, TEAM_LEAD, SENIOR, JUNIOR, etc.
  */
 
+import { DepartmentCode } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+
 // Template Types
 const TEMPLATE_TYPE = {
   ROLE_BASED: 'ROLE_BASED',
@@ -73,6 +75,10 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS = {
   SENIOR: '36f95d97-7217-4333-9940-ed1a11d8d06f',
   JUNIOR: 'c9c7058b-b12c-40b6-9b7f-9ce96033470d',
   FINANCE_ANALYST: 'b75fadca-0d2a-4bba-bf9c-efb0fe558ad7',
+  // SALES Department Templates
+  SALES_DIRECTOR: 'e1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c',
+  SALES_MANAGER: 'f2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d',
+  SALES_STAFF: 'a3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e',
 };
 
 export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[] =
@@ -84,7 +90,7 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
       templateName: 'Chief Executive Officer',
       description: 'Full access to all resources and actions',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
-      departmentType: 'EXECUTIVE',
+      departmentType: DepartmentCode.EXECUTIVE,
       hierarchyLevel: 1,
       applicableToLevels: JSON.stringify([1]),
       version: '1.0.0',
@@ -102,7 +108,7 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
       description:
         'High-level access with some restrictions on system settings',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
-      departmentType: 'EXECUTIVE',
+      departmentType: DepartmentCode.EXECUTIVE,
       hierarchyLevel: 2,
       applicableToLevels: JSON.stringify([2]),
       version: '1.0.0',
@@ -210,7 +216,7 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
       templateName: 'Finance Analyst',
       description: 'Specialized access to financial data and reports',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
-      departmentType: 'FINANCE',
+      departmentType: DepartmentCode.FINANCE,
       hierarchyLevel: 6,
       applicableToLevels: JSON.stringify([5, 6, 7]),
       version: '1.0.0',
@@ -220,5 +226,63 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
       resolutionStrategy: RESOLUTION_STRATEGY.MOST_RESTRICTIVE,
       createdBySource: CREATED_BY_SOURCE.SYSTEM,
       position: 8,
+    },
+
+    // ===========================================
+    // SALES Department Templates
+    // ===========================================
+    {
+      id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      templateKey: 'SALES_DIRECTOR',
+      templateName: 'Sales Director',
+      description:
+        'Full department access to customers, orders, with read access to licenses and invoices',
+      templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
+      departmentType: DepartmentCode.SALES,
+      hierarchyLevel: 5,
+      applicableToLevels: JSON.stringify([5]),
+      version: '1.0.0',
+      isSystemTemplate: true,
+      isActive: true,
+      priority: 800,
+      resolutionStrategy: RESOLUTION_STRATEGY.PRIORITY_BASED,
+      createdBySource: CREATED_BY_SOURCE.SYSTEM,
+      position: 9,
+    },
+    {
+      id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      templateKey: 'SALES_MANAGER',
+      templateName: 'Sales Manager',
+      description:
+        'Team-level access to customers and orders, limited license update, read invoices',
+      templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
+      departmentType: DepartmentCode.SALES,
+      hierarchyLevel: 7,
+      applicableToLevels: JSON.stringify([6, 7]),
+      version: '1.0.0',
+      isSystemTemplate: true,
+      isActive: true,
+      priority: 700,
+      resolutionStrategy: RESOLUTION_STRATEGY.PRIORITY_BASED,
+      createdBySource: CREATED_BY_SOURCE.SYSTEM,
+      position: 10,
+    },
+    {
+      id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
+      templateKey: 'SALES_STAFF',
+      templateName: 'Sales Staff',
+      description:
+        'Own record access to customers and orders, read-only licenses and invoices',
+      templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
+      departmentType: DepartmentCode.SALES,
+      hierarchyLevel: 9,
+      applicableToLevels: JSON.stringify([8, 9, 10]),
+      version: '1.0.0',
+      isSystemTemplate: true,
+      isActive: true,
+      priority: 500,
+      resolutionStrategy: RESOLUTION_STRATEGY.PRIORITY_BASED,
+      createdBySource: CREATED_BY_SOURCE.SYSTEM,
+      position: 11,
     },
   ];

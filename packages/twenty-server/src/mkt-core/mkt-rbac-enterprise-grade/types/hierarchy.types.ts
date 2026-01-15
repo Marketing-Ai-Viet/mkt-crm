@@ -1,105 +1,19 @@
 /**
  * Hierarchy Types for Enterprise RBAC
- * Contains all hierarchy-related type definitions converted from enums and interfaces
+ * Contains all hierarchy-related type definitions
+ *
+ * @description Re-exports core types from mkt-department.constant.ts
+ * and defines additional type utilities for enterprise RBAC
  */
 
-/**
- * Hierarchy Level Type
- * Defines the organizational hierarchy levels from CEO to Intern
- */
-export type HierarchyLevel =
-  | 1 // CEO - Chief Executive Officer
-  | 2 // C_LEVEL - C-Level Executives (CTO, CFO, COO, etc.)
-  | 3 // VP - Vice Presidents
-  | 4 // SENIOR_DIRECTOR - Senior Directors
-  | 5 // DIRECTOR - Directors
-  | 6 // SENIOR_MANAGER - Senior Managers
-  | 7 // MANAGER - Managers
-  | 8 // SENIOR_SPECIALIST - Senior Specialists/Lead
-  | 9 // SPECIALIST - Specialists/Senior
-  | 10 // JUNIOR_SPECIALIST - Junior Specialists
-  | 11; // INTERN - Interns/Entry Level
+import {
+  HierarchyLevel,
+  DepartmentCode,
+  ReportingRelationship,
+} from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
-/**
- * Hierarchy Level Constants for better readability
- */
-export const HIERARCHY_LEVEL = {
-  CEO: 1 as HierarchyLevel,
-  C_LEVEL: 2 as HierarchyLevel,
-  VP: 3 as HierarchyLevel,
-  SENIOR_DIRECTOR: 4 as HierarchyLevel,
-  DIRECTOR: 5 as HierarchyLevel,
-  SENIOR_MANAGER: 6 as HierarchyLevel,
-  MANAGER: 7 as HierarchyLevel,
-  SENIOR_SPECIALIST: 8 as HierarchyLevel,
-  SPECIALIST: 9 as HierarchyLevel,
-  JUNIOR_SPECIALIST: 10 as HierarchyLevel,
-  INTERN: 11 as HierarchyLevel,
-} as const;
-
-/**
- * Department Type
- * Defines all possible department types within the organization
- */
-export type DepartmentType =
-  | 'EXECUTIVE'
-  | 'ENGINEERING'
-  | 'PRODUCT'
-  | 'SALES'
-  | 'MARKETING'
-  | 'FINANCE'
-  | 'HR'
-  | 'OPERATIONS'
-  | 'LEGAL'
-  | 'SECURITY'
-  | 'CUSTOMER_SUCCESS'
-  | 'SUPPORT'
-  | 'OTHER';
-
-/**
- * Department Type Constants for better readability
- */
-export const DEPARTMENT_TYPE = {
-  EXECUTIVE: 'EXECUTIVE' as DepartmentType,
-  ENGINEERING: 'ENGINEERING' as DepartmentType,
-  PRODUCT: 'PRODUCT' as DepartmentType,
-  SALES: 'SALES' as DepartmentType,
-  MARKETING: 'MARKETING' as DepartmentType,
-  FINANCE: 'FINANCE' as DepartmentType,
-  HR: 'HR' as DepartmentType,
-  OPERATIONS: 'OPERATIONS' as DepartmentType,
-  LEGAL: 'LEGAL' as DepartmentType,
-  SECURITY: 'SECURITY' as DepartmentType,
-  CUSTOMER_SUCCESS: 'CUSTOMER_SUCCESS' as DepartmentType,
-  SUPPORT: 'SUPPORT' as DepartmentType,
-  OTHER: 'OTHER' as DepartmentType,
-} as const;
-
-/**
- * Reporting Relationship Type
- * Defines the types of relationships between users in the hierarchy
- */
-export type ReportingRelationship =
-  | 'DIRECT_REPORT' // Direct subordinate
-  | 'INDIRECT_REPORT' // Subordinate through hierarchy
-  | 'PEER' // Same level, same department
-  | 'CROSS_DEPARTMENT_PEER' // Same level, different department
-  | 'MANAGER' // Direct manager
-  | 'SENIOR_MANAGER' // Manager through hierarchy
-  | 'UNRELATED'; // No reporting relationship
-
-/**
- * Reporting Relationship Constants for better readability
- */
-export const REPORTING_RELATIONSHIP = {
-  DIRECT_REPORT: 'DIRECT_REPORT' as ReportingRelationship,
-  INDIRECT_REPORT: 'INDIRECT_REPORT' as ReportingRelationship,
-  PEER: 'PEER' as ReportingRelationship,
-  CROSS_DEPARTMENT_PEER: 'CROSS_DEPARTMENT_PEER' as ReportingRelationship,
-  MANAGER: 'MANAGER' as ReportingRelationship,
-  SENIOR_MANAGER: 'SENIOR_MANAGER' as ReportingRelationship,
-  UNRELATED: 'UNRELATED' as ReportingRelationship,
-} as const;
+// Re-export from centralized location
+export { HierarchyLevel, DepartmentCode, ReportingRelationship };
 
 /**
  * Organization Level Structure
@@ -113,7 +27,7 @@ export type OrganizationLevel = {
   canDelegate: boolean;
   canEscalate: boolean;
   maxSubordinates?: number;
-  departmentRestrictions?: DepartmentType[];
+  departmentRestrictions?: DepartmentCode[];
 };
 
 /**
@@ -122,7 +36,7 @@ export type OrganizationLevel = {
 export type Department = {
   id: string;
   name: string;
-  type: DepartmentType;
+  type: DepartmentCode;
   parentDepartmentId?: string;
   children?: string[];
   headId?: string; // Department head user ID
@@ -158,7 +72,7 @@ export type UserHierarchyPosition = {
 
   // Department and team
   departmentId: string;
-  departmentType: DepartmentType;
+  departmentType: DepartmentCode;
   teamId?: string;
 
   // Reporting relationships
@@ -173,8 +87,8 @@ export type UserHierarchyPosition = {
   canDelegatePermissions: boolean;
 
   // Cross-department access
-  crossDepartmentPermissions: DepartmentType[];
-  restrictedDepartments: DepartmentType[];
+  crossDepartmentPermissions: DepartmentCode[];
+  restrictedDepartments: DepartmentCode[];
 
   // Special authorities
   hasFinancialAuthority?: boolean;
@@ -207,8 +121,8 @@ export type HierarchyAccessRule = {
   accessType: 'READ' | 'WRITE' | 'DELETE' | 'MANAGE';
 
   // Department restrictions
-  sourceDepartments?: DepartmentType[];
-  targetDepartments?: DepartmentType[];
+  sourceDepartments?: DepartmentCode[];
+  targetDepartments?: DepartmentCode[];
   crossDepartmentAllowed: boolean;
 
   // Conditions
@@ -351,11 +265,11 @@ export type PermissionInheritanceRule = {
  */
 export type CrossDepartmentAccessMatrix = {
   // Source department
-  sourceDepartment: DepartmentType;
+  sourceDepartment: DepartmentCode;
 
   // Target department access rules
   targetAccess: {
-    [key in DepartmentType]: {
+    [key in DepartmentCode]: {
       allowed: boolean;
       requiredLevel?: HierarchyLevel;
       requiresApproval?: boolean;
@@ -417,6 +331,6 @@ export type HierarchyNavigator = {
    */
   getUsersByLevelAndDepartment(
     level: HierarchyLevel,
-    department?: DepartmentType,
+    department?: DepartmentCode,
   ): Promise<UserHierarchyPosition[]>;
 };

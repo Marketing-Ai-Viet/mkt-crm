@@ -137,7 +137,7 @@ export type AuditExportResult = {
  * Contains all service-related type definitions and contracts
  */
 
-import { HierarchyLevel, DepartmentType } from './hierarchy.types';
+import { HierarchyLevel, DepartmentCode } from './hierarchy.types';
 
 /**
  * Cache Service Types
@@ -187,7 +187,7 @@ export type PermissionTemplate = {
   name: string;
   type: 'SYSTEM' | 'CUSTOM' | 'INHERITED';
   hierarchyLevel: HierarchyLevel;
-  departmentTypes: DepartmentType[];
+  departmentTypes: DepartmentCode[];
   permissions: string[];
   restrictions: string[];
   priority: number;
@@ -325,7 +325,7 @@ export type SpecialAuthority = {
 export type DepartmentInfo = {
   departmentId: string;
   departmentName: string;
-  departmentType: DepartmentType;
+  departmentType: DepartmentCode;
   parentDepartmentId?: string;
   headId?: string;
   budgetAccess: boolean;

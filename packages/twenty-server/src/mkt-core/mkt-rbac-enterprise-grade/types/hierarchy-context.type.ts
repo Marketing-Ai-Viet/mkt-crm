@@ -2,9 +2,9 @@ import { DateTime } from 'luxon';
 
 import {
   HierarchyLevel,
-  DepartmentType,
+  DepartmentCode,
   ReportingRelationship,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/hierarchy.constants';
+} from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 
 /**
  * Organization Level Structure
@@ -18,7 +18,7 @@ export type OrganizationLevel = {
   canDelegate: boolean;
   canEscalate: boolean;
   maxSubordinates?: number;
-  departmentRestrictions?: DepartmentType[];
+  departmentRestrictions?: DepartmentCode[];
 };
 
 /**
@@ -27,7 +27,7 @@ export type OrganizationLevel = {
 export type Department = {
   id: string;
   name: string;
-  type: DepartmentType;
+  type: DepartmentCode;
   parentDepartmentId?: string;
   children?: string[];
   headId?: string; // Department head user ID
@@ -63,7 +63,7 @@ export type UserHierarchyPosition = {
 
   // Department and team
   departmentId: string;
-  departmentType: DepartmentType;
+  departmentType: DepartmentCode;
   teamId?: string;
 
   // Reporting relationships
@@ -78,8 +78,8 @@ export type UserHierarchyPosition = {
   canDelegatePermissions: boolean;
 
   // Cross-department access
-  crossDepartmentPermissions: DepartmentType[];
-  restrictedDepartments: DepartmentType[];
+  crossDepartmentPermissions: DepartmentCode[];
+  restrictedDepartments: DepartmentCode[];
 
   // Special authorities
   hasFinancialAuthority?: boolean;
@@ -112,8 +112,8 @@ export type HierarchyAccessRule = {
   accessType: 'READ' | 'WRITE' | 'DELETE' | 'MANAGE';
 
   // Department restrictions
-  sourceDepartments?: DepartmentType[];
-  targetDepartments?: DepartmentType[];
+  sourceDepartments?: DepartmentCode[];
+  targetDepartments?: DepartmentCode[];
   crossDepartmentAllowed: boolean;
 
   // Conditions
@@ -256,11 +256,11 @@ export type PermissionInheritanceRule = {
  */
 export type CrossDepartmentAccessMatrix = {
   // Source department
-  sourceDepartment: DepartmentType;
+  sourceDepartment: DepartmentCode;
 
   // Target department access rules
   targetAccess: {
-    [key in DepartmentType]: {
+    [key in DepartmentCode]: {
       allowed: boolean;
       requiredLevel?: HierarchyLevel;
       requiresApproval?: boolean;
@@ -322,6 +322,6 @@ export type HierarchyNavigator = {
    */
   getUsersByLevelAndDepartment(
     level: HierarchyLevel,
-    department?: DepartmentType,
+    department?: DepartmentCode,
   ): Promise<UserHierarchyPosition[]>;
 };

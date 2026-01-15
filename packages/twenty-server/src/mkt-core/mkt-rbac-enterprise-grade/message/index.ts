@@ -309,6 +309,37 @@ export const RBAC_GRAPHQL_DESCRIPTIONS = {
   REVOKE_TEMPORARY_PERMISSION_MUTATION: 'Revoke temporary permission from user',
 } as const;
 
+// ============================================
+// DEPARTMENT AUTHORIZATION GUARD MESSAGES
+// ============================================
+
+export const DEPARTMENT_AUTH_MESSAGES = {
+  // Error messages
+  USER_NOT_FOUND: 'User not authenticated',
+  WORKSPACE_NOT_FOUND: 'Workspace not found',
+  CONTEXT_NOT_FOUND: 'Unable to resolve user context',
+  ACCESS_DENIED: 'Access denied: insufficient department permissions',
+
+  // Dynamic messages
+  ACCESS_DENIED_CUSTOM: (message: string) => message,
+  CHECKING: (userId: string, departments: string[]) =>
+    `Checking department auth for user=${userId}, allowedDepartments=${departments.join(',')}`,
+  ALLOWED_BY_TEMPLATE: (
+    userId: string,
+    templateKey: string,
+    priority: number,
+  ) =>
+    `Access granted: user=${userId} has high-priority template=${templateKey} (priority=${priority})`,
+  ALLOWED_BY_EXECUTIVE: (userId: string, level: number) =>
+    `Access granted: user=${userId} is executive (level=${level})`,
+  ALLOWED_BY_MANAGER: (userId: string, level: number) =>
+    `Access granted: user=${userId} is manager (level=${level})`,
+  ALLOWED_BY_DEPARTMENT: (userId: string, dept: string) =>
+    `Access granted: user=${userId} belongs to allowed department=${dept}`,
+  DENIED: (userId: string, userDept: string | null, allowed: string[]) =>
+    `Access denied: user=${userId}, department=${userDept}, allowedDepartments=${allowed.join(',')}`,
+} as const;
+
 /**
  * RBAC Messages for hooks, services, and error handling
  */

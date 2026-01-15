@@ -1,5 +1,7 @@
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import { MKT_DEPARTMENT_DATA_SEEDS_IDS } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+import { RBAC_RESOURCE_KEY } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
+import { getEntityName } from 'src/mkt-core/mkt-rbac-enterprise-grade/utils/resource-mapper.utils';
 
 type MktDataAccessPolicyDataSeed = {
   id: string;
@@ -39,17 +41,6 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS = {
   DEPARTMENT_HEAD_POLICY: 'fea20581-d433-4a05-9f4a-fa35519ad842',
 };
 
-export const MKT_DATA_ACCESS_POLICY_OBJECT_NAMES = {
-  MKT_CUSTOMER: 'mktCustomer',
-  MKT_ORDER: 'mktOrder',
-  MKT_INVOICE: 'mktInvoice',
-  MKT_LICENSE: 'mktLicense',
-  MKT_KPI: 'mktKpi',
-  MKT_PRODUCT: 'mktProduct',
-  WORKSPACE_MEMBER: 'workspaceMember',
-  MKT_CONTRACT: 'mktContract',
-};
-
 export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
   [
     // Sales department: Customer ownership policy
@@ -60,7 +51,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
         'Sales team members can only access customers assigned to them',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
       specificMemberId: null,
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_CUSTOMER,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.CUSTOMER),
       filterConditions: {
         ownership: {
           enabled: true,
@@ -84,7 +75,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       description: 'Sales team can access orders from their customers only',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
       specificMemberId: null,
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_ORDER,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.ORDER),
       filterConditions: {
         ownership: {
           enabled: true,
@@ -111,7 +102,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       description: 'Support team can only access recent customer interactions',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SUPPORT,
       specificMemberId: null,
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_CUSTOMER,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.CUSTOMER),
       filterConditions: {
         timeRange: {
           field: 'updatedAt',
@@ -139,7 +130,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
         'Accounting team can access all invoices but with specific filters',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.ACCOUNTING,
       specificMemberId: null,
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_INVOICE,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.INVOICE),
       filterConditions: {
         amount: {
           minValue: 0,
@@ -166,7 +157,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
         'HR team has controlled access to employee confidential data',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.HR,
       specificMemberId: null,
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.WORKSPACE_MEMBER,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.WORKSPACE_MEMBER),
       filterConditions: {
         confidential: {
           enabled: true,
@@ -193,7 +184,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       description: 'Tech team system-level access with audit logging',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.TECH,
       specificMemberId: null,
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_KPI,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.KPI),
       filterConditions: {
         systemAccess: {
           enabled: true,
@@ -220,7 +211,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       description: 'Team managers can view their team members data',
       departmentId: null,
       specificMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Manager
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_PRODUCT,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.PRODUCT),
       filterConditions: {
         teamAccess: {
           enabled: true,
@@ -248,7 +239,7 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       description: 'Department heads have broader access within their domain',
       departmentId: null,
       specificMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Admin Manager
-      objectName: MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_CONTRACT,
+      objectName: getEntityName(RBAC_RESOURCE_KEY.CONTRACT),
       filterConditions: {
         departmentOverride: {
           enabled: true,
@@ -309,34 +300,29 @@ export const POLICIES_BY_DEPARTMENT = {
   ),
 };
 
-export const POLICIES_BY_OBJECT_NAME = {
-  mktCustomer: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName === MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_CUSTOMER,
+// Export for easy lookup by resource key
+export const POLICIES_BY_RESOURCE = {
+  [RBAC_RESOURCE_KEY.CUSTOMER]: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+    (policy) => policy.objectName === getEntityName(RBAC_RESOURCE_KEY.CUSTOMER),
   ),
-  mktOrder: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName === MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_ORDER,
+  [RBAC_RESOURCE_KEY.ORDER]: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+    (policy) => policy.objectName === getEntityName(RBAC_RESOURCE_KEY.ORDER),
   ),
-  mktInvoice: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName === MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_INVOICE,
+  [RBAC_RESOURCE_KEY.INVOICE]: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+    (policy) => policy.objectName === getEntityName(RBAC_RESOURCE_KEY.INVOICE),
   ),
-  workspaceMember: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName ===
-      MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.WORKSPACE_MEMBER,
+  [RBAC_RESOURCE_KEY.WORKSPACE_MEMBER]:
+    MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+      (policy) =>
+        policy.objectName === getEntityName(RBAC_RESOURCE_KEY.WORKSPACE_MEMBER),
+    ),
+  [RBAC_RESOURCE_KEY.KPI]: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+    (policy) => policy.objectName === getEntityName(RBAC_RESOURCE_KEY.KPI),
   ),
-  mktKpi: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName === MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_KPI,
+  [RBAC_RESOURCE_KEY.PRODUCT]: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+    (policy) => policy.objectName === getEntityName(RBAC_RESOURCE_KEY.PRODUCT),
   ),
-  mktProduct: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName === MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_PRODUCT,
-  ),
-  mktContract: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
-    (policy) =>
-      policy.objectName === MKT_DATA_ACCESS_POLICY_OBJECT_NAMES.MKT_CONTRACT,
+  [RBAC_RESOURCE_KEY.CONTRACT]: MKT_DATA_ACCESS_POLICY_DATA_SEEDS.filter(
+    (policy) => policy.objectName === getEntityName(RBAC_RESOURCE_KEY.CONTRACT),
   ),
 };

@@ -99,6 +99,32 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS = {
   MANAGER_CUSTOMERS: '0ef9b8a8-23a6-44a5-b471-cff49409e8be',
   MANAGER_ORDERS: 'ed669a96-f20a-4369-8570-a2fa7d782a40',
   MANAGER_PRODUCTS: '986fe497-f972-44a6-9998-70de94bef561',
+
+  // ===========================================
+  // SALES Department permissions
+  // ===========================================
+  // Sales Director permissions
+  SALES_DIRECTOR_CUSTOMERS: 'b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e',
+  SALES_DIRECTOR_ORDERS: 'c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f',
+  SALES_DIRECTOR_LICENSES: 'd6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a',
+  SALES_DIRECTOR_INVOICES: 'e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b',
+  SALES_DIRECTOR_PRODUCTS: 'f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c',
+  SALES_DIRECTOR_PAYMENTS: 'a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c3d',
+
+  // Sales Manager permissions
+  SALES_MANAGER_CUSTOMERS: 'b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e',
+  SALES_MANAGER_ORDERS: 'c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f',
+  SALES_MANAGER_LICENSES: 'd2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f6a',
+  SALES_MANAGER_INVOICES: 'e3f4a5b6-c7d8-4e9f-0a1b-2c3d4e5f6a7b',
+  SALES_MANAGER_PRODUCTS: 'f4a5b6c7-d8e9-4f0a-1b2c-3d4e5f6a7b8c',
+  SALES_MANAGER_PAYMENTS: 'a5b6c7d8-e9f0-4a1b-2c3d-4e5f6a7b8c9d',
+
+  // Sales Staff permissions
+  SALES_STAFF_CUSTOMERS: 'b6c7d8e9-f0a1-4b2c-3d4e-5f6a7b8c9d0e',
+  SALES_STAFF_ORDERS: 'c7d8e9f0-a1b2-4c3d-4e5f-6a7b8c9d0e1f',
+  SALES_STAFF_LICENSES: 'd8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f2a',
+  SALES_STAFF_INVOICES: 'e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b',
+  SALES_STAFF_PRODUCTS: 'f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c',
 };
 
 export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePermissionDataSeed[] =
@@ -341,6 +367,295 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
       allowedActions: READ_ONLY_ACTIONS,
+      deniedActions: null,
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+
+    // ===========================================
+    // SALES_DIRECTOR Permissions - Full department access
+    // Customer: ALL CRUD + EXPORT + ASSIGN
+    // Order: ALL CRUD + APPROVE
+    // License: READ only
+    // Invoice: READ + EXPORT (team scope)
+    // ===========================================
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_CUSTOMERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.ASSIGN,
+      ]),
+      deniedActions: null,
+      conditions: JSON.stringify({ scope: 'DEPARTMENT' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_ORDERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+      ]),
+      deniedActions: null,
+      conditions: JSON.stringify({ scope: 'DEPARTMENT' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_LICENSES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'DEPARTMENT' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_INVOICES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_PRODUCTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      allowedActions: READ_ONLY_ACTIONS,
+      deniedActions: null,
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_PAYMENTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM', viewStatusOnly: true }),
+      restrictions: null,
+      isActive: true,
+    },
+
+    // ===========================================
+    // SALES_MANAGER Permissions - Team-level access
+    // Customer: TEAM CRU + EXPORT + ASSIGN (no DELETE)
+    // Order: TEAM CRU + APPROVE (no DELETE)
+    // License: TEAM READ + UPDATE
+    // Invoice: TEAM READ
+    // ===========================================
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_CUSTOMERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.ASSIGN,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_ORDERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_LICENSES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_INVOICES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_PRODUCTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      allowedActions: READ_ONLY_ACTIONS,
+      deniedActions: null,
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_PAYMENTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'TEAM', viewStatusOnly: true }),
+      restrictions: null,
+      isActive: true,
+    },
+
+    // ===========================================
+    // SALES_STAFF Permissions - Own record access
+    // Customer: OWN CRU (no DELETE, no EXPORT)
+    // Order: OWN CRU (no DELETE, no APPROVE)
+    // License: OWN READ only
+    // Invoice: OWN READ only
+    // ===========================================
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_CUSTOMERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      conditions: JSON.stringify({ scope: 'OWN', filterBy: 'accountOwnerId' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_ORDERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+      ]),
+      conditions: JSON.stringify({ scope: 'OWN', filterBy: 'createdById' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_LICENSES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ scope: 'OWN' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_INVOICES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      conditions: JSON.stringify({ scope: 'OWN_ORDERS' }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_PRODUCTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
       deniedActions: null,
       conditions: null,
       restrictions: null,

@@ -5,3 +5,4 @@
 export * from './permission-mapper.utils';
 export * from './policy-evaluator.utils';
 export * from './cache-key-builder.utils';
+export * from './resource-mapper.utils';

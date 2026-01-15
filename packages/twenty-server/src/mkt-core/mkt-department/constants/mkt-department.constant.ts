@@ -20,14 +20,143 @@ export const DEPARTMENT_TYPE_OPTIONS = [
   },
 ];
 
-// Level 1
+// ============================================================================
+// DEPARTMENT CODES (Level 1)
+// ============================================================================
+
+/**
+ * Department Code - Canonical department identifiers
+ * Used for department-based permission templates and access control
+ */
+export enum DepartmentCode {
+  // Core Business Departments
+  SALES = 'SALES',
+  SUPPORT = 'SUPPORT',
+  ACCOUNTING = 'ACCOUNTING',
+  FINANCE = 'FINANCE',
+  MARKETING = 'MARKETING',
+
+  // Administrative Departments
+  HR = 'HR',
+  ADMIN = 'ADMIN',
+  LEGAL = 'LEGAL',
+
+  // Technical Departments
+  TECH = 'TECH',
+  IT = 'IT',
+  ENGINEERING = 'ENGINEERING',
+  QA = 'QA',
+  PRODUCT = 'PRODUCT',
+  SECURITY = 'SECURITY',
+
+  // Executive Level
+  EXECUTIVE = 'EXECUTIVE',
+
+  // Operations
+  OPERATIONS = 'OPERATIONS',
+  LOGISTICS = 'LOGISTICS',
+  PROCUREMENT = 'PROCUREMENT',
+
+  // Customer Facing
+  CUSTOMER_SUCCESS = 'CUSTOMER_SUCCESS',
+  PARTNERSHIPS = 'PARTNERSHIPS',
+
+  // Other
+  OTHER = 'OTHER',
+}
+
+/**
+ * DEPARTMENT object for backward compatibility
+ * Provides object-style access: DEPARTMENT.SALES, DEPARTMENT.ACCOUNTING
+ * @example
+ * import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+ * const allowedDepts = [DEPARTMENT.SALES, DEPARTMENT.ACCOUNTING];
+ */
 export const DEPARTMENT = {
-  SALES: 'SALES',
-  SUPPORT: 'SUPPORT',
-  ACCOUNTING: 'ACCOUNTING',
-  HR: 'HR',
-  TECH: 'TECH',
-  ADMIN: 'ADMIN',
+  ...DepartmentCode,
+} as const;
+
+// ============================================================================
+// DEPARTMENT GROUPS
+// ============================================================================
+
+/**
+ * Department Code Groups - Logical groupings of departments
+ */
+export const DEPARTMENT_CODE_GROUP = {
+  REVENUE_GENERATING: [
+    DepartmentCode.SALES,
+    DepartmentCode.MARKETING,
+    DepartmentCode.PARTNERSHIPS,
+  ] as const,
+  CUSTOMER_FACING: [
+    DepartmentCode.SALES,
+    DepartmentCode.SUPPORT,
+    DepartmentCode.CUSTOMER_SUCCESS,
+  ] as const,
+  FINANCIAL: [DepartmentCode.ACCOUNTING, DepartmentCode.FINANCE] as const,
+  TECHNICAL: [
+    DepartmentCode.TECH,
+    DepartmentCode.IT,
+    DepartmentCode.ENGINEERING,
+    DepartmentCode.QA,
+  ] as const,
+  ADMINISTRATIVE: [
+    DepartmentCode.HR,
+    DepartmentCode.ADMIN,
+    DepartmentCode.LEGAL,
+  ] as const,
+  OPERATIONS: [
+    DepartmentCode.OPERATIONS,
+    DepartmentCode.LOGISTICS,
+    DepartmentCode.PROCUREMENT,
+  ] as const,
+} as const;
+
+// ============================================================================
+// DEPARTMENT CROSS-ACCESS
+// ============================================================================
+
+/**
+ * Department Cross-Access Level
+ * Defines how departments can access data from other departments
+ */
+export enum DepartmentCrossAccessLevel {
+  FULL = 'FULL', // Can access all data from other departments
+  LIMITED = 'LIMITED', // Can access some data with restrictions
+  RESTRICTED = 'RESTRICTED', // Minimal cross-department access
+  NONE = 'NONE', // No cross-department access
+}
+
+/**
+ * Department Cross-Access Configuration
+ * Maps department codes to their cross-access levels
+ */
+export const DEPARTMENT_CROSS_ACCESS: Record<
+  DepartmentCode,
+  DepartmentCrossAccessLevel
+> = {
+  [DepartmentCode.SALES]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.SUPPORT]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.ACCOUNTING]: DepartmentCrossAccessLevel.RESTRICTED,
+  [DepartmentCode.FINANCE]: DepartmentCrossAccessLevel.RESTRICTED,
+  [DepartmentCode.MARKETING]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.HR]: DepartmentCrossAccessLevel.RESTRICTED,
+  [DepartmentCode.ADMIN]: DepartmentCrossAccessLevel.FULL,
+  [DepartmentCode.LEGAL]: DepartmentCrossAccessLevel.RESTRICTED,
+  [DepartmentCode.TECH]: DepartmentCrossAccessLevel.FULL,
+  [DepartmentCode.IT]: DepartmentCrossAccessLevel.FULL,
+  [DepartmentCode.ENGINEERING]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.QA]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.PRODUCT]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.SECURITY]: DepartmentCrossAccessLevel.RESTRICTED,
+  [DepartmentCode.EXECUTIVE]: DepartmentCrossAccessLevel.FULL,
+  [DepartmentCode.OPERATIONS]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.LOGISTICS]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.PROCUREMENT]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.CUSTOMER_SUCCESS]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.PARTNERSHIPS]: DepartmentCrossAccessLevel.LIMITED,
+  [DepartmentCode.OTHER]: DepartmentCrossAccessLevel.NONE,
 };
 
 // Level 2
@@ -64,11 +193,11 @@ export const TEAM = {
 
 export const MKT_DEPARTMENT_DATA_SEEDS_IDS = {
   //Level 1,
-  [DEPARTMENT.SALES]: 'ad95f81e-bda5-4a98-b72a-880c0b5c204c',
-  [DEPARTMENT.SUPPORT]: '7d95bc7c-0e33-4514-9f77-143e98affdf6',
-  [DEPARTMENT.ACCOUNTING]: '5ee8a0af-2aef-4eb4-865c-d4bc143ee97b',
-  [DEPARTMENT.HR]: '00b72fe7-77d0-429c-87b9-d88b671ea502',
-  [DEPARTMENT.TECH]: 'e4fd8648-3739-4fec-8e37-44c90ee54a0c',
+  [DepartmentCode.SALES]: 'ad95f81e-bda5-4a98-b72a-880c0b5c204c',
+  [DepartmentCode.SUPPORT]: '7d95bc7c-0e33-4514-9f77-143e98affdf6',
+  [DepartmentCode.ACCOUNTING]: '5ee8a0af-2aef-4eb4-865c-d4bc143ee97b',
+  [DepartmentCode.HR]: '00b72fe7-77d0-429c-87b9-d88b671ea502',
+  [DepartmentCode.TECH]: 'e4fd8648-3739-4fec-8e37-44c90ee54a0c',
   // Level 2 of SALES,
   [TEAM.SALES_DOMESTIC]: '566d23d5-1498-4f7f-b61e-a7101772344a',
   [TEAM.SALES_INTERNATIONAL]: 'e1d75cc3-fd9c-4664-b921-a407b990fb81',
@@ -140,3 +269,112 @@ export const MKT_DEPARTMENT_ANCESTRY_DATA_SEEDS_IDS = {
   TECH_QA_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567118',
   TECH_DATA_TO_TECH: 'b2c3d4e5-f6a7-8901-bcde-f01234567119',
 };
+
+// ============================================================================
+// HIERARCHY LEVELS
+// ============================================================================
+
+/**
+ * Hierarchy Level Enumeration
+ * Defines the organizational hierarchy levels from CEO to Intern
+ */
+export enum HierarchyLevel {
+  CEO = 1, // Chief Executive Officer
+  C_LEVEL = 2, // C-Level Executives (CTO, CFO, COO, etc.)
+  VP = 3, // Vice Presidents
+  SENIOR_DIRECTOR = 4, // Senior Directors
+  DIRECTOR = 5, // Directors
+  SENIOR_MANAGER = 6, // Senior Managers
+  MANAGER = 7, // Managers
+  SENIOR_SPECIALIST = 8, // Senior Specialists/Lead
+  SPECIALIST = 9, // Specialists/Senior
+  JUNIOR_SPECIALIST = 10, // Junior Specialists
+  INTERN = 11, // Interns/Entry Level
+}
+
+/**
+ * Reporting Relationship Types
+ * Defines the types of relationships between users in the hierarchy
+ */
+export enum ReportingRelationship {
+  DIRECT_REPORT = 'DIRECT_REPORT', // Direct subordinate
+  INDIRECT_REPORT = 'INDIRECT_REPORT', // Subordinate through hierarchy
+  PEER = 'PEER', // Same level, same department
+  CROSS_DEPARTMENT_PEER = 'CROSS_DEPARTMENT_PEER', // Same level, different department
+  MANAGER = 'MANAGER', // Direct manager
+  SENIOR_MANAGER = 'SENIOR_MANAGER', // Manager through hierarchy
+  UNRELATED = 'UNRELATED', // No reporting relationship
+}
+
+/**
+ * Hierarchy Constants
+ * Configuration values for hierarchy-related functionality
+ */
+export const HIERARCHY_CONSTANTS = {
+  MAX_HIERARCHY_LEVELS: 11,
+  MAX_REPORTING_CHAIN_LENGTH: 10,
+  MAX_SUBORDINATES_PER_MANAGER: 50,
+  DEFAULT_CACHE_TTL: 300, // 5 minutes
+  EMERGENCY_ACCESS_DURATION: 60, // 1 hour in minutes
+  MAX_CROSS_DEPARTMENT_REQUESTS_PER_DAY: 10,
+} as const;
+
+// ============================================================================
+// TEMPLATE PRIORITY
+// ============================================================================
+
+/**
+ * Template Priority Thresholds
+ * Maps to permission template priorities in mktPermissionTemplate table
+ *
+ * Priority ordering (higher = more permissions):
+ * - CEO: 1000
+ * - VP: 900
+ * - DIRECTOR: 800
+ * - MANAGER: 700
+ * - TEAM_LEAD: 600
+ * - SENIOR: 500
+ * - JUNIOR: 400
+ */
+export const TEMPLATE_PRIORITY = {
+  /** CEO template priority - full access */
+  CEO: 1000,
+  /** VP template priority - near full access */
+  VP: 900,
+  /** Director template priority */
+  DIRECTOR: 800,
+  /** Manager template priority - used as default threshold for allowHighPriorityTemplates */
+  MANAGER: 700,
+  /** Team Lead template priority */
+  TEAM_LEAD: 600,
+  /** Finance Analyst template priority (department-specific) */
+  FINANCE_ANALYST: 550,
+  /** Senior staff template priority */
+  SENIOR: 500,
+  /** Junior staff template priority */
+  JUNIOR: 400,
+  /** Base priority for implicit permissions (department membership) */
+  BASE: 100,
+  /** User override priority (highest, always wins) */
+  USER_OVERRIDE: 2000,
+} as const;
+
+// ============================================================================
+// RESOLUTION STRATEGY
+// ============================================================================
+
+/**
+ * Permission Resolution Strategy
+ * Determines how to resolve conflicts when user has multiple permission sources
+ */
+export const RESOLUTION_STRATEGY = {
+  /** Highest priority wins */
+  PRIORITY_BASED: 'PRIORITY_BASED',
+  /** If any source allows, access is granted */
+  MOST_PERMISSIVE: 'MOST_PERMISSIVE',
+  /** All sources must allow */
+  MOST_RESTRICTIVE: 'MOST_RESTRICTIVE',
+} as const;
+
+export type ResolutionStrategyType =
+  (typeof RESOLUTION_STRATEGY)[keyof typeof RESOLUTION_STRATEGY];
