@@ -16,6 +16,10 @@ import {
   MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
 } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-data-seeds.constants';
 import {
+  MKT_PERMISSION_CONTEXT_DATA_SEED_COLUMNS,
+  MKT_PERMISSION_CONTEXT_DATA_SEEDS,
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-data-seeds.constants';
+import {
   MKT_DEPARTMENT_DATA_SEED_COLUMNS,
   MKT_DEPARTMENT_DATA_SEEDS,
 } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-data-seeds.constants';
@@ -389,6 +393,12 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktDepartmentAncestry',
     pgColumns: MKT_DEPARTMENT_ANCESTRY_DATA_SEED_COLUMNS,
     recordSeeds: MKT_DEPARTMENT_ANCESTRY_DATA_SEEDS,
+  },
+  // Permission context (template layer) - phải seed trước Data Access Policy
+  {
+    tableName: 'mktPermissionContext',
+    pgColumns: MKT_PERMISSION_CONTEXT_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_PERMISSION_CONTEXT_DATA_SEEDS,
   },
   {
     tableName: 'mktDataAccessPolicy',

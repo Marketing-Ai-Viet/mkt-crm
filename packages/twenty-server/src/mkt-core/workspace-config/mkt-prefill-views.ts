@@ -15,6 +15,7 @@ import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-p
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
 import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-all.view';
 import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-all.view';
+import { mktPermissionContextsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-all.view';
 import { mktDepartmentsAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-all.view';
 import { mktGenericCombosAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-all.view';
 import { mktGenericComboItemsAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-all.view';
@@ -109,6 +110,8 @@ export const MKT_ALL_VIEWS = [
   mktDepartmentHierarchiesAllView,
   mktDepartmentSubManagersAllView,
   mktDepartmentAncestriesAllView,
+  // Permission context views (template layer)
+  mktPermissionContextsAllView,
   mktDataAccessPoliciesAllView,
   mktPermissionAuditsAllView,
   // permission template views

@@ -8,6 +8,7 @@ import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mk
 import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
 import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/prefill-mkt-data-access-policies';
+import { prefillMktPermissionContexts } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/prefill-mkt-permission-contexts';
 import { prefillMktDepartmentAncestries } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/prefill-mkt-department-ancestries';
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/prefill-mkt-department-hierarchies';
 import { prefillMktDepartmentSubManagers } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/prefill-mkt-department-sub-managers';
@@ -106,6 +107,8 @@ export const MKT_PREFILLS = [
   prefillMktDepartmentHierarchies,
   prefillMktDepartmentSubManagers,
   prefillMktDepartmentAncestries,
+  // Permission context prefills (template layer - seed before data access policies)
+  prefillMktPermissionContexts,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
   // permission template prefills (order matters: actions -> resources -> templates -> resource permissions -> system actions -> user templates)
