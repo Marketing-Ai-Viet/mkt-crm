@@ -32,6 +32,7 @@ export {
   RevokeReason,
 } from './bases/temporary-permission.service';
 export { RbacAuditService } from './rbac-audit.service';
+export { HierarchicalAccessEvaluatorService } from './hierarchical-access-evaluator.service';
 
 // Re-export types from types folder for backward compatibility
 export type {

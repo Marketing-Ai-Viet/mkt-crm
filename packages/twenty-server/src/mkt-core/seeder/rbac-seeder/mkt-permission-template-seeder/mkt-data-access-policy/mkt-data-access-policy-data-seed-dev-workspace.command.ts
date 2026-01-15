@@ -17,8 +17,8 @@ import {
   mktDataAccessPoliciesActiveView,
   mktDataAccessPoliciesDepartmentView,
   mktDataAccessPoliciesMemberView,
-} from 'src/mkt-core/seeder/prefill-view/mkt-data-access-policy-all.view';
-import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-all.view';
+import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/prefill-mkt-data-access-policies';
 
 interface SeedDataAccessPolicyModuleOptions {
   workspaceId?: string;

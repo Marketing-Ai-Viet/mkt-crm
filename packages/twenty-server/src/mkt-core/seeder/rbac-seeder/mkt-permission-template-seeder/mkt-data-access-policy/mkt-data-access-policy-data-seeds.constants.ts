@@ -68,23 +68,59 @@ export const MKT_DATA_ACCESS_POLICY_DATA_SEEDS: MktDataAccessPolicyDataSeed[] =
       position: 1,
     },
 
-    // Sales department: Order access policy
+    // Sales department: Order hierarchy access policy
     {
       id: MKT_DATA_ACCESS_POLICY_DATA_SEED_IDS.SALES_ORDER_OWNERSHIP,
-      name: 'Sales Order Access Policy',
-      description: 'Sales team can access orders from their customers only',
+      name: 'Sales Order Hierarchy Access Policy',
+      description:
+        'Phân quyền đơn hàng theo cấp bậc: Staff xem đơn mình tạo, Manager xem đơn cấp dưới, cấp trên xem toàn chuỗi, peer manager không xem được đơn của nhau',
       departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS.SALES,
       specificMemberId: null,
       objectName: getEntityName(RBAC_RESOURCE_KEY.ORDER),
       filterConditions: {
-        ownership: {
+        hierarchicalAccess: {
           enabled: true,
-          field: 'accountOwnerId',
-          allowShared: true,
+          ownershipField: 'createdById',
+          rules: [
+            {
+              name: 'STAFF_SELF_ONLY',
+              description: 'Nhân viên chỉ xem đơn hàng do mình tạo',
+              minHierarchyLevel: 8,
+              maxHierarchyLevel: 11,
+              accessScope: 'SELF',
+            },
+            {
+              name: 'MANAGER_SUBORDINATES',
+              description: 'Quản lý xem đơn hàng của cấp dưới trực tiếp',
+              minHierarchyLevel: 7,
+              maxHierarchyLevel: 7,
+              accessScope: 'DIRECT_SUBORDINATES',
+            },
+            {
+              name: 'UPPER_MANAGEMENT_CHAIN',
+              description: 'Cấp trên xem toàn bộ chuỗi báo cáo',
+              minHierarchyLevel: 1,
+              maxHierarchyLevel: 6,
+              accessScope: 'REPORTING_CHAIN',
+            },
+          ],
+          peerRestriction: {
+            enabled: true,
+            description: 'Quản lý ngang hàng không xem được đơn hàng của nhau',
+            blockPeerAccess: true,
+            peerDefinition: 'SAME_HIERARCHY_LEVEL_SAME_PARENT',
+          },
         },
-        timeRange: {
-          field: 'createdAt',
-          daysBack: 365, // Access orders from last year
+        departmentScope: {
+          enabled: true,
+          allowedDepartments: [
+            'SALES',
+            'SALES_DOMESTIC',
+            'SALES_INTERNATIONAL',
+            'SALES_ONLINE',
+            'SALES_PARTNER',
+          ],
+          crossDepartmentAccess: false,
         },
         status: {
           deniedValues: ['deleted', 'void'],

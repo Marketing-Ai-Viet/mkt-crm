@@ -14,7 +14,7 @@ import { mktPaymentsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment
 import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-method-all.view';
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
 import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-all.view';
-import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-data-access-policy-all.view';
+import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-all.view';
 import { mktDepartmentsAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-all.view';
 import { mktGenericCombosAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-all.view';
 import { mktGenericComboItemsAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-all.view';

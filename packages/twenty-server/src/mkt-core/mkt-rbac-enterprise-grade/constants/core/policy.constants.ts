@@ -260,3 +260,57 @@ export const POLICY_DATA_TYPES = {
   ARRAY: 'array',
   OBJECT: 'object',
 } as const;
+
+// ============================================
+// HIERARCHICAL ACCESS CONSTANTS
+// ============================================
+
+/**
+ * Access Scope Constants
+ * Defines who can access data based on organization hierarchy
+ */
+export const ACCESS_SCOPE = {
+  /** User can only access their own records */
+  SELF: 'SELF',
+  /** User can access records of direct subordinates */
+  DIRECT_SUBORDINATES: 'DIRECT_SUBORDINATES',
+  /** User can access records of entire reporting chain */
+  REPORTING_CHAIN: 'REPORTING_CHAIN',
+  /** User can access all records in department */
+  DEPARTMENT: 'DEPARTMENT',
+  /** User can access all records */
+  ALL: 'ALL',
+} as const;
+
+export type AccessScope = (typeof ACCESS_SCOPE)[keyof typeof ACCESS_SCOPE];
+
+/**
+ * Peer Definition Constants
+ * Defines how peers are identified for restriction rules
+ */
+export const PEER_DEFINITION = {
+  /** Same hierarchy level under same parent manager */
+  SAME_HIERARCHY_LEVEL_SAME_PARENT: 'SAME_HIERARCHY_LEVEL_SAME_PARENT',
+  /** Same hierarchy level regardless of parent */
+  SAME_HIERARCHY_LEVEL: 'SAME_HIERARCHY_LEVEL',
+  /** Same department but different manager */
+  SAME_DEPARTMENT_DIFFERENT_MANAGER: 'SAME_DEPARTMENT_DIFFERENT_MANAGER',
+} as const;
+
+export type PeerDefinition =
+  (typeof PEER_DEFINITION)[keyof typeof PEER_DEFINITION];
+
+/**
+ * Hierarchy Level Ranges
+ * Default ranges for common hierarchy rules
+ */
+export const HIERARCHY_LEVEL_RANGES = {
+  /** Staff level (8-11): SELF access only */
+  STAFF: { min: 8, max: 11 },
+  /** Manager level (7): DIRECT_SUBORDINATES access */
+  MANAGER: { min: 7, max: 7 },
+  /** Upper management (1-6): REPORTING_CHAIN access */
+  UPPER_MANAGEMENT: { min: 1, max: 6 },
+  /** Executive level (1-3): ALL access */
+  EXECUTIVE: { min: 1, max: 3 },
+} as const;

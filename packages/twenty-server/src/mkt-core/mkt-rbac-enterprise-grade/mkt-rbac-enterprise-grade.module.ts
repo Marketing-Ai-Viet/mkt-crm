@@ -18,6 +18,7 @@ import {
   RbacCacheService,
   RbacContextService,
   RbacEnforcerService,
+  HierarchicalAccessEvaluatorService,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/services';
 import { DepartmentAuthorizationGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/department-authorization.guard';
 import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
@@ -77,6 +78,7 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     RbacCacheService,
     RbacContextService,
     RbacEnforcerService,
+    HierarchicalAccessEvaluatorService,
 
     // Guards
     DepartmentAuthorizationGuard,
@@ -102,6 +104,7 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     RbacCacheService,
     RbacContextService,
     RbacEnforcerService,
+    HierarchicalAccessEvaluatorService,
 
     // Export guards
     DepartmentAuthorizationGuard,

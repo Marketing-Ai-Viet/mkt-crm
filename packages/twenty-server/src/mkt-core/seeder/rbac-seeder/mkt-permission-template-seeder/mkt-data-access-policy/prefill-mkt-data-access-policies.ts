@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
   MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-data-access-policy-data-seeds.constants';
+} from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-data-seeds.constants';
 
 export const prefillMktDataAccessPolicies = async (
   entityManager: WorkspaceEntityManager,

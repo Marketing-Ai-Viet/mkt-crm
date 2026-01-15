@@ -340,6 +340,29 @@ export const DEPARTMENT_AUTH_MESSAGES = {
     `Access denied: user=${userId}, department=${userDept}, allowedDepartments=${allowed.join(',')}`,
 } as const;
 
+// ============================================
+// HIERARCHICAL ACCESS MESSAGES
+// ============================================
+
+/**
+ * Messages for hierarchical access decisions
+ */
+export const HIERARCHICAL_ACCESS_MESSAGES = {
+  ALLOWED_SELF: 'Truy cập được phép: Bạn là người tạo record này',
+  ALLOWED_SUBORDINATE: 'Truy cập được phép: Record thuộc cấp dưới trực tiếp',
+  ALLOWED_REPORTING_CHAIN: 'Truy cập được phép: Record thuộc chuỗi báo cáo',
+  ALLOWED_FULL_ACCESS: 'Truy cập được phép: Bạn có quyền truy cập đầy đủ',
+  DENIED_NOT_OWNER: 'Từ chối truy cập: Bạn không phải người tạo record này',
+  DENIED_NOT_SUBORDINATE:
+    'Từ chối truy cập: Record không thuộc cấp dưới của bạn',
+  DENIED_PEER_RESTRICTION:
+    'Từ chối truy cập: Bạn không thể xem record của quản lý ngang cấp',
+  DENIED_DEPARTMENT_MISMATCH: 'Từ chối truy cập: Record thuộc phòng ban khác',
+  DENIED_NO_APPLICABLE_RULE:
+    'Từ chối truy cập: Không có quy tắc phù hợp với cấp bậc của bạn',
+  ERROR_MISSING_CONTEXT: 'Lỗi: Thiếu thông tin context để đánh giá quyền',
+} as const;
+
 /**
  * RBAC Messages for hooks, services, and error handling
  */

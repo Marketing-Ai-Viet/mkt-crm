@@ -101,3 +101,6 @@ export {
 
 // Department authorization types
 export * from './department-authorization.types';
+
+// Hierarchical access types
+export * from './hierarchical-access.types';

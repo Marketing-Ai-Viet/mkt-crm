@@ -7,7 +7,7 @@ import { prefillMktSInvoices } from 'src/mkt-core/seeder/invoice-seeder/prefill-
 import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
 import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
 import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
-import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
+import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/prefill-mkt-data-access-policies';
 import { prefillMktDepartmentAncestries } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/prefill-mkt-department-ancestries';
 import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/prefill-mkt-department-hierarchies';
 import { prefillMktDepartmentSubManagers } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/prefill-mkt-department-sub-managers';
