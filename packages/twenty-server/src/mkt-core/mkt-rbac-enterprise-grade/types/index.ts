@@ -104,3 +104,9 @@ export * from './department-authorization.types';
 
 // Hierarchical access types
 export * from './hierarchical-access.types';
+
+// RBAC Context types
+export * from './rbac-context.types';
+
+// Filter expression types (Template layer)
+export * from './filter-expression.types';

@@ -33,6 +33,11 @@ const DEFAULT_CACHE_WARMUP_CRON = '0 0 * * * *'; // Every hour
 const DEFAULT_AUDIT_CLEANUP_CRON = '0 0 2 * * *'; // Every day at 2 AM
 const DEFAULT_TEMPORARY_PERMISSION_CLEANUP_CRON = '0 */15 * * * *'; // Every 15 min
 
+// Phase 2: Feature flags cho PermissionContext flow
+const DEFAULT_USE_PERMISSION_CONTEXT = false; // Gradual rollout - default off
+const DEFAULT_FALLBACK_ON_ERROR = true; // Fallback to legacy if new flow fails
+const DEFAULT_DEBUG_FILTER_RESOLUTION = false; // Log chi tiết filter resolution
+
 // ============================================
 // ZOD SCHEMAS
 // ============================================
@@ -79,6 +84,11 @@ const cronEnvSchema = (defaultValue: string) =>
  * - RBAC_CACHE_WARMUP_CRON: Cache warmup cron expression (default: every hour)
  * - RBAC_AUDIT_CLEANUP_CRON: Audit log cleanup cron (default: every day at 2 AM)
  * - RBAC_TEMPORARY_PERMISSION_CLEANUP_CRON: Temporary permission cleanup cron (default: every 15 min)
+ *
+ * Phase 2 - PermissionContext Feature Flags:
+ * - RBAC_USE_PERMISSION_CONTEXT: Enable new PermissionContext flow (default: false)
+ * - RBAC_FALLBACK_ON_ERROR: Fallback to legacy if new flow fails (default: true)
+ * - RBAC_DEBUG_FILTER_RESOLUTION: Log chi tiết filter resolution (default: false)
  */
 const rbacConfigSchema = z.object({
   RBAC_CACHE_TTL_SECONDS: positiveIntEnvSchema(DEFAULT_CACHE_TTL_SECONDS),
@@ -95,6 +105,12 @@ const rbacConfigSchema = z.object({
   RBAC_AUDIT_CLEANUP_CRON: cronEnvSchema(DEFAULT_AUDIT_CLEANUP_CRON),
   RBAC_TEMPORARY_PERMISSION_CLEANUP_CRON: cronEnvSchema(
     DEFAULT_TEMPORARY_PERMISSION_CLEANUP_CRON,
+  ),
+  // Phase 2: PermissionContext Feature Flags
+  RBAC_USE_PERMISSION_CONTEXT: booleanEnvSchema(DEFAULT_USE_PERMISSION_CONTEXT),
+  RBAC_FALLBACK_ON_ERROR: booleanEnvSchema(DEFAULT_FALLBACK_ON_ERROR),
+  RBAC_DEBUG_FILTER_RESOLUTION: booleanEnvSchema(
+    DEFAULT_DEBUG_FILTER_RESOLUTION,
   ),
 });
 
@@ -114,6 +130,10 @@ const parsedEnv = rbacConfigSchema.safeParse({
   RBAC_AUDIT_CLEANUP_CRON: process.env.RBAC_AUDIT_CLEANUP_CRON,
   RBAC_TEMPORARY_PERMISSION_CLEANUP_CRON:
     process.env.RBAC_TEMPORARY_PERMISSION_CLEANUP_CRON,
+  // Phase 2: PermissionContext Feature Flags
+  RBAC_USE_PERMISSION_CONTEXT: process.env.RBAC_USE_PERMISSION_CONTEXT,
+  RBAC_FALLBACK_ON_ERROR: process.env.RBAC_FALLBACK_ON_ERROR,
+  RBAC_DEBUG_FILTER_RESOLUTION: process.env.RBAC_DEBUG_FILTER_RESOLUTION,
 });
 
 if (!parsedEnv.success) {
@@ -160,6 +180,29 @@ export const MKT_RBAC_CONFIG = {
   /** Temporary permission cleanup cron expression */
   TEMPORARY_PERMISSION_CLEANUP_CRON:
     validatedEnv.RBAC_TEMPORARY_PERMISSION_CLEANUP_CRON,
+
+  // ============================================
+  // Phase 2: PermissionContext Feature Flags
+  // ============================================
+
+  /**
+   * Enable new PermissionContext flow (default: false)
+   * - false: Dùng hard-coded switch logic (legacy)
+   * - true: Dùng PermissionContext + FilterExpressionResolver (new)
+   */
+  USE_PERMISSION_CONTEXT: validatedEnv.RBAC_USE_PERMISSION_CONTEXT,
+
+  /**
+   * Fallback to legacy flow if new flow fails (default: true)
+   * Khi new flow gặp lỗi, tự động fallback về legacy để đảm bảo availability
+   */
+  FALLBACK_ON_ERROR: validatedEnv.RBAC_FALLBACK_ON_ERROR,
+
+  /**
+   * Log chi tiết filter resolution (default: false)
+   * Hữu ích cho debugging và monitoring rollout
+   */
+  DEBUG_FILTER_RESOLUTION: validatedEnv.RBAC_DEBUG_FILTER_RESOLUTION,
 } as const;
 
 export type MktRbacConfigType = typeof MKT_RBAC_CONFIG;

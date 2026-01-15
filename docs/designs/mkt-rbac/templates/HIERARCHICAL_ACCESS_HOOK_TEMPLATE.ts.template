@@ -1,0 +1,102 @@
+/**
+ * Template: Hierarchical Access Pre-Query Hook
+ *
+ * Hướng dẫn sử dụng:
+ * 1. Copy nội dung này vào file hierarchical-access.pre-query.hook.ts
+ * 2. Replace tất cả {{RESOURCE_NAME}} bằng tên resource (PascalCase, e.g., MktContract)
+ * 3. Replace tất cả {{resourceName}} bằng tên resource (camelCase, e.g., mktContract)
+ * 4. Thêm resource vào HIERARCHICAL_ACCESS_RESOURCES array
+ * 5. Thêm hooks vào HIERARCHICAL_ACCESS_HOOKS array
+ *
+ * Variables:
+ * - {{RESOURCE_NAME}}: PascalCase resource name (e.g., MktContract, MktQuote)
+ * - {{resourceName}}: camelCase resource name (e.g., mktContract, mktQuote)
+ */
+
+// ============================================
+// HOOKS FOR {{resourceName}}
+// ============================================
+
+@Injectable()
+@WorkspaceQueryHook('{{resourceName}}.findMany')
+export class {{RESOURCE_NAME}}HierarchicalAccessFindManyHook
+  implements WorkspacePreQueryHookInstance
+{
+  constructor(
+    private readonly filterService: HierarchicalAccessFilterService,
+  ) {}
+
+  async execute(
+    authContext: AuthContext,
+    objectName: string,
+    payload: FindManyResolverArgs<HierarchicalFilter, ObjectRecordOrderBy>,
+  ): Promise<FindManyResolverArgs<HierarchicalFilter, ObjectRecordOrderBy>> {
+    const filter = await this.filterService.buildHierarchicalFilter(
+      authContext,
+      objectName,
+    );
+
+    payload.filter = this.filterService.mergeFilters(payload.filter, filter);
+
+    return payload;
+  }
+}
+
+@Injectable()
+@WorkspaceQueryHook('{{resourceName}}.findOne')
+export class {{RESOURCE_NAME}}HierarchicalAccessFindOneHook
+  implements WorkspacePreQueryHookInstance
+{
+  constructor(
+    private readonly filterService: HierarchicalAccessFilterService,
+  ) {}
+
+  async execute(
+    authContext: AuthContext,
+    objectName: string,
+    payload: FindOneResolverArgs<HierarchicalFilter>,
+  ): Promise<FindOneResolverArgs<HierarchicalFilter>> {
+    const filter = await this.filterService.buildHierarchicalFilter(
+      authContext,
+      objectName,
+    );
+
+    payload.filter = this.filterService.mergeFilters(payload.filter, filter);
+
+    return payload;
+  }
+}
+
+// ============================================
+// THÊM VÀO HIERARCHICAL_ACCESS_RESOURCES (trong cùng file)
+// ============================================
+
+/*
+export const HIERARCHICAL_ACCESS_RESOURCES = [
+  'mktOrder',
+  'mktInvoice',
+  'mktLicense',
+  'mktCustomer',
+  'mktPayment',
+  'mktContract',
+  'task',
+  'note',
+  'opportunity',
+  '{{resourceName}}',  // ← THÊM DÒNG NÀY
+] as const;
+*/
+
+// ============================================
+// THÊM VÀO HIERARCHICAL_ACCESS_HOOKS (trong cùng file)
+// ============================================
+
+/*
+export const HIERARCHICAL_ACCESS_HOOKS = [
+  // Core filter service
+  HierarchicalAccessFilterService,
+  // ... existing hooks ...
+  // {{resourceName}} - THÊM 2 DÒNG NÀY
+  {{RESOURCE_NAME}}HierarchicalAccessFindManyHook,
+  {{RESOURCE_NAME}}HierarchicalAccessFindOneHook,
+];
+*/
