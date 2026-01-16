@@ -165,12 +165,12 @@ export const conditionItemToWhere = (
  *   type: 'OR',
  *   conditions: [
  *     { field: 'departmentId', operator: 'IN', value: ['dept1', 'dept2'] },
- *     { field: 'createdByWorkspaceMemberId', operator: '=', value: 'member1' }
+ *     { field: 'createdById', operator: '=', value: 'member1' }
  *   ]
  * };
  *
  * const where = filterToWhere(filter);
- * // Result: [{ departmentId: In(['dept1', 'dept2']) }, { createdByWorkspaceMemberId: 'member1' }]
+ * // Result: [{ departmentId: In(['dept1', 'dept2']) }, { createdById: 'member1' }]
  *
  * // Use in TypeORM query:
  * repository.find({ where });

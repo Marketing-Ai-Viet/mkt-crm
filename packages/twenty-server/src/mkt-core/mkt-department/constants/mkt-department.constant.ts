@@ -191,6 +191,55 @@ export const TEAM = {
   TECH_DATA: 'TECH_DATA',
 };
 
+// ============================================================================
+// DEPARTMENT WITH CHILD TEAMS MAPPING
+// ============================================================================
+
+/**
+ * Mapping từ parent department sang tất cả child teams
+ * Used for authorization rules where child teams inherit parent permissions
+ *
+ * @example
+ * DEPARTMENT_CHILDREN_MAP[DEPARTMENT.TECH]
+ * // → ['TECH', 'TECH_BACKEND', 'TECH_FRONTEND', 'TECH_DEVOPS', 'TECH_QA', 'TECH_DATA']
+ */
+export const DEPARTMENT_CHILDREN_MAP: Record<string, readonly string[]> = {
+  [DepartmentCode.SALES]: [
+    DepartmentCode.SALES,
+    TEAM.SALES_DOMESTIC,
+    TEAM.SALES_INTERNATIONAL,
+    TEAM.SALES_PARTNER,
+    TEAM.SALES_ONLINE,
+  ],
+  [DepartmentCode.SUPPORT]: [
+    DepartmentCode.SUPPORT,
+    TEAM.SUPPORT_CUSTOMER,
+    TEAM.SUPPORT_TECHNICAL,
+    TEAM.SUPPORT_INTERNAL,
+  ],
+  [DepartmentCode.ACCOUNTING]: [
+    DepartmentCode.ACCOUNTING,
+    TEAM.ACCOUNTING_PAYABLE,
+    TEAM.ACCOUNTING_RECEIVABLE,
+    TEAM.ACCOUNTING_AUDIT,
+    TEAM.ACCOUNTING_TAX,
+  ],
+  [DepartmentCode.HR]: [
+    DepartmentCode.HR,
+    TEAM.HR_RECRUITMENT,
+    TEAM.HR_TRAINING,
+    TEAM.HR_PAYROLL,
+  ],
+  [DepartmentCode.TECH]: [
+    DepartmentCode.TECH,
+    TEAM.TECH_BACKEND,
+    TEAM.TECH_FRONTEND,
+    TEAM.TECH_DEVOPS,
+    TEAM.TECH_QA,
+    TEAM.TECH_DATA,
+  ],
+} as const;
+
 export const MKT_DEPARTMENT_DATA_SEEDS_IDS = {
   //Level 1,
   [DepartmentCode.SALES]: 'ad95f81e-bda5-4a98-b72a-880c0b5c204c',

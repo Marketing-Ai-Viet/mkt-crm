@@ -30,19 +30,9 @@ import {
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/filter-expression.types';
 import { RBACUserContext } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/rbac-context.types';
 
-// ============================================
-// CONSTANTS
-// ============================================
-
-const LOG_CONTEXT = 'FilterExpressionResolver';
-
-// ============================================
-// SERVICE
-// ============================================
-
 @Injectable()
 export class FilterExpressionResolverService {
-  private readonly logger = new Logger(LOG_CONTEXT);
+  private readonly logger = new Logger(FilterExpressionResolverService.name);
 
   /**
    * Resolve template filter expression to actual values
@@ -238,63 +228,115 @@ export class FilterExpressionResolverService {
     context: FilterResolutionContext,
     unresolvedVars: string[],
   ): unknown {
-    // Parse variable path: "$user.workspaceMemberId" → ["user", "workspaceMemberId"]
-    const parts = variable.replace('$', '').split('.');
-    const root = parts[0]; // "user" or "context"
-    const path = parts.slice(1); // ["workspaceMemberId"]
+    const { root, path } = this.parseVariablePath(variable);
 
-    let current: unknown;
+    const rootObject = this.getRootObject(root, context);
 
-    // Get root object
-    if (root === 'user') {
-      current = context.user;
-    } else if (root === 'context') {
-      current = context.context;
-    } else {
-      // Unknown root - mark as unresolved
+    if (rootObject === undefined) {
       unresolvedVars.push(variable);
 
       return variable;
     }
 
-    // Navigate path
+    const navigateResult = this.navigatePath(rootObject, path);
+
+    if (!navigateResult.found) {
+      unresolvedVars.push(variable);
+
+      return variable;
+    }
+
+    return this.handleResolvedValue(
+      navigateResult.value,
+      path,
+      variable,
+      unresolvedVars,
+    );
+  }
+
+  /**
+   * Parse variable path từ template variable string
+   * @example "$user.workspaceMemberId" → { root: "user", path: ["workspaceMemberId"] }
+   */
+  private parseVariablePath(variable: string): {
+    root: string;
+    path: string[];
+  } {
+    const parts = variable.replace('$', '').split('.');
+
+    return {
+      root: parts[0],
+      path: parts.slice(1),
+    };
+  }
+
+  /**
+   * Get root object từ context dựa trên root key
+   * @returns undefined nếu root không hợp lệ
+   */
+  private getRootObject(
+    root: string,
+    context: FilterResolutionContext,
+  ): unknown {
+    const rootMap: Record<string, unknown> = {
+      user: context.user,
+      context: context.context,
+    };
+
+    return rootMap[root];
+  }
+
+  /**
+   * Navigate qua path để lấy value từ object
+   */
+  private navigatePath(
+    rootObject: unknown,
+    path: string[],
+  ): { found: boolean; value: unknown } {
+    let current = rootObject;
+
     for (const key of path) {
       if (current === null || current === undefined) {
-        unresolvedVars.push(variable);
-
-        return variable;
+        return { found: false, value: undefined };
       }
 
       if (
-        typeof current === 'object' &&
-        key in (current as Record<string, unknown>)
+        typeof current !== 'object' ||
+        !(key in (current as Record<string, unknown>))
       ) {
-        current = (current as Record<string, unknown>)[key];
-      } else {
-        // Key not found - mark as unresolved
-        unresolvedVars.push(variable);
-
-        return variable;
-      }
-    }
-
-    // Handle null departmentId special case - trả về empty string thay vì null
-    // để tránh filter với NULL value
-    if (current === null) {
-      // Nếu là array type (ends with Ids), trả về empty array
-      const lastKey = path[path.length - 1];
-
-      if (lastKey && lastKey.endsWith('Ids')) {
-        return [];
+        return { found: false, value: undefined };
       }
 
-      // Nếu là single value, trả về variable (unresolved)
-      unresolvedVars.push(variable);
-
-      return variable;
+      current = (current as Record<string, unknown>)[key];
     }
 
-    return current;
+    return { found: true, value: current };
+  }
+
+  /**
+   * Handle resolved value - xử lý null case và trả về giá trị phù hợp
+   */
+  private handleResolvedValue(
+    value: unknown,
+    path: string[],
+    variable: string,
+    unresolvedVars: string[],
+  ): unknown {
+    if (value !== null) {
+      return value;
+    }
+
+    // Nếu là array type (ends with Ids), trả về empty array
+    const lastKey = path[path.length - 1];
+
+    if (lastKey?.endsWith('Ids')) {
+      return [];
+    }
+
+    // Nếu là single value null, mark as unresolved
+    unresolvedVars.push(variable);
+
+    return variable;
   }
 
   // ============================================
@@ -324,11 +366,7 @@ export class FilterExpressionResolverService {
 
     if (typeof value === 'string') {
       // Template variables phải bắt đầu bằng $user. hoặc $context.
-      if (value.startsWith('$') && !isTemplateVariable(value)) {
-        return false;
-      }
-
-      return true;
+      return !value.startsWith('$') || isTemplateVariable(value);
     }
 
     if (Array.isArray(value)) {

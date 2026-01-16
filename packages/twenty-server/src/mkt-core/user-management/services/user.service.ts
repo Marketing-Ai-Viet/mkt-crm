@@ -314,6 +314,8 @@ export class UserService {
       timeZone: 'SYSTEM',
       dateFormat: 'SYSTEM',
       timeFormat: 'SYSTEM',
+      startDate: input.startDate,
+      endDate: input.endDate ?? null,
       teamId: input.teamId ?? null,
       status: input.status ?? '',
       memberType: input.memberType ?? '',

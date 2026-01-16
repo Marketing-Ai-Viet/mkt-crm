@@ -55,11 +55,14 @@ export type CreateWorkspaceMemberData = Partial<
     | 'calendarStartDay'
     | 'dateFormat'
     | 'timeFormat'
+    | 'startDate'
+    | 'endDate'
   >
 > & {
   name: FullNameMetadata;
   userEmail: string;
   userId: string;
+  startDate: Date;
 };
 
 /**

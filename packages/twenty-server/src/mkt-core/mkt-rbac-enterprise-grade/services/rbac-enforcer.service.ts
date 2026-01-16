@@ -15,6 +15,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { DATA_ACCESS_SCOPE } from 'src/mkt-core/seeder/constants/mkt-organization-level-data-seeds.constants';
 import { MKT_RBAC_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
+import { DEFAULT_OWNERSHIP_FIELD } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
 import { MktDataAccessPolicyRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
@@ -581,49 +582,59 @@ export class RbacEnforcerService {
         // No filter needed
         return null;
 
-      case DATA_ACCESS_SCOPE.OWN_AND_CHILD_DEPARTMENTS:
-        if (userContext.departmentId) {
-          const deptIds = [
-            userContext.departmentId,
-            ...userContext.departmentDescendantIds,
-          ];
+      case DATA_ACCESS_SCOPE.OWN_AND_CHILD_DEPARTMENTS: {
+        // Records created by user or subordinates in child departments
+        const memberIds = [
+          userContext.workspaceMemberId,
+          ...userContext.subordinateMemberIds,
+        ];
 
-          conditions.push({
-            field: 'departmentId',
-            operator: 'IN',
-            value: deptIds,
-            description: 'Own department and descendants',
-          });
-        }
+        conditions.push({
+          field: DEFAULT_OWNERSHIP_FIELD,
+          operator: 'IN',
+          value: memberIds,
+          description: 'Own records and subordinates records',
+        });
+
+        // Or records assigned to user or subordinates
+        conditions.push({
+          field: 'accountOwnerId',
+          operator: 'IN',
+          value: memberIds,
+          description: 'Assigned to user or subordinates',
+        });
         break;
+      }
 
-      case DATA_ACCESS_SCOPE.OWN_DEPARTMENT_AND_TEAM:
-        // Team members in same department
-        if (userContext.departmentId) {
-          conditions.push({
-            field: 'departmentId',
-            operator: '=',
-            value: userContext.departmentId,
-            description: 'Own department',
-          });
-        }
+      case DATA_ACCESS_SCOPE.OWN_DEPARTMENT_AND_TEAM: {
+        // Records created by user or team members in same department
+        const teamIds = [
+          userContext.workspaceMemberId,
+          ...userContext.teamMemberIds,
+        ];
 
-        // Or created by team members
-        if (userContext.teamMemberIds.length > 0) {
-          conditions.push({
-            field: 'createdByWorkspaceMemberId',
-            operator: 'IN',
-            value: userContext.teamMemberIds,
-            description: 'Created by team members',
-          });
-        }
+        conditions.push({
+          field: DEFAULT_OWNERSHIP_FIELD,
+          operator: 'IN',
+          value: teamIds,
+          description: 'Own records and team members records',
+        });
+
+        // Or records assigned to user or team members
+        conditions.push({
+          field: 'accountOwnerId',
+          operator: 'IN',
+          value: teamIds,
+          description: 'Assigned to user or team members',
+        });
         break;
+      }
 
       case DATA_ACCESS_SCOPE.OWN_RECORDS:
       default:
         // Own records only
         conditions.push({
-          field: 'createdByWorkspaceMemberId',
+          field: DEFAULT_OWNERSHIP_FIELD,
           operator: '=',
           value: userContext.workspaceMemberId,
           description: 'Own records',
@@ -640,7 +651,7 @@ export class RbacEnforcerService {
         // Or supporting members' records
         if (userContext.supportingMemberIds.length > 0) {
           conditions.push({
-            field: 'createdByWorkspaceMemberId',
+            field: DEFAULT_OWNERSHIP_FIELD,
             operator: 'IN',
             value: userContext.supportingMemberIds,
             description: 'Supporting members records',
@@ -692,7 +703,7 @@ export class RbacEnforcerService {
 
     if (ownership?.enabled) {
       conditions.push({
-        field: (ownership.field as string) ?? 'createdByWorkspaceMemberId',
+        field: (ownership.field as string) ?? DEFAULT_OWNERSHIP_FIELD,
         operator: '=',
         value: '${user.workspaceMemberId}', // Will be resolved later
         description: 'Ownership filter',
@@ -882,7 +893,7 @@ export class RbacEnforcerService {
       type: 'OR',
       conditions: [
         {
-          field: 'createdByWorkspaceMemberId',
+          field: DEFAULT_OWNERSHIP_FIELD,
           operator: '=',
           value: userContext.workspaceMemberId,
           description: 'Own records',

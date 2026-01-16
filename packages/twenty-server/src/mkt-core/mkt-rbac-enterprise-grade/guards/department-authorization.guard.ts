@@ -112,6 +112,8 @@ export class DepartmentAuthorizationGuard implements CanActivate {
       templateKeys: userContext.templateKeys,
     };
 
+    console.log('Authorization', authContext);
+    console.log('Options', options);
     // Kiểm tra authorization với multi-source resolution
     const result = this.checkAuthorization(authContext, options);
 

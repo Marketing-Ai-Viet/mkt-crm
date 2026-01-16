@@ -1,82 +1,90 @@
 /**
  * Order Authorization Constants
  *
- * Định nghĩa quy tắc phân quyền cho các order mutations.
+ * Authorization rules for order mutations.
+ * Uses withChildTeams() helper to include child teams of each department.
  */
 
 import { DepartmentAuthOptions } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/department-authorization.types';
 import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+import {
+  withChildTeams,
+  combineWithChildTeams,
+} from 'src/mkt-core/mkt-department/helpers/department-auth.helper';
 
 /**
- * Authorization rules cho các order mutations
+ * Authorization rules for order mutations
  */
 export const ORDER_AUTHORIZATION = {
   /**
-   * Tạo đơn hàng: SALES + Manager + Executives
-   * - Nhân viên phòng SALES (bao gồm các team con)
-   * - Manager từ bất kỳ phòng ban nào (level ≤ 7)
+   * Create order: SALES + TECH (including all child teams) + Executives
+   * - SALES department and all child teams (SALES_DOMESTIC, SALES_ONLINE, etc.)
+   * - TECH department and all child teams (TECH_BACKEND, TECH_FRONTEND, etc.)
    * - Executives (CEO, C-Level, VP - level ≤ 3)
    */
   CREATE_ORDER: {
-    allowedDepartments: [DEPARTMENT.SALES],
-    allowManagers: true,
-    allowExecutives: true,
-    deniedMessage:
-      'Chỉ nhân viên kinh doanh hoặc quản lý mới có quyền tạo đơn hàng',
-  } satisfies DepartmentAuthOptions,
-
-  /**
-   * Publish draft: SALES + Manager + Executives
-   * - Cùng quy tắc với CREATE_ORDER
-   */
-  PUBLISH_DRAFT: {
-    allowedDepartments: [DEPARTMENT.SALES],
-    allowManagers: true,
-    allowExecutives: true,
-    deniedMessage:
-      'Chỉ nhân viên kinh doanh hoặc quản lý mới có quyền publish đơn hàng',
-  } satisfies DepartmentAuthOptions,
-
-  /**
-   * Xác nhận thanh toán: Chỉ ACCOUNTING + Executives
-   * - Chỉ phòng kế toán (bao gồm các team con)
-   * - Executives (CEO, C-Level, VP)
-   * - Manager không được phép (trừ khi thuộc ACCOUNTING)
-   */
-  CONFIRM_ORDER: {
-    allowedDepartments: [DEPARTMENT.ACCOUNTING],
+    allowedDepartments: combineWithChildTeams([DEPARTMENT.SALES]),
     allowManagers: false,
     allowExecutives: true,
-    deniedMessage:
-      'Chỉ phòng kế toán mới có quyền xác nhận thanh toán đơn hàng',
+    deniedMessage: 'Only sales or tech staff can create orders',
   } satisfies DepartmentAuthOptions,
 
   /**
-   * Cập nhật trạng thái: SALES + ACCOUNTING + Manager + Executives
-   * - Phòng SALES (tạo và quản lý đơn hàng)
-   * - Phòng ACCOUNTING (xử lý tài chính)
-   * - Manager từ bất kỳ phòng ban
+   * Publish draft: All employees can publish draft orders
+   * - Any authenticated employee can publish draft orders
+   * - Uses low template priority threshold to allow all staff levels
+   */
+  PUBLISH_DRAFT: {
+    allowedDepartments: [],
+    allowManagers: true,
+    allowExecutives: true,
+    allowHighPriorityTemplates: true,
+    minTemplatePriority: 0,
+    deniedMessage: 'You do not have permission to publish draft orders',
+  } satisfies DepartmentAuthOptions,
+
+  /**
+   * Confirm order payment: ACCOUNTING (including child teams) + Executives
+   * - ACCOUNTING department and all child teams (ACCOUNTING_PAYABLE, etc.)
+   * - Executives (CEO, C-Level, VP)
+   * - Managers NOT allowed (unless in ACCOUNTING)
+   */
+  CONFIRM_ORDER: {
+    allowedDepartments: withChildTeams(DEPARTMENT.ACCOUNTING),
+    allowManagers: false,
+    allowExecutives: true,
+    deniedMessage: 'Only accounting staff can confirm order payments',
+  } satisfies DepartmentAuthOptions,
+
+  /**
+   * Update order status: SALES + ACCOUNTING (including child teams) + Managers + Executives
+   * - SALES department (order management)
+   * - ACCOUNTING department (financial processing)
+   * - Managers from any department
    * - Executives
    */
   UPDATE_STATUS: {
-    allowedDepartments: [DEPARTMENT.SALES, DEPARTMENT.ACCOUNTING],
+    allowedDepartments: combineWithChildTeams([
+      DEPARTMENT.SALES,
+      DEPARTMENT.ACCOUNTING,
+    ]),
     allowManagers: true,
     allowExecutives: true,
     deniedMessage:
-      'Chỉ nhân viên kinh doanh, kế toán hoặc quản lý mới có quyền cập nhật trạng thái đơn hàng',
+      'Only sales, accounting staff, or managers can update order status',
   } satisfies DepartmentAuthOptions,
 
   /**
-   * Hoàn tiền: Chỉ ACCOUNTING + Executives
-   * - Nghiệp vụ tài chính nhạy cảm
-   * - Chỉ phòng kế toán được phép
-   * - Manager không được phép (trừ khi thuộc ACCOUNTING)
+   * Refund order: ACCOUNTING (including child teams) + Executives only
+   * - Sensitive financial operation
+   * - Only ACCOUNTING department allowed
+   * - Managers NOT allowed (unless in ACCOUNTING)
    */
   REFUND_ORDER: {
-    allowedDepartments: [DEPARTMENT.ACCOUNTING],
+    allowedDepartments: withChildTeams(DEPARTMENT.ACCOUNTING),
     allowManagers: false,
     allowExecutives: true,
-    deniedMessage: 'Chỉ phòng kế toán mới có quyền hoàn tiền đơn hàng',
+    deniedMessage: 'Only accounting staff can process order refunds',
   } satisfies DepartmentAuthOptions,
 } as const;
 

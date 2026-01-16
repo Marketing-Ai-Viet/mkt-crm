@@ -126,6 +126,27 @@ export const ENTITY_RESOURCE_MAP: Record<string, string> = Object.entries(
 );
 
 // ============================================================================
+// OWNERSHIP FIELD CONFIGURATION
+// ============================================================================
+
+/**
+ * Default ownership field for row-level security filtering
+ * Most mkt-core entities use 'createdById' to track record ownership
+ */
+export const DEFAULT_OWNERSHIP_FIELD = 'createdById' as const;
+
+/**
+ * Resource-specific ownership field overrides
+ * Use this when a resource uses a different field for ownership
+ */
+export const RESOURCE_OWNERSHIP_FIELD: Record<string, string> = {
+  // Default for most resources is 'createdById'
+  // Add overrides here if needed, e.g.:
+  // 'workspaceMember': 'id',
+  // 'auditLog': 'userId',
+};
+
+// ============================================================================
 // ACTIONS
 // ============================================================================
 

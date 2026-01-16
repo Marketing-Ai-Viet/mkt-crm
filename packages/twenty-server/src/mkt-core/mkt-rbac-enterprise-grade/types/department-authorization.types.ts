@@ -46,11 +46,12 @@ export type TemplateAuthInfo = {
  */
 export type DepartmentAuthOptions = {
   /**
-   * Danh sách department codes được phép truy cập.
+   * Danh sách department/team codes được phép truy cập.
    * Kiểm tra cả departmentCode trực tiếp và qua department ancestors.
-   * @example [DEPARTMENT.SALES, DEPARTMENT.ACCOUNTING]
+   * Supports both DepartmentCode (SALES, TECH) và TEAM codes (TECH_BACKEND).
+   * @example [DEPARTMENT.SALES] hoặc withChildTeams(DEPARTMENT.SALES)
    */
-  allowedDepartments?: DepartmentCode[];
+  allowedDepartments?: string[];
 
   /**
    * Cho phép managers (hierarchyLevel <= 7) từ bất kỳ phòng ban nào.

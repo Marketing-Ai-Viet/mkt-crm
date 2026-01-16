@@ -109,7 +109,7 @@ export class CreateUserInput {
   @IsString()
   organizationLevelId?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, { description: 'Role ID is required for user creation' })
   @IsString()
   roleId: string;
 }
