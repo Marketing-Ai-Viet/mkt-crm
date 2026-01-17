@@ -60,6 +60,7 @@ import {
   MktOrderCustomEventListener,
   LicenseLifecycleListener,
 } from './listeners';
+import { ORDER_MODULE_BLOCK_HOOKS } from './hooks';
 
 import {
   CreateOrderSaga,
@@ -116,6 +117,9 @@ import {
     TokenModule,
   ],
   providers: [
+    // Block Hooks - Disable auto-generated GraphQL operations
+    ...ORDER_MODULE_BLOCK_HOOKS,
+
     // Event Listeners
     MktOrderCustomEventListener,
     LicenseLifecycleListener,

@@ -43,9 +43,15 @@ const SEARCH_FIELDS_FOR_ORDER: FieldTypeAndNameMetadata[] = [
   { name: 'note', type: FieldMetadataType.TEXT },
 ];
 
+/**
+ * Entity name for mktOrder
+ * Used by block hooks and other configurations
+ */
+export const MKT_ORDER_ENTITY_NAME = 'mktOrder';
+
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktOrder,
-  namePlural: 'orders',
+  namePlural: `${MKT_ORDER_ENTITY_NAME}s`,
   labelSingular: msg`Order`,
   labelPlural: msg`Orders`,
   description: msg`Represents a customer order.`,
