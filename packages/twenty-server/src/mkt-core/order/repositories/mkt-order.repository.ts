@@ -202,6 +202,49 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     });
   }
 
+  /**
+   * Find single order with dynamic where clause (supports AND/OR conditions)
+   * Used by custom resolvers with hierarchical access filtering
+   *
+   * @param where - TypeORM where clause (single object or array for OR)
+   * @param options - Find options
+   */
+  async findOneWithWhere(
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+    options?: FindOrderOptions,
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    const repository = await this.getRepository();
+
+    return repository.findOne({
+      where,
+      relations: options?.relations ?? DEFAULT_ORDER_RELATIONS,
+    });
+  }
+
+  /**
+   * Find orders with dynamic where clause (supports AND/OR conditions)
+   * Used by custom resolvers with hierarchical access filtering
+   *
+   * @param where - TypeORM where clause (single object or array for OR)
+   * @param options - Find options
+   */
+  async findManyWithWhere(
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+    options?: FindOrderOptions,
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    const repository = await this.getRepository();
+
+    return repository.find({
+      where,
+      relations: options?.relations,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   // ============================================
   // CREATE OPERATIONS
   // ============================================

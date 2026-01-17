@@ -75,3 +75,105 @@ export type StatusDistributionItem = {
   status: string;
   count: number;
 };
+
+// ============================================================================
+// SERVICE OPERATION TYPES
+// ============================================================================
+
+/**
+ * Result type for service operations
+ */
+export type ServiceResult<T = void> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+/**
+ * Create contract input from GraphQL
+ */
+export type CreateContractServiceInput = {
+  name: string;
+  contractNumber?: string;
+  contractType?: MKT_CONTRACT_TYPE;
+  startDate?: string;
+  endDate?: string;
+  signedDate?: string;
+  filePath?: string;
+  fileName?: string;
+  description?: string;
+  customerId?: string;
+  accountOwnerId?: string;
+  workspaceMemberId?: string;
+};
+
+/**
+ * Update contract input from GraphQL
+ */
+export type UpdateContractServiceInput = {
+  id: string;
+  name?: string;
+  contractNumber?: string;
+  status?: MKT_CONTRACT_STATUS;
+  contractType?: MKT_CONTRACT_TYPE;
+  startDate?: string;
+  endDate?: string;
+  signedDate?: string;
+  filePath?: string;
+  fileName?: string;
+  description?: string;
+  customerId?: string;
+  accountOwnerId?: string;
+};
+
+/**
+ * Create contract result
+ */
+export type CreateContractResult = {
+  contractId: string;
+  contractNumber: string;
+  status: MKT_CONTRACT_STATUS;
+};
+
+/**
+ * Update contract result
+ */
+export type UpdateContractResult = {
+  contractId: string;
+  previousStatus: MKT_CONTRACT_STATUS;
+  newStatus: MKT_CONTRACT_STATUS;
+};
+
+/**
+ * Delete contract result
+ */
+export type DeleteContractResult = {
+  contractId: string;
+};
+
+/**
+ * Restore contract result
+ */
+export type RestoreContractResult = {
+  contractId: string;
+  status: MKT_CONTRACT_STATUS;
+};
+
+/**
+ * Customer contract statistics
+ */
+export type CustomerContractStats = {
+  contractCount: number;
+  activeCount: number;
+  expiredCount: number;
+  firstContractDate?: string;
+  lastContractDate?: string;
+};
+
+/**
+ * Query options with DataScope context
+ */
+export type ContractQueryOptions = {
+  take?: number;
+  skip?: number;
+  filter?: Record<string, unknown> | Record<string, unknown>[];
+  hasFullAccess?: boolean;
+};

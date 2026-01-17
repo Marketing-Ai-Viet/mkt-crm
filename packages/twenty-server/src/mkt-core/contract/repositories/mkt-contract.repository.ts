@@ -1,14 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { IsNull } from 'typeorm';
+import { FindOptionsOrder, FindOptionsWhere, IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories/base-workspace.repository';
-import {
-  CONTRACT_MESSAGES,
-  MKT_CONTRACT_LOG_CONTEXT,
-} from 'src/mkt-core/contract/messages';
+import { CONTRACT_MESSAGES } from 'src/mkt-core/contract/messages';
 import {
   FindContractOptions,
   FindWithPaginationOptions,
@@ -16,6 +13,16 @@ import {
 } from 'src/mkt-core/contract/types';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+/**
+ * Options for findManyWithWhere method
+ */
+type FindManyWithWhereOptions = {
+  take?: number;
+  skip?: number;
+  order?: FindOptionsOrder<MktContractWorkspaceEntity>;
+  relations?: string[];
+};
 
 /**
  * MktContractRepository - Data access layer for Contract entity
@@ -40,8 +47,54 @@ export class MktContractRepository extends BaseWorkspaceRepository<MktContractWo
       twentyORMGlobalManager,
       scopedWorkspaceContextFactory,
       MktContractWorkspaceEntity,
-      `${MKT_CONTRACT_LOG_CONTEXT}:Repository`,
+      MktContractRepository.name,
     );
+  }
+
+  // ============================================
+  // FIND WITH WHERE OPERATIONS (for RBAC)
+  // ============================================
+
+  /**
+   * Find one contract with custom where clause (supports OR conditions)
+   * Used by resolver with hierarchical access filtering
+   *
+   * @param where - Where clause (can be object or array for OR conditions)
+   * @returns Contract or null
+   */
+  async findOneWithWhere(
+    where:
+      | FindOptionsWhere<MktContractWorkspaceEntity>
+      | FindOptionsWhere<MktContractWorkspaceEntity>[],
+  ): Promise<MktContractWorkspaceEntity | null> {
+    const repository = await this.getRepository();
+
+    return repository.findOne({ where });
+  }
+
+  /**
+   * Find many contracts with custom where clause (supports OR conditions)
+   * Used by resolver with hierarchical access filtering
+   *
+   * @param where - Where clause (can be object or array for OR conditions)
+   * @param options - Pagination and ordering options
+   * @returns Array of contracts
+   */
+  async findManyWithWhere(
+    where:
+      | FindOptionsWhere<MktContractWorkspaceEntity>
+      | FindOptionsWhere<MktContractWorkspaceEntity>[],
+    options?: FindManyWithWhereOptions,
+  ): Promise<MktContractWorkspaceEntity[]> {
+    const repository = await this.getRepository();
+
+    return repository.find({
+      where,
+      take: options?.take,
+      skip: options?.skip,
+      order: options?.order ?? { createdAt: 'DESC' },
+      relations: options?.relations,
+    });
   }
 
   // ============================================

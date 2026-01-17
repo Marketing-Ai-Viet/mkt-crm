@@ -9,10 +9,22 @@ import {
 } from 'src/mkt-core/contract/constants';
 import {
   CONTRACT_MESSAGES,
-  MKT_CONTRACT_LOG_CONTEXT,
+  CONTRACT_RESPONSE_MESSAGES,
 } from 'src/mkt-core/contract/messages';
 import { MktContractRepository } from 'src/mkt-core/contract/repositories';
-import { UpdateContractData } from 'src/mkt-core/contract/types';
+import {
+  UpdateContractData,
+  ServiceResult,
+  CreateContractServiceInput,
+  UpdateContractServiceInput,
+  CreateContractResult,
+  UpdateContractResult,
+  DeleteContractResult,
+  RestoreContractResult,
+  CustomerContractStats,
+  ContractQueryOptions,
+  StatusDistributionItem,
+} from 'src/mkt-core/contract/types';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
@@ -30,7 +42,7 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  */
 @Injectable()
 export class MktContractService {
-  private readonly logger = new Logger(`${MKT_CONTRACT_LOG_CONTEXT}:Service`);
+  private readonly logger = new Logger(MktContractService.name);
 
   constructor(
     private readonly contractRepository: MktContractRepository,
@@ -255,5 +267,478 @@ export class MktContractService {
 
       return null;
     }
+  }
+
+  // ============================================================================
+  // GRAPHQL MUTATION OPERATIONS
+  // ============================================================================
+
+  /**
+   * Create contract from GraphQL input
+   */
+  async createContractFromInput(
+    input: CreateContractServiceInput,
+  ): Promise<ServiceResult<CreateContractResult>> {
+    try {
+      const contractNumber =
+        input.contractNumber ?? (await this.generateContractNumber());
+
+      const contract =
+        await this.contractRepository.createContractWithOwnership(
+          {
+            name: input.name,
+            contractNumber,
+            contractType: input.contractType,
+            status: MKT_CONTRACT_STATUS.ACTIVE,
+            startDate: input.startDate
+              ? DateTimeUtils.fromISO(input.startDate).toJSDate()
+              : undefined,
+            endDate: input.endDate
+              ? DateTimeUtils.fromISO(input.endDate).toJSDate()
+              : undefined,
+            signedDate: input.signedDate
+              ? DateTimeUtils.fromISO(input.signedDate).toJSDate()
+              : undefined,
+            filePath: input.filePath,
+            fileName: input.fileName,
+            description: input.description,
+            customerId: input.customerId,
+            accountOwnerId: input.accountOwnerId ?? input.workspaceMemberId,
+          },
+          input.workspaceMemberId,
+          input.accountOwnerId,
+        );
+
+      this.logger.log(CONTRACT_MESSAGES.LOG.CREATE_SUCCESS(contract.id));
+
+      return {
+        success: true,
+        data: {
+          contractId: contract.id,
+          contractNumber: contract.contractNumber,
+          status: contract.status as MKT_CONTRACT_STATUS,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to create contract:', error);
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : CONTRACT_RESPONSE_MESSAGES.FAILURE.CREATE_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Update contract from GraphQL input
+   */
+  async updateContractFromInput(
+    input: UpdateContractServiceInput,
+  ): Promise<ServiceResult<UpdateContractResult>> {
+    try {
+      const existingContract = await this.contractRepository.findByIdOrNull(
+        input.id,
+      );
+
+      if (!existingContract) {
+        return {
+          success: false,
+          error: CONTRACT_RESPONSE_MESSAGES.FAILURE.NOT_FOUND(input.id),
+        };
+      }
+
+      const previousStatus = existingContract.status as MKT_CONTRACT_STATUS;
+
+      const updateData = this.buildUpdateData(input);
+
+      await this.contractRepository.updateContract(input.id, updateData);
+
+      this.logger.log(CONTRACT_MESSAGES.LOG.UPDATE_SUCCESS(input.id));
+
+      return {
+        success: true,
+        data: {
+          contractId: input.id,
+          previousStatus,
+          newStatus: (input.status ?? previousStatus) as MKT_CONTRACT_STATUS,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update contract ${input.id}:`, error);
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : CONTRACT_RESPONSE_MESSAGES.FAILURE.UPDATE_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Update contract status
+   */
+  async updateStatus(
+    contractId: string,
+    newStatus: MKT_CONTRACT_STATUS,
+  ): Promise<ServiceResult<UpdateContractResult>> {
+    try {
+      const existingContract =
+        await this.contractRepository.findByIdOrNull(contractId);
+
+      if (!existingContract) {
+        return {
+          success: false,
+          error: CONTRACT_RESPONSE_MESSAGES.FAILURE.NOT_FOUND(contractId),
+        };
+      }
+
+      const previousStatus = existingContract.status as MKT_CONTRACT_STATUS;
+
+      await this.contractRepository.updateContract(contractId, {
+        status: newStatus,
+      });
+
+      this.logger.log(
+        CONTRACT_MESSAGES.LOG.STATUS_CHANGED(
+          contractId,
+          previousStatus,
+          newStatus,
+        ),
+      );
+
+      return {
+        success: true,
+        data: {
+          contractId,
+          previousStatus,
+          newStatus,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to update status for contract ${contractId}:`,
+        error,
+      );
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : CONTRACT_RESPONSE_MESSAGES.FAILURE.STATUS_UPDATE_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Soft delete contract
+   */
+  async softDelete(
+    contractId: string,
+  ): Promise<ServiceResult<DeleteContractResult>> {
+    try {
+      const existingContract =
+        await this.contractRepository.findByIdOrNull(contractId);
+
+      if (!existingContract) {
+        return {
+          success: false,
+          error: CONTRACT_RESPONSE_MESSAGES.FAILURE.NOT_FOUND(contractId),
+        };
+      }
+
+      await this.contractRepository.softDeleteContract(contractId);
+
+      this.logger.log(CONTRACT_MESSAGES.LOG.SOFT_DELETE_SUCCESS(contractId));
+
+      return {
+        success: true,
+        data: { contractId },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to delete contract ${contractId}:`, error);
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : CONTRACT_RESPONSE_MESSAGES.FAILURE.DELETE_FAILED,
+      };
+    }
+  }
+
+  /**
+   * Restore soft deleted contract
+   */
+  async restore(
+    contractId: string,
+  ): Promise<ServiceResult<RestoreContractResult>> {
+    try {
+      const repository = await this.contractRepository.getRepository();
+      const contract = await repository.findOne({
+        where: { id: contractId },
+        withDeleted: true,
+      });
+
+      if (!contract) {
+        return {
+          success: false,
+          error: CONTRACT_RESPONSE_MESSAGES.FAILURE.NOT_FOUND(contractId),
+        };
+      }
+
+      if (!contract.deletedAt) {
+        return {
+          success: false,
+          error: CONTRACT_RESPONSE_MESSAGES.FAILURE.NOT_DELETED,
+        };
+      }
+
+      await repository.update(contractId, {
+        deletedAt: null,
+      } as never);
+
+      this.logger.log(`Restored contract: ${contractId}`);
+
+      return {
+        success: true,
+        data: {
+          contractId,
+          status: contract.status as MKT_CONTRACT_STATUS,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to restore contract ${contractId}:`, error);
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : CONTRACT_RESPONSE_MESSAGES.FAILURE.RESTORE_FAILED,
+      };
+    }
+  }
+
+  // ============================================================================
+  // GRAPHQL QUERY OPERATIONS
+  // ============================================================================
+
+  /**
+   * Find contract by ID with hierarchical filtering
+   */
+  async findByIdWithFilter(
+    contractId: string,
+    options?: ContractQueryOptions,
+  ): Promise<MktContractWorkspaceEntity | null> {
+    const whereClause = this.buildWhereClause({ id: contractId }, options);
+
+    return this.contractRepository.findOneWithWhere(whereClause);
+  }
+
+  /**
+   * Find contract by number with hierarchical filtering
+   */
+  async findByNumberWithFilter(
+    contractNumber: string,
+    options?: ContractQueryOptions,
+  ): Promise<MktContractWorkspaceEntity | null> {
+    const whereClause = this.buildWhereClause({ contractNumber }, options);
+
+    return this.contractRepository.findOneWithWhere(whereClause);
+  }
+
+  /**
+   * Find contracts by customer with hierarchical filtering
+   */
+  async findByCustomerWithFilter(
+    customerId: string,
+    options?: ContractQueryOptions,
+  ): Promise<MktContractWorkspaceEntity[]> {
+    const whereClause = this.buildWhereClause({ customerId }, options);
+
+    return this.contractRepository.findManyWithWhere(whereClause);
+  }
+
+  /**
+   * Find contracts by status with hierarchical filtering
+   */
+  async findByStatusWithFilter(
+    status: MKT_CONTRACT_STATUS,
+    options?: ContractQueryOptions,
+  ): Promise<MktContractWorkspaceEntity[]> {
+    const whereClause = this.buildWhereClause({ status }, options);
+
+    return this.contractRepository.findManyWithWhere(whereClause);
+  }
+
+  /**
+   * Find all contracts with pagination and hierarchical filtering
+   */
+  async findAllWithFilter(
+    options?: ContractQueryOptions,
+  ): Promise<MktContractWorkspaceEntity[]> {
+    const whereClause = this.buildWhereClause({}, options);
+
+    return this.contractRepository.findManyWithWhere(whereClause, {
+      take: options?.take ?? 50,
+      skip: options?.skip ?? 0,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Get status distribution statistics
+   */
+  async getStatusDistribution(): Promise<{
+    distribution: StatusDistributionItem[];
+    totalCount: number;
+  }> {
+    const distribution = await this.contractRepository.getStatusDistribution();
+    const totalCount = distribution.reduce((sum, item) => sum + item.count, 0);
+
+    return { distribution, totalCount };
+  }
+
+  /**
+   * Get customer contract statistics
+   */
+  async getCustomerStats(customerId: string): Promise<CustomerContractStats> {
+    const contracts =
+      await this.contractRepository.findByCustomerId(customerId);
+
+    const activeCount = contracts.filter(
+      (c) => c.status === MKT_CONTRACT_STATUS.ACTIVE,
+    ).length;
+
+    const expiredCount = contracts.filter(
+      (c) => c.status === MKT_CONTRACT_STATUS.EXPIRED,
+    ).length;
+
+    const sortedByDate = [...contracts].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      return dateA - dateB;
+    });
+
+    const firstContract = sortedByDate[0];
+    const lastContract = sortedByDate[sortedByDate.length - 1];
+
+    return {
+      contractCount: contracts.length,
+      activeCount,
+      expiredCount,
+      firstContractDate: firstContract?.createdAt?.toString(),
+      lastContractDate: lastContract?.createdAt?.toString(),
+    };
+  }
+
+  /**
+   * Find expiring contracts within date range
+   */
+  async findExpiringInRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<MktContractWorkspaceEntity[]> {
+    const start = DateTimeUtils.fromISO(startDate).toJSDate();
+    const end = DateTimeUtils.fromISO(endDate).toJSDate();
+
+    return this.contractRepository.findExpiringContracts(start, end);
+  }
+
+  // ============================================================================
+  // PRIVATE HELPER METHODS
+  // ============================================================================
+
+  /**
+   * Build update data from input, filtering undefined values
+   */
+  private buildUpdateData(
+    input: UpdateContractServiceInput,
+  ): UpdateContractData {
+    const updateData: UpdateContractData = {};
+
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+
+    if (input.contractNumber !== undefined) {
+      updateData.contractNumber = input.contractNumber;
+    }
+
+    if (input.status !== undefined) {
+      updateData.status = input.status;
+    }
+
+    if (input.contractType !== undefined) {
+      updateData.contractType = input.contractType;
+    }
+
+    if (input.startDate !== undefined) {
+      updateData.startDate = input.startDate
+        ? DateTimeUtils.fromISO(input.startDate).toJSDate()
+        : undefined;
+    }
+
+    if (input.endDate !== undefined) {
+      updateData.endDate = input.endDate
+        ? DateTimeUtils.fromISO(input.endDate).toJSDate()
+        : undefined;
+    }
+
+    if (input.signedDate !== undefined) {
+      updateData.signedDate = input.signedDate
+        ? DateTimeUtils.fromISO(input.signedDate).toJSDate()
+        : null;
+    }
+
+    if (input.filePath !== undefined) {
+      updateData.filePath = input.filePath;
+    }
+
+    if (input.fileName !== undefined) {
+      updateData.fileName = input.fileName;
+    }
+
+    if (input.description !== undefined) {
+      updateData.description = input.description;
+    }
+
+    if (input.customerId !== undefined) {
+      updateData.customerId = input.customerId;
+    }
+
+    if (input.accountOwnerId !== undefined) {
+      updateData.accountOwnerId = input.accountOwnerId;
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Build where clause with hierarchical filter
+   */
+  private buildWhereClause(
+    baseWhere: Record<string, unknown>,
+    options?: ContractQueryOptions,
+  ): Record<string, unknown> | Record<string, unknown>[] {
+    // No filter or full access - return base where only
+    if (!options?.filter || options.hasFullAccess) {
+      return baseWhere;
+    }
+
+    // Merge base where with hierarchical filter
+    if (Array.isArray(options.filter)) {
+      return options.filter.map((f) => ({ ...baseWhere, ...f }));
+    }
+
+    return { ...baseWhere, ...options.filter };
   }
 }

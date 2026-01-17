@@ -3,7 +3,68 @@
  * Following MKT_CRM_Backend_Implementation_Guide pattern
  */
 
-export const MKT_CONTRACT_LOG_CONTEXT = 'MktContract';
+// ============================================================================
+// GRAPHQL DESCRIPTIONS
+// ============================================================================
+
+/**
+ * GraphQL operation descriptions for Contract queries
+ */
+export const CONTRACT_QUERY_DESCRIPTIONS = {
+  GET_CONTRACT_BY_ID: 'Get contract by ID with hierarchical access filtering',
+  GET_CONTRACT_BY_NUMBER: 'Get contract by contract number',
+  GET_CONTRACTS_BY_CUSTOMER: 'Get contracts by customer ID',
+  GET_CONTRACTS_BY_STATUS: 'Get contracts by status',
+  GET_CONTRACT_STATUS_DISTRIBUTION:
+    'Get contract status distribution statistics',
+  GET_CUSTOMER_CONTRACT_STATS: 'Get contract statistics for a customer',
+  GET_EXPIRING_CONTRACTS: 'Get contracts expiring within a date range',
+  GET_ALL_CONTRACTS: 'Get all contracts with pagination',
+} as const;
+
+/**
+ * GraphQL operation descriptions for Contract mutations
+ */
+export const CONTRACT_MUTATION_DESCRIPTIONS = {
+  CREATE_CONTRACT: 'Create a new contract',
+  UPDATE_CONTRACT: 'Update an existing contract',
+  UPDATE_CONTRACT_STATUS: 'Update contract status',
+  DELETE_CONTRACT: 'Soft delete a contract',
+  DESTROY_CONTRACT: 'Permanently delete a contract',
+  RESTORE_CONTRACT: 'Restore a soft deleted contract',
+} as const;
+
+// ============================================================================
+// RESPONSE MESSAGES
+// ============================================================================
+
+/**
+ * Success/error response messages for Contract operations
+ */
+export const CONTRACT_RESPONSE_MESSAGES = {
+  SUCCESS: {
+    CONTRACT_CREATED: 'Contract created successfully',
+    CONTRACT_UPDATED: 'Contract updated successfully',
+    CONTRACT_DELETED: 'Contract has been soft deleted',
+    CONTRACT_RESTORED: 'Contract has been restored',
+    STATUS_UPDATED: (previousStatus: string, newStatus: string) =>
+      `Contract status updated from ${previousStatus} to ${newStatus}`,
+  },
+  FAILURE: {
+    CREATE_FAILED: 'Failed to create contract',
+    UPDATE_FAILED: 'Failed to update contract',
+    DELETE_FAILED: 'Failed to delete contract',
+    RESTORE_FAILED: 'Failed to restore contract',
+    STATUS_UPDATE_FAILED: 'Failed to update contract status',
+    NOT_FOUND: (contractId: string) =>
+      `Contract with ID ${contractId} not found`,
+    NOT_DELETED: 'Contract is not deleted',
+  },
+} as const;
+
+// ============================================================================
+// LOG MESSAGES
+// ============================================================================
 
 export const CONTRACT_MESSAGES = {
   LOG: {
