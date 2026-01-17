@@ -326,6 +326,93 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   comboDiscount?: number;
 
+  // ============================================
+  // PAYMENT DEADLINE FIELDS (New Payment Flow)
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.paymentDeadline,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Payment Deadline`,
+    description: msg`Payment deadline for this order`,
+    icon: 'IconClock',
+  })
+  @WorkspaceIsNullable()
+  paymentDeadline?: Date | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.paymentDeadlineSource,
+    type: FieldMetadataType.SELECT,
+    label: msg`Payment Deadline Source`,
+    description: msg`Source of deadline configuration`,
+    icon: 'IconSettings',
+    options: [
+      { value: 'GLOBAL', label: 'Global Setting', position: 0, color: 'gray' },
+      { value: 'PRODUCT', label: 'Product Config', position: 1, color: 'blue' },
+      {
+        value: 'CUSTOMER_TYPE',
+        label: 'Customer Type',
+        position: 2,
+        color: 'green',
+      },
+      {
+        value: 'RESELLER_TIER',
+        label: 'Reseller Tier',
+        position: 3,
+        color: 'purple',
+      },
+      {
+        value: 'MANUAL',
+        label: 'Manual Override',
+        position: 4,
+        color: 'orange',
+      },
+    ],
+  })
+  @WorkspaceIsNullable()
+  paymentDeadlineSource?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.lockedAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Locked At`,
+    description: msg`Timestamp when order was locked due to overdue payment`,
+    icon: 'IconLock',
+  })
+  @WorkspaceIsNullable()
+  lockedAt?: Date | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.lockedReason,
+    type: FieldMetadataType.TEXT,
+    label: msg`Locked Reason`,
+    description: msg`Reason for order lock`,
+    icon: 'IconAlertTriangle',
+  })
+  @WorkspaceIsNullable()
+  lockedReason?: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.remindersSent,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Reminders Sent`,
+    description: msg`Number of payment reminders sent`,
+    icon: 'IconBell',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  remindersSent?: number;
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.lastReminderAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Last Reminder At`,
+    description: msg`Timestamp of last payment reminder`,
+    icon: 'IconBellRinging',
+  })
+  @WorkspaceIsNullable()
+  lastReminderAt?: Date | null;
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,
     type: RelationType.ONE_TO_MANY,
