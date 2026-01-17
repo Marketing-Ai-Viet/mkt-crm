@@ -43,6 +43,10 @@ import {
   OrderOverdueSchedulerService,
   OrderOverdueWorkerService,
   OrderOverdueMigrationService,
+  // New Payment Flow Services
+  PaymentDeadlineService,
+  OrderConfirmService,
+  OrderLockService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -138,6 +142,10 @@ import {
     OrderConfirmUtilsService,
     OrderMetadataService,
     MktOrderOverdueService,
+    // New Payment Flow Services
+    PaymentDeadlineService,
+    OrderConfirmService,
+    OrderLockService,
     // Delayed Job Services (order overdue)
     OrderOverdueSchedulerService,
     OrderOverdueWorkerService,
@@ -203,6 +211,10 @@ import {
     OrderPaymentCalculationService,
     OrderConfirmUtilsService,
     OrderMetadataService,
+    // New Payment Flow Services
+    PaymentDeadlineService,
+    OrderConfirmService,
+    OrderLockService,
     // Integration Services
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,
