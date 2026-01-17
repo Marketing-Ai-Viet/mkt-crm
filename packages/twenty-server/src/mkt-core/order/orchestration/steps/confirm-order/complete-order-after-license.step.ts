@@ -80,11 +80,7 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
     return false;
   }
 
-  async execute(
-    context: SagaContext,
-    _input: ConfirmOrderInput,
-    queryRunner: QueryRunner,
-  ): Promise<SagaStepResult<void>> {
+  async execute(context: SagaContext): Promise<SagaStepResult<void>> {
     const typedContext = context as ConfirmOrderSagaContext;
 
     try {
@@ -113,22 +109,17 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
       });
 
       // Update order status to COMPLETED
-      await this.orderRepository.update(
-        context.workspaceId,
-        typedContext.orderId,
-        {
-          status: ORDER_STATUS.COMPLETED,
-          updatedAt: nowISO,
-          metadata: safeJsonStringify({
-            orderAction: ORDER_ACTION.COMPLETE,
-            autoCompletedAt: nowISO,
-            licensesCreated: licenseData.licenseIds.length,
-            previousStatus: typedContext.targetStatus,
-            completedBy: 'system',
-          }) as unknown as JSON,
-        },
-        queryRunner,
-      );
+      await this.orderRepository.update(typedContext.orderId, {
+        status: ORDER_STATUS.COMPLETED,
+        updatedAt: nowISO,
+        metadata: safeJsonStringify({
+          orderAction: ORDER_ACTION.COMPLETE,
+          autoCompletedAt: nowISO,
+          licensesCreated: licenseData.licenseIds.length,
+          previousStatus: typedContext.targetStatus,
+          completedBy: 'system',
+        }) as unknown as JSON,
+      });
 
       // Update context with new status
       typedContext.targetStatus = ORDER_STATUS.COMPLETED;
@@ -153,7 +144,7 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
 
   async compensate(
     context: SagaContext,
-    queryRunner: QueryRunner,
+    _queryRunner: QueryRunner,
   ): Promise<void> {
     const typedContext = context as ConfirmOrderSagaContext;
 
@@ -174,19 +165,14 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
 
       const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
 
-      await this.orderRepository.update(
-        context.workspaceId,
-        typedContext.orderId,
-        {
-          status: data.previousStatus,
-          updatedAt: nowISO,
-          metadata: safeJsonStringify({
-            rolledBackAt: nowISO,
-            rolledBackFrom: ORDER_STATUS.COMPLETED,
-          }) as unknown as JSON,
-        },
-        queryRunner,
-      );
+      await this.orderRepository.update(typedContext.orderId, {
+        status: data.previousStatus,
+        updatedAt: nowISO,
+        metadata: safeJsonStringify({
+          rolledBackAt: nowISO,
+          rolledBackFrom: ORDER_STATUS.COMPLETED,
+        }) as unknown as JSON,
+      });
 
       this.logger.log(
         `Order ${typedContext.orderId} rolled back to: ${data.previousStatus}`,

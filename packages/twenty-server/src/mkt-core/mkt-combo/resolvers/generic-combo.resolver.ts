@@ -26,7 +26,7 @@ import {
   CreateGenericComboData,
   CreateGenericComboItemData,
 } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
-import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
+import { buildOwnershipFields } from 'src/mkt-core/common/repositories/base-workspace.repository';
 import {
   GenericComboPricingType,
   ComboItemType,
@@ -69,13 +69,10 @@ export class GenericComboResolver {
     description: GENERIC_COMBO_GRAPHQL_DESCRIPTIONS.COMBO_QUERY,
   })
   async mktGenericComboDetail(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() _workspace: Workspace,
     @Args('comboId') comboId: string,
   ): Promise<GenericComboOutput | null> {
-    const result = await this.genericComboService.getComboById(
-      workspace.id,
-      comboId,
-    );
+    const result = await this.genericComboService.getComboById(comboId);
 
     if (!result) {
       return null;
@@ -116,7 +113,7 @@ export class GenericComboResolver {
     description: GENERIC_COMBO_GRAPHQL_DESCRIPTIONS.COMBOS_QUERY,
   })
   async mktGenericCombosList(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() _workspace: Workspace,
     @Args('input', { nullable: true }) input?: GetGenericCombosInput,
   ): Promise<PaginatedGenericCombosOutput> {
     const pagination = {
@@ -125,7 +122,6 @@ export class GenericComboResolver {
     };
 
     const result = await this.genericComboService.getCombosPaginated(
-      workspace.id,
       pagination,
       input?.filter,
     );
@@ -165,13 +161,10 @@ export class GenericComboResolver {
     description: GENERIC_COMBO_GRAPHQL_DESCRIPTIONS.VALIDATE_COMBO_QUERY,
   })
   async mktValidateGenericCombo(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() _workspace: Workspace,
     @Args('comboId') comboId: string,
   ): Promise<GenericComboValidationOutput> {
-    const result = await this.genericComboService.validateForOrder(
-      workspace.id,
-      comboId,
-    );
+    const result = await this.genericComboService.validateForOrder(comboId);
 
     return {
       valid: result.valid,
@@ -223,7 +216,7 @@ export class GenericComboResolver {
     @Args('input') input: CreateGenericComboInput,
   ): Promise<GenericComboOutput> {
     // Build ownership fields
-    const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+    const ownershipFields = buildOwnershipFields({
       workspaceMemberId,
     });
 
@@ -242,10 +235,7 @@ export class GenericComboResolver {
       ...ownershipFields,
     };
 
-    const combo = await this.genericComboService.createCombo(
-      workspace.id,
-      data,
-    );
+    const combo = await this.genericComboService.createCombo(data);
 
     this.logger.log(
       `${GENERIC_COMBO_MESSAGES.SUCCESS.CREATED} - ID: ${combo.id}, workspace: ${workspace.id}`,

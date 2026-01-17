@@ -104,7 +104,6 @@ export class DepartmentService {
 
       const parentHierarchy =
         await this.hierarchyRepository.findParentHierarchy(
-          workspaceId,
           currentDeptId,
           relationshipTypes,
         );
@@ -167,11 +166,11 @@ export class DepartmentService {
       orphanedCount,
       circularCount,
     ] = await Promise.all([
-      this.hierarchyRepository.count(workspaceId),
-      this.hierarchyRepository.count(workspaceId, { isActive: true }),
-      this.hierarchyRepository.getMaxLevel(workspaceId),
-      this.hierarchyRepository.getAverageLevel(workspaceId),
-      this.countOrphanedDepartments(workspaceId),
+      this.hierarchyRepository.count(),
+      this.hierarchyRepository.count({ isActive: true }),
+      this.hierarchyRepository.getMaxLevel(),
+      this.hierarchyRepository.getAverageLevel(),
+      this.countOrphanedDepartments(),
       this.detectCircularReferences(workspaceId),
     ]);
 
@@ -223,7 +222,6 @@ export class DepartmentService {
     // Process level by level to maintain dependencies
     for (let level = 0; level <= MAX_DEPTH; level++) {
       const hierarchies = await this.hierarchyRepository.findByLevel(
-        workspaceId,
         level,
         true,
       );
@@ -234,7 +232,7 @@ export class DepartmentService {
           hierarchy.childDepartmentId,
         );
 
-        await this.hierarchyRepository.update(workspaceId, hierarchy.id, {
+        await this.hierarchyRepository.update(hierarchy.id, {
           hierarchyPath: path,
         });
         rebuilt++;
@@ -252,10 +250,10 @@ export class DepartmentService {
     const { relationshipTypes, includeInactive = false } = options;
 
     // Get all departments
-    const allDepartments = await this.departmentRepository.findAll(workspaceId);
+    const allDepartments = await this.departmentRepository.findAll();
 
     // Get all hierarchies based on filters
-    const hierarchies = await this.hierarchyRepository.findAll(workspaceId, {
+    const hierarchies = await this.hierarchyRepository.findAllWithFilters({
       isActive: !includeInactive ? true : undefined,
       relationshipTypes:
         relationshipTypes && relationshipTypes.length > 0
@@ -290,7 +288,6 @@ export class DepartmentService {
 
       const parentHierarchy =
         await this.hierarchyRepository.findParentHierarchy(
-          workspaceId,
           currentDeptId,
           relationshipTypes && relationshipTypes.length > 0
             ? relationshipTypes
@@ -301,10 +298,8 @@ export class DepartmentService {
       currentDeptId = parentHierarchy.parentDepartmentId;
     }
 
-    const rootDepartment = await this.departmentRepository.findById(
-      workspaceId,
-      currentDeptId,
-    );
+    const rootDepartment =
+      await this.departmentRepository.findById(currentDeptId);
 
     if (!rootDepartment) {
       throw new NotFoundException(
@@ -340,10 +335,7 @@ export class DepartmentService {
     workspaceId: string,
     departmentId: string,
   ): Promise<MktDepartmentWorkspaceEntity> {
-    const department = await this.departmentRepository.findById(
-      workspaceId,
-      departmentId,
-    );
+    const department = await this.departmentRepository.findById(departmentId);
 
     if (!department) {
       throw new NotFoundException(
@@ -373,16 +365,12 @@ export class DepartmentService {
     }
 
     const childHierarchies =
-      await this.hierarchyRepository.findChildHierarchies(
-        workspaceId,
-        parentId,
-        {
-          includeInactive,
-          relationshipTypes,
-          sortBy,
-          sortDirection: sortDirection as 'ASC' | 'DESC',
-        },
-      );
+      await this.hierarchyRepository.findChildHierarchies(parentId, {
+        includeInactive,
+        relationshipTypes,
+        sortBy,
+        sortDirection: sortDirection as 'ASC' | 'DESC',
+      });
 
     const childPromises = childHierarchies.map(async (hierarchy) => {
       const childTree = await this.buildTreeFromRoot(
@@ -433,16 +421,12 @@ export class DepartmentService {
     if (currentDepth >= maxDepth) return;
 
     const childHierarchies =
-      await this.hierarchyRepository.findChildHierarchies(
-        workspaceId,
-        parentId,
-        {
-          includeInactive: false,
-          relationshipTypes,
-          sortBy: 'displayOrder',
-          sortDirection: 'ASC',
-        },
-      );
+      await this.hierarchyRepository.findChildHierarchies(parentId, {
+        includeInactive: false,
+        relationshipTypes,
+        sortBy: 'displayOrder',
+        sortDirection: 'ASC',
+      });
 
     for (const hierarchy of childHierarchies) {
       const newPath = [
@@ -486,11 +470,9 @@ export class DepartmentService {
       visited.add(currentDeptId);
 
       const parentHierarchy =
-        await this.hierarchyRepository.findParentHierarchy(
-          workspaceId,
-          currentDeptId,
-          [DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD],
-        );
+        await this.hierarchyRepository.findParentHierarchy(currentDeptId, [
+          DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD,
+        ]);
 
       if (!parentHierarchy) break;
 
@@ -505,10 +487,7 @@ export class DepartmentService {
     workspaceId: string,
     departmentId: string,
   ): Promise<void> {
-    const exists = await this.departmentRepository.exists(
-      workspaceId,
-      departmentId,
-    );
+    const exists = await this.departmentRepository.exists(departmentId);
 
     if (!exists) {
       throw new NotFoundException(
@@ -517,9 +496,9 @@ export class DepartmentService {
     }
   }
 
-  private async countOrphanedDepartments(workspaceId: string): Promise<number> {
-    const allDepartments = await this.departmentRepository.findAll(workspaceId);
-    const hierarchies = await this.hierarchyRepository.findAll(workspaceId);
+  private async countOrphanedDepartments(): Promise<number> {
+    const allDepartments = await this.departmentRepository.findAll();
+    const hierarchies = await this.hierarchyRepository.findAll();
 
     const departmentsInHierarchy = new Set<string>();
 

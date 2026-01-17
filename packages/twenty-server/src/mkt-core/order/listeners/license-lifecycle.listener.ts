@@ -68,7 +68,7 @@ export class LicenseLifecycleListener {
   private async processLicenseLifecycle(
     event: MktOrderCustomEventData,
   ): Promise<void> {
-    const { eventType, orderData, workspaceId, orderId } = event;
+    const { eventType, orderData, orderId } = event;
 
     if (!orderId) {
       this.logger.warn('Event missing orderId, skipping license lifecycle');
@@ -78,14 +78,14 @@ export class LicenseLifecycleListener {
 
     // Handle order completion - activate licenses
     if (orderData.status === ORDER_STATUS.COMPLETED) {
-      await this.activateLicensesForOrder(workspaceId, orderId);
+      await this.activateLicensesForOrder(orderId);
 
       return;
     }
 
     // Handle order refund - revoke licenses
     if (eventType === MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED) {
-      await this.revokeLicensesForOrder(workspaceId, orderId);
+      await this.revokeLicensesForOrder(orderId);
 
       return;
     }
@@ -98,13 +98,10 @@ export class LicenseLifecycleListener {
   /**
    * Activate all licenses for an order on MKT Server
    */
-  private async activateLicensesForOrder(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<void> {
+  private async activateLicensesForOrder(orderId: string): Promise<void> {
     this.logger.log(LICENSE_LIFECYCLE_MESSAGES.ACTIVATE_START(orderId));
 
-    const licenseIds = await this.getExternalLicenseIds(workspaceId, orderId);
+    const licenseIds = await this.getExternalLicenseIds(orderId);
 
     if (licenseIds.length === 0) {
       this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
@@ -129,13 +126,10 @@ export class LicenseLifecycleListener {
   /**
    * Revoke all licenses for an order on MKT Server
    */
-  private async revokeLicensesForOrder(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<void> {
+  private async revokeLicensesForOrder(orderId: string): Promise<void> {
     this.logger.log(LICENSE_LIFECYCLE_MESSAGES.REVOKE_START(orderId));
 
-    const licenseIds = await this.getExternalLicenseIds(workspaceId, orderId);
+    const licenseIds = await this.getExternalLicenseIds(orderId);
 
     if (licenseIds.length === 0) {
       this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
@@ -161,14 +155,8 @@ export class LicenseLifecycleListener {
    * Get external MKT license IDs from order items
    * Extracts all license IDs from the licenses array of each order item
    */
-  private async getExternalLicenseIds(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<string[]> {
-    const orderItems = await this.orderItemRepository.findByOrderId(
-      workspaceId,
-      orderId,
-    );
+  private async getExternalLicenseIds(orderId: string): Promise<string[]> {
+    const orderItems = await this.orderItemRepository.findByOrderId(orderId);
 
     // Flatten all license IDs from all order items
     return orderItems.flatMap((item) =>

@@ -13,7 +13,7 @@ import {
   MKT_CUSTOMER_LOG_CONTEXT,
 } from 'src/mkt-core/customer/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { EntityOwnershipUtil } from 'src/mkt-core/utils/entity-ownership.util';
+import { buildOwnershipFields } from 'src/mkt-core/common/repositories/base-workspace.repository';
 
 /**
  * Pre-query hook for MktCustomer createOne operation
@@ -78,7 +78,7 @@ export class MktCustomerCreateOnePreQueryHook
     const now = DateTimeUtils.toDate(DateTimeUtils.now());
 
     // 6. Build ownership fields (createdById + accountOwnerId)
-    const ownershipFields = EntityOwnershipUtil.buildOwnershipFields({
+    const ownershipFields = buildOwnershipFields({
       workspaceMemberId: authContext.workspaceMemberId,
       accountOwnerId: data.accountOwnerId ?? undefined,
     });

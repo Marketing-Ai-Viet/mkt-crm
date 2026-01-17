@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { DepartmentLookupService } from 'src/mkt-core/user-management/services/department-lookup.service';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/services/mkt-member-code-generation.service';
@@ -17,10 +18,10 @@ export class WorkspaceMemberService {
     private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
     private readonly departmentLookup: DepartmentLookupService,
     private readonly memberCodeService: MktMemberCodeGenerationService,
+    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
   async createWorkspaceMember(
-    workspaceId: string,
     data: CreateWorkspaceMemberData,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
     let departmentId = data.departmentId;
@@ -47,16 +48,21 @@ export class WorkspaceMemberService {
     let memberCode = data.memberCode;
 
     if (!memberCode) {
-      memberCode = await this.memberCodeService.generateUniqueMemberCode(
-        workspaceId,
-        true,
-      );
-      this.logger.log(
-        `[CREATE WORKSPACE MEMBER] Generated memberCode: ${memberCode}`,
-      );
+      const workspaceId =
+        this.scopedWorkspaceContextFactory.create().workspaceId;
+
+      if (workspaceId) {
+        memberCode = await this.memberCodeService.generateUniqueMemberCode(
+          workspaceId,
+          true,
+        );
+        this.logger.log(
+          `[CREATE WORKSPACE MEMBER] Generated memberCode: ${memberCode}`,
+        );
+      }
     }
 
-    const member = await this.workspaceMemberRepository.create(workspaceId, {
+    const member = await this.workspaceMemberRepository.createMember({
       ...data,
       departmentId,
       memberCode,
@@ -70,26 +76,21 @@ export class WorkspaceMemberService {
   }
 
   async updateWorkspaceMember(
-    workspaceId: string,
     memberId: string,
     data: UpdateWorkspaceMemberData,
   ): Promise<void> {
-    await this.workspaceMemberRepository.update(workspaceId, memberId, data);
+    await this.workspaceMemberRepository.updateMember(memberId, data);
     this.logger.log(`Updated workspace member: ${memberId}`);
   }
 
   async findWorkspaceMember(
-    workspaceId: string,
     userId: string,
   ): Promise<WorkspaceMemberWorkspaceEntity | null> {
-    return this.workspaceMemberRepository.findByUserId(workspaceId, userId);
+    return this.workspaceMemberRepository.findByUserId(userId);
   }
 
-  async softDeleteWorkspaceMember(
-    workspaceId: string,
-    memberId: string,
-  ): Promise<void> {
-    await this.workspaceMemberRepository.softDelete(workspaceId, memberId);
+  async softDeleteWorkspaceMember(memberId: string): Promise<void> {
+    await this.workspaceMemberRepository.softDeleteMember(memberId);
     this.logger.log(`Soft deleted workspace member: ${memberId}`);
   }
 }

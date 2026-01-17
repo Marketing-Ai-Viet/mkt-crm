@@ -49,7 +49,6 @@ export class GenericComboValidationService {
    * Validate dữ liệu tạo combo
    */
   async validateCreateData(
-    workspaceId: string,
     data: CreateGenericComboData,
   ): Promise<GenericComboValidationResult> {
     const errors: GenericComboValidationErrorDetail[] = [];
@@ -62,10 +61,7 @@ export class GenericComboValidationService {
         code: 'REQUIRED',
       });
     } else {
-      const codeExists = await this.comboRepository.codeExists(
-        workspaceId,
-        data.comboCode,
-      );
+      const codeExists = await this.comboRepository.codeExists(data.comboCode);
 
       if (codeExists) {
         errors.push({
@@ -282,16 +278,13 @@ export class GenericComboValidationService {
    * Validate combo cho order
    */
   async validateForOrder(
-    workspaceId: string,
     comboId: string,
   ): Promise<GenericComboValidationResult> {
     const errors: GenericComboValidationErrorDetail[] = [];
 
     // Lấy combo với items
-    const comboWithItems = await this.comboRepository.findByIdWithItems(
-      workspaceId,
-      comboId,
-    );
+    const comboWithItems =
+      await this.comboRepository.findByIdWithItems(comboId);
 
     if (!comboWithItems) {
       return {

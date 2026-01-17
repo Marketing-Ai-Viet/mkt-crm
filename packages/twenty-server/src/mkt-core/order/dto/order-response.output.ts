@@ -279,3 +279,111 @@ export class PublishDraftOrderResponseDto {
   @Field(() => String, { nullable: true })
   error?: string;
 }
+
+// ============================================
+// QUERY OUTPUT TYPES
+// ============================================
+
+/**
+ * Order output for query responses
+ */
+@ObjectType()
+export class OrderOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  name?: string;
+
+  @Field(() => String, { nullable: true })
+  orderCode?: string;
+
+  @Field(() => ORDER_STATUS, { nullable: true })
+  status?: ORDER_STATUS;
+
+  @Field(() => Number, { nullable: true })
+  totalAmount?: number;
+
+  @Field(() => Number, { nullable: true })
+  subtotal?: number;
+
+  @Field(() => Number, { nullable: true })
+  tax?: number;
+
+  @Field(() => Number, { nullable: true })
+  discount?: number;
+
+  @Field(() => Number, { nullable: true })
+  promotionDiscount?: number;
+
+  @Field(() => Number, { nullable: true })
+  comboDiscount?: number;
+
+  @Field(() => String, { nullable: true })
+  currency?: string;
+
+  @Field(() => String, { nullable: true })
+  note?: string;
+
+  @Field(() => Number, { nullable: true })
+  paidAmount?: number;
+
+  @Field(() => Number, { nullable: true })
+  remainingAmount?: number;
+
+  @Field(() => PAYMENT_STATUS, { nullable: true })
+  paymentStatus?: PAYMENT_STATUS;
+
+  @Field(() => Boolean, { nullable: true })
+  accountingConfirmed?: boolean;
+
+  @Field(() => String, { nullable: true })
+  mktCustomerId?: string;
+
+  @Field(() => String, { nullable: true })
+  accountOwnerId?: string;
+
+  @Field(() => String, { nullable: true })
+  createdById?: string;
+
+  @Field(() => String, { nullable: true })
+  createdAt?: string;
+
+  @Field(() => String, { nullable: true })
+  updatedAt?: string;
+}
+
+/**
+ * Paginated orders list response
+ */
+@ObjectType()
+export class OrderListOutput {
+  @Field(() => [OrderOutput])
+  orders: OrderOutput[];
+
+  @Field(() => Number)
+  totalCount: number;
+}
+
+/**
+ * Customer order statistics output
+ */
+@ObjectType()
+export class CustomerOrderStatsOutput {
+  @Field(() => Number, { description: 'Total number of orders' })
+  orderCount: number;
+
+  @Field(() => Number, { description: 'Total order value' })
+  totalValue: number;
+
+  @Field(() => String, { nullable: true, description: 'Date of first order' })
+  firstOrderDate?: string;
+
+  @Field(() => String, { nullable: true, description: 'Date of last order' })
+  lastOrderDate?: string;
+
+  @Field(() => Number, {
+    description: 'Average days between orders',
+  })
+  averageOrderInterval: number;
+}

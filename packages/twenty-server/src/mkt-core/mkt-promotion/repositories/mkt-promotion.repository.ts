@@ -1,14 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { IsNull, LessThanOrEqual, QueryRunner } from 'typeorm';
+import { IsNull, LessThanOrEqual } from 'typeorm';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import {
   PROMOTION_STATUS,
   PROMOTION_LOG_CONTEXT,
   PROMOTION_DEFAULTS,
+  PromotionStatus,
 } from 'src/mkt-core/mkt-promotion/constants';
 import {
   PromotionWithRules,
@@ -22,49 +25,35 @@ import { MktPromotionRuleWorkspaceEntity } from 'src/mkt-core/mkt-promotion/work
 
 /**
  * Repository for MktPromotionWorkspaceEntity
- * Handles database operations with complex queries to avoid N+1 problems
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Handles database operations with complex queries to avoid N+1 problems.
  */
 @Injectable()
-export class MktPromotionRepository {
-  private readonly logger = new Logger(PROMOTION_LOG_CONTEXT);
-
+export class MktPromotionRepository extends BaseWorkspaceRepository<MktPromotionWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  private async getRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPromotionWorkspaceEntity>(
-      workspaceId,
-      'mktPromotion',
-      { shouldBypassPermissionChecks: true },
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktPromotionWorkspaceEntity,
+      PROMOTION_LOG_CONTEXT,
     );
   }
 
-  /**
-   * Find promotion by ID (without relations)
-   */
-  async findById(
-    workspaceId: string,
-    promotionId: string,
-  ): Promise<MktPromotionWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: {
-        id: promotionId,
-        deletedAt: IsNull(),
-      },
-    });
-  }
+  // ============================================
+  // FIND OPERATIONS
+  // ============================================
 
   /**
    * Find promotion by ID with rules (using JOIN to avoid N+1)
    */
   async findByIdWithRules(
-    workspaceId: string,
     promotionId: string,
   ): Promise<PromotionWithRules | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const promotion = await repository
       .createQueryBuilder('promotion')
@@ -92,27 +81,15 @@ export class MktPromotionRepository {
   /**
    * Find promotion by code
    */
-  async findByCode(
-    workspaceId: string,
-    code: string,
-  ): Promise<MktPromotionWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: {
-        code,
-        deletedAt: IsNull(),
-      },
-    });
+  async findByCode(code: string): Promise<MktPromotionWorkspaceEntity | null> {
+    return this.findOne({ code });
   }
 
   /**
    * Find active promotions with auto-apply enabled
    */
-  async findActiveAutoApply(
-    workspaceId: string,
-  ): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findActiveAutoApply(): Promise<MktPromotionWorkspaceEntity[]> {
+    const repository = await this.getRepository();
     const now = DateTimeUtils.now().toJSDate();
 
     return repository.find({
@@ -131,10 +108,8 @@ export class MktPromotionRepository {
   /**
    * Find active promotions by status and optional filters
    */
-  async findActive(
-    workspaceId: string,
-  ): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findActive(): Promise<MktPromotionWorkspaceEntity[]> {
+    const repository = await this.getRepository();
     const now = DateTimeUtils.now().toJSDate();
 
     return repository
@@ -153,11 +128,10 @@ export class MktPromotionRepository {
    * Find all promotions with pagination and filters
    */
   async findAllPaginated(
-    workspaceId: string,
     options: { limit: number; offset: number },
     filter?: PromotionFilter,
   ): Promise<PaginatedResult<MktPromotionWorkspaceEntity>> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('promotion')
@@ -223,121 +197,10 @@ export class MktPromotionRepository {
   }
 
   /**
-   * Create new promotion
-   */
-  async create(
-    workspaceId: string,
-    data: CreatePromotionData,
-    queryRunner?: QueryRunner,
-  ): Promise<MktPromotionWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    const { rules: _rules, ...promotionData } = data;
-
-    const promotion = repository.create({
-      ...promotionData,
-      status: PROMOTION_STATUS.DRAFT,
-      currentUsageCount: PROMOTION_DEFAULTS.CURRENT_USAGE_COUNT,
-      priority: data.priority ?? PROMOTION_DEFAULTS.PRIORITY,
-      stackable: data.stackable ?? PROMOTION_DEFAULTS.STACKABLE,
-      isAutoApply: data.isAutoApply ?? PROMOTION_DEFAULTS.IS_AUTO_APPLY,
-      currency: data.currency ?? PROMOTION_DEFAULTS.CURRENCY,
-    });
-
-    let savedPromotion: MktPromotionWorkspaceEntity;
-
-    if (queryRunner) {
-      savedPromotion = await queryRunner.manager.save(promotion);
-    } else {
-      savedPromotion = await repository.save(promotion);
-    }
-
-    this.logger.log(
-      `Created promotion ${savedPromotion.id} (${savedPromotion.code})`,
-    );
-
-    return savedPromotion;
-  }
-
-  /**
-   * Update promotion
-   */
-  async update(
-    workspaceId: string,
-    data: UpdatePromotionData,
-    queryRunner?: QueryRunner,
-  ): Promise<MktPromotionWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    const { id, ...updateData } = data;
-
-    await manager.update(
-      'MktPromotionWorkspaceEntity',
-      { id },
-      {
-        ...updateData,
-        updatedAt: DateTimeUtils.now().toJSDate(),
-      },
-    );
-
-    this.logger.log(`Updated promotion ${id}`);
-
-    return this.findById(workspaceId, id);
-  }
-
-  /**
-   * Update promotion status
-   */
-  async updateStatus(
-    workspaceId: string,
-    promotionId: string,
-    status: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.update(
-      'MktPromotionWorkspaceEntity',
-      { id: promotionId },
-      {
-        status,
-        updatedAt: DateTimeUtils.now().toJSDate(),
-      },
-    );
-
-    this.logger.log(`Updated promotion ${promotionId} status to ${status}`);
-  }
-
-  /**
-   * Increment usage count
-   */
-  async incrementUsageCount(
-    workspaceId: string,
-    promotionId: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.increment(
-      'MktPromotionWorkspaceEntity',
-      { id: promotionId },
-      'currentUsageCount',
-      1,
-    );
-
-    this.logger.debug(`Incremented usage count for promotion ${promotionId}`);
-  }
-
-  /**
    * Find active promotions with rules (for cache warmup job)
    */
-  async findActiveWithRules(
-    workspaceId: string,
-  ): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findActiveWithRules(): Promise<MktPromotionWorkspaceEntity[]> {
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('promotion')
@@ -351,44 +214,8 @@ export class MktPromotionRepository {
   /**
    * Find expired active promotions for a specific workspace (for background job)
    */
-  async findExpiredActiveForWorkspace(
-    workspaceId: string,
-    now: Date,
-  ): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository
-      .createQueryBuilder('promotion')
-      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
-      .andWhere('promotion.endDate IS NOT NULL')
-      .andWhere('promotion.endDate < :now', { now })
-      .andWhere('promotion.deletedAt IS NULL')
-      .getMany();
-  }
-
-  /**
-   * Find active promotions that reached usage limit for a workspace (for background job)
-   */
-  async findUsageLimitReachedForWorkspace(
-    workspaceId: string,
-  ): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository
-      .createQueryBuilder('promotion')
-      .where('promotion.status = :status', { status: PROMOTION_STATUS.ACTIVE })
-      .andWhere('promotion.usageLimit IS NOT NULL')
-      .andWhere('promotion.currentUsageCount >= promotion.usageLimit')
-      .andWhere('promotion.deletedAt IS NULL')
-      .getMany();
-  }
-
-  /**
-   * Find expired active promotions (for background job - all workspaces)
-   * @deprecated Use findExpiredActiveForWorkspace instead
-   */
   async findExpiredActive(now: Date): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository('*'); // All workspaces
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('promotion')
@@ -400,11 +227,10 @@ export class MktPromotionRepository {
   }
 
   /**
-   * Find active promotions that reached usage limit (for background job - all workspaces)
-   * @deprecated Use findUsageLimitReachedForWorkspace instead
+   * Find active promotions that reached usage limit (for background job)
    */
   async findUsageLimitReached(): Promise<MktPromotionWorkspaceEntity[]> {
-    const repository = await this.getRepository('*'); // All workspaces
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('promotion')
@@ -414,16 +240,131 @@ export class MktPromotionRepository {
       .andWhere('promotion.deletedAt IS NULL')
       .getMany();
   }
+
+  /**
+   * Find promotions by IDs (batch operation)
+   */
+  async findManyByIds(ids: string[]): Promise<MktPromotionWorkspaceEntity[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const repository = await this.getRepository();
+
+    return repository
+      .createQueryBuilder('promotion')
+      .where('promotion.id IN (:...ids)', { ids })
+      .andWhere('promotion.deletedAt IS NULL')
+      .getMany();
+  }
+
+  // ============================================
+  // CREATE OPERATIONS
+  // ============================================
+
+  /**
+   * Create new promotion
+   */
+  async createPromotion(
+    data: CreatePromotionData,
+  ): Promise<MktPromotionWorkspaceEntity> {
+    const repository = await this.getRepository();
+
+    const { rules: _rules, ...promotionData } = data;
+
+    const promotion = repository.create({
+      ...promotionData,
+      status: PROMOTION_STATUS.DRAFT,
+      currentUsageCount: PROMOTION_DEFAULTS.CURRENT_USAGE_COUNT,
+      priority: data.priority ?? PROMOTION_DEFAULTS.PRIORITY,
+      stackable: data.stackable ?? PROMOTION_DEFAULTS.STACKABLE,
+      isAutoApply: data.isAutoApply ?? PROMOTION_DEFAULTS.IS_AUTO_APPLY,
+      currency: data.currency ?? PROMOTION_DEFAULTS.CURRENCY,
+    });
+
+    const savedPromotion = await repository.save(promotion);
+
+    this.logger.log(
+      `Created promotion ${savedPromotion.id} (${savedPromotion.code})`,
+    );
+
+    return savedPromotion;
+  }
+
+  // ============================================
+  // UPDATE OPERATIONS
+  // ============================================
+
+  /**
+   * Update promotion
+   */
+  async updatePromotion(
+    data: UpdatePromotionData,
+  ): Promise<MktPromotionWorkspaceEntity | null> {
+    const repository = await this.getRepository();
+
+    const { id, ...updateData } = data;
+
+    await repository.update(id, {
+      ...updateData,
+      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
+
+    this.logger.log(`Updated promotion ${id}`);
+
+    return this.findById(id);
+  }
+
+  /**
+   * Update promotion status
+   */
+  async updateStatus(
+    promotionId: string,
+    status: PromotionStatus,
+  ): Promise<void> {
+    const repository = await this.getRepository();
+
+    await repository.update(promotionId, {
+      status,
+      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
+
+    this.logger.log(`Updated promotion ${promotionId} status to ${status}`);
+  }
+
+  /**
+   * Increment usage count
+   */
+  async incrementUsageCount(promotionId: string): Promise<void> {
+    const repository = await this.getRepository();
+
+    await repository.increment({ id: promotionId }, 'currentUsageCount', 1);
+
+    this.logger.debug(`Incremented usage count for promotion ${promotionId}`);
+  }
+
+  // ============================================
+  // DELETE OPERATIONS
+  // ============================================
+
+  /**
+   * Soft delete promotion
+   */
+  async softDeletePromotion(id: string): Promise<void> {
+    await this.softDelete(id);
+
+    this.logger.log(`Soft deleted promotion ${id}`);
+  }
+
+  // ============================================
+  // CHECK OPERATIONS
+  // ============================================
 
   /**
    * Check if promotion code exists
    */
-  async codeExists(
-    workspaceId: string,
-    code: string,
-    excludeId?: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async codeExists(code: string, excludeId?: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const query = repository
       .createQueryBuilder('promotion')
@@ -439,54 +380,19 @@ export class MktPromotionRepository {
     return count > 0;
   }
 
-  /**
-   * Find promotions by IDs (batch operation)
-   */
-  async findManyByIds(
-    workspaceId: string,
-    ids: string[],
-  ): Promise<MktPromotionWorkspaceEntity[]> {
-    if (ids.length === 0) {
-      return [];
-    }
-
-    const repository = await this.getRepository(workspaceId);
-
-    return repository
-      .createQueryBuilder('promotion')
-      .where('promotion.id IN (:...ids)', { ids })
-      .andWhere('promotion.deletedAt IS NULL')
-      .getMany();
-  }
-
-  /**
-   * Soft delete promotion
-   */
-  async softDelete(
-    workspaceId: string,
-    id: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktPromotionWorkspaceEntity', id);
-
-    this.logger.log(`Soft deleted promotion ${id}`);
-  }
+  // ============================================
+  // STATISTICS OPERATIONS
+  // ============================================
 
   /**
    * Get promotion statistics
    */
-  async getStatistics(
-    workspaceId: string,
-    promotionId: string,
-  ): Promise<{
+  async getStatistics(promotionId: string): Promise<{
     totalUsage: number;
     remainingUsage: number | null;
     usagePercentage: number | null;
   }> {
-    const promotion = await this.findById(workspaceId, promotionId);
+    const promotion = await this.findById(promotionId);
 
     if (!promotion) {
       return {

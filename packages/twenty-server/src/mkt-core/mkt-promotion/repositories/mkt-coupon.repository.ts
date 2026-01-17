@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { In, IsNull, QueryRunner } from 'typeorm';
+import { In, IsNull } from 'typeorm';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   COUPON_STATUS,
@@ -17,69 +19,44 @@ import { MktCouponWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-e
 
 /**
  * Repository for MktCouponWorkspaceEntity
- * Handles database operations for coupons
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Handles database operations for coupons.
  */
 @Injectable()
-export class MktCouponRepository {
-  private readonly logger = new Logger(PROMOTION_LOG_CONTEXT);
-
+export class MktCouponRepository extends BaseWorkspaceRepository<MktCouponWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  private async getRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktCouponWorkspaceEntity>(
-      workspaceId,
-      'mktCoupon',
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktCouponWorkspaceEntity,
+      `${PROMOTION_LOG_CONTEXT}:Coupon`,
     );
   }
 
-  /**
-   * Find coupon by ID
-   */
-  async findById(
-    workspaceId: string,
-    couponId: string,
-  ): Promise<MktCouponWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: {
-        id: couponId,
-        deletedAt: IsNull(),
-      },
-    });
-  }
+  // ============================================
+  // FIND OPERATIONS
+  // ============================================
 
   /**
    * Find coupon by code
    */
-  async findByCode(
-    workspaceId: string,
-    code: string,
-  ): Promise<MktCouponWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: {
-        code,
-        deletedAt: IsNull(),
-      },
-    });
+  async findByCode(code: string): Promise<MktCouponWorkspaceEntity | null> {
+    return this.findOne({ code });
   }
 
   /**
    * Find coupons by codes (batch operation)
    */
-  async findByCodes(
-    workspaceId: string,
-    codes: string[],
-  ): Promise<MktCouponWorkspaceEntity[]> {
+  async findByCodes(codes: string[]): Promise<MktCouponWorkspaceEntity[]> {
     if (codes.length === 0) {
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {
@@ -93,10 +70,9 @@ export class MktCouponRepository {
    * Find all coupons for a promotion
    */
   async findByPromotionId(
-    workspaceId: string,
     promotionId: string,
   ): Promise<MktCouponWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {
@@ -113,12 +89,11 @@ export class MktCouponRepository {
    * Find coupons by promotion ID with pagination
    */
   async findByPromotionIdPaginated(
-    workspaceId: string,
     promotionId: string,
     options: { limit: number; offset: number },
     status?: string,
   ): Promise<PaginatedResult<MktCouponWorkspaceEntity>> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('coupon')
@@ -148,10 +123,9 @@ export class MktCouponRepository {
    * Find active coupons for a customer
    */
   async findActiveByCustomerId(
-    workspaceId: string,
     customerId: string,
   ): Promise<MktCouponWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const now = DateTimeUtils.now().toJSDate();
 
     return repository
@@ -171,10 +145,9 @@ export class MktCouponRepository {
    * Find valid coupon by code (checks status and validity period)
    */
   async findValidByCode(
-    workspaceId: string,
     code: string,
   ): Promise<MktCouponWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const now = DateTimeUtils.now().toJSDate();
 
     return repository
@@ -190,116 +163,10 @@ export class MktCouponRepository {
   }
 
   /**
-   * Create a new coupon
-   */
-  async create(
-    workspaceId: string,
-    data: CreateCouponData & { code: string },
-    queryRunner?: QueryRunner,
-  ): Promise<MktCouponWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-
-    const coupon = repository.create({
-      ...data,
-      status: COUPON_STATUS.ACTIVE,
-      currentUsageCount: 0,
-    });
-
-    let savedCoupon: MktCouponWorkspaceEntity;
-
-    if (queryRunner) {
-      savedCoupon = await queryRunner.manager.save(coupon);
-    } else {
-      savedCoupon = await repository.save(coupon);
-    }
-
-    this.logger.log(`Created coupon ${savedCoupon.code}`);
-
-    return savedCoupon;
-  }
-
-  /**
-   * Create multiple coupons at once (transactional)
-   */
-  async createMany(
-    workspaceId: string,
-    couponsData: Array<CreateCouponData & { code: string }>,
-    queryRunner?: QueryRunner,
-  ): Promise<MktCouponWorkspaceEntity[]> {
-    if (couponsData.length === 0) {
-      return [];
-    }
-
-    const repository = await this.getRepository(workspaceId);
-
-    const coupons = couponsData.map((data) =>
-      repository.create({
-        ...data,
-        status: COUPON_STATUS.ACTIVE,
-        currentUsageCount: 0,
-      }),
-    );
-
-    let savedCoupons: MktCouponWorkspaceEntity[];
-
-    if (queryRunner) {
-      savedCoupons = await queryRunner.manager.save(coupons);
-    } else {
-      savedCoupons = await repository.save(coupons);
-    }
-
-    this.logger.log(`Created ${savedCoupons.length} coupons in bulk`);
-
-    return savedCoupons;
-  }
-
-  /**
-   * Update coupon status
-   */
-  async updateStatus(
-    workspaceId: string,
-    couponId: string,
-    status: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.update(
-      'MktCouponWorkspaceEntity',
-      { id: couponId },
-      { status },
-    );
-
-    this.logger.log(`Updated coupon ${couponId} status to ${status}`);
-  }
-
-  /**
-   * Increment usage count
-   */
-  async incrementUsageCount(
-    workspaceId: string,
-    couponId: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.increment(
-      'MktCouponWorkspaceEntity',
-      { id: couponId },
-      'currentUsageCount',
-      1,
-    );
-
-    this.logger.debug(`Incremented usage count for coupon ${couponId}`);
-  }
-
-  /**
    * Find expired active coupons (for background job)
    */
   async findExpiredActive(now: Date): Promise<MktCouponWorkspaceEntity[]> {
-    const repository = await this.getRepository('*'); // All workspaces
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('coupon')
@@ -314,7 +181,7 @@ export class MktCouponRepository {
    * Find active coupons that reached usage limit (for background job)
    */
   async findUsageLimitReached(): Promise<MktCouponWorkspaceEntity[]> {
-    const repository = await this.getRepository('*'); // All workspaces
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('coupon')
@@ -325,15 +192,106 @@ export class MktCouponRepository {
       .getMany();
   }
 
+  // ============================================
+  // CREATE OPERATIONS
+  // ============================================
+
+  /**
+   * Create a new coupon
+   */
+  async createCoupon(
+    data: CreateCouponData & { code: string },
+  ): Promise<MktCouponWorkspaceEntity> {
+    const repository = await this.getRepository();
+
+    const coupon = repository.create({
+      ...data,
+      status: COUPON_STATUS.ACTIVE,
+      currentUsageCount: 0,
+    });
+
+    const savedCoupon = await repository.save(coupon);
+
+    this.logger.log(`Created coupon ${savedCoupon.code}`);
+
+    return savedCoupon;
+  }
+
+  /**
+   * Create multiple coupons at once (transactional)
+   */
+  async createManyCoupons(
+    couponsData: Array<CreateCouponData & { code: string }>,
+  ): Promise<MktCouponWorkspaceEntity[]> {
+    if (couponsData.length === 0) {
+      return [];
+    }
+
+    const repository = await this.getRepository();
+
+    const coupons = couponsData.map((data) =>
+      repository.create({
+        ...data,
+        status: COUPON_STATUS.ACTIVE,
+        currentUsageCount: 0,
+      }),
+    );
+
+    const savedCoupons = await repository.save(coupons);
+
+    this.logger.log(`Created ${savedCoupons.length} coupons in bulk`);
+
+    return savedCoupons;
+  }
+
+  // ============================================
+  // UPDATE OPERATIONS
+  // ============================================
+
+  /**
+   * Update coupon status
+   */
+  async updateStatus(couponId: string, status: CouponStatus): Promise<void> {
+    const repository = await this.getRepository();
+
+    await repository.update(couponId, { status });
+
+    this.logger.log(`Updated coupon ${couponId} status to ${status}`);
+  }
+
+  /**
+   * Increment usage count
+   */
+  async incrementUsageCount(couponId: string): Promise<void> {
+    const repository = await this.getRepository();
+
+    await repository.increment({ id: couponId }, 'currentUsageCount', 1);
+
+    this.logger.debug(`Incremented usage count for coupon ${couponId}`);
+  }
+
+  // ============================================
+  // DELETE OPERATIONS
+  // ============================================
+
+  /**
+   * Soft delete coupon
+   */
+  async softDeleteCoupon(id: string): Promise<void> {
+    await this.softDelete(id);
+
+    this.logger.log(`Soft deleted coupon ${id}`);
+  }
+
+  // ============================================
+  // CHECK OPERATIONS
+  // ============================================
+
   /**
    * Check if coupon code exists
    */
-  async codeExists(
-    workspaceId: string,
-    code: string,
-    excludeId?: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async codeExists(code: string, excludeId?: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const query = repository
       .createQueryBuilder('coupon')
@@ -349,15 +307,18 @@ export class MktCouponRepository {
     return count > 0;
   }
 
+  // ============================================
+  // COUNT OPERATIONS
+  // ============================================
+
   /**
    * Count coupons by status for a promotion
    */
   async countByStatus(
-    workspaceId: string,
     promotionId: string,
     status: CouponStatus,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.count({
       where: {
@@ -368,20 +329,21 @@ export class MktCouponRepository {
     });
   }
 
+  // ============================================
+  // STATISTICS OPERATIONS
+  // ============================================
+
   /**
    * Get coupon statistics for a promotion
    */
-  async getStatistics(
-    workspaceId: string,
-    promotionId: string,
-  ): Promise<{
+  async getStatistics(promotionId: string): Promise<{
     total: number;
     active: number;
     used: number;
     expired: number;
     disabled: number;
   }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('coupon')
@@ -422,21 +384,5 @@ export class MktCouponRepository {
     }
 
     return stats;
-  }
-
-  /**
-   * Soft delete coupon
-   */
-  async softDelete(
-    workspaceId: string,
-    id: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktCouponWorkspaceEntity', id);
-
-    this.logger.log(`Soft deleted coupon ${id}`);
   }
 }

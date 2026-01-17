@@ -1,14 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { Between, IsNull, QueryRunner } from 'typeorm';
+import omit from 'lodash.omit';
+import { Between, IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {
-  EMAIL_MESSAGES,
-  MKT_EMAIL_LOG_CONTEXT,
-} from 'src/mkt-core/email/messages';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
+import { EMAIL_MESSAGES } from 'src/mkt-core/email/messages';
 import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
 import {
   FindEmailOptions,
@@ -17,8 +15,13 @@ import {
 } from 'src/mkt-core/email/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
+// Relation fields to omit when updating (prevents TypeORM type errors)
+const EMAIL_RELATION_FIELDS = ['accountOwner', 'timelineActivities'] as const;
+
 /**
  * MktEmailRepository - Data access layer for Email entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktEmail entity
@@ -30,36 +33,16 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * - Email sending (handled by Service layer)
  */
 @Injectable()
-export class MktEmailRepository {
-  private readonly logger = new Logger(`${MKT_EMAIL_LOG_CONTEXT}:Repository`);
-
+export class MktEmailRepository extends BaseWorkspaceRepository<MktEmailWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
-   */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktEmailWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
-
-    if (!wsId) {
-      throw new NotFoundException(EMAIL_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
-    }
-
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktEmailWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      MktEmailRepository.name,
     );
   }
 
@@ -69,15 +52,12 @@ export class MktEmailRepository {
 
   /**
    * Find email by ID
+   * @throws NotFoundException if email not found
    */
-  async findById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktEmailWorkspaceEntity> {
+  async findEmailById(id: string): Promise<MktEmailWorkspaceEntity> {
     this.logger.debug(EMAIL_MESSAGES.LOG.FIND_BY_ID_START(id));
 
-    const repository = await this.getRepository(workspaceId);
-    const email = await repository.findOne({ where: { id } });
+    const email = await this.findById(id);
 
     if (!email) {
       this.logger.debug(EMAIL_MESSAGES.LOG.FIND_BY_ID_NOT_FOUND(id));
@@ -92,28 +72,19 @@ export class MktEmailRepository {
   /**
    * Find email by ID (returns null if not found)
    */
-  async findByIdOrNull(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktEmailWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
+  async findByIdOrNull(id: string): Promise<MktEmailWorkspaceEntity | null> {
+    return this.findById(id);
   }
 
   /**
    * Find all emails with pagination
    */
-  async findAll(
-    workspaceId?: string,
+  async findAllEmails(
     options?: FindEmailOptions,
   ): Promise<MktEmailWorkspaceEntity[]> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+    this.logger.debug(EMAIL_MESSAGES.LOG.FIND_ALL_START('current'));
 
-    this.logger.debug(EMAIL_MESSAGES.LOG.FIND_ALL_START(wsId ?? 'unknown'));
-
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const emails = await repository.find({
       where: { deletedAt: IsNull() },
@@ -130,8 +101,8 @@ export class MktEmailRepository {
   /**
    * Find all email IDs (lightweight operation)
    */
-  async findAllIds(workspaceId?: string): Promise<string[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findAllIds(): Promise<string[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('email')
@@ -147,10 +118,9 @@ export class MktEmailRepository {
    */
   async findByRecipient(
     to: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktEmailWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { to, deletedAt: IsNull() },
@@ -165,10 +135,9 @@ export class MktEmailRepository {
    */
   async findByStatus(
     status: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktEmailWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { status, deletedAt: IsNull() },
@@ -183,10 +152,9 @@ export class MktEmailRepository {
    */
   async findByEmailType(
     emailType: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktEmailWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { emailType, deletedAt: IsNull() },
@@ -203,11 +171,10 @@ export class MktEmailRepository {
   /**
    * Create a new email record
    */
-  async create(
+  async createEmail(
     data: Partial<MktEmailWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktEmailWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const email = repository.create(data);
     const savedEmail = await repository.save(email);
@@ -222,9 +189,8 @@ export class MktEmailRepository {
    */
   async save(
     data: Partial<MktEmailWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktEmailWorkspaceEntity> {
-    return this.create(data, workspaceId);
+    return this.createEmail(data);
   }
 
   // ============================================
@@ -234,23 +200,22 @@ export class MktEmailRepository {
   /**
    * Update email by ID
    */
-  async update(
+  async updateEmail(
     id: string,
     data: Partial<MktEmailWorkspaceEntity>,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
-    await manager.update(
-      'MktEmailWorkspaceEntity',
-      { id },
+    // Strip relation fields to prevent TypeORM type errors
+    const updateData = omit(
       {
         ...data,
-        updatedAt: DateTimeUtils.now().toJSDate(),
+        updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
       },
+      EMAIL_RELATION_FIELDS,
     );
+
+    await repository.update(id, updateData);
 
     this.logger.debug(EMAIL_MESSAGES.LOG.UPDATE_SUCCESS(id));
   }
@@ -258,28 +223,20 @@ export class MktEmailRepository {
   /**
    * Update and return the updated email
    */
-  async updateAndReturn(
+  async updateEmailAndReturn(
     id: string,
     data: Partial<MktEmailWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktEmailWorkspaceEntity> {
-    await this.update(id, data, workspaceId);
+    await this.updateEmail(id, data);
 
-    return this.findById(id, workspaceId);
+    return this.findEmailById(id);
   }
 
   /**
    * Soft delete email
    */
-  async softDelete(
-    id: string,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktEmailWorkspaceEntity', id);
+  async softDeleteEmail(id: string): Promise<void> {
+    await this.softDelete(id);
 
     this.logger.log(EMAIL_MESSAGES.LOG.SOFT_DELETE_SUCCESS(id));
   }
@@ -291,17 +248,15 @@ export class MktEmailRepository {
   /**
    * Count all emails
    */
-  async count(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({ where: { deletedAt: IsNull() } });
+  async countEmails(): Promise<number> {
+    return this.count({ deletedAt: IsNull() } as never);
   }
 
   /**
    * Count emails by status
    */
-  async countByStatus(status: string, workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByStatus(status: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
       where: { status, deletedAt: IsNull() },
@@ -311,8 +266,8 @@ export class MktEmailRepository {
   /**
    * Count emails by recipient
    */
-  async countByRecipient(to: string, workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByRecipient(to: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
       where: { to, deletedAt: IsNull() },
@@ -326,10 +281,8 @@ export class MktEmailRepository {
   /**
    * Get status distribution statistics
    */
-  async getStatusDistribution(
-    workspaceId?: string,
-  ): Promise<StatusDistributionItem[]> {
-    const repository = await this.getRepository(workspaceId);
+  async getStatusDistribution(): Promise<StatusDistributionItem[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('email')
@@ -351,9 +304,8 @@ export class MktEmailRepository {
   async findSentInRange(
     startDate: Date,
     endDate: Date,
-    workspaceId?: string,
   ): Promise<MktEmailWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {

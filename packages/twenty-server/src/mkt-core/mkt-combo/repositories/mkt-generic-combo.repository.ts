@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
 import { MktGenericComboItemWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo-item.workspace-entity';
 import {
@@ -20,38 +20,43 @@ import {
 
 /**
  * Repository cho MktGenericCombo
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  * Xử lý truy vấn database với JOIN queries để tránh N+1
  */
 @Injectable()
-export class MktGenericComboRepository {
-  private readonly logger = new Logger(GENERIC_COMBO_LOG_CONTEXT);
-
+export class MktGenericComboRepository extends BaseWorkspaceRepository<MktGenericComboWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  private async getRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktGenericComboWorkspaceEntity>(
-      workspaceId,
-      'mktGenericCombo',
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktGenericComboWorkspaceEntity,
+      GENERIC_COMBO_LOG_CONTEXT,
     );
   }
 
-  private async getItemRepository(workspaceId: string) {
+  private async getItemRepository() {
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+
+    if (!wsId) {
+      throw new Error('Workspace ID not found in scoped context');
+    }
+
     return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktGenericComboItemWorkspaceEntity>(
-      workspaceId,
-      'mktGenericComboItem',
+      wsId,
+      MktGenericComboItemWorkspaceEntity,
+      { shouldBypassPermissionChecks: true },
     );
   }
 
   /**
    * Tìm combo theo ID với items (sử dụng JOIN để tránh N+1)
    */
-  async findByIdWithItems(
-    workspaceId: string,
-    id: string,
-  ): Promise<GenericComboWithItems | null> {
-    const repository = await this.getRepository(workspaceId);
+  async findByIdWithItems(id: string): Promise<GenericComboWithItems | null> {
+    const repository = await this.getRepository();
 
     const combo = await repository
       .createQueryBuilder('combo')
@@ -74,15 +79,12 @@ export class MktGenericComboRepository {
   /**
    * Tìm nhiều combo theo IDs (batch operation)
    */
-  async findManyByIds(
-    workspaceId: string,
-    ids: string[],
-  ): Promise<GenericComboWithItems[]> {
+  async findManyByIds(ids: string[]): Promise<GenericComboWithItems[]> {
     if (ids.length === 0) {
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const combos = await repository
       .createQueryBuilder('combo')
@@ -102,10 +104,9 @@ export class MktGenericComboRepository {
    * Tìm combo active theo code với items
    */
   async findActiveByCode(
-    workspaceId: string,
     comboCode: string,
   ): Promise<GenericComboWithItems | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const combo = await repository
       .createQueryBuilder('combo')
@@ -130,11 +131,10 @@ export class MktGenericComboRepository {
    * Tìm tất cả combo active với phân trang
    */
   async findAllActivePaginated(
-    workspaceId: string,
     options: { limit: number; offset: number },
     filter?: GenericComboFilter,
   ): Promise<PaginatedGenericComboResult<MktGenericComboWorkspaceEntity>> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('combo')
@@ -189,13 +189,11 @@ export class MktGenericComboRepository {
   /**
    * Tạo combo với items (transactional)
    */
-  async create(
-    workspaceId: string,
+  async createCombo(
     data: CreateGenericComboData,
-    queryRunner?: QueryRunner,
   ): Promise<MktGenericComboWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
-    const itemRepository = await this.getItemRepository(workspaceId);
+    const repository = await this.getRepository();
+    const itemRepository = await this.getItemRepository();
 
     const { items, ...comboData } = data;
 
@@ -205,13 +203,7 @@ export class MktGenericComboRepository {
       version: GENERIC_COMBO_DEFAULTS.VERSION,
     });
 
-    let savedCombo: MktGenericComboWorkspaceEntity;
-
-    if (queryRunner) {
-      savedCombo = await queryRunner.manager.save(combo);
-    } else {
-      savedCombo = await repository.save(combo);
-    }
+    const savedCombo = await repository.save(combo);
 
     // Tạo items
     if (items.length > 0) {
@@ -224,11 +216,7 @@ export class MktGenericComboRepository {
         }),
       );
 
-      if (queryRunner) {
-        await queryRunner.manager.save(itemEntities);
-      } else {
-        await itemRepository.save(itemEntities);
-      }
+      await itemRepository.save(itemEntities);
     }
 
     this.logger.log(
@@ -241,20 +229,17 @@ export class MktGenericComboRepository {
   /**
    * Cập nhật combo với optimistic locking
    */
-  async update(
-    workspaceId: string,
+  async updateCombo(
     id: string,
     data: UpdateGenericComboData,
-    queryRunner?: QueryRunner,
   ): Promise<MktGenericComboWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
     const { expectedVersion, ...updateData } = data;
 
     // Kiểm tra version nếu cần
     if (expectedVersion !== undefined) {
-      const current = await this.findById(workspaceId, id);
+      const current = await this.findById(id);
 
       if (!current) {
         return null;
@@ -270,9 +255,9 @@ export class MktGenericComboRepository {
     }
 
     // Update với version increment
-    await manager
+    await repository
       .createQueryBuilder()
-      .update(MktGenericComboWorkspaceEntity)
+      .update()
       .set({
         ...updateData,
         version: () => 'version + 1',
@@ -282,32 +267,14 @@ export class MktGenericComboRepository {
 
     this.logger.log(`Updated generic combo ${id}`);
 
-    return this.findById(workspaceId, id);
-  }
-
-  /**
-   * Tìm combo theo ID (không có items)
-   */
-  async findById(
-    workspaceId: string,
-    id: string,
-  ): Promise<MktGenericComboWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { id },
-    });
+    return this.findById(id);
   }
 
   /**
    * Kiểm tra code đã tồn tại chưa
    */
-  async codeExists(
-    workspaceId: string,
-    comboCode: string,
-    excludeId?: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async codeExists(comboCode: string, excludeId?: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const query = repository
       .createQueryBuilder('combo')
@@ -326,15 +293,8 @@ export class MktGenericComboRepository {
   /**
    * Soft delete combo
    */
-  async softDelete(
-    workspaceId: string,
-    id: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete(MktGenericComboWorkspaceEntity, id);
+  async softDeleteCombo(id: string): Promise<void> {
+    await this.softDelete(id);
 
     this.logger.log(`Soft deleted generic combo ${id}`);
   }

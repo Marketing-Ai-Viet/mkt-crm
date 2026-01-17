@@ -14,11 +14,14 @@ import { mktPaymentsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment
 import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-method-all.view';
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
 import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-all.view';
-import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-data-access-policy-all.view';
-import { mktDepartmentsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-department-all.view';
+import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-all.view';
+import { mktPermissionContextsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-all.view';
+import { mktDepartmentsAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-all.view';
 import { mktGenericCombosAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-all.view';
 import { mktGenericComboItemsAllView } from 'src/mkt-core/seeder/combo-seeder/mkt-generic-combo-item-all.view';
-import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-department-hierarchy-all.view';
+import { mktDepartmentHierarchiesAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/mkt-department-hierarchy-all.view';
+import { mktDepartmentSubManagersAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/mkt-department-sub-manager-all.view';
+import { mktDepartmentAncestriesAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/mkt-department-ancestry-all.view';
 import { mktEmploymentStatusesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-employment-status-all.view';
 import { mktI18nAllView } from 'src/mkt-core/seeder/prefill-view/mkt-i18n-all.view';
 import { mktKpisAllView } from 'src/mkt-core/seeder/prefill-view/mkt-kpi-all.view';
@@ -26,7 +29,7 @@ import { mktKpisAllView } from 'src/mkt-core/seeder/prefill-view/mkt-kpi-all.vie
 // import { mktLicenseHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-organization-level-all.view';
 import { mktPaymentHistoriesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-payment-history-all.view';
-import { mktPermissionAuditsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-permission-audit-all.view';
+import { mktPermissionAuditsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-all.view';
 import { mktStaffStatusHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-staff-status-history-all.view';
 import { mktTagsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-tag-all.view';
 import { mktTemplatesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-template-all.view';
@@ -39,6 +42,18 @@ import { mktPromotionRulesAllView } from 'src/mkt-core/seeder/promotion-seeder/m
 import { mktPromotionUsagesAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-usage-all.view';
 import { mktPromotionsAllView } from 'src/mkt-core/seeder/promotion-seeder/mkt-promotion-all.view';
 import { mktOptionsAllView } from 'src/mkt-core/seeder/mkt-option-seeder/mkt-option-all.view';
+// Permission template seeder view imports
+import { mktPermissionActionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/mkt-permission-action-all.view';
+import { mktPermissionResourcesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/mkt-permission-resource-all.view';
+import { mktPermissionTemplatesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/mkt-permission-template-all.view';
+import { mktTemplateResourcePermissionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-all.view';
+import { mktTemplateSystemActionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-all.view';
+import { mktUserPermissionTemplatesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-all.view';
+// Casbin seeder view imports
+import { mktCasbinRulesAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/mkt-casbin-rule-all.view';
+import { mktPolicyVersionsAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/mkt-policy-version-all.view';
+import { mktPolicyChangeRequestsAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/mkt-policy-change-request-all.view';
+import { mktPolicyApprovalsAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/mkt-policy-approval-all.view';
 
 export const MKT_ALL_VIEWS = [
   // core views
@@ -93,6 +108,22 @@ export const MKT_ALL_VIEWS = [
   // temporary permission views
   mktTemporaryPermissionsAllView,
   mktDepartmentHierarchiesAllView,
+  mktDepartmentSubManagersAllView,
+  mktDepartmentAncestriesAllView,
+  // Permission context views (template layer)
+  mktPermissionContextsAllView,
   mktDataAccessPoliciesAllView,
   mktPermissionAuditsAllView,
+  // permission template views
+  mktPermissionActionsAllView,
+  mktPermissionResourcesAllView,
+  mktPermissionTemplatesAllView,
+  mktTemplateResourcePermissionsAllView,
+  mktTemplateSystemActionsAllView,
+  mktUserPermissionTemplatesAllView,
+  // casbin views
+  mktPolicyVersionsAllView,
+  mktCasbinRulesAllView,
+  mktPolicyChangeRequestsAllView,
+  mktPolicyApprovalsAllView,
 ];

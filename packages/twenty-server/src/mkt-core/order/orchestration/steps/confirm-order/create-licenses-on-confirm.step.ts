@@ -143,7 +143,6 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
 
       // Get customer email for license creation
       const customerEmail = await this.getCustomerEmail(
-        context.workspaceId,
         order.mktCustomerId ?? '',
       );
 
@@ -160,10 +159,7 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
 
         if (hasTrialLicenses) {
           // Upgrade existing trial license to official (atomic operation)
-          const result = await this.upgradeTrialLicenseForItem(
-            context.workspaceId,
-            item,
-          );
+          const result = await this.upgradeTrialLicenseForItem(item);
 
           if (result) {
             processedLicenses.push(result);
@@ -172,7 +168,6 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
         } else {
           // Create new official license (no trial exists)
           const result = await this.createOfficialLicenseForItem(
-            context.workspaceId,
             item,
             customerEmail,
           );
@@ -286,20 +281,14 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
    *
    * @throws Error if customer not found or no valid MKT_SERVER email
    */
-  private async getCustomerEmail(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<string> {
+  private async getCustomerEmail(customerId: string): Promise<string> {
     if (!customerId) {
       throw new Error(
         'No customerId provided. Cannot determine email for license creation.',
       );
     }
 
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       throw new Error(
@@ -329,7 +318,6 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
    * - Keeps the same license key (customer doesn't need new key)
    */
   private async upgradeTrialLicenseForItem(
-    workspaceId: string,
     item: MktOrderItemWorkspaceEntity,
   ): Promise<CreatedLicenseInfo | null> {
     // Get trial license ID from the licenses array (first license for trial orders)
@@ -383,7 +371,7 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       }
 
       // Update order item with upgraded license
-      await this.orderItemRepository.update(workspaceId, item.id, {
+      await this.orderItemRepository.update(item.id, {
         licenses: updatedLicenses,
       });
 
@@ -414,7 +402,6 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
    * - maxDevices from order item (can be > 1 for paid licenses)
    */
   private async createOfficialLicenseForItem(
-    workspaceId: string,
     item: MktOrderItemWorkspaceEntity,
     email: string,
   ): Promise<CreatedLicenseInfo | null> {
@@ -452,7 +439,7 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       const updatedLicenses = [...existingLicenses, orderItemLicense];
 
       // Update order item with license info
-      await this.orderItemRepository.update(workspaceId, item.id, {
+      await this.orderItemRepository.update(item.id, {
         licenses: updatedLicenses,
       });
 

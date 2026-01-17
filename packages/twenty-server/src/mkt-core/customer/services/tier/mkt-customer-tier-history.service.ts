@@ -66,7 +66,7 @@ export class MktCustomerTierHistoryService {
    * Log tier change to history
    * Only logs when tier actually changed
    *
-   * @param workspaceId - Workspace ID
+   * @param workspaceId - Workspace ID (kept for logging context)
    * @param customerId - Customer ID
    * @param previousTier - Previous tier (null for initial assignment)
    * @param newTier - New tier
@@ -96,7 +96,7 @@ export class MktCustomerTierHistoryService {
       `Recording tier ${changeType} for customer ${customerId}: ${previousTier ?? 'null'} -> ${newTier} (${reason})`,
     );
 
-    return this.tierHistoryRepository.create(workspaceId, {
+    return this.tierHistoryRepository.createTierHistory({
       customerId,
       previousTier,
       newTier,
@@ -238,10 +238,8 @@ export class MktCustomerTierHistoryService {
       orderCountAtChange: change.metadata?.orderCount ?? 0,
     }));
 
-    const count = await this.tierHistoryRepository.bulkCreate(
-      workspaceId,
-      records,
-    );
+    const count =
+      await this.tierHistoryRepository.bulkCreateTierHistory(records);
 
     this.logger.log(
       `Bulk logged ${count} tier changes for workspace ${workspaceId}`,
@@ -262,11 +260,7 @@ export class MktCustomerTierHistoryService {
     customerId: string,
     options?: TierHistoryQueryOptions,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity[]> {
-    return this.tierHistoryRepository.findByCustomerId(
-      workspaceId,
-      customerId,
-      options,
-    );
+    return this.tierHistoryRepository.findByCustomerId(customerId, options);
   }
 
   /**
@@ -276,10 +270,7 @@ export class MktCustomerTierHistoryService {
     workspaceId: string,
     customerId: string,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity | null> {
-    return this.tierHistoryRepository.findLatestByCustomerId(
-      workspaceId,
-      customerId,
-    );
+    return this.tierHistoryRepository.findLatestByCustomerId(customerId);
   }
 
   /**
@@ -292,7 +283,6 @@ export class MktCustomerTierHistoryService {
     options?: TierHistoryQueryOptions,
   ): Promise<MktCustomerTierHistoryWorkspaceEntity[]> {
     return this.tierHistoryRepository.findByDateRange(
-      workspaceId,
       startDate,
       endDate,
       options,
@@ -306,11 +296,11 @@ export class MktCustomerTierHistoryService {
   /**
    * Get tier change statistics for workspace
    */
-  async getTierChangeStats(workspaceId: string): Promise<TierChangeStats> {
+  async getTierChangeStats(): Promise<TierChangeStats> {
     const [statsByReason, upgradeCounts, totalCount] = await Promise.all([
-      this.tierHistoryRepository.getStatsByReason(workspaceId),
-      this.tierHistoryRepository.getUpgradeDowngradeCounts(workspaceId),
-      this.tierHistoryRepository.count(workspaceId),
+      this.tierHistoryRepository.getStatsByReason(),
+      this.tierHistoryRepository.getUpgradeDowngradeCounts(),
+      this.tierHistoryRepository.countAll(),
     ]);
 
     return {
@@ -328,10 +318,7 @@ export class MktCustomerTierHistoryService {
     workspaceId: string,
     customerId: string,
   ): Promise<number> {
-    return this.tierHistoryRepository.countByCustomerId(
-      workspaceId,
-      customerId,
-    );
+    return this.tierHistoryRepository.countByCustomerId(customerId);
   }
 
   // ============================================

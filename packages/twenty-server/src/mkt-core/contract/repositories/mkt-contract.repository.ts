@@ -1,14 +1,11 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { IsNull, QueryRunner } from 'typeorm';
+import { FindOptionsOrder, FindOptionsWhere, IsNull } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {
-  CONTRACT_MESSAGES,
-  MKT_CONTRACT_LOG_CONTEXT,
-} from 'src/mkt-core/contract/messages';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories/base-workspace.repository';
+import { CONTRACT_MESSAGES } from 'src/mkt-core/contract/messages';
 import {
   FindContractOptions,
   FindWithPaginationOptions,
@@ -18,51 +15,86 @@ import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-enti
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
+ * Options for findManyWithWhere method
+ */
+type FindManyWithWhereOptions = {
+  take?: number;
+  skip?: number;
+  order?: FindOptionsOrder<MktContractWorkspaceEntity>;
+  relations?: string[];
+};
+
+/**
  * MktContractRepository - Data access layer for Contract entity
  *
- * Responsibilities:
- * - Database operations for MktContract entity
- * - Query building and execution
- * - Thread-safe workspace context handling
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * WorkspaceId is automatically resolved from scoped context.
  *
- * Does NOT handle:
- * - Business logic (handled by Service layer)
- * - Validation (handled by Hook layer)
+ * Usage:
+ * ```typescript
+ * // No need to pass workspaceId
+ * const contract = await repository.findById(id);
+ * const contracts = await repository.findByCustomerId(customerId);
+ * ```
  */
 @Injectable()
-export class MktContractRepository {
-  private readonly logger = new Logger(
-    `${MKT_CONTRACT_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktContractRepository extends BaseWorkspaceRepository<MktContractWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktContractWorkspaceEntity,
+      MktContractRepository.name,
+    );
+  }
 
   // ============================================
-  // REPOSITORY ACCESS
+  // FIND WITH WHERE OPERATIONS (for RBAC)
   // ============================================
 
   /**
-   * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
+   * Find one contract with custom where clause (supports OR conditions)
+   * Used by resolver with hierarchical access filtering
+   *
+   * @param where - Where clause (can be object or array for OR conditions)
+   * @returns Contract or null
    */
-  async getRepository(
-    workspaceId?: string,
-  ): Promise<WorkspaceRepository<MktContractWorkspaceEntity>> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+  async findOneWithWhere(
+    where:
+      | FindOptionsWhere<MktContractWorkspaceEntity>
+      | FindOptionsWhere<MktContractWorkspaceEntity>[],
+  ): Promise<MktContractWorkspaceEntity | null> {
+    const repository = await this.getRepository();
 
-    if (!wsId) {
-      throw new NotFoundException(CONTRACT_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
-    }
+    return repository.findOne({ where });
+  }
 
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      wsId,
-      MktContractWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
+  /**
+   * Find many contracts with custom where clause (supports OR conditions)
+   * Used by resolver with hierarchical access filtering
+   *
+   * @param where - Where clause (can be object or array for OR conditions)
+   * @param options - Pagination and ordering options
+   * @returns Array of contracts
+   */
+  async findManyWithWhere(
+    where:
+      | FindOptionsWhere<MktContractWorkspaceEntity>
+      | FindOptionsWhere<MktContractWorkspaceEntity>[],
+    options?: FindManyWithWhereOptions,
+  ): Promise<MktContractWorkspaceEntity[]> {
+    const repository = await this.getRepository();
+
+    return repository.find({
+      where,
+      take: options?.take,
+      skip: options?.skip,
+      order: options?.order ?? { createdAt: 'DESC' },
+      relations: options?.relations,
+    });
   }
 
   // ============================================
@@ -71,15 +103,12 @@ export class MktContractRepository {
 
   /**
    * Find contract by ID
+   * @throws NotFoundException if contract not found
    */
-  async findById(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktContractWorkspaceEntity> {
+  async findContractById(id: string): Promise<MktContractWorkspaceEntity> {
     this.logger.debug(CONTRACT_MESSAGES.LOG.FIND_BY_ID_START(id));
 
-    const repository = await this.getRepository(workspaceId);
-    const contract = await repository.findOne({ where: { id } });
+    const contract = await this.findById(id);
 
     if (!contract) {
       this.logger.debug(CONTRACT_MESSAGES.LOG.FIND_BY_ID_NOT_FOUND(id));
@@ -96,13 +125,8 @@ export class MktContractRepository {
   /**
    * Find contract by ID (returns null if not found)
    */
-  async findByIdOrNull(
-    id: string,
-    workspaceId?: string,
-  ): Promise<MktContractWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
+  async findByIdOrNull(id: string): Promise<MktContractWorkspaceEntity | null> {
+    return this.findById(id);
   }
 
   /**
@@ -111,14 +135,8 @@ export class MktContractRepository {
   async findByIdWithRelations(
     id: string,
     relations: string[],
-    workspaceId?: string,
   ): Promise<MktContractWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { id },
-      relations,
-    });
+    return this.findById(id, { relations });
   }
 
   /**
@@ -126,26 +144,19 @@ export class MktContractRepository {
    */
   async findByContractNumber(
     contractNumber: string,
-    workspaceId?: string,
   ): Promise<MktContractWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { contractNumber } });
+    return this.findOne({ contractNumber } as never);
   }
 
   /**
    * Find all contracts with pagination
    */
-  async findAll(
-    workspaceId?: string,
+  async findAllContracts(
     options?: FindContractOptions,
   ): Promise<MktContractWorkspaceEntity[]> {
-    const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+    this.logger.debug(CONTRACT_MESSAGES.LOG.FIND_ALL_START('current'));
 
-    this.logger.debug(CONTRACT_MESSAGES.LOG.FIND_ALL_START(wsId ?? 'unknown'));
-
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const contracts = await repository.find({
       where: { deletedAt: IsNull() },
@@ -162,8 +173,8 @@ export class MktContractRepository {
   /**
    * Find all contract IDs (lightweight operation)
    */
-  async findAllIds(workspaceId?: string): Promise<string[]> {
-    const repository = await this.getRepository(workspaceId);
+  async findAllIds(): Promise<string[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('contract')
@@ -179,10 +190,9 @@ export class MktContractRepository {
    */
   async findByCustomerId(
     customerId: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktContractWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('contract')
@@ -206,10 +216,9 @@ export class MktContractRepository {
    */
   async findByStatus(
     status: string,
-    workspaceId?: string,
     options?: FindWithPaginationOptions,
   ): Promise<MktContractWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('contract')
@@ -231,11 +240,8 @@ export class MktContractRepository {
   /**
    * Find last contract number with prefix (for number generation)
    */
-  async findLastNumberWithPrefix(
-    prefix: string,
-    workspaceId?: string,
-  ): Promise<string | null> {
-    const repository = await this.getRepository(workspaceId);
+  async findLastNumberWithPrefix(prefix: string): Promise<string | null> {
+    const repository = await this.getRepository();
 
     const contract = await repository
       .createQueryBuilder('contract')
@@ -253,14 +259,37 @@ export class MktContractRepository {
   /**
    * Create a new contract
    */
-  async create(
+  async createContract(
     data: Partial<MktContractWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktContractWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
+    const savedContract = await this.create(data);
 
-    const contract = repository.create(data);
-    const savedContract = await repository.save(contract);
+    this.logger.debug(CONTRACT_MESSAGES.LOG.CREATE_SUCCESS(savedContract.id));
+
+    return savedContract;
+  }
+
+  /**
+   * Create a new contract with ownership fields
+   *
+   * @param data - Contract data (without ownership fields)
+   * @param workspaceMemberId - The workspace member ID for ownership
+   * @param accountOwnerId - Optional: explicit account owner ID
+   */
+  async createContractWithOwnership(
+    data: Partial<MktContractWorkspaceEntity>,
+    workspaceMemberId: string | undefined,
+    accountOwnerId?: string,
+  ): Promise<MktContractWorkspaceEntity> {
+    const ownershipFields = this.buildOwnershipFields({
+      workspaceMemberId,
+      accountOwnerId,
+    });
+
+    const savedContract = await this.create({
+      ...data,
+      ...ownershipFields,
+    });
 
     this.logger.debug(CONTRACT_MESSAGES.LOG.CREATE_SUCCESS(savedContract.id));
 
@@ -273,25 +302,17 @@ export class MktContractRepository {
 
   /**
    * Update contract by ID
-   * Pattern: Follow mkt-customer repository pattern with manager.update()
    */
-  async update(
+  async updateContract(
     id: string,
     data: Partial<MktContractWorkspaceEntity>,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
-    await manager.update(
-      'MktContractWorkspaceEntity',
-      { id },
-      {
-        ...data,
-        updatedAt: DateTimeUtils.now().toJSDate(),
-      },
-    );
+    await repository.update(id, {
+      ...data,
+      updatedAt: DateTimeUtils.now().toJSDate(),
+    } as never);
 
     this.logger.debug(CONTRACT_MESSAGES.LOG.UPDATE_SUCCESS(id));
   }
@@ -299,28 +320,20 @@ export class MktContractRepository {
   /**
    * Update and return the updated contract
    */
-  async updateAndReturn(
+  async updateContractAndReturn(
     id: string,
     data: Partial<MktContractWorkspaceEntity>,
-    workspaceId?: string,
   ): Promise<MktContractWorkspaceEntity> {
-    await this.update(id, data, workspaceId);
+    await this.updateContract(id, data);
 
-    return this.findById(id, workspaceId);
+    return this.findContractById(id);
   }
 
   /**
    * Soft delete contract
    */
-  async softDelete(
-    id: string,
-    workspaceId?: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktContractWorkspaceEntity', id);
+  async softDeleteContract(id: string): Promise<void> {
+    await this.softDelete(id);
 
     this.logger.log(CONTRACT_MESSAGES.LOG.SOFT_DELETE_SUCCESS(id));
   }
@@ -332,8 +345,8 @@ export class MktContractRepository {
   /**
    * Count all contracts
    */
-  async count(workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countContracts(): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({ where: { deletedAt: IsNull() } });
   }
@@ -341,25 +354,22 @@ export class MktContractRepository {
   /**
    * Count contracts by customer
    */
-  async countByCustomer(
-    customerId: string,
-    workspaceId?: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByCustomer(customerId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
-      where: { customerId, deletedAt: IsNull() },
+      where: { customerId, deletedAt: IsNull() } as never,
     });
   }
 
   /**
    * Count contracts by status
    */
-  async countByStatus(status: string, workspaceId?: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByStatus(status: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
-      where: { status, deletedAt: IsNull() },
+      where: { status, deletedAt: IsNull() } as never,
     });
   }
 
@@ -370,11 +380,8 @@ export class MktContractRepository {
   /**
    * Check if contract number exists
    */
-  async isContractNumberExists(
-    contractNumber: string,
-    workspaceId?: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async isContractNumberExists(contractNumber: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const count = await repository
       .createQueryBuilder('contract')
@@ -390,12 +397,9 @@ export class MktContractRepository {
 
   /**
    * Get status distribution statistics
-   * Single query for all status counts
    */
-  async getStatusDistribution(
-    workspaceId?: string,
-  ): Promise<StatusDistributionItem[]> {
-    const repository = await this.getRepository(workspaceId);
+  async getStatusDistribution(): Promise<StatusDistributionItem[]> {
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('contract')
@@ -417,9 +421,8 @@ export class MktContractRepository {
   async findExpiringContracts(
     startDate: Date,
     endDate: Date,
-    workspaceId?: string,
   ): Promise<MktContractWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('contract')

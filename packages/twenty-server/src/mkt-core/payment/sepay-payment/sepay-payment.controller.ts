@@ -163,7 +163,6 @@ export class SepayPaymentController {
 
     // Delegate all logic to webhook service with DB transaction
     const result = await this.mktPaymentWebhookService.processWebhookPayment(
-      workspaceId,
       payload,
       authContext,
       ipAddress,
@@ -190,10 +189,7 @@ export class SepayPaymentController {
       }
 
       // Find order by order code
-      const order = await this.mktPaymentService.findOneByOrderCode(
-        workspaceId,
-        orderCode,
-      );
+      const order = await this.mktPaymentService.findOneByOrderCode(orderCode);
 
       if (!order) {
         this.logger.error(`Order not found for code: ${orderCode}`);
@@ -202,7 +198,6 @@ export class SepayPaymentController {
 
       // Find payments for this order
       const payments = await this.mktPaymentService.findPaymentsByOrderId(
-        workspaceId,
         order.id,
       );
 

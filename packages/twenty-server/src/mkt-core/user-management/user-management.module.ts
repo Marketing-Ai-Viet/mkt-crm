@@ -54,6 +54,7 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
     WorkspaceMemberService,
     RoleService,
     EmailNotificationService,
+    MktWorkspaceMemberRepository,
   ],
 })
 export class UserManagementModule {}

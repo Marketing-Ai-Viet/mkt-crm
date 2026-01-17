@@ -63,10 +63,8 @@ export class OrderItemService {
     input: UpdateOrderItemInput,
   ): Promise<OrderItemValidationResult> {
     try {
-      const orderItem = await this.orderItemRepository.findByIdWithRelations(
-        workspaceId,
-        orderItemId,
-      );
+      const orderItem =
+        await this.orderItemRepository.findByIdWithRelations(orderItemId);
 
       if (!orderItem) {
         return {
@@ -272,18 +270,11 @@ export class OrderItemService {
       }
 
       // Update the order item
-      await this.orderItemRepository.update(
-        workspaceId,
-        orderItemId,
-        updateData,
-      );
+      await this.orderItemRepository.updateOrderItem(orderItemId, updateData);
 
       // Fetch updated order item
       const updatedOrderItem =
-        await this.orderItemRepository.findByIdWithRelations(
-          workspaceId,
-          orderItemId,
-        );
+        await this.orderItemRepository.findByIdWithRelations(orderItemId);
 
       this.logger.log(`Order item ${orderItemId} updated successfully`);
 
@@ -306,13 +297,10 @@ export class OrderItemService {
    */
   async recalculateOrderItem(
     orderItemId: string,
-    workspaceId: string,
   ): Promise<UpdateOrderItemResult> {
     try {
-      const orderItem = await this.orderItemRepository.findByIdWithRelations(
-        workspaceId,
-        orderItemId,
-      );
+      const orderItem =
+        await this.orderItemRepository.findByIdWithRelations(orderItemId);
 
       if (!orderItem) {
         return {
@@ -325,17 +313,13 @@ export class OrderItemService {
       const calculatedValues = this.calculateValuesFromOrderItem(orderItem);
 
       // Update the order item
-      await this.orderItemRepository.update(
-        workspaceId,
+      await this.orderItemRepository.updateOrderItem(
         orderItemId,
         calculatedValues as Partial<MktOrderItemWorkspaceEntity>,
       );
 
       const updatedOrderItem =
-        await this.orderItemRepository.findByIdWithRelations(
-          workspaceId,
-          orderItemId,
-        );
+        await this.orderItemRepository.findByIdWithRelations(orderItemId);
 
       this.logger.log(`Order item ${orderItemId} recalculated successfully`);
 
@@ -358,12 +342,8 @@ export class OrderItemService {
    */
   async getOrderItemWithRelations(
     orderItemId: string,
-    workspaceId: string,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    return this.orderItemRepository.findByIdWithRelations(
-      workspaceId,
-      orderItemId,
-    );
+    return this.orderItemRepository.findByIdWithRelations(orderItemId);
   }
 
   /**
@@ -383,20 +363,17 @@ export class OrderItemService {
    */
   async recalculateAllOrderItems(
     orderId: string,
-    workspaceId: string,
   ): Promise<BulkRecalculateResult> {
     try {
-      const orderItems = await this.orderItemRepository.findByOrderId(
-        workspaceId,
-        orderId,
-        { relations: { mktOrder: true } },
-      );
+      const orderItems = await this.orderItemRepository.findByOrderId(orderId, {
+        relations: { mktOrder: true },
+      });
 
       let updatedCount = 0;
       const errors: string[] = [];
 
       for (const item of orderItems) {
-        const result = await this.recalculateOrderItem(item.id, workspaceId);
+        const result = await this.recalculateOrderItem(item.id);
 
         if (result.success) {
           updatedCount++;

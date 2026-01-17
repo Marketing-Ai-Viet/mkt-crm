@@ -320,16 +320,14 @@ export class MktCustomerDowngradePolicyService {
    * Update lastTierUpgradeAt when customer is upgraded
    */
   async updateLastTierUpgrade(
-    workspaceId: string,
+    _workspaceId: string,
     customerId: string,
   ): Promise<void> {
     const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
 
-    await this.customerRepository.update(
-      customerId,
-      { lastTierUpgradeAt: now },
-      workspaceId,
-    );
+    await this.customerRepository.updateCustomer(customerId, {
+      lastTierUpgradeAt: now,
+    });
 
     this.logger.debug(
       `Updated lastTierUpgradeAt for customer ${customerId}: ${now.toISOString()}`,
@@ -340,7 +338,7 @@ export class MktCustomerDowngradePolicyService {
    * Bulk update lastTierUpgradeAt for upgraded customers
    */
   async bulkUpdateLastTierUpgrade(
-    workspaceId: string,
+    _workspaceId: string,
     customerIds: string[],
   ): Promise<number> {
     if (customerIds.length === 0) {
@@ -349,9 +347,13 @@ export class MktCustomerDowngradePolicyService {
 
     const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
 
-    await this.customerRepository.bulkUpdate(workspaceId, customerIds, {
-      lastTierUpgradeAt: now,
-    });
+    await this.customerRepository.bulkUpdateCustomers(
+      _workspaceId,
+      customerIds,
+      {
+        lastTierUpgradeAt: now,
+      },
+    );
 
     this.logger.debug(
       `Bulk updated lastTierUpgradeAt for ${customerIds.length} customers`,

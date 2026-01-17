@@ -136,8 +136,7 @@ export class CreateOrderItemsStep extends SagaStep<
       this.logger.warn(`Hard deleting ${data.orderItemIds.length} order items`);
 
       // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderItemRepository.softDeleteMany(
-        context.workspaceId,
+      await this.orderItemRepository.softDeleteManyOrderItems(
         data.orderItemIds,
       );
 
@@ -199,10 +198,8 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Save order items using repository
-    const savedOrderItems = await this.orderItemRepository.createMany(
-      context.workspaceId,
-      allOrderItemsData,
-    );
+    const savedOrderItems =
+      await this.orderItemRepository.createManyOrderItems(allOrderItemsData);
 
     this.logger.log(`Created ${savedOrderItems.length} order items`);
 
@@ -516,8 +513,7 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Get trial order with items
-    const trialOrder = await this.orderRepository.findById(
-      context.workspaceId,
+    const trialOrder = await this.orderRepository.findByIdWithOptions(
       input.trialOrderId,
       { relations: { orderItems: true } },
     );
@@ -581,10 +577,8 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Save order items using repository
-    const savedOrderItems = await this.orderItemRepository.createMany(
-      context.workspaceId,
-      clonedItemsData,
-    );
+    const savedOrderItems =
+      await this.orderItemRepository.createManyOrderItems(clonedItemsData);
 
     this.logger.log(
       `Cloned ${savedOrderItems.length} order items from trial order`,
@@ -605,7 +599,7 @@ export class CreateOrderItemsStep extends SagaStep<
     if (!context.orderId) {
       throw new Error('Order ID is required');
     }
-    await this.orderRepository.update(context.workspaceId, context.orderId, {
+    await this.orderRepository.updateOrder(context.orderId, {
       note: `Converted from trial order: ${input.trialOrderId}`,
       name: trialOrder.name,
       mktCustomerId: trialOrder.mktCustomerId,
@@ -644,7 +638,7 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
-    await this.orderRepository.update(context.workspaceId, context.orderId, {
+    await this.orderRepository.updateOrder(context.orderId, {
       subtotal: totals.subtotal,
       tax: totals.tax,
       discount: totals.discount,
@@ -682,7 +676,7 @@ export class CreateOrderItemsStep extends SagaStep<
     ).toNumber();
 
     // Use repository for update
-    await this.orderRepository.update(context.workspaceId, context.orderId, {
+    await this.orderRepository.updateOrder(context.orderId, {
       subtotal: totals.subtotal,
       tax: totals.tax,
       discount: totals.discount,

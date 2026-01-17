@@ -1,8 +1,6 @@
 import { Logger, UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
@@ -47,7 +45,6 @@ export class MktCustomerLinkedAccountResolver {
     description: 'Get all linked accounts for a customer',
   })
   async getCustomerAccounts(
-    @AuthWorkspace() workspace: Workspace,
     @Args('customerId', { type: () => String }) customerId: string,
     @Args('provider', { type: () => String, nullable: true })
     provider?: string,
@@ -59,13 +56,11 @@ export class MktCustomerLinkedAccountResolver {
     const accounts = await this.customerAccountService.getCustomerAccounts(
       customerId,
       provider as AccountProvider | undefined,
-      workspace.id,
     );
 
     const primaryAccount = await this.customerAccountService.getPrimaryAccount(
       customerId,
       provider as AccountProvider | undefined,
-      workspace.id,
     );
 
     return {
@@ -85,7 +80,6 @@ export class MktCustomerLinkedAccountResolver {
     nullable: true,
   })
   async getPrimaryAccount(
-    @AuthWorkspace() workspace: Workspace,
     @Args('customerId', { type: () => String }) customerId: string,
     @Args('provider', { type: () => String, nullable: true })
     provider?: string,
@@ -95,7 +89,6 @@ export class MktCustomerLinkedAccountResolver {
     const primaryAccount = await this.customerAccountService.getPrimaryAccount(
       customerId,
       provider as AccountProvider | undefined,
-      workspace.id,
     );
 
     if (!primaryAccount) {
@@ -115,7 +108,6 @@ export class MktCustomerLinkedAccountResolver {
     nullable: true,
   })
   async findCustomerByExternalId(
-    @AuthWorkspace() workspace: Workspace,
     @Args('provider', { type: () => String }) provider: string,
     @Args('externalId', { type: () => String }) externalId: string,
   ): Promise<string | null> {
@@ -126,7 +118,6 @@ export class MktCustomerLinkedAccountResolver {
     return this.customerAccountService.findCustomerByExternalId(
       provider as AccountProvider,
       externalId,
-      workspace.id,
     );
   }
 
@@ -139,7 +130,6 @@ export class MktCustomerLinkedAccountResolver {
     description: 'Link an external account to a customer',
   })
   async linkAccount(
-    @AuthWorkspace() workspace: Workspace,
     @Args('input') input: LinkAccountInput,
   ): Promise<LinkAccountOutput> {
     this.logger.log(
@@ -147,10 +137,7 @@ export class MktCustomerLinkedAccountResolver {
     );
 
     try {
-      const account = await this.customerAccountService.linkAccount(
-        input,
-        workspace.id,
-      );
+      const account = await this.customerAccountService.linkAccount(input);
 
       return {
         success: true,
@@ -177,7 +164,6 @@ export class MktCustomerLinkedAccountResolver {
     description: 'Unlink an account from a customer',
   })
   async unlinkAccount(
-    @AuthWorkspace() workspace: Workspace,
     @Args('input') input: UnlinkAccountInput,
   ): Promise<UnlinkAccountOutput> {
     this.logger.log(
@@ -188,7 +174,6 @@ export class MktCustomerLinkedAccountResolver {
       await this.customerAccountService.unlinkAccount(
         input.customerId,
         input.accountId,
-        workspace.id,
       );
 
       return {
@@ -214,7 +199,6 @@ export class MktCustomerLinkedAccountResolver {
     description: 'Set an account as the primary account for a customer',
   })
   async setPrimaryAccount(
-    @AuthWorkspace() workspace: Workspace,
     @Args('input') input: SetPrimaryAccountInput,
   ): Promise<UnlinkAccountOutput> {
     this.logger.log(
@@ -225,7 +209,6 @@ export class MktCustomerLinkedAccountResolver {
       await this.customerAccountService.setPrimaryAccount(
         input.customerId,
         input.accountId,
-        workspace.id,
       );
 
       return {

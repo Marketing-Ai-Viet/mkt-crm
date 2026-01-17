@@ -29,7 +29,11 @@ import {
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 
-const TABLE_ORDER_HISTORY_NAME = 'mktOrderHistory';
+/**
+ * Entity name for mktOrderHistory
+ * Used by block hooks and other configurations
+ */
+export const MKT_ORDER_HISTORY_ENTITY_NAME = 'mktOrderHistory';
 
 export const SEARCH_FIELDS: FieldTypeAndNameMetadata[] = [
   { name: 'name', type: FieldMetadataType.TEXT },
@@ -39,7 +43,7 @@ export const SEARCH_FIELDS: FieldTypeAndNameMetadata[] = [
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktOrderHistory,
-  namePlural: `${TABLE_ORDER_HISTORY_NAME}s`,
+  namePlural: `${MKT_ORDER_HISTORY_ENTITY_NAME}s`,
   labelSingular: msg`Order History`,
   labelPlural: msg`Orders Histories`,
   description: msg`Order History entity for tracking order changes`,

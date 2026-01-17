@@ -26,6 +26,7 @@ import {
   PRODUCT_CACHE_PREFIX,
   PROMOTION_CACHE_PREFIX,
   RATE_LIMIT_CACHE_PREFIX,
+  RBAC_CACHE_PREFIX,
   RESELLER_CACHE_PREFIX,
 } from './cache-keys.constant';
 
@@ -202,4 +203,16 @@ export const MKT_CACHE_TTL_CONFIG: Record<string, number> = {
   [EXTERNAL_PRODUCT_CACHE_PREFIX.DIGITAL_PACKAGES]: CACHE_TTL.DAY, // 24h - Packages
   [EXTERNAL_PRODUCT_CACHE_PREFIX.PHYSICAL]: CACHE_TTL.DAY, // 24h - Physical product
   [EXTERNAL_PRODUCT_CACHE_PREFIX.SERVICE]: CACHE_TTL.DAY, // 24h - Service product
+
+  // ============================================
+  // RBAC DOMAIN
+  // ============================================
+  [RBAC_CACHE_PREFIX.PERMISSION_TEMPLATE]: CACHE_TTL.VERY_LONG, // 1 hour - Permission templates
+  [RBAC_CACHE_PREFIX.USER_PERMISSIONS]: CACHE_TTL.LONG, // 30 min - User permissions
+  [RBAC_CACHE_PREFIX.POLICY]: CACHE_TTL.VERY_LONG, // 1 hour - Policies
+  [RBAC_CACHE_PREFIX.HIERARCHY]: CACHE_TTL.VERY_LONG, // 1 hour - Hierarchy (stable)
+  [RBAC_CACHE_PREFIX.VALIDATION]: CACHE_TTL.SHORT, // 5 min - Validation results
+  [RBAC_CACHE_PREFIX.AUDIT_LOG]: CACHE_TTL.DAY, // 24 hours - Audit logs
+  [RBAC_CACHE_PREFIX.DATA_ACCESS_POLICY]: CACHE_TTL.VERY_LONG, // 1 hour - Data access policies
+  [RBAC_CACHE_PREFIX.USER_CONTEXT]: CACHE_TTL.MEDIUM, // 10 min - User context
 };

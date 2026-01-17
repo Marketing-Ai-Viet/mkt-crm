@@ -70,8 +70,7 @@ export class FinalizeOrderStep extends SagaStep<
       this.logger.log(`Finalizing order: ${context.orderId}`);
 
       // Get order for contract creation
-      const order = await this.orderRepository.findById(
-        context.workspaceId,
+      const order = await this.orderRepository.findByIdWithOptions(
         context.orderId,
         { relations: { orderItems: true } },
       );
@@ -99,7 +98,7 @@ export class FinalizeOrderStep extends SagaStep<
       const orderName = this.generateOrderName(order);
 
       // Use repository for update
-      await this.orderRepository.update(context.workspaceId, context.orderId, {
+      await this.orderRepository.updateOrder(context.orderId, {
         name: orderName,
         mktContractId: contractId ?? undefined,
       });
@@ -159,14 +158,10 @@ export class FinalizeOrderStep extends SagaStep<
 
       // Revert trial order status if it was updated
       if (data.trialOrderId) {
-        await this.orderRepository.update(
-          context.workspaceId,
-          data.trialOrderId,
-          {
-            status: ORDER_STATUS.TRIAL,
-            note: '',
-          },
-        );
+        await this.orderRepository.updateOrder(data.trialOrderId, {
+          status: ORDER_STATUS.TRIAL,
+          note: '',
+        });
         this.logger.log(`Reverted trial order ${data.trialOrderId} status`);
       }
     } catch (error) {
@@ -221,7 +216,7 @@ export class FinalizeOrderStep extends SagaStep<
     context: SagaContext,
     trialOrderId: string,
   ): Promise<void> {
-    await this.orderRepository.update(context.workspaceId, trialOrderId, {
+    await this.orderRepository.updateOrder(trialOrderId, {
       status: ORDER_STATUS.COMPLETED,
       note: `Converted to paid order: ${context.orderId}`,
     });

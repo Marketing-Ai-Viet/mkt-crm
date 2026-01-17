@@ -55,13 +55,11 @@ export class PaymentFacadeService {
   /**
    * Initialize a new payment
    *
-   * @param workspaceId - Workspace context
    * @param providerType - Payment provider to use
    * @param request - Payment initialization request
    * @returns Payment initialization result
    */
   async createPayment(
-    workspaceId: string,
     providerType: PaymentProviderType,
     request: InitializePaymentRequest,
   ): Promise<InitializePaymentResult> {
@@ -74,7 +72,7 @@ export class PaymentFacadeService {
 
       if (result.success) {
         // Create payment record in database
-        await this.paymentRepository.create(workspaceId, {
+        await this.paymentRepository.createPayment({
           name: `Payment - ${request.orderCode}`,
           amount: request.amount,
           currency: (request.currency as PaymentCurrency) ?? 'VND',
@@ -178,20 +176,15 @@ export class PaymentFacadeService {
   /**
    * Get payment status
    *
-   * @param workspaceId - Workspace context
    * @param paymentId - Payment ID
    * @param providerType - Optional provider for pull status
    * @returns Payment status result
    */
   async getPaymentStatus(
-    workspaceId: string,
     paymentId: string,
     providerType?: PaymentProviderType,
   ): Promise<PaymentStatusResult> {
-    const payment = await this.paymentRepository.findById(
-      workspaceId,
-      paymentId,
-    );
+    const payment = await this.paymentRepository.findById(paymentId);
 
     if (!payment) {
       return {
@@ -227,14 +220,12 @@ export class PaymentFacadeService {
   /**
    * Process refund
    *
-   * @param workspaceId - Workspace context
    * @param paymentId - Payment ID to refund
    * @param providerType - Provider to process refund
    * @param request - Refund request details
    * @returns Refund result
    */
   async refundPayment(
-    workspaceId: string,
     paymentId: string,
     providerType: PaymentProviderType,
     request: RefundRequest,
@@ -255,11 +246,7 @@ export class PaymentFacadeService {
 
     if (result.success) {
       // Update payment status to refunded
-      await this.paymentRepository.updateStatus(
-        workspaceId,
-        paymentId,
-        'REFUNDED',
-      );
+      await this.paymentRepository.updateStatus(paymentId, 'REFUNDED');
     }
 
     return result;

@@ -46,7 +46,7 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     this.logger.log(`Validating organization level update for ID: ${recordId}`);
 
     // Get current record
-    const currentRecord = await this.getCurrentRecord(recordId, workspaceId);
+    const currentRecord = await this.getCurrentRecord(recordId);
 
     // 1. Validate input with class-validator
     const validatedDto = await this.validationService.validateUpdateInput(
@@ -58,20 +58,12 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
       validatedDto.levelCode &&
       validatedDto.levelCode !== currentRecord.levelCode
     ) {
-      await this.validateLevelCodeUniqueness(
-        validatedDto.levelCode,
-        workspaceId,
-        recordId,
-      );
+      await this.validateLevelCodeUniqueness(validatedDto.levelCode, recordId);
     }
 
     // 3. Validate hierarchy level changes
     if (validatedDto.hierarchyLevel !== undefined) {
-      await this.validateHierarchyLevelUpdate(
-        validatedDto,
-        currentRecord,
-        workspaceId,
-      );
+      await this.validateHierarchyLevelUpdate(validatedDto, currentRecord);
     }
 
     // 4. Validate parent level changes
@@ -79,20 +71,12 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
       validatedDto.parentLevelId !== undefined ||
       validatedDto.hierarchyLevel !== undefined
     ) {
-      await this.validateParentLevelUpdate(
-        validatedDto,
-        currentRecord,
-        workspaceId,
-      );
+      await this.validateParentLevelUpdate(validatedDto, currentRecord);
     }
 
     // 5. Validate activation/deactivation
     if (validatedDto.isActive !== undefined) {
-      await this.validateActivationChange(
-        validatedDto.isActive,
-        currentRecord,
-        workspaceId,
-      );
+      await this.validateActivationChange(validatedDto.isActive, currentRecord);
     }
 
     // 6. Transform to entity format
@@ -110,9 +94,8 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
   private async getCurrentRecord(
     recordId: string,
-    workspaceId: string,
   ): Promise<MktOrganizationLevelWorkspaceEntity> {
-    const record = await this.repository.findById(workspaceId, recordId);
+    const record = await this.repository.findById(recordId);
 
     if (!record) {
       throw new BadRequestException(
@@ -125,11 +108,9 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
   private async validateLevelCodeUniqueness(
     levelCode: string,
-    workspaceId: string,
     currentRecordId: string,
   ): Promise<void> {
     const exists = await this.repository.existsByCode(
-      workspaceId,
       levelCode,
       currentRecordId,
     );
@@ -144,7 +125,6 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
   private async validateHierarchyLevelUpdate(
     input: { hierarchyLevel?: number },
     currentRecord: MktOrganizationLevelWorkspaceEntity,
-    workspaceId: string,
   ): Promise<void> {
     const newHierarchyLevel = input.hierarchyLevel;
     const oldHierarchyLevel = currentRecord.hierarchyLevel;
@@ -154,10 +134,7 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     }
 
     // Check if this level has children - if so, hierarchy change might break structure
-    const childLevels = await this.repository.findByParentId(
-      workspaceId,
-      currentRecord.id,
-    );
+    const childLevels = await this.repository.findByParentId(currentRecord.id);
 
     if (
       childLevels.length > 0 &&
@@ -173,7 +150,6 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
   private async validateParentLevelUpdate(
     input: { hierarchyLevel?: number; parentLevelId?: string },
     currentRecord: MktOrganizationLevelWorkspaceEntity,
-    workspaceId: string,
   ): Promise<void> {
     const newHierarchyLevel =
       input.hierarchyLevel ?? currentRecord.hierarchyLevel;
@@ -198,10 +174,7 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
     // Validate parent exists and relationships
     if (newParentLevelId && newParentLevelId !== currentRecord.id) {
-      const parentLevel = await this.repository.findById(
-        workspaceId,
-        newParentLevelId,
-      );
+      const parentLevel = await this.repository.findById(newParentLevelId);
 
       if (!parentLevel) {
         throw new BadRequestException(
@@ -222,18 +195,13 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
       }
 
       // Check for circular reference
-      await this.checkCircularReference(
-        currentRecord.id,
-        newParentLevelId,
-        workspaceId,
-      );
+      await this.checkCircularReference(currentRecord.id, newParentLevelId);
     }
   }
 
   private async checkCircularReference(
     currentId: string,
     newParentId: string,
-    workspaceId: string,
   ): Promise<void> {
     let checkId: string | null | undefined = newParentId;
     const visited = new Set<string>();
@@ -247,7 +215,7 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
 
       visited.add(checkId);
 
-      const parent = await this.repository.findById(workspaceId, checkId);
+      const parent = await this.repository.findById(checkId);
 
       checkId = parent?.parentLevelId ?? null;
     }
@@ -256,12 +224,10 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
   private async validateActivationChange(
     newIsActive: boolean,
     currentRecord: MktOrganizationLevelWorkspaceEntity,
-    workspaceId: string,
   ): Promise<void> {
     // If deactivating, check if this level has active children
     if (!newIsActive && currentRecord.isActive) {
       const childLevels = await this.repository.findByParentId(
-        workspaceId,
         currentRecord.id,
       );
 
@@ -278,7 +244,6 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
     // If activating, check if parent is active
     if (newIsActive && !currentRecord.isActive && currentRecord.parentLevelId) {
       const parent = await this.repository.findById(
-        workspaceId,
         currentRecord.parentLevelId,
       );
 
@@ -308,8 +273,9 @@ export class MktOrganizationLevelUpdateOnePreQueryHook
         parentLevelId: dto.parentLevelId,
         displayOrder: dto.displayOrder,
         isActive: dto.isActive,
-        defaultPermissions: dto.defaultPermissions,
-        accessLimitations: dto.accessLimitations,
+        // TODO: Add defaultPermissions and accessLimitations fields to MktOrganizationLevelWorkspaceEntity
+        // defaultPermissions: dto.defaultPermissions,
+        // accessLimitations: dto.accessLimitations,
       },
       isNil,
     ) as Partial<MktOrganizationLevelWorkspaceEntity>;

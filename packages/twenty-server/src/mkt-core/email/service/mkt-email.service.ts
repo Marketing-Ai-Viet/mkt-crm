@@ -179,9 +179,7 @@ export class MktEmailService {
   private async findEmailTemplate(
     templateKey: string,
   ): Promise<MktTemplateWorkspaceEntity | null> {
-    const workspaceId = this.getWorkspaceId();
-
-    return this.templateRepository.findByKey(workspaceId, templateKey);
+    return this.templateRepository.findByKey(templateKey);
   }
 
   /**
@@ -227,10 +225,7 @@ export class MktEmailService {
    */
   private async getTrialPeriodDays(): Promise<number> {
     try {
-      const workspaceId = this.getWorkspaceId();
-
       return this.optionRepository.getNumberValue(
-        workspaceId,
         'default_trial_period_days',
         DEFAULT_TRIAL_PERIOD_DAYS,
       );

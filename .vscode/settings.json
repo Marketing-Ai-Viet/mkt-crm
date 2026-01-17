@@ -1,56 +1,13 @@
 {
-  "editor.formatOnSave": false,
-  "files.eol": "auto",
-  "[typescript]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit",
-      "source.addMissingImports": "always",
-      "source.organizeImports": "always"
+  "copilot.chat.mcp.servers": {
+    "twenty-core": {
+      "type": "remote",
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMDIwMjAyMC05ZTNiLTQ2ZDQtYTU1Ni04OGI5ZGRjMmIwMzQiLCJ1c2VySWQiOiIyMDIwMjAyMC05ZTNiLTQ2ZDQtYTU1Ni04OGI5ZGRjMmIwMzQiLCJ3b3Jrc3BhY2VJZCI6IjNiOGU2NDU4LTVmYzEtNGU2My04NTYzLTAwOGNjZGRhYTZkYiIsIndvcmtzcGFjZU1lbWJlcklkIjoiMjAyMDIwMjAtMDY4Ny00YzQxLWI3MDctZWQxYmZjYTk3MmE3IiwidXNlcldvcmtzcGFjZUlkIjoiMjAyMDIwMjAtZTEwYS00YzI3LWE5MGItYjA4YzU3YjAyZDQ0IiwidHlwZSI6IkFDQ0VTUyIsImF1dGhQcm92aWRlciI6InBhc3N3b3JkIiwiaWF0IjoxNzU0OTA0NzQxLCJleHAiOjE3NjI2ODA3NDF9.LM-wY4Y_hcGokNZ10NteLQfWpZ7jSSrYiDeuni4bn9U"
+      },
+      "enabled": true
     }
   },
-  "[javascript]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit",
-      "source.addMissingImports": "always",
-      "source.organizeImports": "always"
-    }
-  },
-  "[typescriptreact]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit",
-      "source.addMissingImports": "always",
-      "source.organizeImports": "always"
-    }
-  },
-  "[json]": {
-    "editor.formatOnSave": true
-  },
-  "javascript.format.enable": false,
-  "typescript.format.enable": false,
-  "cSpell.enableFiletypes": [
-    "!javascript",
-    "!json",
-    "!typescript",
-    "!typescriptreact",
-    "md",
-    "mdx"
-  ],
-  "cSpell.words": [
-    "twentyhq"
-  ],
-  "typescript.preferences.importModuleSpecifier": "non-relative",
-  "search.exclude": {
-    "**/.yarn": true
-  },
-  "eslint.debug": true,
-  "files.associations": {
-    ".cursorrules": "markdown"
-  },
-  "jestrunner.codeLensSelector": "**/*.{test,spec,integration-spec}.{js,jsx,ts,tsx}"
+  "copilot.chat.mcp.autoConnect": true
 }

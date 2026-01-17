@@ -95,20 +95,21 @@ import { TimelineActivitySeederService } from 'src/engine/workspace-manager/dev-
 import { prefillViews } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-views';
 import { prefillWorkspaceFavorites } from 'src/engine/workspace-manager/standard-objects-prefill-data/prefill-workspace-favorites';
 import {
-  getCompleteMktSeedsByProfile,
-  getFirstPhaseSeedsByProfile,
-} from 'src/mkt-core/seeder/factories/seed-data.factory';
-import {
   DEFAULT_SEED_PROFILE,
   SeedProfile,
   shouldSeedDemoData,
 } from 'src/mkt-core/seeder/types/seed-profile.types';
+import {
+  MKT_RECORD_SEEDS_CONFIGS,
+  MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
+} from 'src/mkt-core/workspace-config/mkt-dev-seeder-data.config';
 
 /**
  * Standard Twenty CRM demo data seeds
  * These are only seeded for development/demo profiles
  */
 const STANDARD_DEMO_SEEDS_CONFIGS = [
+  // ...MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
   {
     tableName: 'workspaceMember',
     pgColumns: WORKSPACE_MEMBER_DATA_SEED_COLUMNS,
@@ -219,6 +220,7 @@ const STANDARD_DEMO_SEEDS_CONFIGS = [
     pgColumns: TASK_TARGET_DATA_SEED_COLUMNS,
     recordSeeds: TASK_TARGET_DATA_SEEDS,
   },
+  // ...MKT_RECORD_SEEDS_CONFIGS,
 ];
 
 @Injectable()
@@ -257,32 +259,34 @@ export class DevSeederDataService {
 
     this.logger.log(`Seeding business data with profile: ${profile}`);
 
-    // Get MKT seeds based on profile
-    const mktFirstPhaseSeeds = getFirstPhaseSeedsByProfile(profile);
-    const mktSeeds = getCompleteMktSeedsByProfile(profile);
-
     // Get standard seeds based on profile
     const standardSeeds = shouldSeedDemoData(profile)
       ? STANDARD_DEMO_SEEDS_CONFIGS
       : [];
 
     // Combine seeds in correct order:
-    // 1. MKT first phase (no FK dependencies)
-    // 2. Standard seeds (workspaceMember first for FK references)
-    // 3. MKT remaining seeds
-    const allRecordSeeds = [
-      ...mktFirstPhaseSeeds,
-      ...standardSeeds,
-      ...mktSeeds.filter(
-        (seed) =>
-          !mktFirstPhaseSeeds.some((fp) => fp.tableName === seed.tableName),
-      ),
-    ];
+    // 1. MKT first phase (organization structure - no FK dependencies)
+    // 2. Standard seeds (workspaceMember needs department, org level, employment status)
+    // 3. MKT remaining seeds (demo data)
+    const allRecordSeeds = shouldSeedDemoData(profile)
+      ? [
+          ...MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
+          ...standardSeeds,
+          ...MKT_RECORD_SEEDS_CONFIGS,
+        ]
+      : [...MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES];
 
     this.logger.log(`Total seed configs: ${allRecordSeeds.length}`);
+    this.logger.log(
+      `MKT first phase seeds: ${MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES.map((s) => s.tableName).join(', ')}`,
+    );
 
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
+
+    this.logger.log(
+      `Available metadata tables: ${objectMetadataItems.map((item) => computeTableName(item.nameSingular, item.isCustom)).join(', ')}`,
+    );
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
@@ -294,8 +298,13 @@ export class DevSeederDataService {
           );
 
           if (!objectMetadata) {
+            this.logger.warn(
+              `Skipping seed for table '${recordSeedsConfig.tableName}' - no metadata found`,
+            );
             continue;
           }
+
+          this.logger.log(`Seeding table: ${recordSeedsConfig.tableName}`);
 
           await this.seedRecords({
             entityManager,

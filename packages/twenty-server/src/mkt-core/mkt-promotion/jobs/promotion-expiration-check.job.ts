@@ -75,10 +75,7 @@ export class PromotionExpirationCheckJob {
 
     // Tìm các promotion có endDate < NOW() và status = ACTIVE
     const expiredPromotions =
-      await this.promotionRepository.findExpiredActiveForWorkspace(
-        workspaceId,
-        now,
-      );
+      await this.promotionRepository.findExpiredActive(now);
 
     if (expiredPromotions.length === 0) {
       this.logger.debug(
@@ -96,7 +93,6 @@ export class PromotionExpirationCheckJob {
     for (const promotion of expiredPromotions) {
       try {
         await this.promotionRepository.updateStatus(
-          workspaceId,
           promotion.id,
           PROMOTION_STATUS.EXPIRED,
         );
@@ -129,10 +125,7 @@ export class PromotionExpirationCheckJob {
     workspaceId: string,
   ): Promise<number> {
     // Tìm các promotion có currentUsageCount >= usageLimit và status = ACTIVE
-    const promotions =
-      await this.promotionRepository.findUsageLimitReachedForWorkspace(
-        workspaceId,
-      );
+    const promotions = await this.promotionRepository.findUsageLimitReached();
 
     if (promotions.length === 0) {
       return 0;
@@ -146,7 +139,6 @@ export class PromotionExpirationCheckJob {
     for (const promotion of promotions) {
       try {
         await this.promotionRepository.updateStatus(
-          workspaceId,
           promotion.id,
           PROMOTION_STATUS.EXPIRED,
         );

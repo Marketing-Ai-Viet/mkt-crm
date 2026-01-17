@@ -18,6 +18,7 @@ import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integratio
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration';
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
+import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
 import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
@@ -27,6 +28,7 @@ import {
   MktOrderHistoryRepository,
 } from 'src/mkt-core/order/repositories';
 import { IdempotencyModule } from 'src/mkt-core/common/idempotency';
+import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 
 import {
   // Core Services
@@ -58,6 +60,7 @@ import {
   MktOrderCustomEventListener,
   LicenseLifecycleListener,
 } from './listeners';
+import { ORDER_MODULE_BLOCK_HOOKS } from './hooks';
 
 import {
   CreateOrderSaga,
@@ -110,8 +113,13 @@ import {
     MktContractModule,
     CustomerModule,
     IdempotencyModule.register(), // Idempotency protection for order operations
+    MktRbacEnterpriseGradeModule, // RBAC authorization for order operations
+    TokenModule,
   ],
   providers: [
+    // Block Hooks - Disable auto-generated GraphQL operations
+    ...ORDER_MODULE_BLOCK_HOOKS,
+
     // Event Listeners
     MktOrderCustomEventListener,
     LicenseLifecycleListener,

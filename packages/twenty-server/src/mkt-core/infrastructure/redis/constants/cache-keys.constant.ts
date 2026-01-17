@@ -299,6 +299,60 @@ export const LOCK_CACHE_PREFIX = {
 } as const;
 
 // ============================================
+// RBAC DOMAIN
+// ============================================
+
+export const RBAC_CACHE_PREFIX = {
+  /** Permission template: mkt:rbac-seeder:permission-template:{templateId} */
+  PERMISSION_TEMPLATE: 'mkt:rbac-seeder:permission-template',
+
+  /** User permissions: mkt:rbac-seeder:user-permissions:{userId} */
+  USER_PERMISSIONS: 'mkt:rbac-seeder:user-permissions',
+
+  /** Policy: mkt:rbac-seeder:policy:{policyId} */
+  POLICY: 'mkt:rbac-seeder:policy',
+
+  /** Hierarchy: mkt:rbac-seeder:hierarchy:{userId} */
+  HIERARCHY: 'mkt:rbac-seeder:hierarchy',
+
+  /** Validation result: mkt:rbac-seeder:validation:{userId}:{action}:{resource} */
+  VALIDATION: 'mkt:rbac-seeder:validation',
+
+  /** Audit log: mkt:rbac-seeder:audit-log:{logId} */
+  AUDIT_LOG: 'mkt:rbac-seeder:audit-log',
+
+  /** Data access policy: mkt:rbac-seeder:data-access-policy:{policyId} */
+  DATA_ACCESS_POLICY: 'mkt:rbac-seeder:data-access-policy',
+
+  /** User context: mkt:rbac-seeder:user-context:{userId} */
+  USER_CONTEXT: 'mkt:rbac-seeder:user-context',
+} as const;
+
+// ============================================
+// PUB/SUB CHANNELS
+// ============================================
+
+export const PUBSUB_CHANNELS = {
+  /** RBAC policy invalidation: mkt:pubsub:rbac:policy:invalidation */
+  RBAC_POLICY_INVALIDATION: 'mkt:pubsub:rbac:policy:invalidation',
+
+  /** Cache invalidation: mkt:pubsub:cache:invalidation */
+  CACHE_INVALIDATION: 'mkt:pubsub:cache:invalidation',
+
+  /** Department hierarchy changed: mkt:pubsub:department:hierarchy */
+  DEPARTMENT_HIERARCHY: 'mkt:pubsub:department:hierarchy',
+
+  /** License status changed: mkt:pubsub:license:status */
+  LICENSE_STATUS: 'mkt:pubsub:license:status',
+
+  /** Order status changed: mkt:pubsub:order:status */
+  ORDER_STATUS: 'mkt:pubsub:order:status',
+} as const;
+
+export type PubSubChannel =
+  (typeof PUBSUB_CHANNELS)[keyof typeof PUBSUB_CHANNELS];
+
+// ============================================
 // COMBINED EXPORT
 // ============================================
 
@@ -323,6 +377,7 @@ export const MKT_CACHE_PREFIX = {
   TAG_INDEX: TAG_INDEX_CACHE_PREFIX,
   SYNC_LOCK: SYNC_LOCK_CACHE_PREFIX,
   LOCK: LOCK_CACHE_PREFIX,
+  RBAC: RBAC_CACHE_PREFIX,
 } as const;
 
 /**
@@ -342,4 +397,5 @@ export type MktCachePrefix =
   | (typeof KPI_CACHE_PREFIX)[keyof typeof KPI_CACHE_PREFIX]
   | (typeof PROMOTION_CACHE_PREFIX)[keyof typeof PROMOTION_CACHE_PREFIX]
   | (typeof COMBO_CACHE_PREFIX)[keyof typeof COMBO_CACHE_PREFIX]
-  | (typeof EXTERNAL_PRODUCT_CACHE_PREFIX)[keyof typeof EXTERNAL_PRODUCT_CACHE_PREFIX];
+  | (typeof EXTERNAL_PRODUCT_CACHE_PREFIX)[keyof typeof EXTERNAL_PRODUCT_CACHE_PREFIX]
+  | (typeof RBAC_CACHE_PREFIX)[keyof typeof RBAC_CACHE_PREFIX];

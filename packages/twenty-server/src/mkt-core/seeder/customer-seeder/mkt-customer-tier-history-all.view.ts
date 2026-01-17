@@ -11,7 +11,7 @@ export const mktCustomerTierHistoriesAllView = (
   );
 
   if (!itemObjectMetadata) {
-    return null;
+    throw new Error('Customer Tier History object metadata not found');
   }
 
   return {

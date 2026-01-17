@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { IsNull, QueryRunner } from 'typeorm';
+import { IsNull } from 'typeorm';
 
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { PROMOTION_LOG_CONTEXT } from 'src/mkt-core/mkt-promotion/constants';
 import { PaginatedResult } from 'src/mkt-core/mkt-promotion/types';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities';
@@ -23,48 +25,35 @@ export type CreatePromotionUsageData = {
 
 /**
  * Repository for MktPromotionUsageWorkspaceEntity
- * Handles database operations for promotion usage tracking
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ * Handles database operations for promotion usage tracking.
  */
 @Injectable()
-export class MktPromotionUsageRepository {
-  private readonly logger = new Logger(PROMOTION_LOG_CONTEXT);
-
+export class MktPromotionUsageRepository extends BaseWorkspaceRepository<MktPromotionUsageWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  private async getRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktPromotionUsageWorkspaceEntity>(
-      workspaceId,
-      'mktPromotionUsage',
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktPromotionUsageWorkspaceEntity,
+      `${PROMOTION_LOG_CONTEXT}:Usage`,
     );
   }
 
-  /**
-   * Find usage by ID
-   */
-  async findById(
-    workspaceId: string,
-    usageId: string,
-  ): Promise<MktPromotionUsageWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: {
-        id: usageId,
-        deletedAt: IsNull(),
-      },
-    });
-  }
+  // ============================================
+  // FIND OPERATIONS
+  // ============================================
 
   /**
    * Find all usages for a promotion
    */
   async findByPromotionId(
-    workspaceId: string,
     promotionId: string,
   ): Promise<MktPromotionUsageWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {
@@ -81,11 +70,10 @@ export class MktPromotionUsageRepository {
    * Find usages by promotion ID with pagination
    */
   async findByPromotionIdPaginated(
-    workspaceId: string,
     promotionId: string,
     options: { limit: number; offset: number },
   ): Promise<PaginatedResult<MktPromotionUsageWorkspaceEntity>> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const queryBuilder = repository
       .createQueryBuilder('usage')
@@ -111,10 +99,9 @@ export class MktPromotionUsageRepository {
    * Find usages by customer ID
    */
   async findByCustomerId(
-    workspaceId: string,
     customerId: string,
   ): Promise<MktPromotionUsageWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {
@@ -131,10 +118,9 @@ export class MktPromotionUsageRepository {
    * Find usages by order ID
    */
   async findByOrderId(
-    workspaceId: string,
     orderId: string,
   ): Promise<MktPromotionUsageWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {
@@ -151,10 +137,9 @@ export class MktPromotionUsageRepository {
    * Find usages by coupon ID
    */
   async findByCouponId(
-    workspaceId: string,
     couponId: string,
   ): Promise<MktPromotionUsageWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: {
@@ -168,13 +153,34 @@ export class MktPromotionUsageRepository {
   }
 
   /**
+   * Find usages by multiple promotion IDs (batch operation)
+   */
+  async findByPromotionIds(
+    promotionIds: string[],
+  ): Promise<MktPromotionUsageWorkspaceEntity[]> {
+    if (promotionIds.length === 0) {
+      return [];
+    }
+
+    const repository = await this.getRepository();
+
+    return repository
+      .createQueryBuilder('usage')
+      .where('usage.promotionId IN (:...promotionIds)', { promotionIds })
+      .andWhere('usage.deletedAt IS NULL')
+      .orderBy('usage.appliedAt', 'DESC')
+      .getMany();
+  }
+
+  // ============================================
+  // COUNT OPERATIONS
+  // ============================================
+
+  /**
    * Count usages for a promotion
    */
-  async countByPromotionId(
-    workspaceId: string,
-    promotionId: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByPromotionId(promotionId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
       where: {
@@ -188,11 +194,10 @@ export class MktPromotionUsageRepository {
    * Count usages for a customer on a specific promotion
    */
   async countByPromotionAndCustomer(
-    workspaceId: string,
     promotionId: string,
     customerId: string,
   ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.count({
       where: {
@@ -206,11 +211,8 @@ export class MktPromotionUsageRepository {
   /**
    * Count usages for a coupon
    */
-  async countByCouponId(
-    workspaceId: string,
-    couponId: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async countByCouponId(couponId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     return repository.count({
       where: {
@@ -220,25 +222,21 @@ export class MktPromotionUsageRepository {
     });
   }
 
+  // ============================================
+  // CREATE OPERATIONS
+  // ============================================
+
   /**
    * Create a new usage record
    */
-  async create(
-    workspaceId: string,
+  async createUsage(
     data: CreatePromotionUsageData,
-    queryRunner?: QueryRunner,
   ): Promise<MktPromotionUsageWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const usage = repository.create(data);
 
-    let savedUsage: MktPromotionUsageWorkspaceEntity;
-
-    if (queryRunner) {
-      savedUsage = await queryRunner.manager.save(usage);
-    } else {
-      savedUsage = await repository.save(usage);
-    }
+    const savedUsage = await repository.save(usage);
 
     this.logger.log(
       `Created usage record ${savedUsage.id} for promotion ${data.promotionId}`,
@@ -247,14 +245,56 @@ export class MktPromotionUsageRepository {
     return savedUsage;
   }
 
+  // ============================================
+  // DELETE OPERATIONS
+  // ============================================
+
+  /**
+   * Soft delete usage record
+   */
+  async softDeleteUsage(id: string): Promise<void> {
+    await this.softDelete(id);
+
+    this.logger.log(`Soft deleted usage record ${id}`);
+  }
+
+  /**
+   * Delete all usages for an order (when order is cancelled)
+   */
+  async deleteByOrderId(orderId: string): Promise<void> {
+    await this.softDeleteWhere({ orderId });
+
+    this.logger.log(`Deleted all usage records for order ${orderId}`);
+  }
+
+  // ============================================
+  // CHECK OPERATIONS
+  // ============================================
+
+  /**
+   * Check if customer has used a promotion
+   */
+  async hasCustomerUsedPromotion(
+    promotionId: string,
+    customerId: string,
+  ): Promise<boolean> {
+    const count = await this.countByPromotionAndCustomer(
+      promotionId,
+      customerId,
+    );
+
+    return count > 0;
+  }
+
+  // ============================================
+  // AGGREGATION OPERATIONS
+  // ============================================
+
   /**
    * Get total discount amount for a promotion
    */
-  async getTotalDiscountByPromotionId(
-    workspaceId: string,
-    promotionId: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async getTotalDiscountByPromotionId(promotionId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('usage')
@@ -269,11 +309,8 @@ export class MktPromotionUsageRepository {
   /**
    * Get total discount amount for a customer
    */
-  async getTotalDiscountByCustomerId(
-    workspaceId: string,
-    customerId: string,
-  ): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
+  async getTotalDiscountByCustomerId(customerId: string): Promise<number> {
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('usage')
@@ -289,7 +326,6 @@ export class MktPromotionUsageRepository {
    * Get usage statistics for a promotion in a date range
    */
   async getStatisticsByDateRange(
-    workspaceId: string,
     promotionId: string,
     startDate: Date,
     endDate: Date,
@@ -299,7 +335,7 @@ export class MktPromotionUsageRepository {
     totalOriginalAmount: number;
     averageDiscount: number;
   }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('usage')
@@ -327,13 +363,12 @@ export class MktPromotionUsageRepository {
    * Get top customers by discount amount for a promotion
    */
   async getTopCustomersByDiscount(
-    workspaceId: string,
     promotionId: string,
     limit: number,
   ): Promise<
     Array<{ customerId: string; totalDiscount: number; usageCount: number }>
   > {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('usage')
@@ -358,14 +393,13 @@ export class MktPromotionUsageRepository {
    * Get daily usage statistics for a promotion
    */
   async getDailyStatistics(
-    workspaceId: string,
     promotionId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<
     Array<{ date: string; usageCount: number; totalDiscount: number }>
   > {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const results = await repository
       .createQueryBuilder('usage')
@@ -387,77 +421,5 @@ export class MktPromotionUsageRepository {
       usageCount: parseInt(row.usageCount, 10),
       totalDiscount: parseFloat(row.totalDiscount),
     }));
-  }
-
-  /**
-   * Find usages by multiple promotion IDs (batch operation)
-   */
-  async findByPromotionIds(
-    workspaceId: string,
-    promotionIds: string[],
-  ): Promise<MktPromotionUsageWorkspaceEntity[]> {
-    if (promotionIds.length === 0) {
-      return [];
-    }
-
-    const repository = await this.getRepository(workspaceId);
-
-    return repository
-      .createQueryBuilder('usage')
-      .where('usage.promotionId IN (:...promotionIds)', { promotionIds })
-      .andWhere('usage.deletedAt IS NULL')
-      .orderBy('usage.appliedAt', 'DESC')
-      .getMany();
-  }
-
-  /**
-   * Check if customer has used a promotion
-   */
-  async hasCustomerUsedPromotion(
-    workspaceId: string,
-    promotionId: string,
-    customerId: string,
-  ): Promise<boolean> {
-    const count = await this.countByPromotionAndCustomer(
-      workspaceId,
-      promotionId,
-      customerId,
-    );
-
-    return count > 0;
-  }
-
-  /**
-   * Soft delete usage record
-   */
-  async softDelete(
-    workspaceId: string,
-    id: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktPromotionUsageWorkspaceEntity', id);
-
-    this.logger.log(`Soft deleted usage record ${id}`);
-  }
-
-  /**
-   * Delete all usages for an order (when order is cancelled)
-   */
-  async deleteByOrderId(
-    workspaceId: string,
-    orderId: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
-
-    await manager.softDelete('MktPromotionUsageWorkspaceEntity', {
-      orderId,
-    });
-
-    this.logger.log(`Deleted all usage records for order ${orderId}`);
   }
 }

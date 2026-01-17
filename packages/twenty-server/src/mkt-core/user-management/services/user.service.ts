@@ -299,7 +299,7 @@ export class UserService {
     email: string,
     input: CreateUserInput,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
-    return this.workspaceMemberService.createWorkspaceMember(workspaceId, {
+    return this.workspaceMemberService.createWorkspaceMember({
       name: {
         firstName: input.firstName ?? '',
         lastName: input.lastName ?? '',
@@ -314,6 +314,8 @@ export class UserService {
       timeZone: 'SYSTEM',
       dateFormat: 'SYSTEM',
       timeFormat: 'SYSTEM',
+      startDate: input.startDate,
+      endDate: input.endDate ?? null,
       teamId: input.teamId ?? null,
       status: input.status ?? '',
       memberType: input.memberType ?? '',

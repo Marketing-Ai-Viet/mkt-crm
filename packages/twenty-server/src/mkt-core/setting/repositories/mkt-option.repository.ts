@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { DeepPartial } from 'typeorm';
+
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 import { safeJsonParse } from 'src/mkt-core/utils/json.util';
 
@@ -10,33 +13,24 @@ const LOG_CONTEXT = 'MktOption:Repository';
 /**
  * MktOptionRepository - Data access layer for Option entity
  *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
+ *
  * Responsibilities:
  * - Database operations for MktOptionWorkspaceEntity
  * - System configuration management
  * - Thread-safe workspace context handling
  */
 @Injectable()
-export class MktOptionRepository {
-  private readonly logger = new Logger(LOG_CONTEXT);
-
+export class MktOptionRepository extends BaseWorkspaceRepository<MktOptionWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktOptionWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktOptionWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      LOG_CONTEXT,
     );
   }
 
@@ -45,47 +39,20 @@ export class MktOptionRepository {
   // ============================================
 
   /**
-   * Find option by ID
-   */
-  async findById(
-    workspaceId: string,
-    optionId: string,
-  ): Promise<MktOptionWorkspaceEntity | null> {
-    this.logger.debug(`Finding option by ID: ${optionId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { id: optionId },
-    });
-  }
-
-  /**
    * Find option by key
    * Primary lookup method for configuration values
    */
-  async findByKey(
-    workspaceId: string,
-    key: string,
-  ): Promise<MktOptionWorkspaceEntity | null> {
+  async findByKey(key: string): Promise<MktOptionWorkspaceEntity | null> {
     this.logger.debug(`Finding option by key: ${key}`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { key },
-    });
+    return this.findOne({ key });
   }
 
   /**
    * Get value by key with optional default
    */
-  async getValue(
-    workspaceId: string,
-    key: string,
-    defaultValue?: string,
-  ): Promise<string | null> {
-    const option = await this.findByKey(workspaceId, key);
+  async getValue(key: string, defaultValue?: string): Promise<string | null> {
+    const option = await this.findByKey(key);
 
     return option?.value ?? defaultValue ?? null;
   }
@@ -93,12 +60,8 @@ export class MktOptionRepository {
   /**
    * Get value as number
    */
-  async getNumberValue(
-    workspaceId: string,
-    key: string,
-    defaultValue?: number,
-  ): Promise<number> {
-    const value = await this.getValue(workspaceId, key);
+  async getNumberValue(key: string, defaultValue?: number): Promise<number> {
+    const value = await this.getValue(key);
 
     if (value === null) {
       return defaultValue ?? 0;
@@ -112,12 +75,8 @@ export class MktOptionRepository {
   /**
    * Get value as boolean
    */
-  async getBooleanValue(
-    workspaceId: string,
-    key: string,
-    defaultValue = false,
-  ): Promise<boolean> {
-    const value = await this.getValue(workspaceId, key);
+  async getBooleanValue(key: string, defaultValue = false): Promise<boolean> {
+    const value = await this.getValue(key);
 
     if (value === null) {
       return defaultValue;
@@ -129,12 +88,8 @@ export class MktOptionRepository {
   /**
    * Get value as JSON object
    */
-  async getJsonValue<T>(
-    workspaceId: string,
-    key: string,
-    defaultValue?: T,
-  ): Promise<T | null> {
-    const value = await this.getValue(workspaceId, key);
+  async getJsonValue<T>(key: string, defaultValue?: T): Promise<T | null> {
+    const value = await this.getValue(key);
 
     if (value === null) {
       return defaultValue ?? null;
@@ -152,9 +107,11 @@ export class MktOptionRepository {
   }
 
   /**
-   * Find all options
+   * Find all options with ordering
    */
-  async findAll(workspaceId: string): Promise<MktOptionWorkspaceEntity[]> {
+  async findAllOrdered(
+    workspaceId: string,
+  ): Promise<MktOptionWorkspaceEntity[]> {
     const repository = await this.getRepository(workspaceId);
 
     return repository.find({
@@ -185,31 +142,15 @@ export class MktOptionRepository {
   /**
    * Create new option
    */
-  async create(
-    workspaceId: string,
-    data: Partial<MktOptionWorkspaceEntity>,
+  async createEntity(
+    data: DeepPartial<MktOptionWorkspaceEntity>,
   ): Promise<MktOptionWorkspaceEntity> {
     this.logger.log(`Creating option: ${data.key}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const option = repository.create(data);
 
     return repository.save(option);
-  }
-
-  /**
-   * Update option by ID
-   */
-  async update(
-    workspaceId: string,
-    optionId: string,
-    data: Partial<MktOptionWorkspaceEntity>,
-  ): Promise<void> {
-    this.logger.log(`Updating option: ${optionId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(optionId, data);
   }
 
   /**
@@ -217,20 +158,19 @@ export class MktOptionRepository {
    * Creates if not exists, updates if exists
    */
   async setValue(
-    workspaceId: string,
     key: string,
     value: string,
     options?: { name?: string; description?: string },
   ): Promise<MktOptionWorkspaceEntity> {
-    const existing = await this.findByKey(workspaceId, key);
+    const existing = await this.findByKey(key);
 
     if (existing) {
-      await this.update(workspaceId, existing.id, { value });
+      await this.update(existing.id, { value });
 
       return { ...existing, value } as MktOptionWorkspaceEntity;
     }
 
-    return this.create(workspaceId, {
+    return this.createEntity({
       key,
       value,
       name: options?.name ?? key,
@@ -242,11 +182,10 @@ export class MktOptionRepository {
    * Bulk set options
    */
   async setValues(
-    workspaceId: string,
     options: Array<{ key: string; value: string; name?: string }>,
   ): Promise<void> {
     for (const option of options) {
-      await this.setValue(workspaceId, option.key, option.value, {
+      await this.setValue(option.key, option.value, {
         name: option.name,
       });
     }
@@ -267,17 +206,6 @@ export class MktOptionRepository {
     await repository.delete({ key });
   }
 
-  /**
-   * Soft delete option
-   */
-  async softDelete(workspaceId: string, optionId: string): Promise<void> {
-    this.logger.warn(`Soft deleting option: ${optionId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.softDelete(optionId);
-  }
-
   // ============================================
   // EXISTENCE CHECKS
   // ============================================
@@ -285,13 +213,7 @@ export class MktOptionRepository {
   /**
    * Check if option exists by key
    */
-  async exists(workspaceId: string, key: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { key },
-    });
-
-    return count > 0;
+  async existsByKey(key: string): Promise<boolean> {
+    return this.existsWhere({ key });
   }
 }

@@ -111,7 +111,7 @@ export class SInvoiceIntegrationService {
         return {} as SInvoiceType;
       }
 
-      const sInvoice = await this.findSInvoiceByOrderId(workspaceId, orderId);
+      const sInvoice = await this.findSInvoiceByOrderId(orderId);
 
       if (!sInvoice) {
         this.logger.warn(
@@ -157,10 +157,7 @@ export class SInvoiceIntegrationService {
     );
 
     // Fetch order và items
-    const { order, items } = await this.fetchOrderWithItems(
-      workspaceId,
-      orderId,
-    );
+    const { order, items } = await this.fetchOrderWithItems(orderId);
 
     if (!order) {
       this.logger.warn(`[S-INVOICE SERVICE] Order not found: ${orderId}`);
@@ -243,10 +240,7 @@ export class SInvoiceIntegrationService {
         return;
       }
 
-      const existingSInvoice = await this.findSInvoiceById(
-        workspaceId,
-        sInvoiceId,
-      );
+      const existingSInvoice = await this.findSInvoiceById(sInvoiceId);
 
       if (!existingSInvoice) {
         this.logger.warn(
@@ -256,12 +250,8 @@ export class SInvoiceIntegrationService {
         return;
       }
 
-      await this.updateSInvoiceRecord(workspaceId, sInvoiceId, sInvoiceUpdate);
-      await this.updateOrderSInvoiceStatus(
-        workspaceId,
-        existingSInvoice,
-        sInvoiceUpdate,
-      );
+      await this.updateSInvoiceRecord(sInvoiceId, sInvoiceUpdate);
+      await this.updateOrderSInvoiceStatus(existingSInvoice, sInvoiceUpdate);
 
       this.logger.log(
         `[S-INVOICE SERVICE] Successfully saved S-Invoice with ID: ${sInvoiceId}`,
@@ -341,7 +331,7 @@ export class SInvoiceIntegrationService {
         return this.buildErrorResponse(400, 'Workspace ID not found');
       }
 
-      const sInvoice = await this.findSInvoiceById(workspaceId, invoiceId);
+      const sInvoice = await this.findSInvoiceById(invoiceId);
 
       if (!sInvoice) {
         return this.buildErrorResponse(404, 'Invoice not found');
@@ -899,7 +889,6 @@ export class SInvoiceIntegrationService {
    * Find SInvoice by order ID with full relations
    */
   private async findSInvoiceByOrderId(
-    _workspaceId: string,
     orderId: string,
   ): Promise<MktSInvoiceWorkspaceEntity | null> {
     return this.sInvoiceRepository.findByOrderIdWithRelations(orderId);
@@ -909,28 +898,21 @@ export class SInvoiceIntegrationService {
    * Find SInvoice by ID
    */
   private async findSInvoiceById(
-    _workspaceId: string,
     sInvoiceId: string,
   ): Promise<MktSInvoiceWorkspaceEntity | null> {
-    return this.sInvoiceRepository.findById(sInvoiceId);
+    return this.sInvoiceRepository.findByIdWithContext(sInvoiceId);
   }
 
   /**
    * Fetch order với order items từ database
    * Sử dụng MktOrderRepository và MktOrderItemRepository
    */
-  private async fetchOrderWithItems(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<{
+  private async fetchOrderWithItems(orderId: string): Promise<{
     order: MktOrderWorkspaceEntity | null;
     items: MktOrderItemWorkspaceEntity[];
   }> {
-    const order = await this.orderRepository.findById(workspaceId, orderId);
-    const items = await this.orderItemRepository.findByOrderId(
-      workspaceId,
-      orderId,
-    );
+    const order = await this.orderRepository.findByIdWithOptions(orderId);
+    const items = await this.orderItemRepository.findByOrderId(orderId);
 
     return { order, items };
   }
@@ -939,7 +921,6 @@ export class SInvoiceIntegrationService {
    * Update SInvoice record
    */
   private async updateSInvoiceRecord(
-    _workspaceId: string,
     sInvoiceId: string,
     sInvoiceUpdate: SInvoiceUpdate,
   ): Promise<void> {
@@ -955,7 +936,10 @@ export class SInvoiceIntegrationService {
       errorData: sInvoiceUpdate.errorData,
     };
 
-    await this.sInvoiceRepository.update(sInvoiceId, updateData);
+    await this.sInvoiceRepository.updateWithContext(
+      sInvoiceId,
+      updateData as never,
+    );
 
     this.logger.log(
       `[S-INVOICE SERVICE] Updated data: ${JSON.stringify(updateData)}`,
@@ -966,7 +950,6 @@ export class SInvoiceIntegrationService {
    * Update order S-Invoice status
    */
   private async updateOrderSInvoiceStatus(
-    workspaceId: string,
     existingSInvoice: MktSInvoiceWorkspaceEntity,
     sInvoiceUpdate: SInvoiceUpdate,
   ): Promise<void> {
@@ -974,14 +957,10 @@ export class SInvoiceIntegrationService {
       return;
     }
 
-    await this.orderRepository.update(
-      workspaceId,
-      existingSInvoice.mktOrderId,
-      {
-        sInvoiceStatus:
-          sInvoiceUpdate.orderSInvoiceStatus as ORDER_SINVOICE_STATUS,
-      },
-    );
+    await this.orderRepository.updateOrder(existingSInvoice.mktOrderId, {
+      sInvoiceStatus:
+        sInvoiceUpdate.orderSInvoiceStatus as ORDER_SINVOICE_STATUS,
+    });
 
     this.logger.log(
       `[S-INVOICE SERVICE] Updated order sInvoiceStatus to ${sInvoiceUpdate.orderSInvoiceStatus} for order ID: ${existingSInvoice.mktOrderId}`,

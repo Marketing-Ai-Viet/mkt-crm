@@ -7,7 +7,6 @@ import {
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import {
   ACCOUNT_PROVIDER,
   LINKED_ACCOUNT_STATUS,
@@ -39,19 +38,13 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 export class MktCustomerAccountService {
   private readonly logger = new Logger(MktCustomerAccountService.name);
 
-  constructor(
-    private readonly customerRepository: MktCustomerRepository,
-    private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
-  ) {}
+  constructor(private readonly customerRepository: MktCustomerRepository) {}
 
   /**
    * Link an external account to a customer
    * Auto-sets as primary if it's the first account of that provider
    */
-  async linkAccount(
-    input: LinkAccountInput,
-    workspaceId?: string,
-  ): Promise<LinkedAccount> {
+  async linkAccount(input: LinkAccountInput): Promise<LinkedAccount> {
     const {
       customerId,
       provider,
@@ -67,10 +60,7 @@ export class MktCustomerAccountService {
       `Linking ${provider} account ${externalId} to customer ${customerId}`,
     );
 
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       throw new NotFoundException(
@@ -123,11 +113,9 @@ export class MktCustomerAccountService {
     existingAccounts.push(newAccount);
 
     // Primary is tracked via isPrimary field in linkedAccounts array
-    await this.customerRepository.update(
-      customerId,
-      { linkedAccounts: existingAccounts },
-      workspaceId,
-    );
+    await this.customerRepository.updateCustomer(customerId, {
+      linkedAccounts: existingAccounts,
+    });
 
     this.logger.log(
       `Successfully linked ${provider} account ${externalId} to customer ${customerId}`,
@@ -139,29 +127,23 @@ export class MktCustomerAccountService {
   /**
    * Legacy method for MKT Server accounts - delegates to linkAccount
    */
-  async linkMktAccount(
-    input: {
-      customerId: string;
-      mktAccountId: string;
-      mktAccountEmail?: string;
-      mktAccountName?: string;
-      isPrimary?: boolean;
-      notes?: string;
-    },
-    workspaceId?: string,
-  ): Promise<LinkedAccount> {
-    return this.linkAccount(
-      {
-        customerId: input.customerId,
-        provider: ACCOUNT_PROVIDER.MKT_SERVER,
-        externalId: input.mktAccountId,
-        email: input.mktAccountEmail,
-        displayName: input.mktAccountName,
-        isPrimary: input.isPrimary,
-        notes: input.notes,
-      },
-      workspaceId,
-    );
+  async linkMktAccount(input: {
+    customerId: string;
+    mktAccountId: string;
+    mktAccountEmail?: string;
+    mktAccountName?: string;
+    isPrimary?: boolean;
+    notes?: string;
+  }): Promise<LinkedAccount> {
+    return this.linkAccount({
+      customerId: input.customerId,
+      provider: ACCOUNT_PROVIDER.MKT_SERVER,
+      externalId: input.mktAccountId,
+      email: input.mktAccountEmail,
+      displayName: input.mktAccountName,
+      isPrimary: input.isPrimary,
+      notes: input.notes,
+    });
   }
 
   /**
@@ -170,16 +152,12 @@ export class MktCustomerAccountService {
   async setPrimaryAccount(
     customerId: string,
     accountId: string,
-    workspaceId?: string,
   ): Promise<void> {
     this.logger.log(
       `Setting primary account ${accountId} for customer ${customerId}`,
     );
 
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       throw new NotFoundException(
@@ -204,11 +182,9 @@ export class MktCustomerAccountService {
     }
 
     // Primary is tracked via isPrimary field in linkedAccounts array
-    await this.customerRepository.update(
-      customerId,
-      { linkedAccounts: accounts },
-      workspaceId,
-    );
+    await this.customerRepository.updateCustomer(customerId, {
+      linkedAccounts: accounts,
+    });
 
     this.logger.log(`Primary account set successfully`);
   }
@@ -219,12 +195,8 @@ export class MktCustomerAccountService {
   async getPrimaryAccount(
     customerId: string,
     provider?: AccountProvider,
-    workspaceId?: string,
   ): Promise<LinkedAccount | null> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) return null;
 
@@ -253,12 +225,8 @@ export class MktCustomerAccountService {
   async getCustomerAccounts(
     customerId: string,
     provider?: AccountProvider,
-    workspaceId?: string,
   ): Promise<LinkedAccount[]> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     const accounts = customer?.linkedAccounts ?? [];
 
@@ -276,12 +244,10 @@ export class MktCustomerAccountService {
   async findCustomerByExternalId(
     provider: AccountProvider,
     externalId: string,
-    workspaceId?: string,
   ): Promise<string | null> {
     const customer = await this.customerRepository.findByLinkedAccount(
       provider,
       externalId,
-      workspaceId,
     );
 
     return customer?.id ?? null;
@@ -292,31 +258,22 @@ export class MktCustomerAccountService {
    */
   async findCustomerByMktAccountId(
     mktAccountId: string,
-    workspaceId?: string,
   ): Promise<string | null> {
     return this.findCustomerByExternalId(
       ACCOUNT_PROVIDER.MKT_SERVER,
       mktAccountId,
-      workspaceId,
     );
   }
 
   /**
    * Unlink an account from customer
    */
-  async unlinkAccount(
-    customerId: string,
-    accountId: string,
-    workspaceId?: string,
-  ): Promise<void> {
+  async unlinkAccount(customerId: string, accountId: string): Promise<void> {
     this.logger.log(
       `Unlinking account ${accountId} from customer ${customerId}`,
     );
 
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       throw new NotFoundException(
@@ -351,11 +308,9 @@ export class MktCustomerAccountService {
     }
 
     // Primary is tracked via isPrimary field in linkedAccounts array
-    await this.customerRepository.update(
-      customerId,
-      { linkedAccounts: accounts },
-      workspaceId,
-    );
+    await this.customerRepository.updateCustomer(customerId, {
+      linkedAccounts: accounts,
+    });
 
     this.logger.log(`Successfully unlinked account ${accountId}`);
   }
@@ -366,12 +321,8 @@ export class MktCustomerAccountService {
   async unlinkMktAccount(
     customerId: string,
     mktAccountId: string,
-    workspaceId?: string,
   ): Promise<void> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       throw new NotFoundException(
@@ -392,21 +343,14 @@ export class MktCustomerAccountService {
       );
     }
 
-    return this.unlinkAccount(customerId, account.id, workspaceId);
+    return this.unlinkAccount(customerId, account.id);
   }
 
   /**
    * Update last sync timestamp for an account
    */
-  async updateLastSyncAt(
-    customerId: string,
-    accountId: string,
-    workspaceId?: string,
-  ): Promise<void> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+  async updateLastSyncAt(customerId: string, accountId: string): Promise<void> {
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) return;
 
@@ -416,11 +360,9 @@ export class MktCustomerAccountService {
     if (account) {
       account.lastSyncAt = DateTimeUtils.toISO(DateTimeUtils.now());
 
-      await this.customerRepository.update(
-        customerId,
-        { linkedAccounts: accounts },
-        workspaceId,
-      );
+      await this.customerRepository.updateCustomer(customerId, {
+        linkedAccounts: accounts,
+      });
     }
   }
 
@@ -431,12 +373,8 @@ export class MktCustomerAccountService {
     customerId: string,
     accountId: string,
     status: LinkedAccountStatus,
-    workspaceId?: string,
   ): Promise<void> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) return;
 
@@ -446,11 +384,9 @@ export class MktCustomerAccountService {
     if (account) {
       account.status = status;
 
-      await this.customerRepository.update(
-        customerId,
-        { linkedAccounts: accounts },
-        workspaceId,
-      );
+      await this.customerRepository.updateCustomer(customerId, {
+        linkedAccounts: accounts,
+      });
     }
   }
 
@@ -466,12 +402,8 @@ export class MktCustomerAccountService {
       avatarUrl?: string;
       metadata?: LinkedAccountMetadata;
     },
-    workspaceId?: string,
   ): Promise<void> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       this.logger.warn(`Customer ${customerId} not found for sync`);
@@ -496,10 +428,8 @@ export class MktCustomerAccountService {
     }
     account.lastSyncAt = DateTimeUtils.toISO(DateTimeUtils.now());
 
-    await this.customerRepository.update(
-      customerId,
-      { linkedAccounts: accounts },
-      workspaceId,
-    );
+    await this.customerRepository.updateCustomer(customerId, {
+      linkedAccounts: accounts,
+    });
   }
 }

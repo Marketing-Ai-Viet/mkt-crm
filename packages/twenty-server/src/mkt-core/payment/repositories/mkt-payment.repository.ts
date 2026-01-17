@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, QueryRunner } from 'typeorm';
+import { FindOptionsWhere } from 'typeorm';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MKT_PAYMENT_LOG_CONTEXT,
   MKT_PAYMENT_LOG_MESSAGES,
@@ -16,10 +17,11 @@ import {
   UpdatePaymentData,
 } from 'src/mkt-core/payment/types/repository.types';
 import { PaymentStatus } from 'src/mkt-core/payment/types';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktPaymentRepository - Data access layer for Payment entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktPayment entity
@@ -31,28 +33,33 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * - Validation (handled by Service layer)
  */
 @Injectable()
-export class MktPaymentRepository {
-  private readonly logger = new Logger(`${MKT_PAYMENT_LOG_CONTEXT}:Repository`);
-
+export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktPaymentWorkspaceEntity,
+      `${MKT_PAYMENT_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find payment by ID
+   * Find payment by ID with options (logging included)
    */
-  async findById(
-    workspaceId: string,
+  async findByIdWithOptions(
     paymentId: string,
     options?: FindPaymentOptions,
   ): Promise<MktPaymentWorkspaceEntity | null> {
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.FIND_BY_ID_START(paymentId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const payment = await repository.findOne({
       where: { id: paymentId },
@@ -76,10 +83,9 @@ export class MktPaymentRepository {
    * Find payment by ID with default relations
    */
   async findByIdWithRelations(
-    workspaceId: string,
     paymentId: string,
   ): Promise<MktPaymentWorkspaceEntity | null> {
-    return this.findById(workspaceId, paymentId, {
+    return this.findByIdWithOptions(paymentId, {
       relations: [...DEFAULT_PAYMENT_RELATIONS],
     });
   }
@@ -88,13 +94,12 @@ export class MktPaymentRepository {
    * Find payments by order ID
    */
   async findByOrderId(
-    workspaceId: string,
     orderId: string,
     options?: FindPaymentOptions,
   ): Promise<MktPaymentWorkspaceEntity[]> {
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.FIND_BY_ORDER_START(orderId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const payments = await repository.find({
       where: { mktOrderId: orderId },
@@ -113,7 +118,6 @@ export class MktPaymentRepository {
    * Find payment by SePay transaction ID
    */
   async findBySepayTransactionId(
-    workspaceId: string,
     transactionId: string,
     options?: FindPaymentOptions,
   ): Promise<MktPaymentWorkspaceEntity | null> {
@@ -121,7 +125,7 @@ export class MktPaymentRepository {
       MKT_PAYMENT_LOG_MESSAGES.FIND_BY_TRANSACTION_ID_START(transactionId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const payment = await repository.findOne({
       where: { sepayTransactionId: transactionId },
@@ -149,11 +153,10 @@ export class MktPaymentRepository {
    * Find payments by status
    */
   async findByStatus(
-    workspaceId: string,
     status: PaymentStatus,
     options?: FindPaymentOptions,
   ): Promise<MktPaymentWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { status },
@@ -165,12 +168,11 @@ export class MktPaymentRepository {
   /**
    * Find payments with custom where clause
    */
-  async findMany(
-    workspaceId: string,
+  async findManyWithOptions(
     where: FindOptionsWhere<MktPaymentWorkspaceEntity>,
     options?: FindPaymentOptions,
   ): Promise<MktPaymentWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where,
@@ -179,26 +181,10 @@ export class MktPaymentRepository {
   }
 
   /**
-   * Check if payment exists
-   */
-  async exists(workspaceId: string, paymentId: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { id: paymentId },
-    });
-
-    return count > 0;
-  }
-
-  /**
    * Check if payment exists by transaction ID
    */
-  async existsByTransactionId(
-    workspaceId: string,
-    transactionId: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
+  async existsByTransactionId(transactionId: string): Promise<boolean> {
+    const repository = await this.getRepository();
 
     const count = await repository.count({
       where: { sepayTransactionId: transactionId },
@@ -214,14 +200,12 @@ export class MktPaymentRepository {
   /**
    * Create new payment
    */
-  async create(
-    workspaceId: string,
+  async createPayment(
     data: CreatePaymentData,
-    _queryRunner?: QueryRunner,
   ): Promise<MktPaymentWorkspaceEntity> {
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.CREATE_START());
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const payment = repository.create({
       ...data,
@@ -242,28 +226,16 @@ export class MktPaymentRepository {
 
   /**
    * Update payment by ID
-   * Supports QueryRunner for transaction context
    */
-  async update(
-    workspaceId: string,
+  async updatePayment(
     paymentId: string,
     data: UpdatePaymentData,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.UPDATE_START(paymentId));
 
-    // Use queryRunner for transaction context if provided
-    if (queryRunner) {
-      await queryRunner.manager.update(
-        MktPaymentWorkspaceEntity,
-        { id: paymentId },
-        data,
-      );
-    } else {
-      const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
-      await repository.update(paymentId, data);
-    }
+    await repository.update(paymentId, data);
 
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.UPDATE_SUCCESS(paymentId));
   }
@@ -271,17 +243,12 @@ export class MktPaymentRepository {
   /**
    * Update payment status
    */
-  async updateStatus(
-    workspaceId: string,
-    paymentId: string,
-    status: PaymentStatus,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async updateStatus(paymentId: string, status: PaymentStatus): Promise<void> {
     this.logger.debug(
       MKT_PAYMENT_LOG_MESSAGES.STATUS_UPDATE_START(paymentId, status),
     );
 
-    await this.update(workspaceId, paymentId, { status }, queryRunner);
+    await this.updatePayment(paymentId, { status });
 
     this.logger.debug(
       MKT_PAYMENT_LOG_MESSAGES.STATUS_UPDATE_SUCCESS(paymentId, status),
@@ -291,15 +258,13 @@ export class MktPaymentRepository {
   /**
    * Update and return the updated payment
    */
-  async updateAndReturn(
-    workspaceId: string,
+  async updatePaymentAndReturn(
     paymentId: string,
     data: UpdatePaymentData,
-    queryRunner?: QueryRunner,
   ): Promise<MktPaymentWorkspaceEntity | null> {
-    await this.update(workspaceId, paymentId, data, queryRunner);
+    await this.updatePayment(paymentId, data);
 
-    return this.findById(workspaceId, paymentId);
+    return this.findById(paymentId);
   }
 
   // ============================================
@@ -309,18 +274,10 @@ export class MktPaymentRepository {
   /**
    * Soft delete payment by setting deletedAt timestamp
    */
-  async softDelete(
-    workspaceId: string,
-    paymentId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeletePayment(paymentId: string): Promise<void> {
     this.logger.warn(MKT_PAYMENT_LOG_MESSAGES.DELETE_START(paymentId));
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(paymentId, {
-      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    await this.softDelete(paymentId);
 
     this.logger.warn(MKT_PAYMENT_LOG_MESSAGES.DELETE_SUCCESS(paymentId));
   }
@@ -329,21 +286,14 @@ export class MktPaymentRepository {
    * Soft delete multiple payments by IDs
    * Used for saga compensation
    */
-  async softDeleteMany(
-    workspaceId: string,
-    paymentIds: string[],
-  ): Promise<void> {
+  async softDeleteManyPayments(paymentIds: string[]): Promise<void> {
     if (paymentIds.length === 0) {
       return;
     }
 
     this.logger.warn(`Soft deleting ${paymentIds.length} payments`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(paymentIds, {
-      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    await this.softDeleteMany(paymentIds);
 
     this.logger.warn(`Successfully soft deleted ${paymentIds.length} payments`);
   }
@@ -355,16 +305,13 @@ export class MktPaymentRepository {
   /**
    * Get payment statistics for an order
    */
-  async getPaymentStatsByOrder(
-    workspaceId: string,
-    orderId: string,
-  ): Promise<{
+  async getPaymentStatsByOrder(orderId: string): Promise<{
     totalPaid: number;
     paymentCount: number;
     completedCount: number;
     pendingCount: number;
   }> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const result = await repository
       .createQueryBuilder('payment')
@@ -390,22 +337,5 @@ export class MktPaymentRepository {
       completedCount: parseInt(result?.completedCount, 10) || 0,
       pendingCount: parseInt(result?.pendingCount, 10) || 0,
     };
-  }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get the underlying TypeORM repository
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktPaymentWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      MktPaymentWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
-    );
   }
 }

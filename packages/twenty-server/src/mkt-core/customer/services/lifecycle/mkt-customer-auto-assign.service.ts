@@ -68,18 +68,14 @@ export class MktCustomerAutoAssignService {
     );
 
     // Update customer with assigned sales member
-    await this.customerRepository.update(
-      customer.id,
-      {
-        createdBy: {
-          source: FieldActorSource.SYSTEM,
-          workspaceMemberId: selectedMember.id,
-          name: selectedMember.name?.firstName ?? 'Unknown',
-          context: {},
-        },
-      } as Partial<MktCustomerWorkspaceEntity>,
-      workspaceId,
-    );
+    await this.customerRepository.updateCustomer(customer.id, {
+      createdBy: {
+        source: FieldActorSource.SYSTEM,
+        workspaceMemberId: selectedMember.id,
+        name: selectedMember.name?.firstName ?? 'Unknown',
+        context: {},
+      },
+    } as Partial<MktCustomerWorkspaceEntity>);
 
     this.logger.log(
       CUSTOMER_MESSAGES.LOG.AUTO_ASSIGN_SUCCESS(customer.id, selectedMember.id),
@@ -97,11 +93,11 @@ export class MktCustomerAutoAssignService {
    * Get workspace members eligible for auto-assignment
    */
   private async getEligibleSalesMembers(
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<WorkspaceMemberWorkspaceEntity[]> {
     // Get all active workspace members
     // In a full implementation, you would filter by role
-    return this.workspaceMemberRepository.findAllActive(workspaceId);
+    return this.workspaceMemberRepository.findAllActive();
   }
 
   /**
@@ -146,15 +142,13 @@ export class MktCustomerAutoAssignService {
    */
   private async selectLeastCustomers(
     members: WorkspaceMemberWorkspaceEntity[],
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
     const memberIds = members.map((m) => m.id);
 
     // Batch query to get all counts at once (prevents N+1)
-    const countMap = await this.customerRepository.countByCreatedByMemberIds(
-      memberIds,
-      workspaceId,
-    );
+    const countMap =
+      await this.customerRepository.countByCreatedByMemberIds(memberIds);
 
     let minCount = Infinity;
     let selectedMember = members[0];
@@ -201,24 +195,20 @@ export class MktCustomerAutoAssignService {
    * Get assignment statistics
    * Uses batch query to avoid N+1 problem
    */
-  async getAssignmentStats(workspaceId: string): Promise<{
+  async getAssignmentStats(_workspaceId: string): Promise<{
     totalCustomers: number;
     assignedCustomers: number;
     unassignedCustomers: number;
     byMember: Array<{ memberId: string; memberName: string; count: number }>;
   }> {
-    const totalCustomers = await this.customerRepository.count(workspaceId);
-    const assignedCustomers =
-      await this.customerRepository.countAssigned(workspaceId);
-    const members =
-      await this.workspaceMemberRepository.findAllActive(workspaceId);
+    const totalCustomers = await this.customerRepository.countCustomers();
+    const assignedCustomers = await this.customerRepository.countAssigned();
+    const members = await this.workspaceMemberRepository.findAllActive();
 
     // Batch query to get all counts at once (prevents N+1)
     const memberIds = members.map((m) => m.id);
-    const countMap = await this.customerRepository.countByCreatedByMemberIds(
-      memberIds,
-      workspaceId,
-    );
+    const countMap =
+      await this.customerRepository.countByCreatedByMemberIds(memberIds);
 
     const byMember = members.map((member) => ({
       memberId: member.id,

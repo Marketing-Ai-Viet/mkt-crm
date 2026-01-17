@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { DeepPartial } from 'typeorm';
+
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MktTemplateType,
   MktTemplateWorkspaceEntity,
@@ -15,12 +18,10 @@ type FindOptions = {
   isActive?: boolean;
 };
 
-type CreateTemplateData = Partial<MktTemplateWorkspaceEntity>;
-
-type UpdateTemplateData = Partial<MktTemplateWorkspaceEntity>;
-
 /**
  * MktTemplateRepository - Unified data access layer for MktTemplate entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktTemplateWorkspaceEntity
@@ -30,27 +31,16 @@ type UpdateTemplateData = Partial<MktTemplateWorkspaceEntity>;
  * - Thread-safe workspace context handling
  */
 @Injectable()
-export class MktTemplateRepository {
-  private readonly logger = new Logger(LOG_CONTEXT);
-
+export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get repository for specific workspace
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktTemplateWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
       MktTemplateWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
+      LOG_CONTEXT,
     );
   }
 
@@ -118,35 +108,14 @@ export class MktTemplateRepository {
   // ============================================
 
   /**
-   * Find template by ID
-   */
-  async findById(
-    workspaceId: string,
-    templateId: string,
-  ): Promise<MktTemplateWorkspaceEntity | null> {
-    this.logger.debug(`Finding template by ID: ${templateId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { id: templateId },
-    });
-  }
-
-  /**
    * Find template by template key
    */
   async findByKey(
-    workspaceId: string,
     templateKey: string,
   ): Promise<MktTemplateWorkspaceEntity | null> {
     this.logger.debug(`Finding template by key: ${templateKey}`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { templateKey },
-    });
+    return this.findOne({ templateKey });
   }
 
   /**
@@ -170,23 +139,18 @@ export class MktTemplateRepository {
    * Find template by type and locale
    */
   async findByTypeAndLocale(
-    workspaceId: string,
     type: string,
     locale: string,
   ): Promise<MktTemplateWorkspaceEntity | null> {
     this.logger.debug(`Finding template by type: ${type}, locale: ${locale}`);
 
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({
-      where: { type, locale },
-    });
+    return this.findOne({ type, locale });
   }
 
   /**
-   * Find all templates
+   * Find all templates with options
    */
-  async findAll(
+  async findAllWithOptions(
     workspaceId: string,
     options?: FindOptions,
   ): Promise<MktTemplateWorkspaceEntity[]> {
@@ -213,13 +177,12 @@ export class MktTemplateRepository {
   /**
    * Create new template
    */
-  async create(
-    workspaceId: string,
-    data: CreateTemplateData,
+  async createEntity(
+    data: DeepPartial<MktTemplateWorkspaceEntity>,
   ): Promise<MktTemplateWorkspaceEntity> {
     this.logger.log(`Creating template: ${data.name}`);
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
     const template = repository.create({
       ...data,
       isActive: data.isActive ?? true,
@@ -229,40 +192,24 @@ export class MktTemplateRepository {
   }
 
   /**
-   * Update template by ID
-   */
-  async update(
-    workspaceId: string,
-    templateId: string,
-    data: UpdateTemplateData,
-  ): Promise<void> {
-    this.logger.log(`Updating template: ${templateId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(templateId, data);
-  }
-
-  /**
    * Upsert template by type and locale
    * Creates if not exists, updates if exists
    * Migrated from MktSendmailTemplateRepository.upsert
    */
   async upsertByTypeAndLocale(
-    workspaceId: string,
     type: string,
     locale: string,
-    data: UpdateTemplateData,
+    data: DeepPartial<MktTemplateWorkspaceEntity>,
   ): Promise<MktTemplateWorkspaceEntity> {
-    const existing = await this.findByTypeAndLocale(workspaceId, type, locale);
+    const existing = await this.findByTypeAndLocale(type, locale);
 
     if (existing) {
-      await this.update(workspaceId, existing.id, data);
+      await this.update(existing.id, data);
 
       return { ...existing, ...data } as MktTemplateWorkspaceEntity;
     }
 
-    return this.create(workspaceId, { ...data, type, locale });
+    return this.createEntity({ ...data, type, locale });
   }
 
   // ============================================
@@ -270,32 +217,21 @@ export class MktTemplateRepository {
   // ============================================
 
   /**
-   * Soft delete template
-   */
-  async softDelete(workspaceId: string, templateId: string): Promise<void> {
-    this.logger.warn(`Soft deleting template: ${templateId}`);
-
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.softDelete(templateId);
-  }
-
-  /**
    * Deactivate template (set isActive to false)
    */
-  async deactivate(workspaceId: string, templateId: string): Promise<void> {
+  async deactivate(templateId: string): Promise<void> {
     this.logger.log(`Deactivating template: ${templateId}`);
 
-    await this.update(workspaceId, templateId, { isActive: false });
+    await this.update(templateId, { isActive: false });
   }
 
   /**
    * Activate template (set isActive to true)
    */
-  async activate(workspaceId: string, templateId: string): Promise<void> {
+  async activate(templateId: string): Promise<void> {
     this.logger.log(`Activating template: ${templateId}`);
 
-    await this.update(workspaceId, templateId, { isActive: true });
+    await this.update(templateId, { isActive: true });
   }
 
   // ============================================
@@ -306,28 +242,14 @@ export class MktTemplateRepository {
    * Check if template exists by type and locale
    * Migrated from MktSendmailTemplateRepository.exists
    */
-  async exists(
-    workspaceId: string,
-    type: string,
-    locale: string,
-  ): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { type, locale },
-    });
-
-    return count > 0;
+  async existsByTypeAndLocale(type: string, locale: string): Promise<boolean> {
+    return this.existsWhere({ type, locale });
   }
 
   /**
    * Count templates by type
    */
-  async countByType(workspaceId: string, type: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: { type },
-    });
+  async countByType(type: string): Promise<number> {
+    return this.count({ type });
   }
 }

@@ -142,7 +142,7 @@ export class MktInvoiceService {
         throw new Error(INVOICE_MESSAGES.ERROR.WORKSPACE_NOT_FOUND);
       }
 
-      const orderItems = await this.fetchOrderItems(workspaceId, mktOrderId);
+      const orderItems = await this.fetchOrderItems(mktOrderId);
 
       if (!orderItems || orderItems.length === 0) {
         return null;
@@ -164,10 +164,9 @@ export class MktInvoiceService {
    * Sử dụng MktOrderItemRepository
    */
   private async fetchOrderItems(
-    workspaceId: string,
     mktOrderId: string,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    return this.orderItemRepository.findByOrderId(workspaceId, mktOrderId);
+    return this.orderItemRepository.findByOrderId(mktOrderId);
   }
 
   /**

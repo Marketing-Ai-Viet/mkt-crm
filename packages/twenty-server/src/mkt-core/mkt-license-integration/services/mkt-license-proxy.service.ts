@@ -200,12 +200,9 @@ export class MktLicenseProxyService {
    */
   private async getCustomerEmail(
     customerId: string,
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<string> {
-    const customer = await this.customerRepository.findByIdOrNull(
-      customerId,
-      workspaceId,
-    );
+    const customer = await this.customerRepository.findByIdOrNull(customerId);
 
     if (!customer) {
       throw new Error(

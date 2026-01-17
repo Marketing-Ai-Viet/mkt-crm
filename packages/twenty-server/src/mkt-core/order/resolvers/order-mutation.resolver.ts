@@ -1,12 +1,14 @@
-import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
-import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
-import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
+import { RequireDepartment } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators/require-department.decorator';
+import {
+  ORDER_GRAPHQL_DESCRIPTIONS,
+  ORDER_AUTHORIZATION,
+} from 'src/mkt-core/order/constants';
 import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
@@ -24,6 +26,7 @@ import {
 import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
+import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 
 /**
  * OrderMutationResolver - GraphQL resolver for order mutations
@@ -44,6 +47,7 @@ import { OrderStatusService } from 'src/mkt-core/order/services/core';
  * Note: Trial license creation is handled by MktLicenseResolver.mktCreateTrialLicense
  */
 @Resolver()
+@UseGuards(WorkspaceAuthGuard)
 export class OrderMutationResolver {
   constructor(
     private readonly orderOrchestrationService: OrderOrchestrationService,
@@ -58,8 +62,10 @@ export class OrderMutationResolver {
    * - Automatic rollback on failure
    * - Better error handling
    * - Idempotency support to prevent duplicate orders
+   *
+   * Authorization: SALES department + Manager + Executives
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @RequireDepartment(ORDER_AUTHORIZATION.CREATE_ORDER)
   @Mutation(() => CreateOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CREATE_ORDER_WITH_ITEMS,
   })
@@ -79,8 +85,10 @@ export class OrderMutationResolver {
 
   /**
    * Confirm an order (change status)
+   *
+   * Authorization: ACCOUNTING department + Executives only
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @RequireDepartment(ORDER_AUTHORIZATION.CONFIRM_ORDER)
   @Mutation(() => ConfirmOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER,
   })
@@ -100,8 +108,10 @@ export class OrderMutationResolver {
 
   /**
    * Update order status using state machine validation
+   *
+   * Authorization: SALES + ACCOUNTING department + Manager + Executives
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @RequireDepartment(ORDER_AUTHORIZATION.UPDATE_STATUS)
   @Mutation(() => UpdateOrderStatusResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_STATUS,
   })
@@ -124,8 +134,10 @@ export class OrderMutationResolver {
 
   /**
    * Refund an order (full or partial)
+   *
+   * Authorization: ACCOUNTING department + Executives only
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @RequireDepartment(ORDER_AUTHORIZATION.REFUND_ORDER)
   @Mutation(() => RefundOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.REFUND_ORDER,
   })
@@ -148,8 +160,10 @@ export class OrderMutationResolver {
    * - Creates payment/QR code
    * - Updates order status to PENDING_PAYMENT
    * - Schedules overdue check
+   *
+   * Authorization: SALES department + Manager + Executives
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @RequireDepartment(ORDER_AUTHORIZATION.PUBLISH_DRAFT)
   @Mutation(() => PublishDraftOrderResponseDto, {
     description:
       'Publish a draft order to create payment and start the payment flow',

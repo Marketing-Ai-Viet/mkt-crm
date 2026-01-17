@@ -35,8 +35,7 @@ import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 export class MktYourEntityResolver {
   private readonly logger = new Logger(MktYourEntityResolver.name);
 
-  constructor() // TODO: Inject your service
-  // private readonly yourEntityService: YourEntityService,
+  constructor() // private readonly yourEntityService: YourEntityService, // TODO: Inject your service
   {}
 
   /**

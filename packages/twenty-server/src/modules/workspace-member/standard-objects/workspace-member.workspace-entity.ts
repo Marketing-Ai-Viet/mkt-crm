@@ -15,6 +15,7 @@ import { IndexType } from 'src/engine/metadata-modules/index-metadata/types/inde
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
 import { WorkspaceFieldIndex } from 'src/engine/twenty-orm/decorators/workspace-field-index.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
+import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
@@ -69,6 +70,12 @@ export const SEARCH_FIELDS_FOR_WORKSPACE_MEMBER: FieldTypeAndNameMetadata[] = [
   { name: USER_EMAIL_FIELD_NAME, type: FieldMetadataType.TEXT },
 ];
 
+@WorkspaceIndex(['departmentId'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
+@WorkspaceIndex(['organizationLevelId'], {
+  indexWhereClause: '"deletedAt" IS NULL',
+})
 @WorkspaceEntity({
   standardId: STANDARD_OBJECT_IDS.workspaceMember,
   namePlural: 'workspaceMembers',

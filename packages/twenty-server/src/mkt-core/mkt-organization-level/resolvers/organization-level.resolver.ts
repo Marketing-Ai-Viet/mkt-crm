@@ -44,12 +44,8 @@ export class OrganizationLevelResolver {
    * Business Value: Analytics & aggregated data không có trong auto-generated
    */
   @Query(() => OrganizationLevelStatistics)
-  async getOrganizationLevelStatistics(
-    @AuthWorkspace() { id: workspaceId }: Workspace,
-  ): Promise<OrganizationLevelStatistics> {
-    return await this.organizationLevelService.getOrganizationLevelStatistics(
-      workspaceId,
-    );
+  async getOrganizationLevelStatistics(): Promise<OrganizationLevelStatistics> {
+    return await this.organizationLevelService.getOrganizationLevelStatistics();
   }
 
   // === SPECIALIZED MUTATIONS ===

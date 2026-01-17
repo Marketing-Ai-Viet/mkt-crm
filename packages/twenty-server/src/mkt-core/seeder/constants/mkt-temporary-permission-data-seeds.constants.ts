@@ -2,6 +2,28 @@ import { DateTime } from 'luxon';
 
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 
+// Valid enum values for purpose field
+export const TEMPORARY_PERMISSION_PURPOSE = {
+  EMERGENCY_ACCESS: 'EMERGENCY_ACCESS',
+  CROSS_DEPARTMENT_COLLABORATION: 'CROSS_DEPARTMENT_COLLABORATION',
+  PROJECT_ASSIGNMENT: 'PROJECT_ASSIGNMENT',
+  TEMPORARY_COVERAGE: 'TEMPORARY_COVERAGE',
+  TRAINING_ACCESS: 'TRAINING_ACCESS',
+  AUDIT_REVIEW: 'AUDIT_REVIEW',
+  OTHER: 'OTHER',
+} as const;
+
+// Valid enum values for revokeReason field
+export const TEMPORARY_PERMISSION_REVOKE_REASON = {
+  EXPIRED: 'EXPIRED',
+  TASK_COMPLETED: 'TASK_COMPLETED',
+  SECURITY_CONCERN: 'SECURITY_CONCERN',
+  ROLE_CHANGED: 'ROLE_CHANGED',
+  MANUAL_REVOCATION: 'MANUAL_REVOCATION',
+  POLICY_VIOLATION: 'POLICY_VIOLATION',
+  OTHER: 'OTHER',
+} as const;
+
 type MktTemporaryPermissionDataSeed = {
   id: string;
   granteeWorkspaceMemberId: string;
@@ -77,7 +99,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ days: 7 }).toISO(), // 7 days from now
       reason: 'Manager on sick leave - temporary coverage needed',
-      purpose: 'Tim covers for Jony during sick leave period',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.TEMPORARY_COVERAGE,
       isActive: true,
       revokedAt: null,
       revokedById: null,
@@ -96,8 +118,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ days: 2 }).toISO(), // 2 days from now
       reason: 'Urgent customer escalation requires immediate access',
-      purpose:
-        'Resolve critical customer complaint requiring account history access',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.EMERGENCY_ACCESS,
       isActive: true,
       revokedAt: null,
       revokedById: null,
@@ -116,7 +137,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ days: 14 }).toISO(), // 14 days from now
       reason: 'Q1 performance analysis and reporting',
-      purpose: 'Comprehensive quarterly sales performance review',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.PROJECT_ASSIGNMENT,
       isActive: true,
       revokedAt: null,
       revokedById: null,
@@ -135,7 +156,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ days: 30 }).toISO(), // 30 days from now
       reason: 'External audit compliance requirement',
-      purpose: 'Year-end financial audit - invoice verification',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.AUDIT_REVIEW,
       isActive: true,
       revokedAt: null,
       revokedById: null,
@@ -154,7 +175,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ days: 60 }).toISO(), // 60 days from now
       reason: 'New employee onboarding and training',
-      purpose: 'Learn KPI structure and templates during probation period',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.TRAINING_ACCESS,
       isActive: true,
       revokedAt: null,
       revokedById: null,
@@ -173,7 +194,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().minus({ days: 1 }).toISO(), // Expired yesterday
       reason: 'Previous license review project',
-      purpose: 'Completed project access',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.PROJECT_ASSIGNMENT,
       isActive: false, // Should be auto-deactivated
       revokedAt: null,
       revokedById: null,
@@ -192,11 +213,11 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ days: 7 }).toISO(), // Still valid
       reason: 'Special project access',
-      purpose: 'Company integration project',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.PROJECT_ASSIGNMENT,
       isActive: false, // Revoked
       revokedAt: DateTime.now().minus({ hours: 2 }).toISO(), // Revoked 2 hours ago
       revokedById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Same person who granted
-      revokeReason: 'Project scope changed, access no longer needed',
+      revokeReason: TEMPORARY_PERMISSION_REVOKE_REASON.TASK_COMPLETED,
     },
 
     // Case 8: Delegation scenario - manager delegates to assistant
@@ -211,8 +232,7 @@ export const MKT_TEMPORARY_PERMISSION_DATA_SEEDS: MktTemporaryPermissionDataSeed
       canDelete: false,
       expiresAt: DateTime.now().plus({ weeks: 3 }).toISO(), // 3 weeks
       reason: 'Manager delegation during business trip',
-      purpose:
-        'Handle contract approvals and reviews while manager is traveling',
+      purpose: TEMPORARY_PERMISSION_PURPOSE.TEMPORARY_COVERAGE,
       isActive: true,
       revokedAt: null,
       revokedById: null,

@@ -52,13 +52,12 @@ export class OrderMetadataService {
       `Updating order ${orderId} with data: ${safeJsonStringify(updateData)}`,
     );
 
-    await this.mktOrderRepository.update(workspaceId, orderId, updateData);
+    await this.mktOrderRepository.update(orderId, updateData);
   }
 
   async updateOrderForRefund(
     status: ORDER_STATUS,
     updateOrder: MktOrderWorkspaceEntity | null,
-    workspaceId: string,
   ) {
     if (!updateOrder?.id) {
       return;
@@ -69,11 +68,7 @@ export class OrderMetadataService {
       metadata: safeJsonStringify(this.orderMetadata) as unknown as JSON,
     };
 
-    await this.mktOrderRepository.update(
-      workspaceId,
-      updateOrder.id,
-      updateData,
-    );
+    await this.mktOrderRepository.update(updateOrder.id, updateData);
   }
 
   async updateFirstMetadata(

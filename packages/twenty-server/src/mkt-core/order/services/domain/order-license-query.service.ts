@@ -58,15 +58,12 @@ export class OrderLicenseQueryService {
    * @returns Array of license statuses
    */
   async getOrderLicenses(
-    workspaceId: string,
+    _workspaceId: string,
     orderId: string,
   ): Promise<LicenseStatus[]> {
     this.logger.debug(`Fetching licenses for order: ${orderId}`);
 
-    const orderItems = await this.orderItemRepository.findByOrderId(
-      workspaceId,
-      orderId,
-    );
+    const orderItems = await this.orderItemRepository.findByOrderId(orderId);
 
     // Flatten all licenses from all order items
     const licensePromises = orderItems.flatMap((item) =>

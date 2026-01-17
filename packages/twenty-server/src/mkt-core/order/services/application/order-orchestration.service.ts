@@ -127,7 +127,7 @@ export class OrderOrchestrationService {
   ): Promise<CreateOrderResponse> {
     // Validate input
     const validationResult =
-      await this.validationService.validateCreateOrderInput(workspaceId, input);
+      await this.validationService.validateCreateOrderInput(input);
 
     this.logger.debug(LOG.CREATE_VALIDATION_RESULT(validationResult.valid));
 
@@ -189,10 +189,7 @@ export class OrderOrchestrationService {
 
     // Validate input
     const validationResult =
-      await this.validationService.validateConfirmOrderInput(
-        workspaceId,
-        input,
-      );
+      await this.validationService.validateConfirmOrderInput(input);
 
     if (!validationResult.valid) {
       const errorMessages = validationResult.errors
@@ -376,10 +373,8 @@ export class OrderOrchestrationService {
     this.logger.log(LOG.RECALCULATE_START(orderId));
 
     try {
-      const result = await this.orderItemService.recalculateAllOrderItems(
-        orderId,
-        workspaceId,
-      );
+      const result =
+        await this.orderItemService.recalculateAllOrderItems(orderId);
 
       if (result.success) {
         this.logger.log(LOG.RECALCULATE_SUCCESS(result.updatedCount ?? 0));
@@ -408,7 +403,7 @@ export class OrderOrchestrationService {
     valid: boolean;
     errors: Array<{ field: string; message: string; code: string }>;
   }> {
-    return this.validationService.validateCreateOrderInput(workspaceId, input);
+    return this.validationService.validateCreateOrderInput(input);
   }
 
   // ============================================
@@ -433,10 +428,7 @@ export class OrderOrchestrationService {
 
     try {
       // 1. Get and validate order
-      const order = await this.orderRepository.findById(
-        workspaceId,
-        input.orderId,
-      );
+      const order = await this.orderRepository.findById(input.orderId);
 
       if (!order) {
         return {
@@ -473,7 +465,7 @@ export class OrderOrchestrationService {
         ? `[PUBLISHED] ${input.note}`
         : '[PUBLISHED] Draft order published';
 
-      await this.orderRepository.update(workspaceId, order.id, {
+      await this.orderRepository.update(order.id, {
         status: ORDER_STATUS.PENDING_PAYMENT,
         note: order.note ? `${order.note}\n${updateNote}` : updateNote,
       });
@@ -525,10 +517,8 @@ export class OrderOrchestrationService {
 
     // Get payment method entities
     const paymentMethodIds = paymentMethods.map((p) => p.paymentMethodId);
-    const paymentMethodMap = await this.paymentMethodRepository.findManyByIds(
-      workspaceId,
-      paymentMethodIds,
-    );
+    const paymentMethodMap =
+      await this.paymentMethodRepository.findManyByIdsAsMap(paymentMethodIds);
 
     for (const pmInput of paymentMethods) {
       const paymentMethod = paymentMethodMap.get(pmInput.paymentMethodId);
@@ -562,7 +552,7 @@ export class OrderOrchestrationService {
         mktTemplateId: MKT_TEMPLATE.SEPAY,
       };
 
-      await this.paymentRepository.create(workspaceId, paymentData);
+      await this.paymentRepository.createPayment(paymentData);
 
       // Set first QR code as primary
       if (!primaryQrCodeUrl && qrCodeUrl) {

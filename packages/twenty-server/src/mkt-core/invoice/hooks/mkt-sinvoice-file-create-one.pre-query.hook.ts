@@ -55,9 +55,8 @@ export class MktSInvoiceFileCreateOnePreQueryHook
     try {
       // get information of SInvoice to have enough information to call API
       // Uses MktSInvoiceRepository for thread-safe access
-      const sInvoice = await this.sInvoiceRepository.findById(
+      const sInvoice = await this.sInvoiceRepository.findByIdWithContext(
         input.mktSInvoiceId,
-        workspaceId,
       );
 
       if (!sInvoice) {

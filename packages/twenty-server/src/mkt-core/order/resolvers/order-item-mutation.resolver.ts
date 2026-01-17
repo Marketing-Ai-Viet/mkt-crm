@@ -1,10 +1,8 @@
-import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
-import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
 import { UpdateOrderItemInputDto } from 'src/mkt-core/order/dto/create-order.input';
 import {
@@ -12,6 +10,8 @@ import {
   UpdateOrderItemResponseDto,
 } from 'src/mkt-core/order/dto';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
+import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 /**
  * OrderItemMutationResolver - GraphQL resolver for order item mutations
@@ -21,6 +21,7 @@ import { OrderOrchestrationService } from 'src/mkt-core/order/services/applicati
  * - recalculateOrderItems: Recalculate all order items for an order
  */
 @Resolver()
+@UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
 export class OrderItemMutationResolver {
   constructor(
     private readonly orderOrchestrationService: OrderOrchestrationService,
@@ -30,7 +31,6 @@ export class OrderItemMutationResolver {
    * Update an order item
    * Supports optimistic locking via updatedAt field
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => UpdateOrderItemResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_ITEM,
   })
@@ -52,7 +52,6 @@ export class OrderItemMutationResolver {
    * Recalculate all order items for an order
    * Useful when variant prices change
    */
-  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Mutation(() => RecalculateOrderItemsResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.RECALCULATE_ORDER_ITEMS,
   })

@@ -17,6 +17,211 @@ import {
 
 // Permission Templates for each Organization Level
 export const PERMISSION_TEMPLATES = {
+  CEO: {
+    defaultPermissions: {
+      resources: {
+        [RBAC_RESOURCES.CUSTOMERS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.EXPORT,
+          RBAC_ACTIONS.APPROVE,
+        ],
+        [RBAC_RESOURCES.ORDERS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.APPROVE,
+        ],
+        [RBAC_RESOURCES.PRODUCTS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.CONFIGURE,
+        ],
+        [RBAC_RESOURCES.REPORTS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.EXPORT,
+          RBAC_ACTIONS.SHARE,
+          RBAC_ACTIONS.PUBLISH,
+        ],
+        [RBAC_RESOURCES.SETTINGS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.CONFIGURE,
+        ],
+        [RBAC_RESOURCES.USERS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+        ],
+        [RBAC_RESOURCES.DEPARTMENTS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+        ],
+        [RBAC_RESOURCES.KPIS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+        ],
+        [RBAC_RESOURCES.FINANCIAL_DATA]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+        ],
+      },
+      actions: {
+        [RBAC_SYSTEM_ACTIONS.DATA_EXPORT]: true,
+        [RBAC_SYSTEM_ACTIONS.BULK_OPERATIONS]: true,
+        [RBAC_SYSTEM_ACTIONS.ADMIN_FUNCTIONS]: true,
+        [RBAC_SYSTEM_ACTIONS.CROSS_DEPARTMENT_VIEW]: true,
+        [RBAC_SYSTEM_ACTIONS.ESCALATION_APPROVE]: true,
+        [RBAC_SYSTEM_ACTIONS.BUDGET_APPROVE]: true,
+        [RBAC_SYSTEM_ACTIONS.SYSTEM_CONFIGURATION]: true,
+        [RBAC_SYSTEM_ACTIONS.USER_MANAGEMENT]: true,
+      },
+      restrictions: {
+        [RBAC_RESTRICTIONS.MAX_RECORDS_PER_QUERY]: -1, // unlimited
+        [RBAC_RESTRICTIONS.MAX_EXPORT_SIZE]: -1, // unlimited
+        [RBAC_RESTRICTIONS.WORKING_HOURS_ONLY]: false,
+        [RBAC_RESTRICTIONS.APPROVAL_REQUIRED]: false,
+      },
+    } as DefaultPermissions,
+
+    accessLimitations: {
+      temporal: {
+        working_hours: {
+          enabled: false,
+        },
+        session_timeout: 28800, // 8 hours
+      },
+      data_access: {
+        sensitive_fields: [], // Full access
+        restricted_departments: [], // Full access
+        data_retention_days: -1, // unlimited
+      },
+      operational: {
+        max_concurrent_sessions: -1, // unlimited
+        ip_restrictions: [],
+        require_2fa: true,
+        audit_all_actions: true,
+      },
+      functional: {
+        blocked_actions: [], // No blocked actions
+        require_approval: [], // No approval required
+        escalation_required: [], // No escalation required
+      },
+    } as AccessLimitations,
+  },
+
+  VICE_PRESIDENT: {
+    defaultPermissions: {
+      resources: {
+        [RBAC_RESOURCES.CUSTOMERS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.EXPORT,
+        ],
+        [RBAC_RESOURCES.ORDERS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.APPROVE,
+        ],
+        [RBAC_RESOURCES.PRODUCTS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.CONFIGURE,
+        ],
+        [RBAC_RESOURCES.REPORTS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.EXPORT,
+          RBAC_ACTIONS.SHARE,
+          RBAC_ACTIONS.PUBLISH,
+        ],
+        [RBAC_RESOURCES.SETTINGS]: [RBAC_ACTIONS.READ, RBAC_ACTIONS.UPDATE],
+        [RBAC_RESOURCES.USERS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+        ],
+        [RBAC_RESOURCES.DEPARTMENTS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+        ],
+        [RBAC_RESOURCES.KPIS]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+        ],
+        [RBAC_RESOURCES.FINANCIAL_DATA]: [
+          RBAC_ACTIONS.READ,
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+        ],
+      },
+      actions: {
+        [RBAC_SYSTEM_ACTIONS.DATA_EXPORT]: true,
+        [RBAC_SYSTEM_ACTIONS.BULK_OPERATIONS]: true,
+        [RBAC_SYSTEM_ACTIONS.ADMIN_FUNCTIONS]: true,
+        [RBAC_SYSTEM_ACTIONS.CROSS_DEPARTMENT_VIEW]: true,
+        [RBAC_SYSTEM_ACTIONS.ESCALATION_APPROVE]: true,
+        [RBAC_SYSTEM_ACTIONS.BUDGET_APPROVE]: true,
+        [RBAC_SYSTEM_ACTIONS.SYSTEM_CONFIGURATION]: true,
+        [RBAC_SYSTEM_ACTIONS.USER_MANAGEMENT]: true,
+      },
+      restrictions: {
+        [RBAC_RESTRICTIONS.MAX_RECORDS_PER_QUERY]: -1, // unlimited
+        [RBAC_RESTRICTIONS.MAX_EXPORT_SIZE]: -1, // unlimited
+        [RBAC_RESTRICTIONS.WORKING_HOURS_ONLY]: false,
+        [RBAC_RESTRICTIONS.APPROVAL_REQUIRED]: false,
+      },
+    } as DefaultPermissions,
+
+    accessLimitations: {
+      temporal: {
+        working_hours: {
+          enabled: false,
+        },
+        session_timeout: 21600, // 6 hours
+      },
+      data_access: {
+        sensitive_fields: [], // Full access
+        restricted_departments: [], // Full access
+        data_retention_days: -1, // unlimited
+      },
+      operational: {
+        max_concurrent_sessions: -1, // unlimited
+        ip_restrictions: [],
+        require_2fa: true,
+        audit_all_actions: true,
+      },
+      functional: {
+        blocked_actions: [], // No blocked actions
+        require_approval: [RBAC_ACTIONS.DELETE], // Only delete requires approval
+        escalation_required: [], // No escalation required
+      },
+    } as AccessLimitations,
+  },
+
   DIRECTOR: {
     defaultPermissions: {
       resources: {
@@ -414,4 +619,115 @@ export const PERMISSION_TEMPLATES = {
       },
     } as AccessLimitations,
   },
+
+  INTERN: {
+    defaultPermissions: {
+      resources: {
+        [RBAC_RESOURCES.CUSTOMERS]: [RBAC_ACTIONS.READ],
+        [RBAC_RESOURCES.ORDERS]: [RBAC_ACTIONS.READ],
+        [RBAC_RESOURCES.PRODUCTS]: [RBAC_ACTIONS.READ],
+        [RBAC_RESOURCES.REPORTS]: [],
+        [RBAC_RESOURCES.SETTINGS]: [],
+        [RBAC_RESOURCES.USERS]: [],
+        [RBAC_RESOURCES.DEPARTMENTS]: [],
+        [RBAC_RESOURCES.KPIS]: [],
+        [RBAC_RESOURCES.FINANCIAL_DATA]: [],
+      },
+      actions: {
+        [RBAC_SYSTEM_ACTIONS.DATA_EXPORT]: false,
+        [RBAC_SYSTEM_ACTIONS.BULK_OPERATIONS]: false,
+        [RBAC_SYSTEM_ACTIONS.ADMIN_FUNCTIONS]: false,
+        [RBAC_SYSTEM_ACTIONS.CROSS_DEPARTMENT_VIEW]: false,
+        [RBAC_SYSTEM_ACTIONS.ESCALATION_APPROVE]: false,
+        [RBAC_SYSTEM_ACTIONS.BUDGET_APPROVE]: false,
+        [RBAC_SYSTEM_ACTIONS.SYSTEM_CONFIGURATION]: false,
+        [RBAC_SYSTEM_ACTIONS.USER_MANAGEMENT]: false,
+      },
+      restrictions: {
+        [RBAC_RESTRICTIONS.MAX_RECORDS_PER_QUERY]: 100,
+        [RBAC_RESTRICTIONS.MAX_EXPORT_SIZE]: 0, // no export
+        [RBAC_RESTRICTIONS.WORKING_HOURS_ONLY]: true,
+        [RBAC_RESTRICTIONS.APPROVAL_REQUIRED]: true,
+      },
+    } as DefaultPermissions,
+
+    accessLimitations: {
+      temporal: {
+        working_hours: {
+          enabled: true,
+          start: '09:00',
+          end: '17:00',
+          timezone: 'Asia/Ho_Chi_Minh',
+          weekdays_only: true,
+        },
+        session_timeout: 1800, // 30 minutes
+        max_daily_hours: 4, // Part-time
+        break_required: true,
+      },
+      data_access: {
+        sensitive_fields: [
+          SENSITIVE_FIELDS.SALARY,
+          SENSITIVE_FIELDS.PERSONAL_ID,
+          SENSITIVE_FIELDS.BANK_ACCOUNT,
+          SENSITIVE_FIELDS.PROFIT_MARGIN,
+          SENSITIVE_FIELDS.COST,
+          SENSITIVE_FIELDS.REVENUE,
+        ],
+        restricted_departments: [
+          DEPARTMENT_CATEGORIES.HR,
+          DEPARTMENT_CATEGORIES.FINANCE,
+          DEPARTMENT_CATEGORIES.EXECUTIVE,
+          DEPARTMENT_CATEGORIES.LEGAL,
+        ],
+        data_retention_days: 14, // Only 2 weeks
+        own_records_only: true,
+        supervisor_approval_required: true,
+        read_only_mode: true,
+      },
+      operational: {
+        max_concurrent_sessions: 1,
+        ip_restrictions: ['192.168.1.200/32'], // Dedicated intern workstation
+        require_2fa: false,
+        audit_all_actions: true,
+        supervisor_oversight: true,
+        screen_recording: true,
+        activity_monitoring: true,
+      },
+      functional: {
+        blocked_actions: [
+          RBAC_ACTIONS.CREATE,
+          RBAC_ACTIONS.UPDATE,
+          RBAC_ACTIONS.DELETE,
+          RBAC_ACTIONS.EXPORT,
+          RBAC_ACTIONS.APPROVE,
+        ],
+        require_approval: [RBAC_ACTIONS.READ], // Even read requires approval
+        escalation_required: [RBAC_ACTIONS.READ],
+      },
+    } as AccessLimitations,
+  },
+} as const;
+
+// Hierarchy Level to Template Mapping
+export const HIERARCHY_LEVEL_MAPPING = {
+  1: 'CEO',
+  2: 'VICE_PRESIDENT',
+  3: 'DIRECTOR',
+  4: 'MANAGER',
+  5: 'TEAM_LEAD',
+  6: 'SENIOR_STAFF',
+  7: 'JUNIOR_STAFF',
+  8: 'INTERN',
+} as const;
+
+// Level Code to Template Mapping
+export const LEVEL_CODE_MAPPING = {
+  CEO: 'CEO',
+  VP: 'VICE_PRESIDENT',
+  DIR: 'DIRECTOR',
+  MGR: 'MANAGER',
+  TL: 'TEAM_LEAD',
+  SR: 'SENIOR_STAFF',
+  JR: 'JUNIOR_STAFF',
+  INT: 'INTERN',
 } as const;

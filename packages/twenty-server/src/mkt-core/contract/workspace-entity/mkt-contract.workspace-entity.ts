@@ -28,7 +28,11 @@ import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-o
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 
-const TABLE_CONTRACT_NAME = 'mktContract';
+/**
+ * Entity name for mktContract - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
+export const MKT_CONTRACT_ENTITY_NAME = 'mktContract';
 const NAME_FIELD_NAME = 'name';
 
 export const SEARCH_FIELDS_FOR_MKT_CONTRACT: FieldTypeAndNameMetadata[] = [
@@ -37,7 +41,7 @@ export const SEARCH_FIELDS_FOR_MKT_CONTRACT: FieldTypeAndNameMetadata[] = [
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktContract,
-  namePlural: `${TABLE_CONTRACT_NAME}s`,
+  namePlural: `${MKT_CONTRACT_ENTITY_NAME}s`,
   labelSingular: msg`Contract`,
   labelPlural: msg`Contracts`,
   description: msg`Contract entity for catalog`,

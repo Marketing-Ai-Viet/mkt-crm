@@ -1,24 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, In, QueryRunner } from 'typeorm';
+import { DeepPartial, FindOptionsWhere, In } from 'typeorm';
 
-import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MKT_ORDER_ITEM_LOG_CONTEXT,
   MKT_ORDER_ITEM_LOG_MESSAGES,
 } from 'src/mkt-core/order/messages';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import {
-  CreateOrderItemData,
   DEFAULT_ORDER_ITEM_RELATIONS,
   FindOrderItemOptions,
-  UpdateOrderItemData,
 } from 'src/mkt-core/order/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * MktOrderItemRepository - Data access layer for OrderItem entity
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  *
  * Responsibilities:
  * - Database operations for MktOrderItem entity
@@ -32,30 +33,33 @@ import {
  * - Price calculations (handled by Service layer)
  */
 @Injectable()
-export class MktOrderItemRepository {
-  private readonly logger = new Logger(
-    `${MKT_ORDER_ITEM_LOG_CONTEXT}:Repository`,
-  );
-
+export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItemWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktOrderItemWorkspaceEntity,
+      `${MKT_ORDER_ITEM_LOG_CONTEXT}:Repository`,
+    );
+  }
 
   // ============================================
   // FIND OPERATIONS
   // ============================================
 
   /**
-   * Find order item by ID
+   * Find order item by ID with options (logging included)
    */
-  async findById(
-    workspaceId: string,
+  async findByIdWithOptions(
     itemId: string,
     options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.FIND_BY_ID_START(itemId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const orderItem = await repository.findOne({
       where: { id: itemId },
@@ -79,10 +83,9 @@ export class MktOrderItemRepository {
    * Find order item by ID with full relations
    */
   async findByIdWithRelations(
-    workspaceId: string,
     itemId: string,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    return this.findById(workspaceId, itemId, {
+    return this.findByIdWithOptions(itemId, {
       relations: DEFAULT_ORDER_ITEM_RELATIONS,
     });
   }
@@ -91,13 +94,12 @@ export class MktOrderItemRepository {
    * Find all order items for an order
    */
   async findByOrderId(
-    workspaceId: string,
     orderId: string,
     options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.FIND_BY_ORDER_START(orderId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const items = await repository.find({
       where: { mktOrderId: orderId },
@@ -116,7 +118,6 @@ export class MktOrderItemRepository {
    * Find order items by external product ID
    */
   async findByExternalProductId(
-    workspaceId: string,
     externalProductId: string,
     options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
@@ -124,7 +125,7 @@ export class MktOrderItemRepository {
       MKT_ORDER_ITEM_LOG_MESSAGES.FIND_BY_PRODUCT_START(externalProductId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { externalMktProductId: externalProductId },
@@ -136,11 +137,10 @@ export class MktOrderItemRepository {
    * Find order items by external product code
    */
   async findByExternalProductCode(
-    workspaceId: string,
     externalProductCode: string,
     options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { externalMktProductCode: externalProductCode },
@@ -153,7 +153,6 @@ export class MktOrderItemRepository {
    * Find order items by variant ID - returns empty array as variants are removed
    */
   async findByVariantId(
-    _workspaceId: string,
     variantId: string,
     _options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
@@ -165,14 +164,13 @@ export class MktOrderItemRepository {
   }
 
   /**
-   * Find order items with custom where clause
+   * Find order items with custom where clause and options
    */
-  async findMany(
-    workspaceId: string,
+  async findManyWithOptions(
     where: FindOptionsWhere<MktOrderItemWorkspaceEntity>,
     options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where,
@@ -181,27 +179,10 @@ export class MktOrderItemRepository {
   }
 
   /**
-   * Check if order item exists
-   */
-  async exists(workspaceId: string, itemId: string): Promise<boolean> {
-    const repository = await this.getRepository(workspaceId);
-
-    const count = await repository.count({
-      where: { id: itemId },
-    });
-
-    return count > 0;
-  }
-
-  /**
    * Count order items for an order
    */
-  async countByOrderId(workspaceId: string, orderId: string): Promise<number> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.count({
-      where: { mktOrderId: orderId },
-    });
+  async countByOrderId(orderId: string): Promise<number> {
+    return this.count({ mktOrderId: orderId });
   }
 
   // ============================================
@@ -210,20 +191,16 @@ export class MktOrderItemRepository {
 
   /**
    * Create new order item
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async create(
-    workspaceId: string,
-    data: CreateOrderItemData,
-    _queryRunner?: QueryRunner,
+  async createOrderItem(
+    data: DeepPartial<MktOrderItemWorkspaceEntity>,
   ): Promise<MktOrderItemWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_START());
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const orderItem = repository.create(data);
 
-    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
     const savedItem = await repository.save(orderItem);
 
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_SUCCESS(savedItem.id));
@@ -233,12 +210,9 @@ export class MktOrderItemRepository {
 
   /**
    * Create multiple order items
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async createMany(
-    workspaceId: string,
-    items: CreateOrderItemData[],
-    _queryRunner?: QueryRunner,
+  async createManyOrderItems(
+    items: DeepPartial<MktOrderItemWorkspaceEntity>[],
   ): Promise<MktOrderItemWorkspaceEntity[]> {
     if (items.length === 0) {
       return [];
@@ -248,11 +222,10 @@ export class MktOrderItemRepository {
       MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_BULK_START(items.length),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const orderItems = items.map((item) => repository.create(item));
 
-    // Always use repository.save() - queryRunner.manager doesn't have workspace entity metadata
     const savedItems = await repository.save(orderItems);
 
     this.logger.debug(
@@ -268,56 +241,47 @@ export class MktOrderItemRepository {
 
   /**
    * Update order item by ID
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async update(
-    workspaceId: string,
+  async updateOrderItem(
     itemId: string,
-    data: UpdateOrderItemData,
-    _queryRunner?: QueryRunner,
+    data: DeepPartial<MktOrderItemWorkspaceEntity>,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.UPDATE_START(itemId));
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
-    // Always use repository.update() - queryRunner.manager doesn't have workspace entity metadata
-    await repository.update(itemId, data);
+    await repository.update(itemId, data as never);
 
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.UPDATE_SUCCESS(itemId));
   }
 
   /**
-   * Update and return the updated order item
+   * Update and return the updated order item with options
    */
-  async updateAndReturn(
-    workspaceId: string,
+  async updateAndReturnWithOptions(
     itemId: string,
-    data: UpdateOrderItemData,
+    data: DeepPartial<MktOrderItemWorkspaceEntity>,
     options?: FindOrderItemOptions,
   ): Promise<MktOrderItemWorkspaceEntity | null> {
-    await this.update(workspaceId, itemId, data, options?.queryRunner);
+    await this.updateOrderItem(itemId, data);
 
-    return this.findById(workspaceId, itemId, options);
+    return this.findByIdWithOptions(itemId, options);
   }
 
   /**
    * Update multiple order items by IDs (batch update)
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async updateMany(
-    workspaceId: string,
+  async updateManyOrderItems(
     itemIds: string[],
-    data: UpdateOrderItemData,
-    _queryRunner?: QueryRunner,
+    data: DeepPartial<MktOrderItemWorkspaceEntity>,
   ): Promise<void> {
     if (itemIds.length === 0) {
       return;
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
-    // Use batch update with In() operator to avoid N+1 queries
-    await repository.update({ id: In(itemIds) }, data);
+    await repository.update({ id: In(itemIds) }, data as never);
   }
 
   // ============================================
@@ -326,33 +290,19 @@ export class MktOrderItemRepository {
 
   /**
    * Soft delete order item by setting deletedAt timestamp
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async softDelete(
-    workspaceId: string,
-    itemId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeleteOrderItem(itemId: string): Promise<void> {
     this.logger.warn(MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_START(itemId));
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(itemId, {
-      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    await this.softDelete(itemId);
 
     this.logger.warn(MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_SUCCESS(itemId));
   }
 
   /**
    * Soft delete multiple order items by IDs
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async softDeleteMany(
-    workspaceId: string,
-    itemIds: string[],
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeleteManyOrderItems(itemIds: string[]): Promise<void> {
     if (itemIds.length === 0) {
       return;
     }
@@ -361,11 +311,7 @@ export class MktOrderItemRepository {
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BULK_START(itemIds.length),
     );
 
-    const repository = await this.getRepository(workspaceId);
-
-    await repository.update(itemIds, {
-      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    await this.softDeleteMany(itemIds);
 
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BULK_SUCCESS(itemIds.length),
@@ -374,44 +320,20 @@ export class MktOrderItemRepository {
 
   /**
    * Soft delete all order items for an order
-   * Note: queryRunner is ignored - workspace repository handles its own connection
    */
-  async softDeleteByOrderId(
-    workspaceId: string,
-    orderId: string,
-    _queryRunner?: QueryRunner,
-  ): Promise<void> {
+  async softDeleteByOrderId(orderId: string): Promise<void> {
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BY_ORDER_START(orderId),
     );
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
-    await repository.update(
-      { mktOrderId: orderId },
-      { deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()) },
-    );
+    await repository.update({ mktOrderId: orderId }, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    } as never);
 
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BY_ORDER_SUCCESS(orderId),
-    );
-  }
-
-  // ============================================
-  // REPOSITORY ACCESS
-  // ============================================
-
-  /**
-   * Get the underlying TypeORM repository
-   * Useful for complex queries not covered by this repository
-   */
-  async getRepository(
-    workspaceId: string,
-  ): Promise<WorkspaceRepository<MktOrderItemWorkspaceEntity>> {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace(
-      workspaceId,
-      MktOrderItemWorkspaceEntity,
-      { shouldBypassPermissionChecks: true },
     );
   }
 }

@@ -50,10 +50,7 @@ export class CouponListener {
 
     try {
       // Kiểm tra coupon có tồn tại không
-      const coupon = await this.couponRepository.findById(
-        event.workspaceId,
-        event.couponId,
-      );
+      const coupon = await this.couponRepository.findById(event.couponId);
 
       if (!coupon) {
         this.logger.warn('Coupon not found', {
@@ -65,7 +62,6 @@ export class CouponListener {
 
       // Kiểm tra promotion có tồn tại không
       const promotion = await this.promotionRepository.findById(
-        event.workspaceId,
         event.promotionId,
       );
 
@@ -110,16 +106,10 @@ export class CouponListener {
 
     try {
       // Increment coupon usage count
-      await this.couponRepository.incrementUsageCount(
-        event.workspaceId,
-        event.couponId,
-      );
+      await this.couponRepository.incrementUsageCount(event.couponId);
 
       // Lấy coupon data để check limits
-      const coupon = await this.couponRepository.findById(
-        event.workspaceId,
-        event.couponId,
-      );
+      const coupon = await this.couponRepository.findById(event.couponId);
 
       if (!coupon) {
         this.logger.warn('Coupon not found for usage update', {
@@ -135,7 +125,6 @@ export class CouponListener {
 
       if (usageLimit && currentUsageCount >= usageLimit) {
         await this.couponRepository.updateStatus(
-          event.workspaceId,
           event.couponId,
           COUPON_STATUS.USED,
         );
@@ -149,10 +138,7 @@ export class CouponListener {
 
       // Lấy promotion data để gửi thông báo
       const promotionId = coupon.promotionId as string;
-      const promotion = await this.promotionRepository.findById(
-        event.workspaceId,
-        promotionId,
-      );
+      const promotion = await this.promotionRepository.findById(promotionId);
 
       if (promotion) {
         // Gửi thông báo
@@ -196,7 +182,6 @@ export class CouponListener {
     try {
       // Update coupon status
       await this.couponRepository.updateStatus(
-        payload.workspaceId,
         payload.couponId,
         COUPON_STATUS.EXPIRED,
       );

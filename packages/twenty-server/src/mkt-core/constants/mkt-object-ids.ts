@@ -57,6 +57,17 @@ export const MKT_OBJECT_IDS = {
   mktKpiTemplateHistory: 'e1f2a3b4-5c6d-7e8f-9a0b-1c2d3e4f5a6b',
   // temporary permission system
   mktTemporaryPermission: 'dde9a4ee-2920-46f1-9f07-bf10944bc897',
+  // permission template system
+  mktPermissionTemplate: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
+  mktPermissionResource: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+  mktPermissionAction: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  mktTemplateResourcePermission: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
+  mktTemplateSystemAction: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b',
+  mktTemplateAccessLimitation: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c',
+  mktUserPermissionTemplate: '7a8b9c0d-1e2f-3456-789a-bcdef0123456',
+  mktUserPermissionOverride: '8b9c0d1e-2f34-5678-9abc-def012345678',
+  mktPermissionContext: '9c0d1e2f-3456-789a-bcde-f01234567890',
+  mktPermissionPriorityConfig: 'c89abcd3-4def-5678-9abc-def012345679',
   // data access policy system
   mktDataAccessPolicy: 'a8b9c0d1-e2f3-4567-89ab-cdef01234567',
   // permission audit system
@@ -81,4 +92,13 @@ export const MKT_OBJECT_IDS = {
   mktPromotionAudit: '550e8400-e29b-41d4-a716-446655440105',
   // webhook logs
   mktWebhookLog: 'a3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e',
+  // casbin RBAC
+  mktCasbinRule: '1a2b3c4d-e5f6-7890-abcd-ef1234567890',
+  mktPolicyVersion: '2b3c4d5e-f6a7-8901-bcde-f01234567891',
+  mktPolicyChangeRequest: '3c4d5e6f-a7b8-9012-cdef-012345678902',
+  mktPolicyApproval: '4d5e6f7a-b8c9-0123-def0-123456789013',
+  // department ancestry
+  mktDepartmentAncestry: '5e6f7a8b-c9d0-1234-ef01-234567890124',
+  // department sub-manager (join table for multiple sub-managers)
+  mktDepartmentSubManager: '6f7a8b9c-d0e1-2345-f012-345678901235',
 };

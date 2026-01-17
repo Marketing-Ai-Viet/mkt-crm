@@ -21,5 +21,11 @@ export const ORDER_GRAPHQL_DESCRIPTIONS = {
   // ==================== QUERIES ====================
 
   VALIDATE_ORDER_INPUT: 'Validate order input before creation',
+  GET_ORDER_BY_ID: 'Get order by ID with full details',
+  GET_ORDER_BY_CODE: 'Get order by order code',
+  GET_ORDERS_BY_CUSTOMER: 'Get all orders for a specific customer',
+  GET_ORDERS_BY_STATUS: 'Get all orders with a specific status',
   GET_ORDER_PAYMENT_SUMMARY: 'Get payment summary for an order',
+  GET_CUSTOMER_ORDER_STATS:
+    'Get order statistics for a customer (count, total value, dates)',
 } as const;

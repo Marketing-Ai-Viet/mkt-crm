@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { QueryRunner } from 'typeorm';
-
+import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { MktGenericComboItemWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo-item.workspace-entity';
 import {
   CreateGenericComboItemData,
@@ -15,19 +15,20 @@ import {
 
 /**
  * Repository cho MktGenericComboItem
+ *
+ * Extends BaseWorkspaceRepository for common CRUD operations.
  */
 @Injectable()
-export class MktGenericComboItemRepository {
-  private readonly logger = new Logger(GENERIC_COMBO_LOG_CONTEXT);
-
+export class MktGenericComboItemRepository extends BaseWorkspaceRepository<MktGenericComboItemWorkspaceEntity> {
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  private async getRepository(workspaceId: string) {
-    return this.twentyORMGlobalManager.getRepositoryForWorkspace<MktGenericComboItemWorkspaceEntity>(
-      workspaceId,
-      'mktGenericComboItem',
+    twentyORMGlobalManager: TwentyORMGlobalManager,
+    scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
+  ) {
+    super(
+      twentyORMGlobalManager,
+      scopedWorkspaceContextFactory,
+      MktGenericComboItemWorkspaceEntity,
+      `${GENERIC_COMBO_LOG_CONTEXT}:Item`,
     );
   }
 
@@ -35,10 +36,9 @@ export class MktGenericComboItemRepository {
    * Tìm items theo combo ID, sắp xếp theo position
    */
   async findByComboId(
-    workspaceId: string,
     comboId: string,
   ): Promise<MktGenericComboItemWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository.find({
       where: { genericComboId: comboId },
@@ -47,25 +47,12 @@ export class MktGenericComboItemRepository {
   }
 
   /**
-   * Tìm item theo ID
-   */
-  async findById(
-    workspaceId: string,
-    id: string,
-  ): Promise<MktGenericComboItemWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-
-    return repository.findOne({ where: { id } });
-  }
-
-  /**
    * Tìm item theo ID với relations (internal product/variant)
    */
   async findByIdWithRelations(
-    workspaceId: string,
     id: string,
   ): Promise<MktGenericComboItemWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('item')
@@ -79,10 +66,9 @@ export class MktGenericComboItemRepository {
    * Tìm items theo combo ID với relations
    */
   async findByComboIdWithRelations(
-    workspaceId: string,
     comboId: string,
   ): Promise<MktGenericComboItemWorkspaceEntity[]> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     return repository
       .createQueryBuilder('item')
@@ -96,13 +82,11 @@ export class MktGenericComboItemRepository {
   /**
    * Tạo item mới
    */
-  async create(
-    workspaceId: string,
+  async createItem(
     comboId: string,
     data: CreateGenericComboItemData,
-    queryRunner?: QueryRunner,
   ): Promise<MktGenericComboItemWorkspaceEntity> {
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const item = repository.create({
       ...data,
@@ -111,13 +95,7 @@ export class MktGenericComboItemRepository {
       position: data.position ?? GENERIC_COMBO_DEFAULTS.POSITION,
     });
 
-    let savedItem: MktGenericComboItemWorkspaceEntity;
-
-    if (queryRunner) {
-      savedItem = await queryRunner.manager.save(item);
-    } else {
-      savedItem = await repository.save(item);
-    }
+    const savedItem = await repository.save(item);
 
     this.logger.log(
       `Created generic combo item ${savedItem.id} for combo ${comboId}`,
@@ -129,17 +107,15 @@ export class MktGenericComboItemRepository {
   /**
    * Tạo nhiều items (batch)
    */
-  async createMany(
-    workspaceId: string,
+  async createManyItems(
     comboId: string,
     items: CreateGenericComboItemData[],
-    queryRunner?: QueryRunner,
   ): Promise<MktGenericComboItemWorkspaceEntity[]> {
     if (items.length === 0) {
       return [];
     }
 
-    const repository = await this.getRepository(workspaceId);
+    const repository = await this.getRepository();
 
     const itemEntities = items.map((item, index) =>
       repository.create({
@@ -150,13 +126,7 @@ export class MktGenericComboItemRepository {
       }),
     );
 
-    let savedItems: MktGenericComboItemWorkspaceEntity[];
-
-    if (queryRunner) {
-      savedItems = await queryRunner.manager.save(itemEntities);
-    } else {
-      savedItems = await repository.save(itemEntities);
-    }
+    const savedItems = await repository.save(itemEntities);
 
     this.logger.log(
       `Created ${savedItems.length} generic combo items for combo ${comboId}`,
@@ -168,32 +138,24 @@ export class MktGenericComboItemRepository {
   /**
    * Cập nhật item
    */
-  async update(
-    workspaceId: string,
+  async updateItem(
     id: string,
     data: UpdateGenericComboItemData,
-    queryRunner?: QueryRunner,
   ): Promise<MktGenericComboItemWorkspaceEntity | null> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
-    await manager.update(MktGenericComboItemWorkspaceEntity, id, data);
+    await repository.update(id, data);
 
-    return this.findById(workspaceId, id);
+    return this.findById(id);
   }
 
   /**
-   * Xóa item
+   * Xóa item (hard delete)
    */
-  async delete(
-    workspaceId: string,
-    id: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+  async deleteItem(id: string): Promise<void> {
+    const repository = await this.getRepository();
 
-    await manager.delete(MktGenericComboItemWorkspaceEntity, id);
+    await repository.delete(id);
 
     this.logger.log(`Deleted generic combo item ${id}`);
   }
@@ -201,17 +163,10 @@ export class MktGenericComboItemRepository {
   /**
    * Xóa tất cả items của combo
    */
-  async deleteByComboId(
-    workspaceId: string,
-    comboId: string,
-    queryRunner?: QueryRunner,
-  ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+  async deleteByComboId(comboId: string): Promise<void> {
+    const repository = await this.getRepository();
 
-    await manager.delete(MktGenericComboItemWorkspaceEntity, {
-      genericComboId: comboId,
-    });
+    await repository.delete({ genericComboId: comboId });
 
     this.logger.log(`Deleted all items for generic combo ${comboId}`);
   }
@@ -220,17 +175,12 @@ export class MktGenericComboItemRepository {
    * Cập nhật positions cho items
    */
   async updatePositions(
-    workspaceId: string,
     itemPositions: Array<{ id: string; position: number }>,
-    queryRunner?: QueryRunner,
   ): Promise<void> {
-    const repository = await this.getRepository(workspaceId);
-    const manager = queryRunner?.manager ?? repository.manager;
+    const repository = await this.getRepository();
 
     for (const { id, position } of itemPositions) {
-      await manager.update(MktGenericComboItemWorkspaceEntity, id, {
-        position,
-      });
+      await repository.update(id, { position });
     }
 
     this.logger.log(`Updated positions for ${itemPositions.length} items`);

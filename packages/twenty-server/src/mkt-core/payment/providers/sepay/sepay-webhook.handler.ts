@@ -119,14 +119,8 @@ export class SepayWebhookHandler implements IWebhookHandler {
   /**
    * Check for duplicate webhook using transaction ID in payment records
    */
-  async isDuplicateWebhook(
-    workspaceId: string,
-    transactionId: string,
-  ): Promise<boolean> {
-    return this.paymentRepository.existsByTransactionId(
-      workspaceId,
-      transactionId,
-    );
+  async isDuplicateWebhook(transactionId: string): Promise<boolean> {
+    return this.paymentRepository.existsByTransactionId(transactionId);
   }
 
   /**
@@ -157,25 +151,11 @@ export class SepayWebhookHandler implements IWebhookHandler {
 
     try {
       // Step 1: Create webhook log
-      webhookLogId = await this.createWebhookLog(
-        context.workspaceId,
-        payload,
-        context.ipAddress,
-        queryRunner,
-      );
+      webhookLogId = await this.createWebhookLog(payload, context.ipAddress);
 
       // Step 2: Idempotency check
-      if (
-        await this.isDuplicateWebhook(
-          context.workspaceId,
-          payload.providerTransactionId,
-        )
-      ) {
-        await this.updateWebhookLogSuccess(
-          context.workspaceId,
-          webhookLogId,
-          'ALREADY_PROCESSED',
-        );
+      if (await this.isDuplicateWebhook(payload.providerTransactionId)) {
+        await this.updateWebhookLogSuccess(webhookLogId, 'ALREADY_PROCESSED');
         await queryRunner.commitTransaction();
 
         return this.buildResult(
@@ -188,11 +168,7 @@ export class SepayWebhookHandler implements IWebhookHandler {
 
       // Step 3: Validate order code exists
       if (!payload.orderCode) {
-        await this.updateWebhookLogSuccess(
-          context.workspaceId,
-          webhookLogId,
-          'UNMATCHED',
-        );
+        await this.updateWebhookLogSuccess(webhookLogId, 'UNMATCHED');
         await queryRunner.commitTransaction();
 
         return this.buildResult(
@@ -205,16 +181,11 @@ export class SepayWebhookHandler implements IWebhookHandler {
 
       // Step 4: Find order
       const order = await this.orderRepository.findByOrderCode(
-        context.workspaceId,
         payload.orderCode,
       );
 
       if (!order) {
-        await this.updateWebhookLogSuccess(
-          context.workspaceId,
-          webhookLogId,
-          'ORDER_NOT_FOUND',
-        );
+        await this.updateWebhookLogSuccess(webhookLogId, 'ORDER_NOT_FOUND');
         await queryRunner.commitTransaction();
 
         return this.buildResult(
@@ -229,14 +200,10 @@ export class SepayWebhookHandler implements IWebhookHandler {
       this.validateAmount(order.totalAmount, payload.amount, payload.orderCode);
 
       // Step 6: Find payments for order
-      const payments = await this.paymentRepository.findByOrderId(
-        context.workspaceId,
-        order.id,
-      );
+      const payments = await this.paymentRepository.findByOrderId(order.id);
 
       if (payments.length === 0) {
         await this.updateWebhookLogSuccess(
-          context.workspaceId,
           webhookLogId,
           'NO_PAYMENT',
           order.orderCode,
@@ -267,16 +234,12 @@ export class SepayWebhookHandler implements IWebhookHandler {
         DateTimeUtils.now(),
       );
 
-      await this.webhookLogRepository.update(
-        context.workspaceId,
-        webhookLogId,
-        {
-          status: 'SUCCESS',
-          responseStatus: 200,
-          matchedOrderCode: order.orderCode,
-          processingTimeMs,
-        },
-      );
+      await this.webhookLogRepository.updateWebhookLog(webhookLogId, {
+        status: 'SUCCESS',
+        responseStatus: 200,
+        matchedOrderCode: order.orderCode,
+        processingTimeMs,
+      });
 
       // Commit transaction
       await queryRunner.commitTransaction();
@@ -301,11 +264,7 @@ export class SepayWebhookHandler implements IWebhookHandler {
 
       // Update webhook log to failed (outside transaction)
       if (webhookLogId) {
-        await this.updateWebhookLogFailed(
-          context.workspaceId,
-          webhookLogId,
-          error,
-        );
+        await this.updateWebhookLogFailed(webhookLogId, error);
       }
 
       return this.buildResult(
@@ -324,33 +283,26 @@ export class SepayWebhookHandler implements IWebhookHandler {
   // ============================================
 
   private async createWebhookLog(
-    workspaceId: string,
     payload: NormalizedWebhookPayload,
     ipAddress: string | undefined,
-    queryRunner: QueryRunner,
   ): Promise<string> {
-    const webhookLog = await this.webhookLogRepository.create(
-      workspaceId,
-      {
-        sepayTransactionId: Number(payload.providerTransactionId),
-        gateway: payload.gateway,
-        requestBody: payload.rawPayload as object,
-        ipAddress,
-        status: 'PROCESSING',
-      },
-      queryRunner,
-    );
+    const webhookLog = await this.webhookLogRepository.createWebhookLog({
+      sepayTransactionId: Number(payload.providerTransactionId),
+      gateway: payload.gateway,
+      requestBody: payload.rawPayload as object,
+      ipAddress,
+      status: 'PROCESSING',
+    });
 
     return webhookLog.id;
   }
 
   private async updateWebhookLogSuccess(
-    workspaceId: string,
     webhookLogId: string,
     status: string,
     orderCode?: string,
   ): Promise<void> {
-    await this.webhookLogRepository.update(workspaceId, webhookLogId, {
+    await this.webhookLogRepository.updateWebhookLog(webhookLogId, {
       status: 'SUCCESS',
       responseStatus: 200,
       responseBody: { status },
@@ -359,12 +311,11 @@ export class SepayWebhookHandler implements IWebhookHandler {
   }
 
   private async updateWebhookLogFailed(
-    workspaceId: string,
     webhookLogId: string,
     error: unknown,
   ): Promise<void> {
     try {
-      await this.webhookLogRepository.update(workspaceId, webhookLogId, {
+      await this.webhookLogRepository.updateWebhookLog(webhookLogId, {
         status: 'FAILED',
         responseStatus: 500,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',

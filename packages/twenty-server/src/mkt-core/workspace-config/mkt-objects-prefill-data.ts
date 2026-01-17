@@ -7,9 +7,12 @@ import { prefillMktSInvoices } from 'src/mkt-core/seeder/invoice-seeder/prefill-
 import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
 import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
 import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
-import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-data-access-policies';
-import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-department-hierarchies';
-import { prefillMktDepartments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-departments';
+import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/prefill-mkt-data-access-policies';
+import { prefillMktPermissionContexts } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/prefill-mkt-permission-contexts';
+import { prefillMktDepartmentAncestries } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/prefill-mkt-department-ancestries';
+import { prefillMktDepartmentHierarchies } from 'src/mkt-core/seeder/department-seeder/mkt-department-hierarchy/prefill-mkt-department-hierarchies';
+import { prefillMktDepartmentSubManagers } from 'src/mkt-core/seeder/department-seeder/mkt-department-sub-manager/prefill-mkt-department-sub-managers';
+import { prefillMktDepartments } from 'src/mkt-core/seeder/department-seeder/mkt-department/prefill-mkt-departments';
 import { prefillMktGenericComboItems } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combo-items';
 import { prefillMktGenericCombos } from 'src/mkt-core/seeder/combo-seeder/prefill-mkt-generic-combos';
 import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-employment-statuses';
@@ -23,7 +26,7 @@ import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/p
 import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-methods';
 import { prefillMktPayments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payments';
-import { prefillMktPermissionAudits } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-permission-audits';
+import { prefillMktPermissionAudits } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/prefill-mkt-permission-audits';
 import { prefillMktStaffStatusHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-staff-status-histories';
 import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tags';
 import { prefillMktTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-templates';
@@ -36,6 +39,18 @@ import { prefillMktPromotionRules } from 'src/mkt-core/seeder/promotion-seeder/p
 import { prefillMktPromotionUsages } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotion-usages';
 import { prefillMktPromotions } from 'src/mkt-core/seeder/promotion-seeder/prefill-mkt-promotions';
 import { prefillMktOptions } from 'src/mkt-core/seeder/mkt-option-seeder/prefill-mkt-options';
+// Permission template seeder imports
+import { prefillMktPermissionActions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/prefill-mkt-permission-actions';
+import { prefillMktPermissionResources } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/prefill-mkt-permission-resources';
+import { prefillMktPermissionTemplates } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/prefill-mkt-permission-templates';
+import { prefillMktTemplateResourcePermissions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/prefill-mkt-template-resource-permissions';
+import { prefillMktTemplateSystemActions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/prefill-mkt-template-system-actions';
+import { prefillMktUserPermissionTemplates } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/prefill-mkt-user-permission-templates';
+// Casbin seeder imports
+import { prefillMktCasbinRules } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/prefill-mkt-casbin-rules';
+import { prefillMktPolicyVersions } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/prefill-mkt-policy-versions';
+import { prefillMktPolicyChangeRequests } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/prefill-mkt-policy-change-requests';
+import { prefillMktPolicyApprovals } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/prefill-mkt-policy-approvals';
 
 export const MKT_PREFILLS = [
   // core prefills
@@ -90,6 +105,22 @@ export const MKT_PREFILLS = [
   // temporary permission prefills (should be last to ensure all dependencies exist)
   prefillMktTemporaryPermissions,
   prefillMktDepartmentHierarchies,
+  prefillMktDepartmentSubManagers,
+  prefillMktDepartmentAncestries,
+  // Permission context prefills (template layer - seed before data access policies)
+  prefillMktPermissionContexts,
   prefillMktDataAccessPolicies,
   prefillMktPermissionAudits,
+  // permission template prefills (order matters: actions -> resources -> templates -> resource permissions -> system actions -> user templates)
+  prefillMktPermissionActions,
+  prefillMktPermissionResources,
+  prefillMktPermissionTemplates,
+  prefillMktTemplateResourcePermissions,
+  prefillMktTemplateSystemActions,
+  prefillMktUserPermissionTemplates,
+  // casbin prefills (order matters: policy version -> casbin rules -> change requests -> approvals)
+  prefillMktPolicyVersions,
+  prefillMktCasbinRules,
+  prefillMktPolicyChangeRequests,
+  prefillMktPolicyApprovals,
 ];
