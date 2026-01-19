@@ -522,4 +522,80 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       totalValue: parseFloat(s.totalValue) || 0,
     }));
   }
+
+  // ============================================
+  // PAYMENT DEADLINE OPERATIONS
+  // ============================================
+
+  /**
+   * Find orders that are overdue (PROCESSING status with deadline passed)
+   * Used by PaymentOverdueScanService
+   */
+  async findOverdueOrders(
+    workspaceId: string,
+    options: {
+      status: ORDER_STATUS;
+      paymentDeadlineBefore: Date;
+    },
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    this.logger.debug(
+      `Finding overdue orders with status ${options.status} and deadline before ${options.paymentDeadlineBefore}`,
+    );
+
+    const repository = await this.getRepository();
+
+    const orders = await repository
+      .createQueryBuilder('order')
+      .where('order.status = :status', { status: options.status })
+      .andWhere('order.paymentDeadline < :deadline', {
+        deadline: options.paymentDeadlineBefore,
+      })
+      .andWhere('order.paymentDeadline IS NOT NULL')
+      .orderBy('order.paymentDeadline', 'ASC')
+      .getMany();
+
+    this.logger.debug(`Found ${orders.length} overdue orders`);
+
+    return orders;
+  }
+
+  /**
+   * Get order licenses from order items
+   * Returns license data from MKT Server stored in order items
+   * Used by PaymentDeadlineProcessor
+   */
+  async getOrderLicenses(
+    orderId: string,
+    _workspaceId: string,
+  ): Promise<Array<{ id: string; status: string }> | null> {
+    this.logger.debug(`Getting licenses for order ${orderId}`);
+
+    const order = await this.findByIdWithOptions(orderId, {
+      relations: { orderItems: true },
+    });
+
+    if (!order || !order.orderItems) {
+      return null;
+    }
+
+    // Extract license IDs from order items metadata
+    // Order items store license info from MKT Server
+    const licenses: Array<{ id: string; status: string }> = [];
+
+    for (const item of order.orderItems) {
+      // Check if item has license info in metadata or licenseId field
+      const itemAny = item as unknown as Record<string, unknown>;
+
+      if (itemAny.licenseId) {
+        licenses.push({
+          id: itemAny.licenseId as string,
+          status: (itemAny.licenseStatus as string) ?? 'UNKNOWN',
+        });
+      }
+    }
+
+    this.logger.debug(`Found ${licenses.length} licenses for order ${orderId}`);
+
+    return licenses;
+  }
 }

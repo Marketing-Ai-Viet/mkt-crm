@@ -107,6 +107,21 @@ export const REMINDER_TYPE_THRESHOLDS = {
 } as const;
 
 // ============================================
+// PAYMENT OVERDUE SCAN CONFIG
+// ============================================
+
+export const PAYMENT_OVERDUE_SCAN_CONFIG = {
+  /** Cron pattern for overdue scan job (every 5 minutes) */
+  CRON_PATTERN: '0 */5 * * * *',
+
+  /** Max orders to process per scan */
+  BATCH_SIZE: 100,
+
+  /** Whether overdue scan is enabled */
+  ENABLED: true,
+} as const;
+
+// ============================================
 // JOB NAMES
 // ============================================
 

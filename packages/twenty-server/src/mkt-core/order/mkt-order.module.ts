@@ -19,7 +19,11 @@ import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integratio
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
-import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs';
+import {
+  MktOrderOverdueJob,
+  PaymentDeadlineProcessor,
+  PaymentOverdueScanJob,
+} from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 import {
@@ -195,6 +199,9 @@ import {
 
     // Jobs
     MktOrderOverdueJob,
+    // New Payment Flow Jobs
+    PaymentDeadlineProcessor,
+    PaymentOverdueScanJob,
 
     // GraphQL Resolvers
     OrderMutationResolver,
