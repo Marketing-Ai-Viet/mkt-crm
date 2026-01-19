@@ -28,7 +28,6 @@ import {
   OrderValidationService,
   OrderConfirmUtilsService,
 } from 'src/mkt-core/order/services/core';
-import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
   CreateOrderWithItemsInput,
@@ -79,7 +78,6 @@ export class OrderOrchestrationService {
     private readonly paymentRepository: MktPaymentRepository,
     private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
-    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
     @Inject(ORDER_CONFIG_KEY)
     private readonly config: OrderConfig,
   ) {}
@@ -463,25 +461,23 @@ export class OrderOrchestrationService {
         qrCodeUrl = paymentResult.qrCodeUrl;
       }
 
-      // 3. Update order status to PENDING_PAYMENT
+      // 3. Update order status to PROCESSING (new payment flow)
+      // Note: In new payment flow, DRAFT → PROCESSING with payment deadline scheduling
+      // handled by PaymentDeadlineProcessor
       const updateNote = input.note
         ? `[PUBLISHED] ${input.note}`
         : '[PUBLISHED] Draft order published';
 
       await this.orderRepository.update(order.id, {
-        status: ORDER_STATUS.PENDING_PAYMENT,
+        status: ORDER_STATUS.PROCESSING,
         note: order.note ? `${order.note}\n${updateNote}` : updateNote,
       });
 
-      // 4. Schedule overdue check
-      await this.orderOverdueSchedulerService.scheduleOverdueCheck(
-        workspaceId,
-        order.id,
-        order.orderCode,
-      );
+      // Note: Payment deadline scheduling is now handled by ConfirmOrderSaga
+      // via SchedulePaymentRemindersStep using PaymentDeadlineProcessor
 
       this.logger.log(
-        `[PublishDraft] Success - Order ${order.id} published with status PENDING_PAYMENT`,
+        `[PublishDraft] Success - Order ${order.id} published with status PROCESSING`,
       );
 
       return {
@@ -489,7 +485,7 @@ export class OrderOrchestrationService {
         orderId: order.id,
         orderCode: order.orderCode,
         paymentQrCode: qrCodeUrl,
-        newStatus: ORDER_STATUS.PENDING_PAYMENT,
+        newStatus: ORDER_STATUS.PROCESSING,
       };
     } catch (error) {
       this.logger.error('[PublishDraft] Unexpected error', error);

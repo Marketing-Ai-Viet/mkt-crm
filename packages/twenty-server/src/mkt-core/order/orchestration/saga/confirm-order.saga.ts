@@ -2,7 +2,6 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   ConfirmOrderSagaContext,
   createConfirmOrderContext,
@@ -17,7 +16,6 @@ import {
   CalculatePaymentDeadlineStep,
   SchedulePaymentRemindersStep,
 } from 'src/mkt-core/order/orchestration/steps/confirm-order';
-import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import {
   MKT_ORDER_EVENT_TYPES,
   ConfirmOrderInput,
@@ -78,7 +76,6 @@ export class ConfirmOrderSaga
   constructor(
     twentyORMGlobalManager: TwentyORMGlobalManager,
     eventEmitter: EventEmitter2,
-    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
     // Inject steps directly
     private readonly validateOrderStep: ValidateOrderStep,
     private readonly validateTransitionStep: ValidateTransitionStep,
@@ -163,9 +160,6 @@ export class ConfirmOrderSaga
       return;
     }
 
-    // Cancel overdue check nếu order chuyển từ PENDING_PAYMENT sang status khác
-    this.cancelOverdueCheckIfNeeded(typedContext);
-
     const eventType = input.accountingConfirmed
       ? MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED
       : MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
@@ -192,32 +186,5 @@ export class ConfirmOrderSaga
     });
 
     this.logger.log(`Emitted ${eventType} for order: ${typedContext.orderId}`);
-  }
-
-  /**
-   * Cancel overdue check nếu order chuyển từ PENDING_PAYMENT sang status khác
-   *
-   * Khi order được thanh toán (ACCOUNTING_CONFIRMED) hoặc huỷ (CANCEL),
-   * cần cancel delayed job để tránh mark OVERDUE sai.
-   */
-  private cancelOverdueCheckIfNeeded(context: ConfirmOrderSagaContext): void {
-    // Chỉ cancel nếu previous status là PENDING_PAYMENT
-    if (context.previousStatus !== ORDER_STATUS.PENDING_PAYMENT) {
-      return;
-    }
-
-    if (!context.orderId) {
-      return;
-    }
-
-    // Fire and forget - không block saga completion
-    this.orderOverdueSchedulerService
-      .cancelOverdueCheck(context.orderId)
-      .catch((error) => {
-        // Log nhưng không fail - job sẽ tự skip khi execute do idempotent check
-        this.logger.warn(
-          `Failed to cancel overdue check for order ${context.orderId}: ${error.message}`,
-        );
-      });
   }
 }

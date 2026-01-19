@@ -245,37 +245,6 @@ export class OrderPaymentSummaryOutput {
 }
 
 /**
- * Order Overdue Queue Statistics
- *
- * Provides observability for the order overdue delayed job queue.
- * Used for monitoring and debugging.
- */
-@ObjectType()
-export class OrderOverdueQueueStatsOutput {
-  @Field(() => Number, { description: 'Jobs waiting to be processed' })
-  waiting: number;
-
-  @Field(() => Number, {
-    description: 'Jobs delayed (scheduled for future execution)',
-  })
-  delayed: number;
-
-  @Field(() => Number, { description: 'Jobs currently being processed' })
-  active: number;
-
-  @Field(() => Number, { description: 'Jobs completed successfully' })
-  completed: number;
-
-  @Field(() => Number, { description: 'Jobs that failed' })
-  failed: number;
-
-  @Field(() => Number, {
-    description: 'Total jobs in queue (waiting + delayed + active)',
-  })
-  total: number;
-}
-
-/**
  * Response for publishing a draft order
  */
 @ObjectType()

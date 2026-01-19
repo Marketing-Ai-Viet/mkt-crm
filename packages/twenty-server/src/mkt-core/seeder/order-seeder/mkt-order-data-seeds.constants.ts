@@ -4,6 +4,26 @@ import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.cons
 import { GenericComboSnapshot } from 'src/mkt-core/order/types';
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+
+// ============================================
+// PAYMENT DEADLINE SOURCE CONSTANTS
+// ============================================
+
+export const PAYMENT_DEADLINE_SOURCE = {
+  GLOBAL: 'GLOBAL',
+  PRODUCT: 'PRODUCT',
+  CUSTOMER_TYPE: 'CUSTOMER_TYPE',
+  RESELLER_TIER: 'RESELLER_TIER',
+  MANUAL: 'MANUAL',
+} as const;
+
+type PaymentDeadlineSource =
+  (typeof PAYMENT_DEADLINE_SOURCE)[keyof typeof PAYMENT_DEADLINE_SOURCE];
+
+// ============================================
+// SEED DATA TYPE
+// ============================================
 
 type MktOrderDataSeed = {
   id: string;
@@ -39,6 +59,13 @@ type MktOrderDataSeed = {
   paidAmount: number;
   remainingAmount: number;
   paymentStatus: string;
+  // Payment deadline fields (New Payment Flow)
+  paymentDeadline: Date | null;
+  paymentDeadlineSource: PaymentDeadlineSource | null;
+  lockedAt: Date | null;
+  lockedReason: string | null;
+  remindersSent: number;
+  lastReminderAt: Date | null;
 };
 
 // prettier-ignore
@@ -75,6 +102,13 @@ export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
   'paidAmount',
   'remainingAmount',
   'paymentStatus',
+  // Payment deadline fields (New Payment Flow)
+  'paymentDeadline',
+  'paymentDeadlineSource',
+  'lockedAt',
+  'lockedReason',
+  'remindersSent',
+  'lastReminderAt',
 ];
 
 // Default promotion fields for seed data
@@ -88,6 +122,99 @@ const DEFAULT_PROMOTION_FIELDS = {
 const DEFAULT_COMBO_FIELDS = {
   appliedCombos: null,
   comboDiscount: 0,
+};
+
+// ============================================
+// PAYMENT DEADLINE HELPERS
+// ============================================
+
+/**
+ * Default payment deadline fields for completed/legacy orders
+ * (Orders without new payment flow)
+ */
+const DEFAULT_PAYMENT_DEADLINE_FIELDS = {
+  paymentDeadline: null,
+  paymentDeadlineSource: null,
+  lockedAt: null,
+  lockedReason: null,
+  remindersSent: 0,
+  lastReminderAt: null,
+};
+
+/**
+ * Create payment deadline fields for PROCESSING orders
+ * (Orders confirmed, license issued with PENDING_PAYMENT, waiting for payment)
+ *
+ * @param hoursFromNow - Hours from now for payment deadline
+ * @param source - Source of deadline configuration
+ * @param remindersSent - Number of reminders already sent
+ */
+const CREATE_PROCESSING_DEADLINE_FIELDS = (
+  hoursFromNow: number,
+  source: PaymentDeadlineSource,
+  remindersSent = 0,
+): Pick<
+  MktOrderDataSeed,
+  | 'paymentDeadline'
+  | 'paymentDeadlineSource'
+  | 'lockedAt'
+  | 'lockedReason'
+  | 'remindersSent'
+  | 'lastReminderAt'
+> => {
+  const NOW = DateTimeUtils.now();
+  const DEADLINE = DateTimeUtils.add(NOW, { hours: hoursFromNow });
+  const LAST_REMINDER =
+    remindersSent > 0 ? DateTimeUtils.subtract(NOW, { hours: 2 }) : null;
+
+  return {
+    paymentDeadline: DateTimeUtils.toDate(DEADLINE) ?? null,
+    paymentDeadlineSource: source,
+    lockedAt: null,
+    lockedReason: null,
+    remindersSent,
+    lastReminderAt: LAST_REMINDER
+      ? (DateTimeUtils.toDate(LAST_REMINDER) ?? null)
+      : null,
+  };
+};
+
+/**
+ * Create payment deadline fields for LOCKED orders
+ * (Orders locked due to overdue payment)
+ *
+ * @param hoursAgoLocked - Hours ago when the order was locked
+ * @param source - Source of deadline configuration
+ * @param reason - Reason for locking
+ */
+const CREATE_LOCKED_DEADLINE_FIELDS = (
+  hoursAgoLocked: number,
+  source: PaymentDeadlineSource,
+  reason = 'Payment overdue - deadline exceeded',
+): Pick<
+  MktOrderDataSeed,
+  | 'paymentDeadline'
+  | 'paymentDeadlineSource'
+  | 'lockedAt'
+  | 'lockedReason'
+  | 'remindersSent'
+  | 'lastReminderAt'
+> => {
+  const NOW = DateTimeUtils.now();
+  const LOCKED_AT = DateTimeUtils.subtract(NOW, { hours: hoursAgoLocked });
+  // Deadline was before lock time (e.g., 24h before locked)
+  const DEADLINE = DateTimeUtils.subtract(LOCKED_AT, { minutes: 1 });
+  // Last reminder was sent ~30 minutes before deadline
+  const LAST_REMINDER = DateTimeUtils.subtract(DEADLINE, { minutes: 30 });
+
+  return {
+    paymentDeadline: DateTimeUtils.toDate(DEADLINE) ?? null,
+    paymentDeadlineSource: source,
+    lockedAt: DateTimeUtils.toDate(LOCKED_AT) ?? null,
+    lockedReason: reason,
+    remindersSent: 3, // All 3 reminders were sent (6h, 2h, 30min)
+    lastReminderAt: DateTimeUtils.toDate(LAST_REMINDER) ?? null,
+  };
 };
 
 /**
@@ -143,6 +270,13 @@ DIAMOND_ORDER_17:"b882a0c9-27dd-4cdd-8239-823ec11f3ee4",
 DIAMOND_ORDER_18:"37b8f1be-0b69-4768-b5cc-cbda101c3163",
 DIAMOND_ORDER_19:"faac3d90-bdb1-4b42-a0c0-88c965eee9ff",
 DIAMOND_ORDER_20:"f840d091-cf46-4d5a-99c9-d2259cacd3e3",
+  // New Payment Flow - PROCESSING orders (waiting for payment, license issued with PENDING_PAYMENT)
+  PROCESSING_ORDER_1: 'c1a2b3c4-d5e6-f7a8-b9c0-1234567890ab',
+  PROCESSING_ORDER_2: 'd2b3c4d5-e6f7-a8b9-c0d1-234567890abc',
+  PROCESSING_ORDER_3: 'e3c4d5e6-f7a8-b9c0-d1e2-34567890abcd',
+  // New Payment Flow - LOCKED orders (overdue, license locked on MKT Server)
+  LOCKED_ORDER_1: 'f4d5e6f7-a8b9-c0d1-e2f3-4567890abcde',
+  LOCKED_ORDER_2: 'a5e6f7a8-b9c0-d1e2-f3a4-567890abcdef',
 };
 
 // prettier-ignore
@@ -173,6 +307,8 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(12100000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
@@ -200,6 +336,8 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(17100000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
@@ -227,6 +365,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(6600000, false),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
@@ -254,6 +393,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(16500000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
@@ -281,6 +421,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(9900000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
@@ -308,6 +449,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(3300000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
@@ -335,6 +477,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(5500000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
@@ -362,6 +505,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(17600000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
@@ -389,6 +533,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(3300000, false),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
@@ -416,6 +561,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(5500000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
@@ -443,6 +589,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(9900000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
@@ -470,6 +617,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(11000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
@@ -497,6 +645,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(9350000, false),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_14,
@@ -524,6 +673,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(12100000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   // GOLD_CUSTOMER orders
   {
@@ -552,6 +702,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(26500000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_2,
@@ -579,6 +730,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(19300000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_3,
@@ -606,6 +758,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(23400000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   // DIAMOND_CUSTOMER orders
   {
@@ -634,6 +787,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(525000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_2,
@@ -661,6 +815,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(315000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_3,
@@ -688,6 +843,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(840000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_4,
@@ -715,6 +871,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(475000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_5,
@@ -742,6 +899,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(630000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_6,
@@ -769,6 +927,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(263000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_7,
@@ -796,6 +955,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(127000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_8,
@@ -823,6 +983,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(190000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_9,
@@ -850,6 +1011,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(368000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_10,
@@ -877,6 +1039,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(294000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_11,
@@ -904,6 +1067,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(158000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_12,
@@ -931,6 +1095,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(210000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_13,
@@ -958,6 +1123,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(336000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_14,
@@ -985,6 +1151,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(420000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_15,
@@ -1012,6 +1179,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(630000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_16,
@@ -1039,6 +1207,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(399000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_17,
@@ -1066,6 +1235,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(1260000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_18,
@@ -1093,6 +1263,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(525000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_19,
@@ -1120,6 +1291,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(788000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_20,
@@ -1147,5 +1319,156 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(2100000000, true),
+    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+  },
+
+  // ============================================
+  // PROCESSING ORDERS (New Payment Flow)
+  // License đã cấp với status PENDING_PAYMENT, đang chờ thanh toán
+  // ============================================
+  {
+    id: MKT_ORDER_DATA_SEEDS_IDS.PROCESSING_ORDER_1,
+    name: 'Đơn hàng MKT Care Pro - Đang chờ thanh toán (deadline 12h)',
+    position: 38,
+    orderCode: 'MKT-PROC-2024-038',
+    status: ORDER_STATUS.PROCESSING,
+    subtotal: 15000000,
+    tax: 1500000,
+    discount: 0,
+    discountPercent: 0,
+    refundAmount: 0,
+    totalAmount: 16500000,
+    currency: 'VND',
+    note: 'Đơn hàng PROCESSING - License đã cấp với PENDING_PAYMENT, deadline còn 12h',
+    trialLicense: false,
+    requireContract: true,
+    sInvoiceStatus: SINVOICE_STATUS.PENDING,
+    licenseStatus: 'PENDING_PAYMENT',
+    accountingConfirmed: false,
+    metadata: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
+    createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
+    ...CREATE_PAYMENT_FIELDS(16500000, false),
+    ...CREATE_PROCESSING_DEADLINE_FIELDS(12, PAYMENT_DEADLINE_SOURCE.GLOBAL, 1),
+  },
+  {
+    id: MKT_ORDER_DATA_SEEDS_IDS.PROCESSING_ORDER_2,
+    name: 'Đơn hàng MKT Enterprise - Đang chờ thanh toán (deadline 48h, VIP)',
+    position: 39,
+    orderCode: 'MKT-PROC-2024-039',
+    status: ORDER_STATUS.PROCESSING,
+    subtotal: 50000000,
+    tax: 5000000,
+    discount: 2500000,
+    discountPercent: 5.0,
+    refundAmount: 0,
+    totalAmount: 52500000,
+    currency: 'VND',
+    note: 'Đơn hàng PROCESSING - Khách VIP có deadline 48h, đã gửi 0 reminder',
+    trialLicense: false,
+    requireContract: true,
+    sInvoiceStatus: SINVOICE_STATUS.PENDING,
+    licenseStatus: 'PENDING_PAYMENT',
+    accountingConfirmed: false,
+    metadata: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.DIAMOND_CUSTOMER,
+    createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
+    ...CREATE_PAYMENT_FIELDS(52500000, false),
+    ...CREATE_PROCESSING_DEADLINE_FIELDS(48, PAYMENT_DEADLINE_SOURCE.CUSTOMER_TYPE, 0),
+  },
+  {
+    id: MKT_ORDER_DATA_SEEDS_IDS.PROCESSING_ORDER_3,
+    name: 'Đơn hàng MKT Reseller Pack - Đang chờ thanh toán (deadline 72h, Gold tier)',
+    position: 40,
+    orderCode: 'MKT-PROC-2024-040',
+    status: ORDER_STATUS.PROCESSING,
+    subtotal: 100000000,
+    tax: 10000000,
+    discount: 10000000,
+    discountPercent: 10.0,
+    refundAmount: 0,
+    totalAmount: 100000000,
+    currency: 'VND',
+    note: 'Đơn hàng PROCESSING - Đại lý Gold tier có deadline 72h (3 ngày)',
+    trialLicense: false,
+    requireContract: true,
+    sInvoiceStatus: SINVOICE_STATUS.PENDING,
+    licenseStatus: 'PENDING_PAYMENT',
+    accountingConfirmed: false,
+    metadata: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
+    createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
+    ...CREATE_PAYMENT_FIELDS(100000000, false),
+    ...CREATE_PROCESSING_DEADLINE_FIELDS(72, PAYMENT_DEADLINE_SOURCE.RESELLER_TIER, 0),
+  },
+
+  // ============================================
+  // LOCKED ORDERS (New Payment Flow)
+  // License bị khóa trên MKT Server do quá hạn thanh toán
+  // ============================================
+  {
+    id: MKT_ORDER_DATA_SEEDS_IDS.LOCKED_ORDER_1,
+    name: 'Đơn hàng MKT Basic - Bị khóa do quá hạn (2 ngày trước)',
+    position: 41,
+    orderCode: 'MKT-LOCK-2024-041',
+    status: ORDER_STATUS.LOCKED,
+    subtotal: 5000000,
+    tax: 500000,
+    discount: 0,
+    discountPercent: 0,
+    refundAmount: 0,
+    totalAmount: 5500000,
+    currency: 'VND',
+    note: 'Đơn hàng LOCKED - License bị khóa trên MKT Server do quá hạn 2 ngày',
+    trialLicense: false,
+    requireContract: false,
+    sInvoiceStatus: SINVOICE_STATUS.PENDING,
+    licenseStatus: 'LOCKED',
+    accountingConfirmed: false,
+    metadata: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.BRONZE_CUSTOMER,
+    createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
+    ...CREATE_PAYMENT_FIELDS(5500000, false),
+    ...CREATE_LOCKED_DEADLINE_FIELDS(48, PAYMENT_DEADLINE_SOURCE.GLOBAL),
+  },
+  {
+    id: MKT_ORDER_DATA_SEEDS_IDS.LOCKED_ORDER_2,
+    name: 'Đơn hàng MKT Premium - Bị khóa do quá hạn (1 tuần trước)',
+    position: 42,
+    orderCode: 'MKT-LOCK-2024-042',
+    status: ORDER_STATUS.LOCKED,
+    subtotal: 25000000,
+    tax: 2500000,
+    discount: 1000000,
+    discountPercent: 4.0,
+    refundAmount: 0,
+    totalAmount: 26500000,
+    currency: 'VND',
+    note: 'Đơn hàng LOCKED - Khách hàng Silver bị khóa do quá hạn 1 tuần, cần liên hệ urgently',
+    trialLicense: false,
+    requireContract: true,
+    sInvoiceStatus: SINVOICE_STATUS.PENDING,
+    licenseStatus: 'LOCKED',
+    accountingConfirmed: false,
+    metadata: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    mktCustomerId: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
+    createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+    ...DEFAULT_PROMOTION_FIELDS,
+    ...DEFAULT_COMBO_FIELDS,
+    ...CREATE_PAYMENT_FIELDS(26500000, false),
+    ...CREATE_LOCKED_DEADLINE_FIELDS(168, PAYMENT_DEADLINE_SOURCE.CUSTOMER_TYPE, 'Payment overdue - customer requested extension but did not pay'),
   },
 ];

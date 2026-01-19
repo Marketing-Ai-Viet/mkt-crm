@@ -5,7 +5,6 @@
  */
 
 export const MKT_DELAYED_JOB_QUEUES = {
-  ORDER_OVERDUE: 'mkt-order-overdue-queue',
   PAYMENT_REMINDER: 'mkt-payment-reminder-queue',
   PAYMENT_DEADLINE: 'mkt-payment-deadline-queue',
 } as const;

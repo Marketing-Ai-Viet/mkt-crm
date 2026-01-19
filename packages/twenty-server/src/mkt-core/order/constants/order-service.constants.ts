@@ -322,14 +322,14 @@ export const ORDER_TRIAL_CONFIG = {
 } as const;
 
 // ============================================
-// OVERDUE JOB CONFIGURATION
+// TRIAL QUEUE JOB CONFIGURATION
 // ============================================
 
 /**
  * Job configuration for order trial expiry handling.
- * Replaces the old 24-hour overdue check.
+ * Used for trial-related delayed jobs (reminder, expiry check).
  */
-export const ORDER_OVERDUE_CONFIG = {
+export const ORDER_TRIAL_QUEUE_CONFIG = {
   /** Job kiểm tra trial sắp hết hạn và gửi reminder */
   TRIAL_REMINDER_JOB: 'order-trial-reminder',
 

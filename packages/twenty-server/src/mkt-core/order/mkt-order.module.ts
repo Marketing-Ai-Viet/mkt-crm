@@ -20,7 +20,6 @@ import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.mod
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
 import {
-  MktOrderOverdueJob,
   PaymentDeadlineProcessor,
   PaymentOverdueScanJob,
 } from 'src/mkt-core/order/jobs';
@@ -43,14 +42,11 @@ import {
   OrderPaymentCalculationService,
   OrderConfirmUtilsService,
   OrderMetadataService,
-  MktOrderOverdueService,
-  OrderOverdueSchedulerService,
-  OrderOverdueWorkerService,
-  OrderOverdueMigrationService,
   // New Payment Flow Services
   PaymentDeadlineService,
   OrderConfirmService,
   OrderLockService,
+  PaymentOverdueScanService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -62,7 +58,6 @@ import {
   OrderMutationResolver,
   OrderQueryResolver,
   OrderItemMutationResolver,
-  OrderOverdueQueryResolver,
 } from './resolvers';
 import {
   MktOrderCustomEventListener,
@@ -148,15 +143,11 @@ import {
     OrderPaymentCalculationService,
     OrderConfirmUtilsService,
     OrderMetadataService,
-    MktOrderOverdueService,
     // New Payment Flow Services
     PaymentDeadlineService,
     OrderConfirmService,
     OrderLockService,
-    // Delayed Job Services (order overdue)
-    OrderOverdueSchedulerService,
-    OrderOverdueWorkerService,
-    OrderOverdueMigrationService, // Auto-run on startup
+    PaymentOverdueScanService,
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -197,9 +188,7 @@ import {
     OrderPromotionIntegrationService,
     OrderComboIntegrationService,
 
-    // Jobs
-    MktOrderOverdueJob,
-    // New Payment Flow Jobs
+    // Jobs - Payment Flow
     PaymentDeadlineProcessor,
     PaymentOverdueScanJob,
 
@@ -207,7 +196,6 @@ import {
     OrderMutationResolver,
     OrderQueryResolver,
     OrderItemMutationResolver,
-    OrderOverdueQueryResolver, // Observability - queue stats
   ],
   exports: [
     // Repositories
@@ -233,8 +221,6 @@ import {
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
     OrderComboIntegrationService,
-    // Delayed Job Services
-    OrderOverdueSchedulerService,
     // Sagas
     ConfirmOrderSaga,
     UpdateOrderSaga,

@@ -55,28 +55,6 @@ export type OrderBidvConfig = {
 };
 
 /**
- * Order overdue configuration
- *
- * Configuration for delayed job system that marks orders as OVERDUE
- */
-export type OrderOverdueConfig = {
-  /** Delay in milliseconds before order becomes overdue */
-  delayMs: number;
-  /** Delay in hours (for display) */
-  delayHours: number;
-  /** Max retry attempts when job fails */
-  retryAttempts: number;
-  /** Base backoff delay in ms for exponential retry */
-  backoffMs: number;
-  /** Worker concurrency */
-  workerConcurrency: number;
-  /** Job name */
-  jobName: string;
-  /** Job ID prefix */
-  jobIdPrefix: string;
-};
-
-/**
  * Order tax configuration
  *
  * Configuration for tax calculation in order module
@@ -97,6 +75,5 @@ export type OrderConfig = {
   urls: OrderUrlConfig;
   sepay: OrderSepayConfig;
   bidv: OrderBidvConfig;
-  overdue: OrderOverdueConfig;
   tax: OrderTaxConfig;
 };
