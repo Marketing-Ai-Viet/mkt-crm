@@ -15,6 +15,7 @@ import {
  * ConfirmedState - State for confirmed orders (payment verified, license created)
  *
  * Transitions:
+ * - CONFIRMED → PROCESSING (new flow: tạo license ngay, chờ thanh toán)
  * - CONFIRMED → COMPLETED (hoàn thành đơn hàng)
  * - CONFIRMED → REFUND (hoàn tiền toàn bộ)
  * - CONFIRMED → REFUND_PARTIAL (hoàn tiền một phần)
@@ -31,6 +32,7 @@ export class ConfirmedState extends OrderState {
     _input: OrderStateInput,
   ): boolean {
     return [
+      ORDER_STATUS.PROCESSING, // New flow: tạo license ngay, chờ thanh toán
       ORDER_STATUS.COMPLETED,
       ORDER_STATUS.REFUND,
       ORDER_STATUS.REFUND_PARTIAL,
@@ -42,6 +44,11 @@ export class ConfirmedState extends OrderState {
     context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
+    // CONFIRMED → PROCESSING (new flow: tạo license ngay, chờ thanh toán)
+    if (input.status === ORDER_STATUS.PROCESSING) {
+      return ORDER_ACTION.CONFIRM_ORDER;
+    }
+
     // CONFIRMED → COMPLETED
     if (input.status === ORDER_STATUS.COMPLETED) {
       return ORDER_ACTION.COMPLETE;
@@ -76,6 +83,16 @@ export class ConfirmedState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
+      // New flow: CONFIRMED → PROCESSING
+      case ORDER_ACTION.CONFIRM_ORDER:
+        return {
+          ...payload,
+          data: {
+            ...payload.data,
+            status: ORDER_STATUS.PROCESSING,
+          },
+        };
+
       case ORDER_ACTION.COMPLETE:
         return {
           ...payload,

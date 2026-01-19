@@ -12,6 +12,7 @@ import { CanceledState } from 'src/mkt-core/order/states/canceled-state';
 import { CompletedState } from 'src/mkt-core/order/states/completed-state';
 import { ConfirmedState } from 'src/mkt-core/order/states/confirm-state';
 import { DraftState } from 'src/mkt-core/order/states/draft-state';
+import { LockedState } from 'src/mkt-core/order/states/locked-state';
 import {
   OrderState,
   OrderStateContext,
@@ -19,6 +20,7 @@ import {
 } from 'src/mkt-core/order/types/order-state.interface';
 import { OverdueState } from 'src/mkt-core/order/states/overdue-state';
 import { PendingPaymentState } from 'src/mkt-core/order/states/pending-payment-state';
+import { ProcessingState } from 'src/mkt-core/order/states/processing-state';
 import { RefundPartialState } from 'src/mkt-core/order/states/refund-partial-state';
 import { RefundState } from 'src/mkt-core/order/states/refund-state';
 import { TrialExpiredState } from 'src/mkt-core/order/states/trial-expired-state';
@@ -58,7 +60,8 @@ export class OrderStateMachine implements OrderStateContext {
    * Create state from current order status
    *
    * Flow chính:
-   * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+   * - NEW_ORDER (legacy): DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+   * - NEW_ORDER (new flow): DRAFT → CONFIRMED → PROCESSING → COMPLETED | LOCKED
    * - TRIAL: TRIAL → (TRIAL_EXPIRED | PENDING_PAYMENT)
    */
   private createStateFromOrder(
@@ -79,8 +82,12 @@ export class OrderStateMachine implements OrderStateContext {
         return new TrialExpiredState();
       case ORDER_STATUS.CONFIRMED:
         return new ConfirmedState();
+      case ORDER_STATUS.PROCESSING:
+        return new ProcessingState();
       case ORDER_STATUS.COMPLETED:
         return new CompletedState();
+      case ORDER_STATUS.LOCKED:
+        return new LockedState();
       case ORDER_STATUS.CANCELED:
         return new CanceledState();
       case ORDER_STATUS.BLOCKED:
