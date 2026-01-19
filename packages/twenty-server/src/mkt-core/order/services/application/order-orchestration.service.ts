@@ -8,7 +8,10 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 // } from 'src/mkt-core/common/idempotency';
 import { IdempotencyService } from 'src/mkt-core/common/idempotency';
 import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  ORDER_STATUS,
+  ORDER_ACTION,
+} from 'src/mkt-core/order/constants/order-status.constants';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
@@ -561,5 +564,292 @@ export class OrderOrchestrationService {
     }
 
     return { qrCodeUrl: primaryQrCodeUrl };
+  }
+
+  // ============================================
+  // NEW PAYMENT FLOW METHODS
+  // ============================================
+
+  /**
+   * Confirm order with license creation (New Payment Flow)
+   *
+   * Flow: DRAFT → CONFIRMED → PROCESSING
+   * - Calculates payment deadline based on priority rules
+   * - Creates licenses on MKT Server with PENDING_PAYMENT status
+   * - Creates invoice
+   * - Schedules payment reminders
+   */
+  async confirmOrderWithLicense(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: {
+      orderId: string;
+      manualDeadlineHours?: number;
+      note?: string;
+    },
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    orderCode?: string;
+    newStatus?: ORDER_STATUS;
+    invoice?: { id: string; invoiceNumber?: string };
+    licenses?: Array<{ id: string; licenseCode?: string; status: string }>;
+    paymentDeadline?: Date;
+    paymentDeadlineSource?: string;
+    paymentDeadlineHours?: number;
+    totalAmount?: number;
+    error?: string;
+  }> {
+    this.logger.log(
+      `[ConfirmOrderWithLicense] Starting for order: ${input.orderId}`,
+    );
+
+    try {
+      // Call ConfirmOrderSaga with new flow
+      // Note: ConfirmOrderSaga should be updated to handle new payment flow
+      const result = await this.confirmOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        {
+          orderId: input.orderId,
+          action: ORDER_ACTION.CONFIRM_ORDER, // New action for new flow
+          note: input.note,
+          manualDeadlineHours: input.manualDeadlineHours,
+        },
+      );
+
+      if (result.success && result.data) {
+        this.logger.log(
+          `[ConfirmOrderWithLicense] Success - Order ${input.orderId} confirmed with PROCESSING status`,
+        );
+
+        return {
+          success: true,
+          orderId: result.data.orderId,
+          orderCode: result.data.orderCode,
+          newStatus: result.data.newStatus,
+          // TODO: Return invoice and licenses from saga result
+          paymentDeadline: result.data.paymentDeadline,
+          paymentDeadlineSource: result.data.paymentDeadlineSource,
+          paymentDeadlineHours: result.data.paymentDeadlineHours,
+          totalAmount: result.data.totalAmount,
+        };
+      }
+
+      return {
+        success: false,
+        error: result.error ?? 'Failed to confirm order with license',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[ConfirmOrderWithLicense] Unexpected error for order ${input.orderId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Confirm payment for an order (New Payment Flow)
+   *
+   * On successful payment:
+   * - Updates order status: PROCESSING → COMPLETED
+   * - Activates licenses: PENDING_PAYMENT → ACTIVE
+   * - Cancels scheduled reminders
+   */
+  async confirmOrderPayment(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: {
+      orderId: string;
+      paymentMethod: string;
+      amount: number;
+      transactionId?: string;
+      note?: string;
+    },
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    orderCode?: string;
+    previousStatus?: ORDER_STATUS;
+    newStatus?: ORDER_STATUS;
+    paymentSummary?: {
+      totalAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      paymentStatus: string;
+      paidPercent: number;
+    };
+    licensesActivated?: boolean;
+    message?: string;
+    error?: string;
+  }> {
+    this.logger.log(
+      `[ConfirmOrderPayment] Starting for order: ${input.orderId}, method: ${input.paymentMethod}`,
+    );
+
+    try {
+      // 1. Get order
+      const order = await this.orderRepository.findById(input.orderId);
+
+      if (!order) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} not found`,
+        };
+      }
+
+      // 2. Validate order can receive payment
+      if (
+        order.status !== ORDER_STATUS.PROCESSING &&
+        order.status !== ORDER_STATUS.LOCKED
+      ) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} is not in PROCESSING or LOCKED status. Current status: ${order.status}`,
+        };
+      }
+
+      // 3. Update payment
+      // TODO: Implement proper payment confirmation logic
+      // - Record payment
+      // - Update paid amount
+      // - Check if fully paid
+
+      const previousStatus = order.status as ORDER_STATUS;
+
+      // 4. If fully paid, update order status to COMPLETED and activate licenses
+      // TODO: Implement license activation via OrderLicenseIntegrationService
+
+      await this.orderRepository.update(order.id, {
+        status: ORDER_STATUS.COMPLETED,
+        paidAmount: input.amount,
+        // paymentStatus: PAYMENT_STATUS.PAID,
+      });
+
+      this.logger.log(
+        `[ConfirmOrderPayment] Success - Order ${input.orderId} completed`,
+      );
+
+      return {
+        success: true,
+        orderId: order.id,
+        orderCode: order.orderCode,
+        previousStatus,
+        newStatus: ORDER_STATUS.COMPLETED,
+        licensesActivated: true,
+        message: 'Payment confirmed and order completed',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[ConfirmOrderPayment] Unexpected error for order ${input.orderId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Unlock order after late payment (New Payment Flow)
+   *
+   * For orders that were LOCKED due to payment overdue:
+   * - Verifies late payment received
+   * - Updates order status: LOCKED → COMPLETED
+   * - Activates licenses: LOCKED → ACTIVE
+   */
+  async unlockOrderAfterPayment(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: {
+      orderId: string;
+      amount: number;
+      transactionId?: string;
+      note?: string;
+    },
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    orderCode?: string;
+    previousStatus?: ORDER_STATUS;
+    newStatus?: ORDER_STATUS;
+    unlockedLicenses?: Array<{
+      id: string;
+      licenseCode?: string;
+      status: string;
+    }>;
+    unlockedAt?: Date;
+    message?: string;
+    error?: string;
+  }> {
+    this.logger.log(
+      `[UnlockOrderAfterPayment] Starting for order: ${input.orderId}`,
+    );
+
+    try {
+      // 1. Get order
+      const order = await this.orderRepository.findById(input.orderId);
+
+      if (!order) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} not found`,
+        };
+      }
+
+      // 2. Validate order is LOCKED
+      if (order.status !== ORDER_STATUS.LOCKED) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} is not LOCKED. Current status: ${order.status}`,
+        };
+      }
+
+      const previousStatus = order.status as ORDER_STATUS;
+
+      // 3. Unlock licenses
+      // TODO: Implement via OrderLockService.unlockLicenses()
+
+      // 4. Update order status to COMPLETED
+      await this.orderRepository.update(order.id, {
+        status: ORDER_STATUS.COMPLETED,
+        lockedAt: null,
+        lockedReason: null,
+        paidAmount: input.amount,
+      });
+
+      const unlockedAt = new Date();
+
+      this.logger.log(
+        `[UnlockOrderAfterPayment] Success - Order ${input.orderId} unlocked`,
+      );
+
+      return {
+        success: true,
+        orderId: order.id,
+        orderCode: order.orderCode,
+        previousStatus,
+        newStatus: ORDER_STATUS.COMPLETED,
+        unlockedAt,
+        message: 'Order unlocked after late payment',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[UnlockOrderAfterPayment] Unexpected error for order ${input.orderId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }

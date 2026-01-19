@@ -129,12 +129,18 @@ export type CreateOrderWithItemsInput = {
 
 /**
  * Input để confirm order
+ *
+ * Actions supported:
+ * - ACCOUNTING_CONFIRMED: Legacy flow (create license after payment)
+ * - CONFIRM_ORDER: New payment flow (create license immediately with PENDING_PAYMENT)
  */
 export type ConfirmOrderInput = {
   orderId: string;
   action: ConfirmOrderAction;
   accountingConfirmed?: boolean;
   note?: string;
+  /** Manual override for payment deadline (hours) - new payment flow */
+  manualDeadlineHours?: number;
 };
 
 /**
@@ -192,8 +198,17 @@ export type CreateOrderResponse = {
 export type ConfirmOrderResponse = {
   success: boolean;
   orderId?: string;
+  orderCode?: string;
   newStatus?: ORDER_STATUS;
   error?: string;
+  // New payment flow fields
+  paymentDeadline?: Date;
+  paymentDeadlineSource?: string;
+  paymentDeadlineHours?: number;
+  totalAmount?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+  paymentStatus?: string;
 };
 
 /**

@@ -18,6 +18,14 @@ export const ORDER_GRAPHQL_DESCRIPTIONS = {
   UPDATE_ORDER_ITEM: 'Update an order item with optimistic locking support',
   RECALCULATE_ORDER_ITEMS: 'Recalculate all order items for an order',
 
+  // New Payment Flow mutations
+  CONFIRM_ORDER_WITH_LICENSE:
+    'Confirm order and create licenses immediately (new flow: DRAFT → PROCESSING). Licenses are created with PENDING_PAYMENT status.',
+  CONFIRM_PAYMENT:
+    'Confirm payment for an order (SEPAY webhook, bank transfer, cash). Updates order status to COMPLETED and activates licenses.',
+  UNLOCK_ORDER:
+    'Unlock order after late payment. Restores LOCKED licenses to ACTIVE status.',
+
   // ==================== QUERIES ====================
 
   VALIDATE_ORDER_INPUT: 'Validate order input before creation',

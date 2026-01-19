@@ -1,10 +1,13 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, ForbiddenException } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { User } from 'src/engine/core-modules/user/user.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
+import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { RequireDepartment } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators/require-department.decorator';
+import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import {
   ORDER_GRAPHQL_DESCRIPTIONS,
   ORDER_AUTHORIZATION,
@@ -23,6 +26,14 @@ import {
   UpdateOrderStatusResponseDto,
   PublishDraftOrderResponseDto,
 } from 'src/mkt-core/order/dto/order-response.output';
+import {
+  ConfirmOrderWithLicenseInputDto,
+  ConfirmOrderWithLicenseOutputDto,
+  ConfirmPaymentInputDto,
+  PaymentConfirmOutputDto,
+  UnlockOrderInputDto,
+  UnlockOrderOutputDto,
+} from 'src/mkt-core/order/dto/payment-flow.dto';
 import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
@@ -187,5 +198,148 @@ export class OrderMutationResolver {
         note: input.note,
       },
     );
+  }
+
+  // ============================================
+  // NEW PAYMENT FLOW MUTATIONS
+  // ============================================
+
+  /**
+   * Confirm order with license creation (New Payment Flow)
+   *
+   * Flow: DRAFT → CONFIRMED → PROCESSING
+   * - Calculates payment deadline based on priority rules
+   * - Creates licenses on MKT Server with PENDING_PAYMENT status
+   * - Creates invoice
+   * - Schedules payment reminders
+   *
+   * Authorization: SALES department + Executives
+   */
+  @RequireDepartment(ORDER_AUTHORIZATION.CONFIRM_ORDER_WITH_LICENSE)
+  @Mutation(() => ConfirmOrderWithLicenseOutputDto, {
+    description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER_WITH_LICENSE,
+  })
+  async confirmOrderWithLicense(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+    @Args('input') input: ConfirmOrderWithLicenseInputDto,
+  ): Promise<ConfirmOrderWithLicenseOutputDto> {
+    return this.orderOrchestrationService.confirmOrderWithLicense(
+      workspace.id,
+      workspaceMemberId,
+      {
+        orderId: input.orderId,
+        manualDeadlineHours: input.paymentDeadlineHours,
+        note: input.note,
+      },
+    );
+  }
+
+  /**
+   * Confirm payment for an order (New Payment Flow)
+   *
+   * Handles payment confirmation from multiple sources:
+   * - SEPAY webhook
+   * - Bank transfer (manual)
+   * - Cash payment (accounting only)
+   *
+   * On successful payment:
+   * - Updates order status: PROCESSING → COMPLETED
+   * - Activates licenses: PENDING_PAYMENT → ACTIVE
+   * - Cancels scheduled reminders
+   *
+   * Authorization: SALES (bank transfer) + ACCOUNTING (cash) + Executives
+   */
+  @RequireDepartment(ORDER_AUTHORIZATION.CONFIRM_PAYMENT)
+  @Mutation(() => PaymentConfirmOutputDto, {
+    description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_PAYMENT,
+  })
+  async confirmOrderPayment(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+    @AuthUser() user: User,
+    @Args('input') input: ConfirmPaymentInputDto,
+  ): Promise<PaymentConfirmOutputDto> {
+    // Validate permission based on payment method
+    this.validatePaymentConfirmPermission(input.paymentMethod, user);
+
+    return this.orderOrchestrationService.confirmOrderPayment(
+      workspace.id,
+      workspaceMemberId,
+      {
+        orderId: input.orderId,
+        paymentMethod: input.paymentMethod,
+        amount: input.amount,
+        transactionId: input.transactionId,
+        note: input.note,
+      },
+    );
+  }
+
+  /**
+   * Unlock order after late payment (New Payment Flow)
+   *
+   * For orders that were LOCKED due to payment overdue:
+   * - Verifies late payment received
+   * - Updates order status: LOCKED → COMPLETED
+   * - Activates licenses: LOCKED → ACTIVE
+   *
+   * Authorization: ACCOUNTING department only + Executives
+   */
+  @RequireDepartment(ORDER_AUTHORIZATION.UNLOCK_ORDER)
+  @Mutation(() => UnlockOrderOutputDto, {
+    description: ORDER_GRAPHQL_DESCRIPTIONS.UNLOCK_ORDER,
+  })
+  async unlockOrderAfterPayment(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+    @Args('input') input: UnlockOrderInputDto,
+  ): Promise<UnlockOrderOutputDto> {
+    return this.orderOrchestrationService.unlockOrderAfterPayment(
+      workspace.id,
+      workspaceMemberId,
+      {
+        orderId: input.orderId,
+        amount: input.amount,
+        transactionId: input.transactionId,
+        note: input.note,
+      },
+    );
+  }
+
+  // ============================================
+  // PRIVATE HELPERS
+  // ============================================
+
+  /**
+   * Validate payment confirmation permission based on payment method
+   *
+   * Cash/Other payments require ACCOUNTING department
+   */
+  private validatePaymentConfirmPermission(
+    paymentMethod: string,
+    user: User,
+  ): void {
+    // Cash/Other payments require ACCOUNTING department
+    const cashMethods = ['CASH', 'OTHER'];
+
+    if (cashMethods.includes(paymentMethod)) {
+      // Check if user has accounting department
+      // Note: This is a simplified check - actual implementation may need to check user's departments
+      const userDepartments = (user as unknown as Record<string, unknown>)
+        .departments as string[] | undefined;
+
+      const hasAccounting = userDepartments?.some(
+        (dept) =>
+          dept === DEPARTMENT.ACCOUNTING ||
+          dept.startsWith(`${DEPARTMENT.ACCOUNTING}_`),
+      );
+
+      if (!hasAccounting) {
+        throw new ForbiddenException(
+          'Cash payments must be confirmed by Accounting department',
+        );
+      }
+    }
   }
 }

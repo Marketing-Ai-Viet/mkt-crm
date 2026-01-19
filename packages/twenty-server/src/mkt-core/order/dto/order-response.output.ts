@@ -60,6 +60,9 @@ export class ConfirmOrderResponseDto {
   @Field(() => String, { nullable: true })
   orderId?: string;
 
+  @Field(() => String, { nullable: true })
+  orderCode?: string;
+
   @Field(() => ORDER_STATUS, { nullable: true })
   newStatus?: ORDER_STATUS;
 
@@ -75,11 +78,27 @@ export class ConfirmOrderResponseDto {
   })
   remainingAmount?: number;
 
-  @Field(() => PAYMENT_STATUS, {
+  @Field(() => String, {
     nullable: true,
     description: 'Payment status',
   })
-  paymentStatus?: PAYMENT_STATUS;
+  paymentStatus?: string;
+
+  // New payment flow fields
+  @Field(() => Date, { nullable: true, description: 'Payment deadline' })
+  paymentDeadline?: Date;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Payment deadline source',
+  })
+  paymentDeadlineSource?: string;
+
+  @Field(() => Number, {
+    nullable: true,
+    description: 'Payment deadline in hours',
+  })
+  paymentDeadlineHours?: number;
 
   @Field(() => String, { nullable: true })
   error?: string;
