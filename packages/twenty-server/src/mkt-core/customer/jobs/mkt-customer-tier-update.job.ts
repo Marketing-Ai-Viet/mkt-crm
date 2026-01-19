@@ -30,10 +30,13 @@ export class MktCustomerTierUpdateJob {
   @Process(MktCustomerTierUpdateJob.name)
   async handle(data: MktCustomerTierUpdateJobData): Promise<void> {
     const { customerId, workspaceId, reason = 'order_completed' } = data;
+    const startTime = Date.now();
 
-    this.logger.log(
-      `Processing customer tier update for customer ${customerId} in workspace ${workspaceId}`,
-    );
+    this.logger.log('Processing customer tier update', {
+      customerId,
+      workspaceId,
+      reason,
+    });
 
     try {
       // Get customer's current tier before update
@@ -46,10 +49,14 @@ export class MktCustomerTierUpdateJob {
         await this.mktCustomerTierService.updateCustomerTier(customerId);
 
       const newTier = result.customerTier;
+      const durationMs = Date.now() - startTime;
 
-      this.logger.log(
-        `Successfully updated customer tier from ${previousTier} to ${newTier} for customer ${customerId}`,
-      );
+      this.logger.log('Customer tier updated', {
+        customerId,
+        previousTier,
+        newTier,
+        durationMs,
+      });
 
       // Log tier history if tier changed
       if (previousTier !== newTier) {
@@ -70,9 +77,12 @@ export class MktCustomerTierUpdateJob {
           },
         );
 
-        this.logger.log(
-          `Logged tier change history: ${previousTier} -> ${newTier} (${changeReason})`,
-        );
+        this.logger.debug('Logged tier change history', {
+          customerId,
+          previousTier,
+          newTier,
+          changeReason,
+        });
 
         // Update lastTierUpgradeAt if this is an upgrade
         if (this.downgradePolicyService.isUpgrade(previousTier, newTier)) {
@@ -80,20 +90,18 @@ export class MktCustomerTierUpdateJob {
             workspaceId,
             customerId,
           );
-          this.logger.log(
-            `Updated lastTierUpgradeAt for customer ${customerId}`,
-          );
+          this.logger.debug('Updated lastTierUpgradeAt', { customerId });
         }
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
 
-      this.logger.error(
-        `Failed to update customer tier for customer ${customerId}: ${errorMessage}`,
-        errorStack,
-      );
+      this.logger.error('Failed to update customer tier', {
+        customerId,
+        workspaceId,
+        error: errorMessage,
+      });
       throw error;
     }
   }

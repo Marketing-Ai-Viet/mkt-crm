@@ -47,8 +47,9 @@ export class PaymentOverdueScanJob {
   )
   async handle(data: PaymentOverdueScanJobData): Promise<void> {
     const { workspaceId } = data;
+    const startTime = Date.now();
 
-    this.logger.log(`Đang quét đơn hàng quá hạn cho workspace ${workspaceId}`);
+    this.logger.log('Starting payment overdue scan', { workspaceId });
 
     try {
       const result =
@@ -56,22 +57,58 @@ export class PaymentOverdueScanJob {
           workspaceId,
         );
 
-      if (result.failCount > 0) {
-        this.logger.warn(
-          `Quét hoàn tất với lỗi: ${result.successCount} đã khóa, ${result.failCount} thất bại`,
-          { failedOrderIds: result.failedOrderIds },
-        );
-      } else if (result.scannedCount > 0) {
-        this.logger.log(
-          `Quét hoàn tất: ${result.successCount} đơn hàng đã khóa`,
-        );
-      }
+      const durationMs = Date.now() - startTime;
+
+      this.logResult(workspaceId, result, durationMs);
     } catch (error) {
-      this.logger.error(
-        `Lỗi khi quét đơn hàng quá hạn cho workspace ${workspaceId}:`,
-        error,
-      );
-      throw error;
+      this.handleError(workspaceId, error);
     }
+  }
+
+  /**
+   * Log kết quả scan với structured format
+   */
+  private logResult(
+    workspaceId: string,
+    result: {
+      scannedCount: number;
+      successCount: number;
+      failCount: number;
+      failedOrderIds: string[];
+    },
+    durationMs: number,
+  ): void {
+    const logContext = {
+      workspaceId,
+      scannedCount: result.scannedCount,
+      successCount: result.successCount,
+      failCount: result.failCount,
+      durationMs,
+    };
+
+    if (result.failCount > 0) {
+      this.logger.warn('Payment overdue scan completed with failures', {
+        ...logContext,
+        failedOrderIds: result.failedOrderIds,
+      });
+    } else if (result.scannedCount > 0) {
+      this.logger.log('Payment overdue scan completed', logContext);
+    } else {
+      this.logger.debug('No overdue orders found', logContext);
+    }
+  }
+
+  /**
+   * Handle và log error với structured format
+   */
+  private handleError(workspaceId: string, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    this.logger.error('Payment overdue scan failed', {
+      workspaceId,
+      error: errorMessage,
+    });
+
+    throw error;
   }
 }

@@ -67,11 +67,19 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
         concurrency: 5,
       },
       async (data) => {
+        this.logger.debug('Processing deadline check', {
+          orderId: data.payload.orderId,
+          jobId: data.jobId,
+          attempt: data.attemptNumber,
+        });
         await this.handleDeadlineCheck(data.payload);
       },
     );
 
-    this.logger.log('Deadline check worker registered');
+    this.logger.log('Deadline check worker registered', {
+      queue: MKT_DELAYED_JOB_QUEUES.PAYMENT_DEADLINE,
+      concurrency: 5,
+    });
   }
 
   /**
@@ -84,11 +92,20 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
         concurrency: 10,
       },
       async (data) => {
+        this.logger.debug('Processing payment reminder', {
+          orderId: data.payload.orderId,
+          reminderType: data.payload.reminderType,
+          jobId: data.jobId,
+          attempt: data.attemptNumber,
+        });
         await this.handleReminder(data.payload);
       },
     );
 
-    this.logger.log('Payment reminder worker registered');
+    this.logger.log('Payment reminder worker registered', {
+      queue: MKT_DELAYED_JOB_QUEUES.PAYMENT_REMINDER,
+      concurrency: 10,
+    });
   }
 
   /**
@@ -102,16 +119,14 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
   ): Promise<void> {
     const { orderId, workspaceId, orderCode } = payload;
 
-    this.logger.debug(
-      `Processing deadline check for order ${orderCode ?? orderId}`,
-    );
-
     try {
       // Lấy order từ repository
       const order = await this.orderRepository.findById(orderId);
 
       if (!order) {
-        this.logger.warn(`Order ${orderId} not found, skipping deadline check`);
+        this.logger.warn('Order not found, skipping deadline check', {
+          orderId,
+        });
 
         return;
       }
@@ -119,16 +134,17 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
       // Skip nếu đã không còn ở PROCESSING status
       // (đã thanh toán, đã hủy, hoặc đã bị lock trước đó)
       if (order.status !== ORDER_STATUS.PROCESSING) {
-        this.logger.debug(
-          `Order ${orderId} status is ${order.status}, skipping deadline check`,
-        );
+        this.logger.debug('Order not in PROCESSING status, skipping', {
+          orderId,
+          status: order.status,
+        });
 
         return;
       }
 
       // Kiểm tra deadline
       if (!order.paymentDeadline) {
-        this.logger.warn(`Order ${orderId} has no payment deadline`);
+        this.logger.warn('Order has no payment deadline', { orderId });
 
         return;
       }
@@ -138,13 +154,13 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
 
       // Kiểm tra đã quá hạn chưa
       if (DateTimeUtils.toMillis(now) < DateTimeUtils.toMillis(deadline)) {
-        this.logger.debug(`Order ${orderId} deadline not yet passed`);
+        this.logger.debug('Order deadline not yet passed', { orderId });
 
         return;
       }
 
       // Đã quá hạn - lock order
-      this.logger.log(`Order ${orderId} deadline passed, locking order`);
+      this.logger.log('Order deadline passed, locking order', { orderId });
 
       // Lấy license IDs từ order items
       const licenses = await this.orderRepository.getOrderLicenses(
@@ -169,14 +185,19 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
         lockedReason: lockUpdateData.lockedReason,
       });
 
-      this.logger.log(
-        `Order ${orderCode ?? orderId} locked due to payment overdue`,
-      );
+      this.logger.log('Order locked due to payment overdue', {
+        orderId,
+        orderCode,
+        licensesLocked: licenseIds.length,
+      });
     } catch (error) {
-      this.logger.error(
-        `Failed to process deadline check for order ${orderId}:`,
-        error,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.logger.error('Failed to process deadline check', {
+        orderId,
+        error: errorMessage,
+      });
       throw error;
     }
   }
@@ -189,25 +210,22 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
   private async handleReminder(payload: PaymentReminderPayload): Promise<void> {
     const { orderId, orderCode, reminderType, hoursBeforeDeadline } = payload;
 
-    this.logger.debug(
-      `Processing ${reminderType} reminder for order ${orderCode ?? orderId}`,
-    );
-
     try {
       // Lấy order từ repository
       const order = await this.orderRepository.findById(orderId);
 
       if (!order) {
-        this.logger.warn(`Order ${orderId} not found, skipping reminder`);
+        this.logger.warn('Order not found, skipping reminder', { orderId });
 
         return;
       }
 
       // Skip nếu đã không còn ở PROCESSING status
       if (order.status !== ORDER_STATUS.PROCESSING) {
-        this.logger.debug(
-          `Order ${orderId} status is ${order.status}, skipping reminder`,
-        );
+        this.logger.debug('Order not in PROCESSING status, skipping reminder', {
+          orderId,
+          status: order.status,
+        });
 
         return;
       }
@@ -215,9 +233,12 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
       // TODO: Implement notification service call
       // await this.notificationService.sendPaymentReminder(order, reminderType);
 
-      this.logger.log(
-        `Payment reminder sent for order ${orderCode ?? orderId}: ${reminderType} (${hoursBeforeDeadline}h before deadline)`,
-      );
+      this.logger.log('Payment reminder sent', {
+        orderId,
+        orderCode,
+        reminderType,
+        hoursBeforeDeadline,
+      });
 
       // Update order với reminder info
       const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
@@ -227,10 +248,13 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
         lastReminderAt: now,
       });
     } catch (error) {
-      this.logger.error(
-        `Failed to send payment reminder for order ${orderId}:`,
-        error,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.logger.error('Failed to send payment reminder', {
+        orderId,
+        error: errorMessage,
+      });
       throw error;
     }
   }

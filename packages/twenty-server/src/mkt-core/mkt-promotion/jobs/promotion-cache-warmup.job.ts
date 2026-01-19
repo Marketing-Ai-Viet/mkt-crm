@@ -28,31 +28,42 @@ export type PromotionCacheWarmupJobData = {
 export class PromotionCacheWarmupJob {
   private readonly logger = new Logger(PromotionCacheWarmupJob.name);
 
-  constructor(private readonly promotionRepository: MktPromotionRepository) {
-    this.logger.log('PromotionCacheWarmupJob initialized');
-  }
+  constructor(private readonly promotionRepository: MktPromotionRepository) {}
 
   @Process(PromotionCacheWarmupJob.name)
   async handle(data: PromotionCacheWarmupJobData): Promise<void> {
     const { workspaceId } = data;
+    const startTime = Date.now();
 
-    this.logger.log(
-      `Starting promotion cache warmup for workspace ${workspaceId}`,
-    );
+    this.logger.log('Starting promotion cache warmup', { workspaceId });
 
     try {
       const count = await this.warmupCacheForWorkspace(workspaceId);
 
-      this.logger.log(
-        `Promotion cache warmup completed: ${count} promotions cached for workspace ${workspaceId}`,
-      );
+      const durationMs = Date.now() - startTime;
+
+      this.logger.log('Promotion cache warmup completed', {
+        workspaceId,
+        cachedCount: count,
+        durationMs,
+      });
     } catch (error) {
-      this.logger.error(
-        `Promotion cache warmup failed for workspace ${workspaceId}`,
-        error,
-      );
-      throw error;
+      this.handleError(workspaceId, error);
     }
+  }
+
+  /**
+   * Handle và log error với structured format
+   */
+  private handleError(workspaceId: string, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    this.logger.error('Promotion cache warmup failed', {
+      workspaceId,
+      error: errorMessage,
+    });
+
+    throw error;
   }
 
   /**
@@ -65,16 +76,15 @@ export class PromotionCacheWarmupJob {
       await this.promotionRepository.findActiveWithRules();
 
     if (activePromotions.length === 0) {
-      this.logger.debug(
-        `No active promotions found for workspace ${workspaceId}`,
-      );
+      this.logger.debug('No active promotions found', { workspaceId });
 
       return 0;
     }
 
-    this.logger.log(
-      `Loaded ${activePromotions.length} active promotions for workspace ${workspaceId}`,
-    );
+    this.logger.log('Loaded active promotions', {
+      workspaceId,
+      count: activePromotions.length,
+    });
 
     // TODO: Implement actual cache storage logic here
     // For now, we're just loading the data to populate any query cache

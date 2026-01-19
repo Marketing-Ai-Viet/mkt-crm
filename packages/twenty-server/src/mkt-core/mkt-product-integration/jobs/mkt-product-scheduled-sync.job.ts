@@ -45,9 +45,10 @@ export class MktProductScheduledSyncJob {
       );
 
       if (timeSinceLastSync < MKT_SYNC_CONFIG.MIN_SYNC_INTERVAL_MS) {
-        this.logger.debug(
-          `Scheduled sync skipped: recent sync exists (${timeSinceLastSync}ms ago)`,
-        );
+        this.logger.debug('Scheduled sync skipped: recent sync exists', {
+          timeSinceLastSyncMs: timeSinceLastSync,
+          minIntervalMs: MKT_SYNC_CONFIG.MIN_SYNC_INTERVAL_MS,
+        });
 
         return;
       }
@@ -58,17 +59,22 @@ export class MktProductScheduledSyncJob {
     try {
       const result = await this.syncService.syncAllProductsAndPackages();
 
-      this.logger.log(
-        `Scheduled sync completed: ${result.productsCount} products, ${result.packagesCount} packages in ${result.duration}ms`,
-      );
+      this.logger.log('Scheduled sync completed', {
+        productsCount: result.productsCount,
+        packagesCount: result.packagesCount,
+        durationMs: result.duration,
+      });
 
       if (result.errors.length > 0) {
-        this.logger.warn(
-          `Scheduled sync completed with ${result.errors.length} errors`,
-        );
+        this.logger.warn('Scheduled sync completed with errors', {
+          errorCount: result.errors.length,
+        });
       }
     } catch (error) {
-      this.logger.error('Scheduled sync failed', error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.logger.error('Scheduled sync failed', { error: errorMessage });
     }
   }
 }

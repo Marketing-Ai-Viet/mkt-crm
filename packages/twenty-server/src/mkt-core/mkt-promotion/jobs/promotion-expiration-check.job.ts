@@ -36,32 +36,43 @@ export class PromotionExpirationCheckJob {
   constructor(
     private readonly promotionRepository: MktPromotionRepository,
     private readonly eventEmitter: EventEmitter2,
-  ) {
-    this.logger.log('PromotionExpirationCheckJob initialized');
-  }
+  ) {}
 
   @Process(PromotionExpirationCheckJob.name)
   async handle(data: PromotionExpirationCheckJobData): Promise<void> {
     const { workspaceId } = data;
+    const startTime = Date.now();
 
-    this.logger.log(
-      `Starting promotion expiration check for workspace ${workspaceId}`,
-    );
+    this.logger.log('Starting promotion expiration check', { workspaceId });
 
     try {
       const expiredCount =
         await this.checkAndExpirePromotionsForWorkspace(workspaceId);
 
-      this.logger.log(
-        `Promotion expiration check completed: ${expiredCount} promotions expired for workspace ${workspaceId}`,
-      );
+      const durationMs = Date.now() - startTime;
+
+      this.logger.log('Promotion expiration check completed', {
+        workspaceId,
+        expiredCount,
+        durationMs,
+      });
     } catch (error) {
-      this.logger.error(
-        `Promotion expiration check failed for workspace ${workspaceId}`,
-        error,
-      );
-      throw error;
+      this.handleError(workspaceId, error);
     }
+  }
+
+  /**
+   * Handle và log error với structured format
+   */
+  private handleError(workspaceId: string, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    this.logger.error('Promotion expiration check failed', {
+      workspaceId,
+      error: errorMessage,
+    });
+
+    throw error;
   }
 
   /**
@@ -78,16 +89,15 @@ export class PromotionExpirationCheckJob {
       await this.promotionRepository.findExpiredActive(now);
 
     if (expiredPromotions.length === 0) {
-      this.logger.debug(
-        `No expired promotions found for workspace ${workspaceId}`,
-      );
+      this.logger.debug('No expired promotions found', { workspaceId });
 
       return 0;
     }
 
-    this.logger.log(
-      `Found ${expiredPromotions.length} expired promotions for workspace ${workspaceId}`,
-    );
+    this.logger.log('Found expired promotions', {
+      workspaceId,
+      count: expiredPromotions.length,
+    });
 
     // Cập nhật status thành EXPIRED và emit event
     for (const promotion of expiredPromotions) {
@@ -106,11 +116,19 @@ export class PromotionExpirationCheckJob {
 
         this.eventEmitter.emit('promotion.expired', event);
 
-        this.logger.debug(
-          `Expired promotion ${promotion.id} (${promotion.name}) - End date: ${promotion.endDate}`,
-        );
+        this.logger.debug('Expired promotion', {
+          promotionId: promotion.id,
+          promotionName: promotion.name,
+          endDate: promotion.endDate,
+        });
       } catch (error) {
-        this.logger.error(`Failed to expire promotion ${promotion.id}`, error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        this.logger.error('Failed to expire promotion', {
+          promotionId: promotion.id,
+          error: errorMessage,
+        });
       }
     }
 
@@ -131,9 +149,10 @@ export class PromotionExpirationCheckJob {
       return 0;
     }
 
-    this.logger.log(
-      `Found ${promotions.length} promotions reached usage limit for workspace ${workspaceId}`,
-    );
+    this.logger.log('Found promotions reached usage limit', {
+      workspaceId,
+      count: promotions.length,
+    });
 
     // Cập nhật status và emit event
     for (const promotion of promotions) {
@@ -151,14 +170,20 @@ export class PromotionExpirationCheckJob {
 
         this.eventEmitter.emit('promotion.expired', event);
 
-        this.logger.debug(
-          `Expired promotion ${promotion.id} (${promotion.name}) - Usage limit reached: ${promotion.currentUsageCount}/${promotion.usageLimit}`,
-        );
+        this.logger.debug('Expired promotion by usage limit', {
+          promotionId: promotion.id,
+          promotionName: promotion.name,
+          currentUsageCount: promotion.currentUsageCount,
+          usageLimit: promotion.usageLimit,
+        });
       } catch (error) {
-        this.logger.error(
-          `Failed to expire promotion by usage limit ${promotion.id}`,
-          error,
-        );
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        this.logger.error('Failed to expire promotion by usage limit', {
+          promotionId: promotion.id,
+          error: errorMessage,
+        });
       }
     }
 
