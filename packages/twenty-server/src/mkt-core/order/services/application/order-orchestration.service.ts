@@ -12,6 +12,7 @@ import {
   ORDER_STATUS,
   ORDER_ACTION,
 } from 'src/mkt-core/order/constants/order-status.constants';
+import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
@@ -724,7 +725,7 @@ export class OrderOrchestrationService {
       await this.orderRepository.update(order.id, {
         status: ORDER_STATUS.COMPLETED,
         paidAmount: input.amount,
-        // paymentStatus: PAYMENT_STATUS.PAID,
+        paymentStatus: PAYMENT_STATUS.PAID,
       });
 
       this.logger.log(
@@ -819,6 +820,7 @@ export class OrderOrchestrationService {
         lockedAt: null,
         lockedReason: null,
         paidAmount: input.amount,
+        paymentStatus: PAYMENT_STATUS.PAID,
       });
 
       const unlockedAt = new Date();

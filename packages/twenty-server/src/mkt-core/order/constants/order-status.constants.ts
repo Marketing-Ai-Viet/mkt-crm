@@ -21,7 +21,6 @@ export type ORDER_METADATA = {
   }>;
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
-  trialOrderId?: string;
   note?: string;
   oldOrderId?: string;
   oldLicenseId?: string;

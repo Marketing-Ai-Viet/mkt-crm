@@ -311,6 +311,12 @@ export const ORDER_TRIAL_CONFIG = {
   /** Thời gian trial mặc định (ngày) */
   DEFAULT_TRIAL_DURATION_DAYS: 30,
 
+  /**
+   * Thời gian trial mặc định cho TRIAL_TO_PAID action (ngày)
+   * TRIAL_TO_PAID tạo license trial với thời hạn ngắn (1 ngày) để khách hàng trải nghiệm
+   */
+  TRIAL_TO_PAID_DEFAULT_DAYS: 1,
+
   /** Thời gian gia hạn khi trial hết (ngày) */
   GRACE_PERIOD_DAYS: 7,
 

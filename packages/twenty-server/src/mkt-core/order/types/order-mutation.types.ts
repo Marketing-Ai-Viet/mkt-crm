@@ -90,14 +90,11 @@ export type CreateOrderWithItemsInput = {
   // For license renewal
   licenseId?: string;
 
-  // For trial to paid conversion
-  trialOrderId?: string;
-
-  // Trial configuration for TRIAL_TO_PAID action
   /**
-   * Duration of trial license in days.
-   * Uses ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS (30 days).
-   * Note: Pure trial creation is handled by MktLicenseResolver.mktCreateTrialLicense
+   * Thời hạn trial license (ngày).
+   *
+   * - Với TRIAL_TO_PAID: Mặc định 1 ngày (ORDER_TRIAL_CONFIG.TRIAL_TO_PAID_DEFAULT_DAYS)
+   * - Với các action khác: Mặc định 30 ngày (ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS)
    */
   trialDurationDays?: number;
 

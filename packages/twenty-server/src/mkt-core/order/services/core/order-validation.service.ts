@@ -166,38 +166,31 @@ export class OrderValidationService {
   }
 
   /**
-   * Validate input cho TRIAL_TO_PAID conversion
+   * Validate input cho TRIAL_TO_PAID action
    *
-   * With multi-payment support, payment methods are optional.
-   * The converted order starts with paymentStatus = PENDING.
+   * TRIAL_TO_PAID giờ tạo license trial với thời hạn ngắn (mặc định 1 ngày)
+   * để khách hàng trải nghiệm trước khi thanh toán.
+   *
+   * Required: externalProducts hoặc combos (giống NEW_ORDER)
+   * Optional: trialDurationDays (mặc định 1 ngày)
    */
   async validateTrialToPaidInput(
     input: CreateOrderWithItemsInput,
   ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
-    if (!input.trialOrderId) {
-      errors.push({
-        field: 'trialOrderId',
-        message: 'Trial order ID is required for TRIAL_TO_PAID action',
-        code: ORDER_VALIDATION_ERROR_CODES.TRIAL_ORDER_REQUIRED,
-      });
-    } else {
-      const trialOrder = await this.findOrder(input.trialOrderId);
+    // TRIAL_TO_PAID cần có externalProducts hoặc combos (giống NEW_ORDER)
+    const hasExternalProducts =
+      input.externalProducts && input.externalProducts.length > 0;
+    const hasCombos = input.combos && input.combos.length > 0;
 
-      if (!trialOrder) {
-        errors.push({
-          field: 'trialOrderId',
-          message: `Trial order with ID ${input.trialOrderId} not found`,
-          code: ORDER_VALIDATION_ERROR_CODES.TRIAL_ORDER_NOT_FOUND,
-        });
-      } else if (trialOrder.status !== ORDER_STATUS.TRIAL) {
-        errors.push({
-          field: 'trialOrderId',
-          message: `Order ${input.trialOrderId} is not a trial order (status: ${trialOrder.status})`,
-          code: ORDER_VALIDATION_ERROR_CODES.INVALID_ORDER_STATUS,
-        });
-      }
+    if (!hasExternalProducts && !hasCombos) {
+      errors.push({
+        field: 'externalProducts',
+        message:
+          'At least one external product or combo is required for TRIAL_TO_PAID action',
+        code: ORDER_VALIDATION_ERROR_CODES.EXTERNAL_PRODUCTS_REQUIRED,
+      });
     }
 
     // Payment methods are optional with multi-payment support

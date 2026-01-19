@@ -3,10 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
-import {
-  ORDER_ACTION,
-  ORDER_STATUS,
-} from 'src/mkt-core/order/constants/order-status.constants';
+import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   SagaContext,
@@ -29,7 +26,6 @@ import {
  * Thực hiện:
  * - Update order status cuối cùng
  * - Tạo contract nếu requireContract = true
- * - Update trial order status nếu TRIAL_TO_PAID
  * - Prepare data cho event emission
  *
  * Compensate:
@@ -89,11 +85,6 @@ export class FinalizeOrderStep extends SagaStep<
         contractId = await this.createContract(context, input, order);
       }
 
-      // Update trial order status if TRIAL_TO_PAID
-      if (input.action === ORDER_ACTION.TRIAL_TO_PAID && input.trialOrderId) {
-        await this.completeTrialOrder(context, input.trialOrderId);
-      }
-
       // Update order with contract and generate name if needed
       const orderName = this.generateOrderName(order);
 
@@ -112,7 +103,6 @@ export class FinalizeOrderStep extends SagaStep<
       // Store rollback data
       context.rollbackData.set(this.name, {
         contractId,
-        trialOrderId: input.trialOrderId,
       });
 
       return {
@@ -138,7 +128,6 @@ export class FinalizeOrderStep extends SagaStep<
   ): Promise<void> {
     const data = context.rollbackData.get(this.name) as {
       contractId?: string;
-      trialOrderId?: string;
     } | null;
 
     if (!data) {
@@ -154,15 +143,6 @@ export class FinalizeOrderStep extends SagaStep<
         this.logger.warn(
           `Contract ${data.contractId} was created but saga failed. Manual cleanup may be needed.`,
         );
-      }
-
-      // Revert trial order status if it was updated
-      if (data.trialOrderId) {
-        await this.orderRepository.updateOrder(data.trialOrderId, {
-          status: ORDER_STATUS.TRIAL,
-          note: '',
-        });
-        this.logger.log(`Reverted trial order ${data.trialOrderId} status`);
       }
     } catch (error) {
       this.logger.error('Failed to compensate finalize step', error);
@@ -207,21 +187,6 @@ export class FinalizeOrderStep extends SagaStep<
 
       return undefined;
     }
-  }
-
-  /**
-   * Complete trial order when converting to paid
-   */
-  private async completeTrialOrder(
-    context: SagaContext,
-    trialOrderId: string,
-  ): Promise<void> {
-    await this.orderRepository.updateOrder(trialOrderId, {
-      status: ORDER_STATUS.COMPLETED,
-      note: `Converted to paid order: ${context.orderId}`,
-    });
-
-    this.logger.log(`Trial order ${trialOrderId} marked as COMPLETED`);
   }
 
   /**

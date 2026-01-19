@@ -434,11 +434,21 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     let averageOrderInterval = 0;
 
     if (orderCount > 1 && result?.firstOrderDate && result?.lastOrderDate) {
-      const firstDateTime = DateTimeUtils.fromISO(result.firstOrderDate);
-      const lastDateTime = DateTimeUtils.fromISO(result.lastOrderDate);
-      const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
+      // createdAt is stored as milliseconds timestamp string
+      const firstMillis = parseInt(result.firstOrderDate, 10);
+      const lastMillis = parseInt(result.lastOrderDate, 10);
 
-      averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+      // Validate parsed values are valid numbers
+      if (!Number.isNaN(firstMillis) && !Number.isNaN(lastMillis)) {
+        const firstDateTime = DateTimeUtils.fromMillis(firstMillis);
+        const lastDateTime = DateTimeUtils.fromMillis(lastMillis);
+        const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
+
+        // Ensure totalDays is valid before division
+        if (!Number.isNaN(totalDays) && totalDays >= 0) {
+          averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+        }
+      }
     }
 
     return {

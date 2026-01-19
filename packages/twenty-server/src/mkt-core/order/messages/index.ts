@@ -314,11 +314,11 @@ export const MKT_ORDER_VALIDATION_LOG_MESSAGES = {
     `Confirm order input validation failed with ${errorCount} errors`,
 
   // Trial to paid validation
-  VALIDATE_TRIAL_TO_PAID_START: (trialOrderId: string) =>
-    `Validating trial to paid conversion for order: ${trialOrderId}`,
-  VALIDATE_TRIAL_TO_PAID_SUCCESS: () => `Trial to paid validation passed`,
+  VALIDATE_TRIAL_TO_PAID_START: (customerId: string) =>
+    `Validating TRIAL_TO_PAID input for customer: ${customerId}`,
+  VALIDATE_TRIAL_TO_PAID_SUCCESS: () => `TRIAL_TO_PAID input validation passed`,
   VALIDATE_TRIAL_TO_PAID_FAILED: (errorCount: number) =>
-    `Trial to paid validation failed with ${errorCount} errors`,
+    `TRIAL_TO_PAID input validation failed with ${errorCount} errors`,
 
   // Entity validation
   CUSTOMER_EXISTS: (customerId: string) => `Customer exists: ${customerId}`,
@@ -475,6 +475,7 @@ export const ORDER_VALIDATION_ERROR_CODES = {
   CUSTOMER_REQUIRED: 'CUSTOMER_REQUIRED',
   CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
   ITEMS_REQUIRED: 'ITEMS_REQUIRED',
+  EXTERNAL_PRODUCTS_REQUIRED: 'EXTERNAL_PRODUCTS_REQUIRED',
   EXTERNAL_PRODUCT_NOT_FOUND: 'EXTERNAL_PRODUCT_NOT_FOUND',
   EXTERNAL_PRODUCT_INACTIVE: 'EXTERNAL_PRODUCT_INACTIVE',
   EXTERNAL_PACKAGE_NOT_FOUND: 'EXTERNAL_PACKAGE_NOT_FOUND',
@@ -485,8 +486,6 @@ export const ORDER_VALIDATION_ERROR_CODES = {
   ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
   INVALID_ORDER_STATUS: 'INVALID_ORDER_STATUS',
   INVALID_ACTION: 'INVALID_ACTION',
-  TRIAL_ORDER_REQUIRED: 'TRIAL_ORDER_REQUIRED',
-  TRIAL_ORDER_NOT_FOUND: 'TRIAL_ORDER_NOT_FOUND',
 } as const;
 
 export type OrderValidationErrorCode =

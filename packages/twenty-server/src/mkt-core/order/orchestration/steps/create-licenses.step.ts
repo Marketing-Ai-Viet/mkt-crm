@@ -185,9 +185,10 @@ export class CreateLicensesStep extends SagaStep<
       );
 
       // Get trial duration
+      // TRIAL_TO_PAID uses 1 day default, other actions use 30 days default
       const trialDays =
         input.trialDurationDays ??
-        ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS;
+        ORDER_TRIAL_CONFIG.TRIAL_TO_PAID_DEFAULT_DAYS;
 
       // Create trial licenses for each item
       const createdLicenses: CreatedLicenseInfo[] = [];

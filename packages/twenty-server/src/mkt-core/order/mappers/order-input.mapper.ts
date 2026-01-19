@@ -62,12 +62,15 @@ export const OrderInputMapper = {
       // DTO uses CREATE_ORDER_ACTION enum, cast to domain type CreateOrderAction
       action: dto.action as unknown as CreateOrderAction,
       licenseId: dto.licenseId,
-      trialOrderId: dto.trialOrderId,
+      // Trial duration for TRIAL_TO_PAID action (default: 1 day)
+      trialDurationDays: dto.trialDurationDays,
       // Promotion fields
       couponCode: dto.couponCode,
       applyAutoPromotions: dto.applyAutoPromotions ?? true,
       // Draft mode
       isDraft: dto.isDraft ?? false,
+      // MKT Server email override
+      mktServerEmail: dto.mktServerEmail,
     };
   },
 
