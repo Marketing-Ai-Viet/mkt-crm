@@ -30,6 +30,72 @@ export type PaymentDeadlineSourceType =
   (typeof PAYMENT_DEADLINE_SOURCE)[keyof typeof PAYMENT_DEADLINE_SOURCE];
 
 // ============================================
+// PAYMENT DEADLINE CONFIG TYPE (for database entity)
+// ============================================
+
+/**
+ * Config type for payment deadline database entity
+ * Maps to PAYMENT_DEADLINE_SOURCE (except MANUAL which is not stored)
+ */
+export const PAYMENT_DEADLINE_CONFIG_TYPE = {
+  /** Global default setting */
+  GLOBAL: 'GLOBAL',
+  /** Product-specific deadline */
+  PRODUCT: 'PRODUCT',
+  /** Customer type-based deadline */
+  CUSTOMER_TYPE: 'CUSTOMER_TYPE',
+  /** Reseller tier-based deadline */
+  RESELLER_TIER: 'RESELLER_TIER',
+} as const;
+
+export type PaymentDeadlineConfigTypeValue =
+  (typeof PAYMENT_DEADLINE_CONFIG_TYPE)[keyof typeof PAYMENT_DEADLINE_CONFIG_TYPE];
+
+/**
+ * Options for GraphQL SELECT field
+ */
+export const PAYMENT_DEADLINE_CONFIG_TYPE_OPTIONS = [
+  {
+    value: PAYMENT_DEADLINE_CONFIG_TYPE.GLOBAL,
+    label: 'Global',
+    color: 'blue' as const,
+    position: 0,
+  },
+  {
+    value: PAYMENT_DEADLINE_CONFIG_TYPE.PRODUCT,
+    label: 'Product',
+    color: 'green' as const,
+    position: 1,
+  },
+  {
+    value: PAYMENT_DEADLINE_CONFIG_TYPE.CUSTOMER_TYPE,
+    label: 'Customer Type',
+    color: 'orange' as const,
+    position: 2,
+  },
+  {
+    value: PAYMENT_DEADLINE_CONFIG_TYPE.RESELLER_TIER,
+    label: 'Reseller Tier',
+    color: 'purple' as const,
+    position: 3,
+  },
+];
+
+/**
+ * Priority for config types (lower = higher priority)
+ * Used when multiple configs match
+ */
+export const PAYMENT_DEADLINE_CONFIG_PRIORITY: Record<
+  PaymentDeadlineConfigTypeValue,
+  number
+> = {
+  [PAYMENT_DEADLINE_CONFIG_TYPE.RESELLER_TIER]: 1,
+  [PAYMENT_DEADLINE_CONFIG_TYPE.CUSTOMER_TYPE]: 2,
+  [PAYMENT_DEADLINE_CONFIG_TYPE.PRODUCT]: 3,
+  [PAYMENT_DEADLINE_CONFIG_TYPE.GLOBAL]: 4,
+} as const;
+
+// ============================================
 // PAYMENT DEADLINE CONFIG
 // ============================================
 

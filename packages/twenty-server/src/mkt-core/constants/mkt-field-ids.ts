@@ -1501,3 +1501,22 @@ export const MKT_DEPARTMENT_SUB_MANAGER_FIELD_IDS = {
   department: 'b1c2d3e4-5670-1234-5678-901234567891',
   workspaceMember: 'c2d3e4f5-6781-2345-6789-012345678902',
 };
+
+// Payment deadline configuration
+export const MKT_PAYMENT_DEADLINE_CONFIG_FIELD_IDS = {
+  // config type: GLOBAL, PRODUCT, CUSTOMER_TYPE, RESELLER_TIER
+  configType: 'd3e4f5a6-7893-4568-9012-345678901236',
+  // target ID: product ID, customer type value, reseller tier ID (nullable for GLOBAL)
+  targetId: 'e4f5a6b7-8904-5679-0123-456789012347',
+  // deadline hours from confirmation (1-720)
+  deadlineHours: 'f5a6b7c8-9015-6780-1234-567890123458',
+  // active status
+  isActive: 'a6b7c8d9-0126-7891-2345-678901234569',
+  // priority (lower = higher priority)
+  priority: 'b7c8d9e0-1237-8902-3456-789012345670',
+  // description/note
+  description: 'c8d9e0f1-2348-9013-4567-890123456781',
+  // standard fields
+  position: 'd9e0f1a2-3459-0124-5678-901234567892',
+  createdBy: 'e0f1a2b3-4560-1235-6789-012345678903',
+};
