@@ -389,21 +389,24 @@ export const IS_CREATE_ORDER_ACTION = (
   CREATE_ORDER_ACTIONS.includes(action as CreateOrderAction);
 
 /**
- * Actions cho phép khi XÁC NHẬN THANH TOÁN đơn hàng (confirmOrder mutation)
+ * Actions cho phép khi XÁC NHẬN đơn hàng (confirmOrder mutation)
  *
- * Chỉ ACCOUNTING_CONFIRMED được hỗ trợ.
+ * - ACCOUNTING_CONFIRMED: Legacy flow - tạo license sau khi thanh toán
+ * - CONFIRM_ORDER: New payment flow - tạo license ngay với PENDING_PAYMENT status
+ *
  * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation.
  */
 export type ConfirmOrderAction = Extract<
   ORDER_ACTION,
-  ORDER_ACTION.ACCOUNTING_CONFIRMED
+  ORDER_ACTION.ACCOUNTING_CONFIRMED | ORDER_ACTION.CONFIRM_ORDER
 >;
 
 /**
- * Array các actions cho phép khi confirm thanh toán
+ * Array các actions cho phép khi confirm
  */
 export const CONFIRM_ORDER_ACTIONS: ConfirmOrderAction[] = [
   ORDER_ACTION.ACCOUNTING_CONFIRMED,
+  ORDER_ACTION.CONFIRM_ORDER,
 ];
 
 /**

@@ -13,6 +13,9 @@ import {
   UpdateStatusStep,
   CreateLicensesOnConfirmStep,
   CompleteOrderAfterLicenseStep,
+  // New Payment Flow Steps
+  CalculatePaymentDeadlineStep,
+  SchedulePaymentRemindersStep,
 } from 'src/mkt-core/order/orchestration/steps/confirm-order';
 import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import {
@@ -33,11 +36,22 @@ import { BaseSaga } from './base/base-saga';
  * Registered Steps:
  * 1. ValidateOrderStep - Validate order exists and load state
  * 2. ValidateTransitionStep - Validate status transition is allowed
- * 3. UpdateStatusStep - Update order status and payment fields
- * 4. CreateLicensesOnConfirmStep - Create licenses when accounting confirms
- * 5. CompleteOrderAfterLicenseStep - Auto-complete order after licenses created
+ * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
+ * 4. UpdateStatusStep - Update order status and payment fields
+ * 5. CreateLicensesOnConfirmStep - Create licenses when accounting confirms
+ * 6. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
+ * 7. CompleteOrderAfterLicenseStep - Auto-complete order after licenses created
  *
- * ACCOUNTING_CONFIRMED Flow:
+ * CONFIRM_ORDER Flow (New Payment Flow):
+ * 1. Validate order exists
+ * 2. Validate status transition (DRAFT → PROCESSING)
+ * 3. Calculate payment deadline based on priority rules
+ * 4. Update: status = PROCESSING, paymentDeadline, paymentStatus = PENDING
+ * 5. Create licenses on MKT Server with PENDING_PAYMENT status
+ * 6. Schedule payment reminders and deadline check jobs
+ * 7. Emit success events
+ *
+ * ACCOUNTING_CONFIRMED Flow (Legacy):
  * 1. Validate order exists
  * 2. Validate status transition is allowed
  * 3. Update: status = CONFIRMED, paymentStatus = PAID, paidAmount = totalAmount
@@ -46,6 +60,7 @@ import { BaseSaga } from './base/base-saga';
  * 6. Emit success events
  *
  * Supports actions:
+ * - CONFIRM_ORDER: New flow - create licenses immediately, schedule deadline
  * - ACCOUNTING_CONFIRMED: Confirm payment, create licenses, auto-complete
  * - COMPLETE: Complete the order
  * - CANCEL: Cancel the order
@@ -67,8 +82,10 @@ export class ConfirmOrderSaga
     // Inject steps directly
     private readonly validateOrderStep: ValidateOrderStep,
     private readonly validateTransitionStep: ValidateTransitionStep,
+    private readonly calculatePaymentDeadlineStep: CalculatePaymentDeadlineStep,
     private readonly updateStatusStep: UpdateStatusStep,
     private readonly createLicensesOnConfirmStep: CreateLicensesOnConfirmStep,
+    private readonly schedulePaymentRemindersStep: SchedulePaymentRemindersStep,
     private readonly completeOrderAfterLicenseStep: CompleteOrderAfterLicenseStep,
   ) {
     super(twentyORMGlobalManager, eventEmitter);
@@ -79,13 +96,24 @@ export class ConfirmOrderSaga
 
   /**
    * Initialize and register steps
+   *
+   * Step order:
+   * 1. ValidateOrderStep - Load and validate order
+   * 2. ValidateTransitionStep - Validate status transition
+   * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
+   * 4. UpdateStatusStep - Update order status
+   * 5. CreateLicensesOnConfirmStep - Create licenses
+   * 6. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
+   * 7. CompleteOrderAfterLicenseStep - Auto-complete (skipped for CONFIRM_ORDER)
    */
   private initializeSteps(): void {
     this.registerSteps([
       this.validateOrderStep,
       this.validateTransitionStep,
+      this.calculatePaymentDeadlineStep,
       this.updateStatusStep,
       this.createLicensesOnConfirmStep,
+      this.schedulePaymentRemindersStep,
       this.completeOrderAfterLicenseStep,
     ]);
   }

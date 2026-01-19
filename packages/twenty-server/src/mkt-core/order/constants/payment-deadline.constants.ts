@@ -122,6 +122,24 @@ export const PAYMENT_DEADLINE_JOB = {
 } as const;
 
 // ============================================
+// JOB ID GENERATORS
+// ============================================
+
+/**
+ * Generate job ID for payment deadline check
+ */
+export const GET_DEADLINE_CHECK_JOB_ID = (orderId: string): string =>
+  `deadline-check-${orderId}`;
+
+/**
+ * Generate job ID for payment reminder
+ */
+export const GET_REMINDER_JOB_ID = (
+  orderId: string,
+  hoursBeforeDeadline: number,
+): string => `reminder-${orderId}-${hoursBeforeDeadline}`;
+
+// ============================================
 // VALID STATUS TRANSITIONS (New Flow)
 // ============================================
 

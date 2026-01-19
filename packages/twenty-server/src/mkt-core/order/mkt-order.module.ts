@@ -89,6 +89,9 @@ import {
   UpdateStatusStep,
   CreateLicensesOnConfirmStep,
   CompleteOrderAfterLicenseStep,
+  // New Payment Flow Steps
+  CalculatePaymentDeadlineStep,
+  SchedulePaymentRemindersStep,
 } from './orchestration/steps/confirm-order';
 import {
   OrderProductIntegrationService,
@@ -180,6 +183,9 @@ import {
     UpdateStatusStep,
     CreateLicensesOnConfirmStep,
     CompleteOrderAfterLicenseStep,
+    // New Payment Flow Steps
+    CalculatePaymentDeadlineStep,
+    SchedulePaymentRemindersStep,
 
     // Integration Services (bridge to other MKT modules)
     OrderProductIntegrationService,

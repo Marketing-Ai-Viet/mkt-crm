@@ -213,7 +213,7 @@ export class OrderConfirmService {
     this.logger.log(`Confirming order ${order.id}`);
 
     const errors: string[] = [];
-    const confirmedAt = DateTimeUtils.toDate(DateTimeUtils.now());
+    const confirmedAt = DateTimeUtils.toDateRequired(DateTimeUtils.now());
 
     // 1. Validate
     const validation = this.canConfirmOrder(order);

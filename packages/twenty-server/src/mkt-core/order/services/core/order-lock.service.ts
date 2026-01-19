@@ -109,10 +109,10 @@ export class OrderLockService {
       return false;
     }
 
-    const now = DateTimeUtils.now();
     const deadline = DateTimeUtils.fromDate(order.paymentDeadline);
 
-    return DateTimeUtils.isAfter(now, deadline);
+    // Should lock if deadline is in the past
+    return DateTimeUtils.isPast(deadline);
   }
 
   /**
@@ -227,7 +227,7 @@ export class OrderLockService {
   } {
     return {
       status: ORDER_STATUS.LOCKED,
-      lockedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      lockedAt: DateTimeUtils.toDateRequired(DateTimeUtils.now()),
       lockedReason: LOCK_REASON_PAYMENT_OVERDUE,
     };
   }

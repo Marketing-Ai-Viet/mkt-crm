@@ -70,7 +70,9 @@ export class PaymentDeadlineService {
       this.logger.debug(`Deadline from MANUAL: ${hours} hours`);
 
       return {
-        deadline: DateTimeUtils.toDate(DateTimeUtils.add(now, { hours })),
+        deadline: DateTimeUtils.toDateRequired(
+          DateTimeUtils.add(now, { hours }),
+        ),
         source: PAYMENT_DEADLINE_SOURCE.MANUAL,
         hours,
       };
@@ -86,7 +88,9 @@ export class PaymentDeadlineService {
         );
 
         return {
-          deadline: DateTimeUtils.toDate(DateTimeUtils.add(now, { hours })),
+          deadline: DateTimeUtils.toDateRequired(
+            DateTimeUtils.add(now, { hours }),
+          ),
           source: PAYMENT_DEADLINE_SOURCE.RESELLER_TIER,
           hours,
         };
@@ -103,7 +107,9 @@ export class PaymentDeadlineService {
         );
 
         return {
-          deadline: DateTimeUtils.toDate(DateTimeUtils.add(now, { hours })),
+          deadline: DateTimeUtils.toDateRequired(
+            DateTimeUtils.add(now, { hours }),
+          ),
           source: PAYMENT_DEADLINE_SOURCE.CUSTOMER_TYPE,
           hours,
         };
@@ -121,7 +127,9 @@ export class PaymentDeadlineService {
       this.logger.debug(`Deadline from PRODUCT: ${hours} hours`);
 
       return {
-        deadline: DateTimeUtils.toDate(DateTimeUtils.add(now, { hours })),
+        deadline: DateTimeUtils.toDateRequired(
+          DateTimeUtils.add(now, { hours }),
+        ),
         source: PAYMENT_DEADLINE_SOURCE.PRODUCT,
         hours,
       };
@@ -133,7 +141,7 @@ export class PaymentDeadlineService {
     this.logger.debug(`Deadline from GLOBAL: ${globalHours} hours`);
 
     return {
-      deadline: DateTimeUtils.toDate(
+      deadline: DateTimeUtils.toDateRequired(
         DateTimeUtils.add(now, { hours: globalHours }),
       ),
       source: PAYMENT_DEADLINE_SOURCE.GLOBAL,
@@ -149,10 +157,10 @@ export class PaymentDeadlineService {
       return false;
     }
 
-    const now = DateTimeUtils.now();
     const deadlineTime = DateTimeUtils.fromDate(deadline);
 
-    return DateTimeUtils.isAfter(now, deadlineTime);
+    // Deadline has passed if it's in the past
+    return DateTimeUtils.isPast(deadlineTime);
   }
 
   /**
@@ -167,7 +175,8 @@ export class PaymentDeadlineService {
     const now = DateTimeUtils.now();
     const deadlineTime = DateTimeUtils.fromDate(deadline);
 
-    if (DateTimeUtils.isAfter(now, deadlineTime)) {
+    // If deadline is in the past, return 0
+    if (DateTimeUtils.isPast(deadlineTime)) {
       return 0;
     }
 
