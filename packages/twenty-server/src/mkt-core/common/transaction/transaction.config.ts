@@ -34,15 +34,12 @@ const positiveIntEnvSchema = (defaultValue: number) =>
  * Transaction Configuration Schema
  *
  * Environment variables:
- * - TRANSACTION_ALS_ENABLED: Enable ALS-based transaction binding (default: false)
- *   NOTE: Currently disabled by default due to incompatibility with Twenty's
- *   workspace entity metadata loading. When enabled, repositories may fail to
- *   get entity metadata from QueryRunner's manager, causing fallback to
- *   non-transactional behavior.
+ * - TRANSACTION_ALS_ENABLED: Enable ALS-based transaction binding (default: true)
+ *   Repositories in transaction context will use the same database connection.
  * - TRANSACTION_DEFAULT_TIMEOUT_MS: Default transaction timeout in ms (default: 30000)
  */
 const transactionConfigSchema = z.object({
-  TRANSACTION_ALS_ENABLED: booleanEnvSchema(false),
+  TRANSACTION_ALS_ENABLED: booleanEnvSchema(true),
   TRANSACTION_DEFAULT_TIMEOUT_MS: positiveIntEnvSchema(DEFAULT_TIMEOUT_MS),
 });
 

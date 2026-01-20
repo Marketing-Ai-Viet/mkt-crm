@@ -6,6 +6,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { convertClassNameToObjectMetadataName } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/convert-class-to-object-metadata-name.util';
 import {
   transactionContextStore,
   TRANSACTION_CONFIG,
@@ -238,10 +239,16 @@ export abstract class BaseWorkspaceRepository<
       return undefined;
     }
 
-    // Try to get repository from transaction-bound manager
-    // May fail if entity metadata is not properly loaded
+    // Convert class name to objectMetadataName
+    // Twenty's WorkspaceDataSource registers entities with objectMetadataName (e.g., "mktOrder")
+    // not with the class reference (e.g., MktOrderWorkspaceEntity)
+    const objectMetadataName = convertClassNameToObjectMetadataName(
+      this.entityClass.name,
+    );
+
+    // Try to get repository from transaction-bound manager using objectMetadataName
     try {
-      const repository = manager.getRepository(this.entityClass, {
+      const repository = manager.getRepository(objectMetadataName, {
         shouldBypassPermissionChecks: true,
       }) as WorkspaceRepository<T>;
 
@@ -250,6 +257,7 @@ export abstract class BaseWorkspaceRepository<
         txId: store.txId,
         workspaceId: store.workspaceId,
         entity: this.entityClass.name,
+        objectMetadataName,
         elapsedMs: transactionContextStore.getElapsedMs(),
       });
 
@@ -263,6 +271,7 @@ export abstract class BaseWorkspaceRepository<
         txId: store.txId,
         workspaceId: store.workspaceId,
         entity: this.entityClass.name,
+        objectMetadataName,
         error: error instanceof Error ? error.message : String(error),
       });
 
