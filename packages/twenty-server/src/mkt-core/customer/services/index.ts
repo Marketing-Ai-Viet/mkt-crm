@@ -1,4 +1,10 @@
-// Core CRUD operations
+// Core service (new CRUD service)
+export * from './mkt-customer.service';
+
+// Validation service
+export * from './validation';
+
+// Core CRUD operations (legacy)
 export * from './core';
 
 // Tier management
