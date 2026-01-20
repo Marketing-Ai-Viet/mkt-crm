@@ -729,6 +729,7 @@ export class OrderOrchestrationService {
       await this.orderRepository.update(order.id, {
         status: ORDER_STATUS.COMPLETED,
         paidAmount: input.amount,
+        remainingAmount: 0,
         paymentStatus: PAYMENT_STATUS.PAID,
       });
 
@@ -824,6 +825,7 @@ export class OrderOrchestrationService {
         lockedAt: null,
         lockedReason: null,
         paidAmount: input.amount,
+        remainingAmount: 0,
         paymentStatus: PAYMENT_STATUS.PAID,
       });
 
