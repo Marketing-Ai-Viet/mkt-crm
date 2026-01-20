@@ -13,6 +13,29 @@ import {
 } from './transaction-context.store';
 
 // ============================================
+// CANCELLATION TOKEN
+// ============================================
+
+/**
+ * Token for signaling transaction cancellation
+ * Used to stop long-running operations when timeout occurs
+ */
+export type CancellationToken = {
+  /** Whether cancellation has been requested */
+  readonly isCancelled: boolean;
+  /** Reason for cancellation */
+  readonly reason?: string;
+};
+
+/**
+ * Mutable cancellation state (internal use)
+ */
+type MutableCancellationState = {
+  isCancelled: boolean;
+  reason?: string;
+};
+
+// ============================================
 // TYPES
 // ============================================
 
@@ -45,6 +68,22 @@ export type TransactionOptions = {
   timeoutMs?: number;
   /** Run transaction in read-only mode */
   readOnly?: boolean;
+  /**
+   * Callback to receive cancellation token
+   * Use this to check `token.isCancelled` in long-running loops
+   * @example
+   * await transactionScopeService.runInTransaction(
+   *   workspaceId,
+   *   async (qr) => {
+   *     for (const item of items) {
+   *       if (cancellationToken?.isCancelled) break;
+   *       await processItem(item);
+   *     }
+   *   },
+   *   { onCancellationToken: (token) => { cancellationToken = token; } }
+   * );
+   */
+  onCancellationToken?: (token: CancellationToken) => void;
 };
 
 // ============================================
@@ -156,37 +195,43 @@ export class TransactionScopeService {
     options?: TransactionOptions,
   ): Promise<T> {
     const propagation = options?.propagation ?? 'REQUIRED';
-    const existingStore = this.txStore.get();
+    const alsEnabled = TRANSACTION_CONFIG.ALS_ENABLED;
 
-    // Handle propagation modes when already in transaction
-    if (existingStore?.queryRunner?.isTransactionActive) {
-      if (existingStore.workspaceId !== workspaceId) {
-        throw new CrossWorkspaceTransactionError(
-          existingStore.workspaceId,
-          workspaceId,
-        );
-      }
+    // Only check existing transaction when ALS is enabled
+    // When ALS is disabled, txStore.get() will always return undefined
+    if (alsEnabled) {
+      const existingStore = this.txStore.get();
 
-      switch (propagation) {
-        case 'REQUIRED':
-          // Reuse existing transaction - just execute fn
-          this.logger.debug({
-            message: 'Reusing existing transaction',
-            txId: existingStore.txId,
+      // Handle propagation modes when already in transaction
+      if (existingStore?.queryRunner?.isTransactionActive) {
+        if (existingStore.workspaceId !== workspaceId) {
+          throw new CrossWorkspaceTransactionError(
+            existingStore.workspaceId,
             workspaceId,
-          });
+          );
+        }
 
-          return fn(existingStore.queryRunner);
+        switch (propagation) {
+          case 'REQUIRED':
+            // Reuse existing transaction - just execute fn
+            this.logger.debug({
+              message: 'Reusing existing transaction',
+              txId: existingStore.txId,
+              workspaceId,
+            });
 
-        case 'NESTED':
-          // Use savepoint for nested transaction
-          return this.runWithSavepoint(existingStore, fn);
+            return fn(existingStore.queryRunner);
 
-        case 'REQUIRES_NEW':
-          throw new UnsupportedPropagationError('REQUIRES_NEW');
+          case 'NESTED':
+            // Use savepoint for nested transaction
+            return this.runWithSavepoint(existingStore, fn);
 
-        default:
-          throw new UnsupportedPropagationError(propagation);
+          case 'REQUIRES_NEW':
+            throw new UnsupportedPropagationError('REQUIRES_NEW');
+
+          default:
+            throw new UnsupportedPropagationError(propagation);
+        }
       }
     }
 
@@ -215,16 +260,36 @@ export class TransactionScopeService {
 
   /**
    * Check if currently inside an active transaction
+   *
+   * Note: When ALS is disabled, this always returns false even if
+   * code is running inside runInTransaction callback.
    */
   isInTransaction(): boolean {
+    if (!TRANSACTION_CONFIG.ALS_ENABLED) {
+      return false;
+    }
+
     return this.txStore.isInTransaction();
   }
 
   /**
    * Get current transaction ID (for logging/correlation)
+   *
+   * Note: When ALS is disabled, this always returns undefined.
    */
   getCurrentTxId(): string | undefined {
+    if (!TRANSACTION_CONFIG.ALS_ENABLED) {
+      return undefined;
+    }
+
     return this.txStore.getTxId();
+  }
+
+  /**
+   * Check if ALS-based transaction binding is enabled
+   */
+  isAlsEnabled(): boolean {
+    return TRANSACTION_CONFIG.ALS_ENABLED;
   }
 
   // ============================================
@@ -240,6 +305,7 @@ export class TransactionScopeService {
     const timeoutMs =
       options?.timeoutMs ?? TRANSACTION_CONFIG.DEFAULT_TIMEOUT_MS;
     const startedAt = Date.now();
+    const alsEnabled = TRANSACTION_CONFIG.ALS_ENABLED;
 
     const dataSource =
       await this.twentyORMGlobalManager.getDataSourceForWorkspace({
@@ -256,7 +322,21 @@ export class TransactionScopeService {
       isolationLevel: options?.isolationLevel ?? 'READ COMMITTED',
       readOnly: options?.readOnly ?? false,
       timeoutMs,
+      alsEnabled,
     });
+
+    // Cancellation state for timeout handling
+    const cancellationState: MutableCancellationState = {
+      isCancelled: false,
+    };
+
+    // Provide cancellation token to caller if callback provided
+    if (options?.onCancellationToken) {
+      options.onCancellationToken(cancellationState as CancellationToken);
+    }
+
+    // Timer reference for cleanup
+    let timeoutTimer: NodeJS.Timeout | undefined;
 
     try {
       // Start transaction with isolation level
@@ -266,15 +346,21 @@ export class TransactionScopeService {
         await queryRunner.startTransaction();
       }
 
-      // Set statement timeout for this connection
-      await queryRunner.query(`SET LOCAL statement_timeout = ${timeoutMs}`);
+      // IMPORTANT: PostgreSQL requires certain SET commands to be executed
+      // in specific order after BEGIN. We use SET LOCAL variants which can
+      // be set at any point within the transaction.
 
-      // Set read-only mode if requested
+      // Set read-only mode FIRST if requested (using SET LOCAL variant)
+      // PostgreSQL: SET TRANSACTION READ ONLY must be first after BEGIN,
+      // but SET LOCAL transaction_read_only can be set anytime
       if (options?.readOnly) {
-        await queryRunner.query('SET TRANSACTION READ ONLY');
+        await queryRunner.query('SET LOCAL transaction_read_only = on');
       }
 
-      // Execute with timeout race
+      // Set statement timeout for this transaction
+      await queryRunner.query(`SET LOCAL statement_timeout = ${timeoutMs}`);
+
+      // Build transaction store for ALS binding
       const store: TransactionStore = {
         workspaceId,
         queryRunner,
@@ -282,21 +368,38 @@ export class TransactionScopeService {
         startedAt,
       };
 
-      const resultPromise = this.txStore.run(store, () => fn(queryRunner));
+      // Execute function - with or without ALS binding based on config
+      const executeWithTimeout = async (): Promise<T> => {
+        // Create timeout promise with proper cleanup
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutTimer = setTimeout(() => {
+            // Mark as cancelled so long-running operations can check
+            cancellationState.isCancelled = true;
+            cancellationState.reason = `Transaction timed out after ${timeoutMs}ms`;
 
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        const timer = setTimeout(
-          () => reject(new TransactionTimeoutError(timeoutMs)),
-          timeoutMs,
-        );
+            reject(new TransactionTimeoutError(timeoutMs));
+          }, timeoutMs);
 
-        // Ensure timer doesn't prevent process from exiting
-        if (timer.unref) {
-          timer.unref();
-        }
-      });
+          // Ensure timer doesn't prevent process from exiting
+          if (timeoutTimer.unref) {
+            timeoutTimer.unref();
+          }
+        });
 
-      const result = await Promise.race([resultPromise, timeoutPromise]);
+        // Execute based on ALS config
+        const resultPromise = alsEnabled
+          ? this.txStore.run(store, () => fn(queryRunner))
+          : fn(queryRunner);
+
+        return Promise.race([resultPromise, timeoutPromise]);
+      };
+
+      const result = await executeWithTimeout();
+
+      // Clear timeout timer on success (prevents timer from firing after completion)
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
 
       await queryRunner.commitTransaction();
 
@@ -311,6 +414,11 @@ export class TransactionScopeService {
 
       return result;
     } catch (e) {
+      // Clear timeout timer on error (cleanup)
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
+
       const durationMs = Date.now() - startedAt;
 
       if (queryRunner.isTransactionActive) {
@@ -324,10 +432,16 @@ export class TransactionScopeService {
         error: e instanceof Error ? e.message : String(e),
         errorName: e instanceof Error ? e.name : 'Unknown',
         durationMs,
+        wasCancelled: cancellationState.isCancelled,
       });
 
       throw e;
     } finally {
+      // Ensure timer is always cleaned up
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
+
       await queryRunner.release();
     }
   }

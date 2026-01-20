@@ -63,6 +63,7 @@ export type {
   PostgresIsolationLevel,
   TransactionPropagation,
   TransactionOptions,
+  CancellationToken,
 } from './transaction-scope.service';
 
 // Store (low-level, usually not needed directly)
