@@ -5,6 +5,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 
+import { TransactionModule } from 'src/mkt-core/common/transaction';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
@@ -23,6 +24,10 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
 
 @Module({
   imports: [
+    // Global infrastructure modules (must be first)
+    TransactionModule,
+
+    // Feature modules
     MktOrderModule,
     MktPaymentModule,
     MktDepartmentModule,
