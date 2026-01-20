@@ -1,10 +1,10 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
 import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
+import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis/redis-infrastructure.module';
@@ -30,6 +30,7 @@ import {
   CacheWarmerJob,
   CrossRegionReloadJob,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/jobs';
+import { RbacCronRegistrationService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/rbac-cron-registration.service';
 import {
   MktPermissionTemplateRepository,
   MktUserPermissionTemplateRepository,
@@ -66,11 +67,11 @@ import {
 @Module({
   imports: [
     ConfigModule.forFeature(rbacConfig),
-    ScheduleModule.forRoot(),
     TerminusModule,
     CacheStorageModule,
     TwentyORMModule,
     RedisInfrastructureModule,
+    MessageQueueModule, // For cron job registration
     // For CacheWarmerService to access workspace list from core schema
     TypeOrmModule.forFeature([Workspace], 'core'),
   ],
@@ -98,7 +99,9 @@ import {
     CasbinAuthzGuard,
     // Health
     RbacHealthIndicator,
-    // Jobs (Cron)
+    // Cron Registration (auto-registers cron jobs on module init)
+    RbacCronRegistrationService,
+    // Jobs (Processor-based)
     CacheWarmerJob,
     CrossRegionReloadJob,
   ],

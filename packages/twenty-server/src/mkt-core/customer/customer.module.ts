@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
+import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { MktCustomerCreateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-create-one.pre-query.hook';
@@ -22,12 +25,11 @@ import {
   MktCustomerCreationService,
   MktCustomerUpdateService,
   // Tier
+  MktCustomerCronRegistrationService,
   MktCustomerDowngradePolicyService,
   MktCustomerQueueService,
   MktCustomerTierCalculationService,
   MktCustomerTierHistoryService,
-  // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
-  // MktCustomerTierRegistrationService,
   MktCustomerTierService,
   // Lifecycle
   MktCustomerAutoAssignService,
@@ -58,6 +60,9 @@ import {
     TwentyORMModule,
     WorkspaceCacheStorageModule,
     MktLicenseIntegrationModule,
+    MessageQueueModule, // For cron job registration
+    // For MktCustomerCronRegistrationService to access workspace list from core schema
+    TypeOrmModule.forFeature([Workspace], 'core'),
   ],
   providers: [
     // Repositories
@@ -74,8 +79,8 @@ import {
     MktCustomerTierService,
     MktCustomerQueueService,
     MktCustomerUpdateService,
-    // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
-    // MktCustomerTierRegistrationService,
+    // Cron Registration (auto-registers cron jobs on module init)
+    MktCustomerCronRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
     MktCustomerCodeGenerationService,
@@ -112,8 +117,6 @@ import {
     MktCustomerAccountService,
     MktCustomerQueueService,
     MktCustomerTierHistoryService,
-    // DISABLED: MktCustomerTierRegistrationService - cron registration disabled
-    // MktCustomerTierRegistrationService,
     MktCustomerExportService,
     MktCustomerLicenseService,
     MktCustomerUpdateService,

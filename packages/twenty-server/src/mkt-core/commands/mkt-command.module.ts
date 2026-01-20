@@ -8,6 +8,8 @@ import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
+import { MktProductSyncCronCommand } from 'src/mkt-core/mkt-product-integration/commands';
+import { RbacCronCommand } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/commands';
 
 @Module({
   imports: [
@@ -19,7 +21,11 @@ import { CustomerModule } from 'src/mkt-core/customer/customer.module';
     WorkspaceCacheStorageModule,
     WorkspaceDataSourceModule,
   ],
-  providers: [],
+  providers: [
+    // Cron registration commands
+    MktProductSyncCronCommand,
+    RbacCronCommand,
+  ],
   exports: [],
 })
 export class MktCommandModule {}

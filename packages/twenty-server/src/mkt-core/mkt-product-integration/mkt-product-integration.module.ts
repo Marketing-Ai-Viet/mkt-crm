@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis';
 
@@ -8,6 +11,7 @@ import {
   MktProductCacheService,
   MktProductProxyService,
   MktProductSyncService,
+  MktProductSyncCronRegistrationService,
   MktSnapshotService,
   MktValidationService,
 } from './services';
@@ -40,6 +44,9 @@ import { MktDigitalProductResolver } from './resolvers';
   imports: [
     OAuth2ClientModule, // Token management and OAuth2 HTTP client
     RedisInfrastructureModule, // Distributed caching infrastructure
+    MessageQueueModule, // For cron job registration
+    // For MktProductSyncCronRegistrationService to access workspace list from core schema
+    TypeOrmModule.forFeature([Workspace], 'core'),
   ],
   providers: [
     // Repositories (Data Access Layer)
@@ -51,6 +58,8 @@ import { MktDigitalProductResolver } from './resolvers';
     MktValidationService,
     MktProductProxyService, // Facade service - depends on repositories and other services
     MktProductSyncService,
+    // Cron Registration (auto-registers cron jobs on module init)
+    MktProductSyncCronRegistrationService,
     // Jobs
     MktProductScheduledSyncJob,
     // Resolvers
