@@ -8,8 +8,6 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { CUSTOMER_BLOCK_HOOKS } from 'src/mkt-core/customer/hooks/customer-block.pre-query.hook';
-import { MktCustomerCreateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-create-one.pre-query.hook';
-import { MktCustomerUpdateOnePreQueryHook } from 'src/mkt-core/customer/hooks/mkt-customer-update-one.pre-query.hook';
 import {
   MktCustomerCategorizationCronJob,
   MktCustomerTierCronJob,
@@ -100,13 +98,8 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktCustomerTierResolver,
     MktCustomerTierHistoryResolver,
 
-    // Hooks - Block all 13 auto-generated GraphQL operations (NEW)
+    // Hooks - Block all 13 auto-generated GraphQL operations
     ...CUSTOMER_BLOCK_HOOKS,
-
-    // Legacy Pre-Query Hooks - TO BE REMOVED in Phase 4
-    // These are kept temporarily for backwards compatibility
-    MktCustomerCreateOnePreQueryHook,
-    MktCustomerUpdateOnePreQueryHook,
 
     // Event Listeners
     MktCustomerEventListener,
