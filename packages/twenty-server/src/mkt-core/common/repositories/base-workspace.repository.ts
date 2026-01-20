@@ -238,17 +238,36 @@ export abstract class BaseWorkspaceRepository<
       return undefined;
     }
 
-    this.logger.debug({
-      message: 'Using transaction-bound repository',
-      txId: store.txId,
-      workspaceId: store.workspaceId,
-      entity: this.entityClass.name,
-      elapsedMs: transactionContextStore.getElapsedMs(),
-    });
+    // Try to get repository from transaction-bound manager
+    // May fail if entity metadata is not properly loaded
+    try {
+      const repository = manager.getRepository(this.entityClass, {
+        shouldBypassPermissionChecks: true,
+      }) as WorkspaceRepository<T>;
 
-    return manager.getRepository(this.entityClass, {
-      shouldBypassPermissionChecks: true,
-    }) as WorkspaceRepository<T>;
+      this.logger.debug({
+        message: 'Using transaction-bound repository',
+        txId: store.txId,
+        workspaceId: store.workspaceId,
+        entity: this.entityClass.name,
+        elapsedMs: transactionContextStore.getElapsedMs(),
+      });
+
+      return repository;
+    } catch (error) {
+      // Entity metadata not found - fallback to default repository
+      // This can happen when QueryRunner's manager doesn't have workspace entity metadata
+      this.logger.warn({
+        message:
+          'Failed to get transaction-bound repository, using default repository',
+        txId: store.txId,
+        workspaceId: store.workspaceId,
+        entity: this.entityClass.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return undefined;
+    }
   }
 
   /**
