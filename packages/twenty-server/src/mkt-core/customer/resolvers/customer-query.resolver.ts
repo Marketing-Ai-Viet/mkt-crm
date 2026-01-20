@@ -182,7 +182,7 @@ export class CustomerQueryResolver {
       updatedAt: this.dateToISOString(customer.updatedAt),
       // Relations
       accountOwnerId: customer.accountOwnerId ?? undefined,
-      createdById: customer.createdById ?? undefined,
+      createdById: customer.createdBy?.workspaceMemberId ?? undefined,
     };
   }
 

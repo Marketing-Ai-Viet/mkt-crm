@@ -105,6 +105,10 @@ export class MktCustomerValidationService {
   async validateUpdate(
     input: UpdateValidationInput,
   ): Promise<ValidationResult<{ linkedAccounts?: LinkedAccount[] }>> {
+    type UpdateValidationResult = ValidationResult<{
+      linkedAccounts?: LinkedAccount[];
+    }>;
+
     // 1. Prevent mktCustomerCode from being changed
     if (input.mktCustomerCode !== undefined) {
       const codeResult = await this.validateCustomerCodeImmutable(
@@ -113,7 +117,10 @@ export class MktCustomerValidationService {
       );
 
       if (!codeResult.success) {
-        return codeResult;
+        return {
+          success: false,
+          error: codeResult.error,
+        } as UpdateValidationResult;
       }
     }
 
@@ -122,7 +129,10 @@ export class MktCustomerValidationService {
       const emailResult = this.validateEmailFormat(input.email);
 
       if (!emailResult.success) {
-        return emailResult;
+        return {
+          success: false,
+          error: emailResult.error,
+        } as UpdateValidationResult;
       }
 
       // 3. Validate email uniqueness
@@ -133,7 +143,10 @@ export class MktCustomerValidationService {
       );
 
       if (!uniqueResult.success) {
-        return uniqueResult;
+        return {
+          success: false,
+          error: uniqueResult.error,
+        } as UpdateValidationResult;
       }
     }
 
@@ -142,7 +155,10 @@ export class MktCustomerValidationService {
       const taxResult = this.validateTaxCode(input.taxCode);
 
       if (!taxResult.success) {
-        return taxResult;
+        return {
+          success: false,
+          error: taxResult.error,
+        } as UpdateValidationResult;
       }
     }
 
@@ -155,7 +171,10 @@ export class MktCustomerValidationService {
       );
 
       if (!linkedResult.success) {
-        return linkedResult;
+        return {
+          success: false,
+          error: linkedResult.error,
+        } as UpdateValidationResult;
       }
       fixedLinkedAccounts = linkedResult.data;
     }
