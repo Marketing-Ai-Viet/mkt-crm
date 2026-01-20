@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import {
   ConfirmOrderSagaContext,
   createConfirmOrderContext,
@@ -74,7 +74,7 @@ export class ConfirmOrderSaga
   protected readonly sagaName = 'ConfirmOrderSaga';
 
   constructor(
-    twentyORMGlobalManager: TwentyORMGlobalManager,
+    transactionScopeService: TransactionScopeService,
     eventEmitter: EventEmitter2,
     // Inject steps directly
     private readonly validateOrderStep: ValidateOrderStep,
@@ -85,7 +85,7 @@ export class ConfirmOrderSaga
     private readonly schedulePaymentRemindersStep: SchedulePaymentRemindersStep,
     private readonly completeOrderAfterLicenseStep: CompleteOrderAfterLicenseStep,
   ) {
-    super(twentyORMGlobalManager, eventEmitter);
+    super(transactionScopeService, eventEmitter);
     // Register steps immediately in constructor
     // (onModuleInit may not be called for lazy-loaded providers)
     this.initializeSteps();

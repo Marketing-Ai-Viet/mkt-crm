@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import {
   CreateOrderStep,
   CreateSnapshotsStep,
@@ -44,7 +44,7 @@ export class CreateOrderSaga implements OnModuleInit {
   private steps: SagaStep<CreateOrderWithItemsInput, unknown>[] = [];
 
   constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly transactionScopeService: TransactionScopeService,
     private readonly eventEmitter: EventEmitter2,
     // Inject steps directly
     private readonly createOrderStep: CreateOrderStep,
@@ -123,40 +123,20 @@ export class CreateOrderSaga implements OnModuleInit {
 
   /**
    * Thực thi saga để tạo order
+   *
+   * Uses TransactionScopeService to ensure all repository operations
+   * within the saga use the same database transaction via ALS binding.
    */
   async execute(
     workspaceId: string,
     workspaceMemberId: string | undefined,
     input: CreateOrderWithItemsInput,
   ): Promise<CreateOrderResponse> {
-    // Get workspace-specific DataSource
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    const queryRunner = dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    const context: SagaContext = {
-      workspaceId,
-      workspaceMemberId,
-      rollbackData: new Map(),
-      metadata: new Map(),
-    };
-
-    const executedSteps: SagaStep<CreateOrderWithItemsInput, unknown>[] = [];
-    let lastResult: SagaStepResult = { success: true };
-
-    // Check if steps are registered
+    // Check if steps are registered before starting transaction
     if (this.steps.length === 0) {
       this.logger.error(
         '[CreateOrderSaga] No steps registered! onModuleInit may not have been called.',
       );
-      await queryRunner.rollbackTransaction();
-      await queryRunner.release();
 
       return {
         success: false,
@@ -165,77 +145,105 @@ export class CreateOrderSaga implements OnModuleInit {
       };
     }
 
+    const context: SagaContext = {
+      workspaceId,
+      workspaceMemberId,
+      rollbackData: new Map(),
+      metadata: new Map(),
+    };
+
     this.logger.debug(
       `[CreateOrderSaga] Executing with ${this.steps.length} steps for workspace: ${workspaceId}`,
     );
 
     try {
-      for (const step of this.steps) {
-        // Check if step should be skipped
-        if (step.shouldSkip(context, input)) {
-          this.logger.log(`Skipping step: ${step.name}`);
-          continue;
-        }
+      // Use TransactionScopeService - all repository operations inside
+      // will automatically use the same transaction via ALS binding
+      const result = await this.transactionScopeService.runInTransaction(
+        workspaceId,
+        async (queryRunner) => {
+          return this.executeSteps(context, input, queryRunner);
+        },
+        {
+          // 60 seconds timeout for order creation
+          timeoutMs: 60000,
+        },
+      );
 
-        this.logger.log(`Executing step: ${step.name}`);
-
-        // Tạo savepoint trước mỗi step
-        const savepointName = `sp_${step.name}_${DateTimeUtils.toMillis(DateTimeUtils.now())}`;
-
-        await queryRunner.query(`SAVEPOINT "${savepointName}"`);
-
-        lastResult = await step.execute(context, input, queryRunner);
-
-        if (!lastResult.success) {
-          this.logger.error(
-            `Step ${step.name} failed: ${lastResult.error?.message}`,
-          );
-          // Rollback to savepoint
-          await queryRunner.query(`ROLLBACK TO SAVEPOINT "${savepointName}"`);
-          break;
-        }
-
-        executedSteps.push(step);
-        this.logger.log(`Step ${step.name} completed successfully`);
-      }
-
-      if (lastResult.success) {
-        await queryRunner.commitTransaction();
-        this.logger.log('Saga completed successfully');
-
-        // Emit event cho async tasks (email, history)
+      if (result.success) {
+        // Emit event AFTER transaction committed successfully
         this.emitOrderCreatedEvent(context);
-
-        return {
-          success: true,
-          orderId: context.orderId,
-          orderCode: context.orderCode,
-          paymentQrCode: context.metadata.get('paymentQrCode') as
-            | string
-            | undefined,
-        };
       }
 
-      // Rollback theo thứ tự ngược
-      await this.compensate(executedSteps, context, queryRunner);
-      await queryRunner.rollbackTransaction();
-
-      return {
-        success: false,
-        error: lastResult.error?.message ?? 'Saga execution failed',
-      };
+      return result;
     } catch (error) {
       this.logger.error('Saga execution error', error);
-      await this.compensate(executedSteps, context, queryRunner);
-      await queryRunner.rollbackTransaction();
 
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
-    } finally {
-      await queryRunner.release();
     }
+  }
+
+  /**
+   * Execute all saga steps within the transaction
+   */
+  private async executeSteps(
+    context: SagaContext,
+    input: CreateOrderWithItemsInput,
+    queryRunner: QueryRunner,
+  ): Promise<CreateOrderResponse> {
+    const executedSteps: SagaStep<CreateOrderWithItemsInput, unknown>[] = [];
+    let lastResult: SagaStepResult = { success: true };
+
+    for (const step of this.steps) {
+      // Check if step should be skipped
+      if (step.shouldSkip(context, input)) {
+        this.logger.log(`Skipping step: ${step.name}`);
+        continue;
+      }
+
+      this.logger.log(`Executing step: ${step.name}`);
+
+      // Tạo savepoint trước mỗi step
+      const savepointName = `sp_${step.name}_${DateTimeUtils.toMillis(DateTimeUtils.now())}`;
+
+      await queryRunner.query(`SAVEPOINT "${savepointName}"`);
+
+      lastResult = await step.execute(context, input, queryRunner);
+
+      if (!lastResult.success) {
+        this.logger.error(
+          `Step ${step.name} failed: ${lastResult.error?.message}`,
+        );
+        // Rollback to savepoint
+        await queryRunner.query(`ROLLBACK TO SAVEPOINT "${savepointName}"`);
+        break;
+      }
+
+      executedSteps.push(step);
+      this.logger.log(`Step ${step.name} completed successfully`);
+    }
+
+    if (lastResult.success) {
+      this.logger.log('Saga completed successfully');
+
+      return {
+        success: true,
+        orderId: context.orderId,
+        orderCode: context.orderCode,
+        paymentQrCode: context.metadata.get('paymentQrCode') as
+          | string
+          | undefined,
+      };
+    }
+
+    // Compensate executed steps before transaction rollback
+    await this.compensate(executedSteps, context, queryRunner);
+
+    // Throw error to trigger transaction rollback
+    throw new Error(lastResult.error?.message ?? 'Saga execution failed');
   }
 
   /**

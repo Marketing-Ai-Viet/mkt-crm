@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { QueryRunner } from 'typeorm';
 
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   SAGA_CONFIG,
@@ -35,7 +35,7 @@ export abstract class BaseSaga<TInput, TOutput> {
   protected steps: SagaStep<TInput, unknown>[] = [];
 
   constructor(
-    protected readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    protected readonly transactionScopeService: TransactionScopeService,
     protected readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -52,98 +52,105 @@ export abstract class BaseSaga<TInput, TOutput> {
 
   /**
    * Execute the saga with all registered steps
+   *
+   * Uses TransactionScopeService to ensure all repository operations
+   * within the saga use the same database transaction via ALS binding.
    */
   async execute(
     workspaceId: string,
     workspaceMemberId: string | undefined,
     input: TInput,
   ): Promise<SagaExecutionResult<TOutput>> {
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId,
-      });
-
-    const queryRunner = dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     const context = this.createContext(workspaceId, workspaceMemberId);
-    const executedSteps: SagaStep<TInput, unknown>[] = [];
-    let lastResult: SagaStepResult = { success: true };
 
     try {
-      for (const step of this.steps) {
-        // Check skip condition
-        if (step.shouldSkip(context, input)) {
-          this.logger.log(`[${this.sagaName}] Skipping step: ${step.name}`);
-          continue;
-        }
+      const result = await this.transactionScopeService.runInTransaction(
+        workspaceId,
+        async (queryRunner) => {
+          return this.executeSteps(context, input, queryRunner);
+        },
+        {
+          timeoutMs: SAGA_CONFIG.TRANSACTION_TIMEOUT_MS,
+        },
+      );
 
-        this.logger.log(`[${this.sagaName}] Executing step: ${step.name}`);
-
-        // Create savepoint before each step
-        const savepointName = `sp_${step.name}_${DateTimeUtils.toMillis(DateTimeUtils.now())}`;
-
-        await queryRunner.query(`SAVEPOINT "${savepointName}"`);
-
-        // Execute step with timeout
-        lastResult = await this.executeStepWithTimeout(
-          step,
-          context,
-          input,
-          queryRunner,
-        );
-
-        if (!lastResult.success) {
-          this.logger.error(
-            `[${this.sagaName}] Step ${step.name} failed: ${lastResult.error?.message}`,
-          );
-          await queryRunner.query(`ROLLBACK TO SAVEPOINT "${savepointName}"`);
-          break;
-        }
-
-        executedSteps.push(step);
-        this.logger.log(`[${this.sagaName}] Step ${step.name} completed`);
-      }
-
-      if (lastResult.success) {
-        await queryRunner.commitTransaction();
-        this.logger.log(`[${this.sagaName}] Saga completed successfully`);
-
-        // Emit event after commit
+      if (result.success) {
+        // Emit event AFTER transaction committed successfully
         this.emitSuccessEvent(context, input);
-
-        return {
-          success: true,
-          data: this.buildSuccessResponse(context) as TOutput,
-          executedSteps: executedSteps.map((s) => s.name),
-        };
       }
 
-      // Compensate and rollback
-      await this.compensateWithRetry(executedSteps, context, queryRunner);
-      await queryRunner.rollbackTransaction();
-
-      return {
-        success: false,
-        error: lastResult.error?.message ?? 'Saga execution failed',
-        failedStep: this.steps[executedSteps.length]?.name,
-        executedSteps: executedSteps.map((s) => s.name),
-      };
+      return result;
     } catch (error) {
-      this.logger.error(`[${this.sagaName}] Saga error`, error);
-      await this.compensateWithRetry(executedSteps, context, queryRunner);
-      await queryRunner.rollbackTransaction();
+      this.logger.error(`[${this.sagaName}] Saga execution error`, error);
 
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+        executedSteps: [],
+      };
+    }
+  }
+
+  /**
+   * Execute all saga steps within the transaction
+   */
+  private async executeSteps(
+    context: SagaContext,
+    input: TInput,
+    queryRunner: QueryRunner,
+  ): Promise<SagaExecutionResult<TOutput>> {
+    const executedSteps: SagaStep<TInput, unknown>[] = [];
+    let lastResult: SagaStepResult = { success: true };
+
+    for (const step of this.steps) {
+      // Check skip condition
+      if (step.shouldSkip(context, input)) {
+        this.logger.log(`[${this.sagaName}] Skipping step: ${step.name}`);
+        continue;
+      }
+
+      this.logger.log(`[${this.sagaName}] Executing step: ${step.name}`);
+
+      // Create savepoint before each step
+      const savepointName = `sp_${step.name}_${DateTimeUtils.toMillis(DateTimeUtils.now())}`;
+
+      await queryRunner.query(`SAVEPOINT "${savepointName}"`);
+
+      // Execute step with timeout
+      lastResult = await this.executeStepWithTimeout(
+        step,
+        context,
+        input,
+        queryRunner,
+      );
+
+      if (!lastResult.success) {
+        this.logger.error(
+          `[${this.sagaName}] Step ${step.name} failed: ${lastResult.error?.message}`,
+        );
+        await queryRunner.query(`ROLLBACK TO SAVEPOINT "${savepointName}"`);
+        break;
+      }
+
+      executedSteps.push(step);
+      this.logger.log(`[${this.sagaName}] Step ${step.name} completed`);
+    }
+
+    if (lastResult.success) {
+      this.logger.log(`[${this.sagaName}] Saga completed successfully`);
+
+      return {
+        success: true,
+        data: this.buildSuccessResponse(context) as TOutput,
         executedSteps: executedSteps.map((s) => s.name),
       };
-    } finally {
-      await queryRunner.release();
     }
+
+    // Compensate executed steps before transaction rollback
+    await this.compensateWithRetry(executedSteps, context, queryRunner);
+
+    // Throw error to trigger transaction rollback
+    throw new Error(lastResult.error?.message ?? 'Saga execution failed');
   }
 
   /**
