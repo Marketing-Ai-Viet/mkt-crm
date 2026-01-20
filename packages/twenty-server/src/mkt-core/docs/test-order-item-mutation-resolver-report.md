@@ -17,12 +17,12 @@
 | 4 | Recalculate Order Items | `recalculateOrderItems` | **PASSED** | updatedCount = 1 |
 | 5 | Invalid Order Item ID | `updateOrderItem` | **PASSED** | Error: "Order item not found" |
 | 6 | Update COMPLETED Order Item | `updateOrderItem` | **PASSED** | Error: "Order item cannot be updated - order status: COMPLETED" |
-| 7 | Recalculate COMPLETED Order | `recalculateOrderItems` | **BUG FOUND** | Không validate order status |
+| 7 | Recalculate COMPLETED Order | `recalculateOrderItems` | **FIXED** | Order status validation đã được thêm |
 
 ### Tóm tắt
-- **Passed**: 5/6 (83%)
+- **Passed**: 6/6 (100%)
 - **Skipped**: 1 (feature disabled)
-- **Bug Found**: 1 (recalculateOrderItems không check order status)
+- **Fixed**: 1 (recalculateOrderItems đã có order status validation)
 
 ---
 
@@ -50,9 +50,9 @@ export class OrderItemMutationResolver {
 
 ---
 
-## 3. Bugs phát hiện cần fix
+## 3. Bugs phát hiện và đã fix
 
-### Bug 1: recalculateOrderItems không validate order status
+### Bug 1: recalculateOrderItems không validate order status ✅ FIXED
 
 **Severity**: Medium
 
@@ -60,26 +60,33 @@ export class OrderItemMutationResolver {
 
 **Mô tả**: Method `recalculateAllOrderItems()` không kiểm tra order status trước khi recalculate. Điều này cho phép recalculate items của COMPLETED orders, có thể gây ra data inconsistency.
 
-**Hiện trạng**:
+**Trạng thái sau fix**:
 - `updateOrderItem` có validate order status ✓
-- `recalculateOrderItems` KHÔNG validate order status ✗
+- `recalculateOrderItems` có validate order status ✓ (FIXED)
 
-**Đề xuất Fix**:
+**Fix đã áp dụng** (2026-01-20):
 ```typescript
 async recalculateAllOrderItems(orderId: string): Promise<BulkRecalculateResult> {
   try {
-    // Add order status check
-    const order = await this.orderRepository.findById(orderId);
-    if (!order) {
-      return { success: false, updatedCount: 0, errors: ['Order not found'] };
+    const orderItems = await this.orderItemRepository.findByOrderId(orderId, {
+      relations: { mktOrder: true },
+    });
+
+    // Validate order status before recalculating
+    if (orderItems.length > 0) {
+      const order = orderItems[0].mktOrder;
+
+      if (!this.canModifyOrderItems(order)) {
+        return {
+          success: false,
+          updatedCount: 0,
+          errors: [
+            `Cannot recalculate items - order status: ${order?.status ?? 'UNKNOWN'}`,
+          ],
+        };
+      }
     }
-    if (!this.canModifyOrderItems(order)) {
-      return {
-        success: false,
-        updatedCount: 0,
-        errors: [`Cannot recalculate items - order status: ${order.status}`]
-      };
-    }
+
     // ... existing logic
   }
 }
@@ -336,10 +343,10 @@ Config:
 3. ✅ Order status validation cho `updateOrderItem`
 4. ✅ Error handling cho invalid order item ID
 5. ✅ Guard fix: Loại bỏ JwtAuthGuard không tương thích với GraphQL
+6. ✅ Order status validation cho `recalculateOrderItems` (FIXED 2026-01-20)
 
 ### Cần fix
-1. ❌ `recalculateOrderItems` cần thêm order status validation
-2. ⚠️ Optimistic locking cần enable trong production
+1. ⚠️ Optimistic locking cần enable trong production
 
 ### Response DTO Enhancement (Optional)
 Response DTO hiện tại chỉ có basic fields. Có thể bổ sung:

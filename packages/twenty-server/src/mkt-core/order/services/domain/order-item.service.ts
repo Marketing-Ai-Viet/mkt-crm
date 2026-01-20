@@ -369,6 +369,21 @@ export class OrderItemService {
         relations: { mktOrder: true },
       });
 
+      // Validate order status before recalculating
+      if (orderItems.length > 0) {
+        const order = orderItems[0].mktOrder;
+
+        if (!this.canModifyOrderItems(order)) {
+          return {
+            success: false,
+            updatedCount: 0,
+            errors: [
+              `Cannot recalculate items - order status: ${order?.status ?? 'UNKNOWN'}`,
+            ],
+          };
+        }
+      }
+
       let updatedCount = 0;
       const errors: string[] = [];
 

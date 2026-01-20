@@ -384,7 +384,11 @@ export class OrderOrchestrationService {
         this.logger.error(LOG.RECALCULATE_HAD_ERRORS());
       }
 
-      return result;
+      return {
+        success: result.success,
+        updatedCount: result.updatedCount,
+        error: result.errors.length > 0 ? result.errors.join('; ') : undefined,
+      };
     } catch (error) {
       this.logger.error(LOG.RECALCULATE_UNEXPECTED_ERROR(), error);
 
