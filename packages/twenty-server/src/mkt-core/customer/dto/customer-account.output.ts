@@ -60,47 +60,6 @@ export class LinkedAccountOutput {
   metadata: Record<string, unknown> | null;
 }
 
-/**
- * MKT Customer Account Output (legacy compatibility)
- */
-@ObjectType()
-export class MktCustomerAccountOutput {
-  @Field(() => String, { description: 'Account link ID' })
-  id: string;
-
-  @Field(() => String, { description: 'MKT Server account ID' })
-  mktAccountId: string;
-
-  @Field(() => String, { nullable: true, description: 'MKT Account email' })
-  mktAccountEmail: string | null;
-
-  @Field(() => String, { nullable: true, description: 'MKT Account name' })
-  mktAccountName: string | null;
-
-  @Field(() => Boolean, {
-    description: 'Whether this is the primary account',
-  })
-  isPrimary: boolean;
-
-  @Field(() => String, { description: 'Account link status' })
-  status: string;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'When the account was linked',
-  })
-  linkedAt: string | null;
-
-  @Field(() => String, { nullable: true, description: 'Last sync timestamp' })
-  lastSyncAt: string | null;
-
-  @Field(() => String, { nullable: true, description: 'Notes' })
-  notes: string | null;
-
-  @Field(() => String, { nullable: true, description: 'Customer ID' })
-  mktCustomerId: string | null;
-}
-
 @ObjectType()
 export class CustomerAccountsOutput {
   @Field(() => [LinkedAccountOutput], {
@@ -134,31 +93,7 @@ export class LinkAccountOutput {
 }
 
 @ObjectType()
-export class LinkMktAccountOutput {
-  @Field(() => Boolean, { description: 'Whether the operation was successful' })
-  success: boolean;
-
-  @Field(() => MktCustomerAccountOutput, {
-    nullable: true,
-    description: 'The created account link',
-  })
-  account: MktCustomerAccountOutput | null;
-
-  @Field(() => String, { nullable: true, description: 'Error message if any' })
-  error: string | null;
-}
-
-@ObjectType()
 export class UnlinkAccountOutput {
-  @Field(() => Boolean, { description: 'Whether the operation was successful' })
-  success: boolean;
-
-  @Field(() => String, { nullable: true, description: 'Error message if any' })
-  error: string | null;
-}
-
-@ObjectType()
-export class UnlinkMktAccountOutput {
   @Field(() => Boolean, { description: 'Whether the operation was successful' })
   success: boolean;
 

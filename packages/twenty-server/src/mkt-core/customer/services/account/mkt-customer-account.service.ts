@@ -125,28 +125,6 @@ export class MktCustomerAccountService {
   }
 
   /**
-   * Legacy method for MKT Server accounts - delegates to linkAccount
-   */
-  async linkMktAccount(input: {
-    customerId: string;
-    mktAccountId: string;
-    mktAccountEmail?: string;
-    mktAccountName?: string;
-    isPrimary?: boolean;
-    notes?: string;
-  }): Promise<LinkedAccount> {
-    return this.linkAccount({
-      customerId: input.customerId,
-      provider: ACCOUNT_PROVIDER.MKT_SERVER,
-      externalId: input.mktAccountId,
-      email: input.mktAccountEmail,
-      displayName: input.mktAccountName,
-      isPrimary: input.isPrimary,
-      notes: input.notes,
-    });
-  }
-
-  /**
    * Set an account as primary for a customer (within its provider)
    */
   async setPrimaryAccount(
@@ -254,18 +232,6 @@ export class MktCustomerAccountService {
   }
 
   /**
-   * Legacy method for MKT Server - delegates to findCustomerByExternalId
-   */
-  async findCustomerByMktAccountId(
-    mktAccountId: string,
-  ): Promise<string | null> {
-    return this.findCustomerByExternalId(
-      ACCOUNT_PROVIDER.MKT_SERVER,
-      mktAccountId,
-    );
-  }
-
-  /**
    * Unlink an account from customer
    */
   async unlinkAccount(customerId: string, accountId: string): Promise<void> {
@@ -313,37 +279,6 @@ export class MktCustomerAccountService {
     });
 
     this.logger.log(`Successfully unlinked account ${accountId}`);
-  }
-
-  /**
-   * Legacy method - unlink MKT account by externalId
-   */
-  async unlinkMktAccount(
-    customerId: string,
-    mktAccountId: string,
-  ): Promise<void> {
-    const customer = await this.customerRepository.findByIdOrNull(customerId);
-
-    if (!customer) {
-      throw new NotFoundException(
-        CUSTOMER_MESSAGES.ERROR.CUSTOMER_NOT_FOUND(customerId),
-      );
-    }
-
-    const accounts: LinkedAccount[] = customer.linkedAccounts ?? [];
-    const account = accounts.find(
-      (acc) =>
-        acc.provider === ACCOUNT_PROVIDER.MKT_SERVER &&
-        acc.externalId === mktAccountId,
-    );
-
-    if (!account) {
-      throw new NotFoundException(
-        `MKT account ${mktAccountId} is not linked to customer ${customerId}`,
-      );
-    }
-
-    return this.unlinkAccount(customerId, account.id);
   }
 
   /**

@@ -1,10 +1,10 @@
-// Core service (new CRUD service)
+// Core CRUD service
 export * from './mkt-customer.service';
 
 // Validation service
 export * from './validation';
 
-// Core CRUD operations (legacy)
+// Code generation service
 export * from './core';
 
 // Tier management

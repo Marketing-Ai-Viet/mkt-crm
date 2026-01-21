@@ -28,7 +28,6 @@ import {
   MktCustomerAutoAssignService,
   MktCustomerCategorizationService,
   MktCustomerCodeGenerationService,
-  MktCustomerCreationService,
   MktCustomerCronRegistrationService,
   MktCustomerDowngradePolicyService,
   MktCustomerExportService,
@@ -37,7 +36,6 @@ import {
   MktCustomerTierCalculationService,
   MktCustomerTierHistoryService,
   MktCustomerTierService,
-  MktCustomerUpdateService,
 } from 'src/mkt-core/customer/services';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 import { MktCustomerValidationService } from 'src/mkt-core/customer/services/validation/mkt-customer-validation.service';
@@ -67,44 +65,46 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktWorkspaceMemberRepository,
     MktOrderRepository,
 
-    // Services - Core CRUD (NEW)
+    // Services - Core
     MktCustomerService,
     MktCustomerValidationService,
+    MktCustomerCodeGenerationService,
 
-    // Services - Legacy (kept for backwards compatibility)
-    MktCustomerCreationService,
+    // Services - Account & Tier
     MktCustomerAccountService,
     MktCustomerTierCalculationService,
     MktCustomerTierHistoryService,
     MktCustomerTierService,
-    MktCustomerQueueService,
-    MktCustomerUpdateService,
-    MktCustomerCronRegistrationService, // Cron Registration (auto-registers cron jobs on module init)
-    MktCustomerExportService,
-    MktCustomerLicenseService,
-    MktCustomerCodeGenerationService,
-    MktCustomerCategorizationService,
-    MktCustomerAutoAssignService,
     MktCustomerDowngradePolicyService,
 
-    // Resolvers - CRUD (NEW)
+    // Services - Lifecycle & Categorization
+    MktCustomerCategorizationService,
+    MktCustomerAutoAssignService,
+
+    // Services - Integration & Export
+    MktCustomerQueueService,
+    MktCustomerExportService,
+    MktCustomerLicenseService,
+    MktCustomerCronRegistrationService,
+
+    // Resolvers - CRUD
     CustomerQueryResolver,
     CustomerMutationResolver,
 
-    // Resolvers - Domain-specific (existing)
+    // Resolvers - Domain-specific
     MktCustomerLicenseResolver,
     MktCustomerLinkedAccountResolver,
     MktCustomerExportResolver,
     MktCustomerTierResolver,
     MktCustomerTierHistoryResolver,
 
-    // Hooks - Block all 13 auto-generated GraphQL operations
+    // Hooks - Block auto-generated GraphQL operations
     ...CUSTOMER_BLOCK_HOOKS,
 
     // Event Listeners
     MktCustomerEventListener,
 
-    // Jobs & Commands
+    // Jobs & Cron
     MktCustomerTierUpdateJob,
     MktCustomerTierCronJob,
     MktCustomerCategorizationCronJob,
@@ -114,23 +114,26 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktCustomerRepository,
     MktCustomerTierHistoryRepository,
 
-    // Services - Core (NEW)
+    // Services - Core
     MktCustomerService,
     MktCustomerValidationService,
+    MktCustomerCodeGenerationService,
 
-    // Services - Legacy
-    MktCustomerCreationService,
+    // Services - Account & Tier
     MktCustomerAccountService,
-    MktCustomerQueueService,
+    MktCustomerTierCalculationService,
     MktCustomerTierHistoryService,
-    MktCustomerExportService,
-    MktCustomerLicenseService,
-    MktCustomerUpdateService,
     MktCustomerTierService,
+    MktCustomerDowngradePolicyService,
+
+    // Services - Lifecycle & Categorization
     MktCustomerCategorizationService,
     MktCustomerAutoAssignService,
-    MktCustomerCodeGenerationService,
-    MktCustomerDowngradePolicyService,
+
+    // Services - Integration & Export
+    MktCustomerQueueService,
+    MktCustomerExportService,
+    MktCustomerLicenseService,
   ],
 })
 export class CustomerModule {}
