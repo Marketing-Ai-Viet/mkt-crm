@@ -8,11 +8,13 @@
 
 Refactor `CreateOrderSaga` để extend `BaseSaga`, đảm bảo framework saga thống nhất trong toàn bộ order module với các tính năng:
 
-- Step timeout protection (30s/step)
-- Compensate retry với exponential backoff (max 3 retries)
+- Step timeout protection (30s/step từ `SAGA_CONFIG.STEP_TIMEOUT_MS`)
+- Compensate retry với exponential backoff (max 3 retries từ `SAGA_CONFIG.COMPENSATION_MAX_RETRIES`)
 - Critical error alerting khi compensation fail
 - Response type chuẩn hóa (`SagaExecutionResult<T>`)
-- Typed context thay vì `Map<string, unknown>`
+- **Typed context fields** bổ sung cho type safety (Map vẫn giữ để backward compatibility, loại bỏ hoàn toàn Map trong P2)
+
+> **NOTE:** Config values (timeout 30s, 3 retries) được định nghĩa trong `BaseSaga` và `SAGA_CONFIG`. Nếu cần override, xem `BaseSaga.executeStepWithTimeout()` và `BaseSaga.compensateWithRetry()`.
 
 ## 2. Phân tích hiện trạng
 
@@ -158,6 +160,10 @@ export type CreateOrderSagaContext = SagaContext & {
 
 /**
  * Factory function to create typed CreateOrderSagaContext
+ *
+ * NOTE: Map vẫn giữ để backward compatibility với SagaContext interface.
+ * P2 sẽ loại bỏ hoàn toàn Map và chuyển sang typed fields.
+ * Theo repo convention "no any", phải specify type cho Map thay vì dùng `new Map()`
  */
 export const createCreateOrderContext = (
   workspaceId: string,
@@ -165,8 +171,9 @@ export const createCreateOrderContext = (
 ): CreateOrderSagaContext => ({
   workspaceId,
   workspaceMemberId,
-  rollbackData: new Map(),
-  metadata: new Map(),
+  // Explicitly typed Maps (avoid `new Map()` which creates Map<any, any>)
+  rollbackData: new Map<string, unknown>(),
+  metadata: new Map<string, unknown>(),
 });
 ```
 
@@ -414,11 +421,22 @@ private async executeCreateOrder(
     }
 
     // Handle saga failure
-    this.logger.error(LOG.CREATE_FAILED(sagaResult.error ?? ''));
+    // NOTE: Error mapping priority from SagaExecutionResult:
+    // 1. sagaResult.error - Human-readable error message
+    // 2. sagaResult.errorCode - Machine-readable code (if available)
+    // 3. sagaResult.failedStep - Step name where failure occurred
+    // Preserve error info for debugging but return clean message to API consumer
+    this.logger.error(LOG.CREATE_FAILED(sagaResult.error ?? ''), {
+      errorCode: sagaResult.errorCode,
+      failedStep: sagaResult.failedStep,
+      compensationStatus: sagaResult.compensationStatus,
+    });
 
     return {
       success: false,
       error: sagaResult.error ?? 'Saga execution failed',
+      // Optionally expose error code if API consumer needs it
+      // errorCode: sagaResult.errorCode,
     };
   } catch (error) {
     this.logger.error(LOG.CREATE_UNEXPECTED_ERROR(), error);
@@ -456,9 +474,15 @@ export * from './create-order.context';  // NEW
 
 ### Phase 2: Refactor CreateOrderSaga (1-2 giờ)
 
-1. **Backup file hiện tại**
+1. **Ghi nhận state hiện tại (dùng git thay vì cp)**
    ```bash
-   cp create-order.saga.ts create-order.saga.ts.backup
+   # Commit hoặc stash changes hiện tại trước khi refactor
+   git stash push -m "WIP before CreateOrderSaga refactor"
+
+   # Hoặc tạo branch backup
+   git branch backup/create-order-saga-before-refactor
+
+   # NOTE: Tránh dùng `cp backup` vì dễ gây stale khi có changes khác
    ```
 
 2. **Refactor theo design section 3.2**
@@ -503,11 +527,16 @@ Nếu có issue sau khi deploy:
 
 1. **Immediate rollback**
    ```bash
-   # Restore backup
-   mv create-order.saga.ts.backup create-order.saga.ts
+   # Option A: Use git restore (recommended per repo guidelines)
+   git restore packages/twenty-server/src/mkt-core/order/orchestration/saga/create-order.saga.ts
+   git restore packages/twenty-server/src/mkt-core/order/services/application/order-orchestration.service.ts
 
-   # Revert orchestration service changes
-   git checkout -- order-orchestration.service.ts
+   # Option B: Manual restore từ backup (nếu đã tạo backup trước đó)
+   # Xem git diff để biết changes cần revert
+   git diff HEAD -- create-order.saga.ts
+
+   # NOTE: Không dùng `git checkout -- <file>` theo repo guideline
+   # NOTE: Không dùng `cp backup` vì dễ gây stale nếu có changes mới
    ```
 
 2. **Verify**
@@ -516,16 +545,28 @@ Nếu có issue sau khi deploy:
    npx nx test twenty-server
    ```
 
+3. **Post-rollback checklist**
+   - [ ] Xác nhận module/provider wiring không thay đổi so với trước refactor
+   - [ ] Chạy lại test để đảm bảo behavior giống trước
+   - [ ] Kiểm tra logs để xác nhận saga execution OK
+
 ## 6. Testing Checklist
 
-### 6.1 Unit Tests
+### 6.1 Pre-testing Checklist
+
+- [ ] **Module/Provider wiring không thay đổi** - Xác nhận `MktOrderModule` vẫn import đúng providers
+- [ ] **Update test mocks** - Mock phải trả về `SagaExecutionResult<T>` thay vì `CreateOrderResponse` trực tiếp
+- [ ] **Verify step injection** - Tất cả 7 steps phải được inject đúng trong constructor
+
+### 6.2 Unit Tests
 
 - [ ] `CreateOrderSaga` khởi tạo đúng với tất cả steps
 - [ ] `createContext()` trả về `CreateOrderSagaContext` typed
 - [ ] `buildSuccessResponse()` map đúng fields từ context
 - [ ] `emitSuccessEvent()` emit event với đúng payload
+- [ ] Test mocks trả về đúng shape `SagaExecutionResult<CreateOrderResponse>`
 
-### 6.2 Integration Tests
+### 6.3 Integration Tests
 
 | Scenario | Expected Behavior |
 |----------|-------------------|
@@ -537,7 +578,7 @@ Nếu có issue sau khi deploy:
 | Compensation retry (mock network error) | Retry up to 3 times with backoff |
 | Compensation exhausted | Emit `saga.critical.error` event |
 
-### 6.3 E2E Tests
+### 6.4 E2E Tests
 
 - [ ] GraphQL mutation `createOrderWithItems` works correctly
 - [ ] Response shape unchanged for API consumers
@@ -577,7 +618,15 @@ Sau khi hoàn thành P1 này, có thể tiếp tục:
 
 1. **P2: Typed metadata cho steps** - Thay `Map<string, unknown>` bằng typed fields trong context (xem Section 10)
 2. **P1: Re-enable idempotency** - Uncomment và test idempotency trong `OrderOrchestrationService`
-3. **P0: Fix orderItems trong CalculatePromotionStep** - Đảm bảo promotion có items để evaluate
+
+> **⚠️ CRITICAL P0 BUG:** "orderItems missing" trong `CalculatePromotionStep` ảnh hưởng đến discount calculation. Bug này được liệt kê trong Section 10.3 nhưng nên được fix **TRƯỚC hoặc CÙNG LÚC P1** để đảm bảo promotion logic hoạt động đúng. Nếu không fix ngay, cần thêm validation gate:
+> ```typescript
+> // Thêm vào CalculatePromotionStep.execute()
+> if (!context.orderItems || context.orderItems.length === 0) {
+>   this.logger.error('orderItems not found in context - skipping promotion');
+>   return { success: true, data: { skipped: true, reason: 'NO_ORDER_ITEMS' } };
+> }
+> ```
 
 ---
 
@@ -586,6 +635,11 @@ Sau khi hoàn thành P1 này, có thể tiếp tục:
 > **Priority**: P2
 > **Effort**: ~2-3 giờ (sau khi hoàn thành P1)
 > **Prerequisite**: P1 phải hoàn thành trước
+>
+> **Mục tiêu P2:**
+> - Loại bỏ hoàn toàn `metadata: Map<string, unknown>` và `rollbackData: Map<string, unknown>`
+> - Chuyển sang **typed rollback fields** (đã định nghĩa trong `CreateOrderSagaContext`)
+> - Tránh sử dụng string key rải rác trong steps
 
 ### 10.1 Vấn đề hiện tại
 
@@ -742,6 +796,8 @@ if (!orderItems || orderItems.length === 0) {
 }
 
 // AFTER (SAFE: TypeScript báo lỗi nếu access wrong field)
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+
 const typedContext = context as CreateOrderSagaContext;
 
 // TypeScript compiler sẽ báo nếu orderItems chưa được định nghĩa trong type
@@ -759,7 +815,9 @@ typedContext.promotionResult = {
   appliedPromotions,
   couponUsed: input.couponCode,
 };
-typedContext.finalAmount = totalAmount - totalDiscount;
+// Use MoneyUtils for financial calculations per repo convention
+// KHÔNG dùng: totalAmount - totalDiscount (manual arithmetic)
+typedContext.finalAmount = MoneyUtils.subtract(totalAmount, totalDiscount).toNumber();
 ```
 
 #### Step 5: CreateLicensesStep
