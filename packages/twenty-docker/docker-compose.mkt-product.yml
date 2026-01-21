@@ -1,0 +1,234 @@
+# =============================================================================
+# MKT Product - Production Environment
+# =============================================================================
+# Usage:
+#   make mkt-build          # Build MKT image
+#   make mkt-up             # Start production
+#   make mkt-logs           # View logs
+#
+# Ports:
+#   - 3006: MKT API Server
+#   - 5433: PostgreSQL
+#   - 6380: Redis
+# =============================================================================
+
+name: mkt-product
+
+services:
+  mkt-server:
+    image: mkt:${TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: packages/twenty-docker/twenty/server/Dockerfile
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-twentycrm/twenty:v1.2.0}
+    container_name: mkt-product-server
+    volumes:
+      - mkt-local-data:/app/packages/twenty-server/.local-storage
+    ports:
+      - "${MKT_PORT:-3006}:3000"
+    environment:
+      # === Core ===
+      NODE_ENV: production
+      NODE_PORT: 3000
+
+      # === Database ===
+      PG_DATABASE_HOST: mkt-db
+      PG_DATABASE_PORT: 5432
+      PG_DATABASE_USER: ${MKT_PG_USER:-postgres}
+      PG_DATABASE_PASSWORD: ${MKT_PG_PASSWORD}
+      PG_DATABASE_NAME: ${MKT_PG_DATABASE:-mkt_product}
+      PG_DATABASE_URL: postgres://${MKT_PG_USER:-postgres}:${MKT_PG_PASSWORD}@mkt-db:5432/${MKT_PG_DATABASE:-mkt_product}
+
+      # === Redis ===
+      REDIS_HOST: mkt-redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://mkt-redis:6379
+
+      # === App ===
+      APP_SECRET: ${MKT_APP_SECRET}
+      SIGN_IN_PREFILLED: "false"
+      FRONTEND_URL: ${MKT_FRONTEND_URL}
+
+      # === OAuth2 Server Config ===
+      OAUTH2_SERVER_ENABLED: "true"
+      OAUTH2_ACCESS_TOKEN_TTL: ${OAUTH2_ACCESS_TOKEN_TTL:-3600}
+      OAUTH2_REFRESH_TOKEN_TTL: ${OAUTH2_REFRESH_TOKEN_TTL:-86400}
+
+      # === Logging ===
+      LOG_LEVELS: log,error,warn
+
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    depends_on:
+      mkt-db:
+        condition: service_healthy
+      mkt-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - mkt-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  mkt-worker:
+    image: mkt:${TAG:-latest}
+    container_name: mkt-product-worker
+    volumes:
+      - mkt-local-data:/app/packages/twenty-server/.local-storage
+    environment:
+      NODE_ENV: production
+      PG_DATABASE_HOST: mkt-db
+      PG_DATABASE_PORT: 5432
+      PG_DATABASE_USER: ${MKT_PG_USER:-postgres}
+      PG_DATABASE_PASSWORD: ${MKT_PG_PASSWORD}
+      PG_DATABASE_NAME: ${MKT_PG_DATABASE:-mkt_product}
+      PG_DATABASE_URL: postgres://${MKT_PG_USER:-postgres}:${MKT_PG_PASSWORD}@mkt-db:5432/${MKT_PG_DATABASE:-mkt_product}
+      REDIS_HOST: mkt-redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://mkt-redis:6379
+      APP_SECRET: ${MKT_APP_SECRET}
+      # Worker config
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      LOG_LEVELS: log,error,warn
+    command: ["node", "dist/src/queue-worker/queue-worker"]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    depends_on:
+      mkt-server:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - mkt-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  mkt-db:
+    image: postgres:16-alpine
+    container_name: mkt-product-db
+    volumes:
+      - mkt-db-data:/var/lib/postgresql/data
+    ports:
+      - "${MKT_PG_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${MKT_PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${MKT_PG_PASSWORD}
+      POSTGRES_DB: ${MKT_PG_DATABASE:-mkt_product}
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "effective_cache_size=768MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "default_statistics_target=100"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MKT_PG_USER:-postgres} -d ${MKT_PG_DATABASE:-mkt_product}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mkt-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  mkt-redis:
+    image: redis:7-alpine
+    container_name: mkt-product-redis
+    volumes:
+      - mkt-redis-data:/data
+    ports:
+      - "${MKT_REDIS_PORT:-6380}:6379"
+    command:
+      - "redis-server"
+      - "--maxmemory"
+      - "256mb"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+      - "--appendonly"
+      - "yes"
+      - "--appendfsync"
+      - "everysec"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mkt-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  mkt-network:
+    name: mkt-network
+    driver: bridge
+
+volumes:
+  mkt-db-data:
+    name: mkt-product-db-data
+  mkt-redis-data:
+    name: mkt-product-redis-data
+  mkt-local-data:
+    name: mkt-product-local-data

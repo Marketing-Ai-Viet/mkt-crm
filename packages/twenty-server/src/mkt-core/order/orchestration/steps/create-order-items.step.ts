@@ -6,6 +6,7 @@ import { RecordPositionService } from 'src/engine/core-modules/record-position/s
 import { MKT_DEFAULT_LANGUAGE } from 'src/mkt-core/mkt-product-integration/constants';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -213,6 +214,12 @@ export class CreateOrderItemsStep extends SagaStep<
     const totals =
       this.calculationService.calculateOrderTotals(calculatedItems);
 
+    // Calculate adjusted total (after combo discount)
+    const adjustedTotalAmount = MoneyUtils.subtract(
+      totals.totalAmount,
+      totalComboDiscount,
+    ).toNumber();
+
     // Update order with totals and combo data
     await this.updateOrderTotalsWithCombo(
       context,
@@ -221,8 +228,22 @@ export class CreateOrderItemsStep extends SagaStep<
       comboSnapshots,
     );
 
+    // Cast to typed context for type safety
+    const typedContext = context as CreateOrderSagaContext;
+
+    // Store order items in typed context (P0 fix: required by CalculatePromotionStep)
+    typedContext.orderItems = savedOrderItems;
+    typedContext.totals = {
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      discount: totals.discount,
+      comboDiscount: totalComboDiscount,
+      totalAmount: adjustedTotalAmount,
+    };
+
     // Store rollback data
     context.orderItemIds = savedOrderItems.map((item) => item.id);
+    typedContext.rollbackOrderItems = context.orderItemIds;
     context.rollbackData.set(this.name, {
       orderItemIds: context.orderItemIds,
     });
@@ -235,7 +256,7 @@ export class CreateOrderItemsStep extends SagaStep<
           subtotal: totals.subtotal,
           tax: totals.tax,
           discount: totals.discount,
-          totalAmount: totals.totalAmount,
+          totalAmount: adjustedTotalAmount,
         },
       },
     };

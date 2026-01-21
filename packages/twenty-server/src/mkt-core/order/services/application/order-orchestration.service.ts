@@ -121,6 +121,8 @@ export class OrderOrchestrationService {
 
   /**
    * Execute order creation (validation + saga)
+   *
+   * CHANGED: Handle SagaExecutionResult<CreateOrderResponse> from BaseSaga
    */
   private async executeCreateOrder(
     workspaceId: string,
@@ -148,21 +150,38 @@ export class OrderOrchestrationService {
 
     // Execute saga
     try {
-      const result = await this.createOrderSaga.execute(
+      const sagaResult = await this.createOrderSaga.execute(
         workspaceId,
         workspaceMemberId,
         input,
       );
 
-      if (result.success) {
+      // CHANGED: Extract data from SagaExecutionResult
+      if (sagaResult.success && sagaResult.data) {
         this.logger.log(
-          LOG.CREATE_SUCCESS(result.orderId ?? '', result.orderCode ?? ''),
+          LOG.CREATE_SUCCESS(
+            sagaResult.data.orderId ?? '',
+            sagaResult.data.orderCode ?? '',
+          ),
         );
-      } else {
-        this.logger.error(LOG.CREATE_FAILED(result.error ?? ''));
+
+        return sagaResult.data;
       }
 
-      return result;
+      // Handle saga failure
+      // NOTE: Error mapping priority from SagaExecutionResult:
+      // 1. sagaResult.error - Human-readable error message
+      // 2. sagaResult.failedStep - Step name where failure occurred
+      // 3. sagaResult.executedSteps - Steps that were executed before failure
+      this.logger.error(LOG.CREATE_FAILED(sagaResult.error ?? ''), {
+        failedStep: sagaResult.failedStep,
+        executedSteps: sagaResult.executedSteps,
+      });
+
+      return {
+        success: false,
+        error: sagaResult.error ?? 'Saga execution failed',
+      };
     } catch (error) {
       this.logger.error(LOG.CREATE_UNEXPECTED_ERROR(), error);
 

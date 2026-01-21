@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { OrderItemForPromotion } from 'src/mkt-core/mkt-promotion/types';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -88,11 +89,12 @@ export class CalculatePromotionStep extends SagaStep<
 
       this.logger.log(`Calculating promotions for order: ${context.orderId}`);
 
-      // Get order subtotal from context metadata
-      // TODO : Combo calculation types may affect this
-      // TODO: Customer tier discounts may affect this
-      const orderSubtotal =
-        (context.metadata.get('totalAmount') as number) ?? 0;
+      // Cast to typed context for type safety
+      const typedContext = context as CreateOrderSagaContext;
+
+      // Get order subtotal from typed context (set by CreateOrderItemsStep)
+      // Note: Uses totalAmount which already includes combo discount
+      const orderSubtotal = typedContext.totals?.totalAmount ?? 0;
 
       // Build order items for promotion evaluation
       const orderItems = this.buildOrderItemsForPromotion(context);
@@ -142,10 +144,14 @@ export class CalculatePromotionStep extends SagaStep<
         input.couponCode,
       );
 
-      // Store in context for subsequent steps
-      context.metadata.set('promotionResult', promotionResult);
-      context.metadata.set('appliedPromotions', promotionResult.promotions);
-      context.metadata.set('promotionDiscount', promotionResult.totalDiscount);
+      // Store in typed context for subsequent steps
+      // promotionResult.promotions is already PromotionSnapshot[]
+      typedContext.promotionResult = {
+        totalDiscount: promotionResult.totalDiscount,
+        appliedPromotions: promotionResult.promotions,
+        couponUsed: input.couponCode,
+      };
+      typedContext.finalAmount = promotionResult.finalOrderAmount;
 
       // Store rollback data
       context.rollbackData.set(this.name, {
@@ -223,23 +229,24 @@ export class CalculatePromotionStep extends SagaStep<
   // ============================================
 
   /**
-   * Build order items for promotion evaluation from context
+   * Build order items for promotion evaluation from typed context
+   *
+   * P0 fix: Uses typed context field instead of metadata Map
+   * - Type safety: TypeScript catches missing fields at compile time
+   * - Data flow: CreateOrderItemsStep sets typedContext.orderItems
    */
   private buildOrderItemsForPromotion(
     context: SagaContext,
   ): OrderItemForPromotion[] {
-    // Try to get order items from metadata (set by CreateOrderItemsStep)
-    const orderItems = context.metadata.get('orderItems') as
-      | Array<{
-          externalMktProductId?: string;
-          externalMktPackageId?: string;
-          quantity?: number;
-          unitPrice?: number;
-          totalPrice?: number;
-        }>
-      | undefined;
+    // Cast to typed context (set by CreateOrderItemsStep)
+    const typedContext = context as CreateOrderSagaContext;
+    const orderItems = typedContext.orderItems;
 
     if (!orderItems || orderItems.length === 0) {
+      this.logger.warn(
+        'No order items found in context - promotion calculation will use empty items',
+      );
+
       return [];
     }
 
@@ -261,8 +268,9 @@ export class CalculatePromotionStep extends SagaStep<
     result: OrderPromotionResult,
     couponCode: string | undefined,
   ): Promise<void> {
-    const currentTotalAmount =
-      (context.metadata.get('totalAmount') as number) ?? 0;
+    // Cast to typed context
+    const typedContext = context as CreateOrderSagaContext;
+    const currentTotalAmount = typedContext.totals?.totalAmount ?? 0;
 
     const finalAmount = currentTotalAmount - result.totalDiscount;
 
@@ -279,7 +287,7 @@ export class CalculatePromotionStep extends SagaStep<
       totalAmount: Math.max(0, finalAmount), // Ensure non-negative
     });
 
-    // Update totalAmount in context for subsequent steps
-    context.metadata.set('totalAmount', Math.max(0, finalAmount));
+    // Update finalAmount in typed context for subsequent steps
+    typedContext.finalAmount = Math.max(0, finalAmount);
   }
 }

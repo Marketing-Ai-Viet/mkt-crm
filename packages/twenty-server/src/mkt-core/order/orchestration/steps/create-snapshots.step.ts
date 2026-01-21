@@ -7,6 +7,7 @@ import {
   MktProductSnapshot,
   MktPackageSnapshot,
 } from 'src/mkt-core/mkt-product-integration/types';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -116,9 +117,18 @@ export class CreateSnapshotsStep extends SagaStep<
       // Build snapshots map for efficient lookup
       const snapshotsMap = this.buildSnapshotsMap(snapshots);
 
-      // Store in context for subsequent steps
-      context.metadata.set('productSnapshots', snapshots);
-      context.metadata.set('snapshotsMap', snapshotsMap);
+      // Cast to typed context
+      const typedContext = context as CreateOrderSagaContext;
+
+      // Store in typed context for subsequent steps
+      // Map ProductWithSnapshot[] to context snapshots format
+      typedContext.snapshots = snapshots.map((s) => ({
+        productId: s.product.id,
+        packageId: s.package?.id,
+        productSnapshot: s.productSnapshot,
+        packageSnapshot: s.packageSnapshot,
+      }));
+      typedContext.snapshotsMap = snapshotsMap;
 
       this.logger.log(
         `Created ${snapshots.length} product snapshots successfully`,
@@ -147,11 +157,13 @@ export class CreateSnapshotsStep extends SagaStep<
   ): Promise<void> {
     // Snapshots are immutable data stored in JSON fields
     // They don't need database rollback
-    // Just clear the metadata
-    this.logger.warn('Compensating snapshots step - clearing metadata');
+    // Just clear the typed context fields
+    this.logger.warn('Compensating snapshots step - clearing context');
 
-    context.metadata.delete('productSnapshots');
-    context.metadata.delete('snapshotsMap');
+    const typedContext = context as CreateOrderSagaContext;
+
+    typedContext.snapshots = undefined;
+    typedContext.snapshotsMap = undefined;
   }
 
   // ============================================

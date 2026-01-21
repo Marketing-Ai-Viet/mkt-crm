@@ -5,6 +5,7 @@ import { QueryRunner } from 'typeorm';
 import { MktContractService } from 'src/mkt-core/contract/services/mkt-contract.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -85,6 +86,9 @@ export class FinalizeOrderStep extends SagaStep<
         contractId = await this.createContract(context, input, order);
       }
 
+      // Cast to typed context
+      const typedContext = context as CreateOrderSagaContext;
+
       // Update order with contract and generate name if needed
       const orderName = this.generateOrderName(order);
 
@@ -94,13 +98,14 @@ export class FinalizeOrderStep extends SagaStep<
         mktContractId: contractId ?? undefined,
       });
 
-      const finalStatus = context.metadata.get('orderStatus') as ORDER_STATUS;
+      // Get final status from typed context (set by CreateOrderStep)
+      const finalStatus = typedContext.finalStatus ?? ORDER_STATUS.DRAFT;
 
       this.logger.log(
         `Order ${context.orderId} finalized with status: ${finalStatus}`,
       );
 
-      // Store rollback data
+      // Store rollback data (keep Map for contract since it's not in typed context)
       context.rollbackData.set(this.name, {
         contractId,
       });
