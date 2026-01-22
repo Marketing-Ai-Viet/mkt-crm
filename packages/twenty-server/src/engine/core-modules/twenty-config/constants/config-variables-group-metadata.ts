@@ -110,19 +110,62 @@ export const CONFIG_VARIABLES_GROUP_METADATA: Record<
   [ConfigVariablesGroup.AnalyticsConfig]: {
     position: 1800,
     description:
-      'We’re running a test to perform analytics within the app. This will evolve.',
+      "We're running a test to perform analytics within the app. This will evolve.",
     isHiddenOnLoad: true,
   },
   [ConfigVariablesGroup.TokensDuration]: {
     position: 1900,
     description:
-      'These have been set to sensible default so you probably don’t need to change them unless you have a specific use-case.',
+      "These have been set to sensible default so you probably don't need to change them unless you have a specific use-case.",
     isHiddenOnLoad: true,
   },
   [ConfigVariablesGroup.TwoFactorAuthentication]: {
     position: 2000,
     description:
-      'These have been set to sensible default so you probably don’t need to change them unless you have a specific use-case.',
+      "These have been set to sensible default so you probably don't need to change them unless you have a specific use-case.",
+    isHiddenOnLoad: true,
+  },
+  // MKT Core Groups
+  [ConfigVariablesGroup.MktInvoice]: {
+    position: 2100,
+    description:
+      'Configure S-Invoice integration for electronic invoice generation and management.',
+    isHiddenOnLoad: true,
+  },
+  [ConfigVariablesGroup.MktPayment]: {
+    position: 2200,
+    description:
+      'Configure payment gateway integration (SEPay, BIDV) for order payment processing.',
+    isHiddenOnLoad: true,
+  },
+  [ConfigVariablesGroup.MktOAuth2]: {
+    position: 2300,
+    description:
+      'Configure OAuth2 client for MKT Server integration. Includes cache, rate limiting, and circuit breaker settings.',
+    isHiddenOnLoad: true,
+  },
+  [ConfigVariablesGroup.MktProductSync]: {
+    position: 2400,
+    description:
+      'Configure product synchronization from MKT Server. Includes batch processing and scheduled sync settings.',
+    isHiddenOnLoad: true,
+  },
+  [ConfigVariablesGroup.MktOrder]: {
+    position: 2500,
+    description:
+      'Configure order processing settings including tax calculation and overdue job processing.',
+    isHiddenOnLoad: true,
+  },
+  [ConfigVariablesGroup.MktRbac]: {
+    position: 2600,
+    description:
+      'Configure RBAC (Role-Based Access Control) settings for enterprise-grade permissions.',
+    isHiddenOnLoad: true,
+  },
+  [ConfigVariablesGroup.MktGeneral]: {
+    position: 2700,
+    description:
+      'General MKT configuration including license API, file download, and transaction settings.',
     isHiddenOnLoad: true,
   },
 };

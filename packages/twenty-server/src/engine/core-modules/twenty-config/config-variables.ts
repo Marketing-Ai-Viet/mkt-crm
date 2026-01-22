@@ -1176,6 +1176,588 @@ export class ConfigVariables {
   })
   @ValidateIf((env) => env.IS_MAPS_AND_ADDRESS_AUTOCOMPLETE_ENABLED)
   GOOGLE_MAP_API_KEY: string;
+
+  // ========== MKT Invoice Configuration (S-Invoice) ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktInvoice,
+    description: 'S-Invoice username for authentication',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  S_INVOICE_USERNAME: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktInvoice,
+    isSensitive: true,
+    description: 'S-Invoice password for authentication',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  S_INVOICE_PASSWORD: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktInvoice,
+    isSensitive: true,
+    description: 'S-Invoice auth token',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  S_INVOICE_AUTH_TOKEN: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktInvoice,
+    isSensitive: true,
+    description: 'S-Invoice authorization header value (Basic auth)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  S_INVOICE_AUTHORIZATION: string;
+
+  // ========== MKT Payment Configuration (SEPay/BIDV) ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'SEPay bank account number',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  SEPAY_ACC: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'SEPay bank name (e.g., TECHCOMBANK, BIDV)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  SEPAY_BANK: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'SEPay workspace ID for payment processing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  SEPAY_WORKSPACE_ID: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'SEPay virtual account prefix',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  SEPAY_VA: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'Enable or disable SEPay authentication',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  SEPAY_AUTH_ENABLED = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    isSensitive: true,
+    description: 'SEPay webhook API key for verification',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  SEPAY_WEBHOOK_API_KEY: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'Enable BIDV Business payment mode',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_BIDV_BUSINESS = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    description: 'BIDV SEPay API URL for business payments',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  @ValidateIf((env) => env.IS_BIDV_BUSINESS)
+  BIDV_SEPAY_API_URL: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    isSensitive: true,
+    description: 'BIDV SEPay authentication token',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @ValidateIf((env) => env.IS_BIDV_BUSINESS)
+  BIDV_SEPAY_AUTH_TOKEN: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktPayment,
+    isSensitive: true,
+    description: 'BIDV SEPay cookie for session management',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @ValidateIf((env) => env.IS_BIDV_BUSINESS)
+  BIDV_SEPAY_COOKIE: string;
+
+  // ========== MKT OAuth2 Client Configuration ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Base URL of MKT Authorization Server',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  MKT_API_BASE_URL: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'OAuth2 client ID from MKT Authorization Server',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  MKT_OAUTH_CLIENT_ID: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    isSensitive: true,
+    description: 'OAuth2 client secret from MKT Authorization Server',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  MKT_OAUTH_CLIENT_SECRET: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'OAuth2 scopes to request (comma-separated)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  MKT_OAUTH_SCOPES: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'OAuth2 token endpoint path',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  OAUTH2_TOKEN_ENDPOINT = '/oauth/token';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'OAuth2 token introspection endpoint path',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  OAUTH2_INTROSPECT_ENDPOINT = '/oauth/introspect';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'OAuth2 token revocation endpoint path',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  OAUTH2_REVOKE_ENDPOINT = '/oauth/revoke';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Maximum entries in OAuth2 LRU cache',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_CACHE_LRU_MAX = 10;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'TTL for OAuth2 LRU cache entries (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_CACHE_LRU_TTL_MS = 3600000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'TTL for OAuth2 Redis cache entries (seconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_CACHE_REDIS_TTL_SECONDS = 3600;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Token refresh threshold before expiry (seconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_REFRESH_THRESHOLD_SECONDS = 300;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Interval between token refresh checks (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_REFRESH_INTERVAL_MS = 30000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'HTTP request timeout (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_HTTP_TIMEOUT_MS = 10000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Maximum HTTP retry attempts',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_HTTP_MAX_RETRIES = 3;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Delay between HTTP retries (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_HTTP_RETRY_DELAY_MS = 1000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Enable or disable OAuth2 rate limiting',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  OAUTH2_RATE_LIMIT_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Maximum rate limit attempts in window',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_RATE_LIMIT_MAX_ATTEMPTS = 10;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Rate limit sliding window (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_RATE_LIMIT_WINDOW_MS = 60000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Enable or disable OAuth2 circuit breaker',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  OAUTH2_CIRCUIT_BREAKER_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Failures threshold to open circuit breaker',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 5;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Circuit breaker reset timeout (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_CIRCUIT_BREAKER_RESET_TIMEOUT_MS = 60000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Half-open state test attempts',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_CIRCUIT_BREAKER_HALF_OPEN_ATTEMPTS = 3;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Enable or disable JWT token verification',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  OAUTH2_JWT_VERIFICATION_ENABLED = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'JWT signing algorithm (RS256, HS256, etc.)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  OAUTH2_JWT_ALGORITHM = 'RS256';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Enable Redis health check for OAuth2 cache',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  OAUTH2_REDIS_HEALTH_CHECK_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Redis health check interval (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_REDIS_HEALTH_CHECK_INTERVAL_MS = 30000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Redis health check timeout (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_REDIS_HEALTH_CHECK_TIMEOUT_MS = 5000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOAuth2,
+    description: 'Threshold to mark Redis as unhealthy',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  OAUTH2_REDIS_HEALTH_CHECK_UNHEALTHY_THRESHOLD = 3;
+
+  // ========== MKT Product Sync Configuration ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Enable auto-sync products when OAuth2 token is acquired',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  MKT_AUTO_SYNC_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Sync products on startup after initial token acquisition',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  MKT_SYNC_ON_STARTUP = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Batch size for pagination when syncing products',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_SYNC_BATCH_SIZE = 50;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Minimum interval between syncs (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_SYNC_MIN_INTERVAL_MS = 300000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Max retry attempts for failed sync items',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_SYNC_MAX_RETRIES = 3;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Enable parallel batch processing during sync',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  MKT_SYNC_PARALLEL = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Enable stale cache invalidation during sync',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  MKT_SYNC_INVALIDATE_STALE = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Enable scheduled sync via cron job',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  MKT_SCHEDULED_SYNC_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktProductSync,
+    description: 'Cron expression for scheduled sync (e.g., 0 */30 * * * *)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  MKT_SCHEDULED_SYNC_CRON = '0 */30 * * * *';
+
+  // ========== MKT Order Configuration ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Enable or disable optimistic locking for orders',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  ORDER_OPTIMISTIC_LOCKING_ENABLED = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Enable or disable tax calculation for orders',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  MKT_ORDER_TAX_ENABLED = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Tax percentage for order calculations',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_ORDER_TAX_PERCENTAGE = 10;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Delay before order becomes OVERDUE (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_ORDER_OVERDUE_DELAY_MS = 86400000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Max retry attempts when overdue job fails',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_ORDER_OVERDUE_RETRY_ATTEMPTS = 3;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Base backoff delay for exponential retry (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_ORDER_OVERDUE_BACKOFF_MS = 60000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktOrder,
+    description: 'Worker concurrency for overdue job processing',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  MKT_ORDER_OVERDUE_WORKER_CONCURRENCY = 5;
+
+  // ========== MKT RBAC Configuration ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktRbac,
+    description: 'Skip RBAC module during development',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  SKIP_RBAC_MODULE = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktRbac,
+    description: 'RBAC validation mode (SIMPLIFIED or FULL)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  RBAC_VALIDATION_MODE = 'SIMPLIFIED';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktRbac,
+    description: 'Enable prune selection for GraphQL queries',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  PRUNE_SELECTION_ENABLED = true;
+
+  // ========== MKT General Configuration ==========
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktGeneral,
+    description: 'License API URL for license validation',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  LICENSE_API_URL: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktGeneral,
+    description: 'File download link expiration time (seconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  FILE_DOWNLOAD_EXPIRES = 3600;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktGeneral,
+    isSensitive: true,
+    description: 'Secret key for file download URL signing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  FILE_DOWNLOAD_SECRET: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktGeneral,
+    description: 'Enable AsyncLocalStorage for transaction context',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  TRANSACTION_ALS_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.MktGeneral,
+    description: 'Default transaction timeout (milliseconds)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  TRANSACTION_DEFAULT_TIMEOUT_MS = 30000;
 }
 
 export const validate = (config: Record<string, unknown>): ConfigVariables => {

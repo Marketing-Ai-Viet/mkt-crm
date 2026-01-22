@@ -19,4 +19,12 @@ export enum ConfigVariablesGroup {
   AnalyticsConfig = 'audit-config',
   TokensDuration = 'tokens-duration',
   TwoFactorAuthentication = 'two-factor-authentication',
+  // MKT Core Groups
+  MktInvoice = 'mkt-invoice',
+  MktPayment = 'mkt-payment',
+  MktOAuth2 = 'mkt-oauth2',
+  MktProductSync = 'mkt-product-sync',
+  MktOrder = 'mkt-order',
+  MktRbac = 'mkt-rbac',
+  MktGeneral = 'mkt-general',
 }
