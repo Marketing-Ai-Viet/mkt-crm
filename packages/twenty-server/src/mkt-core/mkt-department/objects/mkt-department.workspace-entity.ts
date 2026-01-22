@@ -33,10 +33,12 @@ import {
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-// Entity name constant for GraphQL operations
+/**
+ * Entity name for mktDepartment - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
 export const MKT_DEPARTMENT_ENTITY_NAME = 'mktDepartment';
 
-//SEARCH_FIELDS_FOR_ENTITY
 // Define fields to be used for search
 const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
   { name: 'departmentCode', type: FieldMetadataType.TEXT },
@@ -45,7 +47,7 @@ const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartment,
-  namePlural: 'mktDepartments',
+  namePlural: `${MKT_DEPARTMENT_ENTITY_NAME}s`,
   labelSingular: msg`Department`,
   labelPlural: msg`Departments`,
   description: msg`Departments in the marketing system.`,

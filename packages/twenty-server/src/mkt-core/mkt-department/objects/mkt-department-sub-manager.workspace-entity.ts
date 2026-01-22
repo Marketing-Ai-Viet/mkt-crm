@@ -15,7 +15,10 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-// Entity name constant for GraphQL operations
+/**
+ * Entity name for mktDepartmentSubManager - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
 export const MKT_DEPARTMENT_SUB_MANAGER_ENTITY_NAME = 'mktDepartmentSubManager';
 
 /**
@@ -28,7 +31,7 @@ export const MKT_DEPARTMENT_SUB_MANAGER_ENTITY_NAME = 'mktDepartmentSubManager';
  */
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartmentSubManager,
-  namePlural: 'mktDepartmentSubManagers',
+  namePlural: `${MKT_DEPARTMENT_SUB_MANAGER_ENTITY_NAME}s`,
   labelSingular: msg`Department Sub Manager`,
   labelPlural: msg`Department Sub Managers`,
   description: msg`Sub-manager assignments for departments`,

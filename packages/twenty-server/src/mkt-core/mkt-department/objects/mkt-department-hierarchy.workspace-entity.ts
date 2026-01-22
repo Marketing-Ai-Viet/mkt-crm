@@ -17,12 +17,16 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPE_OPTIONS } from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 
-// Entity name constant for GraphQL operations
+/**
+ * Entity name for mktDepartmentHierarchy - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ * Note: namePlural uses irregular plural 'Hierarchies' instead of 'Hierarchys'
+ */
 export const MKT_DEPARTMENT_HIERARCHY_ENTITY_NAME = 'mktDepartmentHierarchy';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartmentHierarchy,
-  namePlural: 'mktDepartmentHierarchies',
+  namePlural: 'mktDepartmentHierarchies', // Irregular plural
   labelSingular: msg`Department Hierarchy`,
   labelPlural: msg`Department Hierarchies`,
   description: msg`Hierarchical relationships between departments in the marketing system.`,
