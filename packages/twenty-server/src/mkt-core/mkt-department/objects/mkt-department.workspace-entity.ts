@@ -24,9 +24,9 @@ import {
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
-import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
-import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-sub-manager.workspace-entity';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
 import {
   DEPARTMENT_TYPE,
   DEPARTMENT_TYPE_OPTIONS,

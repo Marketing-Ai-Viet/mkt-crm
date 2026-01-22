@@ -16,7 +16,7 @@ import {
   DepartmentTreeOptions,
   HierarchyStatistics,
 } from 'src/mkt-core/mkt-department/types';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 
 @Injectable()
 export class DepartmentService {

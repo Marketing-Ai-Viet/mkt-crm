@@ -7,7 +7,7 @@ import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/s
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES } from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
 
 // Relations for hierarchy entity
 const HIERARCHY_PARENT_RELATION = ['parentDepartment'] as const;

@@ -6,9 +6,9 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 import {
   AncestorData,
   AncestryStaleResult,

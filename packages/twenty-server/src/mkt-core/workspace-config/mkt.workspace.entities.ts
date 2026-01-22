@@ -31,9 +31,9 @@ import {
   MktPolicyChangeRequestWorkspaceEntity,
   MktPolicyApprovalWorkspaceEntity,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
-import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department.workspace-entity';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
 import { MktKpiHistoryWorkspaceEntity } from 'src/mkt-core/mkt-kpi-history/mkt-kpi-history.workspace-entity';
 import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
@@ -61,7 +61,7 @@ import {
   MktPromotionUsageWorkspaceEntity,
   MktPromotionAuditWorkspaceEntity,
 } from 'src/mkt-core/mkt-promotion/workspace-entities';
-import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects';
 
 export const MKT_WORKSPACE_ENTITIES = [
   //core
