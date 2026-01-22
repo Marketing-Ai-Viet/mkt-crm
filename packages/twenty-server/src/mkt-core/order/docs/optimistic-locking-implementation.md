@@ -1,4 +1,4 @@
-# Optimistic Locking - Implementation Guide
+# Optimistic Locking - Order Module Implementation
 
 ## Document Information
 
@@ -9,7 +9,7 @@
 | **Module** | mkt-core/order |
 | **Solution** | Optimistic Locking (Version-based) |
 | **Status** | Implementation Guide |
-| **Estimated Effort** | 3-5 days |
+| **Estimated Effort** | 2-3 days |
 
 ### Changelog
 
@@ -17,16 +17,19 @@
 |------|---------|
 | 2026-01-21 | Initial document (Hybrid approach) |
 | 2026-01-21 | Simplified: Remove Soft Lock, Real-time, Redis - keep only Optimistic Locking |
+| 2026-01-21 | Refactored: Extend từ common module `mkt-core/common/optimistic-locking` |
+| 2026-01-22 | Integrated `expectedVersion` into existing status update mutations |
 
 ---
 
 ## Table of Contents
 
 1. [Architecture Overview](#1-architecture-overview)
-2. [Implementation](#2-implementation)
-3. [Frontend Integration](#3-frontend-integration)
-4. [Testing Strategy](#4-testing-strategy)
-5. [Deployment Checklist](#5-deployment-checklist)
+2. [Common Module Integration](#2-common-module-integration)
+3. [Order Module Implementation](#3-order-module-implementation)
+4. [Frontend Integration](#4-frontend-integration)
+5. [Testing Strategy](#5-testing-strategy)
+6. [Deployment Checklist](#6-deployment-checklist)
 
 ---
 
@@ -82,16 +85,19 @@
 │            │  - updateWithVersion  │                        │
 │            └───────────┬───────────┘                        │
 │                        │                                     │
+│  ┌─────────────────────┼─────────────────────┐              │
+│  │    COMMON MODULE    │                     │              │
+│  │  ┌──────────────────▼────────────────┐   │              │
+│  │  │ BaseOptimisticLockingService<T>   │   │              │
+│  │  │ - updateWithOptimisticLock()      │   │              │
+│  │  │ - forceUpdate()                   │   │              │
+│  │  │ - detectConflicts()               │   │              │
+│  │  └──────────────────┬────────────────┘   │              │
+│  └─────────────────────┼─────────────────────┘              │
+│                        │ extends                             │
 │            ┌───────────▼───────────┐                        │
 │            │ OrderConcurrencyService│                       │
-│            │ - version check       │                        │
-│            │ - conflict detection  │                        │
-│            └───────────┬───────────┘                        │
-│                        │                                     │
-│            ┌───────────▼───────────┐                        │
-│            │  MktOrderRepository   │                        │
-│            │  - updateWithVersion  │                        │
-│            │  - atomic operations  │                        │
+│            │ (Order-specific config)│                        │
 │            └───────────┬───────────┘                        │
 └────────────────────────┼────────────────────────────────────┘
                          │
@@ -184,21 +190,157 @@
 
 ---
 
-## 2. Implementation
+## 2. Common Module Integration
 
-### 2.1. Files to Create/Modify
+Order module sử dụng common module `mkt-core/common/optimistic-locking` làm base.
+
+### 2.1. Common Module Structure
+
+```
+mkt-core/common/optimistic-locking/
+├── index.ts                                    # Public exports
+├── types/optimistic-locking.types.ts          # Generic types
+├── dto/optimistic-locking.dto.ts              # Base GraphQL DTOs
+├── messages/optimistic-locking.messages.ts    # Shared messages
+└── services/base-optimistic-locking.service.ts # Abstract base service
+```
+
+### 2.2. Available Base Types
+
+```typescript
+import {
+  // Types
+  VersionedEntity,
+  OptimisticUpdateResult,
+  FieldConflict,
+  ConflictInfo,
+  OptimisticLockingConfig,
+  // DTOs
+  BaseUpdateWithVersionInput,
+  BaseResolveConflictInput,
+  OptimisticUpdateOutput,
+  ConflictInfoOutput,
+  FieldConflictOutput,
+  ConflictResolutionStrategyEnum,
+  // Service
+  BaseOptimisticLockingService,
+  // Messages
+  OPTIMISTIC_LOCKING_MESSAGES,
+} from 'src/mkt-core/common/optimistic-locking';
+```
+
+### 2.3. Key Features in Base Service
+
+**File**: `src/mkt-core/common/optimistic-locking/services/base-optimistic-locking.service.ts`
+
+```typescript
+export abstract class BaseOptimisticLockingService<T extends VersionedEntity> {
+  // Atomic update với version check
+  async updateWithOptimisticLock(
+    workspaceId: string,
+    entityId: string,
+    data: Partial<T>,
+    expectedVersion: number,
+  ): Promise<OptimisticUpdateResult<T>>;
+
+  // Force update sau conflict resolution
+  async forceUpdate(
+    workspaceId: string,
+    entityId: string,
+    resolvedData: Partial<T>,
+    currentVersion: number,
+  ): Promise<OptimisticUpdateResult<T>>;
+
+  // Detect field-level conflicts
+  protected detectConflicts(
+    userChanges: Partial<T>,
+    currentData: T,
+  ): FieldConflict[];
+
+  // Deep equality comparison with lodash.isequal
+  protected isEqual(a: unknown, b: unknown): boolean;
+
+  // Build conflict info from entity
+  protected buildConflictInfo(entity: T, conflicts: FieldConflict[]): ConflictInfo;
+}
+```
+
+**Key Implementation Details:**
+
+1. **Atomic Update Query**:
+```typescript
+// Sử dụng QueryBuilder với WHERE version = expectedVersion
+const result = await repository
+  .createQueryBuilder()
+  .update()
+  .set({
+    ...data,
+    version: () => 'version + 1',
+    updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+  } as QueryDeepPartialEntity<T>)
+  .where('id = :id AND version = :version', {
+    id: entityId,
+    version: expectedVersion,
+  })
+  .execute();
+```
+
+2. **Type-Safe FindOne** (sử dụng `FindOptionsWhere<T>` thay vì `as any`):
+```typescript
+import { FindOptionsWhere } from 'typeorm';
+
+const currentEntity = await repository.findOne({
+  where: { id: entityId } as FindOptionsWhere<T>,
+});
+```
+
+3. **Deep Equality với lodash.isequal**:
+```typescript
+import isEqual from 'lodash.isequal';
+
+protected isEqual(a: unknown, b: unknown): boolean {
+  // lodash.isEqual handles:
+  // - null/undefined
+  // - primitives
+  // - Date objects
+  // - nested objects (key order independent)
+  // - arrays
+  return isEqual(a, b);
+}
+```
+
+4. **Safe Date Parsing với DateTimeUtils.parse()**:
+```typescript
+// DateTimeUtils.parse() xử lý an toàn cả Date object và ISO string
+protected buildConflictInfo(entity: T, conflicts: FieldConflict[]): ConflictInfo {
+  return {
+    currentVersion: entity.version ?? 0,
+    conflicts,
+    modifiedAt: entity.updatedAt
+      ? DateTimeUtils.toDate(DateTimeUtils.parse(entity.updatedAt))
+      : undefined,
+  };
+}
+```
+
+---
+
+## 3. Order Module Implementation
+
+### 3.1. Files to Create/Modify
 
 | Action | File Path | Description |
 |--------|-----------|-------------|
 | **MODIFY** | `mkt-core/constants/mkt-field-ids.ts` | Thêm field ID cho version |
 | **MODIFY** | `mkt-core/order/objects/mkt-order.workspace-entity.ts` | Thêm version field |
-| **CREATE** | `mkt-core/order/types/optimistic-locking.types.ts` | Types cho optimistic locking |
-| **CREATE** | `mkt-core/order/dto/optimistic-locking.dto.ts` | GraphQL DTOs |
-| **CREATE** | `mkt-core/order/services/order-concurrency.service.ts` | Service xử lý version check |
+| **CREATE** | `mkt-core/order/constants/editable-fields.constant.ts` | Config editable fields |
+| **CREATE** | `mkt-core/order/dto/order-optimistic-locking.dto.ts` | Order-specific DTOs |
+| **CREATE** | `mkt-core/order/services/order-concurrency.service.ts` | Extend base service |
 | **CREATE** | `mkt-core/order/resolvers/order-edit.resolver.ts` | GraphQL resolver |
 | **MODIFY** | `mkt-core/order/mkt-order.module.ts` | Register services |
+| **MODIFY** | `mkt-core/order/services/index.ts` | Export service |
 
-### 2.2. Entity Field
+### 3.2. Entity Field
 
 **File**: `packages/twenty-server/src/mkt-core/constants/mkt-field-ids.ts`
 
@@ -227,44 +369,11 @@ export const MKT_ORDER_FIELD_IDS = {
 version: number | null;
 ```
 
-### 2.3. Types
+### 3.3. Editable Fields Config
 
-**File**: `packages/twenty-server/src/mkt-core/order/types/optimistic-locking.types.ts`
+**File**: `packages/twenty-server/src/mkt-core/order/constants/editable-fields.constant.ts`
 
 ```typescript
-/**
- * Result of optimistic update operation
- */
-export type OptimisticUpdateResult = {
-  success: boolean;
-  newVersion?: number;
-  error?: string;
-  conflict?: ConflictInfo;
-};
-
-/**
- * Represents a single field conflict
- */
-export type FieldConflict = {
-  field: string;
-  yourValue: unknown;
-  currentValue: unknown;
-};
-
-/**
- * Full conflict information
- */
-export type ConflictInfo = {
-  currentVersion: number;
-  conflicts: FieldConflict[];
-  modifiedAt?: Date;
-};
-
-/**
- * Conflict resolution strategies
- */
-export type ConflictResolutionStrategy = 'KEEP_MINE' | 'KEEP_THEIRS' | 'MERGE';
-
 /**
  * List of editable fields for conflict detection
  * Only these fields will be included in conflict detection
@@ -284,262 +393,105 @@ export const EDITABLE_ORDER_FIELDS = [
 export type EditableOrderField = (typeof EDITABLE_ORDER_FIELDS)[number];
 ```
 
-### 2.4. DTOs
+### 3.4. Order-Specific DTOs
 
-**File**: `packages/twenty-server/src/mkt-core/order/dto/optimistic-locking.dto.ts`
+**File**: `packages/twenty-server/src/mkt-core/order/dto/order-optimistic-locking.dto.ts`
 
 ```typescript
-import { Field, ID, InputType, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { IsNotEmpty, IsNumber, IsUUID, Min } from 'class-validator';
+import { Field, ID, InputType } from '@nestjs/graphql';
 
-import GraphQLJSON from 'graphql-type-json';
+import { IsNotEmpty, IsUUID } from 'class-validator';
 
-// ============================================
-// ENUMS
-// ============================================
-
-export enum ConflictResolutionStrategy {
-  KEEP_MINE = 'KEEP_MINE',
-  KEEP_THEIRS = 'KEEP_THEIRS',
-  MERGE = 'MERGE',
-}
-
-registerEnumType(ConflictResolutionStrategy, {
-  name: 'ConflictResolutionStrategy',
-  description: 'Strategy for resolving edit conflicts',
-});
+import {
+  BaseResolveConflictInput,
+  BaseUpdateWithVersionInput,
+  OptimisticUpdateOutput,
+} from 'src/mkt-core/common/optimistic-locking';
 
 // ============================================
-// INPUT DTOs
+// INPUT DTOs (Extend base với Order ID)
 // ============================================
 
 @InputType()
-export class UpdateOrderWithVersionInput {
-  @Field(() => ID)
+export class UpdateOrderWithVersionInput extends BaseUpdateWithVersionInput {
+  @Field(() => ID, { description: 'Order ID to update' })
   @IsUUID()
   @IsNotEmpty()
   orderId: string;
 
-  @Field(() => Int, { description: 'Expected version number' })
-  @IsNumber()
-  @Min(1)
-  expectedVersion: number;
-
-  @Field(() => GraphQLJSON, { description: 'Fields to update' })
-  data: Record<string, unknown>;
+  get entityId(): string {
+    return this.orderId;
+  }
 }
 
 @InputType()
-export class ResolveConflictInput {
-  @Field(() => ID)
+export class ResolveOrderConflictInput extends BaseResolveConflictInput {
+  @Field(() => ID, { description: 'Order ID to resolve conflict' })
   @IsUUID()
   @IsNotEmpty()
   orderId: string;
 
-  @Field(() => Int, { description: 'Current version in database' })
-  @IsNumber()
-  @Min(1)
-  currentVersion: number;
-
-  @Field(() => GraphQLJSON, { description: 'Resolved data to save' })
-  resolvedData: Record<string, unknown>;
+  get entityId(): string {
+    return this.orderId;
+  }
 }
 
 // ============================================
-// OUTPUT DTOs
+// OUTPUT DTOs (Re-export từ common với alias)
 // ============================================
 
-@ObjectType()
-export class FieldConflictOutput {
-  @Field(() => String)
-  field: string;
-
-  @Field(() => GraphQLJSON, { nullable: true })
-  yourValue?: unknown;
-
-  @Field(() => GraphQLJSON, { nullable: true })
-  currentValue?: unknown;
-}
-
-@ObjectType()
-export class ConflictInfoOutput {
-  @Field(() => Int)
-  currentVersion: number;
-
-  @Field(() => [FieldConflictOutput])
-  conflicts: FieldConflictOutput[];
-
-  @Field(() => Date, { nullable: true })
-  modifiedAt?: Date;
-}
-
-@ObjectType()
-export class UpdateOrderWithVersionOutput {
-  @Field(() => Boolean)
-  success: boolean;
-
-  @Field(() => Int, { nullable: true, description: 'New version after successful update' })
-  newVersion?: number;
-
-  @Field(() => String, { nullable: true, description: 'Error message if failed' })
-  error?: string;
-
-  @Field(() => ConflictInfoOutput, { nullable: true, description: 'Conflict details if version mismatch' })
-  conflict?: ConflictInfoOutput;
-}
+/**
+ * Output cho Order optimistic update operations
+ * Re-export từ common module với alias phù hợp
+ */
+export { OptimisticUpdateOutput as UpdateOrderWithVersionOutput };
 ```
 
-### 2.5. Service
+### 3.5. Order Concurrency Service
 
 **File**: `packages/twenty-server/src/mkt-core/order/services/order-concurrency.service.ts`
 
 ```typescript
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { BaseOptimisticLockingService } from 'src/mkt-core/common/optimistic-locking';
+import { EDITABLE_ORDER_FIELDS } from 'src/mkt-core/order/constants/editable-fields.constant';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
-import {
-  ConflictInfo,
-  EDITABLE_ORDER_FIELDS,
-  FieldConflict,
-  OptimisticUpdateResult,
-} from '../types/optimistic-locking.types';
-
-const MESSAGES = {
-  ORDER_NOT_FOUND: 'Order not found',
-  VERSION_CONFLICT: 'Order was modified by another user',
-  UPDATE_SUCCESS: 'Order updated successfully',
-};
-
+/**
+ * Order Concurrency Service
+ *
+ * Extends BaseOptimisticLockingService với Order-specific configuration.
+ * Handles concurrent edit protection cho MktOrder entity.
+ *
+ * @example
+ * ```typescript
+ * const result = await orderConcurrencyService.updateWithOptimisticLock(
+ *   workspaceId,
+ *   orderId,
+ *   { name: 'Updated Name' },
+ *   expectedVersion,
+ * );
+ *
+ * if (!result.success && result.conflict) {
+ *   // Handle conflict - show dialog to user
+ * }
+ * ```
+ */
 @Injectable()
-export class OrderConcurrencyService {
-  private readonly logger = new Logger(OrderConcurrencyService.name);
-
-  constructor(
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
-  ) {}
-
-  /**
-   * Update order with optimistic locking
-   * @returns Result with success status and conflict info if version mismatch
-   */
-  async updateWithOptimisticLock(
-    workspaceId: string,
-    orderId: string,
-    data: Partial<MktOrderWorkspaceEntity>,
-    expectedVersion: number,
-  ): Promise<OptimisticUpdateResult> {
-    this.logger.debug(
-      `Optimistic update: orderId=${orderId}, expectedVersion=${expectedVersion}`,
-    );
-
-    const repository = await this.twentyORMGlobalManager.getRepositoryForWorkspace<MktOrderWorkspaceEntity>(
-      workspaceId,
-      'mktOrder',
-    );
-
-    // Atomic update with version check
-    const result = await repository
-      .createQueryBuilder()
-      .update(MktOrderWorkspaceEntity)
-      .set({
-        ...data,
-        version: () => 'version + 1',
-        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
-      } as unknown as QueryDeepPartialEntity<MktOrderWorkspaceEntity>)
-      .where('id = :id AND version = :version', {
-        id: orderId,
-        version: expectedVersion,
-      })
-      .execute();
-
-    // Success
-    if (result.affected === 1) {
-      return {
-        success: true,
-        newVersion: expectedVersion + 1,
-      };
-    }
-
-    // Conflict - fetch current data
-    const currentOrder = await repository.findOne({
-      where: { id: orderId },
+export class OrderConcurrencyService extends BaseOptimisticLockingService<MktOrderWorkspaceEntity> {
+  constructor(twentyORMGlobalManager: TwentyORMGlobalManager) {
+    super(twentyORMGlobalManager, {
+      entityName: 'mktOrder',
+      editableFields: [...EDITABLE_ORDER_FIELDS],
+      logContext: 'OrderConcurrency',
     });
-
-    if (!currentOrder) {
-      return {
-        success: false,
-        error: MESSAGES.ORDER_NOT_FOUND,
-      };
-    }
-
-    // Detect field-level conflicts
-    const conflicts = this.detectConflicts(data, currentOrder);
-
-    return {
-      success: false,
-      error: MESSAGES.VERSION_CONFLICT,
-      conflict: {
-        currentVersion: currentOrder.version ?? 0,
-        conflicts,
-        modifiedAt: currentOrder.updatedAt
-          ? DateTimeUtils.toDate(DateTimeUtils.fromISO(String(currentOrder.updatedAt)))
-          : undefined,
-      },
-    };
-  }
-
-  /**
-   * Force update after user resolves conflict
-   */
-  async forceUpdate(
-    workspaceId: string,
-    orderId: string,
-    resolvedData: Partial<MktOrderWorkspaceEntity>,
-    currentVersion: number,
-  ): Promise<OptimisticUpdateResult> {
-    // Use current version to ensure no other changes happened during resolution
-    return this.updateWithOptimisticLock(
-      workspaceId,
-      orderId,
-      resolvedData,
-      currentVersion,
-    );
-  }
-
-  /**
-   * Detect field-level conflicts between user's changes and current data
-   */
-  private detectConflicts(
-    userChanges: Partial<MktOrderWorkspaceEntity>,
-    currentData: MktOrderWorkspaceEntity,
-  ): FieldConflict[] {
-    const conflicts: FieldConflict[] = [];
-
-    for (const field of EDITABLE_ORDER_FIELDS) {
-      if (field in userChanges) {
-        const yourValue = userChanges[field as keyof typeof userChanges];
-        const currentValue = currentData[field as keyof typeof currentData];
-
-        // Only add to conflicts if values are different
-        if (yourValue !== currentValue) {
-          conflicts.push({
-            field,
-            yourValue,
-            currentValue,
-          });
-        }
-      }
-    }
-
-    return conflicts;
   }
 }
 ```
 
-### 2.6. Resolver
+### 3.6. Resolver
 
 **File**: `packages/twenty-server/src/mkt-core/order/resolvers/order-edit.resolver.ts`
 
@@ -548,14 +500,13 @@ import { Args, Mutation, Resolver } from '@nestjs/graphql';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-
 import {
-  ResolveConflictInput,
+  ResolveOrderConflictInput,
   UpdateOrderWithVersionInput,
   UpdateOrderWithVersionOutput,
-} from '../dto/optimistic-locking.dto';
-import { OrderConcurrencyService } from '../services/order-concurrency.service';
+} from 'src/mkt-core/order/dto/order-optimistic-locking.dto';
+import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
+import { OrderConcurrencyService } from 'src/mkt-core/order/services/order-concurrency.service';
 
 @Resolver(() => MktOrderWorkspaceEntity)
 export class OrderEditResolver {
@@ -592,6 +543,8 @@ export class OrderEditResolver {
             modifiedAt: result.conflict.modifiedAt,
           }
         : undefined,
+      // Trả về currentData để client có thể refetch hoặc hiển thị merge UI
+      currentData: result.currentData as Record<string, unknown> | undefined,
     };
   }
 
@@ -600,7 +553,7 @@ export class OrderEditResolver {
   })
   async resolveOrderConflict(
     @AuthWorkspace() workspace: Workspace,
-    @Args('input') input: ResolveConflictInput,
+    @Args('input') input: ResolveOrderConflictInput,
   ): Promise<UpdateOrderWithVersionOutput> {
     const result = await this.orderConcurrencyService.forceUpdate(
       workspace.id,
@@ -624,12 +577,13 @@ export class OrderEditResolver {
             modifiedAt: result.conflict.modifiedAt,
           }
         : undefined,
+      currentData: result.currentData as Record<string, unknown> | undefined,
     };
   }
 }
 ```
 
-### 2.7. Module Registration
+### 3.7. Module Registration
 
 **File**: `packages/twenty-server/src/mkt-core/order/mkt-order.module.ts`
 
@@ -652,11 +606,20 @@ import { OrderEditResolver } from './resolvers/order-edit.resolver';
 export class MktOrderModule {}
 ```
 
+### 3.8. Service Exports
+
+**File**: `packages/twenty-server/src/mkt-core/order/services/index.ts`
+
+```typescript
+// ... existing exports ...
+export { OrderConcurrencyService } from './order-concurrency.service';
+```
+
 ---
 
-## 3. Frontend Integration
+## 4. Frontend Integration
 
-### 3.1. GraphQL Operations
+### 4.1. GraphQL Operations
 
 **File**: `packages/twenty-front/src/modules/mkt/order/graphql/order-edit.graphql.ts`
 
@@ -678,12 +641,13 @@ export const UPDATE_ORDER_WITH_VERSION = gql`
         }
         modifiedAt
       }
+      currentData
     }
   }
 `;
 
 export const RESOLVE_ORDER_CONFLICT = gql`
-  mutation ResolveOrderConflict($input: ResolveConflictInput!) {
+  mutation ResolveOrderConflict($input: ResolveOrderConflictInput!) {
     resolveOrderConflict(input: $input) {
       success
       newVersion
@@ -697,12 +661,13 @@ export const RESOLVE_ORDER_CONFLICT = gql`
         }
         modifiedAt
       }
+      currentData
     }
   }
 `;
 ```
 
-### 3.2. React Hook
+### 4.2. React Hook
 
 **File**: `packages/twenty-front/src/modules/mkt/order/hooks/useOrderEdit.ts`
 
@@ -725,6 +690,7 @@ type ConflictInfo = {
   currentVersion: number;
   conflicts: FieldConflict[];
   modifiedAt?: Date;
+  currentData?: Record<string, unknown>;
 };
 
 type UseOrderEditReturn = {
@@ -777,7 +743,10 @@ export const useOrderEdit = (): UseOrderEditReturn => {
       }
 
       if (response?.conflict) {
-        setConflict(response.conflict);
+        setConflict({
+          ...response.conflict,
+          currentData: response.currentData,
+        });
       }
 
       setError(response?.error ?? 'Update failed');
@@ -808,7 +777,10 @@ export const useOrderEdit = (): UseOrderEditReturn => {
       }
 
       if (response?.conflict) {
-        setConflict(response.conflict);
+        setConflict({
+          ...response.conflict,
+          currentData: response.currentData,
+        });
       }
 
       setError(response?.error ?? 'Resolve failed');
@@ -833,7 +805,7 @@ export const useOrderEdit = (): UseOrderEditReturn => {
 };
 ```
 
-### 3.3. Conflict Dialog Component
+### 4.3. Conflict Dialog Component
 
 **File**: `packages/twenty-front/src/modules/mkt/order/components/OrderConflictDialog.tsx`
 
@@ -1011,7 +983,7 @@ export const OrderConflictDialog = ({
 };
 ```
 
-### 3.4. Usage Example
+### 4.4. Usage Example
 
 ```typescript
 const OrderEditForm = ({ orderId, initialData, initialVersion }) => {
@@ -1067,9 +1039,9 @@ const OrderEditForm = ({ orderId, initialData, initialVersion }) => {
 
 ---
 
-## 4. Testing Strategy
+## 5. Testing Strategy
 
-### 4.1. Unit Tests
+### 5.1. Unit Tests
 
 **File**: `packages/twenty-server/src/mkt-core/order/services/__tests__/order-concurrency.service.spec.ts`
 
@@ -1101,6 +1073,7 @@ describe('OrderConcurrencyService', () => {
       expect(result.success).toBe(false);
       expect(result.conflict?.currentVersion).toBe(7);
       expect(result.conflict?.conflicts).toHaveLength(1);
+      expect(result.currentData).toBeDefined();
     });
 
     it('should return error when order not found', async () => {
@@ -1113,23 +1086,29 @@ describe('OrderConcurrencyService', () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Order not found');
+      expect(result.error).toBe('Entity not found');
+    });
+
+    it('should detect conflicts using deep equality', async () => {
+      // Test with nested object that has different key order
+      // lodash.isEqual should handle this correctly
     });
   });
 });
 ```
 
-### 4.2. Integration Tests
+### 5.2. Integration Tests
 
 | Test ID | Scenario | Expected Result |
 |---------|----------|-----------------|
 | INT-001 | User A loads order (v5), edits, saves | Success, version becomes 6 |
 | INT-002 | User A loads (v5), User B loads (v5), A saves, B saves | B gets CONFLICT with v6 |
 | INT-003 | User resolves conflict and saves | Success with new version |
+| INT-004 | Conflict response includes currentData | currentData field populated |
 
 ---
 
-## 5. Deployment Checklist
+## 6. Deployment Checklist
 
 ### Pre-deployment
 
@@ -1137,13 +1116,15 @@ describe('OrderConcurrencyService', () => {
 - [ ] Run `npx nx run twenty-server:command workspace:sync-metadata -f`
 - [ ] Verify migration created for version field
 - [ ] Run database migration
+- [ ] Export OrderConcurrencyService từ `services/index.ts`
 
 ### Post-deployment
 
 - [ ] Test optimistic locking works correctly
 - [ ] Test conflict detection returns correct field differences
+- [ ] Test conflict response includes `currentData`
 - [ ] Test conflict resolution saves correct data
-- [ ] Monitor for any "Order not found" errors
+- [ ] Monitor for any "Entity not found" errors
 
 ---
 
@@ -1153,13 +1134,198 @@ describe('OrderConcurrencyService', () => {
 |--------|-------|
 | **Complexity** | Low |
 | **New Fields** | 1 (version) |
-| **New Services** | 1 (OrderConcurrencyService) |
+| **New Services** | 1 (OrderConcurrencyService - extends base) |
 | **New Resolvers** | 1 (OrderEditResolver) |
-| **Dependencies** | None (no Redis, no WebSocket) |
-| **Estimated Effort** | 3-5 days |
+| **Dependencies** | Common module `mkt-core/common/optimistic-locking` |
+| **Estimated Effort** | 2-3 days |
 
 **Key Benefits:**
-- Simple implementation
+- Simple implementation (extends base service)
+- Reusable common module for other entities
 - No infrastructure changes needed
 - Conflict only occurs when actually needed
 - Clean conflict resolution UX
+- `currentData` returned for merge UI support
+
+**Key Technical Fixes (vs original):**
+- Sử dụng `lodash.isequal` thay vì `===` để deep equality comparison
+- Sử dụng `DateTimeUtils.parse()` thay vì `fromISO(String(...))` cho safe date parsing
+- Sử dụng `FindOptionsWhere<T>` thay vì `as any` cho type safety
+- Thêm `currentData` field trong response cho merge UI
+- Export service qua barrel file `services/index.ts`
+
+---
+
+## 7. Integration với Existing Mutations (Phase 2)
+
+Ngoài resolver riêng `OrderEditResolver`, optimistic locking cũng được tích hợp vào các mutations hiện có để bảo vệ các thao tác thay đổi status của order.
+
+### 7.1. DTOs Updated
+
+Các DTOs sau đã được thêm field `expectedVersion`:
+
+| DTO | File |
+|-----|------|
+| `ConfirmOrderInputDto` | `dto/create-order.input.ts` |
+| `UpdateOrderStatusInputDto` | `dto/create-order.input.ts` |
+| `RefundOrderInputDto` | `dto/create-order.input.ts` |
+| `PublishDraftOrderInputDto` | `dto/create-order.input.ts` |
+| `ConfirmOrderWithLicenseInputDto` | `dto/payment-flow.dto.ts` |
+| `ConfirmPaymentInputDto` | `dto/payment-flow.dto.ts` |
+| `UnlockOrderInputDto` | `dto/payment-flow.dto.ts` |
+
+**Example:**
+```typescript
+@Field(() => Int, {
+  nullable: true,
+  description:
+    'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+})
+@IsOptional()
+@IsNumber()
+@Min(1)
+expectedVersion?: number;
+```
+
+### 7.2. Types Updated
+
+Các types trong `types/order-mutation.types.ts` cũng được cập nhật:
+
+- `ConfirmOrderInput`
+- `RefundOrderInput`
+- `UpdateOrderStatusInput`
+- `PublishDraftOrderInput`
+
+### 7.3. OrderOrchestrationService Updates
+
+**File**: `services/application/order-orchestration.service.ts`
+
+Thêm helper method `checkVersionIfRequired()`:
+
+```typescript
+private async checkVersionIfRequired(
+  orderId: string,
+  expectedVersion?: number,
+): Promise<{
+  error?: string;
+  currentVersion?: number;
+  currentData?: { version: number };
+} | null> {
+  // Nếu không có expectedVersion, bỏ qua check (backward compatible)
+  if (expectedVersion === undefined || expectedVersion === null) {
+    return null;
+  }
+
+  // Validate expectedVersion phải >= 1
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    return {
+      error: OPTIMISTIC_LOCKING_MESSAGES.INVALID_VERSION_MUST_BE_POSITIVE,
+    };
+  }
+
+  // Fetch current order và compare versions
+  const order = await this.orderRepository.findById(orderId);
+  if (!order) {
+    return { error: OPTIMISTIC_LOCKING_MESSAGES.ENTITY_NOT_FOUND };
+  }
+
+  const currentVersion = order.version ?? 1;
+  if (currentVersion !== expectedVersion) {
+    return {
+      error: OPTIMISTIC_LOCKING_MESSAGES.VERSION_CONFLICT,
+      currentVersion,
+      currentData: { version: currentVersion },
+    };
+  }
+
+  return null;
+}
+```
+
+**Các methods được update:**
+
+| Method | Description |
+|--------|-------------|
+| `confirmOrder()` | Version check trước validation và saga execution |
+| `updateOrderStatus()` | Version check trước saga execution |
+| `refundOrder()` | Version check trước saga execution |
+| `publishDraftOrder()` | Version check trước validation |
+| `confirmOrderWithLicense()` | Version check trước saga execution |
+| `confirmOrderPayment()` | Version check trước get order |
+| `unlockOrderAfterPayment()` | Version check trước get order |
+
+### 7.4. Mapper Updates
+
+**File**: `mappers/order-input.mapper.ts`
+
+Các mapper methods được update để pass `expectedVersion`:
+
+- `toConfirmOrderInput()`
+- `toUpdateOrderStatusInput()`
+- `toUpdateOrderStatusInputWithStatus()`
+- `toRefundOrderInput()` (mới thêm)
+
+### 7.5. Resolver Updates
+
+**File**: `resolvers/order-mutation.resolver.ts`
+
+Các resolver methods được update để pass `expectedVersion` từ DTO:
+
+- `publishDraftOrder()`
+- `confirmOrderWithLicense()`
+- `confirmOrderPayment()`
+- `unlockOrderAfterPayment()`
+- `refundOrder()` (sử dụng mapper)
+
+### 7.6. Usage
+
+**Backward Compatible**: Field `expectedVersion` là optional. Nếu không cung cấp, mutation sẽ hoạt động như cũ mà không check version.
+
+**Với Version Check:**
+```graphql
+mutation {
+  updateOrderStatus(input: {
+    orderId: "uuid"
+    action: COMPLETE
+    expectedVersion: 5  # Optional - nếu có sẽ check version
+  }) {
+    success
+    error  # "Entity was modified by another user" nếu version mismatch
+    previousStatus
+    newStatus
+  }
+}
+```
+
+**Không có Version Check (backward compatible):**
+```graphql
+mutation {
+  updateOrderStatus(input: {
+    orderId: "uuid"
+    action: COMPLETE
+    # Không có expectedVersion - bỏ qua check
+  }) {
+    success
+    previousStatus
+    newStatus
+  }
+}
+```
+
+### 7.7. Error Messages
+
+Khi version mismatch, mutation sẽ return:
+```json
+{
+  "success": false,
+  "error": "Entity was modified by another user"
+}
+```
+
+Khi version không hợp lệ (< 1):
+```json
+{
+  "success": false,
+  "error": "Expected version must be a positive integer (>= 1)"
+}
+```

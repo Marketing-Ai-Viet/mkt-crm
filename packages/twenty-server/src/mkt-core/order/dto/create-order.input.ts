@@ -327,6 +327,16 @@ export class ConfirmOrderInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 @InputType()
@@ -343,6 +353,16 @@ export class UpdateOrderStatusInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 @InputType()
@@ -382,6 +402,16 @@ export class RefundOrderInputDto {
   @IsOptional()
   @IsBoolean()
   isPartial?: boolean;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 @InputType()
@@ -451,4 +481,14 @@ export class PublishDraftOrderInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { DeepPartial, FindOptionsWhere } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -277,7 +278,30 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   // ============================================
 
   /**
-   * Update order by ID
+   * Override base update method để tự động increment version
+   *
+   * Tất cả calls đến update() sẽ tự động increment version field.
+   * Điều này đảm bảo optimistic locking hoạt động đúng.
+   *
+   * @param id - Order ID cần update
+   * @param data - Partial data cần update
+   */
+  override async update(
+    id: string,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
+  ): Promise<void> {
+    return this.updateOrder(id, data);
+  }
+
+  /**
+   * Update order by ID với tự động increment version
+   *
+   * Sử dụng QueryBuilder để thực hiện atomic update:
+   * - Tự động increment version field
+   * - Tự động cập nhật updatedAt
+   *
+   * @param orderId - Order ID cần update
+   * @param data - Partial data cần update
    */
   async updateOrder(
     orderId: string,
@@ -287,7 +311,18 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
     const repository = await this.getRepository();
 
-    await repository.update(orderId, data as never);
+    // Sử dụng QueryBuilder để atomic update với version increment
+    await repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        ...data,
+        // Tự động increment version cho optimistic locking
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>)
+      .where('id = :id', { id: orderId })
+      .execute();
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_SUCCESS(orderId));
   }
@@ -320,7 +355,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   }
 
   /**
-   * Update payment amounts for an order
+   * Update payment amounts for an order với version increment
    * Used when payment status changes (new payment, refund, etc.)
    *
    * @param orderId - Order ID
@@ -337,12 +372,20 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
     const repository = await this.getRepository();
 
-    await repository.update(orderId, {
-      paidAmount: data.paidAmount,
-      remainingAmount: data.remainingAmount,
-      paymentStatus: data.paymentStatus,
-      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    } as never);
+    // Sử dụng QueryBuilder để atomic update với version increment
+    await repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        paidAmount: data.paidAmount,
+        remainingAmount: data.remainingAmount,
+        paymentStatus: data.paymentStatus,
+        // Tự động increment version cho optimistic locking
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>)
+      .where('id = :id', { id: orderId })
+      .execute();
 
     this.logger.debug(`Payment amounts updated for order ${orderId}`);
   }
@@ -465,8 +508,8 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   // ============================================
 
   /**
-   * Conditional update - only updates if conditions are met
-   * Returns affected row count for idempotency check
+   * Conditional update với version increment
+   * Only updates if conditions are met. Returns affected row count for idempotency check.
    *
    * @param where - Conditions that must be met for update
    * @param data - Data to update
@@ -482,7 +525,20 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
     const repository = await this.getRepository();
 
-    const result = await repository.update(where, data as never);
+    // Sử dụng QueryBuilder để atomic update với version increment
+    const qb = repository.createQueryBuilder().update().set({
+      ...data,
+      // Tự động increment version cho optimistic locking
+      version: () => 'COALESCE(version, 0) + 1',
+      updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+    } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>);
+
+    // Thêm where conditions
+    for (const [key, value] of Object.entries(where)) {
+      qb.andWhere(`${key} = :${key}`, { [key]: value });
+    }
+
+    const result = await qb.execute();
 
     this.logger.debug(`Conditional update affected: ${result.affected ?? 0}`);
 

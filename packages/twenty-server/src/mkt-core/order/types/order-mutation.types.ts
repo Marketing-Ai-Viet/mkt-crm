@@ -138,6 +138,8 @@ export type ConfirmOrderInput = {
   note?: string;
   /** Manual override for payment deadline (hours) - new payment flow */
   manualDeadlineHours?: number;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 /**
@@ -149,6 +151,8 @@ export type RefundOrderInput = {
   refundAmount?: number;
   reason?: string;
   isPartial?: boolean;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 /**
@@ -158,6 +162,8 @@ export type UpdateOrderStatusInput = {
   orderId: string;
   status: ORDER_STATUS;
   note?: string;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 /**
@@ -172,6 +178,8 @@ export type PublishDraftOrderInput = {
   orderId: string;
   paymentMethods?: OrderPaymentMethodInput[];
   note?: string;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 // ============================================

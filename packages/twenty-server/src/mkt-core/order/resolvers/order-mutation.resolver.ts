@@ -153,10 +153,12 @@ export class OrderMutationResolver {
     @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
     @Args('input') input: RefundOrderInputDto,
   ): Promise<RefundOrderResponseDto> {
+    const domainInput = OrderInputMapper.toRefundOrderInput(input);
+
     return this.orderOrchestrationService.refundOrder(
       workspace.id,
       workspaceMemberId,
-      input,
+      domainInput,
     );
   }
 
@@ -192,6 +194,7 @@ export class OrderMutationResolver {
           amount: p.amount,
         })),
         note: input.note,
+        expectedVersion: input.expectedVersion,
       },
     );
   }
@@ -227,6 +230,7 @@ export class OrderMutationResolver {
         orderId: input.orderId,
         manualDeadlineHours: input.paymentDeadlineHours,
         note: input.note,
+        expectedVersion: input.expectedVersion,
       },
     );
   }
@@ -268,6 +272,7 @@ export class OrderMutationResolver {
         amount: input.amount,
         transactionId: input.transactionId,
         note: input.note,
+        expectedVersion: input.expectedVersion,
       },
     );
   }
@@ -299,6 +304,7 @@ export class OrderMutationResolver {
         amount: input.amount,
         transactionId: input.transactionId,
         note: input.note,
+        expectedVersion: input.expectedVersion,
       },
     );
   }

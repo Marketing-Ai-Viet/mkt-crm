@@ -413,6 +413,20 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   lastReminderAt?: Date | null;
 
+  // ============================================
+  // OPTIMISTIC LOCKING
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.version,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Version`,
+    description: msg`Version number for optimistic locking`,
+    icon: 'IconGitBranch',
+    defaultValue: 1,
+  })
+  version: number;
+
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.orderItems,
     type: RelationType.ONE_TO_MANY,

@@ -125,6 +125,27 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS = {
   SALES_STAFF_LICENSES: 'd8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f2a',
   SALES_STAFF_INVOICES: 'e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b',
   SALES_STAFF_PRODUCTS: 'f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c',
+
+  // ===========================================
+  // ACCOUNTANT_STAFF permissions (FINANCE Department)
+  // ===========================================
+  ACCOUNTANT_STAFF_INVOICES: '01a2b3c4-d5e6-4f78-9a0b-c1d2e3f4a5b6',
+  ACCOUNTANT_STAFF_PAYMENTS: '02b3c4d5-e6f7-4a89-0b1c-d2e3f4a5b6c7',
+  ACCOUNTANT_STAFF_ORDERS: '03c4d5e6-f7a8-4b9a-1c2d-e3f4a5b6c7d8',
+  ACCOUNTANT_STAFF_CUSTOMERS: '04d5e6f7-a8b9-4cab-2d3e-f4a5b6c7d8e9',
+  ACCOUNTANT_STAFF_LICENSES: '05e6f7a8-b9ca-4dbc-3e4f-a5b6c7d8e9f0',
+  ACCOUNTANT_STAFF_REPORTS: '06f7a8b9-cadb-4ecd-4f5a-b6c7d8e9f0a1',
+  ACCOUNTANT_STAFF_PRODUCTS: '07a8b9ca-dbec-4fde-5a6b-c7d8e9f0a1b2',
+
+  // ===========================================
+  // SUPPORT_STAFF permissions (SUPPORT Department)
+  // ===========================================
+  SUPPORT_STAFF_CUSTOMERS: '11b2c3d4-e5f6-4a78-9b0c-d1e2f3a4b5c6',
+  SUPPORT_STAFF_ORDERS: '12c3d4e5-f6a7-4b89-0c1d-e2f3a4b5c6d7',
+  SUPPORT_STAFF_LICENSES: '13d4e5f6-a7b8-4c9a-1d2e-f3a4b5c6d7e8',
+  SUPPORT_STAFF_PRODUCTS: '14e5f6a7-b8c9-4dab-2e3f-a4b5c6d7e8f9',
+  SUPPORT_STAFF_INVOICES: '15f6a7b8-c9da-4ebc-3f4a-b5c6d7e8f9a0',
+  SUPPORT_STAFF_PAYMENTS: '16a7b8c9-daeb-4fcd-4a5b-c6d7e8f9a0b1',
 };
 
 export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePermissionDataSeed[] =
@@ -658,6 +679,229 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       ]),
       deniedActions: null,
       conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+
+    // ===========================================
+    // ACCOUNTANT_STAFF Permissions
+    // Full access to Invoices and Payments for financial operations
+    // Read access to Orders, Customers, Licenses for reconciliation
+    // ===========================================
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_INVOICES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_PAYMENTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_ORDERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_CUSTOMERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_LICENSES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_REPORTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.REPORTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      deniedActions: null,
+      conditions: JSON.stringify({
+        reportTypes: ['FINANCIAL', 'INVOICE', 'PAYMENT'],
+      }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_PRODUCTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: null,
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+
+    // ===========================================
+    // SUPPORT_STAFF Permissions
+    // Read access to most resources for customer support
+    // Update Order status for support case handling
+    // ===========================================
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_CUSTOMERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      conditions: JSON.stringify({
+        updateFields: ['notes', 'supportNotes', 'tags'],
+      }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_ORDERS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+      ]),
+      conditions: JSON.stringify({
+        updateFields: ['supportStatus', 'supportNotes', 'priority'],
+      }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_LICENSES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_PRODUCTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: null,
+      conditions: null,
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_INVOICES,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+      ]),
+      conditions: JSON.stringify({ viewStatusOnly: true }),
+      restrictions: null,
+      isActive: true,
+    },
+    {
+      id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_PAYMENTS,
+      templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
+      allowedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
+      ]),
+      deniedActions: JSON.stringify([
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
+        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
+      ]),
+      conditions: JSON.stringify({ viewStatusOnly: true }),
       restrictions: null,
       isActive: true,
     },

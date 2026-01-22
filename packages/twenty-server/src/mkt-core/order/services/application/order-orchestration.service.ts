@@ -7,6 +7,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 //   IDEMPOTENCY_ORDER_ACTION,
 // } from 'src/mkt-core/common/idempotency';
 import { IdempotencyService } from 'src/mkt-core/common/idempotency';
+import { OPTIMISTIC_LOCKING_MESSAGES } from 'src/mkt-core/common/optimistic-locking';
 import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
 import {
   ORDER_STATUS,
@@ -82,6 +83,77 @@ export class OrderOrchestrationService {
     @Inject(ORDER_CONFIG_KEY)
     private readonly config: OrderConfig,
   ) {}
+
+  // ============================================
+  // OPTIMISTIC LOCKING HELPERS
+  // ============================================
+
+  /**
+   * Check version nếu expectedVersion được cung cấp
+   *
+   * - Nếu không có expectedVersion: bỏ qua check (backward compatible)
+   * - Nếu có expectedVersion: so sánh với current version trong DB
+   * - Nếu mismatch: return error response
+   *
+   * @param orderId - Order ID để check
+   * @param expectedVersion - Version mà client expect (optional)
+   * @returns null nếu OK, hoặc error response nếu version mismatch
+   */
+  private async checkVersionIfRequired(
+    orderId: string,
+    expectedVersion?: number,
+  ): Promise<{
+    error?: string;
+    currentVersion?: number;
+    currentData?: { version: number };
+  } | null> {
+    // Nếu không có expectedVersion, bỏ qua check (backward compatible)
+    if (expectedVersion === undefined || expectedVersion === null) {
+      return null;
+    }
+
+    // Validate expectedVersion phải >= 1
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      this.logger.warn(
+        `[VersionCheck] Invalid expectedVersion: orderId=${orderId}, expectedVersion=${expectedVersion}`,
+      );
+
+      return {
+        error: OPTIMISTIC_LOCKING_MESSAGES.INVALID_VERSION_MUST_BE_POSITIVE,
+      };
+    }
+
+    // Fetch current order để lấy version
+    const order = await this.orderRepository.findById(orderId);
+
+    if (!order) {
+      return {
+        error: OPTIMISTIC_LOCKING_MESSAGES.ENTITY_NOT_FOUND,
+      };
+    }
+
+    // Compare versions
+    const currentVersion = order.version ?? 1;
+
+    if (currentVersion !== expectedVersion) {
+      this.logger.warn(
+        `[VersionCheck] Version mismatch: orderId=${orderId}, ` +
+          `expectedVersion=${expectedVersion}, currentVersion=${currentVersion}`,
+      );
+
+      return {
+        error: OPTIMISTIC_LOCKING_MESSAGES.VERSION_CONFLICT,
+        currentVersion,
+        currentData: { version: currentVersion },
+      };
+    }
+
+    this.logger.debug(
+      `[VersionCheck] Version matched: orderId=${orderId}, version=${expectedVersion}`,
+    );
+
+    return null;
+  }
 
   /**
    * Create order with items using saga pattern
@@ -208,6 +280,19 @@ export class OrderOrchestrationService {
       ),
     );
 
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
     // Validate input
     const validationResult =
       await this.validationService.validateConfirmOrderInput(input);
@@ -274,6 +359,19 @@ export class OrderOrchestrationService {
       ),
     );
 
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
     try {
       const result = await this.updateOrderSaga.execute(
         workspaceId,
@@ -319,6 +417,19 @@ export class OrderOrchestrationService {
         workspaceMemberId ?? 'system',
       ),
     );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     try {
       const result = await this.refundOrderSaga.execute(
@@ -450,6 +561,19 @@ export class OrderOrchestrationService {
     input: PublishDraftOrderInput,
   ): Promise<PublishDraftOrderResponse> {
     this.logger.log(`[PublishDraft] Starting for order: ${input.orderId}`);
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     try {
       // 1. Get and validate order
@@ -606,6 +730,7 @@ export class OrderOrchestrationService {
       orderId: string;
       manualDeadlineHours?: number;
       note?: string;
+      expectedVersion?: number;
     },
   ): Promise<{
     success: boolean;
@@ -623,6 +748,19 @@ export class OrderOrchestrationService {
     this.logger.log(
       `[ConfirmOrderWithLicense] Starting for order: ${input.orderId}`,
     );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     try {
       // Call ConfirmOrderSaga with new flow
@@ -690,6 +828,7 @@ export class OrderOrchestrationService {
       amount: number;
       transactionId?: string;
       note?: string;
+      expectedVersion?: number;
     },
   ): Promise<{
     success: boolean;
@@ -711,6 +850,19 @@ export class OrderOrchestrationService {
     this.logger.log(
       `[ConfirmOrderPayment] Starting for order: ${input.orderId}, method: ${input.paymentMethod}`,
     );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     try {
       // 1. Get order
@@ -794,6 +946,7 @@ export class OrderOrchestrationService {
       amount: number;
       transactionId?: string;
       note?: string;
+      expectedVersion?: number;
     },
   ): Promise<{
     success: boolean;
@@ -813,6 +966,19 @@ export class OrderOrchestrationService {
     this.logger.log(
       `[UnlockOrderAfterPayment] Starting for order: ${input.orderId}`,
     );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     try {
       // 1. Get order

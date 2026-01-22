@@ -1,6 +1,14 @@
 import { Field, InputType, ObjectType, Int, Float, ID } from '@nestjs/graphql';
 
-import { IsOptional, IsString, IsUUID, IsIn, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsIn,
+  Min,
+  Max,
+  IsNumber,
+} from 'class-validator';
 
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 
@@ -37,6 +45,16 @@ export class ConfirmOrderWithLicenseInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 /**
@@ -75,6 +93,16 @@ export class ConfirmPaymentInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 /**
@@ -108,6 +136,16 @@ export class UnlockOrderInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 // ============================================
