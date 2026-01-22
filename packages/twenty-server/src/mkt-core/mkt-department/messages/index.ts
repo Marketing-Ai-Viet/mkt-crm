@@ -64,13 +64,22 @@ export const DEPARTMENT_MESSAGES = {
     REBUILD_PATHS_SUCCESS: (count: number) =>
       `Successfully rebuilt ${count} hierarchy paths`,
 
-    // Hook operations
+    // Hook operations (deprecated - use resolver messages instead)
     HOOK_CREATE_START: 'Starting department create post-query hook',
     HOOK_CREATE_SUCCESS: (metadata: string) =>
       `Department created with metadata: ${metadata}`,
     HOOK_UPDATE_START: 'Starting department update post-query hook',
     HOOK_UPDATE_SUCCESS: (metadata: string) =>
       `Department updated with metadata: ${metadata}`,
+
+    // Resolver operations
+    HIERARCHY_CREATED: (
+      childDepartmentId: string,
+      parentDepartmentId: string,
+    ) =>
+      `Hierarchy created: child=${childDepartmentId}, parent=${parentDepartmentId}`,
+    HIERARCHY_UPDATED: (childDepartmentId: string) =>
+      `Hierarchy updated for department: ${childDepartmentId}`,
   },
 
   WARN: {

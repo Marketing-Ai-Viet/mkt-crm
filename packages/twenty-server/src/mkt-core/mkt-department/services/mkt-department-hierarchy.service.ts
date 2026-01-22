@@ -9,12 +9,19 @@ export class MktDepartmentHierarchyService {
     private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
   ) {}
 
+  /**
+   * Tạo hierarchy cho team department
+   * @returns Created hierarchy entity
+   */
   async createTeamDepartmentHierarchy(
     hierarchyData: Partial<MktDepartmentHierarchyWorkspaceEntity>,
-  ): Promise<void> {
-    await this.hierarchyRepository.createWithContext(hierarchyData);
+  ): Promise<MktDepartmentHierarchyWorkspaceEntity> {
+    return this.hierarchyRepository.createWithContext(hierarchyData);
   }
 
+  /**
+   * Cập nhật hierarchy của team department
+   */
   async updateTeamDepartmentHierarchy(
     hierarchyData: Partial<MktDepartmentHierarchyWorkspaceEntity>,
   ): Promise<void> {
