@@ -72,7 +72,7 @@ export type {
  */
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktCustomer,
-  namePlural: `$mktCustomers`,
+  namePlural: `${MKT_CUSTOMER_ENTITY_NAME}s`,
   labelSingular: msg`Customer`,
   labelPlural: msg`Customers`,
   description: msg`Customer entity for CRM`,

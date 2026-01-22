@@ -24,6 +24,13 @@ import {
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 
 /**
+ * Entity name for mktCustomerTierHistory - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ * Note: namePlural uses irregular plural 'Histories' instead of 'Historys'
+ */
+export const MKT_CUSTOMER_TIER_HISTORY_ENTITY_NAME = 'mktCustomerTierHistory';
+
+/**
  * MktCustomerTierHistoryWorkspaceEntity
  *
  * Records customer tier changes with audit trail
@@ -33,7 +40,7 @@ import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-cu
  */
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktCustomerTierHistory,
-  namePlural: 'mktCustomerTierHistories',
+  namePlural: 'mktCustomerTierHistories', // Irregular plural
   labelSingular: msg`Tier History`,
   labelPlural: msg`Tier Histories`,
   description: msg`Customer tier change history for audit trail`,
