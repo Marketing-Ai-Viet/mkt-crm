@@ -526,12 +526,15 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     const repository = await this.getRepository();
 
     // Sử dụng QueryBuilder để atomic update với version increment
-    const qb = repository.createQueryBuilder().update().set({
-      ...data,
-      // Tự động increment version cho optimistic locking
-      version: () => 'COALESCE(version, 0) + 1',
-      updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
-    } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>);
+    const qb = repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        ...data,
+        // Tự động increment version cho optimistic locking
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>);
 
     // Thêm where conditions
     for (const [key, value] of Object.entries(where)) {

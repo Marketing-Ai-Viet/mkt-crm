@@ -105,9 +105,200 @@
 | Service | Command | Port |
 |---------|---------|------|
 | **Server** (API) | `node dist/src/main` | 3003 |
-| **Worker** (Background) | `node dist/src/queue-worker/main` | - |
+| **Worker** (Background) | `node dist/src/queue-worker/queue-worker` | 9230 (debug) |
 
 Cả hai sử dụng chung Docker image `twenty-server`, chỉ khác entry point.
+
+### QueueWorkerModule Structure
+
+```typescript
+// src/queue-worker/queue-worker.module.ts
+@Module({
+  imports: [
+    CoreEngineModule,                      // Infrastructure (DB, Redis, Logger)
+    MessageQueueModule.registerExplorer(), // Job discovery engine
+    WorkspaceEventEmitterModule,           // Event handling
+    JobsModule,                            // All job providers
+    TwentyORMModule,                       // Database ORM
+  ],
+})
+export class QueueWorkerModule {}
+```
+
+### Module Dependency Tree
+
+```
+QueueWorkerModule
+├── CoreEngineModule
+│   ├── DatabaseModule (PostgreSQL)
+│   ├── CacheStorageModule (Redis)
+│   ├── LoggerModule
+│   └── ExceptionHandlerModule
+│
+├── MessageQueueModule.registerExplorer()
+│   ├── DiscoveryModule (NestJS core)
+│   ├── MessageQueueExplorer ← Discovers @Processor classes
+│   └── MessageQueueMetadataAccessor
+│
+├── JobsModule
+│   ├── MessagingModule (Email sync)
+│   ├── CalendarModule (Calendar sync)
+│   ├── WorkflowModule (Automation)
+│   ├── MktCommandModule (CLI commands)
+│   │
+│   └── MktJobsModule ← MKT-CORE JOBS
+│       ├── CustomerModule
+│       │   ├── MktCustomerCategorizationCronJob
+│       │   ├── MktCustomerTierCronJob
+│       │   └── MktCustomerTierUpdateJob
+│       │
+│       ├── MktOrderModule
+│       │   ├── PaymentOverdueScanJob
+│       │   └── PaymentDeadlineProcessor
+│       │
+│       ├── MktInvoiceModule
+│       │   └── SInvoiceIntegrationJob
+│       │
+│       ├── MktProductIntegrationModule
+│       │   └── MktProductScheduledSyncJob
+│       │
+│       ├── MktPromotionModule
+│       │   ├── PromotionExpirationCheckJob
+│       │   ├── CouponExpirationCheckJob
+│       │   ├── PromotionUsageCleanupJob
+│       │   └── PromotionCacheWarmupJob
+│       │
+│       └── CasbinModule
+│           ├── CacheWarmerJob
+│           └── CrossRegionReloadJob
+│
+└── TwentyORMModule
+```
+
+### Job Discovery Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    JOB DISCOVERY FLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Worker Bootstrap                                            │
+│     │                                                           │
+│     └─► NestFactory.createApplicationContext(QueueWorkerModule) │
+│                                                                 │
+│  2. Module Initialization                                       │
+│     │                                                           │
+│     └─► Load all imports (JobsModule → MktJobsModule → ...)     │
+│                                                                 │
+│  3. MessageQueueExplorer.onModuleInit()                         │
+│     │                                                           │
+│     └─► explore()                                               │
+│         │                                                       │
+│         ├─► DiscoveryService.getProviders()                     │
+│         │   └─► Returns ALL providers from ALL loaded modules   │
+│         │                                                       │
+│         ├─► Filter: metadataAccessor.isProcessor(provider)      │
+│         │   └─► Check for @Processor(MessageQueue.xxx) decorator│
+│         │                                                       │
+│         ├─► Group by queueName                                  │
+│         │   └─► { cronQueue: [Job1, Job2], billingQueue: [...] }│
+│         │                                                       │
+│         └─► For each queue: messageQueueService.work(handler)   │
+│             └─► BullMQ Worker starts listening for jobs         │
+│                                                                 │
+│  4. Job Processing                                              │
+│     │                                                           │
+│     └─► When job arrives from Redis:                            │
+│         │                                                       │
+│         ├─► Match job.name with @Process(jobName) metadata      │
+│         │                                                       │
+│         └─► Invoke matched handler method                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**KEY INSIGHT:** Job classes MUST be in modules that are imported into `JobsModule` (directly or transitively). If a module is not imported, its `@Processor` classes will NOT be discovered.
+
+---
+
+## Cron Registration Flow
+
+### Hai cách đăng ký Cron Jobs
+
+#### 1. CLI Command (entrypoint.sh)
+
+```bash
+# Khi container khởi động, entrypoint.sh gọi:
+yarn command:prod cron:register:all   # Twenty core jobs
+yarn command:prod cron:register:mkt   # MKT-core jobs
+```
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  entrypoint.sh                                                  │
+│  │                                                              │
+│  ├─► cron:register:all                                          │
+│  │   └─► MessagingMessagesImportCronCommand.run()              │
+│  │       └─► messageQueueService.addCron({                      │
+│  │             jobName: 'MessagingMessagesImportCronJob',       │
+│  │             pattern: '*/1 * * * *'                           │
+│  │           })                                                 │
+│  │                                                              │
+│  └─► cron:register:mkt                                          │
+│      └─► (MKT cron commands)                                    │
+└────────────────────────────────────────────────────────────────┘
+```
+
+#### 2. OnModuleInit (Auto-registration)
+
+```typescript
+// BaseCronRegistrationService pattern
+@Injectable()
+export class MktProductSyncCronRegistrationService
+  extends BaseCronRegistrationService
+  implements OnModuleInit
+{
+  // Tự động chạy khi module load
+  async onModuleInit() {
+    const workspaceIds = await this.getWorkspaceIds();
+
+    for (const workspaceId of workspaceIds) {
+      await this.messageQueueService.addCron({
+        jobName: MktProductScheduledSyncJob.name,
+        pattern: '*/30 * * * *',
+        data: { workspaceId },
+      });
+    }
+  }
+}
+```
+
+### addCron() → BullMQ upsertJobScheduler
+
+```typescript
+// BullMQDriver.addCron()
+async addCron({ jobName, data, options }) {
+  // upsertJobScheduler = create or update cron scheduler
+  await this.queueMap[queueName].upsertJobScheduler(
+    jobKey,           // Unique key (jobName + jobId)
+    options.repeat,   // { pattern: '*/30 * * * *' }
+    {
+      name: jobName,  // Matches @Process(jobName)
+      data,           // { workspaceId: '...' }
+    },
+  );
+}
+```
+
+### Redis Storage
+
+```
+# Cron schedulers stored in Redis
+bull:cron-queue:repeat:{jobKey}
+bull:cron-queue:delayed (ZSET - sorted by next run time)
+bull:cron-queue:waiting (LIST - ready to process)
+bull:cron-queue:active  (LIST - currently processing)
+```
 
 ---
 

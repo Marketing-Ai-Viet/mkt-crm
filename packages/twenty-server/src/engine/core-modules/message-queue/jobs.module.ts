@@ -25,6 +25,7 @@ import { CleanSuspendedWorkspacesJob } from 'src/engine/workspace-manager/worksp
 import { CleanWorkspaceDeletionWarningUserVarsJob } from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
 import { WorkspaceCleanerModule } from 'src/engine/workspace-manager/workspace-cleaner/workspace-cleaner.module';
 import { MktCommandModule } from 'src/mkt-core/commands/mkt-command.module';
+import { MktJobsModule } from 'src/mkt-core/jobs';
 import { CalendarEventParticipantManagerModule } from 'src/modules/calendar/calendar-event-participant-manager/calendar-event-participant-manager.module';
 import { CalendarModule } from 'src/modules/calendar/calendar.module';
 import { AutoCompaniesAndContactsCreationJobModule } from 'src/modules/contact-creation-manager/jobs/auto-companies-and-contacts-creation-job.module';
@@ -62,6 +63,7 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     SubscriptionsModule,
     AuditJobModule,
     MktCommandModule,
+    MktJobsModule,
   ],
   providers: [
     CleanSuspendedWorkspacesJob,
