@@ -26,10 +26,9 @@ export class MktCustomerTierCronJob {
   )
   async handle(data: TierUpdateCronJobData): Promise<void> {
     const { workspaceId } = data;
+    const startTime = Date.now();
 
-    this.logger.log(
-      `🔥 Starting customer tier update job for workspace ${workspaceId}`,
-    );
+    this.logger.log('Starting customer tier update job', { workspaceId });
 
     try {
       // Use workspace-specific method for thread-safe processing
@@ -38,15 +37,29 @@ export class MktCustomerTierCronJob {
           workspaceId,
         );
 
-      this.logger.log(
-        `✅ Successfully updated ${results.length} customer tiers for workspace ${workspaceId}`,
-      );
+      const durationMs = Date.now() - startTime;
+
+      this.logger.log('Customer tier update completed', {
+        workspaceId,
+        totalUpdated: results.length,
+        durationMs,
+      });
     } catch (error) {
-      this.logger.error(
-        `❌ Failed to process customer tier updates for workspace ${workspaceId}:`,
-        error,
-      );
-      throw error;
+      this.handleError(workspaceId, error);
     }
+  }
+
+  /**
+   * Handle và log error với structured format
+   */
+  private handleError(workspaceId: string, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    this.logger.error('Failed to process customer tier updates', {
+      workspaceId,
+      error: errorMessage,
+    });
+
+    throw error;
   }
 }

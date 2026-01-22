@@ -1,3 +1,6 @@
 // RBAC Cron Jobs
-export { CacheWarmerJob } from './cache-warmer.job';
-export { CrossRegionReloadJob } from './cross-region-reload.job';
+export { CacheWarmerJob, CacheWarmerJobData } from './cache-warmer.job';
+export {
+  CrossRegionReloadJob,
+  CrossRegionReloadJobData,
+} from './cross-region-reload.job';

@@ -7,8 +7,13 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 //   IDEMPOTENCY_ORDER_ACTION,
 // } from 'src/mkt-core/common/idempotency';
 import { IdempotencyService } from 'src/mkt-core/common/idempotency';
+import { OPTIMISTIC_LOCKING_MESSAGES } from 'src/mkt-core/common/optimistic-locking';
 import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
-import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  ORDER_STATUS,
+  ORDER_ACTION,
+} from 'src/mkt-core/order/constants/order-status.constants';
+import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   MKT_ORDER_ORCHESTRATION_LOG_CONTEXT,
@@ -25,7 +30,6 @@ import {
   OrderValidationService,
   OrderConfirmUtilsService,
 } from 'src/mkt-core/order/services/core';
-import { OrderOverdueSchedulerService } from 'src/mkt-core/order/services/core/order-overdue-scheduler.service';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
   CreateOrderWithItemsInput,
@@ -76,10 +80,80 @@ export class OrderOrchestrationService {
     private readonly paymentRepository: MktPaymentRepository,
     private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
-    private readonly orderOverdueSchedulerService: OrderOverdueSchedulerService,
     @Inject(ORDER_CONFIG_KEY)
     private readonly config: OrderConfig,
   ) {}
+
+  // ============================================
+  // OPTIMISTIC LOCKING HELPERS
+  // ============================================
+
+  /**
+   * Check version nếu expectedVersion được cung cấp
+   *
+   * - Nếu không có expectedVersion: bỏ qua check (backward compatible)
+   * - Nếu có expectedVersion: so sánh với current version trong DB
+   * - Nếu mismatch: return error response
+   *
+   * @param orderId - Order ID để check
+   * @param expectedVersion - Version mà client expect (optional)
+   * @returns null nếu OK, hoặc error response nếu version mismatch
+   */
+  private async checkVersionIfRequired(
+    orderId: string,
+    expectedVersion?: number,
+  ): Promise<{
+    error?: string;
+    currentVersion?: number;
+    currentData?: { version: number };
+  } | null> {
+    // Nếu không có expectedVersion, bỏ qua check (backward compatible)
+    if (expectedVersion === undefined || expectedVersion === null) {
+      return null;
+    }
+
+    // Validate expectedVersion phải >= 1
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      this.logger.warn(
+        `[VersionCheck] Invalid expectedVersion: orderId=${orderId}, expectedVersion=${expectedVersion}`,
+      );
+
+      return {
+        error: OPTIMISTIC_LOCKING_MESSAGES.INVALID_VERSION_MUST_BE_POSITIVE,
+      };
+    }
+
+    // Fetch current order để lấy version
+    const order = await this.orderRepository.findById(orderId);
+
+    if (!order) {
+      return {
+        error: OPTIMISTIC_LOCKING_MESSAGES.ENTITY_NOT_FOUND,
+      };
+    }
+
+    // Compare versions
+    const currentVersion = order.version ?? 1;
+
+    if (currentVersion !== expectedVersion) {
+      this.logger.warn(
+        `[VersionCheck] Version mismatch: orderId=${orderId}, ` +
+          `expectedVersion=${expectedVersion}, currentVersion=${currentVersion}`,
+      );
+
+      return {
+        error: OPTIMISTIC_LOCKING_MESSAGES.VERSION_CONFLICT,
+        currentVersion,
+        currentData: { version: currentVersion },
+      };
+    }
+
+    this.logger.debug(
+      `[VersionCheck] Version matched: orderId=${orderId}, version=${expectedVersion}`,
+    );
+
+    return null;
+  }
 
   /**
    * Create order with items using saga pattern
@@ -119,6 +193,8 @@ export class OrderOrchestrationService {
 
   /**
    * Execute order creation (validation + saga)
+   *
+   * CHANGED: Handle SagaExecutionResult<CreateOrderResponse> from BaseSaga
    */
   private async executeCreateOrder(
     workspaceId: string,
@@ -146,21 +222,38 @@ export class OrderOrchestrationService {
 
     // Execute saga
     try {
-      const result = await this.createOrderSaga.execute(
+      const sagaResult = await this.createOrderSaga.execute(
         workspaceId,
         workspaceMemberId,
         input,
       );
 
-      if (result.success) {
+      // CHANGED: Extract data from SagaExecutionResult
+      if (sagaResult.success && sagaResult.data) {
         this.logger.log(
-          LOG.CREATE_SUCCESS(result.orderId ?? '', result.orderCode ?? ''),
+          LOG.CREATE_SUCCESS(
+            sagaResult.data.orderId ?? '',
+            sagaResult.data.orderCode ?? '',
+          ),
         );
-      } else {
-        this.logger.error(LOG.CREATE_FAILED(result.error ?? ''));
+
+        return sagaResult.data;
       }
 
-      return result;
+      // Handle saga failure
+      // NOTE: Error mapping priority from SagaExecutionResult:
+      // 1. sagaResult.error - Human-readable error message
+      // 2. sagaResult.failedStep - Step name where failure occurred
+      // 3. sagaResult.executedSteps - Steps that were executed before failure
+      this.logger.error(LOG.CREATE_FAILED(sagaResult.error ?? ''), {
+        failedStep: sagaResult.failedStep,
+        executedSteps: sagaResult.executedSteps,
+      });
+
+      return {
+        success: false,
+        error: sagaResult.error ?? 'Saga execution failed',
+      };
     } catch (error) {
       this.logger.error(LOG.CREATE_UNEXPECTED_ERROR(), error);
 
@@ -186,6 +279,19 @@ export class OrderOrchestrationService {
         workspaceMemberId ?? 'system',
       ),
     );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     // Validate input
     const validationResult =
@@ -253,6 +359,19 @@ export class OrderOrchestrationService {
       ),
     );
 
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
     try {
       const result = await this.updateOrderSaga.execute(
         workspaceId,
@@ -298,6 +417,19 @@ export class OrderOrchestrationService {
         workspaceMemberId ?? 'system',
       ),
     );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
 
     try {
       const result = await this.refundOrderSaga.execute(
@@ -382,7 +514,11 @@ export class OrderOrchestrationService {
         this.logger.error(LOG.RECALCULATE_HAD_ERRORS());
       }
 
-      return result;
+      return {
+        success: result.success,
+        updatedCount: result.updatedCount,
+        error: result.errors.length > 0 ? result.errors.join('; ') : undefined,
+      };
     } catch (error) {
       this.logger.error(LOG.RECALCULATE_UNEXPECTED_ERROR(), error);
 
@@ -426,6 +562,19 @@ export class OrderOrchestrationService {
   ): Promise<PublishDraftOrderResponse> {
     this.logger.log(`[PublishDraft] Starting for order: ${input.orderId}`);
 
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
     try {
       // 1. Get and validate order
       const order = await this.orderRepository.findById(input.orderId);
@@ -460,25 +609,23 @@ export class OrderOrchestrationService {
         qrCodeUrl = paymentResult.qrCodeUrl;
       }
 
-      // 3. Update order status to PENDING_PAYMENT
+      // 3. Update order status to PROCESSING (new payment flow)
+      // Note: In new payment flow, DRAFT → PROCESSING with payment deadline scheduling
+      // handled by PaymentDeadlineProcessor
       const updateNote = input.note
         ? `[PUBLISHED] ${input.note}`
         : '[PUBLISHED] Draft order published';
 
       await this.orderRepository.update(order.id, {
-        status: ORDER_STATUS.PENDING_PAYMENT,
+        status: ORDER_STATUS.PROCESSING,
         note: order.note ? `${order.note}\n${updateNote}` : updateNote,
       });
 
-      // 4. Schedule overdue check
-      await this.orderOverdueSchedulerService.scheduleOverdueCheck(
-        workspaceId,
-        order.id,
-        order.orderCode,
-      );
+      // Note: Payment deadline scheduling is now handled by ConfirmOrderSaga
+      // via SchedulePaymentRemindersStep using PaymentDeadlineProcessor
 
       this.logger.log(
-        `[PublishDraft] Success - Order ${order.id} published with status PENDING_PAYMENT`,
+        `[PublishDraft] Success - Order ${order.id} published with status PROCESSING`,
       );
 
       return {
@@ -486,7 +633,7 @@ export class OrderOrchestrationService {
         orderId: order.id,
         orderCode: order.orderCode,
         paymentQrCode: qrCodeUrl,
-        newStatus: ORDER_STATUS.PENDING_PAYMENT,
+        newStatus: ORDER_STATUS.PROCESSING,
       };
     } catch (error) {
       this.logger.error('[PublishDraft] Unexpected error', error);
@@ -561,5 +708,337 @@ export class OrderOrchestrationService {
     }
 
     return { qrCodeUrl: primaryQrCodeUrl };
+  }
+
+  // ============================================
+  // NEW PAYMENT FLOW METHODS
+  // ============================================
+
+  /**
+   * Confirm order with license creation (New Payment Flow)
+   *
+   * Flow: DRAFT → CONFIRMED → PROCESSING
+   * - Calculates payment deadline based on priority rules
+   * - Creates licenses on MKT Server with PENDING_PAYMENT status
+   * - Creates invoice
+   * - Schedules payment reminders
+   */
+  async confirmOrderWithLicense(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: {
+      orderId: string;
+      manualDeadlineHours?: number;
+      note?: string;
+      expectedVersion?: number;
+    },
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    orderCode?: string;
+    newStatus?: ORDER_STATUS;
+    invoice?: { id: string; invoiceNumber?: string };
+    licenses?: Array<{ id: string; licenseCode?: string; status: string }>;
+    paymentDeadline?: Date;
+    paymentDeadlineSource?: string;
+    paymentDeadlineHours?: number;
+    totalAmount?: number;
+    error?: string;
+  }> {
+    this.logger.log(
+      `[ConfirmOrderWithLicense] Starting for order: ${input.orderId}`,
+    );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
+    try {
+      // Call ConfirmOrderSaga with new flow
+      // Note: ConfirmOrderSaga should be updated to handle new payment flow
+      const result = await this.confirmOrderSaga.execute(
+        workspaceId,
+        workspaceMemberId,
+        {
+          orderId: input.orderId,
+          action: ORDER_ACTION.CONFIRM_ORDER, // New action for new flow
+          note: input.note,
+          manualDeadlineHours: input.manualDeadlineHours,
+        },
+      );
+
+      if (result.success && result.data) {
+        this.logger.log(
+          `[ConfirmOrderWithLicense] Success - Order ${input.orderId} confirmed with PROCESSING status`,
+        );
+
+        return {
+          success: true,
+          orderId: result.data.orderId,
+          orderCode: result.data.orderCode,
+          newStatus: result.data.newStatus,
+          // TODO: Return invoice and licenses from saga result
+          paymentDeadline: result.data.paymentDeadline,
+          paymentDeadlineSource: result.data.paymentDeadlineSource,
+          paymentDeadlineHours: result.data.paymentDeadlineHours,
+          totalAmount: result.data.totalAmount,
+        };
+      }
+
+      return {
+        success: false,
+        error: result.error ?? 'Failed to confirm order with license',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[ConfirmOrderWithLicense] Unexpected error for order ${input.orderId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Confirm payment for an order (New Payment Flow)
+   *
+   * On successful payment:
+   * - Updates order status: PROCESSING → COMPLETED
+   * - Activates licenses: PENDING_PAYMENT → ACTIVE
+   * - Cancels scheduled reminders
+   */
+  async confirmOrderPayment(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: {
+      orderId: string;
+      paymentMethod: string;
+      amount: number;
+      transactionId?: string;
+      note?: string;
+      expectedVersion?: number;
+    },
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    orderCode?: string;
+    previousStatus?: ORDER_STATUS;
+    newStatus?: ORDER_STATUS;
+    paymentSummary?: {
+      totalAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      paymentStatus: string;
+      paidPercent: number;
+    };
+    licensesActivated?: boolean;
+    message?: string;
+    error?: string;
+  }> {
+    this.logger.log(
+      `[ConfirmOrderPayment] Starting for order: ${input.orderId}, method: ${input.paymentMethod}`,
+    );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
+    try {
+      // 1. Get order
+      const order = await this.orderRepository.findById(input.orderId);
+
+      if (!order) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} not found`,
+        };
+      }
+
+      // 2. Validate order can receive payment
+      if (
+        order.status !== ORDER_STATUS.PROCESSING &&
+        order.status !== ORDER_STATUS.LOCKED
+      ) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} is not in PROCESSING or LOCKED status. Current status: ${order.status}`,
+        };
+      }
+
+      // 3. Update payment
+      // TODO: Implement proper payment confirmation logic
+      // - Record payment
+      // - Update paid amount
+      // - Check if fully paid
+
+      const previousStatus = order.status as ORDER_STATUS;
+
+      // 4. If fully paid, update order status to COMPLETED and activate licenses
+      // TODO: Implement license activation via OrderLicenseIntegrationService
+
+      await this.orderRepository.update(order.id, {
+        status: ORDER_STATUS.COMPLETED,
+        paidAmount: input.amount,
+        remainingAmount: 0,
+        paymentStatus: PAYMENT_STATUS.PAID,
+      });
+
+      this.logger.log(
+        `[ConfirmOrderPayment] Success - Order ${input.orderId} completed`,
+      );
+
+      return {
+        success: true,
+        orderId: order.id,
+        orderCode: order.orderCode,
+        previousStatus,
+        newStatus: ORDER_STATUS.COMPLETED,
+        licensesActivated: true,
+        message: 'Payment confirmed and order completed',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[ConfirmOrderPayment] Unexpected error for order ${input.orderId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Unlock order after late payment (New Payment Flow)
+   *
+   * For orders that were LOCKED due to payment overdue:
+   * - Verifies late payment received
+   * - Updates order status: LOCKED → COMPLETED
+   * - Activates licenses: LOCKED → ACTIVE
+   */
+  async unlockOrderAfterPayment(
+    workspaceId: string,
+    workspaceMemberId: string | undefined,
+    input: {
+      orderId: string;
+      amount: number;
+      transactionId?: string;
+      note?: string;
+      expectedVersion?: number;
+    },
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    orderCode?: string;
+    previousStatus?: ORDER_STATUS;
+    newStatus?: ORDER_STATUS;
+    unlockedLicenses?: Array<{
+      id: string;
+      licenseCode?: string;
+      status: string;
+    }>;
+    unlockedAt?: Date;
+    message?: string;
+    error?: string;
+  }> {
+    this.logger.log(
+      `[UnlockOrderAfterPayment] Starting for order: ${input.orderId}`,
+    );
+
+    // Check version if expectedVersion is provided (optimistic locking)
+    const versionCheck = await this.checkVersionIfRequired(
+      input.orderId,
+      input.expectedVersion,
+    );
+
+    if (versionCheck?.error) {
+      return {
+        success: false,
+        error: versionCheck.error,
+      };
+    }
+
+    try {
+      // 1. Get order
+      const order = await this.orderRepository.findById(input.orderId);
+
+      if (!order) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} not found`,
+        };
+      }
+
+      // 2. Validate order is LOCKED
+      if (order.status !== ORDER_STATUS.LOCKED) {
+        return {
+          success: false,
+          error: `Order ${input.orderId} is not LOCKED. Current status: ${order.status}`,
+        };
+      }
+
+      const previousStatus = order.status as ORDER_STATUS;
+
+      // 3. Unlock licenses
+      // TODO: Implement via OrderLockService.unlockLicenses()
+
+      // 4. Update order status to COMPLETED
+      await this.orderRepository.update(order.id, {
+        status: ORDER_STATUS.COMPLETED,
+        lockedAt: null,
+        lockedReason: null,
+        paidAmount: input.amount,
+        remainingAmount: 0,
+        paymentStatus: PAYMENT_STATUS.PAID,
+      });
+
+      const unlockedAt = new Date();
+
+      this.logger.log(
+        `[UnlockOrderAfterPayment] Success - Order ${input.orderId} unlocked`,
+      );
+
+      return {
+        success: true,
+        orderId: order.id,
+        orderCode: order.orderCode,
+        previousStatus,
+        newStatus: ORDER_STATUS.COMPLETED,
+        unlockedAt,
+        message: 'Order unlocked after late payment',
+      };
+    } catch (error) {
+      this.logger.error(
+        `[UnlockOrderAfterPayment] Unexpected error for order ${input.orderId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }

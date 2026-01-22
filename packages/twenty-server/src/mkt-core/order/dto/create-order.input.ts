@@ -24,7 +24,10 @@ import { MKT_SUPPORTED_LANGUAGES } from 'src/mkt-core/mkt-product-integration/co
 /**
  * Actions cho phép khi TẠO đơn hàng (qua createOrderWithItems mutation)
  *
- * Note: TRIAL đã được tách ra mutation riêng (createTrialOrder)
+ * - NEW_ORDER: Tạo đơn hàng mới
+ * - LICENSE_RENEWING: Gia hạn license (cần licenseId)
+ * - TRIAL_TO_PAID: Tạo license trial với thời hạn ngắn (mặc định 1 ngày) để khách hàng trải nghiệm
+ *   trước khi thanh toán. Sử dụng trialDurationDays để tùy chỉnh thời gian trial.
  */
 export enum CREATE_ORDER_ACTION {
   NEW_ORDER = 'NEW_ORDER',
@@ -241,13 +244,16 @@ export class CreateOrderWithItemsInputDto {
   @IsUUID()
   licenseId?: string;
 
-  @Field(() => String, {
+  @Field(() => Int, {
     nullable: true,
-    description: 'Trial order ID for TRIAL_TO_PAID',
+    defaultValue: 1,
+    description:
+      'Thời hạn trial license (ngày). Mặc định 1 ngày cho TRIAL_TO_PAID action.',
   })
   @IsOptional()
-  @IsUUID()
-  trialOrderId?: string;
+  @IsNumber()
+  @Min(1)
+  trialDurationDays?: number;
 
   // ============================================
   // PROMOTION FIELDS
@@ -321,6 +327,16 @@ export class ConfirmOrderInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 @InputType()
@@ -337,6 +353,16 @@ export class UpdateOrderStatusInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 @InputType()
@@ -376,6 +402,16 @@ export class RefundOrderInputDto {
   @IsOptional()
   @IsBoolean()
   isPartial?: boolean;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 @InputType()
@@ -445,4 +481,14 @@ export class PublishDraftOrderInputDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  expectedVersion?: number;
 }

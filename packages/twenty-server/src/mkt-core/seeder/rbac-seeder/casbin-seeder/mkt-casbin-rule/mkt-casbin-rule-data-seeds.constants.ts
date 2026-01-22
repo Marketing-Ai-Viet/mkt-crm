@@ -71,12 +71,29 @@ export const MKT_CASBIN_RULE_DATA_SEEDS_IDS = {
   ROLE_FINANCE_INVOICE_ALL: '11111111-0001-4000-8000-000000000013',
   ROLE_MARKETING_PROMOTION_ALL: '11111111-0001-4000-8000-000000000014',
 
+  // Accountant role policies
+  ROLE_ACCOUNTANT_INVOICE_MANAGE: '11111111-0001-4000-8000-000000000015',
+  ROLE_ACCOUNTANT_PAYMENT_MANAGE: '11111111-0001-4000-8000-000000000016',
+  ROLE_ACCOUNTANT_ORDER_READ: '11111111-0001-4000-8000-000000000017',
+  ROLE_ACCOUNTANT_CUSTOMER_READ: '11111111-0001-4000-8000-000000000018',
+  ROLE_ACCOUNTANT_LICENSE_READ: '11111111-0001-4000-8000-000000000019',
+  ROLE_ACCOUNTANT_REPORT_READ: '11111111-0001-4000-8000-000000000020',
+
+  // Support role additional policies
+  ROLE_SUPPORT_CUSTOMER_UPDATE: '11111111-0001-4000-8000-000000000021',
+  ROLE_SUPPORT_ORDER_UPDATE: '11111111-0001-4000-8000-000000000022',
+  ROLE_SUPPORT_LICENSE_READ: '11111111-0001-4000-8000-000000000023',
+  ROLE_SUPPORT_PAYMENT_READ: '11111111-0001-4000-8000-000000000024',
+  ROLE_SUPPORT_INVOICE_READ: '11111111-0001-4000-8000-000000000025',
+  ROLE_SUPPORT_PRODUCT_READ: '11111111-0001-4000-8000-000000000026',
+
   // Role assignments - User to Role mappings
   USER_ADMIN_ASSIGN: '11111111-0002-4000-8000-000000000001',
   USER_MANAGER_ASSIGN: '11111111-0002-4000-8000-000000000002',
   USER_SALES_ASSIGN: '11111111-0002-4000-8000-000000000003',
   USER_SUPPORT_ASSIGN: '11111111-0002-4000-8000-000000000004',
   USER_VIEWER_ASSIGN: '11111111-0002-4000-8000-000000000005',
+  USER_ACCOUNTANT_ASSIGN: '11111111-0002-4000-8000-000000000006',
 
   // Resource groupings
   GROUP_CRM_ENTITIES: '11111111-0003-4000-8000-000000000001',
@@ -95,6 +112,7 @@ const SAMPLE_USER_IDS = {
   SALES_REP: 'user:00000000-0000-4000-8000-000000000003',
   SUPPORT: 'user:00000000-0000-4000-8000-000000000004',
   VIEWER: 'user:00000000-0000-4000-8000-000000000005',
+  ACCOUNTANT: 'user:00000000-0000-4000-8000-000000000006',
 };
 
 export const MKT_CASBIN_RULE_DATA_SEEDS: MktCasbinRuleDataSeed[] = [
@@ -403,5 +421,175 @@ export const MKT_CASBIN_RULE_DATA_SEEDS: MktCasbinRuleDataSeed[] = [
     effect: CASBIN_EFFECT.ALLOW,
     condition: 'r.attr.createdById == u.id',
     position: 24,
+  },
+
+  // ============================================
+  // ACCOUNTANT ROLE POLICIES
+  // Full access to invoices and payments
+  // Read access to orders, customers, licenses for reconciliation
+  // ============================================
+
+  // Accountant - Invoice full management (except delete)
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_ACCOUNTANT_INVOICE_MANAGE,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:accountant',
+    object: 'mktInvoice',
+    action: CASBIN_ACTION.MANAGE,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 25,
+  },
+
+  // Accountant - Payment full management (except delete)
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_ACCOUNTANT_PAYMENT_MANAGE,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:accountant',
+    object: 'mktPayment',
+    action: CASBIN_ACTION.MANAGE,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 26,
+  },
+
+  // Accountant - Order read only
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_ACCOUNTANT_ORDER_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:accountant',
+    object: 'mktOrder',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 27,
+  },
+
+  // Accountant - Customer read only
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_ACCOUNTANT_CUSTOMER_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:accountant',
+    object: 'mktCustomer',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 28,
+  },
+
+  // Accountant - License read only
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_ACCOUNTANT_LICENSE_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:accountant',
+    object: 'mktLicense',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 29,
+  },
+
+  // Accountant - Report read only
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_ACCOUNTANT_REPORT_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:accountant',
+    object: 'mktReport',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 30,
+  },
+
+  // ============================================
+  // SUPPORT ROLE ADDITIONAL POLICIES
+  // Update access to customers and orders for support cases
+  // Read access to licenses, payments, invoices, products
+  // ============================================
+
+  // Support - Customer update (for notes/tags)
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_SUPPORT_CUSTOMER_UPDATE,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:support',
+    object: 'mktCustomer',
+    action: CASBIN_ACTION.UPDATE,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 31,
+  },
+
+  // Support - Order update (for support status)
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_SUPPORT_ORDER_UPDATE,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:support',
+    object: 'mktOrder',
+    action: CASBIN_ACTION.UPDATE,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 32,
+  },
+
+  // Support - License read
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_SUPPORT_LICENSE_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:support',
+    object: 'mktLicense',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 33,
+  },
+
+  // Support - Payment read (view status only)
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_SUPPORT_PAYMENT_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:support',
+    object: 'mktPayment',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 34,
+  },
+
+  // Support - Invoice read (view status only)
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_SUPPORT_INVOICE_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:support',
+    object: 'mktInvoice',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 35,
+  },
+
+  // Support - Product read
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.ROLE_SUPPORT_PRODUCT_READ,
+    ptype: CASBIN_POLICY_TYPE.PERMISSION,
+    subject: 'role:support',
+    object: 'mktProduct',
+    action: CASBIN_ACTION.READ,
+    effect: CASBIN_EFFECT.ALLOW,
+    condition: null,
+    position: 36,
+  },
+
+  // ============================================
+  // ACCOUNTANT ROLE ASSIGNMENT
+  // ============================================
+  {
+    id: MKT_CASBIN_RULE_DATA_SEEDS_IDS.USER_ACCOUNTANT_ASSIGN,
+    ptype: CASBIN_POLICY_TYPE.ROLE_ASSIGNMENT,
+    subject: SAMPLE_USER_IDS.ACCOUNTANT,
+    object: 'role:accountant',
+    action: null,
+    effect: null,
+    condition: null,
+    position: 37,
   },
 ];

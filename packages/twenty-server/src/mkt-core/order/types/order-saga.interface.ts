@@ -161,6 +161,11 @@ export const SAGA_CONFIG = {
   STEP_TIMEOUT_MS: 30000,
 
   /**
+   * Timeout cho toàn bộ transaction (ms)
+   */
+  TRANSACTION_TIMEOUT_MS: 60000,
+
+  /**
    * Max retry cho compensate
    */
   MAX_COMPENSATE_RETRIES: 3,

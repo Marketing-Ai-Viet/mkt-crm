@@ -70,55 +70,6 @@ export class LinkAccountInput {
   metadata?: LinkedAccountMetadata;
 }
 
-/**
- * Input for linking MKT Server account (legacy compatibility)
- */
-@InputType()
-export class LinkMktAccountInput {
-  @Field(() => String, { description: 'Customer ID to link the account to' })
-  @IsNotEmpty()
-  @IsString()
-  customerId: string;
-
-  @Field(() => String, { description: 'MKT Server account ID' })
-  @IsNotEmpty()
-  @IsString()
-  mktAccountId: string;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'Email on MKT Server account',
-  })
-  @IsOptional()
-  @IsString()
-  mktAccountEmail?: string;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'Display name on MKT Server account',
-  })
-  @IsOptional()
-  @IsString()
-  mktAccountName?: string;
-
-  @Field(() => Boolean, {
-    nullable: true,
-    description: 'Whether this should be the primary account',
-    defaultValue: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isPrimary?: boolean;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'Additional notes about this account link',
-  })
-  @IsOptional()
-  @IsString()
-  notes?: string;
-}
-
 @InputType()
 export class SetPrimaryAccountInput {
   @Field(() => String, { description: 'Customer ID' })
@@ -143,20 +94,4 @@ export class UnlinkAccountInput {
   @IsNotEmpty()
   @IsString()
   accountId: string;
-}
-
-/**
- * Legacy input for unlinking MKT account by externalId
- */
-@InputType()
-export class UnlinkMktAccountInput {
-  @Field(() => String, { description: 'Customer ID' })
-  @IsNotEmpty()
-  @IsString()
-  customerId: string;
-
-  @Field(() => String, { description: 'MKT Account ID to unlink' })
-  @IsNotEmpty()
-  @IsString()
-  mktAccountId: string;
 }

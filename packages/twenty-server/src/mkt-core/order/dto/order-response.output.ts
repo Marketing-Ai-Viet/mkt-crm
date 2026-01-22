@@ -60,6 +60,9 @@ export class ConfirmOrderResponseDto {
   @Field(() => String, { nullable: true })
   orderId?: string;
 
+  @Field(() => String, { nullable: true })
+  orderCode?: string;
+
   @Field(() => ORDER_STATUS, { nullable: true })
   newStatus?: ORDER_STATUS;
 
@@ -75,11 +78,27 @@ export class ConfirmOrderResponseDto {
   })
   remainingAmount?: number;
 
-  @Field(() => PAYMENT_STATUS, {
+  @Field(() => String, {
     nullable: true,
     description: 'Payment status',
   })
-  paymentStatus?: PAYMENT_STATUS;
+  paymentStatus?: string;
+
+  // New payment flow fields
+  @Field(() => Date, { nullable: true, description: 'Payment deadline' })
+  paymentDeadline?: Date;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Payment deadline source',
+  })
+  paymentDeadlineSource?: string;
+
+  @Field(() => Number, {
+    nullable: true,
+    description: 'Payment deadline in hours',
+  })
+  paymentDeadlineHours?: number;
 
   @Field(() => String, { nullable: true })
   error?: string;
@@ -223,37 +242,6 @@ export class OrderPaymentSummaryOutput {
     description: 'Percentage of total amount paid (0-100)',
   })
   paidPercent: number;
-}
-
-/**
- * Order Overdue Queue Statistics
- *
- * Provides observability for the order overdue delayed job queue.
- * Used for monitoring and debugging.
- */
-@ObjectType()
-export class OrderOverdueQueueStatsOutput {
-  @Field(() => Number, { description: 'Jobs waiting to be processed' })
-  waiting: number;
-
-  @Field(() => Number, {
-    description: 'Jobs delayed (scheduled for future execution)',
-  })
-  delayed: number;
-
-  @Field(() => Number, { description: 'Jobs currently being processed' })
-  active: number;
-
-  @Field(() => Number, { description: 'Jobs completed successfully' })
-  completed: number;
-
-  @Field(() => Number, { description: 'Jobs that failed' })
-  failed: number;
-
-  @Field(() => Number, {
-    description: 'Total jobs in queue (waiting + delayed + active)',
-  })
-  total: number;
 }
 
 /**

@@ -90,14 +90,11 @@ export type CreateOrderWithItemsInput = {
   // For license renewal
   licenseId?: string;
 
-  // For trial to paid conversion
-  trialOrderId?: string;
-
-  // Trial configuration for TRIAL_TO_PAID action
   /**
-   * Duration of trial license in days.
-   * Uses ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS (30 days).
-   * Note: Pure trial creation is handled by MktLicenseResolver.mktCreateTrialLicense
+   * Thời hạn trial license (ngày).
+   *
+   * - Với TRIAL_TO_PAID: Mặc định 1 ngày (ORDER_TRIAL_CONFIG.TRIAL_TO_PAID_DEFAULT_DAYS)
+   * - Với các action khác: Mặc định 30 ngày (ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS)
    */
   trialDurationDays?: number;
 
@@ -129,12 +126,20 @@ export type CreateOrderWithItemsInput = {
 
 /**
  * Input để confirm order
+ *
+ * Actions supported:
+ * - ACCOUNTING_CONFIRMED: Legacy flow (create license after payment)
+ * - CONFIRM_ORDER: New payment flow (create license immediately with PENDING_PAYMENT)
  */
 export type ConfirmOrderInput = {
   orderId: string;
   action: ConfirmOrderAction;
   accountingConfirmed?: boolean;
   note?: string;
+  /** Manual override for payment deadline (hours) - new payment flow */
+  manualDeadlineHours?: number;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 /**
@@ -146,6 +151,8 @@ export type RefundOrderInput = {
   refundAmount?: number;
   reason?: string;
   isPartial?: boolean;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 /**
@@ -155,6 +162,8 @@ export type UpdateOrderStatusInput = {
   orderId: string;
   status: ORDER_STATUS;
   note?: string;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 /**
@@ -169,6 +178,8 @@ export type PublishDraftOrderInput = {
   orderId: string;
   paymentMethods?: OrderPaymentMethodInput[];
   note?: string;
+  /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
+  expectedVersion?: number;
 };
 
 // ============================================
@@ -192,8 +203,17 @@ export type CreateOrderResponse = {
 export type ConfirmOrderResponse = {
   success: boolean;
   orderId?: string;
+  orderCode?: string;
   newStatus?: ORDER_STATUS;
   error?: string;
+  // New payment flow fields
+  paymentDeadline?: Date;
+  paymentDeadlineSource?: string;
+  paymentDeadlineHours?: number;
+  totalAmount?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+  paymentStatus?: string;
 };
 
 /**

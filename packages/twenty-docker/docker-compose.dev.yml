@@ -1,0 +1,242 @@
+# =============================================================================
+# Twenty CRM - Docker Compose Development (Server Only)
+# =============================================================================
+# Usage:
+#   make dev-up             # Start services
+#   make dev-logs-server    # View server logs
+# =============================================================================
+
+name: twenty-dev
+
+services:
+  server:
+    image: twenty-server:${TAG:-dev}
+    build:
+      context: ../..
+      dockerfile: packages/twenty-docker/twenty/Dockerfile.server
+    container_name: twenty-dev-server
+    volumes:
+      - ../twenty-server/src:/app/packages/twenty-server/src
+      - ../twenty-server/scripts:/app/packages/twenty-server/scripts
+      - ../twenty-shared/src:/app/packages/twenty-shared/src
+      - ../twenty-server/tsconfig.json:/app/packages/twenty-server/tsconfig.json:ro
+      - ../twenty-server/tsconfig.build.json:/app/packages/twenty-server/tsconfig.build.json:ro
+      - ../../tsconfig.base.json:/app/tsconfig.base.json:ro
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    ports:
+      - "${NODE_PORT:-3003}:3003"
+      - "${DEBUG_PORT:-9229}:9229"
+    env_file:
+      - ../twenty-server/.env
+    environment:
+      # === Core ===
+      NODE_ENV: development
+      NODE_PORT: 3003
+
+      # === Database (override for Docker network) ===
+      PG_DATABASE_HOST: db
+      PG_DATABASE_PORT: 5432
+      PG_DATABASE_USER: ${PG_DATABASE_USER:-postgres}
+      PG_DATABASE_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      PG_DATABASE_NAME: ${PG_DATABASE_NAME:-default}
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:-postgres}@db:5432/${PG_DATABASE_NAME:-default}
+
+      # === Redis (override for Docker network) ===
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+
+      # === App ===
+      APP_SECRET: ${APP_SECRET:-replace_me_with_a_random_string}
+      SIGN_IN_PREFILLED: "true"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      LOG_LEVELS: log,error,warn,debug
+      ACCESS_TOKEN_EXPIRES_IN: ${ACCESS_TOKEN_EXPIRES_IN:-90d}
+
+      # === Debug ===
+      NODE_OPTIONS: "--inspect=0.0.0.0:9229"
+
+      # === RBAC ===
+      SKIP_RBAC_MODULE: ${SKIP_RBAC_MODULE:-true}
+      RBAC_VALIDATION_MODE: ${RBAC_VALIDATION_MODE:-SIMPLIFIED}
+
+      # === S-Invoice ===
+      S_INVOICE_USERNAME: ${S_INVOICE_USERNAME:-}
+      S_INVOICE_PASSWORD: ${S_INVOICE_PASSWORD:-}
+      S_INVOICE_AUTH_TOKEN: ${S_INVOICE_AUTH_TOKEN:-}
+      S_INVOICE_AUTHORIZATION: ${S_INVOICE_AUTHORIZATION:-}
+      FILE_DOWNLOAD_EXPIRES: ${FILE_DOWNLOAD_EXPIRES:-3600}
+      FILE_DOWNLOAD_SECRET: ${FILE_DOWNLOAD_SECRET:-default-secret-key}
+
+      # === License ===
+      LICENSE_API_URL: ${LICENSE_API_URL:-}
+
+      # === Order ===
+      ORDER_OPTIMISTIC_LOCKING_ENABLED: ${ORDER_OPTIMISTIC_LOCKING_ENABLED:-false}
+      MKT_ORDER_TAX_ENABLED: ${MKT_ORDER_TAX_ENABLED:-false}
+      MKT_ORDER_TAX_PERCENTAGE: ${MKT_ORDER_TAX_PERCENTAGE:-10}
+      MKT_ORDER_OVERDUE_DELAY_MS: ${MKT_ORDER_OVERDUE_DELAY_MS:-86400000}
+      MKT_ORDER_OVERDUE_RETRY_ATTEMPTS: ${MKT_ORDER_OVERDUE_RETRY_ATTEMPTS:-3}
+      MKT_ORDER_OVERDUE_BACKOFF_MS: ${MKT_ORDER_OVERDUE_BACKOFF_MS:-60000}
+      MKT_ORDER_OVERDUE_WORKER_CONCURRENCY: ${MKT_ORDER_OVERDUE_WORKER_CONCURRENCY:-5}
+
+      # === Payment (SEPay) ===
+      SEPAY_ACC: ${SEPAY_ACC:-}
+      SEPAY_BANK: ${SEPAY_BANK:-}
+      SEPAY_WORKSPACE_ID: ${SEPAY_WORKSPACE_ID:-}
+      SEPAY_VA: ${SEPAY_VA:-}
+      SEPAY_AUTH_ENABLED: ${SEPAY_AUTH_ENABLED:-false}
+      SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY:-}
+
+      # === Payment (BIDV) ===
+      IS_BIDV_BUSINESS: ${IS_BIDV_BUSINESS:-false}
+      BIDV_SEPAY_API_URL: ${BIDV_SEPAY_API_URL:-}
+      BIDV_SEPAY_AUTH_TOKEN: ${BIDV_SEPAY_AUTH_TOKEN:-}
+      BIDV_SEPAY_COOKIE: ${BIDV_SEPAY_COOKIE:-}
+
+      # === Prune Selection ===
+      PRUNE_SELECTION_ENABLED: ${PRUNE_SELECTION_ENABLED:-true}
+
+      # === MKT OAuth2 ===
+      MKT_API_BASE_URL: ${MKT_API_BASE_URL:-http://host.docker.internal:3006}
+      MKT_OAUTH_CLIENT_ID: ${MKT_OAUTH_CLIENT_ID:-}
+      MKT_OAUTH_CLIENT_SECRET: ${MKT_OAUTH_CLIENT_SECRET:-}
+      MKT_OAUTH_SCOPES: ${MKT_OAUTH_SCOPES:-products:read}
+      OAUTH2_TOKEN_ENDPOINT: ${OAUTH2_TOKEN_ENDPOINT:-/oauth/token}
+      OAUTH2_INTROSPECT_ENDPOINT: ${OAUTH2_INTROSPECT_ENDPOINT:-/oauth/introspect}
+      OAUTH2_REVOKE_ENDPOINT: ${OAUTH2_REVOKE_ENDPOINT:-/oauth/revoke}
+      OAUTH2_CACHE_LRU_MAX: ${OAUTH2_CACHE_LRU_MAX:-10}
+      OAUTH2_CACHE_LRU_TTL_MS: ${OAUTH2_CACHE_LRU_TTL_MS:-3600000}
+      OAUTH2_CACHE_REDIS_TTL_SECONDS: ${OAUTH2_CACHE_REDIS_TTL_SECONDS:-3600}
+      OAUTH2_REFRESH_THRESHOLD_SECONDS: ${OAUTH2_REFRESH_THRESHOLD_SECONDS:-300}
+      OAUTH2_REFRESH_INTERVAL_MS: ${OAUTH2_REFRESH_INTERVAL_MS:-30000}
+      OAUTH2_HTTP_TIMEOUT_MS: ${OAUTH2_HTTP_TIMEOUT_MS:-10000}
+      OAUTH2_HTTP_MAX_RETRIES: ${OAUTH2_HTTP_MAX_RETRIES:-3}
+      OAUTH2_HTTP_RETRY_DELAY_MS: ${OAUTH2_HTTP_RETRY_DELAY_MS:-1000}
+      OAUTH2_RATE_LIMIT_ENABLED: ${OAUTH2_RATE_LIMIT_ENABLED:-true}
+      OAUTH2_RATE_LIMIT_MAX_ATTEMPTS: ${OAUTH2_RATE_LIMIT_MAX_ATTEMPTS:-10}
+      OAUTH2_RATE_LIMIT_WINDOW_MS: ${OAUTH2_RATE_LIMIT_WINDOW_MS:-60000}
+      OAUTH2_CIRCUIT_BREAKER_ENABLED: ${OAUTH2_CIRCUIT_BREAKER_ENABLED:-true}
+      OAUTH2_CIRCUIT_BREAKER_FAILURE_THRESHOLD: ${OAUTH2_CIRCUIT_BREAKER_FAILURE_THRESHOLD:-5}
+      OAUTH2_CIRCUIT_BREAKER_RESET_TIMEOUT_MS: ${OAUTH2_CIRCUIT_BREAKER_RESET_TIMEOUT_MS:-60000}
+      OAUTH2_CIRCUIT_BREAKER_HALF_OPEN_ATTEMPTS: ${OAUTH2_CIRCUIT_BREAKER_HALF_OPEN_ATTEMPTS:-3}
+      OAUTH2_JWT_VERIFICATION_ENABLED: ${OAUTH2_JWT_VERIFICATION_ENABLED:-false}
+      OAUTH2_JWT_ALGORITHM: ${OAUTH2_JWT_ALGORITHM:-RS256}
+      OAUTH2_REDIS_HEALTH_CHECK_ENABLED: ${OAUTH2_REDIS_HEALTH_CHECK_ENABLED:-true}
+      OAUTH2_REDIS_HEALTH_CHECK_INTERVAL_MS: ${OAUTH2_REDIS_HEALTH_CHECK_INTERVAL_MS:-30000}
+      OAUTH2_REDIS_HEALTH_CHECK_TIMEOUT_MS: ${OAUTH2_REDIS_HEALTH_CHECK_TIMEOUT_MS:-5000}
+      OAUTH2_REDIS_HEALTH_CHECK_UNHEALTHY_THRESHOLD: ${OAUTH2_REDIS_HEALTH_CHECK_UNHEALTHY_THRESHOLD:-3}
+
+      # === MKT Product Sync ===
+      MKT_AUTO_SYNC_ENABLED: ${MKT_AUTO_SYNC_ENABLED:-true}
+      MKT_SYNC_ON_STARTUP: ${MKT_SYNC_ON_STARTUP:-true}
+      MKT_SYNC_BATCH_SIZE: ${MKT_SYNC_BATCH_SIZE:-50}
+      MKT_SYNC_MIN_INTERVAL_MS: ${MKT_SYNC_MIN_INTERVAL_MS:-300000}
+      MKT_SYNC_MAX_RETRIES: ${MKT_SYNC_MAX_RETRIES:-3}
+      MKT_SYNC_PARALLEL: ${MKT_SYNC_PARALLEL:-true}
+      MKT_SYNC_INVALIDATE_STALE: ${MKT_SYNC_INVALIDATE_STALE:-false}
+      MKT_SCHEDULED_SYNC_ENABLED: ${MKT_SCHEDULED_SYNC_ENABLED:-true}
+      MKT_SCHEDULED_SYNC_CRON: ${MKT_SCHEDULED_SYNC_CRON:-0 */30 * * * *}
+
+      # === ALS Transaction ===
+      TRANSACTION_ALS_ENABLED: ${TRANSACTION_ALS_ENABLED:-true}
+      TRANSACTION_DEFAULT_TIMEOUT_MS: ${TRANSACTION_DEFAULT_TIMEOUT_MS:-30000}
+
+    command: ["node", "--inspect=0.0.0.0:9229", "dist/src/main"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3003/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    image: twenty-server:${TAG:-dev}
+    container_name: twenty-dev-worker
+    volumes:
+      - ../twenty-server/src:/app/packages/twenty-server/src
+      - ../twenty-server/scripts:/app/packages/twenty-server/scripts
+      - ../twenty-shared/src:/app/packages/twenty-shared/src
+      - ../twenty-server/tsconfig.json:/app/packages/twenty-server/tsconfig.json:ro
+      - ../twenty-server/tsconfig.build.json:/app/packages/twenty-server/tsconfig.build.json:ro
+      - ../../tsconfig.base.json:/app/tsconfig.base.json:ro
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    ports:
+      - "${WORKER_DEBUG_PORT:-9230}:9230"
+    env_file:
+      - ../twenty-server/.env
+    environment:
+      NODE_ENV: development
+      PG_DATABASE_HOST: db
+      PG_DATABASE_PORT: 5432
+      PG_DATABASE_USER: ${PG_DATABASE_USER:-postgres}
+      PG_DATABASE_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      PG_DATABASE_NAME: ${PG_DATABASE_NAME:-default}
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:-postgres}@db:5432/${PG_DATABASE_NAME:-default}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      APP_SECRET: ${APP_SECRET:-replace_me_with_a_random_string}
+      # Worker không chạy migrations và cron registration
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      # Debug
+      NODE_OPTIONS: "--inspect=0.0.0.0:9230"
+      # MKT OAuth2
+      MKT_API_BASE_URL: ${MKT_API_BASE_URL:-http://host.docker.internal:3006}
+      MKT_OAUTH_CLIENT_ID: ${MKT_OAUTH_CLIENT_ID:-}
+      MKT_OAUTH_CLIENT_SECRET: ${MKT_OAUTH_CLIENT_SECRET:-}
+      MKT_OAUTH_SCOPES: ${MKT_OAUTH_SCOPES:-products:read}
+      # MKT Product Sync
+      MKT_AUTO_SYNC_ENABLED: ${MKT_AUTO_SYNC_ENABLED:-true}
+      MKT_SCHEDULED_SYNC_ENABLED: ${MKT_SCHEDULED_SYNC_ENABLED:-true}
+      MKT_SCHEDULED_SYNC_CRON: ${MKT_SCHEDULED_SYNC_CRON:-0 */30 * * * *}
+    command: ["node", "--inspect=0.0.0.0:9230", "dist/src/queue-worker/queue-worker"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: twenty-dev-db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "${PG_DATABASE_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${PG_DATABASE_NAME:-default}
+    command:
+      - "postgres"
+      - "-c"
+      - "log_statement=all"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_DATABASE_USER:-postgres} -d ${PG_DATABASE_NAME:-default}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-dev-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    restart: unless-stopped
+
+volumes:
+  db-data:
+    name: twenty-dev-db-data
+  server-local-data:
+    name: twenty-dev-server-local-data

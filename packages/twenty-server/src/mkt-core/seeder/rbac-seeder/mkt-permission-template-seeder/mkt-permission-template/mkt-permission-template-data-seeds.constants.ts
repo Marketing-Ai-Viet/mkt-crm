@@ -79,6 +79,10 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS = {
   SALES_DIRECTOR: 'e1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c',
   SALES_MANAGER: 'f2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d',
   SALES_STAFF: 'a3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e',
+  // FINANCE Department Templates
+  ACCOUNTANT_STAFF: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
+  // SUPPORT Department Templates
+  SUPPORT_STAFF: '2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7',
 };
 
 export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[] =
@@ -284,5 +288,49 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
       resolutionStrategy: RESOLUTION_STRATEGY.PRIORITY_BASED,
       createdBySource: CREATED_BY_SOURCE.SYSTEM,
       position: 11,
+    },
+
+    // ===========================================
+    // FINANCE Department Templates
+    // ===========================================
+    {
+      id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
+      templateKey: 'ACCOUNTANT_STAFF',
+      templateName: 'Accountant Staff',
+      description:
+        'Full access to invoices and payments, read access to orders, customers, and licenses for financial reconciliation',
+      templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
+      departmentType: DepartmentCode.FINANCE,
+      hierarchyLevel: 8,
+      applicableToLevels: JSON.stringify([7, 8, 9, 10]),
+      version: '1.0.0',
+      isSystemTemplate: true,
+      isActive: true,
+      priority: 550,
+      resolutionStrategy: RESOLUTION_STRATEGY.PRIORITY_BASED,
+      createdBySource: CREATED_BY_SOURCE.SYSTEM,
+      position: 12,
+    },
+
+    // ===========================================
+    // SUPPORT Department Templates
+    // ===========================================
+    {
+      id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
+      templateKey: 'SUPPORT_STAFF',
+      templateName: 'Support Staff',
+      description:
+        'Read access to customers, orders, licenses, payments; update order status for support cases',
+      templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
+      departmentType: DepartmentCode.SUPPORT,
+      hierarchyLevel: 8,
+      applicableToLevels: JSON.stringify([7, 8, 9, 10]),
+      version: '1.0.0',
+      isSystemTemplate: true,
+      isActive: true,
+      priority: 500,
+      resolutionStrategy: RESOLUTION_STRATEGY.PRIORITY_BASED,
+      createdBySource: CREATED_BY_SOURCE.SYSTEM,
+      position: 13,
     },
   ];

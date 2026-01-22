@@ -2,11 +2,13 @@ import {
   ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
+  RefundOrderInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
   ConfirmOrderInput,
   CreateOrderWithItemsInput,
   UpdateOrderStatusInput,
+  RefundOrderInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
 import {
@@ -62,12 +64,15 @@ export const OrderInputMapper = {
       // DTO uses CREATE_ORDER_ACTION enum, cast to domain type CreateOrderAction
       action: dto.action as unknown as CreateOrderAction,
       licenseId: dto.licenseId,
-      trialOrderId: dto.trialOrderId,
+      // Trial duration for TRIAL_TO_PAID action (default: 1 day)
+      trialDurationDays: dto.trialDurationDays,
       // Promotion fields
       couponCode: dto.couponCode,
       applyAutoPromotions: dto.applyAutoPromotions ?? true,
       // Draft mode
       isDraft: dto.isDraft ?? false,
+      // MKT Server email override
+      mktServerEmail: dto.mktServerEmail,
     };
   },
 
@@ -83,6 +88,7 @@ export const OrderInputMapper = {
       action: dto.action as unknown as ConfirmOrderAction,
       accountingConfirmed: true, // Always true for ACCOUNTING_CONFIRMED
       note: dto.note,
+      expectedVersion: dto.expectedVersion,
     };
   },
 
@@ -100,6 +106,7 @@ export const OrderInputMapper = {
       orderId: dto.orderId,
       status,
       note: dto.note,
+      expectedVersion: dto.expectedVersion,
     };
   },
 
@@ -115,6 +122,21 @@ export const OrderInputMapper = {
       orderId: dto.orderId,
       status,
       note: dto.note,
+      expectedVersion: dto.expectedVersion,
+    };
+  },
+
+  /**
+   * Map RefundOrderInputDto to RefundOrderInput
+   */
+  toRefundOrderInput(dto: RefundOrderInputDto): RefundOrderInput {
+    return {
+      orderId: dto.orderId,
+      licenseIds: dto.licenseIds,
+      refundAmount: dto.refundAmount,
+      reason: dto.reason,
+      isPartial: dto.isPartial,
+      expectedVersion: dto.expectedVersion,
     };
   },
 } as const;

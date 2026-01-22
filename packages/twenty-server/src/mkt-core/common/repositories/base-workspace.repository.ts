@@ -1,10 +1,16 @@
 import { Logger, NotFoundException } from '@nestjs/common';
 
-import { DeepPartial, FindOptionsWhere } from 'typeorm';
+import { DeepPartial, EntityManager, FindOptionsWhere } from 'typeorm';
 
+import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { convertClassNameToObjectMetadataName } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/convert-class-to-object-metadata-name.util';
+import {
+  transactionContextStore,
+  TRANSACTION_CONFIG,
+} from 'src/mkt-core/common/transaction';
 import { REPOSITORY_MESSAGES } from 'src/mkt-core/common/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
@@ -154,7 +160,10 @@ export abstract class BaseWorkspaceRepository<
 
   /**
    * Get repository for specific workspace
-   * Thread-safe: Uses TwentyORMGlobalManager directly
+   *
+   * When running inside a transaction scope (via TransactionScopeService),
+   * this method automatically returns a repository bound to the active transaction.
+   * This ensures all database operations within the transaction use the same connection.
    *
    * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
@@ -168,10 +177,126 @@ export abstract class BaseWorkspaceRepository<
       );
     }
 
+    // Check if ALS-based transaction binding is enabled
+    if (TRANSACTION_CONFIG.ALS_ENABLED) {
+      const txBoundRepo = this.tryGetTransactionBoundRepository(wsId);
+
+      if (txBoundRepo) {
+        return txBoundRepo;
+      }
+    }
+
+    // Default behavior: get repository from TwentyORMGlobalManager
     return this.twentyORMGlobalManager.getRepositoryForWorkspace(
       wsId,
       this.entityClass,
       { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  /**
+   * Try to get a repository bound to the current transaction context.
+   *
+   * @param workspaceId - The workspace ID to validate against transaction context
+   * @returns WorkspaceRepository if in valid transaction context, undefined otherwise
+   */
+  private tryGetTransactionBoundRepository(
+    workspaceId: string,
+  ): WorkspaceRepository<T> | undefined {
+    const store = transactionContextStore.get();
+
+    // Not in transaction context
+    if (!store?.queryRunner?.isTransactionActive) {
+      return undefined;
+    }
+
+    // Workspace mismatch - prevent cross-workspace transaction leaks
+    if (store.workspaceId !== workspaceId) {
+      this.logger.warn({
+        message:
+          'Workspace mismatch in transaction context, using default repository',
+        txId: store.txId,
+        txWorkspaceId: store.workspaceId,
+        requestedWorkspaceId: workspaceId,
+        entity: this.entityClass.name,
+      });
+
+      return undefined;
+    }
+
+    const manager = store.queryRunner.manager;
+
+    // Validate manager is WorkspaceEntityManager
+    if (!this.isWorkspaceEntityManager(manager)) {
+      this.logger.warn({
+        message:
+          'QueryRunner manager is not WorkspaceEntityManager, using default repository',
+        txId: store.txId,
+        workspaceId: store.workspaceId,
+        entity: this.entityClass.name,
+      });
+
+      return undefined;
+    }
+
+    // Convert class name to objectMetadataName
+    // Twenty's WorkspaceDataSource registers entities with objectMetadataName (e.g., "mktOrder")
+    // not with the class reference (e.g., MktOrderWorkspaceEntity)
+    const objectMetadataName = convertClassNameToObjectMetadataName(
+      this.entityClass.name,
+    );
+
+    // Try to get repository from transaction-bound manager using objectMetadataName
+    try {
+      const repository = manager.getRepository(objectMetadataName, {
+        shouldBypassPermissionChecks: true,
+      }) as WorkspaceRepository<T>;
+
+      this.logger.debug({
+        message: 'Using transaction-bound repository',
+        txId: store.txId,
+        workspaceId: store.workspaceId,
+        entity: this.entityClass.name,
+        objectMetadataName,
+        elapsedMs: transactionContextStore.getElapsedMs(),
+      });
+
+      return repository;
+    } catch (error) {
+      // Entity metadata not found - fallback to default repository
+      // This can happen when QueryRunner's manager doesn't have workspace entity metadata
+      this.logger.warn({
+        message:
+          'Failed to get transaction-bound repository, using default repository',
+        txId: store.txId,
+        workspaceId: store.workspaceId,
+        entity: this.entityClass.name,
+        objectMetadataName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return undefined;
+    }
+  }
+
+  /**
+   * Type guard to check if manager is WorkspaceEntityManager
+   *
+   * Checks for WorkspaceEntityManager-specific method `getFeatureFlagMap`
+   * which is not present in base EntityManager.
+   */
+  private isWorkspaceEntityManager(
+    manager: EntityManager,
+  ): manager is WorkspaceEntityManager {
+    return (
+      manager !== null &&
+      typeof manager === 'object' &&
+      'getRepository' in manager &&
+      typeof manager.getRepository === 'function' &&
+      // WorkspaceEntityManager has getFeatureFlagMap method
+      'getFeatureFlagMap' in manager &&
+      typeof (manager as WorkspaceEntityManager).getFeatureFlagMap ===
+        'function'
     );
   }
 

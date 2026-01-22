@@ -7,6 +7,7 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -106,14 +107,21 @@ export class CreateOrderStep extends SagaStep<
         `Created order: ${savedOrder.id} with code: ${orderCode}`,
       );
 
-      // Store in context for subsequent steps
+      // Cast to typed context
+      const typedContext = context as CreateOrderSagaContext;
+
+      // Store in typed context for subsequent steps
       context.orderId = savedOrder.id;
       context.orderCode = orderCode;
-      context.metadata.set('orderStatus', initialStatus);
-      context.metadata.set('trialLicense', isTrialLicense);
+      typedContext.order = savedOrder;
+      typedContext.finalStatus = initialStatus;
+      typedContext.trialLicense = isTrialLicense;
 
-      // Store rollback data
-      context.rollbackData.set(this.name, { orderId: savedOrder.id });
+      // Store typed rollback data
+      typedContext.rollbackOrder = {
+        id: savedOrder.id,
+        status: initialStatus,
+      };
 
       return {
         success: true,
@@ -136,25 +144,25 @@ export class CreateOrderStep extends SagaStep<
     context: SagaContext,
     _queryRunner: QueryRunner,
   ): Promise<void> {
-    const data = context.rollbackData.get(this.name) as {
-      orderId: string;
-    } | null;
+    // Use typed context for rollback data
+    const typedContext = context as CreateOrderSagaContext;
+    const rollbackOrder = typedContext.rollbackOrder;
 
-    if (!data?.orderId) {
+    if (!rollbackOrder?.id) {
       this.logger.warn('No order to compensate');
 
       return;
     }
 
     try {
-      this.logger.warn(`Hard deleting order: ${data.orderId}`);
+      this.logger.warn(`Hard deleting order: ${rollbackOrder.id}`);
 
       // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderRepository.softDeleteOrder(data.orderId);
+      await this.orderRepository.softDeleteOrder(rollbackOrder.id);
 
-      this.logger.log(`Order ${data.orderId} deleted successfully`);
+      this.logger.log(`Order ${rollbackOrder.id} deleted successfully`);
     } catch (error) {
-      this.logger.error(`Failed to delete order ${data.orderId}`, error);
+      this.logger.error(`Failed to delete order ${rollbackOrder.id}`, error);
       throw error;
     }
   }

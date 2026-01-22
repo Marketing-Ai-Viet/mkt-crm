@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { DeepPartial, FindOptionsWhere } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -277,7 +278,30 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   // ============================================
 
   /**
-   * Update order by ID
+   * Override base update method để tự động increment version
+   *
+   * Tất cả calls đến update() sẽ tự động increment version field.
+   * Điều này đảm bảo optimistic locking hoạt động đúng.
+   *
+   * @param id - Order ID cần update
+   * @param data - Partial data cần update
+   */
+  override async update(
+    id: string,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
+  ): Promise<void> {
+    return this.updateOrder(id, data);
+  }
+
+  /**
+   * Update order by ID với tự động increment version
+   *
+   * Sử dụng QueryBuilder để thực hiện atomic update:
+   * - Tự động increment version field
+   * - Tự động cập nhật updatedAt
+   *
+   * @param orderId - Order ID cần update
+   * @param data - Partial data cần update
    */
   async updateOrder(
     orderId: string,
@@ -287,7 +311,18 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
     const repository = await this.getRepository();
 
-    await repository.update(orderId, data as never);
+    // Sử dụng QueryBuilder để atomic update với version increment
+    await repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        ...data,
+        // Tự động increment version cho optimistic locking
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>)
+      .where('id = :id', { id: orderId })
+      .execute();
 
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_SUCCESS(orderId));
   }
@@ -320,7 +355,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   }
 
   /**
-   * Update payment amounts for an order
+   * Update payment amounts for an order với version increment
    * Used when payment status changes (new payment, refund, etc.)
    *
    * @param orderId - Order ID
@@ -337,12 +372,20 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
     const repository = await this.getRepository();
 
-    await repository.update(orderId, {
-      paidAmount: data.paidAmount,
-      remainingAmount: data.remainingAmount,
-      paymentStatus: data.paymentStatus,
-      updatedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    } as never);
+    // Sử dụng QueryBuilder để atomic update với version increment
+    await repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        paidAmount: data.paidAmount,
+        remainingAmount: data.remainingAmount,
+        paymentStatus: data.paymentStatus,
+        // Tự động increment version cho optimistic locking
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>)
+      .where('id = :id', { id: orderId })
+      .execute();
 
     this.logger.debug(`Payment amounts updated for order ${orderId}`);
   }
@@ -434,11 +477,21 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     let averageOrderInterval = 0;
 
     if (orderCount > 1 && result?.firstOrderDate && result?.lastOrderDate) {
-      const firstDateTime = DateTimeUtils.fromISO(result.firstOrderDate);
-      const lastDateTime = DateTimeUtils.fromISO(result.lastOrderDate);
-      const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
+      // createdAt is stored as milliseconds timestamp string
+      const firstMillis = parseInt(result.firstOrderDate, 10);
+      const lastMillis = parseInt(result.lastOrderDate, 10);
 
-      averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+      // Validate parsed values are valid numbers
+      if (!Number.isNaN(firstMillis) && !Number.isNaN(lastMillis)) {
+        const firstDateTime = DateTimeUtils.fromMillis(firstMillis);
+        const lastDateTime = DateTimeUtils.fromMillis(lastMillis);
+        const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
+
+        // Ensure totalDays is valid before division
+        if (!Number.isNaN(totalDays) && totalDays >= 0) {
+          averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+        }
+      }
     }
 
     return {
@@ -455,8 +508,8 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   // ============================================
 
   /**
-   * Conditional update - only updates if conditions are met
-   * Returns affected row count for idempotency check
+   * Conditional update với version increment
+   * Only updates if conditions are met. Returns affected row count for idempotency check.
    *
    * @param where - Conditions that must be met for update
    * @param data - Data to update
@@ -472,7 +525,23 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
     const repository = await this.getRepository();
 
-    const result = await repository.update(where, data as never);
+    // Sử dụng QueryBuilder để atomic update với version increment
+    const qb = repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        ...data,
+        // Tự động increment version cho optimistic locking
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>);
+
+    // Thêm where conditions
+    for (const [key, value] of Object.entries(where)) {
+      qb.andWhere(`${key} = :${key}`, { [key]: value });
+    }
+
+    const result = await qb.execute();
 
     this.logger.debug(`Conditional update affected: ${result.affected ?? 0}`);
 
@@ -521,5 +590,81 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       orderCount: parseInt(s.orderCount, 10) || 0,
       totalValue: parseFloat(s.totalValue) || 0,
     }));
+  }
+
+  // ============================================
+  // PAYMENT DEADLINE OPERATIONS
+  // ============================================
+
+  /**
+   * Find orders that are overdue (PROCESSING status with deadline passed)
+   * Used by PaymentOverdueScanService
+   */
+  async findOverdueOrders(
+    workspaceId: string,
+    options: {
+      status: ORDER_STATUS;
+      paymentDeadlineBefore: Date;
+    },
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    this.logger.debug(
+      `Finding overdue orders with status ${options.status} and deadline before ${options.paymentDeadlineBefore}`,
+    );
+
+    const repository = await this.getRepository();
+
+    const orders = await repository
+      .createQueryBuilder('order')
+      .where('order.status = :status', { status: options.status })
+      .andWhere('order.paymentDeadline < :deadline', {
+        deadline: options.paymentDeadlineBefore,
+      })
+      .andWhere('order.paymentDeadline IS NOT NULL')
+      .orderBy('order.paymentDeadline', 'ASC')
+      .getMany();
+
+    this.logger.debug(`Found ${orders.length} overdue orders`);
+
+    return orders;
+  }
+
+  /**
+   * Get order licenses from order items
+   * Returns license data from MKT Server stored in order items
+   * Used by PaymentDeadlineProcessor
+   */
+  async getOrderLicenses(
+    orderId: string,
+    _workspaceId: string,
+  ): Promise<Array<{ id: string; status: string }> | null> {
+    this.logger.debug(`Getting licenses for order ${orderId}`);
+
+    const order = await this.findByIdWithOptions(orderId, {
+      relations: { orderItems: true },
+    });
+
+    if (!order || !order.orderItems) {
+      return null;
+    }
+
+    // Extract license IDs from order items metadata
+    // Order items store license info from MKT Server
+    const licenses: Array<{ id: string; status: string }> = [];
+
+    for (const item of order.orderItems) {
+      // Check if item has license info in metadata or licenseId field
+      const itemAny = item as unknown as Record<string, unknown>;
+
+      if (itemAny.licenseId) {
+        licenses.push({
+          id: itemAny.licenseId as string,
+          status: (itemAny.licenseStatus as string) ?? 'UNKNOWN',
+        });
+      }
+    }
+
+    this.logger.debug(`Found ${licenses.length} licenses for order ${orderId}`);
+
+    return licenses;
   }
 }

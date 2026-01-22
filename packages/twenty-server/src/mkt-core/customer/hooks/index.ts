@@ -1,7 +1,9 @@
 /**
  * Customer Module Hooks
  *
- * Pre-query hooks for validation and data enrichment
+ * Block hooks to disable auto-generated GraphQL operations.
+ * All customer CRUD operations should go through custom resolvers.
  */
-export * from './mkt-customer-create-one.pre-query.hook';
-export * from './mkt-customer-update-one.pre-query.hook';
+
+// Block hooks - disable all 13 auto-generated operations
+export * from './customer-block.pre-query.hook';

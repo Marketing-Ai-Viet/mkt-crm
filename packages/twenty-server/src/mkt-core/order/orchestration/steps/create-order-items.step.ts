@@ -5,8 +5,8 @@ import { QueryRunner } from 'typeorm';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { MKT_DEFAULT_LANGUAGE } from 'src/mkt-core/mkt-product-integration/constants';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
-import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -82,11 +82,6 @@ export class CreateOrderItemsStep extends SagaStep<
       }
 
       this.logger.log(`Creating order items for order: ${context.orderId}`);
-
-      // Handle TRIAL_TO_PAID: Clone từ trial order
-      if (input.action === ORDER_ACTION.TRIAL_TO_PAID && input.trialOrderId) {
-        return this.cloneOrderItemsFromTrial(context, input, queryRunner);
-      }
 
       // Check if we have external products or combos
       const hasExternalProducts =
@@ -219,6 +214,12 @@ export class CreateOrderItemsStep extends SagaStep<
     const totals =
       this.calculationService.calculateOrderTotals(calculatedItems);
 
+    // Calculate adjusted total (after combo discount)
+    const adjustedTotalAmount = MoneyUtils.subtract(
+      totals.totalAmount,
+      totalComboDiscount,
+    ).toNumber();
+
     // Update order with totals and combo data
     await this.updateOrderTotalsWithCombo(
       context,
@@ -227,8 +228,22 @@ export class CreateOrderItemsStep extends SagaStep<
       comboSnapshots,
     );
 
+    // Cast to typed context for type safety
+    const typedContext = context as CreateOrderSagaContext;
+
+    // Store order items in typed context (P0 fix: required by CalculatePromotionStep)
+    typedContext.orderItems = savedOrderItems;
+    typedContext.totals = {
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      discount: totals.discount,
+      comboDiscount: totalComboDiscount,
+      totalAmount: adjustedTotalAmount,
+    };
+
     // Store rollback data
     context.orderItemIds = savedOrderItems.map((item) => item.id);
+    typedContext.rollbackOrderItems = context.orderItemIds;
     context.rollbackData.set(this.name, {
       orderItemIds: context.orderItemIds,
     });
@@ -241,7 +256,7 @@ export class CreateOrderItemsStep extends SagaStep<
           subtotal: totals.subtotal,
           tax: totals.tax,
           discount: totals.discount,
-          totalAmount: totals.totalAmount,
+          totalAmount: adjustedTotalAmount,
         },
       },
     };
@@ -495,130 +510,6 @@ export class CreateOrderItemsStep extends SagaStep<
     }
 
     return orderItemsData;
-  }
-
-  /**
-   * Clone order items từ trial order (TRIAL_TO_PAID flow)
-   */
-  private async cloneOrderItemsFromTrial(
-    context: SagaContext,
-    input: CreateOrderWithItemsInput,
-    _queryRunner: QueryRunner,
-  ): Promise<SagaStepResult<CreateOrderItemsStepOutput>> {
-    if (!input.trialOrderId) {
-      return {
-        success: false,
-        error: new Error('Trial order ID is required'),
-      };
-    }
-
-    // Get trial order with items
-    const trialOrder = await this.orderRepository.findByIdWithOptions(
-      input.trialOrderId,
-      { relations: { orderItems: true } },
-    );
-
-    if (!trialOrder) {
-      return {
-        success: false,
-        error: new Error(`Trial order ${input.trialOrderId} not found`),
-      };
-    }
-
-    if (!trialOrder.orderItems || trialOrder.orderItems.length === 0) {
-      return {
-        success: false,
-        error: new Error('Trial order has no items to clone'),
-      };
-    }
-
-    // Clone order items
-    const clonedItemsData: Partial<MktOrderItemWorkspaceEntity>[] = [];
-
-    for (const item of trialOrder.orderItems) {
-      const position = await this.recordPositionService.buildRecordPosition({
-        value: 'last',
-        objectMetadata: {
-          isCustom: false,
-          nameSingular: 'mktOrderItem',
-        },
-        workspaceId: context.workspaceId,
-      });
-
-      clonedItemsData.push({
-        mktOrderId: context.orderId,
-        // External product references
-        externalMktProductId: item.externalMktProductId,
-        externalMktProductCode: item.externalMktProductCode,
-        externalMktPackageId: item.externalMktPackageId,
-        externalMktPackageCode: item.externalMktPackageCode,
-        // Snapshots
-        snapshotMktProduct: item.snapshotMktProduct,
-        snapshotMktPackage: item.snapshotMktPackage,
-        // Licenses array (copy from trial order)
-        licenses: item.licenses,
-        // Display fields
-        name: item.name,
-        snapshotProductName: item.snapshotProductName,
-        snapshotPackageName: item.snapshotPackageName,
-        orderLanguage: item.orderLanguage,
-        unitName: item.unitName,
-        // Values
-        unitPrice: item.unitPrice,
-        quantity: item.quantity,
-        totalPrice: item.totalPrice,
-        taxPercentage: item.taxPercentage,
-        taxAmount: item.taxAmount,
-        totalAmountWithTax: item.totalAmountWithTax,
-        // License configuration
-        maxDevices: item.maxDevices ?? 1,
-        position,
-      });
-    }
-
-    // Save order items using repository
-    const savedOrderItems =
-      await this.orderItemRepository.createManyOrderItems(clonedItemsData);
-
-    this.logger.log(
-      `Cloned ${savedOrderItems.length} order items from trial order`,
-    );
-
-    // Use totals from trial order
-    const totals = {
-      subtotal: trialOrder.subtotal ?? 0,
-      tax: trialOrder.tax ?? 0,
-      discount: trialOrder.discount ?? 0,
-      totalAmount: trialOrder.totalAmount ?? 0,
-    };
-
-    // Update new order with totals and trial order reference
-    await this.updateOrderTotals(context, totals);
-
-    // Update order with trial order reference
-    if (!context.orderId) {
-      throw new Error('Order ID is required');
-    }
-    await this.orderRepository.updateOrder(context.orderId, {
-      note: `Converted from trial order: ${input.trialOrderId}`,
-      name: trialOrder.name,
-      mktCustomerId: trialOrder.mktCustomerId,
-    });
-
-    // Store rollback data
-    context.orderItemIds = savedOrderItems.map((item) => item.id);
-    context.metadata.set('trialOrderId', input.trialOrderId);
-    context.rollbackData.set(this.name, {
-      orderItemIds: context.orderItemIds,
-    });
-
-    return {
-      success: true,
-      data: {
-        orderItems: savedOrderItems,
-        totals,
-      },
-    };
   }
 
   /**

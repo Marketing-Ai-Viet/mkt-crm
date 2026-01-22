@@ -1,1 +1,4 @@
-export { MktProductScheduledSyncJob } from './mkt-product-scheduled-sync.job';
+export {
+  MktProductScheduledSyncJob,
+  MktProductScheduledSyncJobData,
+} from './mkt-product-scheduled-sync.job';

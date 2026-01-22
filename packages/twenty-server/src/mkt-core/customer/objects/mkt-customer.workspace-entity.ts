@@ -41,6 +41,12 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+/**
+ * Entity name for mktCustomer - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
+export const MKT_CUSTOMER_ENTITY_NAME = 'mktCustomer';
+
 // Re-export for backward compatibility
 export { SEARCH_FIELDS_FOR_MKT_CUSTOMER } from 'src/mkt-core/customer/constants/linked-account.constants';
 export {

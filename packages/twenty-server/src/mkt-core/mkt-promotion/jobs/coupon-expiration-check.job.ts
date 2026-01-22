@@ -42,32 +42,43 @@ export class CouponExpirationCheckJob {
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
     private readonly eventEmitter: EventEmitter2,
-  ) {
-    this.logger.log('CouponExpirationCheckJob initialized');
-  }
+  ) {}
 
   @Process(CouponExpirationCheckJob.name)
   async handle(data: CouponExpirationCheckJobData): Promise<void> {
     const { workspaceId } = data;
+    const startTime = Date.now();
 
-    this.logger.log(
-      `Starting coupon expiration check for workspace ${workspaceId}`,
-    );
+    this.logger.log('Starting coupon expiration check', { workspaceId });
 
     try {
       const expiredCount =
         await this.checkAndExpireCouponsForWorkspace(workspaceId);
 
-      this.logger.log(
-        `Coupon expiration check completed: ${expiredCount} coupons expired for workspace ${workspaceId}`,
-      );
+      const durationMs = Date.now() - startTime;
+
+      this.logger.log('Coupon expiration check completed', {
+        workspaceId,
+        expiredCount,
+        durationMs,
+      });
     } catch (error) {
-      this.logger.error(
-        `Coupon expiration check failed for workspace ${workspaceId}`,
-        error,
-      );
-      throw error;
+      this.handleError(workspaceId, error);
     }
+  }
+
+  /**
+   * Handle và log error với structured format
+   */
+  private handleError(workspaceId: string, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    this.logger.error('Coupon expiration check failed', {
+      workspaceId,
+      error: errorMessage,
+    });
+
+    throw error;
   }
 
   /**
@@ -99,16 +110,15 @@ export class CouponExpirationCheckJob {
       .getMany();
 
     if (expiredCoupons.length === 0) {
-      this.logger.debug(
-        `No expired coupons found for workspace ${workspaceId}`,
-      );
+      this.logger.debug('No expired coupons found', { workspaceId });
 
       return 0;
     }
 
-    this.logger.log(
-      `Found ${expiredCoupons.length} expired coupons for workspace ${workspaceId}`,
-    );
+    this.logger.log('Found expired coupons', {
+      workspaceId,
+      count: expiredCoupons.length,
+    });
 
     // Chia thành batches để xử lý
     const couponBatches = chunk(expiredCoupons, BATCH_SIZE);
@@ -119,14 +129,19 @@ export class CouponExpirationCheckJob {
         await this.processBatch(batch, couponRepository, workspaceId);
         totalProcessed += batch.length;
 
-        this.logger.debug(
-          `Processed batch: ${totalProcessed}/${expiredCoupons.length} coupons`,
-        );
+        this.logger.debug('Processed batch', {
+          workspaceId,
+          totalProcessed,
+          totalCoupons: expiredCoupons.length,
+        });
       } catch (error) {
-        this.logger.error(
-          `Failed to process batch for workspace ${workspaceId}`,
-          error,
-        );
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        this.logger.error('Failed to process batch', {
+          workspaceId,
+          error: errorMessage,
+        });
       }
     }
 
@@ -160,14 +175,19 @@ export class CouponExpirationCheckJob {
 
         this.eventEmitter.emit('coupon.expired', event);
 
-        this.logger.debug(
-          `Expired coupon ${coupon.id} (${coupon.code}) - Valid to: ${coupon.validTo}`,
-        );
+        this.logger.debug('Expired coupon', {
+          couponId: coupon.id,
+          couponCode: coupon.code,
+          validTo: coupon.validTo,
+        });
       } catch (error) {
-        this.logger.error(
-          `Failed to emit event for coupon ${coupon.id}`,
-          error,
-        );
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        this.logger.error('Failed to emit event for coupon', {
+          couponId: coupon.id,
+          error: errorMessage,
+        });
       }
     }
   }

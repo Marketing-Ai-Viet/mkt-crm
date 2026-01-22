@@ -1,25 +1,30 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
-import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
-import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
-import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
-import { CustomerModule } from 'src/mkt-core/customer/customer.module';
+import { MktProductSyncCronCommand } from 'src/mkt-core/mkt-product-integration/commands';
+import { RbacCronCommand } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/commands';
 
+/**
+ * MktCommandModule
+ *
+ * Module chứa các CLI commands cho mkt-core.
+ * Commands này dùng để đăng ký cron jobs vào message queue.
+ *
+ * Commands:
+ * - MktProductSyncCronCommand: Đăng ký cron job sync products từ MKT Server
+ * - RbacCronCommand: Đăng ký cron job cho RBAC cache warming
+ *
+ * NOTE: Jobs được discover bởi worker thông qua MktJobsModule, không phải module này.
+ * Module này chỉ chứa CLI commands để đăng ký cron patterns vào queue.
+ */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Workspace], 'core'),
-    MessageQueueModule,
-    CustomerModule,
-    ObjectMetadataModule,
-    TwentyORMModule,
-    WorkspaceCacheStorageModule,
-    WorkspaceDataSourceModule,
+    MessageQueueModule, // For addCron() in commands
   ],
-  providers: [],
-  exports: [],
+  providers: [
+    // CLI Commands for cron registration
+    MktProductSyncCronCommand,
+    RbacCronCommand,
+  ],
 })
 export class MktCommandModule {}

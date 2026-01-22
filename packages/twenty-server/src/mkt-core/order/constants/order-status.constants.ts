@@ -21,7 +21,6 @@ export type ORDER_METADATA = {
   }>;
   customer?: { mktCustomerId: string; name?: string };
   orderAction?: ORDER_ACTION;
-  trialOrderId?: string;
   note?: string;
   oldOrderId?: string;
   oldLicenseId?: string;
@@ -37,26 +36,35 @@ export type ORDER_METADATA = {
 /**
  * Order Status - Trạng thái đơn hàng
  *
- * Flow chính:
- * - NEW_ORDER: DRAFT → PENDING_PAYMENT → CONFIRMED → COMPLETED
+ * Flow mới (New Payment Flow):
+ * - NEW_ORDER: DRAFT → CONFIRMED → PROCESSING → COMPLETED | LOCKED
  * - TRIAL: TRIAL → (TRIAL_EXPIRED | PENDING_PAYMENT)
  *
- * License creation rules:
+ * License creation rules (New Flow):
  * - TRIAL: License được tạo ngay khi tạo đơn
- * - Khác: License được tạo sau khi ACCOUNTING_CONFIRMED
+ * - NEW_ORDER: License được tạo ngay khi CONFIRMED (status: PENDING_PAYMENT)
+ *   → Nếu thanh toán OK: License → ACTIVE, Order → COMPLETED
+ *   → Nếu quá hạn: License → LOCKED, Order → LOCKED
+ *   → Nếu thanh toán muộn: License → ACTIVE, Order → COMPLETED
  */
 export enum ORDER_STATUS {
   /** Nháp - Đơn hàng đang được soạn, chưa gửi đi */
   DRAFT = 'DRAFT',
 
-  /** Chờ thanh toán - Đơn hàng đã gửi, đang chờ khách thanh toán */
+  /** Chờ thanh toán - Đơn hàng đã gửi, đang chờ khách thanh toán (legacy) */
   PENDING_PAYMENT = 'PENDING_PAYMENT',
 
-  /** Đã xác nhận - Kế toán đã xác nhận thanh toán, license đã được tạo */
+  /** Đã xác nhận - Đơn hàng đã xác nhận, sẵn sàng tạo license */
   CONFIRMED = 'CONFIRMED',
 
-  /** Hoàn thành - Đơn hàng hoàn tất, license đã giao cho khách */
+  /** Đang xử lý - License đã cấp, đang chờ thanh toán (NEW) */
+  PROCESSING = 'PROCESSING',
+
+  /** Hoàn thành - Đơn hàng hoàn tất, license đã active */
   COMPLETED = 'COMPLETED',
+
+  /** Bị khóa do quá hạn thanh toán - License bị lock trên MKT Server (NEW) */
+  LOCKED = 'LOCKED',
 
   /** Dùng thử - Đơn trial, license trial đã được tạo ngay */
   TRIAL = 'TRIAL',
@@ -67,7 +75,7 @@ export enum ORDER_STATUS {
   /** Đã hủy - Đơn hàng bị hủy bởi khách hoặc sales */
   CANCELED = 'CANCELED',
 
-  /** Quá hạn - Đơn hàng quá thời hạn thanh toán */
+  /** Quá hạn - Đơn hàng quá thời hạn thanh toán (legacy - use LOCKED) */
   OVERDUE = 'OVERDUE',
 
   /** Bị khóa - Đơn hàng bị khóa do vi phạm chính sách */
@@ -102,52 +110,64 @@ export const ORDER_STATUS_OPTIONS = {
       position: 2,
     },
     {
+      value: ORDER_STATUS.PROCESSING,
+      label: 'Đang xử lý',
+      color: 'sky' as TagColor,
+      position: 3,
+    },
+    {
       value: ORDER_STATUS.COMPLETED,
       label: 'Hoàn thành',
       color: 'green' as TagColor,
-      position: 3,
+      position: 4,
+    },
+    {
+      value: ORDER_STATUS.LOCKED,
+      label: 'Khóa do quá hạn',
+      color: 'red' as TagColor,
+      position: 5,
     },
     {
       value: ORDER_STATUS.TRIAL,
       label: 'Dùng thử',
       color: 'yellow' as TagColor,
-      position: 4,
+      position: 6,
     },
     {
       value: ORDER_STATUS.TRIAL_EXPIRED,
       label: 'Trial hết hạn',
       color: 'red' as TagColor,
-      position: 5,
+      position: 7,
     },
     {
       value: ORDER_STATUS.CANCELED,
       label: 'Đã hủy',
       color: 'gray' as TagColor,
-      position: 6,
+      position: 8,
     },
     {
       value: ORDER_STATUS.OVERDUE,
       label: 'Quá hạn',
       color: 'red' as TagColor,
-      position: 7,
+      position: 9,
     },
     {
       value: ORDER_STATUS.BLOCKED,
       label: 'Bị khóa',
       color: 'purple' as TagColor,
-      position: 8,
+      position: 10,
     },
     {
       value: ORDER_STATUS.REFUND,
       label: 'Hoàn tiền',
       color: 'cyan' as TagColor,
-      position: 9,
+      position: 11,
     },
     {
       value: ORDER_STATUS.REFUND_PARTIAL,
       label: 'Hoàn tiền một phần',
       color: 'cyan' as TagColor,
-      position: 10,
+      position: 12,
     },
   ],
   labels: {
@@ -155,7 +175,9 @@ export const ORDER_STATUS_OPTIONS = {
       DRAFT: 'Draft',
       PENDING_PAYMENT: 'Pending Payment',
       CONFIRMED: 'Confirmed',
+      PROCESSING: 'Processing',
       COMPLETED: 'Completed',
+      LOCKED: 'Locked (Overdue)',
       TRIAL: 'Trial',
       TRIAL_EXPIRED: 'Trial Expired',
       CANCELED: 'Canceled',
@@ -168,7 +190,9 @@ export const ORDER_STATUS_OPTIONS = {
       DRAFT: 'Nháp',
       PENDING_PAYMENT: 'Chờ thanh toán',
       CONFIRMED: 'Đã xác nhận',
+      PROCESSING: 'Đang xử lý',
       COMPLETED: 'Hoàn thành',
+      LOCKED: 'Khóa do quá hạn',
       TRIAL: 'Dùng thử',
       TRIAL_EXPIRED: 'Trial hết hạn',
       CANCELED: 'Đã hủy',
@@ -190,6 +214,7 @@ export const ORDER_STATUS_OPTIONS = {
  * Phân loại:
  * - Create actions: NEW_ORDER, TRIAL, LICENSE_RENEWING
  * - Status change actions: ACCOUNTING_CONFIRMED, COMPLETE, CANCEL, BLOCK
+ * - New payment flow actions: CONFIRM_ORDER, PAYMENT_CONFIRMED, LOCK_OVERDUE, UNLOCK_AFTER_PAYMENT
  * - Refund actions: REFUND, REFUND_PARTIAL
  * - Special actions: TRIAL_TO_PAID, CHANGE_VARIANT
  */
@@ -206,8 +231,20 @@ export enum ORDER_ACTION {
   /** Đổi gói - Thay đổi variant/package của license */
   CHANGE_VARIANT = 'CHANGE_VARIANT',
 
-  /** Kế toán xác nhận thanh toán - Trigger tạo license */
+  /** Kế toán xác nhận thanh toán - Trigger tạo license (legacy) */
   ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
+
+  /** Xác nhận đơn hàng - Tạo license ngay với status PENDING_PAYMENT (NEW) */
+  CONFIRM_ORDER = 'CONFIRM_ORDER',
+
+  /** Thanh toán được xác nhận - License → ACTIVE, Order → COMPLETED (NEW) */
+  PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED',
+
+  /** Khóa do quá hạn thanh toán - License → LOCKED trên MKT Server (NEW) */
+  LOCK_OVERDUE = 'LOCK_OVERDUE',
+
+  /** Mở khóa sau thanh toán muộn - License → ACTIVE, Order → COMPLETED (NEW) */
+  UNLOCK_AFTER_PAYMENT = 'UNLOCK_AFTER_PAYMENT',
 
   /** Hoàn thành đơn hàng */
   COMPLETE = 'COMPLETE',
@@ -351,21 +388,24 @@ export const IS_CREATE_ORDER_ACTION = (
   CREATE_ORDER_ACTIONS.includes(action as CreateOrderAction);
 
 /**
- * Actions cho phép khi XÁC NHẬN THANH TOÁN đơn hàng (confirmOrder mutation)
+ * Actions cho phép khi XÁC NHẬN đơn hàng (confirmOrder mutation)
  *
- * Chỉ ACCOUNTING_CONFIRMED được hỗ trợ.
+ * - ACCOUNTING_CONFIRMED: Legacy flow - tạo license sau khi thanh toán
+ * - CONFIRM_ORDER: New payment flow - tạo license ngay với PENDING_PAYMENT status
+ *
  * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation.
  */
 export type ConfirmOrderAction = Extract<
   ORDER_ACTION,
-  ORDER_ACTION.ACCOUNTING_CONFIRMED
+  ORDER_ACTION.ACCOUNTING_CONFIRMED | ORDER_ACTION.CONFIRM_ORDER
 >;
 
 /**
- * Array các actions cho phép khi confirm thanh toán
+ * Array các actions cho phép khi confirm
  */
 export const CONFIRM_ORDER_ACTIONS: ConfirmOrderAction[] = [
   ORDER_ACTION.ACCOUNTING_CONFIRMED,
+  ORDER_ACTION.CONFIRM_ORDER,
 ];
 
 /**

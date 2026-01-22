@@ -19,7 +19,10 @@ import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integratio
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktComboModule } from 'src/mkt-core/mkt-combo/mkt-combo.module';
 import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
-import { MktOrderOverdueJob } from 'src/mkt-core/order/jobs';
+import {
+  PaymentDeadlineProcessor,
+  PaymentOverdueScanJob,
+} from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
 import {
@@ -39,10 +42,11 @@ import {
   OrderPaymentCalculationService,
   OrderConfirmUtilsService,
   OrderMetadataService,
-  MktOrderOverdueService,
-  OrderOverdueSchedulerService,
-  OrderOverdueWorkerService,
-  OrderOverdueMigrationService,
+  // New Payment Flow Services
+  PaymentDeadlineService,
+  OrderConfirmService,
+  OrderLockService,
+  PaymentOverdueScanService,
   // Domain Services
   OrderCrudService,
   OrderItemService,
@@ -54,7 +58,6 @@ import {
   OrderMutationResolver,
   OrderQueryResolver,
   OrderItemMutationResolver,
-  OrderOverdueQueryResolver,
 } from './resolvers';
 import {
   MktOrderCustomEventListener,
@@ -85,6 +88,9 @@ import {
   UpdateStatusStep,
   CreateLicensesOnConfirmStep,
   CompleteOrderAfterLicenseStep,
+  // New Payment Flow Steps
+  CalculatePaymentDeadlineStep,
+  SchedulePaymentRemindersStep,
 } from './orchestration/steps/confirm-order';
 import {
   OrderProductIntegrationService,
@@ -137,11 +143,11 @@ import {
     OrderPaymentCalculationService,
     OrderConfirmUtilsService,
     OrderMetadataService,
-    MktOrderOverdueService,
-    // Delayed Job Services (order overdue)
-    OrderOverdueSchedulerService,
-    OrderOverdueWorkerService,
-    OrderOverdueMigrationService, // Auto-run on startup
+    // New Payment Flow Services
+    PaymentDeadlineService,
+    OrderConfirmService,
+    OrderLockService,
+    PaymentOverdueScanService,
 
     // Domain Services (domain operations)
     OrderCrudService,
@@ -172,6 +178,9 @@ import {
     UpdateStatusStep,
     CreateLicensesOnConfirmStep,
     CompleteOrderAfterLicenseStep,
+    // New Payment Flow Steps
+    CalculatePaymentDeadlineStep,
+    SchedulePaymentRemindersStep,
 
     // Integration Services (bridge to other MKT modules)
     OrderProductIntegrationService,
@@ -179,14 +188,14 @@ import {
     OrderPromotionIntegrationService,
     OrderComboIntegrationService,
 
-    // Jobs
-    MktOrderOverdueJob,
+    // Jobs - Payment Flow
+    PaymentDeadlineProcessor,
+    PaymentOverdueScanJob,
 
     // GraphQL Resolvers
     OrderMutationResolver,
     OrderQueryResolver,
     OrderItemMutationResolver,
-    OrderOverdueQueryResolver, // Observability - queue stats
   ],
   exports: [
     // Repositories
@@ -203,13 +212,15 @@ import {
     OrderPaymentCalculationService,
     OrderConfirmUtilsService,
     OrderMetadataService,
+    // New Payment Flow Services
+    PaymentDeadlineService,
+    OrderConfirmService,
+    OrderLockService,
     // Integration Services
     OrderProductIntegrationService,
     OrderLicenseIntegrationService,
     OrderPromotionIntegrationService,
     OrderComboIntegrationService,
-    // Delayed Job Services
-    OrderOverdueSchedulerService,
     // Sagas
     ConfirmOrderSaga,
     UpdateOrderSaga,

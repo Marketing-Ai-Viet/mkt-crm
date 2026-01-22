@@ -11,7 +11,6 @@ import {
 } from 'src/mkt-core/order/dto';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 /**
  * OrderItemMutationResolver - GraphQL resolver for order item mutations
@@ -21,7 +20,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
  * - recalculateOrderItems: Recalculate all order items for an order
  */
 @Resolver()
-@UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
+@UseGuards(WorkspaceAuthGuard)
 export class OrderItemMutationResolver {
   constructor(
     private readonly orderOrchestrationService: OrderOrchestrationService,

@@ -7,6 +7,10 @@ export const MKT_LICENSE_STATUS = {
   PENDING: 'pending',
   EXPIRED: 'expired',
   REVOKED: 'revoked',
+  /** License đã cấp, đang chờ thanh toán (usable - New Payment Flow) */
+  PENDING_PAYMENT: 'pending_payment',
+  /** License bị khóa do quá hạn thanh toán (New Payment Flow) */
+  LOCKED: 'locked',
 } as const;
 
 export type MktLicenseStatusType =
@@ -16,6 +20,18 @@ export const isMktLicenseStatus = (
   value: string,
 ): value is MktLicenseStatusType =>
   Object.values(MKT_LICENSE_STATUS).includes(value as MktLicenseStatusType);
+
+/**
+ * License statuses that allow usage (check on MKT Server)
+ * - PENDING_PAYMENT: Usable but waiting for payment
+ * - ACTIVE: Fully active license
+ * - PENDING: Waiting activation (trial)
+ */
+export const USABLE_LICENSE_STATUSES = [
+  MKT_LICENSE_STATUS.PENDING_PAYMENT,
+  MKT_LICENSE_STATUS.ACTIVE,
+  MKT_LICENSE_STATUS.PENDING,
+] as const;
 
 // ============================================
 // LICENSE TYPE

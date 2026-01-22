@@ -5,6 +5,7 @@ import { QueryRunner } from 'typeorm';
 import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
 import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
   SagaStep,
@@ -101,7 +102,11 @@ export class CreatePaymentStep extends SagaStep<
         };
       }
 
-      const totalAmount = (context.metadata.get('totalAmount') as number) ?? 0;
+      // Get total amount from typed context
+      // Priority: finalAmount (after promotion) > totals.totalAmount
+      const typedContext = context as CreateOrderSagaContext;
+      const totalAmount =
+        typedContext.finalAmount ?? typedContext.totals?.totalAmount ?? 0;
       const currency = (input.currency ??
         DEFAULT_PAYMENT_CURRENCY) as PaymentCurrency;
 
@@ -133,21 +138,21 @@ export class CreatePaymentStep extends SagaStep<
     context: SagaContext,
     _queryRunner: QueryRunner,
   ): Promise<void> {
-    const data = context.rollbackData.get(this.name) as {
-      paymentIds: string[];
-    } | null;
+    // Use typed context for rollback data
+    const typedContext = context as CreateOrderSagaContext;
+    const paymentIds = typedContext.rollbackPayments;
 
-    if (!data?.paymentIds?.length) {
+    if (!paymentIds?.length) {
       this.logger.warn('No payments to compensate');
 
       return;
     }
 
     try {
-      this.logger.warn(`Hard deleting ${data.paymentIds.length} payments`);
+      this.logger.warn(`Hard deleting ${paymentIds.length} payments`);
 
       // Uses MktPaymentRepository for thread-safe access
-      await this.paymentRepository.softDeleteManyPayments(data.paymentIds);
+      await this.paymentRepository.softDeleteManyPayments(paymentIds);
 
       this.logger.log('Payments deleted successfully');
     } catch (error) {
@@ -339,10 +344,15 @@ export class CreatePaymentStep extends SagaStep<
     payments: MktPaymentWorkspaceEntity[],
     primaryQrCodeUrl?: string,
   ): void {
+    // Cast to typed context
+    const typedContext = context as CreateOrderSagaContext;
+
+    // Store in typed context
+    typedContext.paymentIds = payments.map((p) => p.id);
+    typedContext.rollbackPayments = typedContext.paymentIds;
+
+    // paymentQrCode is inherited from SagaContext
+    context.paymentQrCode = primaryQrCodeUrl;
     context.paymentId = payments[0]?.id;
-    context.metadata.set('paymentQrCode', primaryQrCodeUrl);
-    context.rollbackData.set(this.name, {
-      paymentIds: payments.map((p) => p.id),
-    });
   }
 }

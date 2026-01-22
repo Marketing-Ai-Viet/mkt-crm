@@ -24,10 +24,10 @@ import { DelayedJobService } from './services';
  * constructor(private readonly delayedJobService: DelayedJobService) {}
  *
  * await this.delayedJobService.scheduleJob(
- *   MKT_DELAYED_JOB_QUEUES.ORDER_OVERDUE,
- *   'ProcessOrderOverdue',
- *   { orderId },
- *   { jobId: `order-overdue:${orderId}`, delayMs: 86400000 }
+ *   MKT_DELAYED_JOB_QUEUES.PAYMENT_DEADLINE,
+ *   'PaymentDeadlineCheck',
+ *   { orderId, workspaceId },
+ *   { jobId: `payment-deadline:${orderId}`, delayMs: 86400000 }
  * );
  */
 @Module({

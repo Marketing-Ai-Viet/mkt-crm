@@ -101,4 +101,6 @@ export const MKT_OBJECT_IDS = {
   mktDepartmentAncestry: '5e6f7a8b-c9d0-1234-ef01-234567890124',
   // department sub-manager (join table for multiple sub-managers)
   mktDepartmentSubManager: '6f7a8b9c-d0e1-2345-f012-345678901235',
+  // payment deadline configuration
+  mktPaymentDeadlineConfig: '7a8b9c0d-e1f2-3456-0123-456789012346',
 };

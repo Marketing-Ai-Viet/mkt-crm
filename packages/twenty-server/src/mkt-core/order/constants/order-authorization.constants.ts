@@ -86,6 +86,48 @@ export const ORDER_AUTHORIZATION = {
     allowExecutives: true,
     deniedMessage: 'Only accounting staff can process order refunds',
   } satisfies DepartmentAuthOptions,
+
+  // ============================================
+  // NEW PAYMENT FLOW AUTHORIZATIONS
+  // ============================================
+
+  /**
+   * Confirm order with license creation: SALES + Executives
+   * New flow: DRAFT → CONFIRMED → PROCESSING (tạo license ngay)
+   */
+  CONFIRM_ORDER_WITH_LICENSE: {
+    allowedDepartments: combineWithChildTeams([DEPARTMENT.SALES]),
+    allowManagers: false,
+    allowExecutives: true,
+    deniedMessage: 'Only sales staff can confirm orders with license creation',
+  } satisfies DepartmentAuthOptions,
+
+  /**
+   * Confirm payment: SALES (bank transfer) + ACCOUNTING (cash/other) + Executives
+   * - SALES can confirm SEPAY/bank transfers
+   * - ACCOUNTING can confirm cash payments
+   */
+  CONFIRM_PAYMENT: {
+    allowedDepartments: combineWithChildTeams([
+      DEPARTMENT.SALES,
+      DEPARTMENT.ACCOUNTING,
+    ]),
+    allowManagers: false,
+    allowExecutives: true,
+    deniedMessage: 'Only sales or accounting staff can confirm payments',
+  } satisfies DepartmentAuthOptions,
+
+  /**
+   * Unlock order after late payment: ACCOUNTING only + Executives
+   * - Sensitive operation: restores locked licenses
+   * - Only ACCOUNTING department allowed
+   */
+  UNLOCK_ORDER: {
+    allowedDepartments: withChildTeams(DEPARTMENT.ACCOUNTING),
+    allowManagers: false,
+    allowExecutives: true,
+    deniedMessage: 'Only accounting staff can unlock orders after late payment',
+  } satisfies DepartmentAuthOptions,
 } as const;
 
 /**

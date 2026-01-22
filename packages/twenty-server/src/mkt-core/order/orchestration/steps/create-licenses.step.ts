@@ -10,6 +10,7 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { ORDER_TRIAL_CONFIG } from 'src/mkt-core/order/constants/order-service.constants';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
+import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   MktOrderItemRepository,
   MktOrderRepository,
@@ -185,9 +186,10 @@ export class CreateLicensesStep extends SagaStep<
       );
 
       // Get trial duration
+      // TRIAL_TO_PAID uses 1 day default, other actions use 30 days default
       const trialDays =
         input.trialDurationDays ??
-        ORDER_TRIAL_CONFIG.DEFAULT_TRIAL_DURATION_DAYS;
+        ORDER_TRIAL_CONFIG.TRIAL_TO_PAID_DEFAULT_DAYS;
 
       // Create trial licenses for each item
       const createdLicenses: CreatedLicenseInfo[] = [];
@@ -207,10 +209,14 @@ export class CreateLicensesStep extends SagaStep<
         }
       }
 
-      // Store rollback data
-      context.rollbackData.set(this.name, { licenseIds });
+      // Cast to typed context
+      const typedContext = context as CreateOrderSagaContext;
 
-      // Update context for next steps
+      // Store in typed context for subsequent steps
+      typedContext.licenses = createdLicenses;
+      typedContext.rollbackLicenses = licenseIds;
+
+      // Also store in base context for backward compatibility
       context.licenseIds = licenseIds;
 
       this.logger.log(
@@ -238,19 +244,19 @@ export class CreateLicensesStep extends SagaStep<
     context: SagaContext,
     _queryRunner: QueryRunner,
   ): Promise<void> {
-    const data = context.rollbackData.get(this.name) as {
-      licenseIds: string[];
-    } | null;
+    // Use typed context for rollback data
+    const typedContext = context as CreateOrderSagaContext;
+    const licenseIds = typedContext.rollbackLicenses;
 
-    if (!data?.licenseIds?.length) {
+    if (!licenseIds?.length) {
       this.logger.debug('No licenses to compensate');
 
       return;
     }
 
-    this.logger.warn(`Revoking ${data.licenseIds.length} trial licenses`);
+    this.logger.warn(`Revoking ${licenseIds.length} trial licenses`);
 
-    for (const licenseId of data.licenseIds) {
+    for (const licenseId of licenseIds) {
       try {
         await this.mktLicenseProxy.revoke(licenseId);
         this.logger.debug(`Revoked license ${licenseId}`);

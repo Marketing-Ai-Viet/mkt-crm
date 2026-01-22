@@ -25,33 +25,47 @@ export class SInvoiceIntegrationJob {
 
   @Process(SInvoiceIntegrationJob.name)
   async handle(data: SInvoiceIntegrationJobData): Promise<void> {
-    this.logger.log(
-      `[S-INVOICE JOB] Starting S-Invoice integration job for order: ${data.orderId}, workspace: ${data.workspaceId}`,
-    );
-    this.logger.log(
-      `[S-INVOICE JOB] Job data received: ${JSON.stringify(data)}`,
-    );
+    const { orderId, workspaceId } = data;
+    const startTime = Date.now();
+
+    this.logger.log('Starting S-Invoice integration job', {
+      orderId,
+      workspaceId,
+    });
 
     try {
-      this.logger.log(
-        `[S-INVOICE JOB] Calling syncSInvoice service for order: ${data.orderId}`,
-      );
+      await this.sInvoiceIntegrationService.syncSInvoice(orderId);
 
-      await this.sInvoiceIntegrationService.syncSInvoice(data.orderId);
+      const durationMs = Date.now() - startTime;
 
-      this.logger.log(
-        `[S-INVOICE JOB] Successfully completed S-Invoice integration for order: ${data.orderId}`,
-      );
+      this.logger.log('S-Invoice integration completed', {
+        orderId,
+        workspaceId,
+        durationMs,
+      });
     } catch (error) {
-      this.logger.error(
-        `[S-INVOICE JOB] Failed to process S-Invoice integration for order: ${data.orderId}`,
-        error,
-      );
-      this.logger.error(
-        `[S-INVOICE JOB] Error details: ${error.message}`,
-        error.stack,
-      );
-      throw error;
+      this.handleError(orderId, workspaceId, error);
     }
+  }
+
+  /**
+   * Handle và log error với structured format
+   */
+  private handleError(
+    orderId: string,
+    workspaceId: string,
+    error: unknown,
+  ): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    this.logger.error('Failed to process S-Invoice integration', {
+      orderId,
+      workspaceId,
+      error: errorMessage,
+      stack: errorStack,
+    });
+
+    throw error;
   }
 }

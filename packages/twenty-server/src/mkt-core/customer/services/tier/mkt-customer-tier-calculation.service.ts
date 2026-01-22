@@ -39,7 +39,7 @@ export class MktCustomerTierCalculationService {
     } = {},
   ): Promise<CustomerTierResult> {
     const cusRepo = await this.customerRepository.getRepository();
-    const orderRepo = await this.orderRepository.getRepository('system');
+    const orderRepo = await this.orderRepository.getRepository();
 
     const customer = await cusRepo.findOne({
       where: { id: customerId },
@@ -122,7 +122,7 @@ export class MktCustomerTierCalculationService {
     }
 
     const cusRepo = await this.customerRepository.getRepository();
-    const orderRepo = await this.orderRepository.getRepository('system');
+    const orderRepo = await this.orderRepository.getRepository();
 
     const results: BulkCustomerTierResult = new Map();
     const batches = chunk(customerIds, TIER_BULK_PROCESSING_CONFIG.BATCH_SIZE);
