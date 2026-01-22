@@ -10,6 +10,8 @@ import {
   MktDepartmentAncestryRepository,
 } from 'src/mkt-core/mkt-department/repositories';
 import { DepartmentTreeResolver } from 'src/mkt-core/mkt-department/resolvers/department-tree.resolver';
+import { DepartmentAncestryService } from 'src/mkt-core/mkt-department/services/department-ancestry.service';
+import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/department-tree.service';
 import { DepartmentService } from 'src/mkt-core/mkt-department/services/department.service';
 import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/services/mkt-department-hierarchy.service';
 
@@ -21,9 +23,16 @@ import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/servi
     MktDepartmentHierarchyRepository,
     MktDepartmentSubManagerRepository,
     MktDepartmentAncestryRepository,
-    // Services
+    // Services - Core
     DepartmentService,
+
+    // Services - Tree & Ancestry
+    DepartmentTreeService,
+    DepartmentAncestryService,
+
+    // Services - Hierarchy
     MktDepartmentHierarchyService,
+
     // Resolvers
     DepartmentTreeResolver,
     // Hooks
@@ -36,8 +45,15 @@ import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/servi
     MktDepartmentHierarchyRepository,
     MktDepartmentSubManagerRepository,
     MktDepartmentAncestryRepository,
-    // Services
+
+    // Services - Core
     DepartmentService,
+
+    // Services - Tree & Ancestry
+    DepartmentTreeService,
+    DepartmentAncestryService,
+
+    // Services - Hierarchy
     MktDepartmentHierarchyService,
   ],
 })
