@@ -15,6 +15,9 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+// Entity name constant for GraphQL operations
+export const MKT_DEPARTMENT_SUB_MANAGER_ENTITY_NAME = 'mktDepartmentSubManager';
+
 /**
  * Entity representing sub-manager assignments for departments.
  * This is a join table that allows a department to have multiple sub-managers.

@@ -16,6 +16,9 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 
 import { MktDepartmentWorkspaceEntity } from './mkt-department.workspace-entity';
 
+// Entity name constant for GraphQL operations
+export const MKT_DEPARTMENT_ANCESTRY_ENTITY_NAME = 'mktDepartmentAncestry';
+
 /**
  * MktDepartmentAncestryWorkspaceEntity
  *

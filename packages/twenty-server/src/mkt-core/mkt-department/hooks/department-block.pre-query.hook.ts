@@ -18,18 +18,12 @@ import {
   createBlockHooks,
   WRITE_OPERATIONS,
 } from 'src/mkt-core/common/hooks';
-
-// ============================================
-// ENTITY NAME CONSTANTS
-// ============================================
-
-/**
- * Entity names matching namePlural in workspace entities (singular form)
- */
-export const MKT_DEPARTMENT_ENTITY_NAME = 'mktDepartment';
-export const MKT_DEPARTMENT_HIERARCHY_ENTITY_NAME = 'mktDepartmentHierarchy';
-export const MKT_DEPARTMENT_ANCESTRY_ENTITY_NAME = 'mktDepartmentAncestry';
-export const MKT_DEPARTMENT_SUB_MANAGER_ENTITY_NAME = 'mktDepartmentSubManager';
+import {
+  MKT_DEPARTMENT_ENTITY_NAME,
+  MKT_DEPARTMENT_HIERARCHY_ENTITY_NAME,
+  MKT_DEPARTMENT_ANCESTRY_ENTITY_NAME,
+  MKT_DEPARTMENT_SUB_MANAGER_ENTITY_NAME,
+} from 'src/mkt-core/mkt-department/objects';
 
 // ============================================
 // BLOCK HOOK CONFIGURATIONS

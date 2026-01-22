@@ -17,6 +17,9 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPE_OPTIONS } from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 
+// Entity name constant for GraphQL operations
+export const MKT_DEPARTMENT_HIERARCHY_ENTITY_NAME = 'mktDepartmentHierarchy';
+
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartmentHierarchy,
   namePlural: 'mktDepartmentHierarchies',
