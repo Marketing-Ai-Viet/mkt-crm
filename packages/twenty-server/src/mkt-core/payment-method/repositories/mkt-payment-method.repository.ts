@@ -9,7 +9,7 @@ import {
   MKT_PAYMENT_METHOD_LOG_CONTEXT,
   MKT_PAYMENT_METHOD_LOG_MESSAGES,
 } from 'src/mkt-core/payment-method/messages';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import {
   CreatePaymentMethodData,
   DEFAULT_PAYMENT_METHOD_RELATIONS,

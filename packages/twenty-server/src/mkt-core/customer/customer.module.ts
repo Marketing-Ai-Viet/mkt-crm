@@ -39,9 +39,8 @@ import {
 } from 'src/mkt-core/customer/services';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 import { MktCustomerValidationService } from 'src/mkt-core/customer/services/validation/mkt-customer-validation.service';
-import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
+import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import { MktLicenseIntegrationModule } from 'src/mkt-core/mkt-license-integration/mkt-license-integration.module';
-import { MktSendmailTemplateModule } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
@@ -49,7 +48,6 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
   imports: [
     EmailModule,
     MktEmailModule,
-    MktSendmailTemplateModule,
     TokenModule,
     TwentyORMModule,
     WorkspaceCacheStorageModule,

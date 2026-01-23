@@ -21,15 +21,14 @@ import {
   FieldTypeAndNameMetadata,
   getTsVectorColumnExpressionFromFields,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
-import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
+import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/workspace-entity/mkt-kpi.workspace-entity';
 import { MKT_KPI_HISTORY_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-
 import {
   MKT_KPI_HISTORY_CHANGE_TYPE_OPTIONS,
   MKT_KPI_HISTORY_CHANGE_SOURCE_OPTIONS,
   MKT_KPI_HISTORY_CHANGE_TYPE,
-} from './constants/mkt-kpi-history-options';
+} from 'src/mkt-core/mkt-kpi/constants/mkt-kpi-history-options';
 
 const SEARCH_FIELDS_FOR_KPI_HISTORY: FieldTypeAndNameMetadata[] = [
   { name: 'changeReason', type: FieldMetadataType.TEXT },

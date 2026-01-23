@@ -26,7 +26,7 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
   shortcut: 'H',
 })
 @WorkspaceIsSearchable()
-export class MktStaffStatusHistoryWorkspaceEntity extends BaseWorkspaceEntity {
+export class MktEmploymentStatusHistoryWorkspaceEntity extends BaseWorkspaceEntity {
   // Relations
   @WorkspaceRelation({
     standardId: MKT_STAFF_STATUS_HISTORY_FIELD_IDS.staffId,

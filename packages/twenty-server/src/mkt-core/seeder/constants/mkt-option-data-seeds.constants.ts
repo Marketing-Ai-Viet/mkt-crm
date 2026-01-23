@@ -2,7 +2,7 @@ import {
   MKT_CUSTOMER_STATUS_OPTIONS,
   MKT_CUSTOMER_TIER_OPTIONS,
 } from 'src/mkt-core/customer/constants/mkt-customer.constant';
-import { MKT_EMAIL_STATUS_OPTIONS } from 'src/mkt-core/email/constants/mkt-email.constant';
+import { MKT_EMAIL_STATUS_OPTIONS } from 'src/mkt-core/mkt-email/constants';
 import {
   MEMBER_STATUS_OPTIONS,
   MEMBER_TYPE_OPTIONS,

@@ -17,7 +17,7 @@ import {
   OrderPaymentMethodInput,
   PaymentCreationParams,
 } from 'src/mkt-core/order/types';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { DEFAULT_PAYMENT_CURRENCY } from 'src/mkt-core/payment/constants';

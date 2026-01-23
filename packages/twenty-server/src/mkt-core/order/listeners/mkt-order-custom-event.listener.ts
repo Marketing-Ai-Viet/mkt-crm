@@ -9,7 +9,7 @@ import {
   MktOrderCustomEventPayload,
 } from 'src/mkt-core/order/types';
 import { MktCustomerQueueService } from 'src/mkt-core/customer/services';
-import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
+import { MktEmailService } from 'src/mkt-core/mkt-email/services';
 import {
   ORDER_HISTORY_ACTION,
   ORDER_STATUS,

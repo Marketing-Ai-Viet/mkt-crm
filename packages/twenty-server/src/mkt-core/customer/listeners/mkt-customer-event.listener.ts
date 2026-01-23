@@ -10,9 +10,9 @@ import { WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/wo
 import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktCustomerAutoAssignService } from 'src/mkt-core/customer/services/lifecycle/mkt-customer-auto-assign.service';
-import { MKT_EMAIL_STATUS } from 'src/mkt-core/email/constants/mkt-email.constant';
-import { MktEmailService } from 'src/mkt-core/email/service/mkt-email.service';
-import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
+import { MKT_EMAIL_STATUS } from 'src/mkt-core/mkt-email/constants';
+import { MktEmailService } from 'src/mkt-core/mkt-email/services';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-email/repositories';
 import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/order/constants/mkt-template.constant';
 
 /**

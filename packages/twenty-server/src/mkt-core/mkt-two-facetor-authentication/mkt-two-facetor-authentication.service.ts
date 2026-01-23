@@ -19,8 +19,8 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
-import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
-import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-email/repositories';
+import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/mkt-email/workspace-entities/mkt-template.workspace-entity';
 import { MtkTwoFacetorAuthGetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthGetOtpSendMail.input';
 import { MtkTwoFacetorAuthSetOtpSendMailInput } from 'src/mkt-core/mkt-two-facetor-authentication/dto/mtkTwoFacetorAuthSetOtpSendMail.input';
 

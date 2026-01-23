@@ -13,7 +13,7 @@ import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration/mkt-product-integration.module';
-import { MktSendmailTemplateModule } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.module';
+import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import { MktSettingModule } from 'src/mkt-core/setting/mkt-setting.module';
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
@@ -40,7 +40,7 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
     MktUserIntegrationModule,
     MktComboModule,
     MktPromotionModule,
-    MktSendmailTemplateModule,
+    MktEmailModule,
     MktSettingModule,
   ],
 })

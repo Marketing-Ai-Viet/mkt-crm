@@ -2,12 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
+import { MktTemplateRepository } from 'src/mkt-core/mkt-email/repositories';
 import {
-  MKT_TEMPLATE_TYPE,
   MktTemplateType,
   MktTemplateWorkspaceEntity,
-} from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+} from 'src/mkt-core/mkt-email/workspace-entities';
+import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/mkt-email/workspace-entities/mkt-template.workspace-entity';
 
 const DEFAULT_LOCALE = 'en';
 

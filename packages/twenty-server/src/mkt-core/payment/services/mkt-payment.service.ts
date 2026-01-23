@@ -12,7 +12,7 @@ import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant
 import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { paymentConfig } from 'src/mkt-core/payment/config';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import {
   PaymentQrResult,

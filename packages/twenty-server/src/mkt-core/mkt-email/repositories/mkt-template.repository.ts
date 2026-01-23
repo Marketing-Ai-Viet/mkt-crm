@@ -8,9 +8,7 @@ import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
 import {
   MktTemplateType,
   MktTemplateWorkspaceEntity,
-} from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
-
-const LOG_CONTEXT = 'MktTemplate:Repository';
+} from 'src/mkt-core/mkt-email/workspace-entities';
 
 type FindOptions = {
   limit?: number;
@@ -40,7 +38,7 @@ export class MktTemplateRepository extends BaseWorkspaceRepository<MktTemplateWo
       twentyORMGlobalManager,
       scopedWorkspaceContextFactory,
       MktTemplateWorkspaceEntity,
-      LOG_CONTEXT,
+      MktTemplateRepository.name,
     );
   }
 

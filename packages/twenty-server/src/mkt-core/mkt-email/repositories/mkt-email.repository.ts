@@ -6,13 +6,13 @@ import { Between, IsNull } from 'typeorm';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
-import { EMAIL_MESSAGES } from 'src/mkt-core/email/messages';
-import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
+import { EMAIL_MESSAGES } from 'src/mkt-core/mkt-email/messages';
 import {
   FindEmailOptions,
   FindWithPaginationOptions,
   StatusDistributionItem,
-} from 'src/mkt-core/email/types';
+} from 'src/mkt-core/mkt-email/types';
+import { MktEmailWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-entities';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 // Relation fields to omit when updating (prevents TypeORM type errors)

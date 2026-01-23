@@ -24,7 +24,7 @@ import {
   PaymentOverdueScanJob,
 } from 'src/mkt-core/order/jobs';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
-import { MktEmailModule } from 'src/mkt-core/email/mkt-email.module';
+import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import {
   MktOrderRepository,
   MktOrderItemRepository,
