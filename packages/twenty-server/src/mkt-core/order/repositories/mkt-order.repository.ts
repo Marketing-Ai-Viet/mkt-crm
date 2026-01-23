@@ -548,6 +548,83 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     return { affected: result.affected ?? 0 };
   }
 
+  // ============================================
+  // OPTIMISTIC LOCKING - ATOMIC UPDATE
+  // ============================================
+
+  /**
+   * Atomic update with optimistic locking (version check in WHERE clause)
+   *
+   * This method performs an atomic conditional update that:
+   * 1. Only updates if current version matches expectedVersion
+   * 2. Automatically increments version on success
+   * 3. Returns affected count (0 = version mismatch, 1 = success)
+   *
+   * This prevents race conditions by doing version check and update in single SQL:
+   * UPDATE ... SET version = version + 1 WHERE id = :id AND version = :expectedVersion
+   *
+   * @param orderId - Order ID to update
+   * @param expectedVersion - Version that client expects (must match current DB version)
+   * @param data - Partial data to update
+   * @returns Object with affected count and new version
+   */
+  async updateWithOptimisticLock(
+    orderId: string,
+    expectedVersion: number,
+    data: DeepPartial<MktOrderWorkspaceEntity>,
+  ): Promise<{ affected: number; newVersion: number }> {
+    this.logger.debug(
+      `[OptimisticLock] Atomic update: orderId=${orderId}, expectedVersion=${expectedVersion}`,
+    );
+
+    const repository = await this.getRepository();
+
+    // Atomic conditional update - version check happens in WHERE clause
+    const result = await repository
+      .createQueryBuilder()
+      .update()
+      .set({
+        ...data,
+        // Increment version atomically
+        version: () => 'COALESCE(version, 0) + 1',
+        updatedAt: DateTimeUtils.toDate(DateTimeUtils.now()),
+      } as QueryDeepPartialEntity<MktOrderWorkspaceEntity>)
+      .where('id = :id', { id: orderId })
+      .andWhere('version = :expectedVersion', { expectedVersion })
+      .execute();
+
+    const affected = result.affected ?? 0;
+    const newVersion = expectedVersion + 1;
+
+    if (affected === 0) {
+      this.logger.warn(
+        `[OptimisticLock] Version conflict: orderId=${orderId}, expectedVersion=${expectedVersion}`,
+      );
+    } else {
+      this.logger.debug(
+        `[OptimisticLock] Update success: orderId=${orderId}, newVersion=${newVersion}`,
+      );
+    }
+
+    return { affected, newVersion };
+  }
+
+  /**
+   * Get current version of an order
+   * Used to fetch version before optimistic lock update
+   */
+  async getCurrentVersion(orderId: string): Promise<number | null> {
+    const repository = await this.getRepository();
+
+    const result = await repository
+      .createQueryBuilder('order')
+      .select('order.version', 'version')
+      .where('order.id = :id', { id: orderId })
+      .getRawOne();
+
+    return result?.version ?? null;
+  }
+
   /**
    * Get completed order statistics aggregated by customer IDs
    * Single query with GROUP BY to avoid N+1 problem

@@ -89,11 +89,16 @@ export class OrderOrchestrationService {
   // ============================================
 
   /**
-   * Check version nếu expectedVersion được cung cấp
+   * Check version với ATOMIC conditional update (optimistic locking)
    *
+   * QUAN TRỌNG: Method này sử dụng atomic update để tránh race condition.
+   *
+   * Cách hoạt động:
    * - Nếu không có expectedVersion: bỏ qua check (backward compatible)
-   * - Nếu có expectedVersion: so sánh với current version trong DB
-   * - Nếu mismatch: return error response
+   * - Nếu có expectedVersion: thực hiện ATOMIC update với version check trong WHERE clause
+   *   UPDATE ... SET version = version + 1 WHERE id = :id AND version = :expectedVersion
+   * - Nếu affected = 0: version mismatch (có người khác đã update trước)
+   * - Nếu affected = 1: thành công, version đã được increment
    *
    * @param orderId - Order ID để check
    * @param expectedVersion - Version mà client expect (optional)
@@ -115,7 +120,7 @@ export class OrderOrchestrationService {
     // Validate expectedVersion phải >= 1
     if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
       this.logger.warn(
-        `[VersionCheck] Invalid expectedVersion: orderId=${orderId}, expectedVersion=${expectedVersion}`,
+        `[OptimisticLock] Invalid expectedVersion: orderId=${orderId}, expectedVersion=${expectedVersion}`,
       );
 
       return {
@@ -123,33 +128,47 @@ export class OrderOrchestrationService {
       };
     }
 
-    // Fetch current order để lấy version
-    const order = await this.orderRepository.findById(orderId);
+    // Check if optimistic locking is enabled
+    if (!this.config.features.optimisticLockingEnabled) {
+      this.logger.debug(
+        `[OptimisticLock] Disabled, skipping check for orderId=${orderId}`,
+      );
 
-    if (!order) {
-      return {
-        error: OPTIMISTIC_LOCKING_MESSAGES.ENTITY_NOT_FOUND,
-      };
+      return null;
     }
 
-    // Compare versions
-    const currentVersion = order.version ?? 1;
+    // ATOMIC version check và "claim" operation
+    // Sử dụng updateWithOptimisticLock để thực hiện atomic conditional update
+    // Nếu affected = 0, có race condition (version đã thay đổi)
+    // Nếu affected = 1, chúng ta đã "claim" order này, version đã increment
+    const { affected, newVersion } =
+      await this.orderRepository.updateWithOptimisticLock(
+        orderId,
+        expectedVersion,
+        {}, // Không cần update data, chỉ check version và increment
+      );
 
-    if (currentVersion !== expectedVersion) {
+    if (affected === 0) {
+      // Version mismatch - có người khác đã update order này
+      // Fetch current version để trả về cho client
+      const currentVersion =
+        await this.orderRepository.getCurrentVersion(orderId);
+
       this.logger.warn(
-        `[VersionCheck] Version mismatch: orderId=${orderId}, ` +
+        `[OptimisticLock] ATOMIC version conflict: orderId=${orderId}, ` +
           `expectedVersion=${expectedVersion}, currentVersion=${currentVersion}`,
       );
 
       return {
         error: OPTIMISTIC_LOCKING_MESSAGES.VERSION_CONFLICT,
-        currentVersion,
-        currentData: { version: currentVersion },
+        currentVersion: currentVersion ?? undefined,
+        currentData: currentVersion ? { version: currentVersion } : undefined,
       };
     }
 
     this.logger.debug(
-      `[VersionCheck] Version matched: orderId=${orderId}, version=${expectedVersion}`,
+      `[OptimisticLock] ATOMIC claim success: orderId=${orderId}, ` +
+        `expectedVersion=${expectedVersion}, newVersion=${newVersion}`,
     );
 
     return null;
