@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 
 import omit from 'lodash.omit';
-import { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
+import {
+  Equal,
+  FindOptionsOrder,
+  FindOptionsWhere,
+  In,
+  IsNull,
+  Or,
+} from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
-import { DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES } from 'src/mkt-core/mkt-department/constants/relationship-type.constants';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
 
 // Relations for hierarchy entity
 const HIERARCHY_PARENT_RELATION = ['parentDepartment'] as const;
@@ -40,6 +46,7 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
   /**
    * Find parent hierarchy for a child department
    * Returns hierarchy entry where this department is child
+   * Note: isActive NULL is treated as true (default active)
    */
   async findParentHierarchy(
     childDepartmentId: string,
@@ -49,18 +56,17 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
 
     const where: FindOptionsWhere<MktDepartmentHierarchyWorkspaceEntity> = {
       childDepartmentId,
-      isActive: true,
+      // Treat NULL as active (isActive = true OR isActive IS NULL)
+      isActive: Or(Equal(true), IsNull()),
     };
 
-    // Handle relationship types
+    // Handle relationship types - use In() for array of enums
     if (relationshipTypes && relationshipTypes.length > 0) {
       if (!relationshipTypes.includes('any')) {
-        where.relationshipType =
-          relationshipTypes as unknown as typeof where.relationshipType;
+        where.relationshipType = In(
+          relationshipTypes,
+        ) as typeof where.relationshipType;
       }
-    } else {
-      where.relationshipType =
-        DEPARTMENT_HIERARCHY_RELATIONSHIP_TYPES.PARENT_CHILD;
     }
 
     return repository.findOne({
@@ -72,6 +78,7 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
   /**
    * Find children hierarchies for a parent department
    * Returns hierarchy entries where this department is parent
+   * Note: isActive NULL is treated as true (default active)
    */
   async findChildHierarchies(
     parentDepartmentId: string,
@@ -95,13 +102,16 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
       parentDepartmentId,
     };
 
+    // Treat NULL as active (isActive = true OR isActive IS NULL)
     if (!includeInactive) {
-      where.isActive = true;
+      where.isActive = Or(Equal(true), IsNull());
     }
 
+    // Use In() for array of relationship types
     if (relationshipTypes && relationshipTypes.length > 0) {
-      where.relationshipType =
-        relationshipTypes as unknown as typeof where.relationshipType;
+      where.relationshipType = In(
+        relationshipTypes,
+      ) as typeof where.relationshipType;
     }
 
     const order: FindOptionsOrder<MktDepartmentHierarchyWorkspaceEntity> = {};
@@ -120,6 +130,7 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
 
   /**
    * Find all hierarchies (with optional filters)
+   * Note: isActive NULL is treated as true (default active)
    */
   async findAllWithFilters(options?: {
     isActive?: boolean;
@@ -127,13 +138,18 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
   }): Promise<MktDepartmentHierarchyWorkspaceEntity[]> {
     const where: FindOptionsWhere<MktDepartmentHierarchyWorkspaceEntity> = {};
 
-    if (options?.isActive !== undefined) {
-      where.isActive = options.isActive;
+    // Handle isActive filter - treat NULL as true
+    if (options?.isActive === true) {
+      where.isActive = Or(Equal(true), IsNull());
+    } else if (options?.isActive === false) {
+      where.isActive = false;
     }
 
+    // Use In() for array of relationship types
     if (options?.relationshipTypes && options.relationshipTypes.length > 0) {
-      where.relationshipType =
-        options.relationshipTypes as unknown as typeof where.relationshipType;
+      where.relationshipType = In(
+        options.relationshipTypes,
+      ) as typeof where.relationshipType;
     }
 
     return this.findMany(where);
@@ -227,25 +243,43 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
 
   /**
    * Update hierarchy (using scoped workspace context)
+   * @throws Error if hierarchy not found
    */
   async updateWithContext(
     childDepartmentId: string,
     data: Partial<MktDepartmentHierarchyWorkspaceEntity>,
-  ): Promise<void> {
+  ): Promise<{ updated: boolean; hierarchyId?: string }> {
     const hierarchy = await this.findOne({
       childDepartmentId,
     });
 
-    if (hierarchy) {
-      const repository = await this.getRepository();
-
-      // Strip relation fields to prevent TypeORM type errors
-      const updateData = omit(data, [
-        ...HIERARCHY_PARENT_RELATION,
-        ...HIERARCHY_CHILD_RELATION,
-      ]);
-
-      await repository.update(hierarchy.id, updateData);
+    if (!hierarchy) {
+      return { updated: false };
     }
+
+    const repository = await this.getRepository();
+
+    // Strip relation fields to prevent TypeORM type errors
+    const updateData = omit(data, [
+      ...HIERARCHY_PARENT_RELATION,
+      ...HIERARCHY_CHILD_RELATION,
+    ]);
+
+    await repository.update(hierarchy.id, updateData);
+
+    return { updated: true, hierarchyId: hierarchy.id };
+  }
+
+  /**
+   * Count active hierarchies (treating NULL as active)
+   */
+  async countActive(): Promise<number> {
+    const repository = await this.getRepository();
+
+    return repository.count({
+      where: {
+        isActive: Or(Equal(true), IsNull()),
+      },
+    });
   }
 }

@@ -24,16 +24,21 @@ import {
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
-import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
-import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-hierarchy.workspace-entity';
-import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-sub-manager.workspace-entity';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
 import {
   DEPARTMENT_TYPE,
   DEPARTMENT_TYPE_OPTIONS,
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-//SEARCH_FIELDS_FOR_ENTITY
+/**
+ * Entity name for mktDepartment - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
+export const MKT_DEPARTMENT_ENTITY_NAME = 'mktDepartment';
+
 // Define fields to be used for search
 const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
   { name: 'departmentCode', type: FieldMetadataType.TEXT },
@@ -42,7 +47,7 @@ const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktDepartment,
-  namePlural: 'mktDepartments',
+  namePlural: `${MKT_DEPARTMENT_ENTITY_NAME}s`,
   labelSingular: msg`Department`,
   labelPlural: msg`Departments`,
   description: msg`Departments in the marketing system.`,

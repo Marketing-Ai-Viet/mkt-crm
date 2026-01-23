@@ -5,7 +5,7 @@ import { In, IsNull } from 'typeorm';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
-import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/workspace-entity/mkt-department-ancestry.workspace-entity';
+import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**

@@ -29,7 +29,12 @@ import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.wor
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-const TABLE_CUSTOMER_TAG_NAME = 'mktCustomerTag';
+/**
+ * Entity name for mktCustomerTag - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
+export const MKT_CUSTOMER_TAG_ENTITY_NAME = 'mktCustomerTag';
+
 const NAME_FIELD_NAME = 'name';
 
 export const SEARCH_FIELDS_FOR_MKT_CUSTOMER_TAG: FieldTypeAndNameMetadata[] = [
@@ -38,7 +43,7 @@ export const SEARCH_FIELDS_FOR_MKT_CUSTOMER_TAG: FieldTypeAndNameMetadata[] = [
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktCustomerTag,
-  namePlural: `${TABLE_CUSTOMER_TAG_NAME}s`,
+  namePlural: `${MKT_CUSTOMER_TAG_ENTITY_NAME}s`,
   labelSingular: msg`Customer Tag`,
   labelPlural: msg`Customer Tags`,
   description: msg`Customer Tag entity for catalog`,

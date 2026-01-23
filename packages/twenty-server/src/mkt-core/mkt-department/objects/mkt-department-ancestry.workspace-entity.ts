@@ -17,6 +17,13 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDepartmentWorkspaceEntity } from './mkt-department.workspace-entity';
 
 /**
+ * Entity name for mktDepartmentAncestry - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ * Note: namePlural uses irregular plural 'Ancestries' instead of 'Ancestrys'
+ */
+export const MKT_DEPARTMENT_ANCESTRY_ENTITY_NAME = 'mktDepartmentAncestry';
+
+/**
  * MktDepartmentAncestryWorkspaceEntity
  *
  * Materialized view of department ancestry for RBAC hierarchy checks.

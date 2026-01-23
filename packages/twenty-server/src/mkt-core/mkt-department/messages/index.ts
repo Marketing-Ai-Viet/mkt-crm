@@ -64,13 +64,22 @@ export const DEPARTMENT_MESSAGES = {
     REBUILD_PATHS_SUCCESS: (count: number) =>
       `Successfully rebuilt ${count} hierarchy paths`,
 
-    // Hook operations
+    // Hook operations (deprecated - use resolver messages instead)
     HOOK_CREATE_START: 'Starting department create post-query hook',
     HOOK_CREATE_SUCCESS: (metadata: string) =>
       `Department created with metadata: ${metadata}`,
     HOOK_UPDATE_START: 'Starting department update post-query hook',
     HOOK_UPDATE_SUCCESS: (metadata: string) =>
       `Department updated with metadata: ${metadata}`,
+
+    // Resolver operations
+    HIERARCHY_CREATED: (
+      childDepartmentId: string,
+      parentDepartmentId: string,
+    ) =>
+      `Hierarchy created: child=${childDepartmentId}, parent=${parentDepartmentId}`,
+    HIERARCHY_UPDATED: (childDepartmentId: string) =>
+      `Hierarchy updated for department: ${childDepartmentId}`,
   },
 
   WARN: {
@@ -105,8 +114,11 @@ export const DEPARTMENT_MESSAGES = {
     INVALID_HIERARCHY_DATA: 'Invalid hierarchy data provided',
     MISSING_REQUIRED_FIELDS: (fields: string) =>
       `Missing required fields: ${fields}`,
+    CHILD_DEPARTMENT_ID_REQUIRED: 'Child department ID is required',
 
     // Hierarchy errors
+    HIERARCHY_NOT_FOUND: (departmentId: string) =>
+      `Hierarchy not found for department: ${departmentId}`,
     HIERARCHY_CREATE_FAILED: (childDepartmentId: string) =>
       `Failed to create hierarchy for department: ${childDepartmentId}`,
     HIERARCHY_UPDATE_FAILED: (childDepartmentId: string) =>

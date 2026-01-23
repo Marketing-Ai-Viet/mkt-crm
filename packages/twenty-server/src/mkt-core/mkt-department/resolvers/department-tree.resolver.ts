@@ -3,12 +3,14 @@ import { UseGuards } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import {
+  DepartmentAncestor,
+  DepartmentDescendant,
+  DepartmentTreeNode,
+  DepartmentTreeOptions,
+  HierarchyStatistics,
+} from 'src/mkt-core/mkt-department/dto';
 import { DepartmentService } from 'src/mkt-core/mkt-department/services/department.service';
-import { DepartmentTreeNode } from 'src/mkt-core/mkt-department/graphql-types/department-tree-node.type';
-import { DepartmentAncestor } from 'src/mkt-core/mkt-department/graphql-types/department-ancestor.type';
-import { DepartmentDescendant } from 'src/mkt-core/mkt-department/graphql-types/department-descendant.type';
-import { HierarchyStatistics } from 'src/mkt-core/mkt-department/graphql-types/hierarchy-statistics.type';
-import { DepartmentTreeOptions } from 'src/mkt-core/mkt-department/graphql-types/department-tree-options.input';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 
 @Resolver()
@@ -56,13 +58,20 @@ export class DepartmentTreeResolver {
     @Args('options', { type: () => DepartmentTreeOptions, nullable: true })
     options?: DepartmentTreeOptions,
   ): Promise<DepartmentTreeNode[]> {
-    const trees = await Promise.all(
+    // Use allSettled to handle errors gracefully - filter out invalid IDs
+    const results = await Promise.allSettled(
       rootIds.map((rootId) =>
         this.hierarchyService.getDepartmentTree(workspaceId, rootId, options),
       ),
     );
 
-    return trees.filter((tree) => tree !== null);
+    // Only return fulfilled results, filter out rejected (invalid IDs)
+    return results
+      .filter(
+        (result): result is PromiseFulfilledResult<DepartmentTreeNode> =>
+          result.status === 'fulfilled' && result.value !== null,
+      )
+      .map((result) => result.value);
   }
 
   //* Tìm tất cả phòng ban cha/tổ tiên

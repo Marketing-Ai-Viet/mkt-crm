@@ -10,7 +10,7 @@ import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department
 import {
   withChildTeams,
   combineWithChildTeams,
-} from 'src/mkt-core/mkt-department/helpers/department-auth.helper';
+} from 'src/mkt-core/mkt-department/utils/department-auth.util';
 
 /**
  * Authorization rules for order mutations
