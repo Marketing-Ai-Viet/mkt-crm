@@ -27,7 +27,7 @@ import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant
 import { ORDER_METADATA } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
 import { PaymentQrResult } from 'src/mkt-core/payment/types/payment.type';

@@ -24,7 +24,7 @@ import { Response } from 'express';
 
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-entities';
 import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
 import {
   RequestSepayJWT,

@@ -10,16 +10,20 @@ import {
   DEFAULT_TRIAL_PERIOD_DAYS,
   MKT_EMAIL_STATUS,
   ORDER_STATUS_TEMPLATE_MAP,
-} from 'src/mkt-core/email/constants';
+} from 'src/mkt-core/mkt-email/constants';
 import {
   EMAIL_MESSAGES,
   MKT_EMAIL_LOG_CONTEXT,
-} from 'src/mkt-core/email/messages';
-import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
-import { MktEmailRepository } from 'src/mkt-core/email/repositories';
-import { OrderEmailReplacements } from 'src/mkt-core/email/types';
-import { MktTemplateRepository } from 'src/mkt-core/mkt-sendmail-template/repositories';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+} from 'src/mkt-core/mkt-email/messages';
+import {
+  MktEmailRepository,
+  MktTemplateRepository,
+} from 'src/mkt-core/mkt-email/repositories';
+import { OrderEmailReplacements } from 'src/mkt-core/mkt-email/types';
+import {
+  MktEmailWorkspaceEntity,
+  MktTemplateWorkspaceEntity,
+} from 'src/mkt-core/mkt-email/workspace-entities';
 import {
   ORDER_STATUS,
   ORDER_STATUS_OPTIONS,

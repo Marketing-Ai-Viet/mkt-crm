@@ -8,7 +8,7 @@ import { CreateOneResolverArgs } from 'src/engine/api/graphql/workspace-resolver
 
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import { paymentConfig } from 'src/mkt-core/payment/config';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import {
   BidvSepayApiResponse,

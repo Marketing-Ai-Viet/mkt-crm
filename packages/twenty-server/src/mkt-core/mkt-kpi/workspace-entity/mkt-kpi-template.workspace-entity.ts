@@ -23,7 +23,6 @@ import {
 import { MKT_KPI_TEMPLATE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
 import {
   MKT_KPI_TEMPLATE_TARGET_ROLE_OPTIONS,
   MKT_KPI_TYPE_OPTIONS,
@@ -31,7 +30,7 @@ import {
   MKT_KPI_UNIT_OPTIONS,
   MKT_KPI_PERIOD_TYPE_OPTIONS,
   MKT_KPI_PRIORITY_OPTIONS,
-} from './constants/mkt-kpi-template-options';
+} from 'src/mkt-core/mkt-kpi/constants/mkt-kpi-template-options';
 
 const SEARCH_FIELDS_FOR_KPI_TEMPLATE: FieldTypeAndNameMetadata[] = [
   { name: 'templateName', type: FieldMetadataType.TEXT },

@@ -12,7 +12,7 @@ import {
 } from 'src/mkt-core/mkt-product-integration';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants';
 import { OrderPaymentMethodInput } from 'src/mkt-core/order/types/order-mutation.types';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { PaymentCurrency } from 'src/mkt-core/payment/types';
 import { SagaContext } from 'src/mkt-core/order/types/order-saga.interface';
 import { MktLicenseSnapshot } from 'src/mkt-core/order/types/mkt-product-proxy.types';

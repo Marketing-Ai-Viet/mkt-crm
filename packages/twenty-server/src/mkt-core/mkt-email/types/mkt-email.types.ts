@@ -1,4 +1,4 @@
-import { MKT_EMAIL_STATUS } from 'src/mkt-core/email/constants';
+import { MKT_EMAIL_STATUS } from 'src/mkt-core/mkt-email/constants';
 
 /**
  * Email Repository Types

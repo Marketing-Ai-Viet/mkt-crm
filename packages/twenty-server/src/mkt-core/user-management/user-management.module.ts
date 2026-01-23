@@ -12,7 +12,7 @@ import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
-import { MktSendmailTemplateModule } from 'src/mkt-core/mkt-sendmail-template/mkt-sendmail-template.module';
+import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import { UserManagementResolver } from 'src/mkt-core/user-management/resolver/user-management.resolver';
 import { DepartmentLookupService } from 'src/mkt-core/user-management/services/department-lookup.service';
 import { EmailNotificationService } from 'src/mkt-core/user-management/services/email-notification.service';
@@ -32,7 +32,7 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
     EmailModule,
     TwentyConfigModule,
     MktDepartmentModule,
-    MktSendmailTemplateModule,
+    MktEmailModule,
   ],
   providers: [
     // Repositories

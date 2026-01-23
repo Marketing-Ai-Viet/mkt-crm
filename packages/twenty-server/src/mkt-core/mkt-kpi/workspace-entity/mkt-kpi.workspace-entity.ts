@@ -15,9 +15,8 @@ import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-re
 import { MKT_KPI_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
-import { MktKpiHistoryWorkspaceEntity } from 'src/mkt-core/mkt-kpi-history/mkt-kpi-history.workspace-entity';
+import { MktKpiHistoryWorkspaceEntity } from 'src/mkt-core/mkt-kpi/workspace-entity/mkt-kpi-history.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
 import {
   MKT_KPI_TYPE_OPTIONS,
   MKT_KPI_CATEGORY_OPTIONS,
@@ -26,7 +25,7 @@ import {
   MKT_KPI_ASSIGNEE_TYPE_OPTIONS,
   MKT_KPI_STATUS_OPTIONS,
   MKT_KPI_PRIORITY_OPTIONS,
-} from './constants/mkt-kpi-options';
+} from 'src/mkt-core/mkt-kpi/constants/mkt-kpi-options';
 
 @WorkspaceEntity({
   standardId: MKT_OBJECT_IDS.mktKpi,

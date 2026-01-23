@@ -24,7 +24,7 @@ import {
 } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/get-ts-vector-column-expression.util';
 import { MKT_INVOICE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-entities';
 
 const TABLE_INVOICE_NAME = 'mktInvoice';
 const NAME_FIELD_NAME = 'name';

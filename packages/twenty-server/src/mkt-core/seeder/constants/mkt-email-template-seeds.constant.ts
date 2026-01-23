@@ -1,4 +1,4 @@
-import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
+import { MKT_TEMPLATE_TYPE } from 'src/mkt-core/mkt-email/workspace-entities/mkt-template.workspace-entity';
 
 /**
  * Email template seed data for unified MktTemplate entity

@@ -2,7 +2,10 @@ import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt
 import { MktCustomerTierHistoryWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tier-history.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
 import { MktTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-tag.workspace-entity';
-import { MktEmailWorkspaceEntity } from 'src/mkt-core/email/objects/mkt-email.workspace-entity';
+import {
+  MktEmailWorkspaceEntity,
+  MktTemplateWorkspaceEntity,
+} from 'src/mkt-core/mkt-email/workspace-entities';
 import { MktI18nWorkspaceEntity } from 'src/mkt-core/i18n/objects/mkt-i18n.workspace-entity';
 import { MktInvoiceWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-invoice.workspace-entity';
 import { MktSInvoiceAuthWorkspaceEntity } from 'src/mkt-core/invoice/objects/mkt-sinvoice-auth.workspace-entity';
@@ -34,18 +37,17 @@ import {
 import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
-import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/mkt-employment-status/mkt-employment-status.workspace-entity';
-import { MktKpiHistoryWorkspaceEntity } from 'src/mkt-core/mkt-kpi-history/mkt-kpi-history.workspace-entity';
-import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi-template/mkt-kpi-template.workspace-entity';
-import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/mkt-kpi.workspace-entity';
+import { MktEmploymentStatusWorkspaceEntity } from 'src/mkt-core/user-management/workspace-entities/mkt-employment-status.workspace-entity';
+import { MktKpiHistoryWorkspaceEntity } from 'src/mkt-core/mkt-kpi/workspace-entity/mkt-kpi-history.workspace-entity';
+import { MktKpiTemplateWorkspaceEntity } from 'src/mkt-core/mkt-kpi/workspace-entity/mkt-kpi-template.workspace-entity';
+import { MktKpiWorkspaceEntity } from 'src/mkt-core/mkt-kpi/workspace-entity/mkt-kpi.workspace-entity';
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
-import { MktStaffStatusHistoryWorkspaceEntity } from 'src/mkt-core/mkt-staff-status-history/mkt-staff-status-history.workspace-entity';
+import { MktEmploymentStatusHistoryWorkspaceEntity } from 'src/mkt-core/user-management/workspace-entities/mkt-employment-status-history.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-history.workspace-entity';
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
-import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-sendmail-template/workspace-entity/mkt-template.workspace-entity';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/mkt-payment-method.workspace-entity';
+import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
@@ -113,7 +115,7 @@ export const MKT_WORKSPACE_ENTITIES = [
 ];
 
 export const MKT_FINAL_WORKSPACE_ENTITIES = [
-  MktStaffStatusHistoryWorkspaceEntity,
+  MktEmploymentStatusHistoryWorkspaceEntity,
   // KPI System
   MktKpiWorkspaceEntity,
   MktKpiTemplateWorkspaceEntity,
