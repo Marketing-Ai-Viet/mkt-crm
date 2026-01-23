@@ -114,8 +114,11 @@ export const DEPARTMENT_MESSAGES = {
     INVALID_HIERARCHY_DATA: 'Invalid hierarchy data provided',
     MISSING_REQUIRED_FIELDS: (fields: string) =>
       `Missing required fields: ${fields}`,
+    CHILD_DEPARTMENT_ID_REQUIRED: 'Child department ID is required',
 
     // Hierarchy errors
+    HIERARCHY_NOT_FOUND: (departmentId: string) =>
+      `Hierarchy not found for department: ${departmentId}`,
     HIERARCHY_CREATE_FAILED: (childDepartmentId: string) =>
       `Failed to create hierarchy for department: ${childDepartmentId}`,
     HIERARCHY_UPDATE_FAILED: (childDepartmentId: string) =>

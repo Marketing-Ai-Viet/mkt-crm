@@ -167,7 +167,7 @@ export class DepartmentService {
       circularCount,
     ] = await Promise.all([
       this.hierarchyRepository.count(),
-      this.hierarchyRepository.count({ isActive: true }),
+      this.hierarchyRepository.countActive(),
       this.hierarchyRepository.getMaxLevel(),
       this.hierarchyRepository.getAverageLevel(),
       this.countOrphanedDepartments(),

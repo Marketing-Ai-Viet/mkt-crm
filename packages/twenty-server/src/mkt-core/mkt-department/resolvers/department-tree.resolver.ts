@@ -58,13 +58,20 @@ export class DepartmentTreeResolver {
     @Args('options', { type: () => DepartmentTreeOptions, nullable: true })
     options?: DepartmentTreeOptions,
   ): Promise<DepartmentTreeNode[]> {
-    const trees = await Promise.all(
+    // Use allSettled to handle errors gracefully - filter out invalid IDs
+    const results = await Promise.allSettled(
       rootIds.map((rootId) =>
         this.hierarchyService.getDepartmentTree(workspaceId, rootId, options),
       ),
     );
 
-    return trees.filter((tree) => tree !== null);
+    // Only return fulfilled results, filter out rejected (invalid IDs)
+    return results
+      .filter(
+        (result): result is PromiseFulfilledResult<DepartmentTreeNode> =>
+          result.status === 'fulfilled' && result.value !== null,
+      )
+      .map((result) => result.value);
   }
 
   //* Tìm tất cả phòng ban cha/tổ tiên
