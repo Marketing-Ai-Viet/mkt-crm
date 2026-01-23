@@ -23,10 +23,16 @@ import {
 import { MktOrganizationLevelWorkspaceEntity } from 'src/mkt-core/mkt-organization-level/workspace-entity/mkt-organization-level.workspace-entity';
 import { OrganizationLevelHierarchyValidator } from 'src/mkt-core/mkt-organization-level/validators/hierarchy-validator';
 import { MktOrganizationLevelRepository } from 'src/mkt-core/mkt-organization-level/repositories/mkt-organization-level.repository';
+import {
+  MKT_ORGANIZATION_LEVEL_LOG_CONTEXT,
+  ORGANIZATION_LEVEL_MESSAGES,
+} from 'src/mkt-core/mkt-organization-level/messages';
 
 @Injectable()
 export class OrganizationLevelService {
-  private readonly logger = new Logger('MktOrganizationLevel:Service');
+  private readonly logger = new Logger(
+    `${MKT_ORGANIZATION_LEVEL_LOG_CONTEXT}:Service`,
+  );
 
   constructor(
     private readonly repository: MktOrganizationLevelRepository,
@@ -227,12 +233,15 @@ export class OrganizationLevelService {
 
   /**
    * Create new organization level
+   * Bao gồm full validation từ pre-query hook
    */
   async createOrganizationLevel(
     workspaceId: string,
     input: CreateOrganizationLevelInput,
   ): Promise<OrganizationLevelHierarchyNode> {
-    this.logger.debug(`Creating organization level: ${input.levelCode}`);
+    this.logger.log(
+      ORGANIZATION_LEVEL_MESSAGES.LOG.CREATE_START(input.levelCode),
+    );
 
     // 1. Validate hierarchy level range
     const rangeError = getHierarchyLevelValidationError(input.hierarchyLevel);
@@ -241,12 +250,21 @@ export class OrganizationLevelService {
       throw new BadRequestException(rangeError);
     }
 
-    // 2. Get existing levels for validation
+    // 2. Validate level code uniqueness
+    await this.validateLevelCodeUniqueness(input.levelCode);
+
+    // 3. Validate parent level relationship (including active check)
+    await this.validateParentLevel({
+      hierarchyLevel: input.hierarchyLevel,
+      parentLevelId: input.parentLevelId,
+    });
+
+    // 4. Get existing levels for hierarchy validation
     const existingLevels = await this.repository.findAllWithOptions({
       includeInactive: true,
     });
 
-    // 3. Validate input - transform data to match validator interface
+    // 5. Validate hierarchy structure
     const validationResult = this.hierarchyValidator.validateOrganizationLevel(
       input.hierarchyLevel,
       input.parentLevelId,
@@ -263,16 +281,7 @@ export class OrganizationLevelService {
       );
     }
 
-    // Check for unique level code
-    const codeExists = await this.repository.existsByCode(input.levelCode);
-
-    if (codeExists) {
-      throw new BadRequestException(
-        `Organization level with code '${input.levelCode}' already exists`,
-      );
-    }
-
-    // Create the organization level
+    // 6. Create the organization level
     const newLevel = await this.repository.create({
       levelCode: input.levelCode,
       levelName: input.levelName,
@@ -284,38 +293,50 @@ export class OrganizationLevelService {
       isActive: input.isActive ?? true,
     });
 
+    this.logger.log(
+      ORGANIZATION_LEVEL_MESSAGES.LOG.CREATE_SUCCESS(newLevel.id),
+    );
+
     return this.buildHierarchyNode(newLevel, 0, true);
   }
 
   /**
    * Update organization level
+   * Bao gồm full validation từ pre-query hook
    */
   async updateOrganizationLevel(
     workspaceId: string,
     levelId: string,
     input: UpdateOrganizationLevelInput,
   ): Promise<OrganizationLevelHierarchyNode> {
-    this.logger.debug(`Updating organization level: ${levelId}`);
+    this.logger.log(ORGANIZATION_LEVEL_MESSAGES.LOG.UPDATE_START(levelId));
 
-    const existingLevel = await this.repository.findById(levelId);
+    // 1. Get current record
+    const currentRecord = await this.repository.findById(levelId);
 
-    if (!existingLevel) {
+    if (!currentRecord) {
       throw new NotFoundException(
-        `Organization level with ID ${levelId} not found`,
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.LEVEL_NOT_FOUND(levelId),
       );
     }
 
-    // Validate hierarchy level range if being changed
-    if (
-      input.hierarchyLevel &&
-      input.hierarchyLevel !== existingLevel.hierarchyLevel
-    ) {
+    // 2. Validate level code uniqueness (if changed)
+    if (input.levelCode && input.levelCode !== currentRecord.levelCode) {
+      await this.validateLevelCodeUniqueness(input.levelCode, levelId);
+    }
+
+    // 3. Validate hierarchy level changes
+    if (input.hierarchyLevel !== undefined) {
+      await this.validateHierarchyLevelUpdate(input, currentRecord);
+
+      // Validate range
       const rangeError = getHierarchyLevelValidationError(input.hierarchyLevel);
 
       if (rangeError) {
         throw new BadRequestException(rangeError);
       }
 
+      // Validate structure
       const allLevels = await this.repository.findAllWithOptions({
         includeInactive: true,
       });
@@ -323,7 +344,7 @@ export class OrganizationLevelService {
       const validationResult =
         this.hierarchyValidator.validateOrganizationLevel(
           input.hierarchyLevel,
-          input.parentLevelId ?? existingLevel.parentLevelId,
+          input.parentLevelId ?? currentRecord.parentLevelId,
           allLevels
             .filter((l) => l.id !== levelId)
             .map((level) => ({
@@ -340,14 +361,29 @@ export class OrganizationLevelService {
       }
     }
 
-    // Update the level
+    // 4. Validate parent level changes
+    if (
+      input.parentLevelId !== undefined ||
+      input.hierarchyLevel !== undefined
+    ) {
+      await this.validateParentLevelUpdate(input, currentRecord);
+    }
+
+    // 5. Validate activation/deactivation
+    if (input.isActive !== undefined) {
+      await this.validateActivationChange(input.isActive, currentRecord);
+    }
+
+    // 6. Update the level
     const updatedLevel = await this.repository.updateAndReturn(levelId, input);
 
     if (!updatedLevel) {
       throw new NotFoundException(
-        `Organization level with ID ${levelId} not found after update`,
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.LEVEL_NOT_FOUND(levelId),
       );
     }
+
+    this.logger.log(ORGANIZATION_LEVEL_MESSAGES.LOG.UPDATE_SUCCESS(levelId));
 
     const employeeCount = await this.repository.countEmployeesAtLevel(levelId);
 
@@ -356,45 +392,317 @@ export class OrganizationLevelService {
 
   /**
    * Delete organization level
+   * Bao gồm full validation từ pre-query hook
    */
   async deleteOrganizationLevel(
     workspaceId: string,
     levelId: string,
   ): Promise<boolean> {
-    this.logger.debug(`Deleting organization level: ${levelId}`);
+    this.logger.log(ORGANIZATION_LEVEL_MESSAGES.LOG.DELETE_START(levelId));
 
-    const existingLevel = await this.repository.findById(levelId);
+    // 1. Get current record
+    const recordToDelete = await this.repository.findById(levelId);
 
-    if (!existingLevel) {
+    if (!recordToDelete) {
       throw new NotFoundException(
-        `Organization level with ID ${levelId} not found`,
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.LEVEL_NOT_FOUND(levelId),
       );
     }
 
-    // Check if there are employees assigned to this level
-    const empCount = await this.repository.countEmployeesAtLevel(levelId);
+    // 2. Check if level has child levels
+    await this.validateNoChildLevels(levelId);
 
-    if (empCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete organization level. There are ${empCount} employees assigned to this level.`,
-      );
-    }
+    // 3. Check if level is assigned to any workspace members
+    await this.validateNoAssignedMembers(levelId);
 
-    // Check if there are child levels
-    const childrenCount = await this.repository.countChildren(levelId);
+    // 4. Check if this is the last active level
+    await this.validateNotLastActiveLevel(recordToDelete);
 
-    if (childrenCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete organization level. There are ${childrenCount} child levels dependent on this level.`,
-      );
-    }
-
+    // 5. Delete the level
     await this.repository.deleteLevel(levelId);
+
+    this.logger.log(ORGANIZATION_LEVEL_MESSAGES.LOG.DELETE_SUCCESS(levelId));
 
     return true;
   }
 
-  // Private helper methods
+  // ============================================
+  // VALIDATION METHODS (Di chuyển từ hooks)
+  // ============================================
+
+  /**
+   * Validate level code uniqueness
+   * @param levelCode - Level code to check
+   * @param excludeId - ID to exclude from check (for update)
+   */
+  private async validateLevelCodeUniqueness(
+    levelCode: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const exists = await this.repository.existsByCode(levelCode, excludeId);
+
+    if (exists) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.CODE_EXISTS(levelCode),
+      );
+    }
+  }
+
+  /**
+   * Validate parent level exists and is valid
+   */
+  private async validateParentLevel(input: {
+    hierarchyLevel: number;
+    parentLevelId?: string;
+  }): Promise<void> {
+    const { hierarchyLevel, parentLevelId } = input;
+
+    if (!parentLevelId) {
+      return;
+    }
+
+    const parentLevel = await this.repository.findById(parentLevelId);
+
+    if (!parentLevel) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.PARENT_NOT_FOUND(parentLevelId),
+      );
+    }
+
+    if (parentLevel.hierarchyLevel >= hierarchyLevel) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.PARENT_HIERARCHY_INVALID(
+          parentLevel.hierarchyLevel,
+          hierarchyLevel,
+        ),
+      );
+    }
+
+    if (!parentLevel.isActive) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.PARENT_INACTIVE,
+      );
+    }
+  }
+
+  /**
+   * Validate hierarchy level update
+   * Kiểm tra nếu có child levels thì không được thay đổi hierarchy level
+   */
+  private async validateHierarchyLevelUpdate(
+    input: { hierarchyLevel?: number },
+    currentRecord: MktOrganizationLevelWorkspaceEntity,
+  ): Promise<void> {
+    const newHierarchyLevel = input.hierarchyLevel;
+    const oldHierarchyLevel = currentRecord.hierarchyLevel;
+
+    if (!newHierarchyLevel || newHierarchyLevel === oldHierarchyLevel) {
+      return;
+    }
+
+    const childLevels = await this.repository.findByParentId(currentRecord.id);
+
+    if (
+      childLevels.length > 0 &&
+      newHierarchyLevel >= Math.min(...childLevels.map((c) => c.hierarchyLevel))
+    ) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.HIERARCHY_CHANGE_INVALID,
+      );
+    }
+  }
+
+  /**
+   * Validate parent level update
+   * Kiểm tra parent-child relationships và circular references
+   */
+  private async validateParentLevelUpdate(
+    input: { hierarchyLevel?: number; parentLevelId?: string },
+    currentRecord: MktOrganizationLevelWorkspaceEntity,
+  ): Promise<void> {
+    const newHierarchyLevel =
+      input.hierarchyLevel ?? currentRecord.hierarchyLevel;
+    const newParentLevelId =
+      input.parentLevelId !== undefined
+        ? input.parentLevelId
+        : currentRecord.parentLevelId;
+
+    // Level 1 should not have parent
+    if (newHierarchyLevel === 1 && newParentLevelId) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.LEVEL_1_NO_PARENT,
+      );
+    }
+
+    // Levels > 1 should have parent
+    if (newHierarchyLevel > 1 && !newParentLevelId) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.LEVEL_NEEDS_PARENT,
+      );
+    }
+
+    // Validate parent exists and relationships
+    if (newParentLevelId && newParentLevelId !== currentRecord.id) {
+      const parentLevel = await this.repository.findById(newParentLevelId);
+
+      if (!parentLevel) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.PARENT_NOT_FOUND(newParentLevelId),
+        );
+      }
+
+      if (parentLevel.hierarchyLevel >= newHierarchyLevel) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.PARENT_HIERARCHY_INVALID(
+            parentLevel.hierarchyLevel,
+            newHierarchyLevel,
+          ),
+        );
+      }
+
+      if (!parentLevel.isActive) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.PARENT_INACTIVE,
+        );
+      }
+
+      // Check for circular reference
+      await this.checkCircularReferenceForUpdate(
+        currentRecord.id,
+        newParentLevelId,
+      );
+    }
+  }
+
+  /**
+   * Check for circular reference in parent chain
+   */
+  private async checkCircularReferenceForUpdate(
+    currentId: string,
+    newParentId: string,
+  ): Promise<void> {
+    let checkId: string | null | undefined = newParentId;
+    const visited = new Set<string>();
+
+    while (checkId && !visited.has(checkId)) {
+      if (checkId === currentId) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.CIRCULAR_REFERENCE,
+        );
+      }
+
+      visited.add(checkId);
+
+      const parent = await this.repository.findById(checkId);
+
+      checkId = parent?.parentLevelId ?? null;
+    }
+  }
+
+  /**
+   * Validate activation/deactivation change
+   */
+  private async validateActivationChange(
+    newIsActive: boolean,
+    currentRecord: MktOrganizationLevelWorkspaceEntity,
+  ): Promise<void> {
+    // If deactivating, check if this level has active children
+    if (!newIsActive && currentRecord.isActive) {
+      const childLevels = await this.repository.findByParentId(
+        currentRecord.id,
+      );
+
+      const activeChildren = childLevels.filter((c) => c.isActive);
+
+      if (activeChildren.length > 0) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.DEACTIVATE_HAS_CHILDREN,
+        );
+      }
+    }
+
+    // If activating, check if parent is active
+    if (newIsActive && !currentRecord.isActive && currentRecord.parentLevelId) {
+      const parent = await this.repository.findById(
+        currentRecord.parentLevelId,
+      );
+
+      if (parent && !parent.isActive) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.ACTIVATE_PARENT_INACTIVE,
+        );
+      }
+    }
+  }
+
+  /**
+   * Validate no child levels exist before delete
+   */
+  private async validateNoChildLevels(recordId: string): Promise<void> {
+    const childLevels = await this.repository.findByParentId(recordId);
+
+    if (childLevels.length > 0) {
+      const childNames = childLevels.map((child) => child.levelName).join(', ');
+
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.DELETE_HAS_CHILDREN(
+          childLevels.length,
+          childNames,
+        ),
+      );
+    }
+  }
+
+  /**
+   * Validate no workspace members assigned before delete
+   */
+  private async validateNoAssignedMembers(recordId: string): Promise<void> {
+    try {
+      const employeeCount =
+        await this.repository.countEmployeesAtLevel(recordId);
+
+      if (employeeCount > 0) {
+        throw new BadRequestException(
+          ORGANIZATION_LEVEL_MESSAGES.ERROR.DELETE_HAS_MEMBERS(employeeCount),
+        );
+      }
+    } catch (error) {
+      // Nếu là BadRequestException, throw lại
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      // Các lỗi khác thì log warning và tiếp tục
+      this.logger.warn(
+        ORGANIZATION_LEVEL_MESSAGES.WARN.EMPLOYEE_CHECK_FAILED(
+          (error as Error).message,
+        ),
+      );
+    }
+  }
+
+  /**
+   * Validate not the last active level before delete
+   */
+  private async validateNotLastActiveLevel(
+    recordToDelete: MktOrganizationLevelWorkspaceEntity,
+  ): Promise<void> {
+    if (!recordToDelete.isActive) {
+      return; // If already inactive, deletion is allowed
+    }
+
+    const activeCount = await this.repository.countActive();
+
+    if (activeCount <= 1) {
+      throw new BadRequestException(
+        ORGANIZATION_LEVEL_MESSAGES.ERROR.DELETE_LAST_ACTIVE,
+      );
+    }
+  }
+
+  // ============================================
+  // HELPER METHODS
+  // ============================================
 
   /**
    * Build hierarchy node từ entity

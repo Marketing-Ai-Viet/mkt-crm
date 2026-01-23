@@ -3,3 +3,5 @@ export * from './organization-level-query-options.input';
 export * from './organization-level-statistics.type';
 export * from './organization-level-validation-result.type';
 export * from './policy-creation-summary.types';
+export * from './organization-level-mutation.output';
+export * from './delete-organization-level.input';

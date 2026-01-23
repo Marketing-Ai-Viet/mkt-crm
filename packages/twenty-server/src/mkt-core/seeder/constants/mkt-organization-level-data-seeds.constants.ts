@@ -71,35 +71,36 @@ export type OrganizationLevelCode =
 
 /**
  * Organization Level IDs - 11 Levels
+ * Real UUIDs generated at 2026-01-23
  */
 export const MKT_ORGANIZATION_LEVEL_DATA_SEEDS_IDS = {
   // Executive levels
-  [ORGANIZATION_LEVEL_CODE.CEO]: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
-  [ORGANIZATION_LEVEL_CODE.C_LEVEL]: '2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7',
-  [ORGANIZATION_LEVEL_CODE.VP]: '3c4d5e6f-7a8b-9c0d-1e2f-a3b4c5d6e7f8',
+  [ORGANIZATION_LEVEL_CODE.CEO]: '74828328-443b-416b-bbb3-fd6db70113ad',
+  [ORGANIZATION_LEVEL_CODE.C_LEVEL]: '52c3b3e3-cb9f-412a-9c75-dc64fe42d80c',
+  [ORGANIZATION_LEVEL_CODE.VP]: '7db8c6b1-efa5-4bbb-aeaa-42e15e19584f',
 
   // Director levels
   [ORGANIZATION_LEVEL_CODE.SENIOR_DIRECTOR]:
-    '3d4e5f6a-7b8c-9d0e-1f2a-3b4c5d6e7f8a',
-  [ORGANIZATION_LEVEL_CODE.DIRECTOR]: '4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9',
+    '1841cee2-9046-49a6-8daf-8923aa7f5977',
+  [ORGANIZATION_LEVEL_CODE.DIRECTOR]: 'fdfac45c-6983-4d39-885b-9993d469373a',
   [ORGANIZATION_LEVEL_CODE.SENIOR_MANAGER]:
-    '4e5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b',
+    '976a15c6-19f6-4563-a5f0-b78e32fba082',
 
   // Manager level
-  [ORGANIZATION_LEVEL_CODE.MANAGER]: '5e6f7a8b-9c0d-1e2f-3a4b-c5d6e7f8a9b0',
+  [ORGANIZATION_LEVEL_CODE.MANAGER]: '6edbc87b-c9db-45f2-b41f-3374ed9e3f41',
 
   // Staff levels
   [ORGANIZATION_LEVEL_CODE.SENIOR_SPECIALIST]:
-    '5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c',
-  [ORGANIZATION_LEVEL_CODE.SPECIALIST]: '6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1',
+    '0b69ad8b-2a17-4459-ae59-1965f4c35e4d',
+  [ORGANIZATION_LEVEL_CODE.SPECIALIST]: '72f13ce6-c312-46d2-badc-6393e4cfc928',
   [ORGANIZATION_LEVEL_CODE.JUNIOR_SPECIALIST]:
-    '7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2',
-  [ORGANIZATION_LEVEL_CODE.INTERN]: '8b9c0d1e-2f3a-4b5c-6d7e-f8a9b0c1d2e3',
+    '8f8a7ff9-747d-4662-af00-b15892e0e99e',
+  [ORGANIZATION_LEVEL_CODE.INTERN]: '2fbe024e-e64a-4f67-95fb-5371d612e22c',
 
   // Legacy aliases (for backward compatibility)
-  ADMIN: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6', // Maps to CEO
-  TEAM_LEAD: '5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c', // Maps to SENIOR_SPECIALIST
-  STAFF: '6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1', // Maps to SPECIALIST
+  ADMIN: '74828328-443b-416b-bbb3-fd6db70113ad', // Maps to CEO
+  TEAM_LEAD: '0b69ad8b-2a17-4459-ae59-1965f4c35e4d', // Maps to SENIOR_SPECIALIST
+  STAFF: '72f13ce6-c312-46d2-badc-6393e4cfc928', // Maps to SPECIALIST
 };
 
 /**
