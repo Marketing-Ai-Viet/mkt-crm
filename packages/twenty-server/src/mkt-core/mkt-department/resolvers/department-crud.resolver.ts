@@ -42,13 +42,13 @@ export class DepartmentCrudResolver {
   // ============================================
 
   /**
-   * Get a department by ID
+   * Get a department by ID with full details
    */
   @Query(() => DepartmentOutput, {
     nullable: true,
-    description: 'Get a department by ID',
+    description: 'Get a department by ID with full details',
   })
-  async getMktDepartment(
+  async getDepartmentById(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('id') id: string,
   ): Promise<DepartmentOutput | null> {
@@ -68,7 +68,7 @@ export class DepartmentCrudResolver {
     nullable: true,
     description: 'Get a department by code',
   })
-  async getMktDepartmentByCode(
+  async getDepartmentByCode(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('code') code: string,
   ): Promise<DepartmentOutput | null> {
@@ -87,11 +87,12 @@ export class DepartmentCrudResolver {
 
   /**
    * Create a new department
+   * Note: Named 'createDepartment' to avoid conflict with auto-generated 'createMktDepartment'
    */
   @Mutation(() => CreateDepartmentResponse, {
-    description: 'Create a new department',
+    description: 'Create a new department with custom logic',
   })
-  async createMktDepartment(
+  async createDepartment(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('input') input: CreateDepartmentInput,
   ): Promise<CreateDepartmentResponse> {
@@ -127,11 +128,12 @@ export class DepartmentCrudResolver {
 
   /**
    * Update an existing department
+   * Note: Named 'updateDepartment' to avoid conflict with auto-generated 'updateMktDepartment'
    */
   @Mutation(() => UpdateDepartmentResponse, {
-    description: 'Update an existing department',
+    description: 'Update an existing department with custom logic',
   })
-  async updateMktDepartment(
+  async updateDepartment(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('input') input: UpdateDepartmentInput,
   ): Promise<UpdateDepartmentResponse> {
@@ -167,11 +169,12 @@ export class DepartmentCrudResolver {
 
   /**
    * Delete a department (soft delete)
+   * Note: Named 'deleteDepartment' to avoid conflict with auto-generated 'deleteMktDepartment'
    */
   @Mutation(() => DeleteDepartmentResponse, {
-    description: 'Delete a department (soft delete)',
+    description: 'Delete a department (soft delete) with custom logic',
   })
-  async deleteMktDepartment(
+  async deleteDepartment(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('id') id: string,
   ): Promise<DeleteDepartmentResponse> {
