@@ -45,6 +45,8 @@ import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-paym
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { PaymentEventService } from 'src/mkt-core/payment/services/payment-event.service';
 import { PaymentFacadeService } from 'src/mkt-core/payment/services/payment-facade.service';
+import { SepayAuthService } from 'src/mkt-core/payment/services/sepay-auth.service';
+import { SepayQrPageService } from 'src/mkt-core/payment/services/sepay-qr-page.service';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
@@ -93,6 +95,8 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentWebhookService,
     MktPaymentListenerService,
     PaymentEventService,
+    SepayAuthService,
+    SepayQrPageService,
     // Event Listeners
     PaymentNotificationListener,
   ],

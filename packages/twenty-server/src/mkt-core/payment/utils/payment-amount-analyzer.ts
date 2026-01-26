@@ -100,9 +100,7 @@ export class PaymentAmountAnalyzer {
     // Calculate percentage paid (capped at 100%)
     const percentagePaid = Math.min(
       100,
-      MoneyUtils.divideSafe(totalPaid, expectedAmount)
-        .multipliedBy(100)
-        .toNumber(),
+      MoneyUtils.divideSafe(totalPaid, expectedAmount).times(100).toNumber(),
     );
 
     // Determine status
@@ -165,7 +163,7 @@ export class PaymentAmountAnalyzer {
       return 'EXACT';
     }
 
-    if (MoneyUtils.compare(totalPaid, expectedAmount) < 0) {
+    if (MoneyUtils.lessThan(totalPaid, expectedAmount)) {
       return 'UNDERPAID';
     }
 
