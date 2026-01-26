@@ -14,7 +14,7 @@ import {
   CreatePaymentResponseDto,
   UpdatePaymentResponseDto,
 } from 'src/mkt-core/payment/dto/payment.output';
-import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+import { MktPaymentService } from 'src/mkt-core/payment/services/core';
 
 /**
  * PaymentMutationResolver - GraphQL resolver for payment mutations

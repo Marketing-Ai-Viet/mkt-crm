@@ -80,28 +80,31 @@ export class CreateOrderStep extends SagaStep<
         workspaceMemberId: context.workspaceMemberId,
       });
 
-      // Create order using repository
-      const savedOrder = await this.orderRepository.createOrder({
-        name: `Đơn hàng ${orderCode}`,
-        orderCode,
-        status: initialStatus,
-        mktCustomerId: input.customerId,
-        currency: input.currency ?? 'VND',
-        note: input.note,
-        requireContract: input.requireContract ?? false,
-        trialLicense: isTrialLicense,
-        // Initialize amounts (will be updated in CreateOrderItemsStep)
-        subtotal: 0,
-        tax: 0,
-        discount: 0,
-        totalAmount: 0,
-        // Initialize payment fields (remainingAmount will be set = totalAmount in CreateOrderItemsStep)
-        paidAmount: 0,
-        remainingAmount: 0,
-        paymentStatus: PAYMENT_STATUS.PENDING,
-        // Set ownership fields
-        ...ownershipFields,
-      });
+      // Create order using repository (pass workspaceId for saga context)
+      const savedOrder = await this.orderRepository.createOrder(
+        {
+          name: `Đơn hàng ${orderCode}`,
+          orderCode,
+          status: initialStatus,
+          mktCustomerId: input.customerId,
+          currency: input.currency ?? 'VND',
+          note: input.note,
+          requireContract: input.requireContract ?? false,
+          trialLicense: isTrialLicense,
+          // Initialize amounts (will be updated in CreateOrderItemsStep)
+          subtotal: 0,
+          tax: 0,
+          discount: 0,
+          totalAmount: 0,
+          // Initialize payment fields (remainingAmount will be set = totalAmount in CreateOrderItemsStep)
+          paidAmount: 0,
+          remainingAmount: 0,
+          paymentStatus: PAYMENT_STATUS.PENDING,
+          // Set ownership fields
+          ...ownershipFields,
+        },
+        context.workspaceId,
+      );
 
       this.logger.log(
         `Created order: ${savedOrder.id} with code: ${orderCode}`,
@@ -157,8 +160,11 @@ export class CreateOrderStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting order: ${rollbackOrder.id}`);
 
-      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
-      await this.orderRepository.softDeleteOrder(rollbackOrder.id);
+      // Use repository for delete - pass workspaceId for saga context
+      await this.orderRepository.softDeleteOrder(
+        rollbackOrder.id,
+        context.workspaceId,
+      );
 
       this.logger.log(`Order ${rollbackOrder.id} deleted successfully`);
     } catch (error) {

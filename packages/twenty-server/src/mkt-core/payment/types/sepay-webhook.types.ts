@@ -65,8 +65,20 @@ export type SepayWebhookResponseStatus =
   | 'MATCHED' // Khớp với order, xử lý thành công
   | 'UNMATCHED' // Không tìm thấy order
   | 'PARTIAL' // Thanh toán một phần
+  | 'OVERPAID' // Thanh toán vượt quá
   | 'ALREADY_PROCESSED' // Đã xử lý trước đó (idempotency)
   | 'NO_PAYMENT'; // Không có payment record
+
+/**
+ * Payment details for partial payment support
+ */
+export type SepayPaymentDetails = {
+  expectedAmount: number;
+  receivedAmount: number;
+  totalPaid: number;
+  remainingAmount: number;
+  percentagePaid: number;
+};
 
 /**
  * SePay Webhook Response
@@ -85,5 +97,7 @@ export type SepayWebhookResponse = {
     transactionId: number;
     matchedOrder?: string;
     status: SepayWebhookResponseStatus;
+    /** Payment details for partial payment scenarios */
+    paymentDetails?: SepayPaymentDetails;
   };
 };

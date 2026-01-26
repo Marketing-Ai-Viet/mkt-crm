@@ -204,13 +204,17 @@ export class CalculatePromotionStep extends SagaStep<
         'Compensating promotion step - resetting promotion data',
       );
 
-      // Reset promotion fields using repository
-      await this.orderRepository.updateOrder(rollbackData.orderId, {
-        couponCode: null,
-        promotionDiscount: 0,
-        appliedPromotions: null,
-        totalAmount: rollbackData.originalTotalAmount,
-      });
+      // Reset promotion fields using repository - pass workspaceId for saga context
+      await this.orderRepository.updateOrder(
+        rollbackData.orderId,
+        {
+          couponCode: null,
+          promotionDiscount: 0,
+          appliedPromotions: null,
+          totalAmount: rollbackData.originalTotalAmount,
+        },
+        context.workspaceId,
+      );
 
       // Clear metadata
       context.metadata.delete('promotionResult');
@@ -278,14 +282,18 @@ export class CalculatePromotionStep extends SagaStep<
       throw new Error('Order ID is required');
     }
 
-    // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
-    await this.orderRepository.updateOrder(context.orderId, {
-      couponCode: couponCode ?? null,
-      promotionDiscount: result.totalDiscount,
-      appliedPromotions:
-        result.promotions.length > 0 ? result.promotions : null,
-      totalAmount: Math.max(0, finalAmount), // Ensure non-negative
-    });
+    // Use repository for update - pass workspaceId for saga context
+    await this.orderRepository.updateOrder(
+      context.orderId,
+      {
+        couponCode: couponCode ?? null,
+        promotionDiscount: result.totalDiscount,
+        appliedPromotions:
+          result.promotions.length > 0 ? result.promotions : null,
+        totalAmount: Math.max(0, finalAmount), // Ensure non-negative
+      },
+      context.workspaceId,
+    );
 
     // Update finalAmount in typed context for subsequent steps
     typedContext.finalAmount = Math.max(0, finalAmount);

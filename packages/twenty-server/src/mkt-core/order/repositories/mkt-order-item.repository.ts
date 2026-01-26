@@ -210,9 +210,13 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
 
   /**
    * Create multiple order items
+   *
+   * @param items - Order items data to create
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async createManyOrderItems(
     items: DeepPartial<MktOrderItemWorkspaceEntity>[],
+    workspaceId?: string,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
     if (items.length === 0) {
       return [];
@@ -222,7 +226,7 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
       MKT_ORDER_ITEM_LOG_MESSAGES.CREATE_BULK_START(items.length),
     );
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const orderItems = items.map((item) => repository.create(item));
 
@@ -241,14 +245,19 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
 
   /**
    * Update order item by ID
+   *
+   * @param itemId - Order item ID to update
+   * @param data - Order item data to update
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async updateOrderItem(
     itemId: string,
     data: DeepPartial<MktOrderItemWorkspaceEntity>,
+    workspaceId?: string,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.UPDATE_START(itemId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     await repository.update(itemId, data as never);
 
@@ -301,8 +310,14 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
 
   /**
    * Soft delete multiple order items by IDs
+   *
+   * @param itemIds - Order item IDs to delete
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
-  async softDeleteManyOrderItems(itemIds: string[]): Promise<void> {
+  async softDeleteManyOrderItems(
+    itemIds: string[],
+    workspaceId?: string,
+  ): Promise<void> {
     if (itemIds.length === 0) {
       return;
     }
@@ -311,7 +326,11 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BULK_START(itemIds.length),
     );
 
-    await this.softDeleteMany(itemIds);
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(itemIds, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    } as never);
 
     this.logger.warn(
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BULK_SUCCESS(itemIds.length),

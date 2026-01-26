@@ -66,10 +66,11 @@ export class FinalizeOrderStep extends SagaStep<
 
       this.logger.log(`Finalizing order: ${context.orderId}`);
 
-      // Get order for contract creation
+      // Get order for contract creation (pass workspaceId for saga context)
       const order = await this.orderRepository.findByIdWithOptions(
         context.orderId,
         { relations: { orderItems: true } },
+        context.workspaceId,
       );
 
       if (!order) {
@@ -92,11 +93,15 @@ export class FinalizeOrderStep extends SagaStep<
       // Update order with contract and generate name if needed
       const orderName = this.generateOrderName(order);
 
-      // Use repository for update
-      await this.orderRepository.updateOrder(context.orderId, {
-        name: orderName,
-        mktContractId: contractId ?? undefined,
-      });
+      // Use repository for update - pass workspaceId for saga context
+      await this.orderRepository.updateOrder(
+        context.orderId,
+        {
+          name: orderName,
+          mktContractId: contractId ?? undefined,
+        },
+        context.workspaceId,
+      );
 
       // Get final status from typed context (set by CreateOrderStep)
       const finalStatus = typedContext.finalStatus ?? ORDER_STATUS.DRAFT;

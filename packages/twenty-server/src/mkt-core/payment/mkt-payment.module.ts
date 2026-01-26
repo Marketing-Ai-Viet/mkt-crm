@@ -6,10 +6,18 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { TransactionModule } from 'src/mkt-core/common/transaction';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { paymentConfig } from 'src/mkt-core/payment/config';
+import {
+  orderCodeConfig,
+  partialPaymentConfig,
+  paymentConfig,
+  securityConfig,
+} from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
+import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
+import { PaymentNotificationListener } from 'src/mkt-core/payment/listeners';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import {
   bidvConfig,
@@ -31,11 +39,22 @@ import {
 } from 'src/mkt-core/payment/repositories';
 import { PaymentMutationResolver } from 'src/mkt-core/payment/resolvers';
 import { SepayPaymentController } from 'src/mkt-core/payment/sepay-payment/sepay-payment.controller';
-import { MktPaymentListenerService } from 'src/mkt-core/payment/services/mkt-payment-listener.service';
-import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
-import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
-import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
-import { PaymentFacadeService } from 'src/mkt-core/payment/services/payment-facade.service';
+// Services - organized by domain
+import {
+  MktPaymentService,
+  MktPaymentPrepareService,
+  PaymentFacadeService,
+} from 'src/mkt-core/payment/services/core';
+import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook';
+import {
+  SepayAuthService,
+  SepayQrPageService,
+  SepayQrService,
+} from 'src/mkt-core/payment/services/sepay';
+import {
+  PaymentEventService,
+  MktPaymentListenerService,
+} from 'src/mkt-core/payment/services/events';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
@@ -45,16 +64,22 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(paymentConfig),
     ConfigModule.forFeature(sepayConfig),
     ConfigModule.forFeature(bidvConfig),
+    ConfigModule.forFeature(securityConfig),
+    ConfigModule.forFeature(orderCodeConfig),
+    ConfigModule.forFeature(partialPaymentConfig),
     HttpModule,
     RecordPositionModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
     JwtModule,
     AuthModule,
     WorkspaceCacheStorageModule,
+    TransactionModule,
   ],
   providers: [
     // Factory
     PaymentProviderFactory,
+    // Guards
+    IpWhitelistGuard,
     // Providers - SePay
     SepayProvider,
     SepayQrGenerator,
@@ -77,6 +102,12 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentService,
     MktPaymentWebhookService,
     MktPaymentListenerService,
+    PaymentEventService,
+    SepayAuthService,
+    SepayQrPageService,
+    SepayQrService,
+    // Event Listeners
+    PaymentNotificationListener,
   ],
   exports: [
     // Factory
@@ -94,6 +125,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentPrepareService,
     MktPaymentService,
     MktPaymentWebhookService,
+    SepayQrService,
   ],
 })
 export class MktPaymentModule implements OnModuleInit {

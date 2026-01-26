@@ -3,8 +3,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 
 import { ORDER_CONFIG_KEY, OrderConfig } from 'src/mkt-core/order/config';
-import { OrderConfirmUtilsService } from 'src/mkt-core/order/services/core/order-confirm-utils.service';
 import { MKT_TEMPLATE } from 'src/mkt-core/order/constants/mkt-template.constant';
+import { SepayQrService } from 'src/mkt-core/payment/services/sepay';
 import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
@@ -51,7 +51,7 @@ export class CreatePaymentStep extends SagaStep<
   constructor(
     private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly paymentRepository: MktPaymentRepository,
-    private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+    private readonly sepayQrService: SepayQrService,
     @Inject(ORDER_CONFIG_KEY)
     private readonly config: OrderConfig,
   ) {
@@ -271,12 +271,11 @@ export class CreatePaymentStep extends SagaStep<
       context.orderCode,
     );
 
-    const { qrCodeUrl, expiredAt } =
-      await this.orderConfirmUtilsService.generateSepayQrCodeUrl(
-        paymentMethod,
-        amount,
-        context.orderCode ?? null,
-      );
+    const { qrCodeUrl, expiredAt } = await this.sepayQrService.generateQrCode({
+      paymentMethod,
+      amount,
+      orderCode: context.orderCode ?? '',
+    });
 
     const orderId = context.orderId ?? '';
     const paymentData = this.buildPaymentData({

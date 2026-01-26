@@ -108,11 +108,12 @@ export class OrderConfirmUtilsService {
       }
 
       // Use OrderCalculationService for consistent calculation
-      // Pass discountPercent = 0, we handle absolute discount separately
+      // discountPercent = 0 vì discount được xử lý riêng (absolute discount)
+      // isCombo sẽ được auto-detect từ orderItems.itemSource
       const calculated =
         this.orderCalculationService.calculateOrderTotalsFromEntities(
           orderItems,
-          0,
+          { discountPercent: 0 },
         );
 
       // Apply absolute discount from order entity
@@ -332,8 +333,10 @@ export class OrderConfirmUtilsService {
     const orderCode = `${this.orderCodePrefix}${datePrefix}${String(nextNumber).padStart(ORDER_CODE_FORMAT.SEQUENCE_LENGTH, '0')}`;
 
     // Double-check uniqueness (defensive)
-    const existingOrder =
-      await this.mktOrderRepository.findByOrderCode(orderCode);
+    // Use orderRepository (with workspaceId) instead of findByOrderCode (which relies on scoped context)
+    const existingOrder = await orderRepository.findOne({
+      where: { orderCode },
+    });
 
     if (existingOrder) {
       this.logger.warn(
