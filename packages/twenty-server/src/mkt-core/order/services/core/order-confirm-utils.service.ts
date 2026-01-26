@@ -108,11 +108,12 @@ export class OrderConfirmUtilsService {
       }
 
       // Use OrderCalculationService for consistent calculation
-      // Pass discountPercent = 0, we handle absolute discount separately
+      // discountPercent = 0 vì discount được xử lý riêng (absolute discount)
+      // isCombo sẽ được auto-detect từ orderItems.itemSource
       const calculated =
         this.orderCalculationService.calculateOrderTotalsFromEntities(
           orderItems,
-          0,
+          { discountPercent: 0 },
         );
 
       // Apply absolute discount from order entity

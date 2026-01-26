@@ -205,14 +205,20 @@ export class CreateOrderItemsStep extends SagaStep<
       unitPrice: item.unitPrice ?? 0,
       quantity: item.quantity ?? 1,
       totalPrice: item.totalPrice ?? 0,
-      taxPercentage: item.taxPercentage ?? 0,
-      taxAmount: item.taxAmount ?? 0,
-      totalAmountWithTax: item.totalAmountWithTax ?? 0,
+      taxPercentage: 0, // Tax đã bị loại bỏ
+      taxAmount: 0, // Tax đã bị loại bỏ
+      totalAmountWithTax: item.totalPrice ?? 0, // Không có tax nên = totalPrice
     }));
 
-    // Calculate totals (discount is handled by promotion system separately)
-    const totals =
-      this.calculationService.calculateOrderTotals(calculatedItems);
+    // Xác định có phải combo order hay không
+    const isCombo = comboSnapshots.length > 0;
+
+    // Calculate totals
+    // Lưu ý: Combo orders không được áp dụng discount thêm
+    const totals = this.calculationService.calculateOrderTotals(
+      calculatedItems,
+      { isCombo },
+    );
 
     // Calculate adjusted total (after combo discount)
     const adjustedTotalAmount = MoneyUtils.subtract(
