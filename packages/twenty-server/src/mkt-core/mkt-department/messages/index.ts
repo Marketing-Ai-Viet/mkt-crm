@@ -143,6 +143,95 @@ export const DEPARTMENT_MESSAGES = {
   },
 } as const;
 
+export const SUB_MANAGER_MESSAGES = {
+  LOG: {
+    // Find operations
+    FIND_BY_ID_START: (id: string) => `Finding sub-manager by ID: ${id}`,
+    FIND_BY_ID_SUCCESS: (id: string) => `Found sub-manager: ${id}`,
+    FIND_BY_DEPARTMENT_START: (departmentId: string) =>
+      `Finding sub-managers for department: ${departmentId}`,
+    FIND_BY_DEPARTMENT_SUCCESS: (departmentId: string, count: number) =>
+      `Found ${count} sub-managers for department: ${departmentId}`,
+    FIND_BY_MEMBER_START: (memberId: string) =>
+      `Finding sub-manager assignments for member: ${memberId}`,
+    FIND_BY_MEMBER_SUCCESS: (memberId: string, count: number) =>
+      `Found ${count} assignments for member: ${memberId}`,
+    FIND_PRIMARY_START: (departmentId: string) =>
+      `Finding primary sub-manager for department: ${departmentId}`,
+    FIND_PRIMARY_SUCCESS: (departmentId: string) =>
+      `Found primary sub-manager for department: ${departmentId}`,
+
+    // Create operations
+    CREATE_START: (departmentId: string, memberId: string) =>
+      `Creating sub-manager assignment: department=${departmentId}, member=${memberId}`,
+    CREATE_SUCCESS: (id: string) =>
+      `Successfully created sub-manager assignment: ${id}`,
+
+    // Update operations
+    UPDATE_START: (id: string) => `Updating sub-manager assignment: ${id}`,
+    UPDATE_SUCCESS: (id: string) =>
+      `Successfully updated sub-manager assignment: ${id}`,
+
+    // Delete operations
+    DELETE_START: (id: string) => `Deleting sub-manager assignment: ${id}`,
+    DELETE_SUCCESS: (id: string) =>
+      `Successfully deleted sub-manager assignment: ${id}`,
+
+    // Set primary operations
+    SET_PRIMARY_START: (departmentId: string, subManagerId: string) =>
+      `Setting primary sub-manager: department=${departmentId}, subManager=${subManagerId}`,
+    SET_PRIMARY_SUCCESS: (departmentId: string, subManagerId: string) =>
+      `Successfully set primary sub-manager: department=${departmentId}, subManager=${subManagerId}`,
+
+    // Activate/Deactivate
+    ACTIVATE_START: (id: string) => `Activating sub-manager assignment: ${id}`,
+    ACTIVATE_SUCCESS: (id: string) =>
+      `Successfully activated sub-manager assignment: ${id}`,
+    DEACTIVATE_START: (id: string) =>
+      `Deactivating sub-manager assignment: ${id}`,
+    DEACTIVATE_SUCCESS: (id: string) =>
+      `Successfully deactivated sub-manager assignment: ${id}`,
+  },
+
+  WARN: {
+    NOT_FOUND: (id: string) => `Sub-manager assignment not found: ${id}`,
+    NO_PRIMARY: (departmentId: string) =>
+      `No primary sub-manager found for department: ${departmentId}`,
+    ALREADY_EXISTS: (departmentId: string, memberId: string) =>
+      `Sub-manager assignment already exists: department=${departmentId}, member=${memberId}`,
+    DEPARTMENT_MISMATCH: (subManagerId: string, departmentId: string) =>
+      `Sub-manager ${subManagerId} does not belong to department ${departmentId}`,
+  },
+
+  ERROR: {
+    NOT_FOUND: (id: string) => `Sub-manager assignment not found: ${id}`,
+    ALREADY_EXISTS:
+      'Sub-manager assignment already exists for this department and member',
+    DEPARTMENT_MISMATCH:
+      'Sub-manager does not belong to the specified department',
+    FIND_BY_ID_FAILED: (id: string, error: string) =>
+      `Failed to find sub-manager ${id}: ${error}`,
+    FIND_BY_DEPARTMENT_FAILED: (departmentId: string, error: string) =>
+      `Failed to find sub-managers for department ${departmentId}: ${error}`,
+    FIND_BY_MEMBER_FAILED: (memberId: string, error: string) =>
+      `Failed to find assignments for member ${memberId}: ${error}`,
+    FIND_PRIMARY_FAILED: (departmentId: string, error: string) =>
+      `Failed to find primary sub-manager for department ${departmentId}: ${error}`,
+    CREATE_FAILED: (error: string) =>
+      `Failed to create sub-manager assignment: ${error}`,
+    UPDATE_FAILED: (id: string, error: string) =>
+      `Failed to update sub-manager assignment ${id}: ${error}`,
+    DELETE_FAILED: (id: string, error: string) =>
+      `Failed to delete sub-manager assignment ${id}: ${error}`,
+    SET_PRIMARY_FAILED: (error: string) =>
+      `Failed to set primary sub-manager: ${error}`,
+    ACTIVATE_FAILED: (id: string, error: string) =>
+      `Failed to activate sub-manager assignment ${id}: ${error}`,
+    DEACTIVATE_FAILED: (id: string, error: string) =>
+      `Failed to deactivate sub-manager assignment ${id}: ${error}`,
+  },
+} as const;
+
 export const HIERARCHY_MESSAGES = {
   LOG: {
     // Repository operations

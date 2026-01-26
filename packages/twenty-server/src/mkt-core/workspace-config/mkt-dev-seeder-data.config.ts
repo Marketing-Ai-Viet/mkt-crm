@@ -206,6 +206,8 @@ import {
   MKT_POLICY_APPROVAL_DATA_SEED_COLUMNS,
   MKT_POLICY_APPROVAL_DATA_SEEDS,
 } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/mkt-policy-approval-data-seeds.constants';
+// Department manager update (Phase 3 - after workspace members are seeded)
+import { updateMktDepartmentManagers } from 'src/mkt-core/seeder/department-seeder/mkt-department/update-mkt-department-managers';
 
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
@@ -489,3 +491,9 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     recordSeeds: MKT_POLICY_APPROVAL_DATA_SEEDS,
   },
 ];
+
+/**
+ * Post-standard-seeds update functions
+ * Chạy SAU khi workspace members đã được seed để giải quyết circular dependency
+ */
+export const MKT_POST_STANDARD_SEEDS_UPDATES = [updateMktDepartmentManagers];
