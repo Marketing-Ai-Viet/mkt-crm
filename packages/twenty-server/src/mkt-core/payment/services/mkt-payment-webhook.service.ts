@@ -22,6 +22,7 @@ import {
   SepayWebhookResponse,
 } from 'src/mkt-core/payment/types';
 import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
+import { PaymentEventService } from 'src/mkt-core/payment/services/payment-event.service';
 import { orderCodeExtractor } from 'src/mkt-core/payment/utils';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
@@ -53,6 +54,7 @@ export class MktPaymentWebhookService {
     private readonly mktWebhookLogRepository: MktWebhookLogRepository,
     private readonly mktOrderRepository: MktOrderRepository,
     private readonly mktWorkspaceMemberRepository: MktWorkspaceMemberRepository,
+    private readonly paymentEventService: PaymentEventService,
   ) {}
 
   /**
@@ -244,6 +246,23 @@ export class MktPaymentWebhookService {
             processingTimeMs,
           });
 
+          // Step 10: Emit events after successful payment processing
+          // Events are emitted within transaction to ensure data consistency
+          // Listeners should handle their own error handling
+          this.emitPaymentEvents({
+            paymentId: primaryPayment.id,
+            orderId: order.id,
+            orderCode: order.orderCode,
+            amount: payload.transferAmount,
+            transactionId: String(payload.id),
+            gateway: payload.gateway,
+            transactionDate: payload.transactionDate,
+            workspaceId,
+            totalPaidAmount: payload.transferAmount,
+            expectedAmount: expectedAmount,
+            receivedAmount: receivedAmount,
+          });
+
           return {
             success: true,
             message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
@@ -404,5 +423,91 @@ export class MktPaymentWebhookService {
       status: ORDER_STATUS.CONFIRMED,
       accountingConfirmed: true,
     });
+  }
+
+  // ============================================
+  // EVENT EMISSION
+  // ============================================
+
+  /**
+   * Emit payment-related events after successful processing
+   *
+   * Currently emits:
+   * - payment.completed: Full payment received
+   * - order.confirmed: Order status updated to CONFIRMED
+   *
+   * Future support for partial payment will add:
+   * - payment.partial: Partial payment received
+   * - payment.overpaid: Overpayment detected
+   */
+  private emitPaymentEvents(data: {
+    paymentId: string;
+    orderId: string;
+    orderCode: string;
+    amount: number;
+    transactionId: string;
+    gateway: string;
+    transactionDate: string;
+    workspaceId: string;
+    totalPaidAmount: number;
+    expectedAmount: number;
+    receivedAmount: number;
+  }): void {
+    const isExactPayment = MoneyUtils.equals(
+      data.receivedAmount,
+      data.expectedAmount,
+    );
+    const isOverpaid =
+      MoneyUtils.compare(data.receivedAmount, data.expectedAmount) > 0;
+
+    // Emit payment completed event (currently we treat all as completed)
+    // Future: Add partial payment support in Phase 4
+    this.paymentEventService.emitPaymentCompleted({
+      paymentId: data.paymentId,
+      orderId: data.orderId,
+      orderCode: data.orderCode,
+      amount: data.amount,
+      transactionId: data.transactionId,
+      gateway: data.gateway,
+      transactionDate: data.transactionDate,
+      workspaceId: data.workspaceId,
+      totalPaidAmount: data.totalPaidAmount,
+    });
+
+    // Emit order confirmed event
+    this.paymentEventService.emitOrderConfirmed({
+      orderId: data.orderId,
+      orderCode: data.orderCode,
+      totalAmount: data.expectedAmount,
+      workspaceId: data.workspaceId,
+      confirmedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    });
+
+    // Log amount mismatch warnings
+    if (!isExactPayment) {
+      if (isOverpaid) {
+        this.logger.warn({
+          message: 'Overpayment detected - refund may be required',
+          orderCode: data.orderCode,
+          expectedAmount: data.expectedAmount,
+          receivedAmount: data.receivedAmount,
+          overpaidAmount: MoneyUtils.subtract(
+            data.receivedAmount,
+            data.expectedAmount,
+          ).toNumber(),
+        });
+      } else {
+        this.logger.warn({
+          message: 'Underpayment detected - full amount not received',
+          orderCode: data.orderCode,
+          expectedAmount: data.expectedAmount,
+          receivedAmount: data.receivedAmount,
+          remainingAmount: MoneyUtils.subtract(
+            data.expectedAmount,
+            data.receivedAmount,
+          ).toNumber(),
+        });
+      }
+    }
   }
 }

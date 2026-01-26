@@ -16,6 +16,7 @@ import {
 } from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
 import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
+import { PaymentNotificationListener } from 'src/mkt-core/payment/listeners';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import {
   bidvConfig,
@@ -41,6 +42,7 @@ import { MktPaymentListenerService } from 'src/mkt-core/payment/services/mkt-pay
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
 import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+import { PaymentEventService } from 'src/mkt-core/payment/services/payment-event.service';
 import { PaymentFacadeService } from 'src/mkt-core/payment/services/payment-facade.service';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
@@ -88,6 +90,9 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentService,
     MktPaymentWebhookService,
     MktPaymentListenerService,
+    PaymentEventService,
+    // Event Listeners
+    PaymentNotificationListener,
   ],
   exports: [
     // Factory
