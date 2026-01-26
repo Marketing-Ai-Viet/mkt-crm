@@ -8,6 +8,7 @@ import { DEPARTMENT_MESSAGES } from 'src/mkt-core/mkt-department/messages';
 import {
   MktDepartmentRepository,
   MktDepartmentHierarchyRepository,
+  MktDepartmentSubManagerRepository,
 } from 'src/mkt-core/mkt-department/repositories';
 import {
   DepartmentAncestor,
@@ -15,14 +16,19 @@ import {
   DepartmentTreeNode,
   DepartmentTreeOptions,
   HierarchyStatistics,
+  ManagerInfo,
+  SubManagerInfo,
 } from 'src/mkt-core/mkt-department/types';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
 @Injectable()
 export class DepartmentService {
   constructor(
     private readonly departmentRepository: MktDepartmentRepository,
     private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
+    private readonly subManagerRepository: MktDepartmentSubManagerRepository,
+    private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
   /**
@@ -328,7 +334,12 @@ export class DepartmentService {
       currentDepth,
     );
 
-    return this.createDepartmentTreeNode(department, currentDepth, children);
+    return this.createDepartmentTreeNode(
+      workspaceId,
+      department,
+      currentDepth,
+      children,
+    );
   }
 
   private async findDepartmentById(
@@ -393,11 +404,25 @@ export class DepartmentService {
     return children.filter(Boolean) as DepartmentTreeNode[];
   }
 
-  private createDepartmentTreeNode(
+  private async createDepartmentTreeNode(
+    workspaceId: string,
     department: MktDepartmentWorkspaceEntity,
     currentDepth: number,
     children: DepartmentTreeNode[],
-  ): DepartmentTreeNode {
+  ): Promise<DepartmentTreeNode> {
+    // Fetch manager info nếu có managerId
+    const manager = department.managerId
+      ? await this.fetchManagerInfo(workspaceId, department.managerId)
+      : undefined;
+
+    // Fetch sub-managers cho department này
+    const subManagers = await this.fetchSubManagers(workspaceId, department.id);
+
+    // Count members trong department
+    const memberCount = await this.workspaceMemberRepository.countByDepartment(
+      department.id,
+    );
+
     return {
       id: department.id,
       departmentCode: department.departmentCode,
@@ -406,7 +431,100 @@ export class DepartmentService {
       children,
       relationshipType: currentDepth === 0 ? undefined : undefined,
       hierarchyId: currentDepth === 0 ? undefined : undefined,
+      // Thêm các fields mới
+      departmentType: department.departmentType ?? undefined,
+      address: department.address,
+      manager,
+      subManagers: subManagers.length > 0 ? subManagers : undefined,
+      memberCount,
     };
+  }
+
+  /**
+   * Fetch manager info từ workspace member
+   */
+  private async fetchManagerInfo(
+    workspaceId: string,
+    managerId: string,
+  ): Promise<ManagerInfo | undefined> {
+    const member =
+      await this.workspaceMemberRepository.findMemberById(managerId);
+
+    if (!member) {
+      return undefined;
+    }
+
+    return {
+      id: member.id,
+      firstName: member.name?.firstName,
+      lastName: member.name?.lastName,
+      fullName: this.buildFullName(
+        member.name?.firstName,
+        member.name?.lastName,
+      ),
+      email: member.userEmail,
+      avatarUrl: member.avatarUrl,
+    };
+  }
+
+  /**
+   * Fetch sub-managers với thông tin workspace member
+   */
+  private async fetchSubManagers(
+    workspaceId: string,
+    departmentId: string,
+  ): Promise<SubManagerInfo[]> {
+    const subManagerAssignments =
+      await this.subManagerRepository.findByDepartmentId(
+        workspaceId,
+        departmentId,
+      );
+
+    const subManagerInfos: SubManagerInfo[] = [];
+
+    for (const assignment of subManagerAssignments) {
+      // Skip nếu không có workspaceMemberId
+      if (!assignment.workspaceMemberId) {
+        continue;
+      }
+
+      const member = await this.workspaceMemberRepository.findMemberById(
+        assignment.workspaceMemberId,
+      );
+
+      if (member) {
+        subManagerInfos.push({
+          id: assignment.id,
+          workspaceMemberId: assignment.workspaceMemberId,
+          firstName: member.name?.firstName,
+          lastName: member.name?.lastName,
+          fullName: this.buildFullName(
+            member.name?.firstName,
+            member.name?.lastName,
+          ),
+          email: member.userEmail,
+          avatarUrl: member.avatarUrl,
+          isPrimary: assignment.isPrimary ?? false,
+          isActive: assignment.isActive ?? true,
+          note: assignment.note ?? undefined,
+          assignedAt: assignment.assignedAt ?? undefined,
+        });
+      }
+    }
+
+    return subManagerInfos;
+  }
+
+  /**
+   * Build full name từ firstName và lastName
+   */
+  private buildFullName(
+    firstName?: string,
+    lastName?: string,
+  ): string | undefined {
+    const parts = [firstName, lastName].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(' ') : undefined;
   }
 
   private async collectDescendants(

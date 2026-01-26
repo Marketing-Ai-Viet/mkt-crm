@@ -452,6 +452,7 @@ export class RbacContextService {
     // Get departments where user is sub-manager
     const subManagedAssignments =
       await this.departmentSubManagerRepository.findByWorkspaceMemberId(
+        workspaceId,
         workspaceMemberId,
         { activeOnly: true },
       );
@@ -550,6 +551,7 @@ export class RbacContextService {
   ): Promise<boolean> {
     const subManagedCount =
       await this.departmentSubManagerRepository.countByWorkspaceMemberId(
+        workspaceId,
         workspaceMemberId,
         { activeOnly: true },
       );

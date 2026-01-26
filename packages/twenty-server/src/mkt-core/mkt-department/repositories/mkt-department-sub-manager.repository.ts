@@ -36,10 +36,11 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find all sub-managers for a department
    */
   async findByDepartmentId(
+    workspaceId: string,
     departmentId: string,
     options?: { activeOnly?: boolean },
   ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const whereClause: Record<string, unknown> = {
       departmentId,
@@ -60,10 +61,11 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find all department assignments for a workspace member
    */
   async findByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
     options?: { activeOnly?: boolean },
   ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const whereClause: Record<string, unknown> = {
       workspaceMemberId,
@@ -84,13 +86,32 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find specific assignment by department and workspace member
    */
   async findByDepartmentAndMember(
+    workspaceId: string,
     departmentId: string,
     workspaceMemberId: string,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity | null> {
-    return this.findOne({
-      departmentId,
-      workspaceMemberId,
-      deletedAt: IsNull(),
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: {
+        departmentId,
+        workspaceMemberId,
+        deletedAt: IsNull(),
+      },
+    });
+  }
+
+  /**
+   * Find by ID with workspace context
+   */
+  async findByIdWithWorkspace(
+    workspaceId: string,
+    id: string,
+  ): Promise<MktDepartmentSubManagerWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
   }
 
@@ -98,13 +119,18 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Find primary sub-manager for a department
    */
   async findPrimaryByDepartmentId(
+    workspaceId: string,
     departmentId: string,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity | null> {
-    return this.findOne({
-      departmentId,
-      isPrimary: true,
-      isActive: true,
-      deletedAt: IsNull(),
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: {
+        departmentId,
+        isPrimary: true,
+        isActive: true,
+        deletedAt: IsNull(),
+      },
     });
   }
 
@@ -112,12 +138,16 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Check if assignment exists
    */
   async assignmentExists(
+    workspaceId: string,
     departmentId: string,
     workspaceMemberId: string,
   ): Promise<boolean> {
-    return this.existsWhere({
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.existsBy({
       departmentId,
       workspaceMemberId,
+      deletedAt: IsNull(),
     });
   }
 
@@ -129,36 +159,45 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Create new sub-manager assignment with defaults
    */
   async createAssignment(
+    workspaceId: string,
     data: Partial<MktDepartmentSubManagerWorkspaceEntity>,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity> {
-    return this.create({
+    const repository = await this.getRepository(workspaceId);
+
+    const entity = repository.create({
       ...data,
       assignedAt: data.assignedAt ?? DateTimeUtils.now().toJSDate(),
       isActive: data.isActive ?? true,
       isPrimary: data.isPrimary ?? false,
     });
+
+    return repository.save(entity);
   }
 
   /**
    * Bulk create sub-manager assignments
    */
   async bulkCreateAssignments(
+    workspaceId: string,
     assignments: Array<Partial<MktDepartmentSubManagerWorkspaceEntity>>,
   ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
     if (assignments.length === 0) {
       return [];
     }
 
+    const repository = await this.getRepository(workspaceId);
     const now = DateTimeUtils.now().toJSDate();
 
-    const items = assignments.map((data) => ({
-      ...data,
-      assignedAt: data.assignedAt ?? now,
-      isActive: data.isActive ?? true,
-      isPrimary: data.isPrimary ?? false,
-    }));
+    const entities = assignments.map((data) =>
+      repository.create({
+        ...data,
+        assignedAt: data.assignedAt ?? now,
+        isActive: data.isActive ?? true,
+        isPrimary: data.isPrimary ?? false,
+      }),
+    );
 
-    return this.bulkCreate(items);
+    return repository.save(entities);
   }
 
   // ============================================
@@ -166,11 +205,28 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
   // ============================================
 
   /**
+   * Update sub-manager assignment
+   */
+  async updateAssignment(
+    workspaceId: string,
+    id: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(id, data as never);
+  }
+
+  /**
    * Set primary sub-manager for a department
    * Unsets any existing primary first
    */
-  async setPrimary(departmentId: string, subManagerId: string): Promise<void> {
-    const repository = await this.getRepository();
+  async setPrimary(
+    workspaceId: string,
+    departmentId: string,
+    subManagerId: string,
+  ): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
 
     // Unset existing primary
     await repository.update(
@@ -185,15 +241,19 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
   /**
    * Deactivate sub-manager assignment
    */
-  async deactivate(id: string): Promise<void> {
-    await this.update(id, { isActive: false });
+  async deactivate(workspaceId: string, id: string): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(id, { isActive: false });
   }
 
   /**
    * Activate sub-manager assignment
    */
-  async activate(id: string): Promise<void> {
-    await this.update(id, { isActive: true });
+  async activate(workspaceId: string, id: string): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(id, { isActive: true });
   }
 
   // ============================================
@@ -201,10 +261,32 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
   // ============================================
 
   /**
+   * Soft delete sub-manager assignment
+   */
+  async softDeleteAssignment(workspaceId: string, id: string): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(id, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    } as never);
+
+    this.logger.log(`Soft deleted sub-manager assignment ${id}`);
+  }
+
+  /**
    * Remove all sub-manager assignments for a department
    */
-  async removeAllByDepartmentId(departmentId: string): Promise<number> {
-    const affected = await this.softDeleteWhere({ departmentId });
+  async removeAllByDepartmentId(
+    workspaceId: string,
+    departmentId: string,
+  ): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository.update({ departmentId }, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    } as never);
+
+    const affected = result.affected ?? 0;
 
     this.logger.log(
       `Removed ${affected} sub-manager assignments for department ${departmentId}`,
@@ -217,11 +299,16 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Remove all sub-manager assignments for a workspace member
    */
   async removeAllByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
   ): Promise<number> {
-    const affected = await this.softDeleteWhere({
-      workspaceMemberId,
-    });
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository.update({ workspaceMemberId }, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    } as never);
+
+    const affected = result.affected ?? 0;
 
     this.logger.log(
       `Removed ${affected} sub-manager assignments for member ${workspaceMemberId}`,
@@ -238,9 +325,12 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
    * Count sub-managers for a department
    */
   async countByDepartmentId(
+    workspaceId: string,
     departmentId: string,
     options?: { activeOnly?: boolean },
   ): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
     const whereClause: Record<string, unknown> = {
       departmentId,
       deletedAt: IsNull(),
@@ -250,18 +340,22 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
       whereClause.isActive = true;
     }
 
-    return this.count(
-      whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
-    );
+    return repository.count({
+      where:
+        whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
+    });
   }
 
   /**
    * Count department assignments for a workspace member
    */
   async countByWorkspaceMemberId(
+    workspaceId: string,
     workspaceMemberId: string,
     options?: { activeOnly?: boolean },
   ): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
     const whereClause: Record<string, unknown> = {
       workspaceMemberId,
       deletedAt: IsNull(),
@@ -271,8 +365,9 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
       whereClause.isActive = true;
     }
 
-    return this.count(
-      whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
-    );
+    return repository.count({
+      where:
+        whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
+    });
   }
 }

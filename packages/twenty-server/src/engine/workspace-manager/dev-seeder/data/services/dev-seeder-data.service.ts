@@ -100,6 +100,7 @@ import {
   shouldSeedDemoData,
 } from 'src/mkt-core/seeder/types/seed-profile.types';
 import {
+  MKT_POST_STANDARD_SEEDS_UPDATES,
   MKT_RECORD_SEEDS_CONFIGS,
   MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES,
 } from 'src/mkt-core/workspace-config/mkt-dev-seeder-data.config';
@@ -313,6 +314,16 @@ export class DevSeederDataService {
             pgColumns: recordSeedsConfig.pgColumns,
             recordSeeds: recordSeedsConfig.recordSeeds,
           });
+        }
+
+        // Post-standard-seeds updates - giải quyết circular dependency
+        // Chạy sau khi workspace members đã được seed
+        if (shouldSeedDemoData(profile)) {
+          this.logger.log('Running post-standard-seeds updates...');
+          for (const updateFn of MKT_POST_STANDARD_SEEDS_UPDATES) {
+            await updateFn(entityManager, schemaName);
+          }
+          this.logger.log('Post-standard-seeds updates completed');
         }
 
         // Timeline activities only for development/demo profiles

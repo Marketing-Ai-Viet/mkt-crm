@@ -1,4 +1,33 @@
-export interface DepartmentTreeNode {
+/**
+ * Manager information type
+ */
+export type ManagerInfo = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  email?: string;
+  avatarUrl?: string;
+};
+
+/**
+ * Sub-manager information with member details
+ */
+export type SubManagerInfo = {
+  id: string;
+  workspaceMemberId: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  email?: string;
+  avatarUrl?: string;
+  isPrimary: boolean;
+  isActive: boolean;
+  note?: string;
+  assignedAt?: Date;
+};
+
+export type DepartmentTreeNode = {
   id: string;
   departmentCode: string;
   departmentName: string;
@@ -7,7 +36,13 @@ export interface DepartmentTreeNode {
   relationshipType?: string;
   hierarchyId?: string;
   parent?: DepartmentTreeNode;
-}
+  // New fields
+  departmentType?: string;
+  address?: string;
+  manager?: ManagerInfo;
+  subManagers?: SubManagerInfo[];
+  memberCount?: number;
+};
 
 export interface DepartmentAncestor {
   id: string;

@@ -4,6 +4,7 @@ import {
   MKT_DEPARTMENT_DATA_SEEDS_IDS,
   TEAM,
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 
 export const MKT_DEPARTMENT_DATA_SEED_COLUMNS = [
   'id',
@@ -21,12 +22,130 @@ export const MKT_DEPARTMENT_DATA_SEED_COLUMNS = [
   'colorCode',
   'iconName',
   'isActive',
+  'address',
+  'managerId',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
   'createdByName',
 ];
 
+/**
+ * Phase 3: Manager assignments - UPDATE sau khi workspace members đã được seed
+ * Mapping: departmentId -> managerId
+ */
+export const DEPARTMENT_MANAGER_ASSIGNMENTS: Array<{
+  departmentId: string;
+  managerId: string;
+}> = [
+  // Level 1 - Departments
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[DEPARTMENT.SALES],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[DEPARTMENT.SUPPORT],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[DEPARTMENT.ACCOUNTING],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[DEPARTMENT.HR],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[DEPARTMENT.TECH],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  // Level 2 - Teams (SALES)
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SALES_DOMESTIC],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SALES_INTERNATIONAL],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SALES_PARTNER],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SALES_ONLINE],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  // Level 2 - Teams (SUPPORT)
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SUPPORT_CUSTOMER],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SUPPORT_TECHNICAL],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.SUPPORT_INTERNAL],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
+  },
+  // Level 2 - Teams (ACCOUNTING)
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.ACCOUNTING_PAYABLE],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.ACCOUNTING_RECEIVABLE],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.ACCOUNTING_AUDIT],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.ACCOUNTING_TAX],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
+  },
+  // Level 2 - Teams (HR)
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.HR_RECRUITMENT],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.HR_TRAINING],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.HR_PAYROLL],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
+  },
+  // Level 2 - Teams (TECH)
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.TECH_BACKEND],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.TECH_FRONTEND],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.TECH_DEVOPS],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.TECH_QA],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
+  },
+  {
+    departmentId: MKT_DEPARTMENT_DATA_SEEDS_IDS[TEAM.TECH_DATA],
+    managerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM,
+  },
+];
+
+/**
+ * Phase 1: Department seed data với managerId = null
+ * Sẽ được update ở Phase 3 sau khi workspace members đã seed
+ */
 export const DEPARTMENT_DATA_SEEDS = [
   //Level 1
   {
@@ -45,6 +164,8 @@ export const DEPARTMENT_DATA_SEEDS = [
     colorCode: '#FF5733',
     iconName: 'sales_icon',
     isActive: true,
+    address: 'Tầng 5, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Quận 1, TP.HCM',
+    managerId: null,
     position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -66,6 +187,8 @@ export const DEPARTMENT_DATA_SEEDS = [
     colorCode: '#33C1FF',
     iconName: 'support_icon',
     isActive: true,
+    address: 'Tầng 3, Tòa nhà Bitexco, 2 Hải Triều, Quận 1, TP.HCM',
+    managerId: null,
     position: 2,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -87,6 +210,9 @@ export const DEPARTMENT_DATA_SEEDS = [
     colorCode: '#28A745',
     iconName: 'accounting_icon',
     isActive: true,
+    address:
+      'Tầng 8, Tòa nhà Saigon Trade Center, 37 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 3,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -108,6 +234,8 @@ export const DEPARTMENT_DATA_SEEDS = [
     colorCode: '#FFC107',
     iconName: 'hr_icon',
     isActive: true,
+    address: 'Tầng 12, Tòa nhà Lim Tower, 9-11 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 4,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -129,6 +257,9 @@ export const DEPARTMENT_DATA_SEEDS = [
     colorCode: '#6F42C1',
     iconName: 'tech_icon',
     isActive: true,
+    address:
+      'Tầng 15, Tòa nhà Dreamplex, 195 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+    managerId: null,
     position: 5,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -154,6 +285,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#FF8C00',
     iconName: 'domestic_sales_icon',
     isActive: true,
+    address: 'Tầng 5, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Quận 1, TP.HCM',
+    managerId: null,
     position: 1,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -175,6 +308,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#FF6347',
     iconName: 'international_sales_icon',
     isActive: true,
+    address: 'Tầng 6, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Quận 1, TP.HCM',
+    managerId: null,
     position: 2,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -196,6 +331,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#FF4500',
     iconName: 'partner_sales_icon',
     isActive: true,
+    address: 'Tầng 7, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Quận 1, TP.HCM',
+    managerId: null,
     position: 3,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -217,6 +354,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#FF7F50',
     iconName: 'online_sales_icon',
     isActive: true,
+    address: 'Tầng 8, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Quận 1, TP.HCM',
+    managerId: null,
     position: 4,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -239,6 +378,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#00BFFF',
     iconName: 'customer_support_icon',
     isActive: true,
+    address: 'Tầng 3, Tòa nhà Bitexco, 2 Hải Triều, Quận 1, TP.HCM',
+    managerId: null,
     position: 5,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -260,6 +401,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#1E90FF',
     iconName: 'technical_support_icon',
     isActive: true,
+    address: 'Tầng 4, Tòa nhà Bitexco, 2 Hải Triều, Quận 1, TP.HCM',
+    managerId: null,
     position: 6,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -281,6 +424,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#4169E1',
     iconName: 'internal_support_icon',
     isActive: true,
+    address: 'Tầng 5, Tòa nhà Bitexco, 2 Hải Triều, Quận 1, TP.HCM',
+    managerId: null,
     position: 7,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -303,6 +448,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#32CD32',
     iconName: 'accounts_payable_icon',
     isActive: true,
+    address:
+      'Tầng 8, Tòa nhà Saigon Trade Center, 37 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 8,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -324,6 +472,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#90EE90',
     iconName: 'accounts_receivable_icon',
     isActive: true,
+    address:
+      'Tầng 9, Tòa nhà Saigon Trade Center, 37 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 9,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -345,6 +496,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#228B22',
     iconName: 'audit_icon',
     isActive: true,
+    address:
+      'Tầng 10, Tòa nhà Saigon Trade Center, 37 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 10,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -366,6 +520,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#008000',
     iconName: 'tax_icon',
     isActive: true,
+    address:
+      'Tầng 11, Tòa nhà Saigon Trade Center, 37 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 11,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -388,6 +545,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#FFD700',
     iconName: 'recruitment_icon',
     isActive: true,
+    address: 'Tầng 12, Tòa nhà Lim Tower, 9-11 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 12,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -409,6 +568,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#F0E68C',
     iconName: 'training_icon',
     isActive: true,
+    address: 'Tầng 13, Tòa nhà Lim Tower, 9-11 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 13,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -430,6 +591,8 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#DAA520',
     iconName: 'payroll_icon',
     isActive: true,
+    address: 'Tầng 14, Tòa nhà Lim Tower, 9-11 Tôn Đức Thắng, Quận 1, TP.HCM',
+    managerId: null,
     position: 14,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -452,6 +615,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#9370DB',
     iconName: 'backend_icon',
     isActive: true,
+    address:
+      'Tầng 15, Tòa nhà Dreamplex, 195 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+    managerId: null,
     position: 15,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -473,6 +639,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#8A2BE2',
     iconName: 'frontend_icon',
     isActive: true,
+    address:
+      'Tầng 16, Tòa nhà Dreamplex, 195 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+    managerId: null,
     position: 16,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -494,6 +663,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#7B68EE',
     iconName: 'devops_icon',
     isActive: true,
+    address:
+      'Tầng 17, Tòa nhà Dreamplex, 195 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+    managerId: null,
     position: 17,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -515,6 +687,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#6A5ACD',
     iconName: 'qa_icon',
     isActive: true,
+    address:
+      'Tầng 18, Tòa nhà Dreamplex, 195 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+    managerId: null,
     position: 18,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
@@ -537,6 +712,9 @@ export const TEAM_DATA_SEEDS = [
     colorCode: '#483D8B',
     iconName: 'data_icon',
     isActive: true,
+    address:
+      'Tầng 19, Tòa nhà Dreamplex, 195 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
+    managerId: null,
     position: 19,
     createdBySource: 'API',
     createdByWorkspaceMemberId: null,
