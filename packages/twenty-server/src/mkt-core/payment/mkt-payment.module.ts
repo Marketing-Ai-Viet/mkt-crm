@@ -39,14 +39,21 @@ import {
 } from 'src/mkt-core/payment/repositories';
 import { PaymentMutationResolver } from 'src/mkt-core/payment/resolvers';
 import { SepayPaymentController } from 'src/mkt-core/payment/sepay-payment/sepay-payment.controller';
-import { MktPaymentListenerService } from 'src/mkt-core/payment/services/mkt-payment-listener.service';
-import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
-import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
-import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
-import { PaymentEventService } from 'src/mkt-core/payment/services/payment-event.service';
-import { PaymentFacadeService } from 'src/mkt-core/payment/services/payment-facade.service';
-import { SepayAuthService } from 'src/mkt-core/payment/services/sepay-auth.service';
-import { SepayQrPageService } from 'src/mkt-core/payment/services/sepay-qr-page.service';
+// Services - organized by domain
+import {
+  MktPaymentService,
+  MktPaymentPrepareService,
+  PaymentFacadeService,
+} from 'src/mkt-core/payment/services/core';
+import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook';
+import {
+  SepayAuthService,
+  SepayQrPageService,
+} from 'src/mkt-core/payment/services/sepay';
+import {
+  PaymentEventService,
+  MktPaymentListenerService,
+} from 'src/mkt-core/payment/services/events';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 

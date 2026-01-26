@@ -9,7 +9,7 @@ import {
   SEPAY_TEMPLATE_DEFAULTS,
   VIETNAM_TIMEZONE,
 } from 'src/mkt-core/payment/constants/sepay.constants';
-import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
+import { MktPaymentService } from 'src/mkt-core/payment/services/core';
 import {
   DATE_TIME_FORMATS,
   DateTimeUtils,

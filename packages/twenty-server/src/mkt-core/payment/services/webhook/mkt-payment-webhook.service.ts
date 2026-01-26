@@ -27,7 +27,7 @@ import {
   SepayWebhookResponseStatus,
 } from 'src/mkt-core/payment/types';
 import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
-import { PaymentEventService } from 'src/mkt-core/payment/services/payment-event.service';
+import { PaymentEventService } from 'src/mkt-core/payment/services/events';
 import {
   orderCodeExtractor,
   paymentAmountAnalyzer,

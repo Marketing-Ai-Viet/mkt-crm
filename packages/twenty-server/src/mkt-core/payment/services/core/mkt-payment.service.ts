@@ -29,7 +29,7 @@ import {
 } from 'src/mkt-core/payment/dto/payment.output';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
-import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/mkt-payment-prepare.service';
+import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/core/mkt-payment-prepare.service';
 import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 

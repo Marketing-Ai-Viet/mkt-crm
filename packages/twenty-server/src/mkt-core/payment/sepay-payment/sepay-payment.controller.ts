@@ -25,9 +25,11 @@ import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
 import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
-import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
-import { SepayAuthService } from 'src/mkt-core/payment/services/sepay-auth.service';
-import { SepayQrPageService } from 'src/mkt-core/payment/services/sepay-qr-page.service';
+import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook';
+import {
+  SepayAuthService,
+  SepayQrPageService,
+} from 'src/mkt-core/payment/services/sepay';
 import { SepayWebhookResponse } from 'src/mkt-core/payment/types';
 import {
   RequestSepayJWT,
