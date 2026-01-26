@@ -8,7 +8,7 @@ import {
 import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { paymentConfig } from 'src/mkt-core/payment/config';
+import { orderCodeConfig, paymentConfig } from 'src/mkt-core/payment/config';
 import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import { WebhookLogStatus } from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
@@ -22,6 +22,7 @@ import {
   SepayWebhookResponse,
 } from 'src/mkt-core/payment/types';
 import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
+import { orderCodeExtractor } from 'src/mkt-core/payment/utils';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
@@ -45,6 +46,8 @@ export class MktPaymentWebhookService {
   constructor(
     @Inject(paymentConfig.KEY)
     private readonly config: ConfigType<typeof paymentConfig>,
+    @Inject(orderCodeConfig.KEY)
+    private readonly orderCodeCfg: ConfigType<typeof orderCodeConfig>,
     private readonly transactionScopeService: TransactionScopeService,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktWebhookLogRepository: MktWebhookLogRepository,
@@ -117,9 +120,31 @@ export class MktPaymentWebhookService {
             };
           }
 
-          // Step 3: Validate code
-          if (!payload.code) {
-            this.logger.warn('Webhook payload has no code');
+          // Step 3: Get order code - prioritize `code` field, fallback to content parsing
+          let orderCode = payload.code;
+
+          if (!orderCode && this.orderCodeCfg.enableContentParsing) {
+            this.logger.log(
+              'Code field is null, attempting to extract from content',
+            );
+            orderCode = orderCodeExtractor.extract(payload.content);
+
+            if (orderCode) {
+              this.logger.log({
+                message: 'Extracted order code from content',
+                extractedCode: orderCode,
+                content: payload.content,
+              });
+            } else {
+              this.logger.warn({
+                message: 'Could not extract order code from content',
+                content: payload.content,
+              });
+            }
+          }
+
+          if (!orderCode) {
+            this.logger.warn('No order code found in payload');
             await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
               responseStatus: 200,
               responseBody: { status: 'UNMATCHED' },
@@ -133,13 +158,13 @@ export class MktPaymentWebhookService {
           }
 
           // Step 4: Find order
-          const order = await this.findOneByOrderCode(payload.code);
+          const order = await this.findOneByOrderCode(orderCode);
 
           if (!order) {
-            this.logger.error(`Order not found for code: ${payload.code}`);
+            this.logger.error(`Order not found for code: ${orderCode}`);
             await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
               responseStatus: 200,
-              responseBody: { status: 'UNMATCHED' },
+              responseBody: { status: 'UNMATCHED', searchedCode: orderCode },
             });
 
             return {
@@ -155,7 +180,7 @@ export class MktPaymentWebhookService {
 
           if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
             this.logger.warn(
-              `Amount mismatch for order ${payload.code}: expected ${expectedAmount}, received ${receivedAmount}`,
+              `Amount mismatch for order ${orderCode}: expected ${expectedAmount}, received ${receivedAmount}`,
             );
           }
 

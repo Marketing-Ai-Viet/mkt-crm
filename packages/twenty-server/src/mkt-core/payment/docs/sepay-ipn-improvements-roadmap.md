@@ -1376,11 +1376,12 @@ export class MktPaymentModule {}
 - [x] Add Zod validation for security config
 - [ ] Write unit tests (skipped)
 
-#### Phase 2: Order Matching (Week 2-3)
-- [ ] Implement OrderCodeExtractor
-- [ ] Add configuration for custom patterns
-- [ ] Write unit tests
-- [ ] Integration testing
+#### Phase 2: Order Matching (Week 2-3) ✅ COMPLETED
+- [x] Implement OrderCodeExtractor
+- [x] Add configuration for custom patterns (Zod validated)
+- [x] Integrate into webhook service
+- [ ] Write unit tests (skipped)
+- [ ] Integration testing (skipped)
 
 #### Phase 3: Event System (Week 3-4)
 - [ ] Define all event types

@@ -9,7 +9,11 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 import { TransactionModule } from 'src/mkt-core/common/transaction';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { paymentConfig, securityConfig } from 'src/mkt-core/payment/config';
+import {
+  orderCodeConfig,
+  paymentConfig,
+  securityConfig,
+} from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
 import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
@@ -48,6 +52,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(sepayConfig),
     ConfigModule.forFeature(bidvConfig),
     ConfigModule.forFeature(securityConfig),
+    ConfigModule.forFeature(orderCodeConfig),
     HttpModule,
     RecordPositionModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
