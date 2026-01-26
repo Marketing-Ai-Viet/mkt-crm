@@ -333,8 +333,10 @@ export class OrderConfirmUtilsService {
     const orderCode = `${this.orderCodePrefix}${datePrefix}${String(nextNumber).padStart(ORDER_CODE_FORMAT.SEQUENCE_LENGTH, '0')}`;
 
     // Double-check uniqueness (defensive)
-    const existingOrder =
-      await this.mktOrderRepository.findByOrderCode(orderCode);
+    // Use orderRepository (with workspaceId) instead of findByOrderCode (which relies on scoped context)
+    const existingOrder = await orderRepository.findOne({
+      where: { orderCode },
+    });
 
     if (existingOrder) {
       this.logger.warn(

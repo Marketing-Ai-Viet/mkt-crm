@@ -49,7 +49,6 @@ export class SepayPaymentController {
     private readonly sepayQrPageService: SepayQrPageService,
   ) {}
 
-  // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
   @UseGuards(PublicEndpointGuard, IpWhitelistGuard)
   @Post('hooks/sepay-payment')
   @HttpCode(HttpStatus.OK)

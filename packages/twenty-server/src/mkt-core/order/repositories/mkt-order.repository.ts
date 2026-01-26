@@ -54,14 +54,19 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
   /**
    * Find order by ID with options (logging included)
+   *
+   * @param orderId - Order ID to find
+   * @param options - Find options including relations
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async findByIdWithOptions(
     orderId: string,
     options?: FindOrderOptions,
+    workspaceId?: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.FIND_BY_ID_START(orderId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const order = await repository.findOne({
       where: { id: orderId },
@@ -252,13 +257,17 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
   /**
    * Create new order
+   *
+   * @param data - Order data to create
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async createOrder(
     data: DeepPartial<MktOrderWorkspaceEntity>,
+    workspaceId?: string,
   ): Promise<MktOrderWorkspaceEntity> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.CREATE_START());
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const order = repository.create({
       ...data,
@@ -302,14 +311,16 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    *
    * @param orderId - Order ID cần update
    * @param data - Partial data cần update
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async updateOrder(
     orderId: string,
     data: DeepPartial<MktOrderWorkspaceEntity>,
+    workspaceId?: string,
   ): Promise<void> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.UPDATE_START(orderId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     // Sử dụng QueryBuilder để atomic update với version increment
     await repository
@@ -396,11 +407,18 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
 
   /**
    * Soft delete order by setting deletedAt timestamp
+   *
+   * @param orderId - Order ID to delete
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
-  async softDeleteOrder(orderId: string): Promise<void> {
+  async softDeleteOrder(orderId: string, workspaceId?: string): Promise<void> {
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_START(orderId));
 
-    await this.softDelete(orderId);
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(orderId, {
+      deletedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+    } as never);
 
     this.logger.warn(MKT_ORDER_LOG_MESSAGES.DELETE_SUCCESS(orderId));
   }

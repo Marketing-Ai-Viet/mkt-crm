@@ -145,10 +145,11 @@ export class CreateLicensesStep extends SagaStep<
         };
       }
 
-      // Get order with items from repository
+      // Get order with items from repository (pass workspaceId for saga context)
       const order = await this.orderRepository.findByIdWithOptions(
         context.orderId,
         { relations: { orderItems: true } },
+        context.workspaceId,
       );
 
       if (!order) {
@@ -348,10 +349,12 @@ export class CreateLicensesStep extends SagaStep<
       const existingLicenses = item.licenses ?? [];
       const updatedLicenses = [...existingLicenses, orderItemLicense];
 
-      // Update order item with license info
-      await this.orderItemRepository.updateOrderItem(item.id, {
-        licenses: updatedLicenses,
-      });
+      // Update order item with license info - pass workspaceId for saga context
+      await this.orderItemRepository.updateOrderItem(
+        item.id,
+        { licenses: updatedLicenses },
+        workspaceId,
+      );
 
       this.logger.log(
         `${result.reused ? 'Reused' : 'Created'} trial license ${license.id} for item ${item.id} (total: ${updatedLicenses.length})`,

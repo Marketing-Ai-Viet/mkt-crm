@@ -130,9 +130,10 @@ export class CreateOrderItemsStep extends SagaStep<
     try {
       this.logger.warn(`Hard deleting ${data.orderItemIds.length} order items`);
 
-      // Use repository for delete - queryRunner.manager doesn't have workspace entity metadata
+      // Use repository for delete - pass workspaceId for saga context
       await this.orderItemRepository.softDeleteManyOrderItems(
         data.orderItemIds,
+        context.workspaceId,
       );
 
       this.logger.log('Order items deleted successfully');
@@ -192,9 +193,11 @@ export class CreateOrderItemsStep extends SagaStep<
       };
     }
 
-    // Save order items using repository
-    const savedOrderItems =
-      await this.orderItemRepository.createManyOrderItems(allOrderItemsData);
+    // Save order items using repository (pass workspaceId for saga context)
+    const savedOrderItems = await this.orderItemRepository.createManyOrderItems(
+      allOrderItemsData,
+      context.workspaceId,
+    );
 
     this.logger.log(`Created ${savedOrderItems.length} order items`);
 
@@ -534,15 +537,19 @@ export class CreateOrderItemsStep extends SagaStep<
       throw new Error('Order ID is required');
     }
 
-    // Use repository for update - queryRunner.manager doesn't have workspace entity metadata
-    await this.orderRepository.updateOrder(context.orderId, {
-      subtotal: totals.subtotal,
-      tax: totals.tax,
-      discount: totals.discount,
-      totalAmount: totals.totalAmount,
-      // Set remainingAmount = totalAmount (no payment yet)
-      remainingAmount: totals.totalAmount,
-    });
+    // Use repository for update - pass workspaceId for saga context
+    await this.orderRepository.updateOrder(
+      context.orderId,
+      {
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        discount: totals.discount,
+        totalAmount: totals.totalAmount,
+        // Set remainingAmount = totalAmount (no payment yet)
+        remainingAmount: totals.totalAmount,
+      },
+      context.workspaceId,
+    );
 
     // Store in context for subsequent steps
     context.metadata.set('totalAmount', totals.totalAmount);
@@ -572,18 +579,22 @@ export class CreateOrderItemsStep extends SagaStep<
       comboDiscount,
     ).toNumber();
 
-    // Use repository for update
-    await this.orderRepository.updateOrder(context.orderId, {
-      subtotal: totals.subtotal,
-      tax: totals.tax,
-      discount: totals.discount,
-      totalAmount: adjustedTotalAmount,
-      // Set remainingAmount = totalAmount (no payment yet)
-      remainingAmount: adjustedTotalAmount,
-      // Combo fields
-      comboDiscount: comboDiscount > 0 ? comboDiscount : undefined,
-      appliedCombos: comboSnapshots.length > 0 ? comboSnapshots : undefined,
-    });
+    // Use repository for update - pass workspaceId for saga context
+    await this.orderRepository.updateOrder(
+      context.orderId,
+      {
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        discount: totals.discount,
+        totalAmount: adjustedTotalAmount,
+        // Set remainingAmount = totalAmount (no payment yet)
+        remainingAmount: adjustedTotalAmount,
+        // Combo fields
+        comboDiscount: comboDiscount > 0 ? comboDiscount : undefined,
+        appliedCombos: comboSnapshots.length > 0 ? comboSnapshots : undefined,
+      },
+      context.workspaceId,
+    );
 
     // Store in context for subsequent steps
     context.metadata.set('totalAmount', adjustedTotalAmount);
