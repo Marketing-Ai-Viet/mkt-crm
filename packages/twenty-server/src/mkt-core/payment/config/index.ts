@@ -7,3 +7,4 @@
 export * from './payment-config.defaults';
 export * from './payment-config.validation';
 export * from './payment.config';
+export * from './security.config';

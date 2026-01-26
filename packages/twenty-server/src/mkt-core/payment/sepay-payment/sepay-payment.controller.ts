@@ -26,19 +26,20 @@ import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-entities';
 import { MKT_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/order/constants/mkt-template.constant';
-import {
-  RequestSepayJWT,
-  SepayWebhookRequest,
-} from 'src/mkt-core/payment/types/payment.type';
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import {
   SEPAY_TEMPLATE_DEFAULTS,
   VIETNAM_TIMEZONE,
 } from 'src/mkt-core/payment/constants/sepay.constants';
 import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
+import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
 import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/mkt-payment-webhook.service';
 import { MktPaymentService } from 'src/mkt-core/payment/services/mkt-payment.service';
 import { SepayWebhookResponse } from 'src/mkt-core/payment/types';
+import {
+  RequestSepayJWT,
+  SepayWebhookRequest,
+} from 'src/mkt-core/payment/types/payment.type';
 import {
   DATE_TIME_FORMATS,
   DateTimeUtils,
@@ -116,7 +117,7 @@ export class SepayPaymentController {
   }
 
   // eslint-disable-next-line @nx/workspace-rest-api-methods-should-be-guarded
-  @UseGuards(PublicEndpointGuard)
+  @UseGuards(PublicEndpointGuard, IpWhitelistGuard)
   @Post('hooks/sepay-payment')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))

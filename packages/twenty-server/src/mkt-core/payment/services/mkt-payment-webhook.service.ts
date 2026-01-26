@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 
 import {
   ActorMetadata,
   FieldActorSource,
 } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
+import { paymentConfig } from 'src/mkt-core/payment/config';
 import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import { WebhookLogStatus } from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
@@ -19,6 +21,7 @@ import {
   SepayWebhookPayload,
   SepayWebhookResponse,
 } from 'src/mkt-core/payment/types';
+import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
@@ -31,15 +34,18 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
  * - Managing webhook logs
  * - Payment and order status updates
  *
- * Note: Transaction support removed - repositories use their own connections
- * via TwentyORMGlobalManager. For critical operations, implement idempotency
- * checks and compensation patterns instead.
+ * Transaction Support:
+ * All payment processing operations are wrapped in a database transaction
+ * to ensure data consistency. If any step fails, all changes are rolled back.
  */
 @Injectable()
 export class MktPaymentWebhookService {
   private readonly logger = new Logger(MktPaymentWebhookService.name);
 
   constructor(
+    @Inject(paymentConfig.KEY)
+    private readonly config: ConfigType<typeof paymentConfig>,
+    private readonly transactionScopeService: TransactionScopeService,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktWebhookLogRepository: MktWebhookLogRepository,
     private readonly mktOrderRepository: MktOrderRepository,
@@ -56,6 +62,8 @@ export class MktPaymentWebhookService {
    * 4. Validate amount
    * 5. Update payment status
    * 6. Update order status
+   *
+   * All operations are wrapped in a database transaction for consistency.
    */
   async processWebhookPayment(
     payload: SepayWebhookPayload,
@@ -63,154 +71,184 @@ export class MktPaymentWebhookService {
     ipAddress?: string,
   ): Promise<SepayWebhookResponse> {
     const startTime = DateTimeUtils.now();
+    const workspaceId = this.config.sepay.workspaceId;
 
-    // Step 1: Create webhook log entry
-    const webhookLog = await this.createWebhookLog({
-      sepayTransactionId: payload.id,
-      gateway: payload.gateway,
-      requestBody: payload as unknown as object,
+    this.logger.log({
+      message: 'Processing webhook payment',
+      transactionId: payload.id,
+      code: payload.code,
+      amount: payload.transferAmount,
       ipAddress,
-      status: 'PROCESSING',
     });
 
-    try {
-      // Step 2: Idempotency check
-      const existingPayment = await this.findBySepayTransactionId(payload.id);
-
-      if (existingPayment) {
-        this.logger.log(
-          `Transaction ${payload.id} already processed, skipping`,
-        );
-        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
-          responseStatus: 200,
-          responseBody: { status: 'ALREADY_PROCESSED' },
-          matchedOrderCode: existingPayment.mktOrderId,
+    // Execute all operations within a transaction
+    return this.transactionScopeService.runInTransaction(
+      workspaceId,
+      async () => {
+        // Step 1: Create webhook log entry
+        const webhookLog = await this.createWebhookLog({
+          sepayTransactionId: payload.id,
+          gateway: payload.gateway,
+          requestBody: payload as unknown as object,
+          ipAddress,
+          status: 'PROCESSING',
         });
 
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.ALREADY_PROCESSED,
-          data: { transactionId: payload.id, status: 'ALREADY_PROCESSED' },
-        };
-      }
+        try {
+          // Step 2: Idempotency check
+          const existingPayment = await this.findBySepayTransactionId(
+            payload.id,
+          );
 
-      // Step 3: Validate code
-      if (!payload.code) {
-        this.logger.warn('Webhook payload has no code');
-        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
-          responseStatus: 200,
-          responseBody: { status: 'UNMATCHED' },
-        });
+          if (existingPayment) {
+            this.logger.log(
+              `Transaction ${payload.id} already processed, skipping`,
+            );
+            await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+              responseStatus: 200,
+              responseBody: { status: 'ALREADY_PROCESSED' },
+              matchedOrderCode: existingPayment.mktOrderId,
+            });
 
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
-          data: { transactionId: payload.id, status: 'UNMATCHED' },
-        };
-      }
+            return {
+              success: true,
+              message: SEPAY_WEBHOOK_MESSAGES.ALREADY_PROCESSED,
+              data: { transactionId: payload.id, status: 'ALREADY_PROCESSED' },
+            };
+          }
 
-      // Step 4: Find order
-      const order = await this.findOneByOrderCode(payload.code);
+          // Step 3: Validate code
+          if (!payload.code) {
+            this.logger.warn('Webhook payload has no code');
+            await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+              responseStatus: 200,
+              responseBody: { status: 'UNMATCHED' },
+            });
 
-      if (!order) {
-        this.logger.error(`Order not found for code: ${payload.code}`);
-        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
-          responseStatus: 200,
-          responseBody: { status: 'UNMATCHED' },
-        });
+            return {
+              success: true,
+              message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
+              data: { transactionId: payload.id, status: 'UNMATCHED' },
+            };
+          }
 
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
-          data: { transactionId: payload.id, status: 'UNMATCHED' },
-        };
-      }
+          // Step 4: Find order
+          const order = await this.findOneByOrderCode(payload.code);
 
-      // Step 5: Amount validation
-      const expectedAmount = order.totalAmount || 0;
-      const receivedAmount = payload.transferAmount || 0;
+          if (!order) {
+            this.logger.error(`Order not found for code: ${payload.code}`);
+            await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+              responseStatus: 200,
+              responseBody: { status: 'UNMATCHED' },
+            });
 
-      if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
-        this.logger.warn(
-          `Amount mismatch for order ${payload.code}: expected ${expectedAmount}, received ${receivedAmount}`,
-        );
-      }
+            return {
+              success: true,
+              message: SEPAY_WEBHOOK_MESSAGES.ORDER_NOT_FOUND,
+              data: { transactionId: payload.id, status: 'UNMATCHED' },
+            };
+          }
 
-      // Step 6: Find payments
-      const payments = await this.findPaymentsByOrderId(order.id);
+          // Step 5: Amount validation
+          const expectedAmount = order.totalAmount || 0;
+          const receivedAmount = payload.transferAmount || 0;
 
-      if (payments.length === 0) {
-        this.logger.warn(`No payments found for order ${order.id}`);
-        await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
-          responseStatus: 200,
-          responseBody: { status: 'NO_PAYMENT' },
-          matchedOrderCode: order.orderCode,
-        });
+          if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
+            this.logger.warn(
+              `Amount mismatch for order ${payload.code}: expected ${expectedAmount}, received ${receivedAmount}`,
+            );
+          }
 
-        return {
-          success: true,
-          message: SEPAY_WEBHOOK_MESSAGES.NO_PAYMENT,
-          data: {
+          // Step 6: Find payments
+          const payments = await this.findPaymentsByOrderId(order.id);
+
+          if (payments.length === 0) {
+            this.logger.warn(`No payments found for order ${order.id}`);
+            await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+              responseStatus: 200,
+              responseBody: { status: 'NO_PAYMENT' },
+              matchedOrderCode: order.orderCode,
+            });
+
+            return {
+              success: true,
+              message: SEPAY_WEBHOOK_MESSAGES.NO_PAYMENT,
+              data: {
+                transactionId: payload.id,
+                matchedOrder: order.orderCode,
+                status: 'NO_PAYMENT',
+              },
+            };
+          }
+
+          // Step 7: Update payment
+          const [primaryPayment] = payments;
+
+          await this.updatePayment(primaryPayment.id, {
+            status: 'COMPLETED',
+            paymentDate: payload.transactionDate,
+            amount: payload.transferAmount,
+            description: payload.content || payload.description,
+            sepayTransactionId: String(payload.id),
+            createdBy: await this.buildActorMetadata(authContext),
+          });
+
+          // Step 8: Update order status to CONFIRMED after payment
+          await this.updateOrderStatusAfterPayment(order.id);
+          this.logger.log(
+            `Order ${order.orderCode} status updated to CONFIRMED`,
+          );
+
+          // Step 9: Update webhook log as success
+          const processingTimeMs = DateTimeUtils.diffInMillis(
+            startTime,
+            DateTimeUtils.now(),
+          );
+
+          await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
+            responseStatus: 200,
+            responseBody: { status: 'MATCHED' },
+            matchedOrderCode: order.orderCode,
+            processingTimeMs,
+          });
+
+          this.logger.log({
+            message: 'Payment completed successfully',
+            paymentId: primaryPayment.id,
+            orderCode: order.orderCode,
+            processingTimeMs,
+          });
+
+          return {
+            success: true,
+            message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
+            data: {
+              transactionId: payload.id,
+              matchedOrder: order.orderCode,
+              status: 'MATCHED',
+            },
+          };
+        } catch (error) {
+          this.logger.error({
+            message: 'Error processing webhook payment',
             transactionId: payload.id,
-            matchedOrder: order.orderCode,
-            status: 'NO_PAYMENT',
-          },
-        };
-      }
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
 
-      // Step 7: Update payment
-      const [primaryPayment] = payments;
+          // Update webhook log status to failed
+          await this.updateWebhookLogStatus(webhookLog.id, 'FAILED', {
+            responseStatus: 500,
+            errorMessage:
+              error instanceof Error ? error.message : 'Unknown error',
+          });
 
-      await this.updatePayment(primaryPayment.id, {
-        status: 'COMPLETED',
-        paymentDate: payload.transactionDate,
-        amount: payload.transferAmount,
-        description: payload.content || payload.description,
-        sepayTransactionId: String(payload.id),
-        createdBy: await this.buildActorMetadata(authContext),
-      });
-
-      // Step 8: Update order status to CONFIRMED after payment
-      await this.updateOrderStatusAfterPayment(order.id);
-      this.logger.log(`Order ${order.orderCode} status updated to CONFIRMED`);
-
-      // Step 9: Update webhook log as success
-      const processingTimeMs = DateTimeUtils.diffInMillis(
-        startTime,
-        DateTimeUtils.now(),
-      );
-
-      await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
-        responseStatus: 200,
-        responseBody: { status: 'MATCHED' },
-        matchedOrderCode: order.orderCode,
-        processingTimeMs,
-      });
-
-      this.logger.log(
-        `Payment ${primaryPayment.id} completed for order ${order.orderCode}`,
-      );
-
-      return {
-        success: true,
-        message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
-        data: {
-          transactionId: payload.id,
-          matchedOrder: order.orderCode,
-          status: 'MATCHED',
-        },
-      };
-    } catch (error) {
-      this.logger.error('Error processing webhook payment:', error);
-
-      // Update webhook log status to failed
-      await this.updateWebhookLogStatus(webhookLog.id, 'FAILED', {
-        responseStatus: 500,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-      });
-
-      throw error;
-    }
+          throw error;
+        }
+      },
+      {
+        timeoutMs: 30000, // 30 second timeout
+      },
+    );
   }
 
   // ============================================

@@ -6,10 +6,12 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { TransactionModule } from 'src/mkt-core/common/transaction';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { paymentConfig } from 'src/mkt-core/payment/config';
+import { paymentConfig, securityConfig } from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
+import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
 import { MktPaymentMethodRepository } from 'src/mkt-core/payment-method/repositories';
 import {
   bidvConfig,
@@ -45,16 +47,20 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(paymentConfig),
     ConfigModule.forFeature(sepayConfig),
     ConfigModule.forFeature(bidvConfig),
+    ConfigModule.forFeature(securityConfig),
     HttpModule,
     RecordPositionModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
     JwtModule,
     AuthModule,
     WorkspaceCacheStorageModule,
+    TransactionModule,
   ],
   providers: [
     // Factory
     PaymentProviderFactory,
+    // Guards
+    IpWhitelistGuard,
     // Providers - SePay
     SepayProvider,
     SepayQrGenerator,
