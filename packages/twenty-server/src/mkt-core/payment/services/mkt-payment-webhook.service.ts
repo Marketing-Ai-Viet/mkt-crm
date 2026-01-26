@@ -8,7 +8,11 @@ import {
 import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { orderCodeConfig, paymentConfig } from 'src/mkt-core/payment/config';
+import {
+  orderCodeConfig,
+  partialPaymentConfig,
+  paymentConfig,
+} from 'src/mkt-core/payment/config';
 import { SEPAY_WEBHOOK_MESSAGES } from 'src/mkt-core/payment/constants/sepay.constants';
 import { WebhookLogStatus } from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
@@ -23,7 +27,11 @@ import {
 } from 'src/mkt-core/payment/types';
 import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
 import { PaymentEventService } from 'src/mkt-core/payment/services/payment-event.service';
-import { orderCodeExtractor } from 'src/mkt-core/payment/utils';
+import {
+  orderCodeExtractor,
+  paymentAmountAnalyzer,
+  PaymentAmountResult,
+} from 'src/mkt-core/payment/utils';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
@@ -49,6 +57,8 @@ export class MktPaymentWebhookService {
     private readonly config: ConfigType<typeof paymentConfig>,
     @Inject(orderCodeConfig.KEY)
     private readonly orderCodeCfg: ConfigType<typeof orderCodeConfig>,
+    @Inject(partialPaymentConfig.KEY)
+    private readonly partialPaymentCfg: ConfigType<typeof partialPaymentConfig>,
     private readonly transactionScopeService: TransactionScopeService,
     private readonly mktPaymentRepository: MktPaymentRepository,
     private readonly mktWebhookLogRepository: MktWebhookLogRepository,
@@ -176,17 +186,7 @@ export class MktPaymentWebhookService {
             };
           }
 
-          // Step 5: Amount validation
-          const expectedAmount = order.totalAmount || 0;
-          const receivedAmount = payload.transferAmount || 0;
-
-          if (!MoneyUtils.equals(receivedAmount, expectedAmount)) {
-            this.logger.warn(
-              `Amount mismatch for order ${orderCode}: expected ${expectedAmount}, received ${receivedAmount}`,
-            );
-          }
-
-          // Step 6: Find payments
+          // Step 5: Find payments for the order
           const payments = await this.findPaymentsByOrderId(order.id);
 
           if (payments.length === 0) {
@@ -208,11 +208,35 @@ export class MktPaymentWebhookService {
             };
           }
 
-          // Step 7: Update payment
+          // Step 6: Analyze payment amount (Partial Payment Support)
+          const expectedAmount = order.totalAmount || 0;
+          const receivedAmount = payload.transferAmount || 0;
+          const previouslyPaidAmount = this.calculatePreviouslyPaidAmount(
+            payments,
+            payload.id,
+          );
+
+          const amountAnalysis = paymentAmountAnalyzer.analyze(
+            expectedAmount,
+            receivedAmount,
+            previouslyPaidAmount,
+          );
+
+          this.logger.log({
+            message: 'Payment amount analysis',
+            orderCode: order.orderCode,
+            analysis: amountAnalysis,
+          });
+
+          // Step 7: Determine payment status based on analysis
+          const paymentStatus =
+            this.determinePaymentStatusFromAnalysis(amountAnalysis);
+
+          // Step 8: Update payment
           const [primaryPayment] = payments;
 
           await this.updatePayment(primaryPayment.id, {
-            status: 'COMPLETED',
+            status: paymentStatus,
             paymentDate: payload.transactionDate,
             amount: payload.transferAmount,
             description: payload.content || payload.description,
@@ -220,35 +244,47 @@ export class MktPaymentWebhookService {
             createdBy: await this.buildActorMetadata(authContext),
           });
 
-          // Step 8: Update order status to CONFIRMED after payment
-          await this.updateOrderStatusAfterPayment(order.id);
-          this.logger.log(
-            `Order ${order.orderCode} status updated to CONFIRMED`,
+          // Step 9: Update order status based on payment analysis
+          await this.updateOrderStatusBasedOnAnalysis(
+            order.id,
+            amountAnalysis,
+            order.orderCode,
           );
 
-          // Step 9: Update webhook log as success
+          // Step 10: Update webhook log as success
           const processingTimeMs = DateTimeUtils.diffInMillis(
             startTime,
             DateTimeUtils.now(),
           );
 
+          const webhookStatus =
+            this.getWebhookStatusFromAnalysis(amountAnalysis);
+
           await this.updateWebhookLogStatus(webhookLog.id, 'SUCCESS', {
             responseStatus: 200,
-            responseBody: { status: 'MATCHED' },
+            responseBody: {
+              status: webhookStatus,
+              paymentDetails: {
+                expectedAmount: amountAnalysis.expectedAmount,
+                receivedAmount: amountAnalysis.receivedAmount,
+                totalPaid: amountAnalysis.totalPaidAmount,
+                remainingAmount: amountAnalysis.remainingAmount,
+                percentagePaid: amountAnalysis.percentagePaid,
+              },
+            },
             matchedOrderCode: order.orderCode,
             processingTimeMs,
           });
 
           this.logger.log({
-            message: 'Payment completed successfully',
+            message: `Payment processed - ${amountAnalysis.status}`,
             paymentId: primaryPayment.id,
             orderCode: order.orderCode,
+            paymentStatus,
             processingTimeMs,
           });
 
-          // Step 10: Emit events after successful payment processing
-          // Events are emitted within transaction to ensure data consistency
-          // Listeners should handle their own error handling
+          // Step 11: Emit events after successful payment processing
           this.emitPaymentEvents({
             paymentId: primaryPayment.id,
             orderId: order.id,
@@ -258,18 +294,23 @@ export class MktPaymentWebhookService {
             gateway: payload.gateway,
             transactionDate: payload.transactionDate,
             workspaceId,
-            totalPaidAmount: payload.transferAmount,
-            expectedAmount: expectedAmount,
-            receivedAmount: receivedAmount,
+            amountAnalysis,
           });
 
           return {
             success: true,
-            message: SEPAY_WEBHOOK_MESSAGES.SUCCESS,
+            message: this.getWebhookMessage(amountAnalysis),
             data: {
               transactionId: payload.id,
               matchedOrder: order.orderCode,
-              status: 'MATCHED',
+              status: webhookStatus,
+              paymentDetails: {
+                expectedAmount: amountAnalysis.expectedAmount,
+                receivedAmount: amountAnalysis.receivedAmount,
+                totalPaid: amountAnalysis.totalPaidAmount,
+                remainingAmount: amountAnalysis.remainingAmount,
+                percentagePaid: amountAnalysis.percentagePaid,
+              },
             },
           };
         } catch (error) {
@@ -415,14 +456,113 @@ export class MktPaymentWebhookService {
     await this.mktPaymentRepository.updatePayment(paymentId, updateData);
   }
 
+  // ============================================
+  // PARTIAL PAYMENT HELPERS
+  // ============================================
+
   /**
-   * Update order status to CONFIRMED after payment is completed
+   * Calculate previously paid amount from existing payments
+   * Excludes the current transaction to avoid double counting
    */
-  private async updateOrderStatusAfterPayment(orderId: string): Promise<void> {
-    await this.mktOrderRepository.updateOrder(orderId, {
-      status: ORDER_STATUS.CONFIRMED,
-      accountingConfirmed: true,
-    });
+  private calculatePreviouslyPaidAmount(
+    payments: MktPaymentWorkspaceEntity[],
+    currentTransactionId: number,
+  ): number {
+    return payments
+      .filter(
+        (p) =>
+          (p.status === 'COMPLETED' || p.status === 'PARTIAL') &&
+          p.sepayTransactionId !== String(currentTransactionId),
+      )
+      .reduce((sum, p) => MoneyUtils.add(sum, p.amount ?? 0).toNumber(), 0);
+  }
+
+  /**
+   * Determine payment status based on amount analysis
+   */
+  private determinePaymentStatusFromAnalysis(
+    analysis: PaymentAmountResult,
+  ): PaymentStatus {
+    // Check auto-confirm threshold
+    if (
+      this.partialPaymentCfg.enabled &&
+      paymentAmountAnalyzer.shouldAutoConfirm(
+        analysis,
+        this.partialPaymentCfg.autoConfirmThreshold,
+      )
+    ) {
+      return 'COMPLETED';
+    }
+
+    return paymentAmountAnalyzer.determinePaymentStatus(
+      analysis,
+    ) as PaymentStatus;
+  }
+
+  /**
+   * Update order status based on payment analysis
+   */
+  private async updateOrderStatusBasedOnAnalysis(
+    orderId: string,
+    analysis: PaymentAmountResult,
+    orderCode: string,
+  ): Promise<void> {
+    const shouldConfirm =
+      analysis.status === 'EXACT' ||
+      analysis.status === 'OVERPAID' ||
+      (this.partialPaymentCfg.enabled &&
+        paymentAmountAnalyzer.shouldAutoConfirm(
+          analysis,
+          this.partialPaymentCfg.autoConfirmThreshold,
+        ));
+
+    if (shouldConfirm) {
+      await this.mktOrderRepository.updateOrder(orderId, {
+        status: ORDER_STATUS.CONFIRMED,
+        accountingConfirmed: true,
+      });
+      this.logger.log(`Order ${orderCode} status updated to CONFIRMED`);
+    } else {
+      // Partial payment - keep order in current status, log the partial payment
+      this.logger.log({
+        message: 'Partial payment received, order not confirmed yet',
+        orderCode,
+        percentagePaid: analysis.percentagePaid,
+        remainingAmount: analysis.remainingAmount,
+      });
+    }
+  }
+
+  /**
+   * Get webhook status string from analysis
+   */
+  private getWebhookStatusFromAnalysis(analysis: PaymentAmountResult): string {
+    switch (analysis.status) {
+      case 'EXACT':
+        return 'MATCHED';
+      case 'UNDERPAID':
+        return 'PARTIAL';
+      case 'OVERPAID':
+        return 'OVERPAID';
+      default:
+        return 'MATCHED';
+    }
+  }
+
+  /**
+   * Get webhook message from analysis
+   */
+  private getWebhookMessage(analysis: PaymentAmountResult): string {
+    switch (analysis.status) {
+      case 'EXACT':
+        return SEPAY_WEBHOOK_MESSAGES.SUCCESS;
+      case 'UNDERPAID':
+        return 'Partial payment received';
+      case 'OVERPAID':
+        return 'Overpayment received';
+      default:
+        return SEPAY_WEBHOOK_MESSAGES.SUCCESS;
+    }
   }
 
   // ============================================
@@ -432,13 +572,11 @@ export class MktPaymentWebhookService {
   /**
    * Emit payment-related events after successful processing
    *
-   * Currently emits:
-   * - payment.completed: Full payment received
-   * - order.confirmed: Order status updated to CONFIRMED
-   *
-   * Future support for partial payment will add:
-   * - payment.partial: Partial payment received
-   * - payment.overpaid: Overpayment detected
+   * Emits based on payment analysis:
+   * - payment.completed: Full payment received (EXACT)
+   * - payment.partial: Partial payment received (UNDERPAID)
+   * - payment.overpaid: Overpayment detected (OVERPAID)
+   * - order.confirmed: Order confirmed (EXACT or OVERPAID)
    */
   private emitPaymentEvents(data: {
     paymentId: string;
@@ -449,20 +587,10 @@ export class MktPaymentWebhookService {
     gateway: string;
     transactionDate: string;
     workspaceId: string;
-    totalPaidAmount: number;
-    expectedAmount: number;
-    receivedAmount: number;
+    amountAnalysis: PaymentAmountResult;
   }): void {
-    const isExactPayment = MoneyUtils.equals(
-      data.receivedAmount,
-      data.expectedAmount,
-    );
-    const isOverpaid =
-      MoneyUtils.compare(data.receivedAmount, data.expectedAmount) > 0;
-
-    // Emit payment completed event (currently we treat all as completed)
-    // Future: Add partial payment support in Phase 4
-    this.paymentEventService.emitPaymentCompleted({
+    const { amountAnalysis } = data;
+    const baseEventData = {
       paymentId: data.paymentId,
       orderId: data.orderId,
       orderCode: data.orderCode,
@@ -471,43 +599,61 @@ export class MktPaymentWebhookService {
       gateway: data.gateway,
       transactionDate: data.transactionDate,
       workspaceId: data.workspaceId,
-      totalPaidAmount: data.totalPaidAmount,
-    });
+    };
 
-    // Emit order confirmed event
-    this.paymentEventService.emitOrderConfirmed({
-      orderId: data.orderId,
-      orderCode: data.orderCode,
-      totalAmount: data.expectedAmount,
-      workspaceId: data.workspaceId,
-      confirmedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
-    });
+    switch (amountAnalysis.status) {
+      case 'EXACT':
+        // Emit payment completed event
+        this.paymentEventService.emitPaymentCompleted({
+          ...baseEventData,
+          totalPaidAmount: amountAnalysis.totalPaidAmount,
+        });
+        // Emit order confirmed event
+        this.paymentEventService.emitOrderConfirmed({
+          orderId: data.orderId,
+          orderCode: data.orderCode,
+          totalAmount: amountAnalysis.expectedAmount,
+          workspaceId: data.workspaceId,
+          confirmedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+        });
+        break;
 
-    // Log amount mismatch warnings
-    if (!isExactPayment) {
-      if (isOverpaid) {
+      case 'UNDERPAID':
+        // Emit partial payment event
+        this.paymentEventService.emitPaymentPartial({
+          ...baseEventData,
+          expectedAmount: amountAnalysis.expectedAmount,
+          totalPaidAmount: amountAnalysis.totalPaidAmount,
+          remainingAmount: amountAnalysis.remainingAmount,
+          percentagePaid: amountAnalysis.percentagePaid,
+        });
+        break;
+
+      case 'OVERPAID':
+        // Emit overpayment event
+        this.paymentEventService.emitPaymentOverpaid({
+          ...baseEventData,
+          expectedAmount: amountAnalysis.expectedAmount,
+          totalPaidAmount: amountAnalysis.totalPaidAmount,
+          overpaidAmount: amountAnalysis.overpaidAmount,
+        });
+        // Also emit order confirmed since payment exceeds expected
+        this.paymentEventService.emitOrderConfirmed({
+          orderId: data.orderId,
+          orderCode: data.orderCode,
+          totalAmount: amountAnalysis.expectedAmount,
+          workspaceId: data.workspaceId,
+          confirmedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
+        });
+        // Log warning for manual refund review
         this.logger.warn({
           message: 'Overpayment detected - refund may be required',
           orderCode: data.orderCode,
-          expectedAmount: data.expectedAmount,
-          receivedAmount: data.receivedAmount,
-          overpaidAmount: MoneyUtils.subtract(
-            data.receivedAmount,
-            data.expectedAmount,
-          ).toNumber(),
+          expectedAmount: amountAnalysis.expectedAmount,
+          totalPaidAmount: amountAnalysis.totalPaidAmount,
+          overpaidAmount: amountAnalysis.overpaidAmount,
         });
-      } else {
-        this.logger.warn({
-          message: 'Underpayment detected - full amount not received',
-          orderCode: data.orderCode,
-          expectedAmount: data.expectedAmount,
-          receivedAmount: data.receivedAmount,
-          remainingAmount: MoneyUtils.subtract(
-            data.expectedAmount,
-            data.receivedAmount,
-          ).toNumber(),
-        });
-      }
+        break;
     }
   }
 }

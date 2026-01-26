@@ -11,6 +11,7 @@ import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import {
   orderCodeConfig,
+  partialPaymentConfig,
   paymentConfig,
   securityConfig,
 } from 'src/mkt-core/payment/config';
@@ -55,6 +56,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(bidvConfig),
     ConfigModule.forFeature(securityConfig),
     ConfigModule.forFeature(orderCodeConfig),
+    ConfigModule.forFeature(partialPaymentConfig),
     HttpModule,
     RecordPositionModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
