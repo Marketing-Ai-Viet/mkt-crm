@@ -22,6 +22,9 @@ export { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook'
 export {
   SepayAuthService,
   SepayQrPageService,
+  SepayQrService,
+  type QrCodeGenerationResult,
+  type QrCodeGenerationInput,
 } from 'src/mkt-core/payment/services/sepay';
 
 // Event Services

@@ -49,6 +49,7 @@ import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook'
 import {
   SepayAuthService,
   SepayQrPageService,
+  SepayQrService,
 } from 'src/mkt-core/payment/services/sepay';
 import {
   PaymentEventService,
@@ -104,6 +105,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     PaymentEventService,
     SepayAuthService,
     SepayQrPageService,
+    SepayQrService,
     // Event Listeners
     PaymentNotificationListener,
   ],
@@ -123,6 +125,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentPrepareService,
     MktPaymentService,
     MktPaymentWebhookService,
+    SepayQrService,
   ],
 })
 export class MktPaymentModule implements OnModuleInit {
