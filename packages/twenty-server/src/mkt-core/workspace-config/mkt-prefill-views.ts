@@ -12,8 +12,10 @@ import { mktOrdersAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-all
 import { mktOrderItemsAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-all.view';
 import { mktPaymentsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-all.view';
 import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-method-all.view';
-import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
-import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-all.view';
+import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-all.view';
+import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/mkt-customer-tag-all.view';
+import { mktCustomerTierHistoriesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-all.view';
+import { mktCustomerNotesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-note/mkt-customer-note-all.view';
 import { mktDataAccessPoliciesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-all.view';
 import { mktPermissionContextsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-all.view';
 import { mktDepartmentsAllView } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-all.view';
@@ -67,6 +69,8 @@ export const MKT_ALL_VIEWS = [
   mktCustomersAllView,
   mktTagsAllView,
   mktCustomerTagsAllView,
+  mktCustomerTierHistoriesAllView,
+  mktCustomerNotesAllView,
   // generic combo views
   mktGenericCombosAllView,
   mktGenericComboItemsAllView,

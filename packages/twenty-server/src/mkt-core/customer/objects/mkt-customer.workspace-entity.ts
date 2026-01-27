@@ -23,6 +23,8 @@ import { MKT_CUSTOMER_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { SEARCH_FIELDS_FOR_MKT_CUSTOMER } from 'src/mkt-core/customer/constants/linked-account.constants';
 import {
+  MKT_CUSTOMER_COMPANY_SIZE_SELECT_OPTIONS,
+  MKT_CUSTOMER_INDUSTRY_SELECT_OPTIONS,
   MKT_CUSTOMER_LIFECYCLE_STAGE_DEFAULT,
   MKT_CUSTOMER_LIFECYCLE_STAGE_SELECT_OPTIONS,
   MKT_CUSTOMER_STATUS_DEFAULT,
@@ -35,17 +37,12 @@ import {
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
 import { MktCustomerTierHistoryWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tier-history.workspace-entity';
+import { MktCustomerNoteWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-note.workspace-entity';
 import { MktCouponWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-coupon.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-entity/mkt-contract.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
-/**
- * Entity name for mktCustomer - used in GraphQL operations and hooks
- * Format: 'mkt{EntityName}' (camelCase)
- */
-export const MKT_CUSTOMER_ENTITY_NAME = 'mktCustomer';
 
 // Re-export for backward compatibility
 export { SEARCH_FIELDS_FOR_MKT_CUSTOMER } from 'src/mkt-core/customer/constants/linked-account.constants';
@@ -58,6 +55,12 @@ export type {
   LinkedAccount,
   LinkedAccountStatus,
 } from 'src/mkt-core/customer/types/linked-account.types';
+
+/**
+ * Entity name for mktCustomer - used in GraphQL operations and hooks
+ * Format: 'mkt{EntityName}' (camelCase)
+ */
+export const MKT_CUSTOMER_ENTITY_NAME = 'mktCustomer';
 
 /**
  * MktCustomerWorkspaceEntity - OPTIMIZED
@@ -136,7 +139,7 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   type: string;
 
-  // ============ BUSINESS INFO (3 fields) ============
+  // ============ BUSINESS INFO (7 fields) ============
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.companyName,
@@ -167,6 +170,48 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   address: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.companySize,
+    type: FieldMetadataType.SELECT,
+    label: msg`Company Size`,
+    description: msg`Quy mô công ty`,
+    icon: 'IconUsers',
+    options: MKT_CUSTOMER_COMPANY_SIZE_SELECT_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  companySize: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.industry,
+    type: FieldMetadataType.SELECT,
+    label: msg`Industry`,
+    description: msg`Ngành nghề kinh doanh`,
+    icon: 'IconCategory',
+    options: MKT_CUSTOMER_INDUSTRY_SELECT_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  industry: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.contactPosition,
+    type: FieldMetadataType.TEXT,
+    label: msg`Contact Position`,
+    description: msg`Chức vụ người liên hệ`,
+    icon: 'IconBriefcase',
+  })
+  @WorkspaceIsNullable()
+  contactPosition: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.contactDepartment,
+    type: FieldMetadataType.TEXT,
+    label: msg`Contact Department`,
+    description: msg`Phòng ban người liên hệ`,
+    icon: 'IconBuilding',
+  })
+  @WorkspaceIsNullable()
+  contactDepartment: string | null;
 
   // ============ SYSTEM STATUS (3 fields) ============
 
@@ -252,6 +297,16 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   licensesCount: number;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.firstPurchase,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`First Purchase`,
+    description: msg`Ngày mua hàng đầu tiên`,
+    icon: 'IconCalendarEvent',
+  })
+  @WorkspaceIsNullable()
+  firstPurchase: Date;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.lastPurchase,
@@ -380,6 +435,22 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   accountOwnerId: string | null;
 
   @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.supportOwner,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Support Owner`,
+    description: msg`Support phụ trách khách hàng`,
+    icon: 'IconLifebuoy',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'supportOwnerForMktCustomers',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  supportOwner: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('supportOwner')
+  supportOwnerId: string | null;
+
+  @WorkspaceRelation({
     standardId: MKT_CUSTOMER_FIELD_IDS.mktOrders,
     type: RelationType.ONE_TO_MANY,
     label: msg`Orders`,
@@ -479,6 +550,21 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   @WorkspaceIsSystem()
   tierHistories: Relation<MktCustomerTierHistoryWorkspaceEntity[]>;
+
+  // ============ CUSTOMER NOTES ============
+
+  @WorkspaceRelation({
+    standardId: MKT_CUSTOMER_FIELD_IDS.customerNotes,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Customer Notes`,
+    description: msg`Ghi chú về khách hàng`,
+    icon: 'IconNotes',
+    inverseSideTarget: () => MktCustomerNoteWorkspaceEntity,
+    inverseSideFieldKey: 'customer',
+    onDelete: RelationOnDeleteAction.CASCADE,
+  })
+  @WorkspaceIsNullable()
+  customerNotes: Relation<MktCustomerNoteWorkspaceEntity[]>;
 
   // ============ SYSTEM FIELDS (1 field) ============
 

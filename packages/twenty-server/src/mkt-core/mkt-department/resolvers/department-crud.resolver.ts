@@ -134,6 +134,10 @@ export class DepartmentCrudResolver {
         note: sm.note,
         isActive: sm.isActive,
       })),
+      // Hierarchy options
+      parentDepartmentId: input.parentDepartmentId,
+      childDepartmentIds: input.childDepartmentIds,
+      hierarchyRelationshipType: input.hierarchyRelationshipType,
     });
 
     return {
@@ -144,6 +148,7 @@ export class DepartmentCrudResolver {
       subManagers: result.createdSubManagers?.map((sm) =>
         this.crudService.mapSubManagerToOutput(sm),
       ),
+      hierarchies: result.createdHierarchies,
       error: result.error,
     };
   }

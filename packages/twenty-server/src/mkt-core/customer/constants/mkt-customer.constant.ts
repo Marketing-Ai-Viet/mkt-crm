@@ -390,40 +390,53 @@ export const MKT_CUSTOMER_COMPANY_SIZE = {
   SMALL: 'SMALL',
   MEDIUM: 'MEDIUM',
   LARGE: 'LARGE',
-};
+  ENTERPRISE: 'ENTERPRISE',
+} as const;
 
-export const MKT_CUSTOMER_COMPANY_SIZE_OPTIONS = {
-  sizes: MKT_CUSTOMER_COMPANY_SIZE,
-  options: [
+/** SELECT field options for Company Size - use in WorkspaceEntity decorator */
+export const MKT_CUSTOMER_COMPANY_SIZE_SELECT_OPTIONS: FieldMetadataComplexOption[] =
+  [
     {
       value: MKT_CUSTOMER_COMPANY_SIZE.SMALL,
+      label: 'Nhỏ (1-10 NV)',
       color: 'green',
-      label: 'Nhỏ (1-10 nhân viên)',
-      position: 1,
+      position: 0,
     },
     {
       value: MKT_CUSTOMER_COMPANY_SIZE.MEDIUM,
+      label: 'Vừa (11-50 NV)',
       color: 'yellow',
-      label: 'Vừa (11-50 nhân viên)',
-      position: 2,
+      position: 1,
     },
     {
       value: MKT_CUSTOMER_COMPANY_SIZE.LARGE,
-      color: 'red',
-      label: 'Lớn (51-200 nhân viên)',
+      label: 'Lớn (51-200 NV)',
+      color: 'blue',
+      position: 2,
+    },
+    {
+      value: MKT_CUSTOMER_COMPANY_SIZE.ENTERPRISE,
+      label: 'Doanh nghiệp (200+ NV)',
+      color: 'purple',
       position: 3,
     },
-  ],
+  ];
+
+export const MKT_CUSTOMER_COMPANY_SIZE_OPTIONS = {
+  sizes: MKT_CUSTOMER_COMPANY_SIZE,
+  options: MKT_CUSTOMER_COMPANY_SIZE_SELECT_OPTIONS,
   labels: {
     EN: {
       SMALL: 'Small (1-10 employees)',
       MEDIUM: 'Medium (11-50 employees)',
       LARGE: 'Large (51-200 employees)',
+      ENTERPRISE: 'Enterprise (200+ employees)',
     },
     VI: {
-      SMALL: 'Nhỏ (1-10 nhân viên)',
-      MEDIUM: 'Vừa (11-50 nhân viên)',
-      LARGE: 'Lớn (51-200 nhân viên)',
+      SMALL: 'Nhỏ (1-10 NV)',
+      MEDIUM: 'Vừa (11-50 NV)',
+      LARGE: 'Lớn (51-200 NV)',
+      ENTERPRISE: 'Doanh nghiệp (200+ NV)',
     },
   },
 };
@@ -432,40 +445,89 @@ export const MKT_CUSTOMER_INDUSTRY = {
   IT: 'IT',
   FINANCE: 'FINANCE',
   MANUFACTURING: 'MANUFACTURING',
-};
+  RETAIL: 'RETAIL',
+  HEALTHCARE: 'HEALTHCARE',
+  EDUCATION: 'EDUCATION',
+  REAL_ESTATE: 'REAL_ESTATE',
+  OTHER: 'OTHER',
+} as const;
 
-export const MKT_CUSTOMER_INDUSTRY_OPTIONS = {
-  industries: MKT_CUSTOMER_INDUSTRY,
-  options: [
+/** SELECT field options for Industry - use in WorkspaceEntity decorator */
+export const MKT_CUSTOMER_INDUSTRY_SELECT_OPTIONS: FieldMetadataComplexOption[] =
+  [
     {
       value: MKT_CUSTOMER_INDUSTRY.IT,
-      color: 'blue',
       label: 'Công nghệ thông tin',
-      position: 1,
+      color: 'blue',
+      position: 0,
     },
     {
       value: MKT_CUSTOMER_INDUSTRY.FINANCE,
+      label: 'Tài chính - Ngân hàng',
       color: 'green',
-      label: 'Tài chính',
-      position: 2,
+      position: 1,
     },
     {
       value: MKT_CUSTOMER_INDUSTRY.MANUFACTURING,
-      color: 'orange',
       label: 'Sản xuất',
+      color: 'orange',
+      position: 2,
+    },
+    {
+      value: MKT_CUSTOMER_INDUSTRY.RETAIL,
+      label: 'Bán lẻ',
+      color: 'purple',
       position: 3,
     },
-  ],
+    {
+      value: MKT_CUSTOMER_INDUSTRY.HEALTHCARE,
+      label: 'Y tế - Sức khỏe',
+      color: 'red',
+      position: 4,
+    },
+    {
+      value: MKT_CUSTOMER_INDUSTRY.EDUCATION,
+      label: 'Giáo dục',
+      color: 'yellow',
+      position: 5,
+    },
+    {
+      value: MKT_CUSTOMER_INDUSTRY.REAL_ESTATE,
+      label: 'Bất động sản',
+      color: 'gray',
+      position: 6,
+    },
+    {
+      value: MKT_CUSTOMER_INDUSTRY.OTHER,
+      label: 'Khác',
+      color: 'gray',
+      position: 7,
+    },
+  ];
+
+export const MKT_CUSTOMER_INDUSTRY_OPTIONS = {
+  industries: MKT_CUSTOMER_INDUSTRY,
+  options: MKT_CUSTOMER_INDUSTRY_SELECT_OPTIONS,
   labels: {
     EN: {
       IT: 'Information Technology',
-      FINANCE: 'Finance',
+      FINANCE: 'Finance & Banking',
       MANUFACTURING: 'Manufacturing',
+      RETAIL: 'Retail',
+      HEALTHCARE: 'Healthcare',
+      EDUCATION: 'Education',
+      REAL_ESTATE: 'Real Estate',
+      OTHER: 'Other',
     },
     VI: {
       IT: 'Công nghệ thông tin',
-      FINANCE: 'Tài chính',
+      FINANCE: 'Tài chính - Ngân hàng',
       MANUFACTURING: 'Sản xuất',
+      RETAIL: 'Bán lẻ',
+      HEALTHCARE: 'Y tế - Sức khỏe',
+      EDUCATION: 'Giáo dục',
+      REAL_ESTATE: 'Bất động sản',
+      OTHER: 'Khác',
     },
   },
 };

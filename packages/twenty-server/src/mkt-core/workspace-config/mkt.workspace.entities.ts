@@ -1,3 +1,4 @@
+import { MktCustomerNoteWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-note.workspace-entity';
 import { MktCustomerTagWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tag.workspace-entity';
 import { MktCustomerTierHistoryWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tier-history.workspace-entity';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
@@ -72,6 +73,7 @@ export const MKT_WORKSPACE_ENTITIES = [
   MktI18nWorkspaceEntity,
   // Customer
   MktCustomerWorkspaceEntity,
+  MktCustomerNoteWorkspaceEntity,
   MktCustomerTierHistoryWorkspaceEntity,
   MktTagWorkspaceEntity,
   MktCustomerTagWorkspaceEntity,

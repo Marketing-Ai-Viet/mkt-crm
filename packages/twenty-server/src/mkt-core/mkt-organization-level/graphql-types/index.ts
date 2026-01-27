@@ -1,3 +1,4 @@
+export * from './organization-level-flat-item.type';
 export * from './organization-level-hierarchy-node.type';
 export * from './organization-level-query-options.input';
 export * from './organization-level-statistics.type';

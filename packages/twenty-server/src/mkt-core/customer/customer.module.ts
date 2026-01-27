@@ -16,11 +16,13 @@ import {
 import { MktCustomerEventListener } from 'src/mkt-core/customer/listeners/mkt-customer-event.listener';
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktCustomerTierHistoryRepository } from 'src/mkt-core/customer/repositories/mkt-customer-tier-history.repository';
+import { MktCustomerNoteRepository } from 'src/mkt-core/customer/repositories/mkt-customer-note.repository';
 import { CustomerMutationResolver } from 'src/mkt-core/customer/resolvers/customer-mutation.resolver';
 import { CustomerQueryResolver } from 'src/mkt-core/customer/resolvers/customer-query.resolver';
 import { MktCustomerExportResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-export.resolver';
 import { MktCustomerLicenseResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-license.resolver';
 import { MktCustomerLinkedAccountResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-linked-account.resolver';
+import { MktCustomerNoteResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-note.resolver';
 import { MktCustomerTierResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier.resolver';
 import { MktCustomerTierHistoryResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-tier-history.resolver';
 import {
@@ -32,6 +34,7 @@ import {
   MktCustomerDowngradePolicyService,
   MktCustomerExportService,
   MktCustomerLicenseService,
+  MktCustomerNoteService,
   MktCustomerQueueService,
   MktCustomerTierCalculationService,
   MktCustomerTierHistoryService,
@@ -60,6 +63,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     // Repositories
     MktCustomerRepository,
     MktCustomerTierHistoryRepository,
+    MktCustomerNoteRepository,
     MktWorkspaceMemberRepository,
     MktOrderRepository,
 
@@ -85,6 +89,9 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktCustomerLicenseService,
     MktCustomerCronRegistrationService,
 
+    // Services - Note
+    MktCustomerNoteService,
+
     // Resolvers - CRUD
     CustomerQueryResolver,
     CustomerMutationResolver,
@@ -95,6 +102,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktCustomerExportResolver,
     MktCustomerTierResolver,
     MktCustomerTierHistoryResolver,
+    MktCustomerNoteResolver,
 
     // Hooks - Block auto-generated GraphQL operations
     ...CUSTOMER_BLOCK_HOOKS,
@@ -111,6 +119,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     // Repositories
     MktCustomerRepository,
     MktCustomerTierHistoryRepository,
+    MktCustomerNoteRepository,
 
     // Services - Core
     MktCustomerService,
@@ -132,6 +141,9 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktCustomerQueueService,
     MktCustomerExportService,
     MktCustomerLicenseService,
+
+    // Services - Note
+    MktCustomerNoteService,
   ],
 })
 export class CustomerModule {}

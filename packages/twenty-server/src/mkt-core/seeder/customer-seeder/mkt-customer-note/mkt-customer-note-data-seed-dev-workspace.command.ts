@@ -12,23 +12,22 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-all.view';
-import { mktCustomerTierHistoriesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-history-all.view';
-import { prefillMktCustomerTierHistories } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tier-histories';
-import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
+import { mktCustomerNotesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-note/mkt-customer-note-all.view';
+import { prefillMktCustomerNotes } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-note/prefill-mkt-customer-notes';
 
-interface SeedModuleOptions {
+type SeedModuleOptions = {
   workspaceId?: string;
-}
+};
 
-type CustomerViewDefinition = ReturnType<typeof mktCustomersAllView>;
+type CustomerNoteViewDefinition = ReturnType<typeof mktCustomerNotesAllView>;
 
 @Command({
-  name: 'workspace:seed:customer-module',
-  description: 'Seed customer module views and data for existing workspace',
+  name: 'workspace:seed:customer-note-module',
+  description:
+    'Seed customer note module views and data for existing workspace',
 })
-export class SeedCustomerModuleCommand extends CommandRunner {
-  private readonly logger = new Logger(SeedCustomerModuleCommand.name);
+export class SeedCustomerNoteModuleCommand extends CommandRunner {
+  private readonly logger = new Logger(SeedCustomerNoteModuleCommand.name);
 
   constructor(
     @InjectRepository(Workspace, 'core')
@@ -42,7 +41,7 @@ export class SeedCustomerModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed customer module for',
+    description: 'workspace id to seed customer note module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
@@ -75,7 +74,8 @@ export class SeedCustomerModuleCommand extends CommandRunner {
     for (const workspace of workspaces) {
       try {
         await this.seedModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All Customer' sau khi seed
+
+        // Lấy viewId của view 'All Customer Notes' sau khi seed
         const mainDataSource =
           await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
@@ -83,34 +83,35 @@ export class SeedCustomerModuleCommand extends CommandRunner {
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Customers' })
+          .where('view.name = :name', { name: 'All Customer Notes' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
-        const ViewId = viewRow?.id;
+        const viewId = viewRow?.id;
 
-        if (ViewId) {
+        if (viewId) {
           // Insert mới Favorite với viewId này
           await mainDataSource
             .createQueryBuilder()
             .insert()
             .into(`${schemaName}.favorite`, ['viewId'])
-            .values([{ viewId: ViewId }])
+            .values([{ viewId }])
             .execute();
           this.logger.log(
-            `✅ Inserted new Favorite record with viewId: ${ViewId}`,
+            `✅ Inserted new Favorite record with viewId: ${viewId}`,
           );
         } else {
           this.logger.warn(
-            '⚠️ Could not find viewId for All Customers view to update Favorite records',
+            '⚠️ Could not find viewId for All Customer Notes view to update Favorite records',
           );
         }
+
         this.logger.log(
-          `✅ Customer module seeded for workspace: ${workspace.id}`,
+          `✅ Customer note module seeded for workspace: ${workspace.id}`,
         );
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed customer module for workspace ${workspace.id}:`,
+          `❌ Failed to seed customer note module for workspace ${workspace.id}:`,
           error,
         );
       }
@@ -119,7 +120,7 @@ export class SeedCustomerModuleCommand extends CommandRunner {
 
   private async seedModuleForWorkspace(workspaceId: string): Promise<void> {
     this.logger.log(
-      `🚀 Starting customer module seeding for workspace ${workspaceId}`,
+      `🚀 Starting customer note module seeding for workspace ${workspaceId}`,
     );
 
     const mainDataSource =
@@ -132,24 +133,21 @@ export class SeedCustomerModuleCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find customer object metadata
+    // Find customer note object metadata
     const itemObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktCustomer',
+      (item) => item.nameSingular === 'mktCustomerNote',
     );
 
     this.logger.log(
-      `🔍 Debug - All objects in workspace: ${objectMetadataItems.map((item) => `${item.nameSingular}(${item.standardId})`).join(', ')}`,
+      `🔍 Debug - Looking for customer note object with nameSingular: 'mktCustomerNote'`,
     );
     this.logger.log(
-      `🔍 Debug - Looking for customer object with nameSingular: 'mktCustomer'`,
-    );
-    this.logger.log(
-      `🔍 Debug - Customer object found: ${itemObjectMetadata ? 'YES' : 'NO'}`,
+      `🔍 Debug - Customer note object found: ${itemObjectMetadata ? 'YES' : 'NO'}`,
     );
 
     if (!itemObjectMetadata) {
       this.logger.log(
-        `Customer object not found in workspace ${workspaceId}, skipping...`,
+        `Customer note object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -159,20 +157,20 @@ export class SeedCustomerModuleCommand extends CommandRunner {
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Check if customer view already exists by looking for a view with name 'All Customers'
+        // Check if customer note view already exists
         const existingView = await entityManager
           .createQueryBuilder(undefined, undefined, undefined, {
             shouldBypassPermissionChecks: true,
           })
           .select('*')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Customers' })
+          .where('view.name = :name', { name: 'All Customer Notes' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
 
         if (existingView) {
           this.logger.log(
-            `Customer view already exists for workspace ${workspaceId}. Deleting and recreating...`,
+            `Customer note view already exists for workspace ${workspaceId}. Deleting and recreating...`,
           );
 
           // Delete existing view (cascade will delete viewFields)
@@ -182,35 +180,32 @@ export class SeedCustomerModuleCommand extends CommandRunner {
             })
             .delete()
             .from(`${schemaName}.view`)
-            .where('name = :name', { name: 'All Customers' })
+            .where('name = :name', { name: 'All Customer Notes' })
             .andWhere('key = :key', { key: 'INDEX' })
             .execute();
         }
 
-        // Create customer view
-        const customerViewDefinition: CustomerViewDefinition =
-          mktCustomersAllView(objectMetadataItems);
+        // Create customer note view
+        const customerNoteViewDefinition: CustomerNoteViewDefinition =
+          mktCustomerNotesAllView(objectMetadataItems);
 
-        // Seed mkt customers
-        await prefillMktCustomers(entityManager, schemaName);
+        // Seed mkt customer notes
+        await prefillMktCustomerNotes(entityManager, schemaName);
 
-        // Seed mkt customer tier histories
-        await prefillMktCustomerTierHistories(entityManager, schemaName);
-
-        if (!customerViewDefinition) {
+        if (!customerNoteViewDefinition) {
           this.logger.log(
-            `Could not create customer view definition for workspace ${workspaceId}`,
+            `Could not create customer note view definition for workspace ${workspaceId}`,
           );
 
           return;
         }
 
         this.logger.log(
-          `🔍 Debug - View definition created with ${customerViewDefinition.fields?.length || 0} fields`,
+          `🔍 Debug - View definition created with ${customerNoteViewDefinition.fields?.length ?? 0} fields`,
         );
 
         const viewDefinitionWithId = {
-          ...customerViewDefinition,
+          ...customerNoteViewDefinition,
           id: uuidv4(),
         };
 
@@ -280,7 +275,6 @@ export class SeedCustomerModuleCommand extends CommandRunner {
         }
 
         // Insert view filters if any
-        // Insert view filters if any
         if (
           viewDefinitionWithId.filters &&
           viewDefinitionWithId.filters.length > 0
@@ -317,108 +311,8 @@ export class SeedCustomerModuleCommand extends CommandRunner {
         }
 
         this.logger.log(
-          `✅ Customer view created for workspace ${workspaceId}`,
+          `✅ Customer note view created for workspace ${workspaceId}`,
         );
-
-        // Create tier history view
-        const tierHistoryViewDefinition =
-          mktCustomerTierHistoriesAllView(objectMetadataItems);
-
-        if (tierHistoryViewDefinition) {
-          // Check if tier history view already exists
-          const existingTierHistoryView = await entityManager
-            .createQueryBuilder(undefined, undefined, undefined, {
-              shouldBypassPermissionChecks: true,
-            })
-            .select('*')
-            .from(`${schemaName}.view`, 'view')
-            .where('view.name = :name', { name: 'All Tier Histories' })
-            .andWhere('view.key = :key', { key: 'INDEX' })
-            .getRawOne();
-
-          if (existingTierHistoryView) {
-            await entityManager
-              .createQueryBuilder(undefined, undefined, undefined, {
-                shouldBypassPermissionChecks: true,
-              })
-              .delete()
-              .from(`${schemaName}.view`)
-              .where('name = :name', { name: 'All Tier Histories' })
-              .andWhere('key = :key', { key: 'INDEX' })
-              .execute();
-          }
-
-          const tierHistoryViewWithId = {
-            ...tierHistoryViewDefinition,
-            id: uuidv4(),
-          };
-
-          // Insert tier history view
-          await entityManager
-            .createQueryBuilder(undefined, undefined, undefined, {
-              shouldBypassPermissionChecks: true,
-            })
-            .insert()
-            .into(`${schemaName}.view`, [
-              'id',
-              'name',
-              'objectMetadataId',
-              'type',
-              'key',
-              'position',
-              'icon',
-              'openRecordIn',
-              'kanbanFieldMetadataId',
-            ])
-            .values({
-              id: tierHistoryViewWithId.id,
-              name: tierHistoryViewWithId.name,
-              objectMetadataId: tierHistoryViewWithId.objectMetadataId,
-              type: tierHistoryViewWithId.type,
-              key: tierHistoryViewWithId.key,
-              position: tierHistoryViewWithId.position,
-              icon: tierHistoryViewWithId.icon,
-              openRecordIn: tierHistoryViewWithId.openRecordIn,
-              kanbanFieldMetadataId:
-                tierHistoryViewWithId.kanbanFieldMetadataId,
-            })
-            .execute();
-
-          // Insert tier history view fields
-          if (
-            tierHistoryViewWithId.fields &&
-            tierHistoryViewWithId.fields.length > 0
-          ) {
-            await entityManager
-              .createQueryBuilder(undefined, undefined, undefined, {
-                shouldBypassPermissionChecks: true,
-              })
-              .insert()
-              .into(`${schemaName}.viewField`, [
-                'id',
-                'fieldMetadataId',
-                'position',
-                'isVisible',
-                'size',
-                'viewId',
-              ])
-              .values(
-                tierHistoryViewWithId.fields.map((field) => ({
-                  id: uuidv4(),
-                  fieldMetadataId: field.fieldMetadataId,
-                  position: field.position,
-                  isVisible: field.isVisible,
-                  size: field.size,
-                  viewId: tierHistoryViewWithId.id,
-                })),
-              )
-              .execute();
-          }
-
-          this.logger.log(
-            `✅ Tier History view created for workspace ${workspaceId}`,
-          );
-        }
       },
     );
   }

@@ -6,11 +6,19 @@ import {
 import {
   MKT_CUSTOMER_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_DATA_SEEDS,
-} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-data-seeds.constants';
 import {
   MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_TAG_DATA_SEEDS,
-} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/mkt-customer-tag-data-seeds.constants';
+import {
+  MKT_CUSTOMER_TIER_HISTORY_DATA_SEED_COLUMNS,
+  MKT_CUSTOMER_TIER_HISTORY_DATA_SEEDS,
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-data-seeds.constants';
+import {
+  MKT_CUSTOMER_NOTE_DATA_SEED_COLUMNS,
+  MKT_CUSTOMER_NOTE_DATA_SEEDS,
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-note/mkt-customer-note-data-seeds.constants';
 import {
   MKT_DATA_ACCESS_POLICY_DATA_SEED_COLUMNS,
   MKT_DATA_ACCESS_POLICY_DATA_SEEDS,
@@ -256,6 +264,16 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     tableName: 'mktCustomerTag',
     pgColumns: MKT_CUSTOMER_TAG_DATA_SEED_COLUMNS,
     recordSeeds: MKT_CUSTOMER_TAG_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktCustomerTierHistory',
+    pgColumns: MKT_CUSTOMER_TIER_HISTORY_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_CUSTOMER_TIER_HISTORY_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktCustomerNote',
+    pgColumns: MKT_CUSTOMER_NOTE_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_CUSTOMER_NOTE_DATA_SEEDS,
   },
   // Generic combo configs
   {

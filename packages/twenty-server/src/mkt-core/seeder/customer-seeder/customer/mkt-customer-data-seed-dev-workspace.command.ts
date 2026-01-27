@@ -12,21 +12,26 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
-import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-all.view';
+import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-all.view';
+import { mktCustomerTierHistoriesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-all.view';
+import { prefillMktCustomerTierHistories } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/prefill-mkt-customer-tier-histories';
+import {
+  prefillMktCustomers,
+  updateCustomerSupportOwners,
+} from 'src/mkt-core/seeder/customer-seeder/customer/prefill-mkt-customers';
 
 interface SeedModuleOptions {
   workspaceId?: string;
 }
 
-type CustomerTagViewDefinition = ReturnType<typeof mktCustomerTagsAllView>;
+type CustomerViewDefinition = ReturnType<typeof mktCustomersAllView>;
 
 @Command({
-  name: 'workspace:seed:customer-tag-module',
-  description: 'Seed customer tag module views and data for existing workspace',
+  name: 'workspace:seed:customer-module',
+  description: 'Seed customer module views and data for existing workspace',
 })
-export class SeedCustomerTagModuleCommand extends CommandRunner {
-  private readonly logger = new Logger(SeedCustomerTagModuleCommand.name);
+export class SeedCustomerModuleCommand extends CommandRunner {
+  private readonly logger = new Logger(SeedCustomerModuleCommand.name);
 
   constructor(
     @InjectRepository(Workspace, 'core')
@@ -40,7 +45,7 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed customer tag module for',
+    description: 'workspace id to seed customer module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
@@ -73,7 +78,7 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
     for (const workspace of workspaces) {
       try {
         await this.seedModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All Customer Tag' sau khi seed
+        // Lấy viewId của view 'All Customer' sau khi seed
         const mainDataSource =
           await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
@@ -81,7 +86,7 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Customer Tags' })
+          .where('view.name = :name', { name: 'All Customers' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
         const ViewId = viewRow?.id;
@@ -99,16 +104,16 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
           );
         } else {
           this.logger.warn(
-            '⚠️ Could not find viewId for All Customer Tags view to update Favorite records',
+            '⚠️ Could not find viewId for All Customers view to update Favorite records',
           );
         }
         this.logger.log(
-          `✅ Customer tag module seeded for workspace: ${workspace.id}`,
+          `✅ Customer module seeded for workspace: ${workspace.id}`,
         );
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed customer tag module for workspace ${workspace.id}:`,
+          `❌ Failed to seed customer module for workspace ${workspace.id}:`,
           error,
         );
       }
@@ -117,7 +122,7 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
 
   private async seedModuleForWorkspace(workspaceId: string): Promise<void> {
     this.logger.log(
-      `🚀 Starting customer tag module seeding for workspace ${workspaceId}`,
+      `🚀 Starting customer module seeding for workspace ${workspaceId}`,
     );
 
     const mainDataSource =
@@ -130,24 +135,24 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find customer tag object metadata
+    // Find customer object metadata
     const itemObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktCustomerTag',
+      (item) => item.nameSingular === 'mktCustomer',
     );
 
     this.logger.log(
       `🔍 Debug - All objects in workspace: ${objectMetadataItems.map((item) => `${item.nameSingular}(${item.standardId})`).join(', ')}`,
     );
     this.logger.log(
-      `🔍 Debug - Looking for customer tag object with nameSingular: 'mktCustomerTag'`,
+      `🔍 Debug - Looking for customer object with nameSingular: 'mktCustomer'`,
     );
     this.logger.log(
-      `🔍 Debug - Customer tag object found: ${itemObjectMetadata ? 'YES' : 'NO'}`,
+      `🔍 Debug - Customer object found: ${itemObjectMetadata ? 'YES' : 'NO'}`,
     );
 
     if (!itemObjectMetadata) {
       this.logger.log(
-        `Customer tag object not found in workspace ${workspaceId}, skipping...`,
+        `Customer object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -157,20 +162,20 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Check if customer tag view already exists by looking for a view with name 'All Customer Tags'
+        // Check if customer view already exists by looking for a view with name 'All Customers'
         const existingView = await entityManager
           .createQueryBuilder(undefined, undefined, undefined, {
             shouldBypassPermissionChecks: true,
           })
           .select('*')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Customer Tags' })
+          .where('view.name = :name', { name: 'All Customers' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
 
         if (existingView) {
           this.logger.log(
-            `Customer tag view already exists for workspace ${workspaceId}. Deleting and recreating...`,
+            `Customer view already exists for workspace ${workspaceId}. Deleting and recreating...`,
           );
 
           // Delete existing view (cascade will delete viewFields)
@@ -180,32 +185,35 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
             })
             .delete()
             .from(`${schemaName}.view`)
-            .where('name = :name', { name: 'All Customer Tags' })
+            .where('name = :name', { name: 'All Customers' })
             .andWhere('key = :key', { key: 'INDEX' })
             .execute();
         }
 
-        // Create customer tag view
-        const customerTagViewDefinition: CustomerTagViewDefinition =
-          mktCustomerTagsAllView(objectMetadataItems);
+        // Create customer view
+        const customerViewDefinition: CustomerViewDefinition =
+          mktCustomersAllView(objectMetadataItems);
 
-        // Seed mkt customer tags
-        await prefillMktCustomerTags(entityManager, schemaName);
+        // Seed mkt customers
+        await prefillMktCustomers(entityManager, schemaName);
 
-        if (!customerTagViewDefinition) {
+        // Seed mkt customer tier histories
+        await prefillMktCustomerTierHistories(entityManager, schemaName);
+
+        if (!customerViewDefinition) {
           this.logger.log(
-            `Could not create customer tag view definition for workspace ${workspaceId}`,
+            `Could not create customer view definition for workspace ${workspaceId}`,
           );
 
           return;
         }
 
         this.logger.log(
-          `🔍 Debug - View definition created with ${customerTagViewDefinition.fields?.length || 0} fields`,
+          `🔍 Debug - View definition created with ${customerViewDefinition.fields?.length || 0} fields`,
         );
 
         const viewDefinitionWithId = {
-          ...customerTagViewDefinition,
+          ...customerViewDefinition,
           id: uuidv4(),
         };
 
@@ -312,7 +320,114 @@ export class SeedCustomerTagModuleCommand extends CommandRunner {
         }
 
         this.logger.log(
-          `✅ Customer tag view created for workspace ${workspaceId}`,
+          `✅ Customer view created for workspace ${workspaceId}`,
+        );
+
+        // Create tier history view
+        const tierHistoryViewDefinition =
+          mktCustomerTierHistoriesAllView(objectMetadataItems);
+
+        if (tierHistoryViewDefinition) {
+          // Check if tier history view already exists
+          const existingTierHistoryView = await entityManager
+            .createQueryBuilder(undefined, undefined, undefined, {
+              shouldBypassPermissionChecks: true,
+            })
+            .select('*')
+            .from(`${schemaName}.view`, 'view')
+            .where('view.name = :name', { name: 'All Tier Histories' })
+            .andWhere('view.key = :key', { key: 'INDEX' })
+            .getRawOne();
+
+          if (existingTierHistoryView) {
+            await entityManager
+              .createQueryBuilder(undefined, undefined, undefined, {
+                shouldBypassPermissionChecks: true,
+              })
+              .delete()
+              .from(`${schemaName}.view`)
+              .where('name = :name', { name: 'All Tier Histories' })
+              .andWhere('key = :key', { key: 'INDEX' })
+              .execute();
+          }
+
+          const tierHistoryViewWithId = {
+            ...tierHistoryViewDefinition,
+            id: uuidv4(),
+          };
+
+          // Insert tier history view
+          await entityManager
+            .createQueryBuilder(undefined, undefined, undefined, {
+              shouldBypassPermissionChecks: true,
+            })
+            .insert()
+            .into(`${schemaName}.view`, [
+              'id',
+              'name',
+              'objectMetadataId',
+              'type',
+              'key',
+              'position',
+              'icon',
+              'openRecordIn',
+              'kanbanFieldMetadataId',
+            ])
+            .values({
+              id: tierHistoryViewWithId.id,
+              name: tierHistoryViewWithId.name,
+              objectMetadataId: tierHistoryViewWithId.objectMetadataId,
+              type: tierHistoryViewWithId.type,
+              key: tierHistoryViewWithId.key,
+              position: tierHistoryViewWithId.position,
+              icon: tierHistoryViewWithId.icon,
+              openRecordIn: tierHistoryViewWithId.openRecordIn,
+              kanbanFieldMetadataId:
+                tierHistoryViewWithId.kanbanFieldMetadataId,
+            })
+            .execute();
+
+          // Insert tier history view fields
+          if (
+            tierHistoryViewWithId.fields &&
+            tierHistoryViewWithId.fields.length > 0
+          ) {
+            await entityManager
+              .createQueryBuilder(undefined, undefined, undefined, {
+                shouldBypassPermissionChecks: true,
+              })
+              .insert()
+              .into(`${schemaName}.viewField`, [
+                'id',
+                'fieldMetadataId',
+                'position',
+                'isVisible',
+                'size',
+                'viewId',
+              ])
+              .values(
+                tierHistoryViewWithId.fields.map((field) => ({
+                  id: uuidv4(),
+                  fieldMetadataId: field.fieldMetadataId,
+                  position: field.position,
+                  isVisible: field.isVisible,
+                  size: field.size,
+                  viewId: tierHistoryViewWithId.id,
+                })),
+              )
+              .execute();
+          }
+
+          this.logger.log(
+            `✅ Tier History view created for workspace ${workspaceId}`,
+          );
+        }
+
+        // Update supportOwnerId cho customers sau khi tất cả data đã được seed
+        // Chạy cuối để tránh circular dependency với workspace members
+        await updateCustomerSupportOwners(entityManager, schemaName);
+        this.logger.log(
+          `✅ Support owners updated for customers in workspace ${workspaceId}`,
         );
       },
     );

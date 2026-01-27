@@ -4,7 +4,9 @@ import kebabCase from 'lodash.kebabcase';
 import pickBy from 'lodash.pickby';
 import { v4 as uuidv4 } from 'uuid';
 
+import { TransactionScopeService } from 'src/mkt-core/common/transaction';
 import {
+  DEFAULT_RELATIONSHIP_TYPE,
   DepartmentOutput,
   ManagerInfo,
   SubManagerInfo,
@@ -16,13 +18,16 @@ import {
   DEPARTMENT_MESSAGES,
   MKT_DEPARTMENT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-department/messages';
+import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
 import {
+  MktDepartmentHierarchyRepository,
   MktDepartmentRepository,
   MktDepartmentSubManagerRepository,
 } from 'src/mkt-core/mkt-department/repositories';
 import {
+  CreatedHierarchyInfo,
   CreateDepartmentData,
   DeleteDepartmentResult,
   DepartmentCrudResult,
@@ -53,14 +58,24 @@ export class DepartmentCrudService {
   constructor(
     private readonly departmentRepository: MktDepartmentRepository,
     private readonly subManagerRepository: MktDepartmentSubManagerRepository,
+    private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
+    private readonly transactionScopeService: TransactionScopeService,
   ) {}
 
   /**
-   * Create a new department
+   * Create a new department with transaction support
    *
-   * Note: Uses workspace repositories instead of TypeORM native transactions
-   * because WorkspaceEntities require workspace-specific data source.
-   * departmentCode is auto-generated from departmentName + UUID suffix.
+   * Uses TransactionScopeService to ensure data consistency:
+   * - Department creation
+   * - Sub-managers creation
+   * - Hierarchy creation (parent and/or children)
+   *
+   * All operations are rolled back if any step fails.
+   *
+   * Hierarchy options:
+   * - parentDepartmentId: Creates hierarchy with this department as child
+   * - childDepartmentIds: Creates hierarchy with existing departments as children
+   * - hierarchyRelationshipType: Type of relationship (default: PARENT_CHILD)
    */
   async create(
     workspaceId: string,
@@ -68,27 +83,105 @@ export class DepartmentCrudService {
   ): Promise<DepartmentCrudResult> {
     // Auto-generate departmentCode
     const departmentCode = this.generateDepartmentCode(data.departmentName);
+    const relationshipType =
+      data.hierarchyRelationshipType ?? DEFAULT_RELATIONSHIP_TYPE;
 
     this.logger.log(DEPARTMENT_MESSAGES.LOG.CREATE_START(data.departmentName));
 
     try {
-      // Create department using workspace repository
-      const department = await this.createDepartmentEntity(
+      // Pre-validation: check parent exists before starting transaction
+      let parentDepartment: MktDepartmentWorkspaceEntity | null = null;
+
+      if (data.parentDepartmentId) {
+        parentDepartment = await this.departmentRepository.findByIdInWorkspace(
+          data.parentDepartmentId,
+          workspaceId,
+        );
+
+        if (!parentDepartment) {
+          return this.buildErrorResult(
+            DEPARTMENT_MESSAGES.ERROR.DEPARTMENT_NOT_FOUND(
+              data.parentDepartmentId,
+            ),
+          );
+        }
+      }
+
+      // Execute all operations within a transaction
+      return await this.transactionScopeService.runInTransaction(
         workspaceId,
-        data,
-        departmentCode,
+        async () => {
+          const createdHierarchies: CreatedHierarchyInfo[] = [];
+
+          // 1. Create department
+          const department = await this.createDepartmentEntity(
+            workspaceId,
+            data,
+            departmentCode,
+          );
+
+          this.logger.log(
+            DEPARTMENT_MESSAGES.LOG.CREATE_SUCCESS(department.id),
+          );
+
+          // 2. Create sub-managers if provided
+          const createdSubManagers = await this.createSubManagers(
+            workspaceId,
+            department.id,
+            data.subManagers,
+          );
+
+          // 3. Create hierarchy with parent if parentDepartmentId is provided
+          if (data.parentDepartmentId && parentDepartment) {
+            const hierarchy = await this.createHierarchy(
+              workspaceId,
+              data.parentDepartmentId,
+              department.id,
+              relationshipType,
+            );
+
+            createdHierarchies.push({
+              id: hierarchy.id,
+              parentDepartmentId: data.parentDepartmentId,
+              parentDepartmentCode: parentDepartment.departmentCode,
+              parentDepartmentName: parentDepartment.departmentName,
+              childDepartmentId: department.id,
+              childDepartmentCode: department.departmentCode,
+              childDepartmentName: department.departmentName,
+              relationshipType,
+              hierarchyLevel: 1,
+            });
+
+            this.logger.log(
+              DEPARTMENT_MESSAGES.LOG.HIERARCHY_CREATED(
+                department.id,
+                data.parentDepartmentId,
+              ),
+            );
+          }
+
+          // 4. Create hierarchies with existing child departments
+          if (data.childDepartmentIds && data.childDepartmentIds.length > 0) {
+            const childHierarchies =
+              await this.createHierarchiesWithChildDepartments(
+                workspaceId,
+                department.id,
+                department.departmentCode,
+                department.departmentName,
+                data.childDepartmentIds,
+                relationshipType,
+              );
+
+            createdHierarchies.push(...childHierarchies);
+          }
+
+          return this.buildSuccessResult(
+            department,
+            createdSubManagers,
+            createdHierarchies,
+          );
+        },
       );
-
-      this.logger.log(DEPARTMENT_MESSAGES.LOG.CREATE_SUCCESS(department.id));
-
-      // Create sub-managers if provided
-      const createdSubManagers = await this.createSubManagers(
-        workspaceId,
-        department.id,
-        data.subManagers,
-      );
-
-      return this.buildSuccessResult(department, createdSubManagers);
     } catch (error) {
       return this.handleError(error, 'create');
     }
@@ -548,12 +641,15 @@ export class DepartmentCrudService {
   private buildSuccessResult(
     department: MktDepartmentWorkspaceEntity,
     subManagers?: MktDepartmentSubManagerWorkspaceEntity[],
+    hierarchies?: CreatedHierarchyInfo[],
   ): DepartmentCrudResult {
     return {
       success: true,
       department,
       createdSubManagers:
         subManagers && subManagers.length > 0 ? subManagers : undefined,
+      createdHierarchies:
+        hierarchies && hierarchies.length > 0 ? hierarchies : undefined,
     };
   }
 
@@ -584,5 +680,94 @@ export class DepartmentCrudService {
     this.logger.error(logMessage);
 
     return { success: false, error: errorMessage };
+  }
+
+  // ============================================
+  // HIERARCHY METHODS
+  // ============================================
+
+  /**
+   * Create a hierarchy relationship between parent and child departments
+   */
+  private async createHierarchy(
+    workspaceId: string,
+    parentDepartmentId: string,
+    childDepartmentId: string,
+    relationshipType: string,
+    hierarchyLevel = 1,
+  ): Promise<MktDepartmentHierarchyWorkspaceEntity> {
+    return this.hierarchyRepository.createInWorkspace(
+      {
+        parentDepartmentId,
+        childDepartmentId,
+        hierarchyLevel,
+        relationshipType,
+        isActive: true,
+        inheritsPermissions: true,
+        canEscalateToParent: true,
+      },
+      workspaceId,
+    );
+  }
+
+  /**
+   * Create hierarchies with existing child departments
+   * Validates that all child departments exist before creating hierarchies
+   * Returns created hierarchy info for response
+   */
+  private async createHierarchiesWithChildDepartments(
+    workspaceId: string,
+    parentDepartmentId: string,
+    parentDepartmentCode: string,
+    parentDepartmentName: string,
+    childDepartmentIds: string[],
+    relationshipType: string,
+  ): Promise<CreatedHierarchyInfo[]> {
+    const createdHierarchies: CreatedHierarchyInfo[] = [];
+
+    for (const childDepartmentId of childDepartmentIds) {
+      // Validate child department exists
+      const childDepartment =
+        await this.departmentRepository.findByIdInWorkspace(
+          childDepartmentId,
+          workspaceId,
+        );
+
+      if (!childDepartment) {
+        this.logger.warn(
+          `Child department not found: ${childDepartmentId}, skipping hierarchy creation`,
+        );
+        continue;
+      }
+
+      // Create hierarchy relationship
+      const hierarchy = await this.createHierarchy(
+        workspaceId,
+        parentDepartmentId,
+        childDepartmentId,
+        relationshipType,
+      );
+
+      createdHierarchies.push({
+        id: hierarchy.id,
+        parentDepartmentId,
+        parentDepartmentCode,
+        parentDepartmentName,
+        childDepartmentId,
+        childDepartmentCode: childDepartment.departmentCode,
+        childDepartmentName: childDepartment.departmentName,
+        relationshipType,
+        hierarchyLevel: 1,
+      });
+
+      this.logger.log(
+        DEPARTMENT_MESSAGES.LOG.HIERARCHY_CREATED(
+          childDepartmentId,
+          parentDepartmentId,
+        ),
+      );
+    }
+
+    return createdHierarchies;
   }
 }

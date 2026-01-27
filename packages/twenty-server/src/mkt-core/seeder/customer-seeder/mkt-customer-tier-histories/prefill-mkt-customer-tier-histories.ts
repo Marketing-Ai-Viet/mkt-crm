@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_CUSTOMER_TIER_HISTORY_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_TIER_HISTORY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-history-data-seeds.constants';
+} from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-data-seeds.constants';
 
 export const prefillMktCustomerTierHistories = async (
   entityManager: WorkspaceEntityManager,
