@@ -1,3 +1,5 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 
 /**
@@ -14,6 +16,23 @@ export const MKT_CUSTOMER_NOTE_TYPE = {
 
 export type MktCustomerNoteType =
   (typeof MKT_CUSTOMER_NOTE_TYPE)[keyof typeof MKT_CUSTOMER_NOTE_TYPE];
+
+/**
+ * GraphQL Enum for MktCustomerNoteType
+ */
+export enum MktCustomerNoteTypeEnum {
+  GENERAL = 'GENERAL',
+  CALL = 'CALL',
+  MEETING = 'MEETING',
+  ISSUE = 'ISSUE',
+  FOLLOWUP = 'FOLLOWUP',
+  OTHER = 'OTHER',
+}
+
+registerEnumType(MktCustomerNoteTypeEnum, {
+  name: 'MktCustomerNoteTypeEnum',
+  description: 'Customer note type categories',
+});
 
 export const MKT_CUSTOMER_NOTE_TYPE_OPTIONS: FieldMetadataComplexOption[] = [
   {

@@ -21,3 +21,6 @@ export * from './license';
 
 // Export functionality
 export * from './export';
+
+// Note service
+export * from './note';

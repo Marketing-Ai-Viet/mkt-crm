@@ -10,5 +10,8 @@ export * from './customer-export.output';
 export * from './customer-tier.output';
 export * from './customer-tier-history.output';
 
+// Note DTOs
+export * from './customer-note.dto';
+
 // License DTOs
 export * from './get-user-licenses.dto';

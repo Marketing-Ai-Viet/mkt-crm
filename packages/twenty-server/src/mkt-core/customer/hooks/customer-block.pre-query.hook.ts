@@ -11,6 +11,7 @@
  * Entities không bị block (sử dụng auto-generated GraphQL):
  * - mktTag: Basic master data CRUD
  * - mktCustomerTag: Junction table managed via auto-generated operations
+ * - mktCustomerNote: Auto-generated + custom resolvers (customerNoteList, customerNoteCreate, etc.)
  */
 
 import {
