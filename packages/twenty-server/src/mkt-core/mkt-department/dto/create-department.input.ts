@@ -1,13 +1,39 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 
 /**
+ * Input for sub-manager when creating a department
+ */
+@InputType()
+export class SubManagerInput {
+  @Field({ description: 'Workspace Member ID' })
+  workspaceMemberId: string;
+
+  @Field({
+    nullable: true,
+    defaultValue: false,
+    description: 'Whether this is the primary sub-manager',
+  })
+  isPrimary?: boolean;
+
+  @Field({
+    nullable: true,
+    description: 'Additional notes about this assignment',
+  })
+  note?: string;
+
+  @Field({
+    nullable: true,
+    defaultValue: true,
+    description: 'Whether this assignment is active',
+  })
+  isActive?: boolean;
+}
+
+/**
  * Input for creating a new department
  */
 @InputType()
 export class CreateDepartmentInput {
-  @Field({ description: 'Unique department code' })
-  departmentCode: string;
-
   @Field({ description: 'Display name of the department' })
   departmentName: string;
 
@@ -67,4 +93,10 @@ export class CreateDepartmentInput {
 
   @Field({ nullable: true, description: 'Manager ID (workspace member)' })
   managerId?: string;
+
+  @Field(() => [SubManagerInput], {
+    nullable: true,
+    description: 'List of sub-managers to assign to this department',
+  })
+  subManagers?: SubManagerInput[];
 }

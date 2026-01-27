@@ -2,68 +2,93 @@
  * Service-level types for department operations
  */
 
-/**
- * Input data for creating hierarchy entry via metadata
- * Fields match MktDepartmentHierarchyWorkspaceEntity
- */
-export type CreateDepartmentHierarchyInput = {
-  name?: string;
-  relationshipType?: string | null;
-  parentDepartmentId: string;
-  hierarchyLevel?: number | null;
-  inheritsPermissions?: boolean;
-  canEscalateToParent?: boolean;
-  allowsCrossBranchAccess?: boolean;
-  displayOrder?: number;
-  notes?: string;
-  isActive?: boolean;
-};
-
-/**
- * Metadata structure for department creation hook
- */
-export type DepartmentCreateMetadata = {
-  CreateOneMktDepartmentHierarchy?: CreateDepartmentHierarchyInput;
-};
-
-/**
- * Input data for updating hierarchy entry via metadata
- */
-export type UpdateDepartmentHierarchyInput = CreateDepartmentHierarchyInput & {
-  childDepartmentId?: string;
-};
-
-/**
- * Metadata structure for department update hook
- */
-export type DepartmentUpdateMetadata = {
-  UpdateOneMktDepartmentHierarchy?: UpdateDepartmentHierarchyInput;
-};
-
-export type DepartmentPathInfo = {
-  departmentId: string;
-  departmentCode: string;
-  level: number;
-  path: string[];
-};
-
-export type CircularReferenceInfo = {
-  departmentId: string;
-  circularPath: string[];
-  detectedAt: Date;
-};
-
-export type RebuildResult = {
-  processedCount: number;
-  errorCount: number;
-  errors: Array<{
-    departmentId: string;
-    error: string;
-  }>;
-};
+import {
+  MktDepartmentSubManagerWorkspaceEntity,
+  MktDepartmentWorkspaceEntity,
+} from 'src/mkt-core/mkt-department/objects';
 
 export type ValidationResult = {
   isValid: boolean;
   errors: string[];
   warnings: string[];
+};
+
+/**
+ * Input type for sub-manager when creating a department
+ */
+export type SubManagerData = {
+  workspaceMemberId: string;
+  isPrimary?: boolean;
+  note?: string;
+  isActive?: boolean;
+};
+
+/**
+ * Input type for creating a department
+ * Note: departmentCode is auto-generated internally
+ */
+export type CreateDepartmentData = {
+  departmentName: string;
+  departmentNameEn?: string;
+  departmentType?: string | null;
+  description?: string;
+  budgetCode?: string;
+  costCenter?: string;
+  requiresKpiTracking?: boolean;
+  allowsCrossDepartmentAccess?: boolean;
+  defaultKpiCategory?: string;
+  displayOrder?: number;
+  colorCode?: string;
+  iconName?: string;
+  address?: string;
+  isActive?: boolean;
+  managerId?: string | null;
+  subManagers?: SubManagerData[];
+};
+
+/**
+ * Input type for updating a department
+ * Note: departmentCode cannot be updated
+ */
+export type UpdateDepartmentData = Partial<CreateDepartmentData>;
+
+/**
+ * Result type for CRUD operations
+ */
+export type DepartmentCrudResult = {
+  success: boolean;
+  department?: MktDepartmentWorkspaceEntity;
+  createdSubManagers?: MktDepartmentSubManagerWorkspaceEntity[];
+  error?: string;
+};
+
+/**
+ * Result type for delete operation
+ */
+export type DeleteDepartmentResult = {
+  success: boolean;
+  deletedId?: string;
+  error?: string;
+};
+
+/**
+ * Search parameters for department search
+ */
+export type SearchDepartmentParams = {
+  keyword?: string;
+  departmentCode?: string;
+  departmentType?: string;
+  managerId?: string;
+  isActive?: boolean;
+  requiresKpiTracking?: boolean;
+  page?: number;
+  limit?: number;
+};
+
+/**
+ * Result type for search operations
+ */
+export type SearchDepartmentResult = {
+  items: MktDepartmentWorkspaceEntity[];
+  total: number;
 };

@@ -88,5 +88,32 @@ export type UpdateWorkspaceMemberData = Partial<
     | 'timeZone'
     | 'startDate'
     | 'endDate'
+    | 'position'
+    | 'calendarStartDay'
   >
 >;
+
+/**
+ * Params for searching workspace members
+ */
+export type SearchMemberParams = {
+  keyword?: string;
+  email?: string;
+  memberCode?: string;
+  status?: string;
+  memberType?: string;
+  departmentId?: string;
+  teamId?: string;
+  organizationLevelId?: string;
+  employmentStatusId?: string;
+  page?: number;
+  limit?: number;
+};
+
+/**
+ * Result of search workspace members
+ */
+export type SearchMemberResult = {
+  items: WorkspaceMemberWorkspaceEntity[];
+  total: number;
+};

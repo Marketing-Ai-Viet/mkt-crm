@@ -8,9 +8,6 @@ export class DepartmentTreeNode {
   id: string;
 
   @Field()
-  departmentCode: string;
-
-  @Field()
   departmentName: string;
 
   @Field(() => Int)

@@ -2,9 +2,11 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
+import omitBy from 'lodash.omitby';
 import { DataSource, Repository } from 'typeorm';
 import { APP_LOCALES } from 'twenty-shared/translations';
 
@@ -17,8 +19,13 @@ import {
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
-import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
-import { UserOutput } from 'src/mkt-core/user-management/dto/user.output';
+import {
+  CreateUserInput,
+  SearchUserInput,
+  UpdateUserInput,
+  UserListOutput,
+  UserOutput,
+} from 'src/mkt-core/user-management/dto';
 import { EmailNotificationService } from 'src/mkt-core/user-management/services/email-notification.service';
 import { WorkspaceMemberService } from 'src/mkt-core/user-management/services/workspace-member.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -33,6 +40,13 @@ const PASSWORD_CHARS = {
 const DEFAULT_PASSWORD_LENGTH = 12;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 16;
+
+// Pagination constants
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+const MIN_PAGE = 1;
+const MIN_LIMIT = 1;
 
 @Injectable()
 export class UserService {
@@ -70,6 +84,152 @@ export class UserService {
     }
 
     return this.createCompleteUser(workspaceId, input);
+  }
+
+  /**
+   * Update user (workspace member)
+   */
+  async updateUser(
+    workspaceId: string,
+    input: UpdateUserInput,
+  ): Promise<UserOutput> {
+    const { memberId, firstName, lastName, ...updateData } = input;
+
+    const existingMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!existingMember) {
+      throw new NotFoundException(`Workspace member not found: ${memberId}`);
+    }
+
+    // Chuẩn bị dữ liệu update với lodash omitBy
+    const updatePayload = omitBy(
+      {
+        name:
+          firstName !== undefined || lastName !== undefined
+            ? {
+                firstName: firstName ?? existingMember.name?.firstName ?? '',
+                lastName: lastName ?? existingMember.name?.lastName ?? '',
+              }
+            : undefined,
+        ...updateData,
+      },
+      (value) => value === undefined,
+    );
+
+    await this.workspaceMemberService.updateWorkspaceMember(
+      workspaceId,
+      memberId,
+      updatePayload,
+    );
+
+    const updatedMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!updatedMember) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve updated member',
+      );
+    }
+
+    return this.mapWorkspaceMemberToUserOutput(updatedMember);
+  }
+
+  /**
+   * Delete user (soft delete workspace member)
+   */
+  async deleteUser(workspaceId: string, memberId: string): Promise<boolean> {
+    const existingMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!existingMember) {
+      throw new NotFoundException(`Workspace member not found: ${memberId}`);
+    }
+
+    // Soft delete workspace member
+    await this.workspaceMemberService.softDeleteWorkspaceMember(
+      workspaceId,
+      memberId,
+    );
+
+    // Soft delete user workspace và core user nếu cần
+    if (existingMember.userId) {
+      await this.deleteUserWorkspace(existingMember.userId, workspaceId);
+      await this.softDeleteUserIfNoWorkspaces(existingMember.userId);
+    }
+
+    this.logger.log(`Deleted user (workspace member): ${memberId}`);
+
+    return true;
+  }
+
+  /**
+   * Search users (workspace members) với pagination
+   * Validation được thực hiện ở service layer để đảm bảo limit không vượt quá MAX_LIMIT
+   */
+  async searchUsers(
+    workspaceId: string,
+    input: SearchUserInput,
+  ): Promise<UserListOutput> {
+    // Validate và normalize pagination params
+    const page = Math.max(input.page ?? DEFAULT_PAGE, MIN_PAGE);
+    const limit = Math.min(
+      Math.max(input.limit ?? DEFAULT_LIMIT, MIN_LIMIT),
+      MAX_LIMIT,
+    );
+
+    // Tạo input đã được validate
+    const validatedInput: SearchUserInput = {
+      ...input,
+      page,
+      limit,
+    };
+
+    const { items, total } =
+      await this.workspaceMemberService.searchWorkspaceMembers(
+        workspaceId,
+        validatedInput,
+      );
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: items.map((member) => this.mapWorkspaceMemberToUserOutput(member)),
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    };
+  }
+
+  /**
+   * Get user by ID
+   */
+  async getUserById(
+    workspaceId: string,
+    memberId: string,
+  ): Promise<UserOutput | null> {
+    const member = await this.workspaceMemberService.findWorkspaceMemberById(
+      workspaceId,
+      memberId,
+    );
+
+    if (!member) {
+      return null;
+    }
+
+    return this.mapWorkspaceMemberToUserOutput(member);
   }
 
   async findCoreUserByEmail(email: string): Promise<User | null> {
@@ -381,11 +541,54 @@ export class UserService {
       email,
       firstName: savedWorkspaceMember.name?.firstName ?? '',
       lastName: savedWorkspaceMember.name?.lastName ?? '',
+      startDate: savedWorkspaceMember.startDate,
+      endDate: savedWorkspaceMember.endDate ?? null,
       jobTitle: input.jobTitle ?? '',
       city: input.city ?? '',
       phone: input.phone ?? '',
       language: savedWorkspaceMember.locale ?? input.language ?? 'en',
       avatarUrl: savedWorkspaceMember.avatarUrl ?? input.avatarUrl ?? undefined,
+      memberCode: savedWorkspaceMember.memberCode ?? '',
+      memberType: savedWorkspaceMember.memberType ?? '',
+      status: savedWorkspaceMember.status ?? '',
+      grade: savedWorkspaceMember.grade ?? '',
+      address: savedWorkspaceMember.address ?? '',
+      departmentId: savedWorkspaceMember.departmentId ?? undefined,
+      teamId: savedWorkspaceMember.teamId ?? undefined,
+      organizationLevelId:
+        savedWorkspaceMember.organizationLevelId ?? undefined,
+      employmentStatusId: savedWorkspaceMember.employmentStatusId ?? undefined,
+      createdAt: new Date(savedWorkspaceMember.createdAt),
+      updatedAt: new Date(savedWorkspaceMember.updatedAt),
+    };
+  }
+
+  /**
+   * Map WorkspaceMember entity to UserOutput
+   */
+  private mapWorkspaceMemberToUserOutput(
+    member: WorkspaceMemberWorkspaceEntity,
+  ): UserOutput {
+    return {
+      id: member.id,
+      email: member.userEmail,
+      firstName: member.name?.firstName ?? '',
+      lastName: member.name?.lastName ?? '',
+      startDate: member.startDate,
+      endDate: member.endDate ?? null,
+      language: member.locale ?? 'en',
+      avatarUrl: member.avatarUrl ?? undefined,
+      memberCode: member.memberCode ?? '',
+      memberType: member.memberType ?? '',
+      status: member.status ?? '',
+      grade: member.grade ?? '',
+      address: member.address ?? '',
+      departmentId: member.departmentId ?? undefined,
+      teamId: member.teamId ?? undefined,
+      organizationLevelId: member.organizationLevelId ?? undefined,
+      employmentStatusId: member.employmentStatusId ?? undefined,
+      createdAt: new Date(member.createdAt),
+      updatedAt: new Date(member.updatedAt),
     };
   }
 }

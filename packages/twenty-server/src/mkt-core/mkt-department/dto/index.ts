@@ -6,6 +6,7 @@
 
 // Query inputs
 export * from './department-tree-options.input';
+export * from './search-department.input';
 
 // Mutation inputs - Department CRUD
 export * from './create-department.input';
@@ -24,6 +25,9 @@ export * from './manager-info.output';
 
 // Mutation outputs - Department CRUD
 export * from './department-response.output';
+
+// Query outputs - List
+export * from './department-list.output';
 
 // Mutation outputs - Hierarchy
 export * from './department-hierarchy-response.output';

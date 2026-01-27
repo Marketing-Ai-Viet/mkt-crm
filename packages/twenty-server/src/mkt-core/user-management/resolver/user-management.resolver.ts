@@ -1,12 +1,17 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { CreateUserInput } from 'src/mkt-core/user-management/dto/create-user.input';
-import { UserOutput } from 'src/mkt-core/user-management/dto/user.output';
+import {
+  CreateUserInput,
+  SearchUserInput,
+  UpdateUserInput,
+  UserListOutput,
+  UserOutput,
+} from 'src/mkt-core/user-management/dto';
 import { UserService } from 'src/mkt-core/user-management/services/user.service';
 
 @UseGuards(UserAuthGuard, WorkspaceAuthGuard)
@@ -14,12 +19,63 @@ import { UserService } from 'src/mkt-core/user-management/services/user.service'
 export class UserManagementResolver {
   constructor(private readonly userService: UserService) {}
 
-  @Mutation(() => UserOutput)
+  // ==================== Mutations ====================
+
+  @Mutation(() => UserOutput, {
+    description: 'Tạo user mới trong workspace',
+  })
   async createPersonUser(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('input', { type: () => CreateUserInput })
     input: CreateUserInput,
-  ) {
+  ): Promise<UserOutput> {
     return this.userService.createUser(workspaceId, input);
+  }
+
+  @Mutation(() => UserOutput, {
+    description: 'Cập nhật thông tin user (workspace member)',
+  })
+  async updatePersonUser(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @Args('input', { type: () => UpdateUserInput })
+    input: UpdateUserInput,
+  ): Promise<UserOutput> {
+    return this.userService.updateUser(workspaceId, input);
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'Xóa user (soft delete workspace member)',
+  })
+  async deletePersonUser(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @Args('memberId', { type: () => String })
+    memberId: string,
+  ): Promise<boolean> {
+    return this.userService.deleteUser(workspaceId, memberId);
+  }
+
+  // ==================== Queries ====================
+
+  @Query(() => UserOutput, {
+    nullable: true,
+    description: 'Lấy thông tin user theo ID',
+  })
+  async getPersonUser(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @Args('memberId', { type: () => String })
+    memberId: string,
+  ): Promise<UserOutput | null> {
+    return this.userService.getUserById(workspaceId, memberId);
+  }
+
+  @Query(() => UserListOutput, {
+    description: 'Tìm kiếm users với nhiều tiêu chí và pagination',
+  })
+  async searchPersonUsers(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @Args('input', { type: () => SearchUserInput })
+    input: SearchUserInput,
+  ): Promise<UserListOutput> {
+    return this.userService.searchUsers(workspaceId, input);
   }
 }

@@ -1,5 +1,7 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 
+import { SubManagerInput } from './create-department.input';
+
 /**
  * Input for updating an existing department
  */
@@ -7,9 +9,6 @@ import { InputType, Field, Int } from '@nestjs/graphql';
 export class UpdateDepartmentInput {
   @Field({ description: 'ID of the department to update' })
   id: string;
-
-  @Field({ nullable: true, description: 'Unique department code' })
-  departmentCode?: string;
 
   @Field({ nullable: true, description: 'Display name of the department' })
   departmentName?: string;
@@ -61,4 +60,11 @@ export class UpdateDepartmentInput {
 
   @Field({ nullable: true, description: 'Manager ID (workspace member)' })
   managerId?: string;
+
+  @Field(() => [SubManagerInput], {
+    nullable: true,
+    description:
+      'List of sub-managers to replace existing ones (REPLACE mode: deletes all existing sub-managers and creates new ones)',
+  })
+  subManagers?: SubManagerInput[];
 }
