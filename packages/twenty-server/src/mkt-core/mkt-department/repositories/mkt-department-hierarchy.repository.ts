@@ -282,4 +282,42 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
       },
     });
   }
+
+  // ============================================
+  // SPECIALIZED DELETE OPERATIONS
+  // ============================================
+
+  /**
+   * Soft delete hierarchy by ID (using scoped workspace context)
+   * @returns true if deleted successfully, false if not found
+   */
+  async softDeleteWithContext(hierarchyId: string): Promise<boolean> {
+    const hierarchy = await this.findById(hierarchyId);
+
+    if (!hierarchy) {
+      return false;
+    }
+
+    await this.softDelete(hierarchyId);
+
+    return true;
+  }
+
+  /**
+   * Soft delete hierarchy by child department ID
+   * @returns true if deleted successfully, false if not found
+   */
+  async softDeleteByChildDepartmentId(
+    childDepartmentId: string,
+  ): Promise<boolean> {
+    const hierarchy = await this.findOne({ childDepartmentId });
+
+    if (!hierarchy) {
+      return false;
+    }
+
+    await this.softDelete(hierarchy.id);
+
+    return true;
+  }
 }

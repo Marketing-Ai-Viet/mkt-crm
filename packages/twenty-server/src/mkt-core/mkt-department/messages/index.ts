@@ -80,6 +80,8 @@ export const DEPARTMENT_MESSAGES = {
       `Hierarchy created: child=${childDepartmentId}, parent=${parentDepartmentId}`,
     HIERARCHY_UPDATED: (childDepartmentId: string) =>
       `Hierarchy updated for department: ${childDepartmentId}`,
+    HIERARCHY_DELETED: (hierarchyId: string) =>
+      `Hierarchy soft deleted: ${hierarchyId}`,
   },
 
   WARN: {
@@ -119,10 +121,14 @@ export const DEPARTMENT_MESSAGES = {
     // Hierarchy errors
     HIERARCHY_NOT_FOUND: (departmentId: string) =>
       `Hierarchy not found for department: ${departmentId}`,
+    HIERARCHY_NOT_FOUND_BY_ID: (hierarchyId: string) =>
+      `Hierarchy not found: ${hierarchyId}`,
     HIERARCHY_CREATE_FAILED: (childDepartmentId: string) =>
       `Failed to create hierarchy for department: ${childDepartmentId}`,
     HIERARCHY_UPDATE_FAILED: (childDepartmentId: string) =>
       `Failed to update hierarchy for department: ${childDepartmentId}`,
+    HIERARCHY_DELETE_FAILED: (error: string) =>
+      `Failed to delete hierarchy: ${error}`,
     PARENT_HIERARCHY_NOT_FOUND: (departmentId: string) =>
       `Parent hierarchy not found for department: ${departmentId}`,
 

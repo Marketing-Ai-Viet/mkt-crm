@@ -6,11 +6,17 @@ import { InputType, Field } from '@nestjs/graphql';
  */
 @InputType()
 export class CreateDepartmentHierarchyInput {
-  @Field({ description: 'ID của department cha' })
-  parentDepartmentId: string;
+  @Field({
+    nullable: true,
+    description: 'ID của department cha (không bắt buộc nếu là root)',
+  })
+  parentDepartmentId?: string;
 
-  @Field({ description: 'ID của department con (team)' })
-  childDepartmentId: string;
+  @Field({
+    nullable: true,
+    description: 'ID của department con (không bắt buộc nếu chỉ set parent)',
+  })
+  childDepartmentId?: string;
 
   @Field({ nullable: true, description: 'Tên mối quan hệ' })
   name?: string;

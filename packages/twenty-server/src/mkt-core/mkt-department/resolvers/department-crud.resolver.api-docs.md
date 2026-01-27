@@ -323,7 +323,7 @@ type DepartmentOutput {
   isActive: Boolean
   managerId: String
   manager: ManagerInfo              # Thông tin chi tiết manager
-  subManagers: [SubManagerInfo]     # Danh sách sub-managers
+  subManage[department-mutation.resolver.api-docs.md](department-mutation.resolver.api-docs.md)rs: [SubManagerInfo]     # Danh sách sub-managers
   createdAt: DateTime!
   updatedAt: DateTime!
 }
