@@ -19,6 +19,7 @@ type MktCustomerDataSeed = {
   name: string;
   email: string | null;
   phone: string | null;
+  citizenId: string | null; // CCCD/CMND - chỉ áp dụng cho INDIVIDUAL
   type: string;
   companyName: string | null;
   taxCode: string | null;
@@ -66,6 +67,7 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'name',
   'email',
   'phone',
+  'citizenId',
   'type',
   'companyName',
   'taxCode',
@@ -100,6 +102,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Nguyễn Văn An',
     email: 'nguyen.van.an@techcorp.vn',
     phone: '0901234567',
+    citizenId: null, // BUSINESS không cần CCCD
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     companyName: 'Công ty TNHH TechCorp Việt Nam',
     taxCode: '0123456789',
@@ -172,6 +175,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Trần Thị Bình',
     email: 'tran.thi.binh@innovate.io',
     phone: '0912345678',
+    citizenId: null, // BUSINESS không cần CCCD
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     companyName: 'Innovate Solutions JSC',
     taxCode: '0234567890',
@@ -232,6 +236,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Lê Minh Cường',
     email: 'le.minh.cuong@gmail.com',
     phone: '0923456789',
+    citizenId: '079090012345', // CCCD 12 số cho khách hàng cá nhân
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     companyName: null,
     taxCode: null,
@@ -289,6 +294,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Phạm Hoàng Dung',
     email: 'pham.hoang.dung@startup.vn',
     phone: '0934567890',
+    citizenId: null, // ORGANIZATION không cần CCCD
     type: MKT_CUSTOMER_TYPE.ORGANIZATION,
     companyName: 'Startup ABC',
     taxCode: '0345678901',
@@ -333,6 +339,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Võ Thị Em',
     email: 'vo.thi.em@oldcompany.vn',
     phone: '0945678901',
+    citizenId: null, // BUSINESS không cần CCCD
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     companyName: 'Old Company Ltd',
     taxCode: '0456789012',
