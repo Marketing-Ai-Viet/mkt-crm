@@ -35,3 +35,18 @@ export class UpdateDepartmentHierarchyResponse {
   @Field({ nullable: true, description: 'Thông báo lỗi nếu có' })
   error?: string;
 }
+
+/**
+ * Response khi xóa department hierarchy
+ */
+@ObjectType()
+export class DeleteDepartmentHierarchyResponse {
+  @Field({ description: 'Thành công hay không' })
+  success: boolean;
+
+  @Field({ nullable: true, description: 'ID của hierarchy đã xóa' })
+  deletedHierarchyId?: string;
+
+  @Field({ nullable: true, description: 'Thông báo lỗi nếu có' })
+  error?: string;
+}

@@ -9,6 +9,11 @@ type UpdateHierarchyResult = {
   hierarchyId?: string;
 };
 
+type DeleteHierarchyResult = {
+  deleted: boolean;
+  hierarchyId?: string;
+};
+
 @Injectable()
 export class MktDepartmentHierarchyService {
   constructor(
@@ -52,5 +57,43 @@ export class MktDepartmentHierarchyService {
     }
 
     return result;
+  }
+
+  /**
+   * Xóa mềm hierarchy theo ID
+   * @throws NotFoundException if hierarchy not found
+   */
+  async deleteHierarchy(hierarchyId: string): Promise<DeleteHierarchyResult> {
+    const deleted =
+      await this.hierarchyRepository.softDeleteWithContext(hierarchyId);
+
+    if (!deleted) {
+      throw new NotFoundException(
+        DEPARTMENT_MESSAGES.ERROR.HIERARCHY_NOT_FOUND_BY_ID(hierarchyId),
+      );
+    }
+
+    return { deleted: true, hierarchyId };
+  }
+
+  /**
+   * Xóa mềm hierarchy theo childDepartmentId
+   * @throws NotFoundException if hierarchy not found
+   */
+  async deleteHierarchyByChildDepartment(
+    childDepartmentId: string,
+  ): Promise<DeleteHierarchyResult> {
+    const hierarchy =
+      await this.hierarchyRepository.findByChildDepartmentId(childDepartmentId);
+
+    if (!hierarchy) {
+      throw new NotFoundException(
+        DEPARTMENT_MESSAGES.ERROR.HIERARCHY_NOT_FOUND(childDepartmentId),
+      );
+    }
+
+    await this.hierarchyRepository.softDelete(hierarchy.id);
+
+    return { deleted: true, hierarchyId: hierarchy.id };
   }
 }

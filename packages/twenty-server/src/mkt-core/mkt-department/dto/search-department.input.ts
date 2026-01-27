@@ -1,6 +1,14 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
+import { Field, InputType, Int, registerEnumType } from '@nestjs/graphql';
 
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+
+import { DEPARTMENT_TYPE } from 'src/mkt-core/mkt-department/constants';
+
+// Đăng ký enum với GraphQL
+registerEnumType(DEPARTMENT_TYPE, {
+  name: 'DepartmentTypeEnum',
+  description: 'Loại phòng ban (DEPARTMENT hoặc TEAM)',
+});
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -24,13 +32,13 @@ export class SearchDepartmentInput {
   @IsString()
   departmentCode?: string;
 
-  @Field(() => String, {
+  @Field(() => DEPARTMENT_TYPE, {
     nullable: true,
-    description: 'Lọc theo loại phòng ban',
+    description: 'Lọc theo loại phòng ban (DEPARTMENT hoặc TEAM)',
   })
   @IsOptional()
-  @IsString()
-  departmentType?: string;
+  @IsEnum(DEPARTMENT_TYPE)
+  departmentType?: DEPARTMENT_TYPE;
 
   @Field(() => String, {
     nullable: true,

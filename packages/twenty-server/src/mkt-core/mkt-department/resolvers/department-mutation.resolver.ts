@@ -19,6 +19,7 @@ import {
   UpdateDepartmentHierarchyInput,
   CreateDepartmentHierarchyResponse,
   UpdateDepartmentHierarchyResponse,
+  DeleteDepartmentHierarchyResponse,
 } from 'src/mkt-core/mkt-department/dto';
 import { MktDepartmentHierarchyService } from 'src/mkt-core/mkt-department/services/mkt-department-hierarchy.service';
 import {
@@ -42,6 +43,9 @@ export class DepartmentMutationResolver {
    *
    * Sử dụng khi cần thiết lập parent-child relationship cho department.
    * Thường dùng sau khi tạo department type TEAM qua auto-generated mutation.
+   *
+   * Lưu ý: parentDepartmentId và childDepartmentId đều không bắt buộc,
+   * cho phép tạo hierarchy linh hoạt (root department, partial relationship, etc.)
    */
   @Mutation(() => CreateDepartmentHierarchyResponse, {
     description: 'Create hierarchy relationship for a department',
@@ -65,16 +69,17 @@ export class DepartmentMutationResolver {
           isActive: input.isActive ?? true,
         });
 
+      // Log với giá trị có thể undefined
+      const childId = input.childDepartmentId ?? 'null';
+      const parentId = input.parentDepartmentId ?? 'null';
+
       this.logger.log(
-        DEPARTMENT_MESSAGES.LOG.HIERARCHY_CREATED(
-          input.childDepartmentId,
-          input.parentDepartmentId,
-        ),
+        DEPARTMENT_MESSAGES.LOG.HIERARCHY_CREATED(childId, parentId),
       );
 
       return {
         success: true,
-        departmentId: input.childDepartmentId,
+        departmentId: input.childDepartmentId ?? input.parentDepartmentId,
         hierarchyId: hierarchy?.id,
       };
     } catch (error) {
@@ -128,6 +133,41 @@ export class DepartmentMutationResolver {
     } catch (error) {
       this.logger.error(
         DEPARTMENT_MESSAGES.ERROR.HIERARCHY_UPDATE_FAILED(
+          (error as Error).message,
+        ),
+      );
+
+      return {
+        success: false,
+        error: (error as Error).message,
+      };
+    }
+  }
+
+  /**
+   * Xóa mềm hierarchy (soft delete)
+   *
+   * Sử dụng khi cần hủy mối quan hệ parent-child của department.
+   * Hierarchy sẽ được đánh dấu deletedAt thay vì xóa hoàn toàn.
+   */
+  @Mutation(() => DeleteDepartmentHierarchyResponse, {
+    description: 'Soft delete a hierarchy relationship',
+  })
+  async deleteDepartmentHierarchy(
+    @Args('hierarchyId') hierarchyId: string,
+  ): Promise<DeleteDepartmentHierarchyResponse> {
+    try {
+      const result = await this.hierarchyService.deleteHierarchy(hierarchyId);
+
+      this.logger.log(DEPARTMENT_MESSAGES.LOG.HIERARCHY_DELETED(hierarchyId));
+
+      return {
+        success: true,
+        deletedHierarchyId: result.hierarchyId,
+      };
+    } catch (error) {
+      this.logger.error(
+        DEPARTMENT_MESSAGES.ERROR.HIERARCHY_DELETE_FAILED(
           (error as Error).message,
         ),
       );
