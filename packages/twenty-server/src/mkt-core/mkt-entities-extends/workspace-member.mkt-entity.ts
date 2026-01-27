@@ -183,6 +183,18 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktCustomers: Relation<MktCustomerWorkspaceEntity[]>;
 
   @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.supportOwnerForMktCustomers,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Support Owner For Customers`,
+    description: msg`Support phụ trách customers`,
+    icon: 'IconLifebuoy',
+    inverseSideTarget: () => MktCustomerWorkspaceEntity,
+    inverseSideFieldKey: 'supportOwner',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  supportOwnerForMktCustomers: Relation<MktCustomerWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktTags,
     type: RelationType.ONE_TO_MANY,
     label: msg`Account Owner For Tags`,

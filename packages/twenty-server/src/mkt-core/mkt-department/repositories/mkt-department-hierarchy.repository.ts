@@ -223,6 +223,20 @@ export class MktDepartmentHierarchyRepository extends BaseWorkspaceRepository<Mk
     return repository.save(hierarchy);
   }
 
+  /**
+   * Create hierarchy in specific workspace
+   * Used by services that need to pass workspaceId explicitly
+   */
+  async createInWorkspace(
+    data: Partial<MktDepartmentHierarchyWorkspaceEntity>,
+    workspaceId: string,
+  ): Promise<MktDepartmentHierarchyWorkspaceEntity> {
+    const repository = await this.getRepository(workspaceId);
+    const hierarchy = repository.create(data);
+
+    return repository.save(hierarchy);
+  }
+
   // ============================================
   // SPECIALIZED UPDATE OPERATIONS
   // ============================================

@@ -3,7 +3,9 @@ import {
   LINKED_ACCOUNT_STATUS,
 } from 'src/mkt-core/customer/constants/linked-account.constants';
 import {
+  MKT_CUSTOMER_COMPANY_SIZE,
   MKT_CUSTOMER_DATA_SEEDS_IDS,
+  MKT_CUSTOMER_INDUSTRY,
   MKT_CUSTOMER_LIFECYCLE_STAGE,
   MKT_CUSTOMER_STATUS,
   MKT_CUSTOMER_TIER,
@@ -27,6 +29,7 @@ type MktCustomerDataSeed = {
   totalOrderValue: number;
   licensesCount: number;
   lastPurchase: string | null;
+  firstPurchase: string | null; // Sprint 1: Ngày mua hàng đầu tiên
   customerLtv: number;
   churnRiskScore: number;
   engagementScore: number;
@@ -37,6 +40,11 @@ type MktCustomerDataSeed = {
   createdByWorkspaceMemberId: string | null;
   createdByName: string;
   linkedAccounts: string | null; // JSON string for PostgreSQL JSONB
+  // Sprint 3: Business Information
+  companySize: string | null;
+  industry: string | null;
+  contactPosition: string | null;
+  contactDepartment: string | null;
 };
 
 /**
@@ -68,6 +76,7 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'totalOrderValue',
   'licensesCount',
   'lastPurchase',
+  'firstPurchase',
   'customerLtv',
   'churnRiskScore',
   'engagementScore',
@@ -78,6 +87,10 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'createdByWorkspaceMemberId',
   'createdByName',
   'linkedAccounts',
+  'companySize',
+  'industry',
+  'contactPosition',
+  'contactDepartment',
 ];
 
 export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
@@ -97,6 +110,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     totalOrderValue: 150000000,
     licensesCount: 25,
     lastPurchase: '2024-11-15T10:30:00.000Z',
+    firstPurchase: '2023-01-20T14:00:00.000Z',
     customerLtv: 180000000,
     churnRiskScore: 5,
     engagementScore: 95,
@@ -147,6 +161,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
         },
       },
     ]),
+    companySize: MKT_CUSTOMER_COMPANY_SIZE.ENTERPRISE,
+    industry: MKT_CUSTOMER_INDUSTRY.IT,
+    contactPosition: 'Giám đốc Công nghệ',
+    contactDepartment: 'Phòng Công nghệ thông tin',
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
@@ -164,6 +182,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     totalOrderValue: 75000000,
     licensesCount: 12,
     lastPurchase: '2024-10-20T14:15:00.000Z',
+    firstPurchase: '2023-06-15T10:00:00.000Z',
     customerLtv: 85000000,
     churnRiskScore: 15,
     engagementScore: 80,
@@ -202,6 +221,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
         },
       },
     ]),
+    companySize: MKT_CUSTOMER_COMPANY_SIZE.LARGE,
+    industry: MKT_CUSTOMER_INDUSTRY.IT,
+    contactPosition: 'Trưởng phòng Kinh doanh',
+    contactDepartment: 'Phòng Kinh doanh',
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
@@ -219,6 +242,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     totalOrderValue: 25000000,
     licensesCount: 5,
     lastPurchase: '2024-09-25T16:45:00.000Z',
+    firstPurchase: '2024-01-25T09:30:00.000Z',
     customerLtv: 28000000,
     churnRiskScore: 25,
     engagementScore: 65,
@@ -254,6 +278,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
         metadata: { domain: 'gmail.com' },
       },
     ]),
+    companySize: null, // Khách hàng cá nhân
+    industry: null,
+    contactPosition: 'Freelancer',
+    contactDepartment: null,
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.BRONZE_CUSTOMER,
@@ -271,6 +299,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     totalOrderValue: 5000000,
     licensesCount: 2,
     lastPurchase: '2024-11-01T09:00:00.000Z',
+    firstPurchase: '2024-10-15T11:00:00.000Z',
     customerLtv: 5500000,
     churnRiskScore: 40,
     engagementScore: 50,
@@ -293,6 +322,10 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
         metadata: { licenseCount: 2, subscriptionTier: 'trial' },
       },
     ]),
+    companySize: MKT_CUSTOMER_COMPANY_SIZE.SMALL,
+    industry: MKT_CUSTOMER_INDUSTRY.IT,
+    contactPosition: 'Founder & CEO',
+    contactDepartment: 'Ban Giám đốc',
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.CHURNED_CUSTOMER,
@@ -310,6 +343,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     totalOrderValue: 35000000,
     licensesCount: 0,
     lastPurchase: '2024-03-15T08:30:00.000Z',
+    firstPurchase: '2022-06-01T10:00:00.000Z',
     customerLtv: 35000000,
     churnRiskScore: 95,
     engagementScore: 10,
@@ -335,5 +369,9 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
         metadata: { licenseCount: 0, subscriptionTier: 'expired' },
       },
     ]),
+    companySize: MKT_CUSTOMER_COMPANY_SIZE.MEDIUM,
+    industry: MKT_CUSTOMER_INDUSTRY.MANUFACTURING,
+    contactPosition: 'Giám đốc điều hành',
+    contactDepartment: 'Ban Giám đốc',
   },
 ];

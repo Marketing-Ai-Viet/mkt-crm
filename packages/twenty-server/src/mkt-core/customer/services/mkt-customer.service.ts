@@ -4,76 +4,19 @@ import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-cu
 import { MktCustomerCodeGenerationService } from 'src/mkt-core/customer/services/core/mkt-customer-code-generation.service';
 import { MktCustomerValidationService } from 'src/mkt-core/customer/services/validation/mkt-customer-validation.service';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
-import {
-  CUSTOMER_MESSAGES,
-  MKT_CUSTOMER_LOG_CONTEXT,
-} from 'src/mkt-core/customer/messages';
+import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { buildOwnershipFields } from 'src/mkt-core/common/repositories/base-workspace.repository';
-import { LinkedAccount } from 'src/mkt-core/customer/types';
-
-// ============================================
-// INPUT TYPES
-// ============================================
-
-type CreateCustomerInput = {
-  email?: string;
-  name: string;
-  phone?: string;
-  companyName?: string;
-  taxCode?: string;
-  address?: string;
-  status?: string;
-  tier?: string;
-  lifecycleStage?: string;
-  notes?: string;
-  accountOwnerId?: string;
-  workspaceMemberId?: string;
-  workspaceId?: string;
-};
-
-type UpdateCustomerInput = {
-  customerId: string;
-  email?: string;
-  name?: string;
-  phone?: string;
-  companyName?: string;
-  taxCode?: string;
-  address?: string;
-  status?: string;
-  tier?: string;
-  lifecycleStage?: string;
-  notes?: string;
-  accountOwnerId?: string;
-  linkedAccounts?: LinkedAccount[];
-  workspaceId?: string;
-};
-
-type CustomerQueryOptions = {
-  take?: number;
-  skip?: number;
-  filter?: Record<string, unknown>;
-  hasFullAccess?: boolean;
-};
-
-// ============================================
-// RESULT TYPES
-// ============================================
-
-type ServiceResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
-
-type CreateCustomerResult = {
-  customerId: string;
-  customerCode: string;
-  status: string;
-};
-
-type UpdateCustomerResult = {
-  customerId: string;
-  updatedFields: string[];
-};
+import {
+  CreateCustomerResult,
+  CustomerQueryOptions,
+  ServiceCustomerResult,
+  UpdateCustomerResult,
+} from 'src/mkt-core/customer/types';
+import {
+  CreateCustomerInput,
+  UpdateCustomerInput,
+} from 'src/mkt-core/customer/dto';
 
 // ============================================
 // CONSTANTS
@@ -105,7 +48,7 @@ const DEFAULT_SKIP = 0;
  */
 @Injectable()
 export class MktCustomerService {
-  private readonly logger = new Logger(`${MKT_CUSTOMER_LOG_CONTEXT}:Service`);
+  private readonly logger = new Logger(MktCustomerService.name);
 
   constructor(
     private readonly customerRepository: MktCustomerRepository,
@@ -125,7 +68,7 @@ export class MktCustomerService {
    */
   async createCustomer(
     input: CreateCustomerInput,
-  ): Promise<ServiceResult<CreateCustomerResult>> {
+  ): Promise<ServiceCustomerResult<CreateCustomerResult>> {
     this.logger.log(
       CUSTOMER_MESSAGES.LOG.CUSTOMER_PRE_CREATE(input.email ?? 'unknown'),
     );
@@ -200,12 +143,15 @@ export class MktCustomerService {
    */
   async updateCustomer(
     input: UpdateCustomerInput,
-  ): Promise<ServiceResult<UpdateCustomerResult>> {
-    this.logger.debug(`Updating customer: ${input.customerId}`);
+  ): Promise<ServiceCustomerResult<UpdateCustomerResult>> {
+    // Lấy customerId từ input.customerId hoặc input.id (GraphQL field)
+    const customerId = input.customerId ?? input.id;
+
+    this.logger.debug(`Updating customer: ${customerId}`);
 
     // 1. Validate input
     const validation = await this.validationService.validateUpdate({
-      customerId: input.customerId,
+      customerId,
       email: input.email,
       taxCode: input.taxCode,
       mktCustomerCode: undefined, // Not allowed to update
@@ -271,16 +217,16 @@ export class MktCustomerService {
     }
 
     // 3. Update customer
-    await this.customerRepository.update(input.customerId, updateData);
+    await this.customerRepository.update(customerId, updateData);
 
     this.logger.log(
-      `Updated customer ${input.customerId}: ${updatedFields.join(', ')}`,
+      `Updated customer ${customerId}: ${updatedFields.join(', ')}`,
     );
 
     return {
       success: true,
       data: {
-        customerId: input.customerId,
+        customerId,
         updatedFields,
       },
     };
@@ -387,7 +333,7 @@ export class MktCustomerService {
    */
   async softDelete(
     customerId: string,
-  ): Promise<ServiceResult<{ customerId: string }>> {
+  ): Promise<ServiceCustomerResult<{ customerId: string }>> {
     const customer = await this.findByIdOrThrow(customerId);
 
     await this.customerRepository.softDelete(customerId);
@@ -405,7 +351,7 @@ export class MktCustomerService {
    */
   async restore(
     customerId: string,
-  ): Promise<ServiceResult<{ customerId: string; status: string }>> {
+  ): Promise<ServiceCustomerResult<{ customerId: string; status: string }>> {
     const repository = await this.customerRepository.getRepository();
 
     // Find including soft-deleted

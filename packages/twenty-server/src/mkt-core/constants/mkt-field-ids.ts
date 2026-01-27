@@ -128,6 +128,26 @@ export const MKT_CUSTOMER_FIELD_IDS = {
   totalOrderCount: 'f7a8b9c0-d1e2-4f3a-5b6c-7d8e9f0a1b2c',
   // tier history relation
   tierHistories: 'ae500603-0b5b-48fa-91e4-551567375edd',
+  // Sprint 1: Core Customer Management
+  firstPurchase: '490d2d3b-d4b9-4f92-9fd4-6a3022b129e7',
+  supportOwner: 'f1533fdb-f64f-4873-ac33-21386e12c4be',
+  // Sprint 2: Customer Notes
+  customerNotes: '5855b6a6-d7c4-46da-9631-68801d0c634f',
+  // Sprint 3: Business Information
+  contactPosition: '53b545dd-372c-42bc-a147-6efa828cd03b',
+  contactDepartment: 'c0290c2e-020e-421f-9ea2-5bbb9d966bd7',
+};
+
+export const MKT_CUSTOMER_NOTE_FIELD_IDS = {
+  // fields
+  content: 'adab9c56-6fdc-42ee-b26a-65e82c9d8e88',
+  noteType: 'b9a533d3-011c-49ad-9c90-b72017ef975f',
+  // relations
+  customer: 'fd6a6347-65a0-4388-98d1-cbbb344ba462',
+  // common relations or fields
+  position: '0639d9b8-9ba6-4a7c-b09f-51e1e1abb618',
+  createdBy: 'a068ddbf-deee-4f2c-81b6-0a31b3ed50c7',
+  searchVector: 'dbb2796c-6480-497c-b73b-63933900b6c7',
 };
 
 export const MKT_TAG_FIELD_IDS = {
@@ -737,6 +757,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForI18ns: '62b34ddc-a703-4172-ad5c-29c7bb7aa681',
   //customers
   accountOwnerForMktCustomers: '06129dff-8941-4cd4-aed8-e5e89e986fd2',
+  supportOwnerForMktCustomers: '64392df8-b678-498a-a429-b4cbc27338e8',
   accountOwnerForMktTags: '0a057a17-d56b-4d9d-8c2d-a00296205f71',
   accountOwnerForMktCustomerTags: '316eaa82-e210-4663-ad62-ef058862ce52',
   //products

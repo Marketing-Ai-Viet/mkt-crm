@@ -1,6 +1,8 @@
 import { SeedContractModuleCommand } from 'src/mkt-core/seeder/commands/mkt-contract-data-seed-dev-workspace.command';
-import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-data-seed-dev-workspace.command';
-import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag-data-seed-dev-workspace.command';
+import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-data-seed-dev-workspace.command';
+import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/mkt-customer-tag-data-seed-dev-workspace.command';
+import { SeedCustomerTierHistoryModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-data-seed-dev-workspace.command';
+import { SeedCustomerNoteModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-note/mkt-customer-note-data-seed-dev-workspace.command';
 import { SeedMktDataAccessPolicyCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/mkt-data-access-policy-data-seed-dev-workspace.command';
 import { SeedMktPermissionContextCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-data-seed-dev-workspace.command';
 import { SeedDepartmentModuleCommand } from 'src/mkt-core/seeder/department-seeder/mkt-department/mkt-department-data-seed-dev-workspace.command';
@@ -65,6 +67,8 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   SeedCustomerModuleCommand,
   SeedTagModuleCommand,
   SeedCustomerTagModuleCommand,
+  SeedCustomerTierHistoryModuleCommand,
+  SeedCustomerNoteModuleCommand,
   // product commands
   // generic combo commands
   MktGenericComboDataSeedDevWorkspaceCommand,

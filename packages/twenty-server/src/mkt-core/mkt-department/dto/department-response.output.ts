@@ -4,6 +4,43 @@ import { ManagerInfo, SubManagerInfo } from './manager-info.output';
 import { SubManagerOutput } from './sub-manager';
 
 /**
+ * Created hierarchy information output
+ */
+@ObjectType()
+export class CreatedHierarchyOutput {
+  @Field({ description: 'Hierarchy record ID' })
+  id: string;
+
+  @Field({ description: 'Parent department ID' })
+  parentDepartmentId: string;
+
+  @Field({ description: 'Parent department code' })
+  parentDepartmentCode: string;
+
+  @Field({ description: 'Parent department name' })
+  parentDepartmentName: string;
+
+  @Field({ description: 'Child department ID' })
+  childDepartmentId: string;
+
+  @Field({ description: 'Child department code' })
+  childDepartmentCode: string;
+
+  @Field({ description: 'Child department name' })
+  childDepartmentName: string;
+
+  @Field({
+    nullable: true,
+    description:
+      'Type of relationship (e.g., PARENT_CHILD, MATRIX, FUNCTIONAL)',
+  })
+  relationshipType?: string;
+
+  @Field(() => Int, { nullable: true, description: 'Level in hierarchy' })
+  hierarchyLevel?: number;
+}
+
+/**
  * Department data output for GraphQL responses
  */
 @ObjectType()
@@ -97,6 +134,12 @@ export class CreateDepartmentResponse {
     description: 'Created sub-managers for the department',
   })
   subManagers?: SubManagerOutput[];
+
+  @Field(() => [CreatedHierarchyOutput], {
+    nullable: true,
+    description: 'Created hierarchies (parent and/or child relationships)',
+  })
+  hierarchies?: CreatedHierarchyOutput[];
 
   @Field({ nullable: true, description: 'Error message if failed' })
   error?: string;

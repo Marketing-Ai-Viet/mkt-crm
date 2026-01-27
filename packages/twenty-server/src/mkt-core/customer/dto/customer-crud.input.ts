@@ -1,5 +1,7 @@
 import { Field, InputType } from '@nestjs/graphql';
 
+import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
+
 /**
  * Input for creating a new customer
  */
@@ -52,6 +54,10 @@ export class CreateCustomerInput {
     description: 'Account owner ID (workspace member)',
   })
   accountOwnerId?: string;
+
+  // Internal fields (set by resolver from auth context, not exposed in GraphQL)
+  workspaceId?: string;
+  workspaceMemberId?: string;
 }
 
 /**
@@ -100,4 +106,9 @@ export class UpdateCustomerInput {
     description: 'Account owner ID (workspace member)',
   })
   accountOwnerId?: string;
+
+  // Internal fields (set by resolver from auth context, not exposed in GraphQL)
+  customerId?: string;
+  workspaceId?: string;
+  linkedAccounts?: LinkedAccount[];
 }

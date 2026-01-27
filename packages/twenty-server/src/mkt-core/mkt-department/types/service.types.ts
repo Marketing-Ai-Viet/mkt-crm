@@ -44,6 +44,25 @@ export type CreateDepartmentData = {
   isActive?: boolean;
   managerId?: string | null;
   subManagers?: SubManagerData[];
+  // Hierarchy options
+  parentDepartmentId?: string;
+  childDepartmentIds?: string[];
+  hierarchyRelationshipType?: string;
+};
+
+/**
+ * Created hierarchy info for response
+ */
+export type CreatedHierarchyInfo = {
+  id: string;
+  parentDepartmentId: string;
+  parentDepartmentCode: string;
+  parentDepartmentName: string;
+  childDepartmentId: string;
+  childDepartmentCode: string;
+  childDepartmentName: string;
+  relationshipType?: string;
+  hierarchyLevel?: number;
 };
 
 /**
@@ -59,6 +78,7 @@ export type DepartmentCrudResult = {
   success: boolean;
   department?: MktDepartmentWorkspaceEntity;
   createdSubManagers?: MktDepartmentSubManagerWorkspaceEntity[];
+  createdHierarchies?: CreatedHierarchyInfo[];
   error?: string;
 };
 

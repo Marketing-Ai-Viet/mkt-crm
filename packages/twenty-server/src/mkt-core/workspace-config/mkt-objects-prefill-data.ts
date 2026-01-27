@@ -5,8 +5,10 @@ import { prefillMktSInvoicePayments } from 'src/mkt-core/seeder/invoice-seeder/p
 import { prefillMktSInvoiceTaxBreakdowns } from 'src/mkt-core/seeder/invoice-seeder/prefill-mkt-sinvoice-tax-breakdowns';
 import { prefillMktSInvoices } from 'src/mkt-core/seeder/invoice-seeder/prefill-mkt-sinvoices';
 import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
-import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customer-tags';
-import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/prefill-mkt-customers';
+import { prefillMktCustomerTags } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/prefill-mkt-customer-tags';
+import { prefillMktCustomerTierHistories } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/prefill-mkt-customer-tier-histories';
+import { prefillMktCustomerNotes } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-note/prefill-mkt-customer-notes';
+import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/customer/prefill-mkt-customers';
 import { prefillMktDataAccessPolicies } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-data-access-policy/prefill-mkt-data-access-policies';
 import { prefillMktPermissionContexts } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/prefill-mkt-permission-contexts';
 import { prefillMktDepartmentAncestries } from 'src/mkt-core/seeder/department-seeder/mkt-department-ancestry/prefill-mkt-department-ancestries';
@@ -64,6 +66,8 @@ export const MKT_PREFILLS = [
   prefillMktCustomers,
   prefillMktTags,
   prefillMktCustomerTags,
+  prefillMktCustomerTierHistories,
+  prefillMktCustomerNotes,
   // generic combo prefills
   prefillMktGenericCombos,
   prefillMktGenericComboItems,

@@ -67,22 +67,22 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS: (keyof MktPermissionTemp
   ];
 
 export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS = {
-  CEO: '45b17cbf-c650-47ec-9e18-b6ee7688d2a0',
-  VP: '36484001-77f6-4256-80c9-f45c5fe622cc',
-  DIRECTOR: '9a5d7c26-48f2-4617-b33c-798ce17df80d',
-  MANAGER: '77739473-30c5-44ec-90d5-0eff1e77f53c',
-  TEAM_LEAD: '093bd5ff-a606-4bb3-ae66-c5b17b02f72c',
-  SENIOR: '36f95d97-7217-4333-9940-ed1a11d8d06f',
-  JUNIOR: 'c9c7058b-b12c-40b6-9b7f-9ce96033470d',
-  FINANCE_ANALYST: 'b75fadca-0d2a-4bba-bf9c-efb0fe558ad7',
+  CEO: '356cdc25-9675-4bac-a919-4212a0b8fdf4',
+  VP: '1abd97ab-3486-4ec9-a385-8bda9e46f472',
+  DIRECTOR: 'a5ac0dd5-5060-4060-ad66-6c775ea769e5',
+  MANAGER: 'ba8a28d0-4055-4897-b491-f72f4d08ceda',
+  TEAM_LEAD: '9be61b0e-21d0-418a-b97c-5fa9a2695aa8',
+  SENIOR: '419cc0a6-936a-456d-b7ba-8f5fdfc065e9',
+  JUNIOR: 'f221b26d-a33f-437c-b3af-b0883ca0267b',
+  FINANCE_ANALYST: 'd28fae85-ad68-4e10-864d-074544dbacd8',
   // SALES Department Templates
-  SALES_DIRECTOR: 'e1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c',
-  SALES_MANAGER: 'f2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d',
-  SALES_STAFF: 'a3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e',
+  SALES_DIRECTOR: 'd1871397-c96f-48fe-a250-7288c4890e34',
+  SALES_MANAGER: 'ae3c6beb-9ced-407b-9b71-7468dddbf2a1',
+  SALES_STAFF: '21e0c01d-6497-4696-a764-ec42b482ba46',
   // FINANCE Department Templates
-  ACCOUNTANT_STAFF: '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6',
+  ACCOUNTANT_STAFF: 'f48ca42f-e151-43cb-b800-1a9648a47a2b',
   // SUPPORT Department Templates
-  SUPPORT_STAFF: '2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7',
+  SUPPORT_STAFF: 'e9af0836-e894-4d96-b412-eddea6dee05f',
 };
 
 export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[] =

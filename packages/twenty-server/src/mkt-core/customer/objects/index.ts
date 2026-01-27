@@ -29,3 +29,9 @@ export {
   MKT_CUSTOMER_TIER_HISTORY_ENTITY_NAME,
   MktCustomerTierHistoryWorkspaceEntity,
 } from './mkt-customer-tier-history.workspace-entity';
+
+// Customer note entity
+export {
+  MKT_CUSTOMER_NOTE_ENTITY_NAME,
+  MktCustomerNoteWorkspaceEntity,
+} from './mkt-customer-note.workspace-entity';
