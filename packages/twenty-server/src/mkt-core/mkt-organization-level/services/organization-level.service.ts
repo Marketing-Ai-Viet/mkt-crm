@@ -15,6 +15,7 @@ import {
 import {
   CreateOrganizationLevelInput,
   LevelEmployeeCount,
+  OrganizationLevelFlatItem,
   OrganizationLevelHierarchyNode,
   OrganizationLevelQueryOptions,
   OrganizationLevelStatistics,
@@ -229,6 +230,35 @@ export class OrganizationLevelService {
       hasCircularReferences,
       recommendations,
     };
+  }
+
+  /**
+   * Get all organization levels as flat list (no hierarchy)
+   */
+  async getAllOrganizationLevels(
+    options: OrganizationLevelQueryOptions = {},
+  ): Promise<OrganizationLevelFlatItem[]> {
+    this.logger.debug('Getting all organization levels as flat list');
+
+    const levels = await this.repository.findAllWithOptions({
+      includeInactive: options.includeInactive,
+      orderBy: 'hierarchyLevel',
+      orderDirection: 'ASC',
+    });
+
+    return levels.map((level) => ({
+      id: level.id,
+      levelCode: level.levelCode,
+      levelName: level.levelName,
+      levelNameEn: level.levelNameEn,
+      description: level.description,
+      hierarchyLevel: level.hierarchyLevel,
+      parentLevelId: level.parentLevelId,
+      displayOrder: level.displayOrder,
+      isActive: level.isActive,
+      createdAt: new Date(level.createdAt),
+      updatedAt: new Date(level.updatedAt),
+    }));
   }
 
   /**

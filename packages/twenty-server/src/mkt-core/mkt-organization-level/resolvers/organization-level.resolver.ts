@@ -6,6 +6,7 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { OrganizationLevelService } from 'src/mkt-core/mkt-organization-level/services/organization-level.service';
 import {
+  OrganizationLevelFlatItem,
   OrganizationLevelHierarchyNode,
   OrganizationLevelStatistics,
   OrganizationLevelQueryOptions,
@@ -46,6 +47,23 @@ export class OrganizationLevelResolver {
   @Query(() => OrganizationLevelStatistics)
   async getOrganizationLevelStatistics(): Promise<OrganizationLevelStatistics> {
     return await this.organizationLevelService.getOrganizationLevelStatistics();
+  }
+
+  /**
+   * Lấy toàn bộ organization levels dạng flat list (không phân cấp)
+   * Business Value: Simple list for dropdowns, selects, exports
+   */
+  @Query(() => [OrganizationLevelFlatItem])
+  async getAllOrganizationLevels(
+    @Args('options', {
+      type: () => OrganizationLevelQueryOptions,
+      nullable: true,
+    })
+    options?: OrganizationLevelQueryOptions,
+  ): Promise<OrganizationLevelFlatItem[]> {
+    return await this.organizationLevelService.getAllOrganizationLevels(
+      options,
+    );
   }
 
   // === SPECIALIZED MUTATIONS ===
