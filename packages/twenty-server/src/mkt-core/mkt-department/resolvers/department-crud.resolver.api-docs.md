@@ -2,17 +2,24 @@
 
 > **Module**: `mkt-department`
 > **File**: `department-crud.resolver.ts`
-> **Version**: 3.0.0
+> **Version**: 3.1.0
 > **Last Updated**: 2026-01-27
 
 ---
+
+## Changes v3.1
+
+| Change | Details |
+|--------|---------|
+| `searchDepartments` query added | Endpoint tìm kiếm với filters và pagination |
+| `departmentCode` restored in output | Response trả về `departmentCode` (read-only) |
+| Mapping methods moved to service | Resolver đơn giản hơn, logic tập trung ở service |
 
 ## Breaking Changes v3.0
 
 | Change | Details |
 |--------|---------|
 | `departmentCode` removed from input | Client **KHÔNG CẦN** truyền `departmentCode` khi tạo/cập nhật |
-| `departmentCode` removed from output | Response **KHÔNG TRẢ VỀ** `departmentCode` |
 | Auto-generation | Backend tự động tạo `departmentCode` từ `departmentName` |
 
 ### Migration Guide (v2.x -> v3.0)
@@ -69,6 +76,7 @@ Department CRUD Resolver cung cấp các API GraphQL để quản lý phòng ban
 
 ### Tính năng chính
 - **Query**: Lấy thông tin department theo ID hoặc code
+- **Search**: Tìm kiếm departments với filters và pagination
 - **Create**: Tạo mới department (departmentCode auto-generated)
 - **Update**: Cập nhật department
 - **Delete**: Xóa mềm (soft delete) department
@@ -234,6 +242,20 @@ input UpdateDepartmentInput {
 }
 ```
 
+#### SearchDepartmentInput
+```graphql
+input SearchDepartmentInput {
+  keyword: String                   # Tìm kiếm trong name, nameEn, code
+  departmentCode: String            # Filter chính xác theo code
+  departmentType: String            # "DEPARTMENT" | "TEAM"
+  managerId: String                 # Filter theo manager ID
+  isActive: Boolean                 # Filter theo trạng thái
+  requiresKpiTracking: Boolean      # Filter theo KPI tracking
+  page: Int = 1                     # Trang hiện tại (min: 1)
+  limit: Int = 20                   # Số items/trang (min: 1, max: 100)
+}
+```
+
 ### 4.2 Output Types
 
 #### ManagerInfo
@@ -284,6 +306,7 @@ type SubManagerOutput {
 ```graphql
 type DepartmentOutput {
   id: String!
+  departmentCode: String!           # Mã phòng ban (auto-generated, read-only)
   departmentName: String!
   departmentNameEn: String
   departmentType: String            # "DEPARTMENT" | "TEAM"
@@ -306,7 +329,20 @@ type DepartmentOutput {
 }
 ```
 
-> **Note:** `departmentCode` đã bị xóa khỏi output trong v3.0
+> **Note:** `departmentCode` là read-only, được auto-generate khi tạo từ `departmentName`
+
+#### DepartmentListOutput
+```graphql
+type DepartmentListOutput {
+  items: [DepartmentOutput]!        # Danh sách departments
+  total: Int!                       # Tổng số kết quả
+  page: Int!                        # Trang hiện tại
+  limit: Int!                       # Số items/trang (max: 100)
+  totalPages: Int!                  # Tổng số trang
+  hasNextPage: Boolean!             # Có trang tiếp theo
+  hasPreviousPage: Boolean!         # Có trang trước
+}
+```
 
 #### CreateDepartmentResponse
 ```graphql
@@ -438,7 +474,143 @@ query GetDepartmentById($id: String!) {
 
 ---
 
-### 5.2 getDepartmentByCode
+### 5.2 searchDepartments
+
+Tìm kiếm departments với filters và pagination.
+
+**GraphQL Schema:**
+```graphql
+type Query {
+  searchDepartments(input: SearchDepartmentInput!): DepartmentListOutput!
+}
+```
+
+**Request:**
+```graphql
+query SearchDepartments($input: SearchDepartmentInput!) {
+  searchDepartments(input: $input) {
+    items {
+      id
+      departmentCode
+      departmentName
+      departmentNameEn
+      departmentType
+      isActive
+      manager {
+        id
+        fullName
+        email
+      }
+    }
+    total
+    page
+    limit
+    totalPages
+    hasNextPage
+    hasPreviousPage
+  }
+}
+```
+
+**Variables (Không filter - lấy tất cả):**
+```json
+{
+  "input": {
+    "page": 1,
+    "limit": 20
+  }
+}
+```
+
+**Variables (Tìm theo keyword):**
+```json
+{
+  "input": {
+    "keyword": "Sales",
+    "page": 1,
+    "limit": 10
+  }
+}
+```
+
+**Variables (Filter theo nhiều tiêu chí):**
+```json
+{
+  "input": {
+    "departmentType": "DEPARTMENT",
+    "isActive": true,
+    "requiresKpiTracking": true,
+    "page": 1,
+    "limit": 20
+  }
+}
+```
+
+**Response (Success):**
+```json
+{
+  "data": {
+    "searchDepartments": {
+      "items": [
+        {
+          "id": "ad95f81e-bda5-4a98-b72a-880c0b5c204c",
+          "departmentCode": "SALES",
+          "departmentName": "Nhân viên kinh doanh",
+          "departmentNameEn": "Sales Department",
+          "departmentType": "DEPARTMENT",
+          "isActive": true,
+          "manager": {
+            "id": "20202020-77d5-4cb6-b60a-f4a835a85d61",
+            "fullName": "Tim Apple",
+            "email": "tim@apple.dev"
+          }
+        },
+        {
+          "id": "566d23d5-1498-4f7f-b61e-a7101772344a",
+          "departmentCode": "SALES_DOMESTIC",
+          "departmentName": "Đội bán hàng trong nước",
+          "departmentNameEn": "Domestic Sales Team",
+          "departmentType": "TEAM",
+          "isActive": true,
+          "manager": null
+        }
+      ],
+      "total": 5,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPreviousPage": false
+    }
+  }
+}
+```
+
+**Pagination Example:**
+```json
+{
+  "data": {
+    "searchDepartments": {
+      "items": [...],
+      "total": 25,
+      "page": 2,
+      "limit": 10,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPreviousPage": true
+    }
+  }
+}
+```
+
+**Limit Validation:**
+- Input `limit: 200` → được cap xuống `100` (MAX_LIMIT)
+- Input `limit: 0` → được set lên `1` (MIN_LIMIT)
+- Input `page: 0` → được set lên `1` (MIN_PAGE)
+
+---
+
+### 5.3 getDepartmentByCode
 
 Lấy thông tin department theo code (internal use - dùng cho RBAC).
 
@@ -816,7 +988,27 @@ curl -X POST http://localhost:3000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your-token>" \
   -d '{
-    "query": "query { getDepartmentById(id: \"ad95f81e-bda5-4a98-b72a-880c0b5c204c\") { id departmentName departmentType isActive } }"
+    "query": "query { getDepartmentById(id: \"ad95f81e-bda5-4a98-b72a-880c0b5c204c\") { id departmentCode departmentName departmentType isActive } }"
+  }'
+```
+
+**Query - Search Departments:**
+```bash
+curl -X POST http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -d '{
+    "query": "query { searchDepartments(input: { keyword: \"Sales\", limit: 10 }) { items { id departmentCode departmentName isActive } total page limit totalPages hasNextPage } }"
+  }'
+```
+
+**Query - Search with filters:**
+```bash
+curl -X POST http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -d '{
+    "query": "query { searchDepartments(input: { departmentType: \"DEPARTMENT\", isActive: true, page: 1, limit: 20 }) { items { id departmentCode departmentName } total totalPages } }"
   }'
 ```
 
@@ -910,6 +1102,17 @@ type UpdateDepartmentInput = {
   subManagers?: SubManagerInput[];
 };
 
+type SearchDepartmentInput = {
+  keyword?: string;
+  departmentCode?: string;
+  departmentType?: 'DEPARTMENT' | 'TEAM';
+  managerId?: string;
+  isActive?: boolean;
+  requiresKpiTracking?: boolean;
+  page?: number;    // Default: 1, Min: 1
+  limit?: number;   // Default: 20, Min: 1, Max: 100
+};
+
 // Output Types
 type ManagerInfo = {
   id: string;
@@ -936,6 +1139,7 @@ type SubManagerInfo = {
 
 type DepartmentOutput = {
   id: string;
+  departmentCode: string;           // Read-only, auto-generated
   departmentName: string;
   departmentNameEn?: string;
   departmentType?: string;
@@ -955,6 +1159,16 @@ type DepartmentOutput = {
   subManagers?: SubManagerInfo[];
   createdAt: Date;
   updatedAt: Date;
+};
+
+type DepartmentListOutput = {
+  items: DepartmentOutput[];
+  total: number;
+  page: number;
+  limit: number;                    // Max: 100
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 };
 
 type CreateDepartmentResponse = {
@@ -989,6 +1203,7 @@ const GET_DEPARTMENT_BY_ID = `
   query GetDepartmentById($id: String!) {
     getDepartmentById(id: $id) {
       id
+      departmentCode
       departmentName
       departmentNameEn
       departmentType
@@ -998,6 +1213,28 @@ const GET_DEPARTMENT_BY_ID = `
       subManagers { id fullName isPrimary isActive }
       createdAt
       updatedAt
+    }
+  }
+`;
+
+const SEARCH_DEPARTMENTS = `
+  query SearchDepartments($input: SearchDepartmentInput!) {
+    searchDepartments(input: $input) {
+      items {
+        id
+        departmentCode
+        departmentName
+        departmentNameEn
+        departmentType
+        isActive
+        manager { id fullName email }
+      }
+      total
+      page
+      limit
+      totalPages
+      hasNextPage
+      hasPreviousPage
     }
   }
 `;
@@ -1045,6 +1282,19 @@ export const useDepartmentById = (id: string) => {
       return getDepartmentById;
     },
     enabled: !!id,
+  });
+};
+
+export const useSearchDepartments = (input: SearchDepartmentInput) => {
+  return useQuery({
+    queryKey: ['departments', 'search', input],
+    queryFn: async () => {
+      const { searchDepartments } = await graphqlClient.request(
+        SEARCH_DEPARTMENTS,
+        { input }
+      );
+      return searchDepartments;
+    },
   });
 };
 
@@ -1238,6 +1488,6 @@ const noChangeInput = {
 
 ---
 
-**Document Version**: 3.0.0
+**Document Version**: 3.1.0
 **Author**: Backend Team
 **Last Updated**: 2026-01-27

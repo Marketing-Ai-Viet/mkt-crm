@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
+import { SearchUserInput } from 'src/mkt-core/user-management/dto';
 import { DepartmentLookupService } from 'src/mkt-core/user-management/services/department-lookup.service';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/services/mkt-member-code-generation.service';
@@ -9,6 +10,11 @@ import {
   UpdateWorkspaceMemberData,
 } from 'src/mkt-core/workspace-member/types';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+
+type SearchResult = {
+  items: WorkspaceMemberWorkspaceEntity[];
+  total: number;
+};
 
 @Injectable()
 export class WorkspaceMemberService {
@@ -76,11 +82,18 @@ export class WorkspaceMemberService {
   }
 
   async updateWorkspaceMember(
+    workspaceId: string,
     memberId: string,
     data: UpdateWorkspaceMemberData,
   ): Promise<void> {
-    await this.workspaceMemberRepository.updateMember(memberId, data);
-    this.logger.log(`Updated workspace member: ${memberId}`);
+    await this.workspaceMemberRepository.updateMemberWithWorkspace(
+      workspaceId,
+      memberId,
+      data,
+    );
+    this.logger.log(
+      `[UPDATE WORKSPACE MEMBER] Updated member: ${memberId} in workspace: ${workspaceId}`,
+    );
   }
 
   async findWorkspaceMember(
@@ -89,8 +102,60 @@ export class WorkspaceMemberService {
     return this.workspaceMemberRepository.findByUserId(userId);
   }
 
-  async softDeleteWorkspaceMember(memberId: string): Promise<void> {
-    await this.workspaceMemberRepository.softDeleteMember(memberId);
-    this.logger.log(`Soft deleted workspace member: ${memberId}`);
+  async findWorkspaceMemberById(
+    workspaceId: string,
+    memberId: string,
+  ): Promise<WorkspaceMemberWorkspaceEntity | null> {
+    return this.workspaceMemberRepository.findMemberByIdWithWorkspace(
+      workspaceId,
+      memberId,
+    );
+  }
+
+  async softDeleteWorkspaceMember(
+    workspaceId: string,
+    memberId: string,
+  ): Promise<void> {
+    await this.workspaceMemberRepository.softDeleteMemberWithWorkspace(
+      workspaceId,
+      memberId,
+    );
+    this.logger.log(
+      `[DELETE WORKSPACE MEMBER] Soft deleted member: ${memberId} in workspace: ${workspaceId}`,
+    );
+  }
+
+  /**
+   * Search workspace members với nhiều tiêu chí và pagination
+   */
+  async searchWorkspaceMembers(
+    workspaceId: string,
+    input: SearchUserInput,
+  ): Promise<SearchResult> {
+    const { page = 1, limit = 20 } = input;
+
+    const result =
+      await this.workspaceMemberRepository.searchMembersWithWorkspace(
+        workspaceId,
+        {
+          keyword: input.keyword,
+          email: input.email,
+          memberCode: input.memberCode,
+          status: input.status,
+          memberType: input.memberType,
+          departmentId: input.departmentId,
+          teamId: input.teamId,
+          organizationLevelId: input.organizationLevelId,
+          employmentStatusId: input.employmentStatusId,
+          page,
+          limit,
+        },
+      );
+
+    this.logger.log(
+      `[SEARCH WORKSPACE MEMBERS] Found ${result.total} members in workspace ${workspaceId}, page ${page}/${Math.ceil(result.total / limit)}`,
+    );
+
+    return result;
   }
 }

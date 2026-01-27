@@ -11,6 +11,9 @@ export class DepartmentOutput {
   @Field({ description: 'Department ID' })
   id: string;
 
+  @Field({ description: 'Unique department code' })
+  departmentCode: string;
+
   @Field({ description: 'Display name of the department' })
   departmentName: string;
 

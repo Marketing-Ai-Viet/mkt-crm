@@ -70,3 +70,25 @@ export type DeleteDepartmentResult = {
   deletedId?: string;
   error?: string;
 };
+
+/**
+ * Search parameters for department search
+ */
+export type SearchDepartmentParams = {
+  keyword?: string;
+  departmentCode?: string;
+  departmentType?: string;
+  managerId?: string;
+  isActive?: boolean;
+  requiresKpiTracking?: boolean;
+  page?: number;
+  limit?: number;
+};
+
+/**
+ * Result type for search operations
+ */
+export type SearchDepartmentResult = {
+  items: MktDepartmentWorkspaceEntity[];
+  total: number;
+};

@@ -18,20 +18,16 @@ import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
   CreateDepartmentInput,
-  UpdateDepartmentInput,
   CreateDepartmentResponse,
-  UpdateDepartmentResponse,
   DeleteDepartmentResponse,
+  DepartmentListOutput,
   DepartmentOutput,
-  SubManagerOutput,
-  ManagerInfo,
-  SubManagerInfo,
+  SearchDepartmentInput,
+  UpdateDepartmentInput,
+  UpdateDepartmentResponse,
 } from 'src/mkt-core/mkt-department/dto';
-import { DepartmentCrudService } from 'src/mkt-core/mkt-department/services/department-crud.service';
 import { MKT_DEPARTMENT_LOG_CONTEXT } from 'src/mkt-core/mkt-department/messages';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
-import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { DepartmentCrudService } from 'src/mkt-core/mkt-department/services/department-crud.service';
 
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
@@ -63,7 +59,7 @@ export class DepartmentCrudResolver {
       return null;
     }
 
-    return this.mapToOutput(department);
+    return this.crudService.mapToOutput(department);
   }
 
   /**
@@ -83,7 +79,20 @@ export class DepartmentCrudResolver {
       return null;
     }
 
-    return this.mapToOutput(department);
+    return this.crudService.mapToOutput(department);
+  }
+
+  /**
+   * Search departments với filters và pagination
+   */
+  @Query(() => DepartmentListOutput, {
+    description: 'Search departments with filters and pagination',
+  })
+  async searchDepartments(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @Args('input') input: SearchDepartmentInput,
+  ): Promise<DepartmentListOutput> {
+    return this.crudService.search(workspaceId, input);
   }
 
   // ============================================
@@ -130,10 +139,10 @@ export class DepartmentCrudResolver {
     return {
       success: result.success,
       department: result.department
-        ? this.mapToOutput(result.department)
+        ? this.crudService.mapToOutput(result.department)
         : undefined,
       subManagers: result.createdSubManagers?.map((sm) =>
-        this.mapSubManagerToOutput(sm),
+        this.crudService.mapSubManagerToOutput(sm),
       ),
       error: result.error,
     };
@@ -179,10 +188,10 @@ export class DepartmentCrudResolver {
     return {
       success: result.success,
       department: result.department
-        ? this.mapToOutput(result.department)
+        ? this.crudService.mapToOutput(result.department)
         : undefined,
       subManagers: result.createdSubManagers?.map((sm) =>
-        this.mapSubManagerToOutput(sm),
+        this.crudService.mapSubManagerToOutput(sm),
       ),
       error: result.error,
     };
@@ -208,100 +217,5 @@ export class DepartmentCrudResolver {
       deletedId: result.deletedId,
       error: result.error,
     };
-  }
-
-  // ============================================
-  // PRIVATE HELPERS
-  // ============================================
-
-  private mapToOutput(entity: MktDepartmentWorkspaceEntity): DepartmentOutput {
-    return {
-      id: entity.id,
-      departmentName: entity.departmentName,
-      departmentNameEn: entity.departmentNameEn,
-      departmentType: entity.departmentType ?? undefined,
-      description: entity.description,
-      budgetCode: entity.budgetCode,
-      costCenter: entity.costCenter,
-      requiresKpiTracking: entity.requiresKpiTracking,
-      allowsCrossDepartmentAccess: entity.allowsCrossDepartmentAccess,
-      defaultKpiCategory: entity.defaultKpiCategory,
-      displayOrder: entity.displayOrder,
-      colorCode: entity.colorCode,
-      iconName: entity.iconName,
-      address: entity.address,
-      isActive: entity.isActive,
-      managerId: entity.managerId ?? undefined,
-      manager: entity.manager
-        ? this.mapManagerToOutput(entity.manager)
-        : undefined,
-      subManagers: entity.subManagers?.map((sm) =>
-        this.mapSubManagerInfoToOutput(sm),
-      ),
-      createdAt: new Date(entity.createdAt ?? Date.now()),
-      updatedAt: new Date(entity.updatedAt ?? Date.now()),
-    };
-  }
-
-  private mapManagerToOutput(
-    member: WorkspaceMemberWorkspaceEntity,
-  ): ManagerInfo {
-    const name = member.name as
-      | { firstName?: string; lastName?: string }
-      | undefined;
-
-    return {
-      id: member.id,
-      firstName: name?.firstName,
-      lastName: name?.lastName,
-      fullName: this.buildFullName(name?.firstName, name?.lastName),
-      email: member.userEmail,
-      avatarUrl: member.avatarUrl,
-    };
-  }
-
-  private mapSubManagerInfoToOutput(
-    entity: MktDepartmentSubManagerWorkspaceEntity,
-  ): SubManagerInfo {
-    const member = entity.workspaceMember as
-      | WorkspaceMemberWorkspaceEntity
-      | undefined;
-    const name = member?.name as
-      | { firstName?: string; lastName?: string }
-      | undefined;
-
-    return {
-      id: entity.id,
-      workspaceMemberId: entity.workspaceMemberId ?? '',
-      firstName: name?.firstName,
-      lastName: name?.lastName,
-      fullName: this.buildFullName(name?.firstName, name?.lastName),
-      email: member?.userEmail,
-      avatarUrl: member?.avatarUrl,
-      isPrimary: entity.isPrimary ?? false,
-      isActive: entity.isActive ?? true,
-      note: entity.note,
-      assignedAt: entity.assignedAt,
-    };
-  }
-
-  private mapSubManagerToOutput(
-    entity: MktDepartmentSubManagerWorkspaceEntity,
-  ): SubManagerOutput {
-    return {
-      id: entity.id,
-      departmentId: entity.departmentId ?? '',
-      workspaceMemberId: entity.workspaceMemberId ?? '',
-      isPrimary: entity.isPrimary,
-      assignedAt: entity.assignedAt,
-      note: entity.note,
-      isActive: entity.isActive,
-      createdAt: new Date(entity.createdAt),
-      updatedAt: new Date(entity.updatedAt),
-    };
-  }
-
-  private buildFullName(firstName?: string, lastName?: string): string {
-    return [firstName, lastName].filter(Boolean).join(' ') || '';
   }
 }

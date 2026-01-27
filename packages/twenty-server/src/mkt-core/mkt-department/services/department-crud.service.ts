@@ -5,15 +5,23 @@ import pickBy from 'lodash.pickby';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-  MktDepartmentRepository,
-  MktDepartmentSubManagerRepository,
-} from 'src/mkt-core/mkt-department/repositories';
-import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
-import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
+  DepartmentOutput,
+  ManagerInfo,
+  SubManagerInfo,
+  SubManagerOutput,
+  SearchDepartmentInput,
+  DepartmentListOutput,
+} from 'src/mkt-core/mkt-department/dto';
 import {
   DEPARTMENT_MESSAGES,
   MKT_DEPARTMENT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-department/messages';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
+import {
+  MktDepartmentRepository,
+  MktDepartmentSubManagerRepository,
+} from 'src/mkt-core/mkt-department/repositories';
 import {
   CreateDepartmentData,
   DeleteDepartmentResult,
@@ -21,6 +29,14 @@ import {
   SubManagerData,
   UpdateDepartmentData,
 } from 'src/mkt-core/mkt-department/types';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+
+// Pagination constants
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+const MIN_PAGE = 1;
+const MIN_LIMIT = 1;
 
 /**
  * DepartmentCrudService - Business logic for department CRUD operations
@@ -195,6 +211,161 @@ export class DepartmentCrudService {
       workspaceId,
       departmentCode,
     );
+  }
+
+  /**
+   * Search departments với filters và pagination
+   * Validation được thực hiện ở service layer để đảm bảo limit không vượt quá MAX_LIMIT
+   */
+  async search(
+    workspaceId: string,
+    input: SearchDepartmentInput,
+  ): Promise<DepartmentListOutput> {
+    // Validate và normalize pagination params
+    const page = Math.max(input.page ?? DEFAULT_PAGE, MIN_PAGE);
+    const limit = Math.min(
+      Math.max(input.limit ?? DEFAULT_LIMIT, MIN_LIMIT),
+      MAX_LIMIT,
+    );
+
+    const { items, total } = await this.departmentRepository.searchInWorkspace(
+      workspaceId,
+      {
+        keyword: input.keyword,
+        departmentCode: input.departmentCode,
+        departmentType: input.departmentType,
+        managerId: input.managerId,
+        isActive: input.isActive,
+        requiresKpiTracking: input.requiresKpiTracking,
+        page,
+        limit,
+      },
+    );
+
+    const totalPages = Math.ceil(total / limit);
+
+    this.logger.log(
+      `[SEARCH DEPARTMENTS] Found ${total} departments in workspace ${workspaceId}, page ${page}/${totalPages}`,
+    );
+
+    return {
+      items: items.map((department) => this.mapToOutput(department)),
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    };
+  }
+
+  // ============================================
+  // PUBLIC MAPPING METHODS
+  // ============================================
+
+  /**
+   * Map Department entity to DepartmentOutput
+   */
+  mapToOutput(entity: MktDepartmentWorkspaceEntity): DepartmentOutput {
+    return {
+      id: entity.id,
+      departmentCode: entity.departmentCode,
+      departmentName: entity.departmentName,
+      departmentNameEn: entity.departmentNameEn,
+      departmentType: entity.departmentType ?? undefined,
+      description: entity.description,
+      budgetCode: entity.budgetCode,
+      costCenter: entity.costCenter,
+      requiresKpiTracking: entity.requiresKpiTracking,
+      allowsCrossDepartmentAccess: entity.allowsCrossDepartmentAccess,
+      defaultKpiCategory: entity.defaultKpiCategory,
+      displayOrder: entity.displayOrder,
+      colorCode: entity.colorCode,
+      iconName: entity.iconName,
+      address: entity.address,
+      isActive: entity.isActive,
+      managerId: entity.managerId ?? undefined,
+      manager: entity.manager
+        ? this.mapManagerToOutput(entity.manager)
+        : undefined,
+      subManagers: entity.subManagers?.map((sm) =>
+        this.mapSubManagerInfoToOutput(sm),
+      ),
+      createdAt: new Date(entity.createdAt ?? Date.now()),
+      updatedAt: new Date(entity.updatedAt ?? Date.now()),
+    };
+  }
+
+  /**
+   * Map WorkspaceMember to ManagerInfo output
+   */
+  mapManagerToOutput(member: WorkspaceMemberWorkspaceEntity): ManagerInfo {
+    const name = member.name as
+      | { firstName?: string; lastName?: string }
+      | undefined;
+
+    return {
+      id: member.id,
+      firstName: name?.firstName,
+      lastName: name?.lastName,
+      fullName: this.buildFullName(name?.firstName, name?.lastName),
+      email: member.userEmail,
+      avatarUrl: member.avatarUrl,
+    };
+  }
+
+  /**
+   * Map SubManager entity to SubManagerInfo output (with member details)
+   */
+  mapSubManagerInfoToOutput(
+    entity: MktDepartmentSubManagerWorkspaceEntity,
+  ): SubManagerInfo {
+    const member = entity.workspaceMember as
+      | WorkspaceMemberWorkspaceEntity
+      | undefined;
+    const name = member?.name as
+      | { firstName?: string; lastName?: string }
+      | undefined;
+
+    return {
+      id: entity.id,
+      workspaceMemberId: entity.workspaceMemberId ?? '',
+      firstName: name?.firstName,
+      lastName: name?.lastName,
+      fullName: this.buildFullName(name?.firstName, name?.lastName),
+      email: member?.userEmail,
+      avatarUrl: member?.avatarUrl,
+      isPrimary: entity.isPrimary ?? false,
+      isActive: entity.isActive ?? true,
+      note: entity.note,
+      assignedAt: entity.assignedAt,
+    };
+  }
+
+  /**
+   * Map SubManager entity to SubManagerOutput (basic)
+   */
+  mapSubManagerToOutput(
+    entity: MktDepartmentSubManagerWorkspaceEntity,
+  ): SubManagerOutput {
+    return {
+      id: entity.id,
+      departmentId: entity.departmentId ?? '',
+      workspaceMemberId: entity.workspaceMemberId ?? '',
+      isPrimary: entity.isPrimary,
+      assignedAt: entity.assignedAt,
+      note: entity.note,
+      isActive: entity.isActive,
+      createdAt: new Date(entity.createdAt),
+      updatedAt: new Date(entity.updatedAt),
+    };
+  }
+
+  /**
+   * Build full name from first and last name
+   */
+  buildFullName(firstName?: string, lastName?: string): string {
+    return [firstName, lastName].filter(Boolean).join(' ') || '';
   }
 
   // ============================================
