@@ -10,6 +10,7 @@ import {
   DepartmentTreeOptions,
   HierarchyStatistics,
 } from 'src/mkt-core/mkt-department/dto';
+import { DepartmentTreeNode as InternalDepartmentTreeNode } from 'src/mkt-core/mkt-department/types';
 import { DepartmentService } from 'src/mkt-core/mkt-department/services/department.service';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 
@@ -66,12 +67,15 @@ export class DepartmentTreeResolver {
     );
 
     // Only return fulfilled results, filter out rejected (invalid IDs)
+    // Note: Service returns internal type with departmentCode, but GraphQL DTO excludes it
     return results
       .filter(
-        (result): result is PromiseFulfilledResult<DepartmentTreeNode> =>
+        (
+          result,
+        ): result is PromiseFulfilledResult<InternalDepartmentTreeNode> =>
           result.status === 'fulfilled' && result.value !== null,
       )
-      .map((result) => result.value);
+      .map((result) => result.value as unknown as DepartmentTreeNode);
   }
 
   //* Tìm tất cả phòng ban cha/tổ tiên

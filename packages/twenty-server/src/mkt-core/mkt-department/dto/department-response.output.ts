@@ -1,5 +1,8 @@
 import { Field, ObjectType, Int } from '@nestjs/graphql';
 
+import { ManagerInfo, SubManagerInfo } from './manager-info.output';
+import { SubManagerOutput } from './sub-manager';
+
 /**
  * Department data output for GraphQL responses
  */
@@ -7,9 +10,6 @@ import { Field, ObjectType, Int } from '@nestjs/graphql';
 export class DepartmentOutput {
   @Field({ description: 'Department ID' })
   id: string;
-
-  @Field({ description: 'Unique department code' })
-  departmentCode: string;
 
   @Field({ description: 'Display name of the department' })
   departmentName: string;
@@ -59,6 +59,15 @@ export class DepartmentOutput {
   @Field({ nullable: true, description: 'Manager ID' })
   managerId?: string;
 
+  @Field(() => ManagerInfo, { nullable: true, description: 'Manager details' })
+  manager?: ManagerInfo;
+
+  @Field(() => [SubManagerInfo], {
+    nullable: true,
+    description: 'Sub-managers with member details',
+  })
+  subManagers?: SubManagerInfo[];
+
   @Field({ description: 'Created timestamp' })
   createdAt: Date;
 
@@ -80,6 +89,12 @@ export class CreateDepartmentResponse {
   })
   department?: DepartmentOutput;
 
+  @Field(() => [SubManagerOutput], {
+    nullable: true,
+    description: 'Created sub-managers for the department',
+  })
+  subManagers?: SubManagerOutput[];
+
   @Field({ nullable: true, description: 'Error message if failed' })
   error?: string;
 }
@@ -97,6 +112,12 @@ export class UpdateDepartmentResponse {
     description: 'Updated department data',
   })
   department?: DepartmentOutput;
+
+  @Field(() => [SubManagerOutput], {
+    nullable: true,
+    description: 'Replaced sub-managers for the department',
+  })
+  subManagers?: SubManagerOutput[];
 
   @Field({ nullable: true, description: 'Error message if failed' })
   error?: string;

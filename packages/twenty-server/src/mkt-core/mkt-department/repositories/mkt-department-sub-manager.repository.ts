@@ -370,4 +370,50 @@ export class MktDepartmentSubManagerRepository extends BaseWorkspaceRepository<M
         whereClause as FindOptionsWhere<MktDepartmentSubManagerWorkspaceEntity>,
     });
   }
+
+  /**
+   * Hard delete all sub-managers for a department (for replacement)
+   */
+  async deleteByDepartmentId(
+    departmentId: string,
+    workspaceId: string,
+  ): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository.delete({ departmentId });
+
+    const affected = result.affected ?? 0;
+
+    this.logger.log(
+      `Deleted ${affected} sub-managers for department ${departmentId}`,
+    );
+
+    return affected;
+  }
+
+  /**
+   * Bulk create sub-managers with explicit workspace context
+   */
+  async bulkCreateInWorkspace(
+    items: Array<Partial<MktDepartmentSubManagerWorkspaceEntity>>,
+    workspaceId: string,
+  ): Promise<MktDepartmentSubManagerWorkspaceEntity[]> {
+    if (items.length === 0) {
+      return [];
+    }
+
+    const repository = await this.getRepository(workspaceId);
+    const now = new Date();
+
+    const entities = items.map((data) =>
+      repository.create({
+        ...data,
+        assignedAt: data.assignedAt ?? now,
+        isActive: data.isActive ?? true,
+        isPrimary: data.isPrimary ?? false,
+      }),
+    );
+
+    return repository.save(entities);
+  }
 }

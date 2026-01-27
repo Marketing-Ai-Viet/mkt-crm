@@ -30,12 +30,70 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
   // ============================================
 
   /**
+   * Relations to load for full department details
+   */
+  private static readonly FULL_RELATIONS = [
+    'manager',
+    'subManagers',
+    'subManagers.workspaceMember',
+  ];
+
+  /**
+   * Find department by ID with full relations (manager, subManagers)
+   */
+  async findByIdWithRelations(
+    workspaceId: string,
+    departmentId: string,
+  ): Promise<MktDepartmentWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { id: departmentId },
+      relations: MktDepartmentRepository.FULL_RELATIONS,
+    });
+  }
+
+  /**
+   * Find department by code with full relations (manager, subManagers)
+   */
+  async findByCodeWithRelations(
+    workspaceId: string,
+    departmentCode: string,
+  ): Promise<MktDepartmentWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { departmentCode },
+      relations: MktDepartmentRepository.FULL_RELATIONS,
+    });
+  }
+
+  /**
    * Find department by code
    */
   async findByCode(
     departmentCode: string,
+    workspaceId?: string,
   ): Promise<MktDepartmentWorkspaceEntity | null> {
-    return this.findOne({ departmentCode });
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { departmentCode },
+    });
+  }
+
+  /**
+   * Find department by ID with explicit workspace context
+   */
+  async findByIdInWorkspace(
+    id: string,
+    workspaceId: string,
+  ): Promise<MktDepartmentWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { id },
+    });
   }
 
   /**
@@ -43,7 +101,53 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
    */
   async findByManagerId(
     managerId: string,
+    workspaceId?: string,
   ): Promise<MktDepartmentWorkspaceEntity[]> {
-    return this.findMany({ managerId });
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where: { managerId },
+    });
+  }
+
+  /**
+   * Create department with explicit workspace context
+   */
+  async createInWorkspace(
+    data: Partial<MktDepartmentWorkspaceEntity>,
+    workspaceId: string,
+  ): Promise<MktDepartmentWorkspaceEntity> {
+    const repository = await this.getRepository(workspaceId);
+    const entity = repository.create(data);
+
+    return repository.save(entity);
+  }
+
+  /**
+   * Update and return department with explicit workspace context
+   */
+  async updateAndReturnInWorkspace(
+    id: string,
+    data: Partial<MktDepartmentWorkspaceEntity>,
+    workspaceId: string,
+  ): Promise<MktDepartmentWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(id, data as never);
+
+    return repository.findOne({ where: { id } });
+  }
+
+  /**
+   * Soft delete department with explicit workspace context
+   */
+  async softDeleteInWorkspace(id: string, workspaceId: string): Promise<void> {
+    const repository = await this.getRepository(workspaceId);
+
+    await repository.update(id, {
+      deletedAt: new Date().toISOString(),
+    } as never);
+
+    this.logger.log(`Soft deleted department ${id}`);
   }
 }

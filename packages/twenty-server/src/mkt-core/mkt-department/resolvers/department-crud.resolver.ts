@@ -23,10 +23,15 @@ import {
   UpdateDepartmentResponse,
   DeleteDepartmentResponse,
   DepartmentOutput,
+  SubManagerOutput,
+  ManagerInfo,
+  SubManagerInfo,
 } from 'src/mkt-core/mkt-department/dto';
 import { DepartmentCrudService } from 'src/mkt-core/mkt-department/services/department-crud.service';
 import { MKT_DEPARTMENT_LOG_CONTEXT } from 'src/mkt-core/mkt-department/messages';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
+import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
@@ -96,10 +101,9 @@ export class DepartmentCrudResolver {
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('input') input: CreateDepartmentInput,
   ): Promise<CreateDepartmentResponse> {
-    this.logger.log(`Creating department: ${input.departmentCode}`);
+    this.logger.log(`Creating department: ${input.departmentName}`);
 
     const result = await this.crudService.create(workspaceId, {
-      departmentCode: input.departmentCode,
       departmentName: input.departmentName,
       departmentNameEn: input.departmentNameEn,
       departmentType: input.departmentType,
@@ -115,6 +119,12 @@ export class DepartmentCrudResolver {
       address: input.address,
       isActive: input.isActive,
       managerId: input.managerId,
+      subManagers: input.subManagers?.map((sm) => ({
+        workspaceMemberId: sm.workspaceMemberId,
+        isPrimary: sm.isPrimary,
+        note: sm.note,
+        isActive: sm.isActive,
+      })),
     });
 
     return {
@@ -122,6 +132,9 @@ export class DepartmentCrudResolver {
       department: result.department
         ? this.mapToOutput(result.department)
         : undefined,
+      subManagers: result.createdSubManagers?.map((sm) =>
+        this.mapSubManagerToOutput(sm),
+      ),
       error: result.error,
     };
   }
@@ -140,7 +153,6 @@ export class DepartmentCrudResolver {
     this.logger.log(`Updating department: ${input.id}`);
 
     const result = await this.crudService.update(workspaceId, input.id, {
-      departmentCode: input.departmentCode,
       departmentName: input.departmentName,
       departmentNameEn: input.departmentNameEn,
       departmentType: input.departmentType,
@@ -156,6 +168,12 @@ export class DepartmentCrudResolver {
       address: input.address,
       isActive: input.isActive,
       managerId: input.managerId,
+      subManagers: input.subManagers?.map((sm) => ({
+        workspaceMemberId: sm.workspaceMemberId,
+        isPrimary: sm.isPrimary,
+        note: sm.note,
+        isActive: sm.isActive,
+      })),
     });
 
     return {
@@ -163,6 +181,9 @@ export class DepartmentCrudResolver {
       department: result.department
         ? this.mapToOutput(result.department)
         : undefined,
+      subManagers: result.createdSubManagers?.map((sm) =>
+        this.mapSubManagerToOutput(sm),
+      ),
       error: result.error,
     };
   }
@@ -196,7 +217,6 @@ export class DepartmentCrudResolver {
   private mapToOutput(entity: MktDepartmentWorkspaceEntity): DepartmentOutput {
     return {
       id: entity.id,
-      departmentCode: entity.departmentCode,
       departmentName: entity.departmentName,
       departmentNameEn: entity.departmentNameEn,
       departmentType: entity.departmentType ?? undefined,
@@ -212,8 +232,76 @@ export class DepartmentCrudResolver {
       address: entity.address,
       isActive: entity.isActive,
       managerId: entity.managerId ?? undefined,
+      manager: entity.manager
+        ? this.mapManagerToOutput(entity.manager)
+        : undefined,
+      subManagers: entity.subManagers?.map((sm) =>
+        this.mapSubManagerInfoToOutput(sm),
+      ),
       createdAt: new Date(entity.createdAt ?? Date.now()),
       updatedAt: new Date(entity.updatedAt ?? Date.now()),
     };
+  }
+
+  private mapManagerToOutput(
+    member: WorkspaceMemberWorkspaceEntity,
+  ): ManagerInfo {
+    const name = member.name as
+      | { firstName?: string; lastName?: string }
+      | undefined;
+
+    return {
+      id: member.id,
+      firstName: name?.firstName,
+      lastName: name?.lastName,
+      fullName: this.buildFullName(name?.firstName, name?.lastName),
+      email: member.userEmail,
+      avatarUrl: member.avatarUrl,
+    };
+  }
+
+  private mapSubManagerInfoToOutput(
+    entity: MktDepartmentSubManagerWorkspaceEntity,
+  ): SubManagerInfo {
+    const member = entity.workspaceMember as
+      | WorkspaceMemberWorkspaceEntity
+      | undefined;
+    const name = member?.name as
+      | { firstName?: string; lastName?: string }
+      | undefined;
+
+    return {
+      id: entity.id,
+      workspaceMemberId: entity.workspaceMemberId ?? '',
+      firstName: name?.firstName,
+      lastName: name?.lastName,
+      fullName: this.buildFullName(name?.firstName, name?.lastName),
+      email: member?.userEmail,
+      avatarUrl: member?.avatarUrl,
+      isPrimary: entity.isPrimary ?? false,
+      isActive: entity.isActive ?? true,
+      note: entity.note,
+      assignedAt: entity.assignedAt,
+    };
+  }
+
+  private mapSubManagerToOutput(
+    entity: MktDepartmentSubManagerWorkspaceEntity,
+  ): SubManagerOutput {
+    return {
+      id: entity.id,
+      departmentId: entity.departmentId ?? '',
+      workspaceMemberId: entity.workspaceMemberId ?? '',
+      isPrimary: entity.isPrimary,
+      assignedAt: entity.assignedAt,
+      note: entity.note,
+      isActive: entity.isActive,
+      createdAt: new Date(entity.createdAt),
+      updatedAt: new Date(entity.updatedAt),
+    };
+  }
+
+  private buildFullName(firstName?: string, lastName?: string): string {
+    return [firstName, lastName].filter(Boolean).join(' ') || '';
   }
 }

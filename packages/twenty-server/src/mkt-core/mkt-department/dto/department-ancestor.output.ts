@@ -6,9 +6,6 @@ export class DepartmentAncestor {
   id: string;
 
   @Field()
-  departmentCode: string;
-
-  @Field()
   departmentName: string;
 
   @Field(() => Int)

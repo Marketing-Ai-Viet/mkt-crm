@@ -53,7 +53,7 @@ const SEARCH_FIELDS_FOR_ENTITY: FieldTypeAndNameMetadata[] = [
   description: msg`Departments in the marketing system.`,
   icon: 'IconBuilding',
   shortcut: 'D',
-  labelIdentifierStandardId: MKT_DEPARTMENT_FIELD_IDS.departmentCode,
+  labelIdentifierStandardId: MKT_DEPARTMENT_FIELD_IDS.departmentName,
 })
 @WorkspaceIsSearchable()
 export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
