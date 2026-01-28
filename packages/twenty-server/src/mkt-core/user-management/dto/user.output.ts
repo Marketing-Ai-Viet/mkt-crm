@@ -1,4 +1,75 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
+
+// ============================================
+// NESTED OBJECT TYPES
+// ============================================
+
+@ObjectType({ description: 'Basic department information' })
+export class DepartmentBasicOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  departmentCode: string;
+
+  @Field(() => String)
+  departmentName: string;
+
+  @Field(() => String, { nullable: true })
+  departmentNameEn?: string;
+}
+
+@ObjectType({ description: 'Basic permission template information' })
+export class PermissionTemplateBasicOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  templateKey: string;
+
+  @Field(() => String)
+  templateName: string;
+
+  @Field(() => String, { nullable: true })
+  templateNameEn?: string;
+}
+
+@ObjectType({ description: 'Basic employment status information' })
+export class EmploymentStatusBasicOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  statusCode: string;
+
+  @Field(() => String)
+  statusName: string;
+
+  @Field(() => String, { nullable: true })
+  statusNameEn?: string;
+}
+
+@ObjectType({ description: 'Basic organization level information' })
+export class OrganizationLevelBasicOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  levelCode: string;
+
+  @Field(() => String)
+  levelName: string;
+
+  @Field(() => String, { nullable: true })
+  levelNameEn?: string;
+
+  @Field(() => Int)
+  hierarchyLevel: number;
+}
+
+// ============================================
+// MAIN USER OUTPUT
+// ============================================
 
 @ObjectType()
 export class UserOutput {
@@ -50,14 +121,65 @@ export class UserOutput {
   @Field(() => String, { nullable: true })
   address?: string;
 
-  @Field(() => String, { nullable: true })
+  // ============================================
+  // RELATED ENTITIES AS OBJECTS
+  // ============================================
+
+  @Field(() => DepartmentBasicOutput, { nullable: true })
+  department?: DepartmentBasicOutput | null;
+
+  @Field(() => PermissionTemplateBasicOutput, { nullable: true })
+  permissionTemplate?: PermissionTemplateBasicOutput | null;
+
+  @Field(() => EmploymentStatusBasicOutput, { nullable: true })
+  employmentStatus?: EmploymentStatusBasicOutput | null;
+
+  @Field(() => OrganizationLevelBasicOutput, { nullable: true })
+  organizationLevel?: OrganizationLevelBasicOutput | null;
+
+  // ============================================
+  // LEGACY ID FIELDS (kept for backward compatibility)
+  // ============================================
+
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Use department.id instead',
+  })
   departmentId?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Use department.departmentName instead',
+  })
+  departmentName?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Use permissionTemplate.id instead',
+  })
+  permissionTemplateId?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Use permissionTemplate.templateName instead',
+  })
+  permissionTemplateName?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Use organizationLevel.id instead',
+  })
   organizationLevelId?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Use employmentStatus.id instead',
+  })
   employmentStatusId?: string;
+
+  // ============================================
+  // TIMESTAMPS
+  // ============================================
 
   @Field(() => Date)
   createdAt: Date;

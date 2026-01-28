@@ -1,9 +1,9 @@
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, UsePipes } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
+import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/resolver-validation.pipe';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
   CreateUserInput,
@@ -12,9 +12,11 @@ import {
   UserListOutput,
   UserOutput,
 } from 'src/mkt-core/user-management/dto';
+import { UserManagementAuthGuard } from 'src/mkt-core/user-management/guards/user-management-auth.guard';
 import { UserService } from 'src/mkt-core/user-management/services/user.service';
 
-@UseGuards(UserAuthGuard, WorkspaceAuthGuard)
+@UseGuards(UserManagementAuthGuard, WorkspaceAuthGuard)
+@UsePipes(ResolverValidationPipe)
 @Resolver(() => UserOutput)
 export class UserManagementResolver {
   constructor(private readonly userService: UserService) {}

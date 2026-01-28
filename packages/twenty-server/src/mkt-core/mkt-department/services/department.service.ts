@@ -120,6 +120,7 @@ export class DepartmentService {
         id: parentHierarchy.parentDepartment.id,
         departmentCode: parentHierarchy.parentDepartment.departmentCode,
         departmentName: parentHierarchy.parentDepartment.departmentName,
+        description: parentHierarchy.parentDepartment.description ?? undefined,
         level: (parentHierarchy.hierarchyLevel ?? 1) - 1,
         relationshipType: parentHierarchy.relationshipType ?? '',
         hierarchyId: parentHierarchy.id,
@@ -433,6 +434,7 @@ export class DepartmentService {
       hierarchyId: currentDepth === 0 ? undefined : undefined,
       // Thêm các fields mới
       departmentType: department.departmentType ?? undefined,
+      description: department.description ?? undefined,
       address: department.address,
       manager,
       subManagers: subManagers.length > 0 ? subManagers : undefined,
@@ -556,6 +558,7 @@ export class DepartmentService {
         id: hierarchy.childDepartment.id,
         departmentCode: hierarchy.childDepartment.departmentCode,
         departmentName: hierarchy.childDepartment.departmentName,
+        description: hierarchy.childDepartment.description ?? undefined,
         level: hierarchy.hierarchyLevel ?? 0,
         relationshipType: hierarchy.relationshipType ?? '',
         hierarchyId: hierarchy.id,

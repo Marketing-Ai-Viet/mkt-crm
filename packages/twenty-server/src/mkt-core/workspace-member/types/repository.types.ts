@@ -30,11 +30,13 @@ export type FindWorkspaceMemberOptions = {
 
 /**
  * Data for creating a new workspace member
+ * Note: Twenty ORM stores composite types as flattened columns:
+ * - name.firstName → nameFirstName
+ * - name.lastName → nameLastName
  */
 export type CreateWorkspaceMemberData = Partial<
   Pick<
     WorkspaceMemberWorkspaceEntity,
-    | 'name'
     | 'userEmail'
     | 'userId'
     | 'memberCode'
@@ -61,6 +63,18 @@ export type CreateWorkspaceMemberData = Partial<
   userEmail: string;
   userId: string;
   startDate: Date;
+};
+
+/**
+ * Flattened data for Twenty ORM repository operations
+ * This is the actual format used when saving to database
+ */
+export type FlattenedWorkspaceMemberData = Omit<
+  CreateWorkspaceMemberData,
+  'name'
+> & {
+  nameFirstName: string;
+  nameLastName: string;
 };
 
 /**

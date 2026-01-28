@@ -38,6 +38,7 @@ export type DepartmentTreeNode = {
   parent?: DepartmentTreeNode;
   // New fields
   departmentType?: string;
+  description?: string;
   address?: string;
   manager?: ManagerInfo;
   subManagers?: SubManagerInfo[];
@@ -48,6 +49,7 @@ export interface DepartmentAncestor {
   id: string;
   departmentCode: string;
   departmentName: string;
+  description?: string;
   level: number;
   relationshipType: string;
   hierarchyId: string;
@@ -58,6 +60,7 @@ export interface DepartmentDescendant {
   id: string;
   departmentCode: string;
   departmentName: string;
+  description?: string;
   level: number;
   relationshipType: string;
   hierarchyId: string;

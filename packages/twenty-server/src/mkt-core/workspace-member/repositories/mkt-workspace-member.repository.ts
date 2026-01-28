@@ -329,6 +329,11 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
   /**
    * Create new workspace member
+   * Note: Twenty ORM handles composite fields like 'name' internally.
+   * Pass nested object: name: { firstName, lastName }
+   *
+   * Important: We pass plain data directly to save() instead of using create()
+   * because TypeORM's create() may not properly handle nested composite fields.
    */
   async createMember(
     data: DeepPartial<WorkspaceMemberWorkspaceEntity>,
@@ -337,15 +342,31 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     const repository = await this.getRepository();
 
-    const member = repository.create(data);
-
-    const savedMember = await repository.save(member);
-
+    // Log the incoming data for debugging
     this.logger.debug(
-      MKT_WORKSPACE_MEMBER_LOG_MESSAGES.CREATE_SUCCESS(savedMember.id),
+      `[CREATE MEMBER] Input data: ${JSON.stringify(data, null, 2)}`,
     );
 
-    return savedMember;
+    try {
+      // Pass plain data directly to save() - Twenty ORM's formatData()
+      // will transform composite fields like name: { firstName, lastName }
+      // to flattened columns: nameFirstName, nameLastName
+      const savedMember = await repository.save(
+        data as DeepPartial<WorkspaceMemberWorkspaceEntity>,
+      );
+
+      this.logger.debug(
+        MKT_WORKSPACE_MEMBER_LOG_MESSAGES.CREATE_SUCCESS(savedMember.id),
+      );
+
+      return savedMember;
+    } catch (error) {
+      this.logger.error(
+        `[CREATE MEMBER] Failed to create member: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 
   // ============================================
