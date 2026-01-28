@@ -1095,6 +1095,7 @@ export const MKT_PERMISSION_TEMPLATE_FIELD_IDS = {
   // template identification
   templateKey: 'a4c9e1f2-3b5d-4e7a-8c9b-0d1e2f3a4b5c',
   templateName: 'b5d0f2a3-4c6e-5f8b-9d0c-1e2f3a4b5c6d',
+  templateNameEn: 'b6e1a4c5-5e8f-6b0d-0f1e-3a4b5c6d7e8f',
   description: 'c6e1a3b4-5d7f-6a9c-0e1d-2f3a4b5c6d7e',
 
   // hierarchy mapping
