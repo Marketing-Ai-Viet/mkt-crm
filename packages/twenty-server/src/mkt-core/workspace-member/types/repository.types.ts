@@ -17,7 +17,6 @@ export type WorkspaceMemberLocale = keyof typeof APP_LOCALES;
  */
 export const DEFAULT_WORKSPACE_MEMBER_RELATIONS = [
   'department',
-  'team',
   'organizationLevel',
   'employmentStatus',
 ] as const;
@@ -31,11 +30,13 @@ export type FindWorkspaceMemberOptions = {
 
 /**
  * Data for creating a new workspace member
+ * Note: Twenty ORM stores composite types as flattened columns:
+ * - name.firstName → nameFirstName
+ * - name.lastName → nameLastName
  */
 export type CreateWorkspaceMemberData = Partial<
   Pick<
     WorkspaceMemberWorkspaceEntity,
-    | 'name'
     | 'userEmail'
     | 'userId'
     | 'memberCode'
@@ -44,7 +45,6 @@ export type CreateWorkspaceMemberData = Partial<
     | 'grade'
     | 'address'
     | 'departmentId'
-    | 'teamId'
     | 'organizationLevelId'
     | 'employmentStatusId'
     | 'avatarUrl'
@@ -66,6 +66,18 @@ export type CreateWorkspaceMemberData = Partial<
 };
 
 /**
+ * Flattened data for Twenty ORM repository operations
+ * This is the actual format used when saving to database
+ */
+export type FlattenedWorkspaceMemberData = Omit<
+  CreateWorkspaceMemberData,
+  'name'
+> & {
+  nameFirstName: string;
+  nameLastName: string;
+};
+
+/**
  * Data for updating a workspace member
  */
 export type UpdateWorkspaceMemberData = Partial<
@@ -79,7 +91,6 @@ export type UpdateWorkspaceMemberData = Partial<
     | 'address'
     | 'supportForMemberId'
     | 'departmentId'
-    | 'teamId'
     | 'organizationLevelId'
     | 'employmentStatusId'
     | 'avatarUrl'
@@ -103,7 +114,6 @@ export type SearchMemberParams = {
   status?: string;
   memberType?: string;
   departmentId?: string;
-  teamId?: string;
   organizationLevelId?: string;
   employmentStatusId?: string;
   page?: number;

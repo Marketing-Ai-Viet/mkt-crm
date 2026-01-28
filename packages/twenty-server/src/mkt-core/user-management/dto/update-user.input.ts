@@ -58,10 +58,13 @@ export class UpdateUserInput {
   @IsString()
   departmentId?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {
+    nullable: true,
+    description: 'Permission Template ID - defines role in department',
+  })
   @IsOptional()
   @IsString()
-  teamId?: string;
+  permissionTemplateId?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

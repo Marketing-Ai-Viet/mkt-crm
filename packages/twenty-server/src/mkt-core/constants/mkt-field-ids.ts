@@ -827,7 +827,6 @@ export const MKT_PERSON_FIELD_IDS = {
   newEmail: '3dd95a4c-9902-4dbe-bd34-ed1c14f3391a',
   // relations
   departmentId: '24674af6-c1c8-446e-92cb-8d9fd2bf3ed6',
-  teamId: '3579b8fd-1e5a-4ced-b248-0587fbd022d0',
   supportForMemberId: 'e7021859-8766-4f68-8730-d32da36774ef',
   startDate: '697bb3ff-fe25-4ffb-b6ad-28a5dab6254f',
   endDate: '8bc02b57-f02e-4853-91a3-ee6e38f989c6',
@@ -934,10 +933,11 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   dataAccessPolicies: '6742dde7-8567-4e8f-a30d-e6b6c70ede0a',
   departmentOwnerForMktLicenses: 'a5f91075-a4d8-4ff2-9b4a-ff646b39850c',
   teamOwnerForMktLicenses: 'a3510a9e-04c7-4a8d-874b-332f87911b37',
-  teamMembers: '9186741b-ad29-4acb-a955-48af8c1f7b1f',
   // ancestry relations (for materialized ancestry table)
   ancestryRecordsAsDescendant: 'd7e8f9a0-b1c2-3d4e-5f6a-7b8c9d0e1f2a',
   ancestryRecordsAsAncestor: 'e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b',
+  // user permission templates (role assignments in this department)
+  userPermissionTemplates: 'd4e0a2b3-4c6f-5e8a-9b0c-1d2e3f4a5b6c',
   // standard fields
   position: 'f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c',
   createdBy: 'a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d',
@@ -1095,6 +1095,7 @@ export const MKT_PERMISSION_TEMPLATE_FIELD_IDS = {
   // template identification
   templateKey: 'a4c9e1f2-3b5d-4e7a-8c9b-0d1e2f3a4b5c',
   templateName: 'b5d0f2a3-4c6e-5f8b-9d0c-1e2f3a4b5c6d',
+  templateNameEn: 'b6e1a4c5-5e8f-6b0d-0f1e-3a4b5c6d7e8f',
   description: 'c6e1a3b4-5d7f-6a9c-0e1d-2f3a4b5c6d7e',
 
   // hierarchy mapping
@@ -1258,6 +1259,7 @@ export const MKT_USER_PERMISSION_TEMPLATE_FIELD_IDS = {
   workspaceMember: 'e0a5c7d8-9f1b-0c3e-4a5f-6b7c8d9e0f1a',
   template: 'f1b6d8e9-0a2c-1d4f-5b6a-7c8d9e0f1a2b',
   assignedBy: 'a2c7e9f0-1b3d-2e5a-6c7b-8d9e0f1a2b3c',
+  department: 'c3d9f1a2-3b5e-4d7f-8a9c-0b1d2e3f4a5b',
 
   // standard fields
   position: 'b3d8f0a1-2c4e-3f6b-7d8c-9e0f1a2b3c4d',

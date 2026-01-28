@@ -38,16 +38,6 @@ export class PersonMktEntity extends BaseWorkspaceEntity {
   departmentId: string;
 
   @WorkspaceField({
-    standardId: MKT_PERSON_FIELD_IDS.teamId,
-    type: FieldMetadataType.TEXT,
-    label: msg`Team ID`,
-    description: msg`The ID of the team the person belongs to`,
-    icon: 'IconUsers',
-  })
-  @WorkspaceIsNullable()
-  teamId: string;
-
-  @WorkspaceField({
     standardId: MKT_PERSON_FIELD_IDS.supportForMemberId,
     type: FieldMetadataType.TEXT,
     label: msg`Support For Member ID`,

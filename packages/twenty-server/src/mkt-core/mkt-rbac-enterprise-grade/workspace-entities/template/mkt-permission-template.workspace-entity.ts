@@ -72,6 +72,16 @@ export class MktPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntity {
   templateName: string;
 
   @WorkspaceField({
+    standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.templateNameEn,
+    type: FieldMetadataType.TEXT,
+    label: msg`Template Name (English)`,
+    description: msg`English name of the template`,
+    icon: 'IconLanguage',
+  })
+  @WorkspaceIsNullable()
+  templateNameEn?: string;
+
+  @WorkspaceField({
     standardId: MKT_PERMISSION_TEMPLATE_FIELD_IDS.description,
     type: FieldMetadataType.TEXT,
     label: msg`Description`,

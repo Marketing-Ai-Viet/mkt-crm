@@ -223,35 +223,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
   }
 
   /**
-   * Find workspace members by team
-   */
-  async findByTeam(
-    teamId: string,
-    options?: FindWorkspaceMemberOptions,
-  ): Promise<WorkspaceMemberWorkspaceEntity[]> {
-    this.logger.debug(
-      MKT_WORKSPACE_MEMBER_LOG_MESSAGES.FIND_BY_TEAM_START(teamId),
-    );
-
-    const repository = await this.getRepository();
-
-    const members = await repository.find({
-      where: { teamId },
-      relations: options?.relations,
-      order: { position: 'ASC' },
-    });
-
-    this.logger.debug(
-      MKT_WORKSPACE_MEMBER_LOG_MESSAGES.FIND_BY_TEAM_SUCCESS(
-        teamId,
-        members.length,
-      ),
-    );
-
-    return members;
-  }
-
-  /**
    * Find workspace members by status
    */
   async findByStatus(
@@ -358,6 +329,11 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
   /**
    * Create new workspace member
+   * Note: Twenty ORM handles composite fields like 'name' internally.
+   * Pass nested object: name: { firstName, lastName }
+   *
+   * Important: We pass plain data directly to save() instead of using create()
+   * because TypeORM's create() may not properly handle nested composite fields.
    */
   async createMember(
     data: DeepPartial<WorkspaceMemberWorkspaceEntity>,
@@ -366,15 +342,31 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     const repository = await this.getRepository();
 
-    const member = repository.create(data);
-
-    const savedMember = await repository.save(member);
-
+    // Log the incoming data for debugging
     this.logger.debug(
-      MKT_WORKSPACE_MEMBER_LOG_MESSAGES.CREATE_SUCCESS(savedMember.id),
+      `[CREATE MEMBER] Input data: ${JSON.stringify(data, null, 2)}`,
     );
 
-    return savedMember;
+    try {
+      // Pass plain data directly to save() - Twenty ORM's formatData()
+      // will transform composite fields like name: { firstName, lastName }
+      // to flattened columns: nameFirstName, nameLastName
+      const savedMember = await repository.save(
+        data as DeepPartial<WorkspaceMemberWorkspaceEntity>,
+      );
+
+      this.logger.debug(
+        MKT_WORKSPACE_MEMBER_LOG_MESSAGES.CREATE_SUCCESS(savedMember.id),
+      );
+
+      return savedMember;
+    } catch (error) {
+      this.logger.error(
+        `[CREATE MEMBER] Failed to create member: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 
   // ============================================
@@ -436,13 +428,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
     await this.updateMember(memberId, { departmentId });
   }
 
-  /**
-   * Assign member to team
-   */
-  async assignToTeam(memberId: string, teamId: string): Promise<void> {
-    await this.updateMember(memberId, { teamId });
-  }
-
   // ============================================
   // DELETE OPERATIONS
   // ============================================
@@ -476,17 +461,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     return repository.count({
       where: { departmentId },
-    });
-  }
-
-  /**
-   * Count workspace members by team
-   */
-  async countByTeam(teamId: string): Promise<number> {
-    const repository = await this.getRepository();
-
-    return repository.count({
-      where: { teamId },
     });
   }
 
@@ -525,7 +499,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
       status,
       memberType,
       departmentId,
-      teamId,
       organizationLevelId,
       employmentStatusId,
       page = 1,
@@ -557,10 +530,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     if (departmentId) {
       baseCondition.departmentId = departmentId;
-    }
-
-    if (teamId) {
-      baseCondition.teamId = teamId;
     }
 
     if (organizationLevelId) {
@@ -719,7 +688,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
       status,
       memberType,
       departmentId,
-      teamId,
       organizationLevelId,
       employmentStatusId,
       page = 1,
@@ -751,10 +719,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     if (departmentId) {
       baseCondition.departmentId = departmentId;
-    }
-
-    if (teamId) {
-      baseCondition.teamId = teamId;
     }
 
     if (organizationLevelId) {

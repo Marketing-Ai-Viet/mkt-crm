@@ -8,6 +8,12 @@ export class DepartmentDescendant {
   @Field()
   departmentName: string;
 
+  @Field(() => String, {
+    nullable: true,
+    description: 'Detailed description of the department',
+  })
+  description?: string;
+
   @Field(() => Int)
   level: number;
 

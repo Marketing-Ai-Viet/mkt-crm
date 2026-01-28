@@ -6,15 +6,21 @@
  */
 
 import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
+import {
+  DEPARTMENT,
+  MKT_DEPARTMENT_DATA_SEEDS_IDS,
+} from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/mkt-permission-template-data-seeds.constants';
 
 const WORKSPACE_MEMBERS = WORKSPACE_MEMBER_DATA_SEED_IDS;
 const TEMPLATES = MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS;
+const DEPARTMENTS = MKT_DEPARTMENT_DATA_SEEDS_IDS;
 
 type MktUserPermissionTemplateDataSeed = {
   id: string;
   workspaceMemberId: string;
   templateId: string;
+  departmentId: string | null;
   isActive: boolean;
   assignedAt: string;
   assignedById: string | null;
@@ -28,6 +34,7 @@ export const MKT_USER_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS: (keyof MktUserPermi
     'id',
     'workspaceMemberId',
     'templateId',
+    'departmentId',
     'isActive',
     'assignedAt',
     'assignedById',
@@ -59,6 +66,7 @@ export const MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS: MktUserPermissionTemplateD
       id: IDS.TIM_CEO_TEMPLATE,
       workspaceMemberId: WORKSPACE_MEMBERS.TIM,
       templateId: TEMPLATES.CEO,
+      departmentId: null, // CEO - global role, not department-specific
       isActive: true,
       assignedAt: '2024-01-01T00:00:00.000Z',
       assignedById: null, // System assigned
@@ -68,32 +76,34 @@ export const MKT_USER_PERMISSION_TEMPLATE_DATA_SEEDS: MktUserPermissionTemplateD
     },
 
     // ============================================
-    // Jony - Director Template Assignment
+    // Jony - Director Template Assignment (Sales Department)
     // ============================================
     {
       id: IDS.JONY_DIRECTOR_TEMPLATE,
       workspaceMemberId: WORKSPACE_MEMBERS.JONY,
       templateId: TEMPLATES.DIRECTOR,
+      departmentId: DEPARTMENTS[DEPARTMENT.SALES], // Director of Sales
       isActive: true,
       assignedAt: '2024-01-01T00:00:00.000Z',
       assignedById: WORKSPACE_MEMBERS.TIM, // Assigned by CEO
       expiresAt: null,
-      assignmentReason: 'Design department director',
+      assignmentReason: 'Sales department director',
       position: 1,
     },
 
     // ============================================
-    // Phil - VP Template Assignment
+    // Phil - VP Template Assignment (Support Department)
     // ============================================
     {
       id: IDS.PHIL_VP_TEMPLATE,
       workspaceMemberId: WORKSPACE_MEMBERS.PHIL,
       templateId: TEMPLATES.VP,
+      departmentId: DEPARTMENTS[DEPARTMENT.SUPPORT], // VP of Support
       isActive: true,
       assignedAt: '2024-01-01T00:00:00.000Z',
       assignedById: WORKSPACE_MEMBERS.TIM, // Assigned by CEO
       expiresAt: null,
-      assignmentReason: 'VP Operations role',
+      assignmentReason: 'VP Support Operations role',
       position: 1,
     },
   ];

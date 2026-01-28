@@ -6,15 +6,19 @@ import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { User } from 'src/engine/core-modules/user/user.entity';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { RoleTargetsEntity } from 'src/engine/metadata-modules/role/role-targets.entity';
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
+import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
+import {
+  MktPermissionTemplateRepository,
+  MktUserPermissionTemplateRepository,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+import { MktEmploymentStatusRepository } from 'src/mkt-core/user-management/repositories';
 import { UserManagementResolver } from 'src/mkt-core/user-management/resolver/user-management.resolver';
-import { DepartmentLookupService } from 'src/mkt-core/user-management/services/department-lookup.service';
 import { EmailNotificationService } from 'src/mkt-core/user-management/services/email-notification.service';
 import { RoleService } from 'src/mkt-core/user-management/services/role.service';
 import { UserService } from 'src/mkt-core/user-management/services/user.service';
@@ -24,7 +28,7 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserWorkspace, Workspace], 'core'),
+    TypeOrmModule.forFeature([User, UserWorkspace], 'core'),
     TypeOrmModule.forFeature([RoleEntity, RoleTargetsEntity], 'core'),
     UserWorkspaceModule,
     UserRoleModule,
@@ -32,11 +36,15 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
     EmailModule,
     TwentyConfigModule,
     MktDepartmentModule,
+    MktOrganizationLevelModule,
     MktEmailModule,
   ],
   providers: [
     // Repositories
     MktWorkspaceMemberRepository,
+    MktUserPermissionTemplateRepository,
+    MktPermissionTemplateRepository,
+    MktEmploymentStatusRepository,
 
     // Resolvers
     UserManagementResolver,
@@ -46,7 +54,6 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
     WorkspaceMemberService,
     RoleService,
     EmailNotificationService,
-    DepartmentLookupService,
     MktMemberCodeGenerationService,
   ],
   exports: [
@@ -55,6 +62,8 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
     RoleService,
     EmailNotificationService,
     MktWorkspaceMemberRepository,
+    MktUserPermissionTemplateRepository,
+    MktEmploymentStatusRepository,
   ],
 })
 export class UserManagementModule {}

@@ -29,6 +29,12 @@ export class DepartmentTreeNode {
   })
   departmentType?: string;
 
+  @Field(() => String, {
+    nullable: true,
+    description: 'Detailed description of the department',
+  })
+  description?: string;
+
   @Field(() => String, { nullable: true, description: 'Department address' })
   address?: string;
 

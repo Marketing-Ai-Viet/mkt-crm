@@ -1,8 +1,7 @@
 import { Field, InputType } from '@nestjs/graphql';
 
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsBoolean,
   IsDate,
   IsEmail,
   IsNumber,
@@ -15,7 +14,7 @@ import {
 export class CreateUserInput {
   @Field(() => String)
   @IsEmail()
-  @Transform(({ value }) => value.toLowerCase())
+  @Transform(({ value }) => value?.toLowerCase?.() ?? value)
   email: string;
 
   @Field(() => String, { nullable: true })
@@ -24,11 +23,13 @@ export class CreateUserInput {
   firstName?: string;
 
   @Field(() => Date)
+  @Type(() => Date)
   @IsDate()
   startDate: Date;
 
   @Field(() => Date, { nullable: true })
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   endDate?: Date;
 
@@ -57,18 +58,6 @@ export class CreateUserInput {
   @IsString()
   phone?: string;
 
-  @Field(() => Boolean, { defaultValue: true })
-  @IsBoolean()
-  canImpersonate = true;
-
-  @Field(() => Boolean, { defaultValue: false })
-  @IsBoolean()
-  canAdmin = false;
-
-  @Field(() => String, { defaultValue: 'en' })
-  @IsString()
-  language = 'en';
-
   @Field(() => String, { nullable: true, defaultValue: null })
   @IsOptional()
   @IsUrl()
@@ -79,15 +68,17 @@ export class CreateUserInput {
   @IsNumber()
   calendarStartDay?: number;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
+  @Field(() => String, {
+    description: 'Department ID is required for user creation',
+  })
   @IsString()
-  departmentId?: string;
+  departmentId: string;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
+  @Field(() => String, {
+    description: 'Permission Template ID - defines role in department',
+  })
   @IsString()
-  teamId?: string;
+  permissionTemplateId: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -108,8 +99,4 @@ export class CreateUserInput {
   @IsOptional()
   @IsString()
   organizationLevelId?: string;
-
-  @Field(() => String, { description: 'Role ID is required for user creation' })
-  @IsString()
-  roleId: string;
 }

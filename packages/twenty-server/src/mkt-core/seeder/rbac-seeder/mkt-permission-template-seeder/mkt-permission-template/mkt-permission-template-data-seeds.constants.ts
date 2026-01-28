@@ -33,6 +33,7 @@ type MktPermissionTemplateDataSeed = {
   id: string;
   templateKey: string;
   templateName: string;
+  templateNameEn: string | null;
   description: string | null;
   templateType: string;
   departmentType: string | null;
@@ -52,6 +53,7 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEED_COLUMNS: (keyof MktPermissionTemp
     'id',
     'templateKey',
     'templateName',
+    'templateNameEn',
     'description',
     'templateType',
     'departmentType',
@@ -91,7 +93,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       templateKey: 'CEO',
-      templateName: 'Chief Executive Officer',
+      templateName: 'Tổng Giám đốc',
+      templateNameEn: 'Chief Executive Officer',
       description: 'Full access to all resources and actions',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
       departmentType: DepartmentCode.EXECUTIVE,
@@ -108,7 +111,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.VP,
       templateKey: 'VP',
-      templateName: 'Vice President',
+      templateName: 'Phó Tổng Giám đốc',
+      templateNameEn: 'Vice President',
       description:
         'High-level access with some restrictions on system settings',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
@@ -128,7 +132,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.DIRECTOR,
       templateKey: 'DIRECTOR',
-      templateName: 'Director',
+      templateName: 'Giám đốc',
+      templateNameEn: 'Director',
       description: 'Department-level management access',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
       departmentType: null,
@@ -145,7 +150,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.MANAGER,
       templateKey: 'MANAGER',
-      templateName: 'Manager',
+      templateName: 'Trưởng phòng',
+      templateNameEn: 'Manager',
       description: 'Team management and operational access',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
       departmentType: null,
@@ -162,7 +168,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.TEAM_LEAD,
       templateKey: 'TEAM_LEAD',
-      templateName: 'Team Lead',
+      templateName: 'Trưởng nhóm',
+      templateNameEn: 'Team Lead',
       description: 'Team coordination and limited management access',
       templateType: TEMPLATE_TYPE.HIERARCHY_BASED,
       departmentType: null,
@@ -181,7 +188,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SENIOR,
       templateKey: 'SENIOR',
-      templateName: 'Senior Staff',
+      templateName: 'Nhân viên cao cấp',
+      templateNameEn: 'Senior Staff',
       description: 'Full operational access with limited management features',
       templateType: TEMPLATE_TYPE.ROLE_BASED,
       departmentType: null,
@@ -198,7 +206,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.JUNIOR,
       templateKey: 'JUNIOR',
-      templateName: 'Junior Staff',
+      templateName: 'Nhân viên',
+      templateNameEn: 'Junior Staff',
       description: 'Basic operational access with read-heavy permissions',
       templateType: TEMPLATE_TYPE.ROLE_BASED,
       departmentType: null,
@@ -217,7 +226,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.FINANCE_ANALYST,
       templateKey: 'FINANCE_ANALYST',
-      templateName: 'Finance Analyst',
+      templateName: 'Chuyên viên tài chính',
+      templateNameEn: 'Finance Analyst',
       description: 'Specialized access to financial data and reports',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
       departmentType: DepartmentCode.FINANCE,
@@ -238,7 +248,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       templateKey: 'SALES_DIRECTOR',
-      templateName: 'Sales Director',
+      templateName: 'Giám đốc kinh doanh',
+      templateNameEn: 'Sales Director',
       description:
         'Full department access to customers, orders, with read access to licenses and invoices',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
@@ -256,7 +267,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       templateKey: 'SALES_MANAGER',
-      templateName: 'Sales Manager',
+      templateName: 'Trưởng phòng kinh doanh',
+      templateNameEn: 'Sales Manager',
       description:
         'Team-level access to customers and orders, limited license update, read invoices',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
@@ -274,7 +286,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
       templateKey: 'SALES_STAFF',
-      templateName: 'Sales Staff',
+      templateName: 'Nhân viên kinh doanh',
+      templateNameEn: 'Sales Staff',
       description:
         'Own record access to customers and orders, read-only licenses and invoices',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
@@ -296,7 +309,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       templateKey: 'ACCOUNTANT_STAFF',
-      templateName: 'Accountant Staff',
+      templateName: 'Nhân viên kế toán',
+      templateNameEn: 'Accountant Staff',
       description:
         'Full access to invoices and payments, read access to orders, customers, and licenses for financial reconciliation',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
@@ -318,7 +332,8 @@ export const MKT_PERMISSION_TEMPLATE_DATA_SEEDS: MktPermissionTemplateDataSeed[]
     {
       id: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       templateKey: 'SUPPORT_STAFF',
-      templateName: 'Support Staff',
+      templateName: 'Nhân viên hỗ trợ',
+      templateNameEn: 'Support Staff',
       description:
         'Read access to customers, orders, licenses, payments; update order status for support cases',
       templateType: TEMPLATE_TYPE.DEPARTMENT_BASED,
