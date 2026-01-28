@@ -16,6 +16,8 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
 import { WorkspaceIndex } from 'src/engine/twenty-orm/decorators/workspace-index.decorator';
 
+import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
+
 import { MktPermissionTemplateWorkspaceEntity } from './mkt-permission-template.workspace-entity';
 
 @WorkspaceIndex(['workspaceMemberId'], {
@@ -132,4 +134,21 @@ export class MktUserPermissionTemplateWorkspaceEntity extends BaseWorkspaceEntit
   })
   @WorkspaceIsNullable()
   position?: number;
+
+  // Department relationship - defines which department this role assignment applies to
+  @WorkspaceRelation({
+    standardId: MKT_USER_PERMISSION_TEMPLATE_FIELD_IDS.department,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Department`,
+    description: msg`Department where this role/permission applies`,
+    icon: 'IconBuilding',
+    inverseSideTarget: () => MktDepartmentWorkspaceEntity,
+    inverseSideFieldKey: 'userPermissionTemplates',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  department?: Relation<MktDepartmentWorkspaceEntity>;
+
+  @WorkspaceJoinColumn('department')
+  departmentId?: string | null;
 }

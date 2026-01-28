@@ -24,6 +24,7 @@ import {
 import { MKT_DEPARTMENT_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import { MktUserPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities/template/mkt-user-permission-template.workspace-entity';
 import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
@@ -305,6 +306,17 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
     inverseSideFieldKey: 'department',
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_DEPARTMENT_FIELD_IDS.userPermissionTemplates,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`User Permission Templates`,
+    description: msg`Role assignments for users in this department`,
+    icon: 'IconUserShield',
+    inverseSideTarget: () => MktUserPermissionTemplateWorkspaceEntity,
+    inverseSideFieldKey: 'department',
+  })
+  userPermissionTemplates: Relation<MktUserPermissionTemplateWorkspaceEntity[]>;
 
   // Ancestry relations (for materialized ancestry table)
   @WorkspaceRelation({
