@@ -1,34 +1,45 @@
 /**
- * CustomerQueryResolver - GraphQL resolver for Customer queries
+ * MktCustomerResolver - GraphQL resolver for Customer CRUD operations
  *
  * Access Control:
  * - Authenticated users with workspace access
  *
- * Provides queries for:
- * - getCustomerById: Get customer by ID
- * - getCustomerByCode: Get customer by customer code
- * - getCustomerByEmail: Get customer by email
- * - getCustomers: Get all customers with pagination
- * - getCustomersByStatus: Get customers by status
- * - getCustomersByTier: Get customers by tier
+ * Provides:
+ * - Queries: getCustomerById, getCustomerByCode, getCustomerByEmail, getCustomers, getCustomersByStatus, getCustomersByTier
+ * - Mutations: createCustomer, updateCustomer, deleteCustomer, restoreCustomer
  */
 
 import { UseGuards } from '@nestjs/common';
-import { Args, Int, Query, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 import {
-  CustomerOutput,
+  CreateCustomerInput,
+  UpdateCustomerInput,
+} from 'src/mkt-core/customer/dto/customer-crud.input';
+import {
+  CreateCustomerResponseDto,
   CustomerListOutput,
+  CustomerOutput,
+  DeleteCustomerResponseDto,
+  RestoreCustomerResponseDto,
+  UpdateCustomerResponseDto,
 } from 'src/mkt-core/customer/dto/customer-crud.output';
 import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
-export class CustomerQueryResolver {
+export class MktCustomerResolver {
   constructor(private readonly customerService: MktCustomerService) {}
+
+  // ============================================
+  // QUERIES
+  // ============================================
 
   /**
    * Get customer by ID
@@ -141,6 +152,136 @@ export class CustomerQueryResolver {
       customers: customers.map((c) => this.mapToOutput(c)),
       totalCount: customers.length,
     };
+  }
+
+  // ============================================
+  // MUTATIONS
+  // ============================================
+
+  /**
+   * Create a new customer
+   */
+  @Mutation(() => CreateCustomerResponseDto, {
+    description: 'Create a new customer',
+  })
+  async createCustomer(
+    @Args('input') input: CreateCustomerInput,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<CreateCustomerResponseDto> {
+    const result = await this.customerService.createCustomer({
+      ...input,
+      workspaceMemberId,
+      workspaceId: workspace.id,
+    });
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+
+    return {
+      success: true,
+      customerId: result.data.customerId,
+      customerCode: result.data.customerCode,
+      status: result.data.status,
+    };
+  }
+
+  /**
+   * Update an existing customer
+   */
+  @Mutation(() => UpdateCustomerResponseDto, {
+    description: 'Update an existing customer',
+  })
+  async updateCustomer(
+    @Args('input') input: UpdateCustomerInput,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<UpdateCustomerResponseDto> {
+    const result = await this.customerService.updateCustomer({
+      customerId: input.id,
+      ...input,
+      workspaceId: workspace.id,
+    });
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+
+    return {
+      success: true,
+      customerId: result.data.customerId,
+      updatedFields: result.data.updatedFields,
+    };
+  }
+
+  /**
+   * Soft delete a customer
+   */
+  @Mutation(() => DeleteCustomerResponseDto, {
+    description: 'Soft delete a customer',
+  })
+  async deleteCustomer(
+    @Args('customerId', { type: () => String }) customerId: string,
+  ): Promise<DeleteCustomerResponseDto> {
+    try {
+      const result = await this.customerService.softDelete(customerId);
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error,
+        };
+      }
+
+      return {
+        success: true,
+        customerId: result.data.customerId,
+        message: 'Customer deleted successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Delete failed',
+      };
+    }
+  }
+
+  /**
+   * Restore a soft deleted customer
+   */
+  @Mutation(() => RestoreCustomerResponseDto, {
+    description: 'Restore a soft deleted customer',
+  })
+  async restoreCustomer(
+    @Args('customerId', { type: () => String }) customerId: string,
+  ): Promise<RestoreCustomerResponseDto> {
+    try {
+      const result = await this.customerService.restore(customerId);
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error,
+        };
+      }
+
+      return {
+        success: true,
+        customerId: result.data.customerId,
+        status: result.data.status,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Restore failed',
+      };
+    }
   }
 
   // ============================================
