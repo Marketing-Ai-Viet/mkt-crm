@@ -827,7 +827,6 @@ export const MKT_PERSON_FIELD_IDS = {
   newEmail: '3dd95a4c-9902-4dbe-bd34-ed1c14f3391a',
   // relations
   departmentId: '24674af6-c1c8-446e-92cb-8d9fd2bf3ed6',
-  teamId: '3579b8fd-1e5a-4ced-b248-0587fbd022d0',
   supportForMemberId: 'e7021859-8766-4f68-8730-d32da36774ef',
   startDate: '697bb3ff-fe25-4ffb-b6ad-28a5dab6254f',
   endDate: '8bc02b57-f02e-4853-91a3-ee6e38f989c6',
@@ -934,7 +933,6 @@ export const MKT_DEPARTMENT_FIELD_IDS = {
   dataAccessPolicies: '6742dde7-8567-4e8f-a30d-e6b6c70ede0a',
   departmentOwnerForMktLicenses: 'a5f91075-a4d8-4ff2-9b4a-ff646b39850c',
   teamOwnerForMktLicenses: 'a3510a9e-04c7-4a8d-874b-332f87911b37',
-  teamMembers: '9186741b-ad29-4acb-a955-48af8c1f7b1f',
   // ancestry relations (for materialized ancestry table)
   ancestryRecordsAsDescendant: 'd7e8f9a0-b1c2-3d4e-5f6a-7b8c9d0e1f2a',
   ancestryRecordsAsAncestor: 'e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b',

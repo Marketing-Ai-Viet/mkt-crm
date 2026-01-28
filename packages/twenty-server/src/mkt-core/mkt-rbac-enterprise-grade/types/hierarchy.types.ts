@@ -70,10 +70,9 @@ export type UserHierarchyPosition = {
   organizationLevelId: string;
   jobTitle?: string;
 
-  // Department and team
+  // Department
   departmentId: string;
   departmentType: DepartmentCode;
-  teamId?: string;
 
   // Reporting relationships
   managerId?: string;
@@ -164,7 +163,6 @@ export type HierarchyValidationContext = {
     userId?: string;
     hierarchyLevel?: HierarchyLevel;
     departmentId?: string;
-    teamId?: string;
   };
 
   // Access details

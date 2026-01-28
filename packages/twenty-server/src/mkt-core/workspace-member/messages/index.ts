@@ -17,12 +17,10 @@ export const MKT_WORKSPACE_MEMBER_MESSAGES = createModuleMessages({
     CODE_GENERATED: 'Member code generated successfully',
     STATUS_UPDATED: 'Member status updated successfully',
     DEPARTMENT_ASSIGNED: 'Member assigned to department successfully',
-    TEAM_ASSIGNED: 'Member assigned to team successfully',
   },
   customError: {
     CODE_EXISTS: 'Member code already exists',
     INVALID_DEPARTMENT: 'Invalid department specified',
-    INVALID_TEAM: 'Invalid team specified',
     EMAIL_EXISTS: 'User email already exists in workspace',
     INVALID_STATUS: 'Invalid member status',
   },
@@ -31,7 +29,6 @@ export const MKT_WORKSPACE_MEMBER_MESSAGES = createModuleMessages({
     FETCH_BY_CODE: 'Fetch member by code',
     FETCH_BY_USER_ID: 'Fetch member by user ID',
     FETCH_BY_DEPARTMENT: 'Fetch members by department',
-    FETCH_BY_TEAM: 'Fetch members by team',
     GENERATE_CODE: 'Generate member code',
   },
 });
@@ -70,10 +67,6 @@ export const MKT_WORKSPACE_MEMBER_LOG_MESSAGES = {
     `Finding workspace members by department: ${departmentId}`,
   FIND_BY_DEPARTMENT_SUCCESS: (departmentId: string, count: number) =>
     `Found ${count} workspace members in department: ${departmentId}`,
-  FIND_BY_TEAM_START: (teamId: string) =>
-    `Finding workspace members by team: ${teamId}`,
-  FIND_BY_TEAM_SUCCESS: (teamId: string, count: number) =>
-    `Found ${count} workspace members in team: ${teamId}`,
 
   // Create operations
   CREATE_START: () => `Creating new workspace member`,

@@ -223,35 +223,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
   }
 
   /**
-   * Find workspace members by team
-   */
-  async findByTeam(
-    teamId: string,
-    options?: FindWorkspaceMemberOptions,
-  ): Promise<WorkspaceMemberWorkspaceEntity[]> {
-    this.logger.debug(
-      MKT_WORKSPACE_MEMBER_LOG_MESSAGES.FIND_BY_TEAM_START(teamId),
-    );
-
-    const repository = await this.getRepository();
-
-    const members = await repository.find({
-      where: { teamId },
-      relations: options?.relations,
-      order: { position: 'ASC' },
-    });
-
-    this.logger.debug(
-      MKT_WORKSPACE_MEMBER_LOG_MESSAGES.FIND_BY_TEAM_SUCCESS(
-        teamId,
-        members.length,
-      ),
-    );
-
-    return members;
-  }
-
-  /**
    * Find workspace members by status
    */
   async findByStatus(
@@ -436,13 +407,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
     await this.updateMember(memberId, { departmentId });
   }
 
-  /**
-   * Assign member to team
-   */
-  async assignToTeam(memberId: string, teamId: string): Promise<void> {
-    await this.updateMember(memberId, { teamId });
-  }
-
   // ============================================
   // DELETE OPERATIONS
   // ============================================
@@ -476,17 +440,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     return repository.count({
       where: { departmentId },
-    });
-  }
-
-  /**
-   * Count workspace members by team
-   */
-  async countByTeam(teamId: string): Promise<number> {
-    const repository = await this.getRepository();
-
-    return repository.count({
-      where: { teamId },
     });
   }
 
@@ -525,7 +478,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
       status,
       memberType,
       departmentId,
-      teamId,
       organizationLevelId,
       employmentStatusId,
       page = 1,
@@ -557,10 +509,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     if (departmentId) {
       baseCondition.departmentId = departmentId;
-    }
-
-    if (teamId) {
-      baseCondition.teamId = teamId;
     }
 
     if (organizationLevelId) {
@@ -719,7 +667,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
       status,
       memberType,
       departmentId,
-      teamId,
       organizationLevelId,
       employmentStatusId,
       page = 1,
@@ -751,10 +698,6 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
 
     if (departmentId) {
       baseCondition.departmentId = departmentId;
-    }
-
-    if (teamId) {
-      baseCondition.teamId = teamId;
     }
 
     if (organizationLevelId) {

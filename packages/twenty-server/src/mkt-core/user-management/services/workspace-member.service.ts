@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { SearchUserInput } from 'src/mkt-core/user-management/dto';
-import { DepartmentLookupService } from 'src/mkt-core/user-management/services/department-lookup.service';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/services/mkt-member-code-generation.service';
 import {
@@ -22,7 +21,6 @@ export class WorkspaceMemberService {
 
   constructor(
     private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
-    private readonly departmentLookup: DepartmentLookupService,
     private readonly memberCodeService: MktMemberCodeGenerationService,
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
@@ -30,25 +28,13 @@ export class WorkspaceMemberService {
   async createWorkspaceMember(
     data: CreateWorkspaceMemberData,
   ): Promise<WorkspaceMemberWorkspaceEntity> {
-    let departmentId = data.departmentId;
-
-    if (data.teamId) {
-      const lookedUpDepartmentId =
-        await this.departmentLookup.getDepartmentIdFromTeamId(data.teamId);
-
-      if (lookedUpDepartmentId) {
-        departmentId = lookedUpDepartmentId;
-        this.logger.log(
-          `[CREATE WORKSPACE MEMBER] Looked up departmentId: ${departmentId} from teamId: ${data.teamId}`,
-        );
-      }
-    }
+    const departmentId = data.departmentId;
 
     this.logger.log(
       `[CREATE WORKSPACE MEMBER] Creating for user: ${data.userId}, email: ${data.userEmail}`,
     );
     this.logger.log(
-      `[CREATE WORKSPACE MEMBER] Fields: departmentId=${departmentId}, teamId=${data.teamId}, status=${data.status}, memberType=${data.memberType}`,
+      `[CREATE WORKSPACE MEMBER] Fields: departmentId=${departmentId}, status=${data.status}, memberType=${data.memberType}`,
     );
 
     let memberCode = data.memberCode;
@@ -144,7 +130,6 @@ export class WorkspaceMemberService {
           status: input.status,
           memberType: input.memberType,
           departmentId: input.departmentId,
-          teamId: input.teamId,
           organizationLevelId: input.organizationLevelId,
           employmentStatusId: input.employmentStatusId,
           page,

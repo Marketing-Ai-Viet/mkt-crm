@@ -115,7 +115,6 @@ export type ResourceContext = {
   createdBy?: string;
   departmentId?: string;
   organizationLevelId?: string;
-  teamId?: string;
 
   // Security classification
   isSystemResource?: boolean;
@@ -479,10 +478,9 @@ export type DepartmentTeamContext = {
   departmentRelationship?: 'PARENT' | 'CHILD' | 'SIBLING' | 'UNRELATED';
   sharedResources?: boolean;
 
-  // Team management and permissions
+  // Department management and permissions
   isTeamLead?: boolean;
   isDepartmentHead?: boolean;
-  teamMembers?: string[];
   canManageTeam?: boolean;
   canManageDepartment?: boolean;
 

@@ -476,7 +476,6 @@ export class UserService {
       timeFormat: 'SYSTEM',
       startDate: input.startDate,
       endDate: input.endDate ?? null,
-      teamId: input.teamId ?? null,
       status: input.status ?? '',
       memberType: input.memberType ?? '',
       employmentStatusId: input.employmentStatusId ?? null,
@@ -554,7 +553,6 @@ export class UserService {
       grade: savedWorkspaceMember.grade ?? '',
       address: savedWorkspaceMember.address ?? '',
       departmentId: savedWorkspaceMember.departmentId ?? undefined,
-      teamId: savedWorkspaceMember.teamId ?? undefined,
       organizationLevelId:
         savedWorkspaceMember.organizationLevelId ?? undefined,
       employmentStatusId: savedWorkspaceMember.employmentStatusId ?? undefined,
@@ -584,7 +582,6 @@ export class UserService {
       grade: member.grade ?? '',
       address: member.address ?? '',
       departmentId: member.departmentId ?? undefined,
-      teamId: member.teamId ?? undefined,
       organizationLevelId: member.organizationLevelId ?? undefined,
       employmentStatusId: member.employmentStatusId ?? undefined,
       createdAt: new Date(member.createdAt),

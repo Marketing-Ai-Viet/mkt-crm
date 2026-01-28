@@ -306,18 +306,6 @@ export class MktDepartmentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   dataAccessPolicies: Relation<MktDataAccessPolicyWorkspaceEntity[]>;
 
-  @WorkspaceRelation({
-    standardId: MKT_DEPARTMENT_FIELD_IDS.teamMembers,
-    type: RelationType.ONE_TO_MANY,
-    label: msg`Team Members`,
-    description: msg`Team members in this department`,
-    icon: 'IconUserCheck',
-    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
-    inverseSideFieldKey: 'team',
-  })
-  @WorkspaceIsNullable()
-  teamMembers: Relation<WorkspaceMemberWorkspaceEntity[]>;
-
   // Ancestry relations (for materialized ancestry table)
   @WorkspaceRelation({
     standardId: MKT_DEPARTMENT_FIELD_IDS.ancestryRecordsAsDescendant,

@@ -54,9 +54,6 @@ export class UserOutput {
   departmentId?: string;
 
   @Field(() => String, { nullable: true })
-  teamId?: string;
-
-  @Field(() => String, { nullable: true })
   organizationLevelId?: string;
 
   @Field(() => String, { nullable: true })

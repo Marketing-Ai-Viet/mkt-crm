@@ -17,7 +17,6 @@ export type WorkspaceMemberLocale = keyof typeof APP_LOCALES;
  */
 export const DEFAULT_WORKSPACE_MEMBER_RELATIONS = [
   'department',
-  'team',
   'organizationLevel',
   'employmentStatus',
 ] as const;
@@ -44,7 +43,6 @@ export type CreateWorkspaceMemberData = Partial<
     | 'grade'
     | 'address'
     | 'departmentId'
-    | 'teamId'
     | 'organizationLevelId'
     | 'employmentStatusId'
     | 'avatarUrl'
@@ -79,7 +77,6 @@ export type UpdateWorkspaceMemberData = Partial<
     | 'address'
     | 'supportForMemberId'
     | 'departmentId'
-    | 'teamId'
     | 'organizationLevelId'
     | 'employmentStatusId'
     | 'avatarUrl'
@@ -103,7 +100,6 @@ export type SearchMemberParams = {
   status?: string;
   memberType?: string;
   departmentId?: string;
-  teamId?: string;
   organizationLevelId?: string;
   employmentStatusId?: string;
   page?: number;

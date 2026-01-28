@@ -61,11 +61,6 @@ export class UpdateUserInput {
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  teamId?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
   organizationLevelId?: string;
 
   @Field(() => String, { nullable: true })

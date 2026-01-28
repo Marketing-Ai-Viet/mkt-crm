@@ -257,7 +257,6 @@ export type ResourceOwnership = {
   ownerId?: string;
   ownerType: 'USER' | 'DEPARTMENT' | 'SYSTEM';
   departmentId?: string;
-  teamId?: string;
   createdBy?: string;
   lastModifiedBy?: string;
   inheritanceRules: OwnershipInheritance[];

@@ -14,7 +14,6 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
 import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import { UserManagementResolver } from 'src/mkt-core/user-management/resolver/user-management.resolver';
-import { DepartmentLookupService } from 'src/mkt-core/user-management/services/department-lookup.service';
 import { EmailNotificationService } from 'src/mkt-core/user-management/services/email-notification.service';
 import { RoleService } from 'src/mkt-core/user-management/services/role.service';
 import { UserService } from 'src/mkt-core/user-management/services/user.service';
@@ -46,7 +45,6 @@ import { MktMemberCodeGenerationService } from 'src/mkt-core/workspace-member/se
     WorkspaceMemberService,
     RoleService,
     EmailNotificationService,
-    DepartmentLookupService,
     MktMemberCodeGenerationService,
   ],
   exports: [
