@@ -1,3 +1,4 @@
+import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import {
   ACCOUNT_PROVIDER,
   LINKED_ACCOUNT_STATUS,
@@ -46,6 +47,9 @@ type MktCustomerDataSeed = {
   industry: string | null;
   contactPosition: string | null;
   contactDepartment: string | null;
+  // Relations: Owner assignments
+  accountOwnerId: string | null; // Sales phụ trách
+  supportOwnerId: string | null; // Support phụ trách
 };
 
 /**
@@ -93,6 +97,8 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'industry',
   'contactPosition',
   'contactDepartment',
+  'accountOwnerId',
+  'supportOwnerId',
 ];
 
 export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
@@ -168,6 +174,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.IT,
     contactPosition: 'Giám đốc Công nghệ',
     contactDepartment: 'Phòng Công nghệ thông tin',
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Admin
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, // Tech Backend Manager - VIP support
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
@@ -229,6 +237,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.IT,
     contactPosition: 'Trưởng phòng Kinh doanh',
     contactDepartment: 'Phòng Kinh doanh',
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Admin
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Tech Frontend Team Lead
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
@@ -287,6 +297,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: null,
     contactPosition: 'Freelancer',
     contactDepartment: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Tech Frontend Team Lead
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Tech DevOps Staff
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.BRONZE_CUSTOMER,
@@ -332,6 +344,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.IT,
     contactPosition: 'Founder & CEO',
     contactDepartment: 'Ban Giám đốc',
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Tech DevOps Staff - trial support
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Same person for small account
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.CHURNED_CUSTOMER,
@@ -380,5 +394,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.MANUFACTURING,
     contactPosition: 'Giám đốc điều hành',
     contactDepartment: 'Ban Giám đốc',
+    accountOwnerId: null, // Đã churned - không còn owner
+    supportOwnerId: null, // Đã churned - không còn support
   },
 ];
