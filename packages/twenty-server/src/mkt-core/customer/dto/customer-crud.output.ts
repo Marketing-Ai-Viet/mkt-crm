@@ -1,5 +1,10 @@
 import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 
+import GraphQLJSON from 'graphql-type-json';
+
+import { CustomerNoteOutput } from 'src/mkt-core/customer/dto/customer-note.dto';
+import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
+
 /**
  * Customer output for GraphQL queries
  *
@@ -7,9 +12,11 @@ import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
  * - Date fields (Entity: Date) → Output: String (ISO 8601)
  * - Currency fields (VND) → Float
  * - Count/Score fields → Int
+ * - JSONB → GraphQLJSON
  */
 @ObjectType()
 export class CustomerOutput {
+  // ============ BASIC INFO ============
   @Field(() => String)
   id: string;
 
@@ -25,6 +32,16 @@ export class CustomerOutput {
   @Field(() => String, { nullable: true })
   phone?: string;
 
+  @Field(() => String, { nullable: true, description: 'Căn cước công dân' })
+  citizenId?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Customer type: INDIVIDUAL, BUSINESS, ORGANIZATION',
+  })
+  type?: string;
+
+  // ============ BUSINESS INFO ============
   @Field(() => String, { nullable: true })
   companyName?: string;
 
@@ -34,13 +51,43 @@ export class CustomerOutput {
   @Field(() => String, { nullable: true })
   address?: string;
 
-  @Field(() => String)
+  @Field(() => String, {
+    nullable: true,
+    description: 'Company size: MICRO, SMALL, MEDIUM, LARGE, ENTERPRISE',
+  })
+  companySize?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Industry: IT, FINANCE, RETAIL, MANUFACTURING, etc.',
+  })
+  industry?: string;
+
+  @Field(() => String, { nullable: true, description: 'Contact position' })
+  contactPosition?: string;
+
+  @Field(() => String, { nullable: true, description: 'Contact department' })
+  contactDepartment?: string;
+
+  // ============ STATUS & TIER ============
+  @Field(() => String, { description: 'Status: ACTIVE, INACTIVE, PROSPECTIVE' })
   status: string;
 
-  @Field(() => String)
+  @Field(() => String, {
+    description: 'Tier: BRONZE, SILVER, GOLD, DIAMOND, CHURNED',
+  })
   tier: string;
 
-  @Field(() => String)
+  @Field(() => String, {
+    nullable: true,
+    description: 'Last tier upgrade date (ISO 8601)',
+  })
+  lastTierUpgradeAt?: string;
+
+  @Field(() => String, {
+    description:
+      'Lifecycle stage: PROSPECTIVE, TRIAL, CUSTOMER, LOYAL, CHURNED',
+  })
   lifecycleStage: string;
 
   // ============ ANALYTICS - Currency (Float) ============
@@ -57,10 +104,10 @@ export class CustomerOutput {
   customerLtv?: number;
 
   // ============ ANALYTICS - Integers ============
-  @Field(() => Int, { nullable: true })
+  @Field(() => Int, { nullable: true, description: 'Number of licenses' })
   licensesCount?: number;
 
-  @Field(() => Int, { nullable: true })
+  @Field(() => Int, { nullable: true, description: 'Total completed orders' })
   totalOrderCount?: number;
 
   @Field(() => Int, { nullable: true, description: 'Churn risk score (0-100)' })
@@ -72,34 +119,79 @@ export class CustomerOutput {
   // ============ DATES - ISO 8601 String ============
   @Field(() => String, {
     nullable: true,
-    description: 'ISO 8601 date string',
+    description: 'Registration date (ISO 8601)',
   })
   registrationDate?: string;
 
   @Field(() => String, {
     nullable: true,
-    description: 'ISO 8601 date string',
+    description: 'First purchase date (ISO 8601)',
+  })
+  firstPurchase?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Last purchase date (ISO 8601)',
   })
   lastPurchase?: string;
 
   @Field(() => String, {
     nullable: true,
-    description: 'ISO 8601 date string',
+    description: 'Assigned date (ISO 8601)',
+  })
+  assignedDate?: string;
+
+  @Field(() => String, { nullable: true, description: 'Assignment reason' })
+  assignedReason?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Created at (ISO 8601)',
   })
   createdAt?: string;
 
   @Field(() => String, {
     nullable: true,
-    description: 'ISO 8601 date string',
+    description: 'Updated at (ISO 8601)',
   })
   updatedAt?: string;
 
   // ============ RELATIONS ============
-  @Field(() => String, { nullable: true })
+  @Field(() => String, { nullable: true, description: 'Account owner ID' })
   accountOwnerId?: string;
 
-  @Field(() => String, { nullable: true })
-  createdById?: string;
+  @Field(() => String, { nullable: true, description: 'Support owner ID' })
+  supportOwnerId?: string;
+
+  // ============ CREATED BY ============
+  @Field(() => String, {
+    nullable: true,
+    description: 'Created by source: MANUAL, SYSTEM, IMPORT, API',
+  })
+  createdBySource?: string;
+
+  @Field(() => String, { nullable: true, description: 'Created by name' })
+  createdByName?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Created by workspace member ID',
+  })
+  createdByWorkspaceMemberId?: string;
+
+  // ============ LINKED ACCOUNTS ============
+  @Field(() => GraphQLJSON, {
+    nullable: true,
+    description: 'Linked accounts (MKT, Google, Zalo, etc.)',
+  })
+  linkedAccounts?: LinkedAccount[];
+
+  // ============ CUSTOMER NOTES ============
+  @Field(() => [CustomerNoteOutput], {
+    nullable: true,
+    description: 'Customer notes and interaction records',
+  })
+  customerNotes?: CustomerNoteOutput[];
 }
 
 /**

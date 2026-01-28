@@ -14,6 +14,7 @@ import { LinkedAccountValidationUtil } from 'src/mkt-core/customer/utils';
 
 type CreateValidationInput = {
   email?: string;
+  citizenId?: string;
   taxCode?: string;
   workspaceId?: string;
 };
@@ -21,6 +22,7 @@ type CreateValidationInput = {
 type UpdateValidationInput = {
   customerId: string;
   email?: string;
+  citizenId?: string;
   taxCode?: string;
   mktCustomerCode?: string;
   linkedAccounts?: LinkedAccount[];
@@ -87,7 +89,20 @@ export class MktCustomerValidationService {
       }
     }
 
-    // 3. Validate tax code format
+    // 3. Validate citizenId uniqueness
+    if (input.citizenId) {
+      const citizenIdResult = await this.validateCitizenIdUniqueness(
+        input.citizenId,
+        undefined,
+        input.workspaceId,
+      );
+
+      if (!citizenIdResult.success) {
+        return citizenIdResult;
+      }
+    }
+
+    // 4. Validate tax code format
     if (input.taxCode) {
       const taxResult = this.validateTaxCode(input.taxCode);
 
@@ -150,7 +165,23 @@ export class MktCustomerValidationService {
       }
     }
 
-    // 4. Validate tax code format
+    // 4. Validate citizenId uniqueness
+    if (input.citizenId !== undefined && input.citizenId !== null) {
+      const citizenIdResult = await this.validateCitizenIdUniqueness(
+        input.citizenId,
+        input.customerId,
+        input.workspaceId,
+      );
+
+      if (!citizenIdResult.success) {
+        return {
+          success: false,
+          error: citizenIdResult.error,
+        } as UpdateValidationResult;
+      }
+    }
+
+    // 5. Validate tax code format
     if (input.taxCode !== undefined && input.taxCode !== null) {
       const taxResult = this.validateTaxCode(input.taxCode);
 
@@ -162,7 +193,7 @@ export class MktCustomerValidationService {
       }
     }
 
-    // 5. Validate and auto-fix linkedAccounts
+    // 6. Validate and auto-fix linkedAccounts
     let fixedLinkedAccounts: LinkedAccount[] | undefined;
 
     if (input.linkedAccounts !== undefined && input.linkedAccounts !== null) {
@@ -218,6 +249,31 @@ export class MktCustomerValidationService {
       return {
         success: false,
         error: CUSTOMER_MESSAGES.ERROR.EMAIL_ALREADY_EXISTS(email),
+      };
+    }
+
+    return { success: true };
+  }
+
+  private async validateCitizenIdUniqueness(
+    citizenId: string,
+    currentCustomerId?: string,
+    workspaceId?: string,
+  ): Promise<ValidationResult> {
+    const existingCustomer = await this.customerRepository.findByCitizenId(
+      citizenId,
+      workspaceId,
+    );
+
+    if (existingCustomer) {
+      // For update: allow if same customer
+      if (currentCustomerId && existingCustomer.id === currentCustomerId) {
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: CUSTOMER_MESSAGES.ERROR.CITIZEN_ID_ALREADY_EXISTS(citizenId),
       };
     }
 

@@ -84,7 +84,7 @@ export const MKT_CUSTOMER_ENTITY_NAME = 'mktCustomer';
 })
 @WorkspaceIsSearchable()
 export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
-  // ============ BASIC INFO (5 fields) ============
+  // ============ BASIC INFO (6 fields) ============
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.mktCustomerCode,
@@ -126,6 +126,17 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   phone: string;
+
+  @WorkspaceField({
+    standardId: MKT_CUSTOMER_FIELD_IDS.personalIdNumber,
+    type: FieldMetadataType.TEXT,
+    label: msg`Citizen ID`,
+    description: msg`Căn cước công dân (CCCD) hoặc CMND - 9 hoặc 12 số`,
+    icon: 'IconId',
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceIsUnique()
+  citizenId: string | null;
 
   @WorkspaceField({
     standardId: MKT_CUSTOMER_FIELD_IDS.type,
@@ -382,18 +393,6 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   assignedReason: string;
-
-  // ============ NOTES (1 field) ============
-
-  @WorkspaceField({
-    standardId: MKT_CUSTOMER_FIELD_IDS.notes,
-    type: FieldMetadataType.RICH_TEXT,
-    label: msg`Notes`,
-    description: msg`Ghi chú về khách hàng`,
-    icon: 'IconNote',
-  })
-  @WorkspaceIsNullable()
-  notes: string;
 
   // ============ COMMON FIELDS (2 fields) ============
 

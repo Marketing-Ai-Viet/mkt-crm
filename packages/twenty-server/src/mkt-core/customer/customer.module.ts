@@ -17,8 +17,7 @@ import { MktCustomerEventListener } from 'src/mkt-core/customer/listeners/mkt-cu
 import { MktCustomerRepository } from 'src/mkt-core/customer/repositories/mkt-customer.repository';
 import { MktCustomerTierHistoryRepository } from 'src/mkt-core/customer/repositories/mkt-customer-tier-history.repository';
 import { MktCustomerNoteRepository } from 'src/mkt-core/customer/repositories/mkt-customer-note.repository';
-import { CustomerMutationResolver } from 'src/mkt-core/customer/resolvers/customer-mutation.resolver';
-import { CustomerQueryResolver } from 'src/mkt-core/customer/resolvers/customer-query.resolver';
+import { MktCustomerResolver } from 'src/mkt-core/customer/resolvers/mkt-customer.resolver';
 import { MktCustomerExportResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-export.resolver';
 import { MktCustomerLicenseResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-license.resolver';
 import { MktCustomerLinkedAccountResolver } from 'src/mkt-core/customer/resolvers/mkt-customer-linked-account.resolver';
@@ -40,6 +39,7 @@ import {
   MktCustomerTierHistoryService,
   MktCustomerTierService,
 } from 'src/mkt-core/customer/services';
+import { MktCustomerPurchaseHistoryService } from 'src/mkt-core/customer/services/core/mkt-customer-purchase-history.service';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 import { MktCustomerValidationService } from 'src/mkt-core/customer/services/validation/mkt-customer-validation.service';
 import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
@@ -92,9 +92,11 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     // Services - Note
     MktCustomerNoteService,
 
+    // Services - Purchase History
+    MktCustomerPurchaseHistoryService,
+
     // Resolvers - CRUD
-    CustomerQueryResolver,
-    CustomerMutationResolver,
+    MktCustomerResolver,
 
     // Resolvers - Domain-specific
     MktCustomerLicenseResolver,
@@ -144,6 +146,9 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
 
     // Services - Note
     MktCustomerNoteService,
+
+    // Services - Purchase History
+    MktCustomerPurchaseHistoryService,
   ],
 })
 export class CustomerModule {}

@@ -24,3 +24,6 @@ export * from './export';
 
 // Note service
 export * from './note';
+
+// Purchase History service
+export * from './core/mkt-customer-purchase-history.service';

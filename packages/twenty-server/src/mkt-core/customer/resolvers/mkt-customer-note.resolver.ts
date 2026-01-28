@@ -59,8 +59,8 @@ export class MktCustomerNoteResolver {
       content: entity.content,
       noteType: entity.noteType ?? 'GENERAL',
       customerId: entity.customerId,
-      createdAt: DateTimeUtils.toDateRequired(createdAtDateTime),
-      updatedAt: DateTimeUtils.toDateRequired(updatedAtDateTime),
+      createdAt: DateTimeUtils.toISO(createdAtDateTime),
+      updatedAt: DateTimeUtils.toISO(updatedAtDateTime),
     };
   }
 

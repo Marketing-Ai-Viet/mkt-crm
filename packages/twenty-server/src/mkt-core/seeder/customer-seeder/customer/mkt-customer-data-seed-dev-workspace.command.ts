@@ -15,10 +15,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-all.view';
 import { mktCustomerTierHistoriesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-all.view';
 import { prefillMktCustomerTierHistories } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/prefill-mkt-customer-tier-histories';
-import {
-  prefillMktCustomers,
-  updateCustomerSupportOwners,
-} from 'src/mkt-core/seeder/customer-seeder/customer/prefill-mkt-customers';
+import { prefillMktCustomers } from 'src/mkt-core/seeder/customer-seeder/customer/prefill-mkt-customers';
 
 interface SeedModuleOptions {
   workspaceId?: string;
@@ -422,13 +419,6 @@ export class SeedCustomerModuleCommand extends CommandRunner {
             `✅ Tier History view created for workspace ${workspaceId}`,
           );
         }
-
-        // Update supportOwnerId cho customers sau khi tất cả data đã được seed
-        // Chạy cuối để tránh circular dependency với workspace members
-        await updateCustomerSupportOwners(entityManager, schemaName);
-        this.logger.log(
-          `✅ Support owners updated for customers in workspace ${workspaceId}`,
-        );
       },
     );
   }

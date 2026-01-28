@@ -1,3 +1,4 @@
+import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev-seeder/data/constants/workspace-member-data-seeds.constant';
 import {
   ACCOUNT_PROVIDER,
   LINKED_ACCOUNT_STATUS,
@@ -19,6 +20,7 @@ type MktCustomerDataSeed = {
   name: string;
   email: string | null;
   phone: string | null;
+  citizenId: string | null; // CCCD/CMND - chỉ áp dụng cho INDIVIDUAL
   type: string;
   companyName: string | null;
   taxCode: string | null;
@@ -34,7 +36,6 @@ type MktCustomerDataSeed = {
   churnRiskScore: number;
   engagementScore: number;
   registrationDate: string;
-  notes: string | null;
   position: number;
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
@@ -45,6 +46,9 @@ type MktCustomerDataSeed = {
   industry: string | null;
   contactPosition: string | null;
   contactDepartment: string | null;
+  // Relations: Owner assignments
+  accountOwnerId: string | null; // Sales phụ trách
+  supportOwnerId: string | null; // Support phụ trách
 };
 
 /**
@@ -66,6 +70,7 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'name',
   'email',
   'phone',
+  'citizenId',
   'type',
   'companyName',
   'taxCode',
@@ -81,7 +86,6 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'churnRiskScore',
   'engagementScore',
   'registrationDate',
-  'notes',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -91,6 +95,8 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'industry',
   'contactPosition',
   'contactDepartment',
+  'accountOwnerId',
+  'supportOwnerId',
 ];
 
 export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
@@ -100,6 +106,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Nguyễn Văn An',
     email: 'nguyen.van.an@techcorp.vn',
     phone: '0901234567',
+    citizenId: null, // BUSINESS không cần CCCD
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     companyName: 'Công ty TNHH TechCorp Việt Nam',
     taxCode: '0123456789',
@@ -115,7 +122,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 5,
     engagementScore: 95,
     registrationDate: '2023-01-15T08:00:00.000Z',
-    notes: 'Khách hàng VIP, ưu tiên hỗ trợ 24/7',
     position: 1,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -165,6 +171,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.IT,
     contactPosition: 'Giám đốc Công nghệ',
     contactDepartment: 'Phòng Công nghệ thông tin',
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Admin
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, // Tech Backend Manager - VIP support
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.GOLD_CUSTOMER,
@@ -172,6 +180,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Trần Thị Bình',
     email: 'tran.thi.binh@innovate.io',
     phone: '0912345678',
+    citizenId: null, // BUSINESS không cần CCCD
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     companyName: 'Innovate Solutions JSC',
     taxCode: '0234567890',
@@ -187,7 +196,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 15,
     engagementScore: 80,
     registrationDate: '2023-06-10T09:30:00.000Z',
-    notes: 'Khách hàng doanh nghiệp vừa, tiềm năng mở rộng',
     position: 2,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -225,6 +233,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.IT,
     contactPosition: 'Trưởng phòng Kinh doanh',
     contactDepartment: 'Phòng Kinh doanh',
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, // Sales Admin
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Tech Frontend Team Lead
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.SILVER_CUSTOMER,
@@ -232,6 +242,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Lê Minh Cường',
     email: 'le.minh.cuong@gmail.com',
     phone: '0923456789',
+    citizenId: '079090012345', // CCCD 12 số cho khách hàng cá nhân
     type: MKT_CUSTOMER_TYPE.INDIVIDUAL,
     companyName: null,
     taxCode: null,
@@ -247,7 +258,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 25,
     engagementScore: 65,
     registrationDate: '2024-01-20T11:00:00.000Z',
-    notes: 'Khách hàng cá nhân, sử dụng cho freelance',
     position: 3,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -282,6 +292,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: null,
     contactPosition: 'Freelancer',
     contactDepartment: null,
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, // Tech Frontend Team Lead
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Tech DevOps Staff
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.BRONZE_CUSTOMER,
@@ -289,6 +301,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Phạm Hoàng Dung',
     email: 'pham.hoang.dung@startup.vn',
     phone: '0934567890',
+    citizenId: null, // ORGANIZATION không cần CCCD
     type: MKT_CUSTOMER_TYPE.ORGANIZATION,
     companyName: 'Startup ABC',
     taxCode: '0345678901',
@@ -304,7 +317,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 40,
     engagementScore: 50,
     registrationDate: '2024-10-01T14:30:00.000Z',
-    notes: 'Startup mới, đang dùng thử',
     position: 4,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -326,6 +338,8 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.IT,
     contactPosition: 'Founder & CEO',
     contactDepartment: 'Ban Giám đốc',
+    accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Tech DevOps Staff - trial support
+    supportOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, // Same person for small account
   },
   {
     id: MKT_CUSTOMER_DATA_SEEDS_IDS.CHURNED_CUSTOMER,
@@ -333,6 +347,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     name: 'Võ Thị Em',
     email: 'vo.thi.em@oldcompany.vn',
     phone: '0945678901',
+    citizenId: null, // BUSINESS không cần CCCD
     type: MKT_CUSTOMER_TYPE.BUSINESS,
     companyName: 'Old Company Ltd',
     taxCode: '0456789012',
@@ -348,7 +363,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 95,
     engagementScore: 10,
     registrationDate: '2022-05-20T10:00:00.000Z',
-    notes: 'Khách hàng đã ngưng sử dụng dịch vụ',
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -373,5 +387,7 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     industry: MKT_CUSTOMER_INDUSTRY.MANUFACTURING,
     contactPosition: 'Giám đốc điều hành',
     contactDepartment: 'Ban Giám đốc',
+    accountOwnerId: null, // Đã churned - không còn owner
+    supportOwnerId: null, // Đã churned - không còn support
   },
 ];
