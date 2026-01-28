@@ -29,20 +29,25 @@ import {
   RestoreCustomerResponseDto,
   UpdateCustomerResponseDto,
 } from 'src/mkt-core/customer/dto/customer-crud.output';
-import { MktCustomerWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer.workspace-entity';
+import { GetPurchaseHistoryArgs } from 'src/mkt-core/customer/dto/purchase-history.args';
+import { PurchaseHistoryOutput } from 'src/mkt-core/customer/dto/purchase-history.dto';
+import { MktCustomerPurchaseHistoryService } from 'src/mkt-core/customer/services/core/mkt-customer-purchase-history.service';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
 export class MktCustomerResolver {
-  constructor(private readonly customerService: MktCustomerService) {}
+  constructor(
+    private readonly customerService: MktCustomerService,
+    private readonly purchaseHistoryService: MktCustomerPurchaseHistoryService,
+  ) {}
 
   // ============================================
   // QUERIES
   // ============================================
 
   /**
-   * Get customer by ID
+   * Get customer by ID with customerNotes
    */
   @Query(() => CustomerOutput, {
     description: 'Get customer by ID',
@@ -50,14 +55,22 @@ export class MktCustomerResolver {
   })
   async getCustomerById(
     @Args('customerId', { type: () => String }) customerId: string,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerOutput | null> {
-    const customer = await this.customerService.findById(customerId);
+    const customer = await this.customerService.findById(
+      customerId,
+      workspace.id,
+    );
 
-    return customer ? this.mapToOutput(customer) : null;
+    if (!customer) {
+      return null;
+    }
+
+    return this.customerService.mapCustomerToOutput(customer);
   }
 
   /**
-   * Get customer by customer code
+   * Get customer by customer code with customerNotes
    */
   @Query(() => CustomerOutput, {
     description: 'Get customer by customer code',
@@ -65,14 +78,22 @@ export class MktCustomerResolver {
   })
   async getCustomerByCode(
     @Args('customerCode', { type: () => String }) customerCode: string,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerOutput | null> {
-    const customer = await this.customerService.findByCode(customerCode);
+    const customer = await this.customerService.findByCode(
+      customerCode,
+      workspace.id,
+    );
 
-    return customer ? this.mapToOutput(customer) : null;
+    if (!customer) {
+      return null;
+    }
+
+    return this.customerService.mapCustomerToOutput(customer);
   }
 
   /**
-   * Get customer by email
+   * Get customer by email with customerNotes
    */
   @Query(() => CustomerOutput, {
     description: 'Get customer by email',
@@ -80,14 +101,22 @@ export class MktCustomerResolver {
   })
   async getCustomerByEmail(
     @Args('email', { type: () => String }) email: string,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerOutput | null> {
-    const customer = await this.customerService.findByEmail(email);
+    const customer = await this.customerService.findByEmail(
+      email,
+      workspace.id,
+    );
 
-    return customer ? this.mapToOutput(customer) : null;
+    if (!customer) {
+      return null;
+    }
+
+    return this.customerService.mapCustomerToOutput(customer);
   }
 
   /**
-   * Get all customers with pagination
+   * Get all customers with pagination and customerNotes
    */
   @Query(() => CustomerListOutput, {
     description: 'Get all customers with pagination',
@@ -97,17 +126,23 @@ export class MktCustomerResolver {
     take: number,
     @Args('skip', { type: () => Int, nullable: true, defaultValue: 0 })
     skip: number,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerListOutput> {
-    const customers = await this.customerService.findAll({ take, skip });
+    const [customers, totalCount] = await Promise.all([
+      this.customerService.findAll({ take, skip }, workspace.id),
+      this.customerService.countAll(workspace.id),
+    ]);
 
     return {
-      customers: customers.map((c) => this.mapToOutput(c)),
-      totalCount: customers.length,
+      customers: customers.map((c) =>
+        this.customerService.mapCustomerToOutput(c),
+      ),
+      totalCount,
     };
   }
 
   /**
-   * Get customers by status
+   * Get customers by status with customerNotes
    */
   @Query(() => CustomerListOutput, {
     description: 'Get customers by status',
@@ -118,20 +153,23 @@ export class MktCustomerResolver {
     take: number,
     @Args('skip', { type: () => Int, nullable: true, defaultValue: 0 })
     skip: number,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerListOutput> {
-    const customers = await this.customerService.findByStatus(status, {
-      take,
-      skip,
-    });
+    const [customers, totalCount] = await Promise.all([
+      this.customerService.findByStatus(status, { take, skip }, workspace.id),
+      this.customerService.countByStatus(status, workspace.id),
+    ]);
 
     return {
-      customers: customers.map((c) => this.mapToOutput(c)),
-      totalCount: customers.length,
+      customers: customers.map((c) =>
+        this.customerService.mapCustomerToOutput(c),
+      ),
+      totalCount,
     };
   }
 
   /**
-   * Get customers by tier
+   * Get customers by tier with customerNotes
    */
   @Query(() => CustomerListOutput, {
     description: 'Get customers by tier',
@@ -142,16 +180,32 @@ export class MktCustomerResolver {
     take: number,
     @Args('skip', { type: () => Int, nullable: true, defaultValue: 0 })
     skip: number,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerListOutput> {
-    const customers = await this.customerService.findByTier(tier, {
-      take,
-      skip,
-    });
+    const [customers, totalCount] = await Promise.all([
+      this.customerService.findByTier(tier, { take, skip }, workspace.id),
+      this.customerService.countByTier(tier, workspace.id),
+    ]);
 
     return {
-      customers: customers.map((c) => this.mapToOutput(c)),
-      totalCount: customers.length,
+      customers: customers.map((c) =>
+        this.customerService.mapCustomerToOutput(c),
+      ),
+      totalCount,
     };
+  }
+
+  /**
+   * Get customer purchase history with pagination and filters
+   */
+  @Query(() => PurchaseHistoryOutput, {
+    description: 'Get customer purchase history with pagination and filters',
+  })
+  async getCustomerPurchaseHistory(
+    @Args() args: GetPurchaseHistoryArgs,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<PurchaseHistoryOutput> {
+    return this.purchaseHistoryService.getPurchaseHistory(args, workspace.id);
   }
 
   // ============================================
@@ -282,72 +336,5 @@ export class MktCustomerResolver {
         error: error instanceof Error ? error.message : 'Restore failed',
       };
     }
-  }
-
-  // ============================================
-  // PRIVATE HELPER METHODS
-  // ============================================
-
-  /**
-   * Map entity to output DTO
-   *
-   * Note: Date fields are converted to ISO 8601 strings
-   * - Entity stores Date objects
-   * - Output returns ISO strings for GraphQL compatibility
-   */
-  private mapToOutput(customer: MktCustomerWorkspaceEntity): CustomerOutput {
-    return {
-      id: customer.id,
-      mktCustomerCode: customer.mktCustomerCode,
-      name: customer.name,
-      email: customer.email ?? undefined,
-      phone: customer.phone ?? undefined,
-      companyName: customer.companyName ?? undefined,
-      taxCode: customer.taxCode ?? undefined,
-      address: customer.address ?? undefined,
-      status: customer.status,
-      tier: customer.tier,
-      lifecycleStage: customer.lifecycleStage,
-      // Currency fields (Float)
-      totalOrderValue: customer.totalOrderValue ?? undefined,
-      customerLtv: customer.customerLtv ?? undefined,
-      // Integer fields
-      licensesCount: customer.licensesCount ?? undefined,
-      totalOrderCount: customer.totalOrderCount ?? undefined,
-      churnRiskScore: customer.churnRiskScore ?? undefined,
-      engagementScore: customer.engagementScore ?? undefined,
-      // Date fields - convert Date to ISO string
-      registrationDate: this.dateToISOString(customer.registrationDate),
-      lastPurchase: this.dateToISOString(customer.lastPurchase),
-      createdAt: this.dateToISOString(customer.createdAt),
-      updatedAt: this.dateToISOString(customer.updatedAt),
-      // Relations
-      accountOwnerId: customer.accountOwnerId ?? undefined,
-      createdById: customer.createdBy?.workspaceMemberId ?? undefined,
-    };
-  }
-
-  /**
-   * Safely convert Date to ISO string
-   * Handles both Date objects and existing ISO strings
-   */
-  private dateToISOString(
-    date: Date | string | null | undefined,
-  ): string | undefined {
-    if (!date) {
-      return undefined;
-    }
-
-    // If already a string (ISO format), return as-is
-    if (typeof date === 'string') {
-      return date;
-    }
-
-    // If Date object, convert to ISO string
-    if (date instanceof Date) {
-      return date.toISOString();
-    }
-
-    return undefined;
   }
 }

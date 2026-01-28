@@ -73,6 +73,21 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   }
 
   /**
+   * Find customer by ID with customerNotes relation
+   */
+  async findByIdWithNotes(
+    id: string,
+    workspaceId?: string,
+  ): Promise<MktCustomerWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { id, deletedAt: IsNull() } as never,
+      relations: ['customerNotes'],
+    });
+  }
+
+  /**
    * Find customer by email
    */
   async findByEmail(
@@ -82,7 +97,21 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
     const repository = await this.getRepository(workspaceId);
 
     return repository.findOne({
-      where: { email } as never,
+      where: { email, deletedAt: IsNull() } as never,
+    });
+  }
+
+  /**
+   * Find customer by citizenId
+   */
+  async findByCitizenId(
+    citizenId: string,
+    workspaceId?: string,
+  ): Promise<MktCustomerWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { citizenId, deletedAt: IsNull() } as never,
     });
   }
 
@@ -214,8 +243,8 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   /**
    * Count all customers
    */
-  async countCustomers(): Promise<number> {
-    const repository = await this.getRepository();
+  async countCustomers(workspaceId?: string): Promise<number> {
+    const repository = await this.getRepository(workspaceId);
 
     return repository.count({ where: { deletedAt: IsNull() } });
   }

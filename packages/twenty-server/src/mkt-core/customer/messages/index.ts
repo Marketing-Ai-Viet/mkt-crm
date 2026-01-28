@@ -137,6 +137,10 @@ export const CUSTOMER_MESSAGES = {
       `Email already exists in workspace: ${email}`,
     INVALID_TAX_CODE: (taxCode: string) =>
       `Tax code must be 10 or 13 digits: ${taxCode}`,
+    CITIZEN_ID_ALREADY_EXISTS: (citizenId: string) =>
+      `CitizenId already exists in workspace: ${citizenId}`,
+    CUSTOMER_NOT_DELETED: (customerId: string) =>
+      `Customer is not deleted: ${customerId}`,
     CATEGORIZATION_FAILED: (customerId: string) =>
       `Failed to categorize customer: ${customerId}`,
 

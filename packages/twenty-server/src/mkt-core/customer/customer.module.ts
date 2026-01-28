@@ -39,6 +39,7 @@ import {
   MktCustomerTierHistoryService,
   MktCustomerTierService,
 } from 'src/mkt-core/customer/services';
+import { MktCustomerPurchaseHistoryService } from 'src/mkt-core/customer/services/core/mkt-customer-purchase-history.service';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 import { MktCustomerValidationService } from 'src/mkt-core/customer/services/validation/mkt-customer-validation.service';
 import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
@@ -91,6 +92,9 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     // Services - Note
     MktCustomerNoteService,
 
+    // Services - Purchase History
+    MktCustomerPurchaseHistoryService,
+
     // Resolvers - CRUD
     MktCustomerResolver,
 
@@ -142,6 +146,9 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
 
     // Services - Note
     MktCustomerNoteService,
+
+    // Services - Purchase History
+    MktCustomerPurchaseHistoryService,
   ],
 })
 export class CustomerModule {}

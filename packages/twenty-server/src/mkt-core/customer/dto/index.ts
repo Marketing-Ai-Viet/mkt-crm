@@ -15,3 +15,7 @@ export * from './customer-note.dto';
 
 // License DTOs
 export * from './get-user-licenses.dto';
+
+// Purchase History DTOs
+export * from './purchase-history.args';
+export * from './purchase-history.dto';

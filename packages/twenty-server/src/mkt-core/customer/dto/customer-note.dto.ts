@@ -10,6 +10,23 @@ import {
 // ============================================
 
 /**
+ * Input for creating initial notes when creating a customer
+ * (does not require customerId since it's a new customer)
+ */
+@InputType()
+export class CreateInitialNoteInput {
+  @Field(() => String, { description: 'Note content (rich text)' })
+  content: string;
+
+  @Field(() => MktCustomerNoteTypeEnum, {
+    nullable: true,
+    description: 'Note type: GENERAL, CALL, MEETING, ISSUE, FOLLOWUP, OTHER',
+    defaultValue: MktCustomerNoteTypeEnum.GENERAL,
+  })
+  noteType?: MktCustomerNoteType;
+}
+
+/**
  * Input for creating a customer note
  */
 @InputType()
@@ -96,11 +113,11 @@ export class CustomerNoteOutput {
   @Field(() => String, { nullable: true, description: 'Customer ID' })
   customerId: string | null;
 
-  @Field(() => Date, { description: 'Created date' })
-  createdAt: Date;
+  @Field(() => String, { description: 'Created date (ISO 8601)' })
+  createdAt: string;
 
-  @Field(() => Date, { description: 'Updated date' })
-  updatedAt: Date;
+  @Field(() => String, { description: 'Updated date (ISO 8601)' })
+  updatedAt: string;
 }
 
 /**
