@@ -112,7 +112,6 @@ export class MktCustomerService {
       churnRiskScore: 0,
       engagementScore: 0,
       customerLtv: 0,
-      notes: input.notes,
       ...ownershipFields,
     };
 
@@ -202,10 +201,6 @@ export class MktCustomerService {
     if (input.lifecycleStage !== undefined) {
       updateData.lifecycleStage = input.lifecycleStage;
       updatedFields.push('lifecycleStage');
-    }
-    if (input.notes !== undefined) {
-      updateData.notes = input.notes;
-      updatedFields.push('notes');
     }
     if (input.accountOwnerId !== undefined) {
       updateData.accountOwnerId = input.accountOwnerId;

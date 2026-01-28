@@ -46,9 +46,6 @@ export class CreateCustomerInput {
   })
   lifecycleStage?: string;
 
-  @Field(() => String, { nullable: true, description: 'Notes' })
-  notes?: string;
-
   @Field(() => String, {
     nullable: true,
     description: 'Account owner ID (workspace member)',
@@ -97,9 +94,6 @@ export class UpdateCustomerInput {
 
   @Field(() => String, { nullable: true, description: 'Lifecycle stage' })
   lifecycleStage?: string;
-
-  @Field(() => String, { nullable: true, description: 'Notes' })
-  notes?: string;
 
   @Field(() => String, {
     nullable: true,

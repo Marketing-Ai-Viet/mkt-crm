@@ -36,7 +36,6 @@ type MktCustomerDataSeed = {
   churnRiskScore: number;
   engagementScore: number;
   registrationDate: string;
-  notes: string | null;
   position: number;
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
@@ -87,7 +86,6 @@ export const MKT_CUSTOMER_DATA_SEED_COLUMNS: (keyof MktCustomerDataSeed)[] = [
   'churnRiskScore',
   'engagementScore',
   'registrationDate',
-  'notes',
   'position',
   'createdBySource',
   'createdByWorkspaceMemberId',
@@ -124,7 +122,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 5,
     engagementScore: 95,
     registrationDate: '2023-01-15T08:00:00.000Z',
-    notes: 'Khách hàng VIP, ưu tiên hỗ trợ 24/7',
     position: 1,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -199,7 +196,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 15,
     engagementScore: 80,
     registrationDate: '2023-06-10T09:30:00.000Z',
-    notes: 'Khách hàng doanh nghiệp vừa, tiềm năng mở rộng',
     position: 2,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -262,7 +258,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 25,
     engagementScore: 65,
     registrationDate: '2024-01-20T11:00:00.000Z',
-    notes: 'Khách hàng cá nhân, sử dụng cho freelance',
     position: 3,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -322,7 +317,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 40,
     engagementScore: 50,
     registrationDate: '2024-10-01T14:30:00.000Z',
-    notes: 'Startup mới, đang dùng thử',
     position: 4,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,
@@ -369,7 +363,6 @@ export const MKT_CUSTOMER_DATA_SEEDS: MktCustomerDataSeed[] = [
     churnRiskScore: 95,
     engagementScore: 10,
     registrationDate: '2022-05-20T10:00:00.000Z',
-    notes: 'Khách hàng đã ngưng sử dụng dịch vụ',
     position: 5,
     createdBySource: 'SYSTEM',
     createdByWorkspaceMemberId: null,

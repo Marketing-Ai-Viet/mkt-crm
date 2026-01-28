@@ -394,18 +394,6 @@ export class MktCustomerWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   assignedReason: string;
 
-  // ============ NOTES (1 field) ============
-
-  @WorkspaceField({
-    standardId: MKT_CUSTOMER_FIELD_IDS.notes,
-    type: FieldMetadataType.RICH_TEXT,
-    label: msg`Notes`,
-    description: msg`Ghi chú về khách hàng`,
-    icon: 'IconNote',
-  })
-  @WorkspaceIsNullable()
-  notes: string;
-
   // ============ COMMON FIELDS (2 fields) ============
 
   @WorkspaceField({
