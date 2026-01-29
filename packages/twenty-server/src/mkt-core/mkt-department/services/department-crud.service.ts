@@ -18,6 +18,7 @@ import {
   DEPARTMENT_MESSAGES,
   MKT_DEPARTMENT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-department/messages';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
 import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-sub-manager.workspace-entity';
 import { MktDepartmentWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department.workspace-entity';
@@ -60,6 +61,7 @@ export class DepartmentCrudService {
     private readonly subManagerRepository: MktDepartmentSubManagerRepository,
     private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
     private readonly transactionScopeService: TransactionScopeService,
+    private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
   /**
@@ -234,7 +236,17 @@ export class DepartmentCrudService {
         data.subManagers,
       );
 
-      return this.buildSuccessResult(updatedDepartment, replacedSubManagers);
+      // Reload department with full relations (manager, subManagers)
+      const departmentWithRelations =
+        await this.departmentRepository.findByIdWithRelations(
+          workspaceId,
+          departmentId,
+        );
+
+      return this.buildSuccessResult(
+        departmentWithRelations ?? updatedDepartment,
+        replacedSubManagers,
+      );
     } catch (error) {
       return this.handleError(error, 'update');
     }
@@ -589,6 +601,27 @@ export class DepartmentCrudService {
     this.logger.log(
       `Creating ${subManagers.length} sub-managers for department: ${departmentId}`,
     );
+
+    // Validate workspace members exist before creating
+    const invalidMemberIds: string[] = [];
+
+    for (const sm of subManagers) {
+      const memberExists = await this.workspaceMemberRepository.memberExists(
+        sm.workspaceMemberId,
+      );
+
+      if (!memberExists) {
+        invalidMemberIds.push(sm.workspaceMemberId);
+      }
+    }
+
+    if (invalidMemberIds.length > 0) {
+      throw new Error(
+        DEPARTMENT_MESSAGES.ERROR.WORKSPACE_MEMBER_NOT_FOUND(
+          invalidMemberIds.join(', '),
+        ),
+      );
+    }
 
     const entities = subManagers.map((sm) => ({
       departmentId,

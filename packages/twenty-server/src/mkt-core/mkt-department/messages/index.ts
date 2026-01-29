@@ -78,8 +78,8 @@ export const DEPARTMENT_MESSAGES = {
       parentDepartmentId: string,
     ) =>
       `Hierarchy created: child=${childDepartmentId}, parent=${parentDepartmentId}`,
-    HIERARCHY_UPDATED: (childDepartmentId: string) =>
-      `Hierarchy updated for department: ${childDepartmentId}`,
+    HIERARCHY_UPDATED: (childDepartmentId?: string) =>
+      `Hierarchy updated for department: ${childDepartmentId ?? 'unknown'}`,
     HIERARCHY_DELETED: (hierarchyId: string) =>
       `Hierarchy soft deleted: ${hierarchyId}`,
   },
@@ -117,6 +117,8 @@ export const DEPARTMENT_MESSAGES = {
     MISSING_REQUIRED_FIELDS: (fields: string) =>
       `Missing required fields: ${fields}`,
     CHILD_DEPARTMENT_ID_REQUIRED: 'Child department ID is required',
+    WORKSPACE_MEMBER_NOT_FOUND: (memberIds: string) =>
+      `Workspace member(s) not found: ${memberIds}`,
 
     // Hierarchy errors
     HIERARCHY_NOT_FOUND: (departmentId: string) =>
