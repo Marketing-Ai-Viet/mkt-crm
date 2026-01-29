@@ -6,8 +6,11 @@ import { InputType, Field } from '@nestjs/graphql';
  */
 @InputType()
 export class UpdateDepartmentHierarchyInput {
-  @Field({ description: 'ID của department cần cập nhật hierarchy' })
-  childDepartmentId: string;
+  @Field({
+    nullable: true,
+    description: 'ID của department cần cập nhật hierarchy',
+  })
+  childDepartmentId?: string;
 
   @Field({ nullable: true, description: 'ID của department cha mới' })
   parentDepartmentId?: string;
