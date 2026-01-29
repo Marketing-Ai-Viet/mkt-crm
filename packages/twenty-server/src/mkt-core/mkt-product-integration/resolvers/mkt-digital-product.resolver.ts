@@ -77,22 +77,22 @@ export class MktDigitalProductResolver {
   }
 
   /**
-   * Get a single digital product by code
+   * Get a single digital product by ID (alias for mktDigitalProduct)
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
   @Query(() => MktDigitalProductResponseDto, {
-    description: 'Get a single digital product by code',
+    description: 'Get a single digital product by ID',
   })
-  async mktDigitalProductByCode(
-    @Args('code') code: string,
+  async mktDigitalProductById(
+    @Args('productId') productId: string,
   ): Promise<MktDigitalProductResponseDto> {
     try {
-      const product = await this.productProxyService.getProductByCode(code);
+      const product = await this.productProxyService.getProduct(productId);
 
       if (!product) {
         return {
           success: false,
-          error: MKT_PRODUCT_MESSAGES.error('NOT_FOUND_BY_CODE', { code }),
+          error: MKT_PRODUCT_MESSAGES.notFoundWithId(productId),
         };
       }
 

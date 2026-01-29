@@ -42,9 +42,6 @@ export class MktDigitalPackageDto {
   id: string;
 
   @Field(() => String)
-  licenseType: string;
-
-  @Field(() => String)
   packageCode: string;
 
   @Field(() => String)
@@ -53,25 +50,24 @@ export class MktDigitalPackageDto {
   @Field(() => String, { nullable: true })
   packageDescription?: string;
 
+  // TODO: Change to enum type later
   @Field(() => String, {
     description: 'Package type: subscription, perpetual, trial, addon',
   })
-  packageType: string;
+  status: string;
 
   @Field(() => String, { description: 'Currency: VND, USD, EUR' })
   currency: string;
 
+  // TODO: Change to enum type later
   @Field(() => String, {
     description:
       'Billing cycle: monthly, quarterly, yearly, one_time, lifetime',
   })
-  billingCycle: string;
+  billingPeriod: string;
 
   @Field(() => Int, { nullable: true, description: 'Duration in days' })
-  durationDays?: number;
-
-  @Field(() => Boolean)
-  isActive: boolean;
+  trialDays: number;
 
   @Field(() => Float)
   price: number;
@@ -99,39 +95,27 @@ export class MktDigitalProductDto {
   id: string;
 
   @Field(() => String)
-  productName: string;
+  name: string;
 
   @Field(() => String, { nullable: true })
-  productDescription?: string;
-
-  @Field(() => String, { nullable: true })
-  productOverview?: string;
+  description?: string;
 
   @Field(() => String)
   code: string;
 
   @Field(() => String, {
-    description: 'Status: active, beta, inactive, deprecated',
+    description: 'Draft, Active, Deprecated, Archived',
   })
   status: string;
 
   @Field(() => String, { nullable: true })
   version?: string;
 
-  @Field(() => Float, { nullable: true })
-  basePrice?: number;
-
   @Field(() => String, { nullable: true })
   iconUrl?: string;
 
   @Field(() => String, { nullable: true })
   bannerUrl?: string;
-
-  @Field(() => [String], { nullable: true })
-  gallery?: string[];
-
-  @Field(() => Int)
-  sortOrder: number;
 
   @Field(() => GraphQLJSON, { nullable: true })
   metadata?: Record<string, unknown>;
