@@ -183,11 +183,16 @@ export class MktAuthHttpService {
       ...options?.headers,
     };
 
-    // Add Bearer token if auth is not skipped
+    // Add Bearer token and Api-Key if auth is not skipped
     if (!options?.skipAuth) {
-      const token = await this.authClientService.getAccessToken();
+      const accessToken = await this.authClientService.getAccessToken();
+      const apiKey = await this.authClientService.getApiKey();
 
-      headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${accessToken}`;
+
+      if (apiKey) {
+        headers['Api-Key'] = apiKey;
+      }
     }
 
     return {

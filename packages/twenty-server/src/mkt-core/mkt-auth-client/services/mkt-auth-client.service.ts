@@ -150,6 +150,18 @@ export class MktAuthClientService
   // ============================================
 
   /**
+   * Get API key for Api-Key header
+   *
+   * Returns the apiKey from cached token data (response.data.token from login).
+   * Must have valid token in cache.
+   */
+  async getApiKey(): Promise<string | null> {
+    const cached = await this.cacheService.get();
+
+    return cached?.apiKey ?? null;
+  }
+
+  /**
    * Get access token (cached or fresh)
    *
    * Flow:
@@ -350,16 +362,17 @@ export class MktAuthClientService
 
     try {
       const response = await this.performSignIn();
-      const token = this.extractTokenFromResponse(response);
+      const { accessToken, apiKey } = this.extractTokensFromResponse(response);
       const tokenData = this.buildTokenData(
-        token,
+        accessToken,
+        apiKey,
         response.data.user?.email,
         isRefresh,
       );
 
       await this.onFetchSuccess(tokenData, isRefresh);
 
-      return token;
+      return accessToken;
     } catch (error) {
       return this.handleFetchError(error, isRefresh, attempt);
     }
@@ -392,10 +405,10 @@ export class MktAuthClientService
     );
   }
 
-  private extractTokenFromResponse(response: {
+  private extractTokensFromResponse(response: {
     headers: Record<string, unknown>;
     data: MktAuthTokenResponse;
-  }): string {
+  }): { accessToken: string; apiKey: string } {
     const headerToken = response.headers['set-auth-token'] as
       | string
       | undefined;
@@ -407,11 +420,18 @@ export class MktAuthClientService
       );
     }
 
-    return headerToken || bodyToken;
+    // accessToken from header (for Authorization: Bearer)
+    // apiKey from body (for Api-Key header)
+    // If header token is missing, use body token for both
+    return {
+      accessToken: headerToken ?? bodyToken,
+      apiKey: bodyToken,
+    };
   }
 
   private buildTokenData(
-    token: string,
+    accessToken: string,
+    apiKey: string,
     userEmail: string | undefined,
     isRefresh: boolean,
   ): MktAuthTokenData {
@@ -420,7 +440,8 @@ export class MktAuthClientService
     const expiresAt = DateTimeUtils.add(now, { milliseconds: redisTtlMs });
 
     return {
-      accessToken: token,
+      accessToken,
+      apiKey,
       acquiredAt: DateTimeUtils.toISO(now),
       expiresAt: DateTimeUtils.toISO(expiresAt),
       refreshAt: DateTimeUtils.toISO(

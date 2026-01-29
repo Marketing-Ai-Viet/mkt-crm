@@ -42,8 +42,11 @@ export type MktAuthTokenResponse = {
  * Cached token data with metadata
  */
 export type MktAuthTokenData = {
-  /** The Bearer access token */
+  /** The Bearer access token (from set-auth-token header) */
   accessToken: string;
+
+  /** API key for Api-Key header (from response.data.token) */
+  apiKey: string;
 
   /** ISO timestamp when token was acquired */
   acquiredAt: string;
