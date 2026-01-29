@@ -1,12 +1,22 @@
 import { Module, Logger, OnModuleInit } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis';
+
+import {
+  MktAuthCacheService,
+  MktAuthLockService,
+  MktAuthClientService,
+} from './services';
 
 import {
   MKT_AUTH_CLIENT_CONFIG_KEY,
   mktAuthClientConfigFactory,
 } from './configs/mkt-auth-client.config';
-import { MKT_AUTH_LOG_CONTEXT } from './constants/mkt-auth-client.constant';
+import {
+  MKT_AUTH_LOG_CONTEXT,
+  MKT_AUTH_DEFAULTS,
+} from './constants/mkt-auth-client.constant';
 
 /**
  * MKT Auth Client Module
@@ -18,7 +28,7 @@ import { MKT_AUTH_LOG_CONTEXT } from './constants/mkt-auth-client.constant';
  * - configs/: Zod-validated configuration schemas
  * - constants/: Cache keys, event names, default values
  * - types/: TypeScript type definitions
- * - services/: Business logic layer (Phase 2)
+ * - services/: Business logic layer
  *   - MktAuthCacheService: Two-tier caching (local + Redis)
  *   - MktAuthLockService: Distributed locking wrapper
  *   - MktAuthClientService: Token lifecycle management
@@ -33,10 +43,10 @@ import { MKT_AUTH_LOG_CONTEXT } from './constants/mkt-auth-client.constant';
  * - Jitter (reduces thundering herd)
  * - Exponential backoff retry
  * - Event-driven integration (EventEmitter2)
- * - Prometheus metrics + alerting
  *
  * Dependencies:
  * - RedisInfrastructureModule: Distributed caching and locking
+ * - HttpModule: HTTP client for MKT Server API calls
  *
  * NOTE: EventEmitter2 is available globally via CoreEngineModule.
  * CacheStorageService is injected via @InjectCacheStorage decorator.
@@ -46,6 +56,10 @@ import { MKT_AUTH_LOG_CONTEXT } from './constants/mkt-auth-client.constant';
 @Module({
   imports: [
     RedisInfrastructureModule, // Distributed caching and locking
+    HttpModule.register({
+      timeout: MKT_AUTH_DEFAULTS.RETRY.MAX_DELAY_MS,
+      maxRedirects: 5,
+    }),
   ],
   providers: [
     // Configuration provider
@@ -53,18 +67,19 @@ import { MKT_AUTH_LOG_CONTEXT } from './constants/mkt-auth-client.constant';
       provide: MKT_AUTH_CLIENT_CONFIG_KEY,
       useFactory: mktAuthClientConfigFactory,
     },
-    // Services will be added in Phase 2
-    // MktAuthCacheService,
-    // MktAuthLockService,
-    // MktAuthClientService,
+    // Core Services (Phase 2)
+    MktAuthCacheService,
+    MktAuthLockService,
+    MktAuthClientService,
     // MktAuthMetricsService (Phase 4)
     // MktAuthHttpService (Phase 3)
   ],
   exports: [
     // Configuration
     MKT_AUTH_CLIENT_CONFIG_KEY,
-    // Public API (to be added in Phase 2)
-    // MktAuthClientService,
+    // Public API
+    MktAuthClientService,
+    MktAuthCacheService,
     // MktAuthHttpService (Phase 3)
   ],
 })
@@ -76,13 +91,14 @@ export class MktAuthClientModule implements OnModuleInit {
 
     if (!config.baseUrl || !config.credentials.email) {
       this.logger.warn(
-        'MKT Auth Client is disabled: Missing required configuration (MKT_SERVER_BASE_URL, MKT_AUTH_EMAIL, MKT_AUTH_PASSWORD)',
+        'MKT Auth Client is disabled: Missing required configuration ' +
+          '(MKT_SERVER_BASE_URL, MKT_AUTH_EMAIL, MKT_AUTH_PASSWORD)',
       );
 
       return;
     }
 
-    this.logger.log(`MKT Auth Client initialized for: ${config.baseUrl}`);
+    this.logger.log(`MKT Auth Client module loaded for: ${config.baseUrl}`);
     this.logger.debug(`Token TTL: ${config.token.serverTtlMs}ms`);
     this.logger.debug(`Buffer: ${config.token.bufferMs}ms`);
     this.logger.debug(

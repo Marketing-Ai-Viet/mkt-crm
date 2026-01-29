@@ -10,6 +10,7 @@ export enum CacheStorageNamespace {
   MktPromotion = 'mkt:promotion',
   MktOrder = 'mkt:order',
   MktDepartment = 'mkt:department',
+  MktAuth = 'mkt:auth',
   // RBAC v2.0 dedicated namespaces
   RbacPermission = 'rbac:permission',
   RbacUser = 'rbac:user',
