@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { MKT_AUTH_DEFAULTS } from 'src/mkt-core/mkt-auth-client/constants/mkt-auth-client.constant';
+import {
+  MKT_AUTH_DEFAULTS,
+  MKT_AUTH_HTTP_CONFIG,
+} from 'src/mkt-core/mkt-auth-client/constants/mkt-auth-client.constant';
 
 // ============================================
 // HELPER SCHEMAS
@@ -145,6 +148,15 @@ export const MktAuthLockConfigSchema = z.object({
 });
 
 /**
+ * HTTP configuration schema
+ */
+export const MktAuthHttpConfigSchema = z.object({
+  MKT_AUTH_REJECT_UNAUTHORIZED: booleanEnvSchema(
+    MKT_AUTH_HTTP_CONFIG.REJECT_UNAUTHORIZED,
+  ),
+});
+
+/**
  * Main configuration schema
  */
 export const MktAuthClientConfigSchema = z.object({
@@ -170,6 +182,9 @@ export const MktAuthClientConfigSchema = z.object({
 
   // Lock configuration
   ...MktAuthLockConfigSchema.shape,
+
+  // HTTP configuration
+  ...MktAuthHttpConfigSchema.shape,
 });
 
 export type MktAuthClientEnvConfig = z.infer<typeof MktAuthClientConfigSchema>;
@@ -225,6 +240,9 @@ export function parseMktAuthClientConfig(): MktAuthClientEnvConfig {
     MKT_AUTH_LOCK_MAX_WAIT_MS: process.env.MKT_AUTH_LOCK_MAX_WAIT_MS,
     MKT_AUTH_LOCK_RETRY_INTERVAL_MS:
       process.env.MKT_AUTH_LOCK_RETRY_INTERVAL_MS,
+
+    // HTTP
+    MKT_AUTH_REJECT_UNAUTHORIZED: process.env.MKT_AUTH_REJECT_UNAUTHORIZED,
   };
 
   const result = MktAuthClientConfigSchema.safeParse(envConfig);
@@ -301,6 +319,7 @@ function getDefaultOptionalConfig() {
     MKT_AUTH_LOCK_TIMEOUT_MS: MKT_AUTH_DEFAULTS.LOCK.TIMEOUT_MS,
     MKT_AUTH_LOCK_MAX_WAIT_MS: MKT_AUTH_DEFAULTS.LOCK.MAX_WAIT_MS,
     MKT_AUTH_LOCK_RETRY_INTERVAL_MS: MKT_AUTH_DEFAULTS.LOCK.RETRY_INTERVAL_MS,
+    MKT_AUTH_REJECT_UNAUTHORIZED: MKT_AUTH_HTTP_CONFIG.REJECT_UNAUTHORIZED,
   };
 }
 
@@ -366,6 +385,9 @@ export function mktAuthClientConfigFactory() {
       timeoutMs: env.MKT_AUTH_LOCK_TIMEOUT_MS,
       maxWaitMs: env.MKT_AUTH_LOCK_MAX_WAIT_MS,
       retryIntervalMs: env.MKT_AUTH_LOCK_RETRY_INTERVAL_MS,
+    },
+    http: {
+      rejectUnauthorized: env.MKT_AUTH_REJECT_UNAUTHORIZED,
     },
   };
 }

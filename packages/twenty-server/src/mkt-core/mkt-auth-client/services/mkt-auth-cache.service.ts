@@ -16,21 +16,8 @@ import {
 import {
   MktAuthTokenData,
   LocalCacheEntry,
+  CacheMetrics,
 } from 'src/mkt-core/mkt-auth-client/types';
-
-// ============================================
-// TYPES
-// ============================================
-
-type CacheMetrics = {
-  localHits: number;
-  redisHits: number;
-  misses: number;
-};
-
-// ============================================
-// SERVICE
-// ============================================
 
 /**
  * MKT Auth Cache Service

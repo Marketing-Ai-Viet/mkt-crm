@@ -8,6 +8,8 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+import * as https from 'https';
+
 import { firstValueFrom } from 'rxjs';
 
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
@@ -30,20 +32,11 @@ import {
   MktAuthFailedEvent,
   MktAuthCircuitStateChangedEvent,
   CircuitBreakerInternalState,
+  CircuitState,
 } from 'src/mkt-core/mkt-auth-client/types';
 
 import { MktAuthCacheService } from './mkt-auth-cache.service';
 import { MktAuthLockService } from './mkt-auth-lock.service';
-
-// ============================================
-// TYPES
-// ============================================
-
-type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
-
-// ============================================
-// SERVICE
-// ============================================
 
 /**
  * MKT Auth Client Service
@@ -90,6 +83,9 @@ export class MktAuthClientService
   private circuitOpenedAt: string | null = null;
   private halfOpenAttempts = 0;
 
+  // HTTPS agent for self-signed certificate support
+  private readonly httpsAgent: https.Agent;
+
   constructor(
     @Inject(MKT_AUTH_CLIENT_CONFIG_KEY)
     private readonly config: MktAuthClientConfigFactoryResult,
@@ -97,7 +93,20 @@ export class MktAuthClientService
     private readonly cacheService: MktAuthCacheService,
     private readonly lockService: MktAuthLockService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+    // Create HTTPS agent with rejectUnauthorized option
+    // Set MKT_AUTH_REJECT_UNAUTHORIZED=false to allow self-signed certificates
+    this.httpsAgent = new https.Agent({
+      rejectUnauthorized: this.config.http.rejectUnauthorized,
+    });
+
+    if (!this.config.http.rejectUnauthorized) {
+      this.logger.warn(
+        'SSL certificate validation disabled (MKT_AUTH_REJECT_UNAUTHORIZED=false). ' +
+          'This should only be used in development!',
+      );
+    }
+  }
 
   // ============================================
   // LIFECYCLE
@@ -331,14 +340,7 @@ export class MktAuthClientService
   }
 
   private async fetchToken(isRefresh: boolean, attempt = 0): Promise<string> {
-    if (attempt >= this.config.retry.maxAttempts) {
-      const error = new Error(
-        `Sign-in to MKT Server failed after ${this.config.retry.maxAttempts} attempts`,
-      );
-
-      this.onAuthFailure(error);
-      throw error;
-    }
+    this.validateRetryAttempt(attempt);
 
     this.logger.debug(
       isRefresh
@@ -347,112 +349,180 @@ export class MktAuthClientService
     );
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.post<MktAuthTokenResponse>(
-          `${this.config.baseUrl}/api/auth/sign-in/email`,
-          {
-            email: this.config.credentials.email,
-            password: this.config.credentials.password,
-          },
-          {
-            timeout: MKT_AUTH_DEFAULTS.RETRY.MAX_DELAY_MS,
-          },
-        ),
+      const response = await this.performSignIn();
+      const token = this.extractTokenFromResponse(response);
+      const tokenData = this.buildTokenData(
+        token,
+        response.data.user?.email,
+        isRefresh,
       );
 
-      // Get token from response
-      const accessToken = response.headers['set-auth-token'] as
-        | string
-        | undefined;
-
-      if (!accessToken && !response.data.token) {
-        throw new Error(
-          'No token in response (missing set-auth-token header and data.token)',
-        );
-      }
-
-      const token = accessToken || response.data.token;
-
-      // Build token data
-      const now = DateTimeUtils.now();
-      const redisTtlMs = this.cacheService.getRedisTtlMs();
-      const expiresAt = DateTimeUtils.add(now, { milliseconds: redisTtlMs });
-
-      const tokenData: MktAuthTokenData = {
-        accessToken: token,
-        acquiredAt: DateTimeUtils.toISO(now),
-        expiresAt: DateTimeUtils.toISO(expiresAt),
-        refreshAt: DateTimeUtils.toISO(
-          DateTimeUtils.add(expiresAt, {
-            milliseconds: -this.config.token.bufferMs,
-          }),
-        ),
-        userEmail: response.data.user?.email,
-        source: isRefresh ? 'refresh' : 'bootstrap',
-      };
-
-      // Cache token
-      await this.cacheService.set(tokenData);
-
-      // Success - reset circuit breaker
-      this.onAuthSuccess(isRefresh);
-      this.isInitialized = true;
-      this.initializationError = null;
-
-      // Emit event
-      const event: MktAuthTokenAcquiredEvent = {
-        userEmail: tokenData.userEmail,
-        source: tokenData.source,
-        expiresAt: tokenData.expiresAt,
-        timestamp: DateTimeUtils.toISO(now),
-      };
-
-      this.eventEmitter.emit(
-        isRefresh
-          ? MKT_AUTH_EVENTS.TOKEN_REFRESHED
-          : MKT_AUTH_EVENTS.TOKEN_ACQUIRED,
-        event,
-      );
-
-      this.logger.log(
-        `Token ${isRefresh ? 'refreshed' : 'acquired'} successfully ` +
-          `(expires in ${Math.floor(redisTtlMs / 1000 / 60)} minutes)`,
-      );
+      await this.onFetchSuccess(tokenData, isRefresh);
 
       return token;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      return this.handleFetchError(error, isRefresh, attempt);
+    }
+  }
 
-      this.logger.warn(
-        `Token fetch failed (attempt ${attempt + 1}/${this.config.retry.maxAttempts}): ${errorMessage}`,
+  private validateRetryAttempt(attempt: number): void {
+    if (attempt >= this.config.retry.maxAttempts) {
+      const error = new Error(
+        `Sign-in to MKT Server failed after ${this.config.retry.maxAttempts} attempts`,
       );
 
-      // Emit failure event
-      const failedEvent: MktAuthFailedEvent = {
-        reason: errorMessage,
-        attemptNumber: attempt + 1,
-        willRetry: attempt + 1 < this.config.retry.maxAttempts,
-        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
-      };
-
-      this.eventEmitter.emit(MKT_AUTH_EVENTS.AUTH_FAILED, failedEvent);
-
-      // Retry with exponential backoff
-      if (attempt + 1 < this.config.retry.maxAttempts) {
-        const delay = this.calculateBackoff(attempt);
-
-        this.logger.debug(`Retrying in ${delay}ms...`);
-        await this.delay(delay);
-
-        return this.fetchToken(isRefresh, attempt + 1);
-      }
-
-      this.onAuthFailure(
-        error instanceof Error ? error : new Error(errorMessage),
-      );
+      this.onAuthFailure(error);
       throw error;
     }
+  }
+
+  private async performSignIn() {
+    return firstValueFrom(
+      this.httpService.post<MktAuthTokenResponse>(
+        `${this.config.baseUrl}/api/auth/sign-in/email`,
+        {
+          email: this.config.credentials.email,
+          password: this.config.credentials.password,
+        },
+        {
+          timeout: MKT_AUTH_DEFAULTS.RETRY.MAX_DELAY_MS,
+          httpsAgent: this.httpsAgent,
+        },
+      ),
+    );
+  }
+
+  private extractTokenFromResponse(response: {
+    headers: Record<string, unknown>;
+    data: MktAuthTokenResponse;
+  }): string {
+    const headerToken = response.headers['set-auth-token'] as
+      | string
+      | undefined;
+    const bodyToken = response.data.token;
+
+    if (!headerToken && !bodyToken) {
+      throw new Error(
+        'No token in response (missing set-auth-token header and data.token)',
+      );
+    }
+
+    return headerToken || bodyToken;
+  }
+
+  private buildTokenData(
+    token: string,
+    userEmail: string | undefined,
+    isRefresh: boolean,
+  ): MktAuthTokenData {
+    const now = DateTimeUtils.now();
+    const redisTtlMs = this.cacheService.getRedisTtlMs();
+    const expiresAt = DateTimeUtils.add(now, { milliseconds: redisTtlMs });
+
+    return {
+      accessToken: token,
+      acquiredAt: DateTimeUtils.toISO(now),
+      expiresAt: DateTimeUtils.toISO(expiresAt),
+      refreshAt: DateTimeUtils.toISO(
+        DateTimeUtils.add(expiresAt, {
+          milliseconds: -this.config.token.bufferMs,
+        }),
+      ),
+      userEmail,
+      source: isRefresh ? 'refresh' : 'bootstrap',
+    };
+  }
+
+  private async onFetchSuccess(
+    tokenData: MktAuthTokenData,
+    isRefresh: boolean,
+  ): Promise<void> {
+    await this.cacheService.set(tokenData);
+
+    this.onAuthSuccess(isRefresh);
+    this.isInitialized = true;
+    this.initializationError = null;
+
+    this.emitTokenAcquiredEvent(tokenData, isRefresh);
+    this.logTokenSuccess(isRefresh);
+  }
+
+  private emitTokenAcquiredEvent(
+    tokenData: MktAuthTokenData,
+    isRefresh: boolean,
+  ): void {
+    const event: MktAuthTokenAcquiredEvent = {
+      userEmail: tokenData.userEmail,
+      source: tokenData.source,
+      expiresAt: tokenData.expiresAt,
+      timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
+    };
+
+    const eventName = isRefresh
+      ? MKT_AUTH_EVENTS.TOKEN_REFRESHED
+      : MKT_AUTH_EVENTS.TOKEN_ACQUIRED;
+
+    this.eventEmitter.emit(eventName, event);
+  }
+
+  private logTokenSuccess(isRefresh: boolean): void {
+    const redisTtlMs = this.cacheService.getRedisTtlMs();
+    const expiresInMinutes = Math.floor(redisTtlMs / 1000 / 60);
+
+    this.logger.log(
+      `Token ${isRefresh ? 'refreshed' : 'acquired'} successfully ` +
+        `(expires in ${expiresInMinutes} minutes)`,
+    );
+  }
+
+  private async handleFetchError(
+    error: unknown,
+    isRefresh: boolean,
+    attempt: number,
+  ): Promise<string> {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    this.logger.warn(
+      `Token fetch failed (attempt ${attempt + 1}/${this.config.retry.maxAttempts}): ${errorMessage}`,
+    );
+
+    this.emitAuthFailedEvent(errorMessage, attempt);
+
+    if (this.shouldRetry(attempt)) {
+      return this.retryFetchToken(isRefresh, attempt);
+    }
+
+    this.onAuthFailure(
+      error instanceof Error ? error : new Error(errorMessage),
+    );
+    throw error;
+  }
+
+  private emitAuthFailedEvent(reason: string, attempt: number): void {
+    const failedEvent: MktAuthFailedEvent = {
+      reason,
+      attemptNumber: attempt + 1,
+      willRetry: this.shouldRetry(attempt),
+      timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
+    };
+
+    this.eventEmitter.emit(MKT_AUTH_EVENTS.AUTH_FAILED, failedEvent);
+  }
+
+  private shouldRetry(attempt: number): boolean {
+    return attempt + 1 < this.config.retry.maxAttempts;
+  }
+
+  private async retryFetchToken(
+    isRefresh: boolean,
+    attempt: number,
+  ): Promise<string> {
+    const delayMs = this.calculateBackoff(attempt);
+
+    this.logger.debug(`Retrying in ${delayMs}ms...`);
+    await this.delay(delayMs);
+
+    return this.fetchToken(isRefresh, attempt + 1);
   }
 
   // ============================================

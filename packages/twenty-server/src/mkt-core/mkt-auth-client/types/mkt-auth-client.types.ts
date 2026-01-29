@@ -448,3 +448,68 @@ export type LocalCacheEntry<T> = {
   /** Timestamp when entry expires */
   expiresAt: number;
 };
+
+// ============================================
+// SERVICE INTERNAL TYPES
+// ============================================
+
+/**
+ * Circuit state alias for internal use
+ */
+export type CircuitState = CircuitBreakerState;
+
+/**
+ * Cache metrics for monitoring
+ */
+export type CacheMetrics = {
+  /** Number of local cache hits */
+  localHits: number;
+
+  /** Number of Redis cache hits */
+  redisHits: number;
+
+  /** Number of cache misses */
+  misses: number;
+};
+
+/**
+ * HTTP method type
+ */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+/**
+ * Request options for HTTP client
+ */
+export type RequestOptions = {
+  /** Query parameters */
+  params?: Record<string, unknown>;
+
+  /** Request timeout in milliseconds (overrides default) */
+  timeout?: number;
+
+  /** Skip authentication (for login endpoint) */
+  skipAuth?: boolean;
+
+  /** Additional headers */
+  headers?: Record<string, string>;
+};
+
+/**
+ * API response wrapper from MKT Server
+ */
+export type ApiResponse<T> = {
+  success?: boolean;
+  data?: T;
+  error?: string;
+} & T;
+
+/**
+ * Retry context for tracking request retry state
+ */
+export type RetryContext = {
+  /** Current attempt number (0-based) */
+  attempt: number;
+
+  /** Whether re-authentication has been attempted after 401 */
+  hasReauthenticated: boolean;
+};

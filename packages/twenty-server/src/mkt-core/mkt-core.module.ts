@@ -15,6 +15,7 @@ import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration/mkt-product-integration.module';
 import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import { MktSettingModule } from 'src/mkt-core/setting/mkt-setting.module';
+import { MktAuthClientModule } from 'src/mkt-core/mkt-auth-client/mkt-auth-client.module';
 import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
@@ -26,6 +27,7 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
   imports: [
     // Global infrastructure modules (must be first)
     TransactionModule,
+    MktAuthClientModule, // MKT Server authentication
 
     // Feature modules
     MktOrderModule,

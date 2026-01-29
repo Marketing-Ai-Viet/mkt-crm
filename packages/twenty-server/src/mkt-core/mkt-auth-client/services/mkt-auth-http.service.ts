@@ -2,6 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+import * as https from 'https';
+
 import { firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
@@ -20,6 +22,10 @@ import {
   MktAuthReloginTriggeredEvent,
   MktAuthReloginSuccessEvent,
   MktAuthReloginFailedEvent,
+  HttpMethod,
+  RequestOptions,
+  ApiResponse,
+  RetryContext,
   MKT_AUTH_ERROR_CODE,
   MktAuthException,
   MktAuthenticationException,
@@ -31,47 +37,6 @@ import {
 } from 'src/mkt-core/mkt-auth-client/types';
 
 import { MktAuthClientService } from './mkt-auth-client.service';
-
-// ============================================
-// TYPES
-// ============================================
-
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
-type RequestOptions = {
-  /** Query parameters */
-  params?: Record<string, unknown>;
-
-  /** Request timeout in milliseconds (overrides default) */
-  timeout?: number;
-
-  /** Skip authentication (for login endpoint) */
-  skipAuth?: boolean;
-
-  /** Additional headers */
-  headers?: Record<string, string>;
-};
-
-type ApiResponse<T> = {
-  success?: boolean;
-  data?: T;
-  error?: string;
-} & T;
-
-/**
- * Retry context for tracking request retry state
- */
-type RetryContext = {
-  /** Current attempt number (0-based) */
-  attempt: number;
-
-  /** Whether re-authentication has been attempted after 401 */
-  hasReauthenticated: boolean;
-};
-
-// ============================================
-// SERVICE
-// ============================================
 
 /**
  * MKT Auth HTTP Service
@@ -105,13 +70,20 @@ type RetryContext = {
 export class MktAuthHttpService {
   private readonly logger = new Logger(`${MKT_AUTH_LOG_CONTEXT}:Http`);
 
+  // HTTPS agent for self-signed certificate support
+  private readonly httpsAgent: https.Agent;
+
   constructor(
     @Inject(MKT_AUTH_CLIENT_CONFIG_KEY)
     private readonly config: MktAuthClientConfigFactoryResult,
     private readonly httpService: HttpService,
     private readonly authClientService: MktAuthClientService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+    this.httpsAgent = new https.Agent({
+      rejectUnauthorized: this.config.http.rejectUnauthorized,
+    });
+  }
 
   // ============================================
   // PUBLIC API
@@ -222,6 +194,7 @@ export class MktAuthHttpService {
       headers,
       params: options?.params,
       timeout: options?.timeout ?? MKT_AUTH_HTTP_CONFIG.REQUEST_TIMEOUT_MS,
+      httpsAgent: this.httpsAgent,
     };
   }
 

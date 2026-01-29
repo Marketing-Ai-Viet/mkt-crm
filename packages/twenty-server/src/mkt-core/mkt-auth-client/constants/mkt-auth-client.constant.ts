@@ -201,6 +201,13 @@ export const MKT_AUTH_HTTP_CONFIG = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
+
+  /**
+   * Reject unauthorized SSL certificates (self-signed)
+   * Set to false in development to allow self-signed certificates
+   * Default: true (secure - reject self-signed in production)
+   */
+  REJECT_UNAUTHORIZED: true,
 } as const;
 
 // ============================================

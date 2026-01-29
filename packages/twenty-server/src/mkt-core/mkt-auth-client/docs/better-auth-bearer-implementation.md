@@ -2786,7 +2786,7 @@ MKT_AUTH_CB_RESET_TIMEOUT_MS=60000
 
 ## 14. Implementation Roadmap
 
-### Phase 1: Foundation (Week 1)
+### Phase 1: Foundation (Week 1) ⚽
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -2830,7 +2830,7 @@ MKT_AUTH_CB_RESET_TIMEOUT_MS=60000
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 2: Core Services (Week 2)
+### Phase 2: Core Services (Week 2) ⚽
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐

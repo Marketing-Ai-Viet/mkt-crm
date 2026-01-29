@@ -1,4 +1,4 @@
-import { Module, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Module, Logger, OnModuleInit } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis';
@@ -13,6 +13,7 @@ import {
 import {
   MKT_AUTH_CLIENT_CONFIG_KEY,
   mktAuthClientConfigFactory,
+  MktAuthClientConfigFactoryResult,
 } from './configs/mkt-auth-client.config';
 import {
   MKT_AUTH_LOG_CONTEXT,
@@ -89,10 +90,13 @@ import {
 export class MktAuthClientModule implements OnModuleInit {
   private readonly logger = new Logger(MKT_AUTH_LOG_CONTEXT);
 
-  onModuleInit() {
-    const config = mktAuthClientConfigFactory();
+  constructor(
+    @Inject(MKT_AUTH_CLIENT_CONFIG_KEY)
+    private readonly config: MktAuthClientConfigFactoryResult,
+  ) {}
 
-    if (!config.baseUrl || !config.credentials.email) {
+  onModuleInit() {
+    if (!this.config.baseUrl || !this.config.credentials.email) {
       this.logger.warn(
         'MKT Auth Client is disabled: Missing required configuration ' +
           '(MKT_SERVER_BASE_URL, MKT_AUTH_EMAIL, MKT_AUTH_PASSWORD)',
@@ -101,14 +105,13 @@ export class MktAuthClientModule implements OnModuleInit {
       return;
     }
 
-    this.logger.log(`MKT Auth Client module loaded for: ${config.baseUrl}`);
-    this.logger.debug(`Token TTL: ${config.token.serverTtlMs}ms`);
-    this.logger.debug(`Buffer: ${config.token.bufferMs}ms`);
-    this.logger.debug(
-      `Circuit breaker: ${config.circuitBreaker.enabled ? 'enabled' : 'disabled'}`,
+    // Log high-level info only (TTL details logged by CacheService)
+    this.logger.log(
+      `MKT Auth Client module loaded for: ${this.config.baseUrl}`,
     );
     this.logger.debug(
-      `Jitter: ${config.jitter.enabled ? 'enabled' : 'disabled'}`,
+      `Features: circuit-breaker=${this.config.circuitBreaker.enabled ? 'on' : 'off'}, ` +
+        `jitter=${this.config.jitter.enabled ? 'on' : 'off'}`,
     );
   }
 }
