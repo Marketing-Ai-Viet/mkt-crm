@@ -73,7 +73,7 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
   }
 
   /**
-   * Find customer by ID with customerNotes relation
+   * Find customer by ID with relations (customerNotes, accountOwner, supportOwner)
    */
   async findByIdWithNotes(
     id: string,
@@ -83,7 +83,7 @@ export class MktCustomerRepository extends BaseWorkspaceRepository<MktCustomerWo
 
     return repository.findOne({
       where: { id, deletedAt: IsNull() } as never,
-      relations: ['customerNotes'],
+      relations: ['customerNotes', 'accountOwner', 'supportOwner'],
     });
   }
 

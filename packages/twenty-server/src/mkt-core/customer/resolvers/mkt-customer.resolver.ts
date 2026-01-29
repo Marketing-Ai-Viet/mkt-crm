@@ -10,7 +10,15 @@
  */
 
 import { UseGuards } from '@nestjs/common';
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Int,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
@@ -30,11 +38,14 @@ import {
   UpdateCustomerResponseDto,
 } from 'src/mkt-core/customer/dto/customer-crud.output';
 import { GetPurchaseHistoryArgs } from 'src/mkt-core/customer/dto/purchase-history.args';
-import { PurchaseHistoryOutput } from 'src/mkt-core/customer/dto/purchase-history.dto';
+import {
+  PurchasedProductOutput,
+  PurchaseHistoryOutput,
+} from 'src/mkt-core/customer/dto/purchase-history.dto';
 import { MktCustomerPurchaseHistoryService } from 'src/mkt-core/customer/services/core/mkt-customer-purchase-history.service';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
 
-@Resolver()
+@Resolver(() => CustomerOutput)
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
 export class MktCustomerResolver {
   constructor(
@@ -206,6 +217,30 @@ export class MktCustomerResolver {
     @AuthWorkspace() workspace: Workspace,
   ): Promise<PurchaseHistoryOutput> {
     return this.purchaseHistoryService.getPurchaseHistory(args, workspace.id);
+  }
+
+  // ============================================
+  // FIELD RESOLVERS
+  // ============================================
+
+  /**
+   * Resolve purchasedProducts field for CustomerOutput
+   * Lazy-loaded only when client requests this field
+   */
+  @ResolveField(() => [PurchasedProductOutput], {
+    nullable: true,
+    description: 'Purchased products (lazy-loaded)',
+  })
+  async purchasedProducts(
+    @Parent() customer: CustomerOutput,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<PurchasedProductOutput[]> {
+    const result = await this.purchaseHistoryService.getPurchasedProducts(
+      { customerId: customer.id },
+      workspace.id,
+    );
+
+    return result.products;
   }
 
   // ============================================

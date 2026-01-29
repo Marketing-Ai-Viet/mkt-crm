@@ -166,6 +166,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_2,
@@ -181,6 +182,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 2 năm',
   },
 
   // Order 2 - MKT Viral Package
@@ -198,6 +200,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_4,
@@ -213,6 +216,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic vĩnh viễn',
   },
 
   // Order 3 - MKT UID Package
@@ -230,6 +234,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
 
   // Order 4 - MKT Insta Package
@@ -247,6 +252,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 2 năm',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_7,
@@ -262,6 +268,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic vĩnh viễn',
   },
 
   // Order 5 - MKT Tube Package
@@ -279,6 +286,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_9,
@@ -294,6 +302,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic vĩnh viễn',
   },
 
   // Order 6 - MKT Post Package
@@ -311,6 +320,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
 
   // Order 7 - MKT Zalo Package
@@ -328,6 +338,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 2 năm',
   },
 
   // Order 8 - MKT Group Package
@@ -345,6 +356,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_13,
@@ -360,6 +372,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic vĩnh viễn',
   },
 
   // Order 9 - MKT Twitter Package
@@ -377,6 +390,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
 
   // Order 10 - MKT Page Package
@@ -394,6 +408,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 2 năm',
   },
 
   // Order 11 - MKT Maps Package
@@ -411,6 +426,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 1 năm',
   },
 
   // Order 12 - MKT Maps Forever Package
@@ -428,6 +444,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic vĩnh viễn',
   },
 
   // Order 13 - Mixed Package (UID + Post)
@@ -445,6 +462,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 2 năm',
   },
   {
     id: MKT_ORDER_ITEM_DATA_SEEDS_IDS.ID_19,
@@ -460,6 +478,7 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 2,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13,
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic 2 năm',
   },
 
   // Order 14 - Premium Package (Care Forever + Viral Forever)
@@ -477,5 +496,6 @@ export const MKT_ORDER_ITEM_DATA_SEEDS: MktOrderItemDataSeed[] = [
     position: 1,
     mktOrderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13, // Reusing ID_13 for premium package
     ...DEFAULT_EXTERNAL_FIELDS,
+    snapshotPackageName: 'Gói Basic vĩnh viễn',
   },
 ];

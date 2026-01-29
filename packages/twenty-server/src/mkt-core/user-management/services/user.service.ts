@@ -47,52 +47,26 @@ import { EmailNotificationService } from 'src/mkt-core/user-management/services/
 import { WorkspaceMemberService } from 'src/mkt-core/user-management/services/workspace-member.service';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-
-// Validation error messages
-const VALIDATION_MESSAGES = {
-  DEPARTMENT_NOT_FOUND: (id: string) => `Department với ID ${id} không tồn tại`,
-  PERMISSION_TEMPLATE_NOT_FOUND: (id: string) =>
-    `Permission template với ID ${id} không tồn tại`,
-  PERMISSION_TEMPLATE_INACTIVE: (id: string) =>
-    `Permission template với ID ${id} không active`,
-  ORGANIZATION_LEVEL_NOT_FOUND: (id: string) =>
-    `Organization level với ID ${id} không tồn tại`,
-  EMPLOYMENT_STATUS_NOT_FOUND: (id: string) =>
-    `Employment status với ID ${id} không tồn tại`,
-  INVALID_EMAIL: 'Email không hợp lệ',
-} as const;
-
-/**
- * Type for validated entities returned from validation
- */
-type ValidatedEntities = {
-  department: DepartmentBasicOutput;
-  permissionTemplate: PermissionTemplateBasicOutput;
-  organizationLevel: OrganizationLevelBasicOutput | null;
-  employmentStatus: EmploymentStatusBasicOutput | null;
-};
-
-const PASSWORD_CHARS = {
-  UPPER: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-  LOWER: 'abcdefghijklmnopqrstuvwxyz',
-  DIGITS: '0123456789',
-  SPECIAL: '@$!%*?&',
-} as const;
-
-const DEFAULT_PASSWORD_LENGTH = 12;
-const MIN_PASSWORD_LENGTH = 8;
-const MAX_PASSWORD_LENGTH = 16;
-
-// Pagination constants
-const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 100;
-const MIN_PAGE = 1;
-const MIN_LIMIT = 1;
+import {
+  ValidatedEntities,
+  WorkspaceMemberWithRelations,
+} from 'src/mkt-core/user-management/types';
+import {
+  USER_ERROR_MESSAGES,
+  USER_LOG_MESSAGES,
+  USER_MESSAGES,
+} from 'src/mkt-core/user-management/messages';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
+
+  // Pagination constants
+  private readonly DEFAULT_PAGE = 1;
+  private readonly DEFAULT_LIMIT = 20;
+  private readonly MAX_LIMIT = 100;
+  private readonly MIN_PAGE = 1;
+  private readonly MIN_LIMIT = 1;
 
   constructor(
     @InjectDataSource('core')
@@ -138,7 +112,7 @@ export class UserService {
 
     // Validate email format
     if (!isEmail(normalizedEmail)) {
-      throw new BadRequestException(VALIDATION_MESSAGES.INVALID_EMAIL);
+      throw new BadRequestException(USER_MESSAGES.ERROR.INVALID_EMAIL);
     }
 
     // Create normalized input
@@ -154,10 +128,8 @@ export class UserService {
     const existing = await this.findCoreUserByEmail(normalizedEmail);
 
     if (existing) {
-      this.logger.warn(
-        `Attempt to create user with existing email: ${normalizedEmail}`,
-      );
-      throw new ConflictError('An account already exists with this email.');
+      this.logger.warn(USER_LOG_MESSAGES.DUPLICATE_EMAIL(normalizedEmail));
+      throw new ConflictError(USER_MESSAGES.ERROR.EMAIL_ALREADY_EXISTS);
     }
 
     return this.createCompleteUser(
@@ -190,7 +162,7 @@ export class UserService {
       );
 
     if (!existingMember) {
-      throw new NotFoundError(`Workspace member not found: ${memberId}`);
+      throw new NotFoundError(USER_ERROR_MESSAGES.MEMBER_NOT_FOUND(memberId));
     }
 
     // Validate departmentId if provided
@@ -247,7 +219,7 @@ export class UserService {
 
     if (!updatedMember) {
       throw new InternalServerErrorException(
-        'Failed to retrieve updated member',
+        USER_MESSAGES.ERROR.FAILED_TO_RETRIEVE,
       );
     }
 
@@ -275,7 +247,7 @@ export class UserService {
       );
 
     if (!existingMember) {
-      throw new NotFoundError(`Workspace member not found: ${memberId}`);
+      throw new NotFoundError(USER_ERROR_MESSAGES.MEMBER_NOT_FOUND(memberId));
     }
 
     // Soft delete permission template assignments
@@ -293,7 +265,7 @@ export class UserService {
       await this.softDeleteUserIfNoWorkspaces(existingMember.userId);
     }
 
-    this.logger.log(`Deleted user (workspace member): ${memberId}`);
+    this.logger.log(USER_LOG_MESSAGES.DELETE_SUCCESS(memberId));
 
     return true;
   }
@@ -307,10 +279,10 @@ export class UserService {
     input: SearchUserInput,
   ): Promise<UserListOutput> {
     // Validate và normalize pagination params
-    const page = Math.max(input.page ?? DEFAULT_PAGE, MIN_PAGE);
+    const page = Math.max(input.page ?? this.DEFAULT_PAGE, this.MIN_PAGE);
     const limit = Math.min(
-      Math.max(input.limit ?? DEFAULT_LIMIT, MIN_LIMIT),
-      MAX_LIMIT,
+      Math.max(input.limit ?? this.DEFAULT_LIMIT, this.MIN_LIMIT),
+      this.MAX_LIMIT,
     );
 
     // Tạo input đã được validate
@@ -385,7 +357,7 @@ export class UserService {
 
     if (!userWorkspace) {
       this.logger.warn(
-        `User workspace not found for user ${userId} in workspace ${workspaceId}`,
+        USER_LOG_MESSAGES.WORKSPACE_NOT_FOUND(userId, workspaceId),
       );
 
       return;
@@ -402,7 +374,7 @@ export class UserService {
           id: userWorkspace.id,
         });
 
-        this.logger.log(`Soft deleted user workspace for user: ${userId}`);
+        this.logger.log(USER_LOG_MESSAGES.WORKSPACE_DELETED(userId));
       },
     );
   }
@@ -420,10 +392,13 @@ export class UserService {
 
         if (remainingUserWorkspaces.length === 0) {
           await transactionalEntityManager.softDelete(User, { id: userId });
-          this.logger.log(`Soft deleted user: ${userId}`);
+          this.logger.log(USER_LOG_MESSAGES.USER_DELETED(userId));
         } else {
           this.logger.log(
-            `User ${userId} still has ${remainingUserWorkspaces.length} workspaces`,
+            USER_LOG_MESSAGES.USER_HAS_WORKSPACES(
+              userId,
+              remainingUserWorkspaces.length,
+            ),
           );
         }
       },
@@ -443,18 +418,27 @@ export class UserService {
     useEmailAsPassword?: string;
     length?: number;
   }): string {
+    const PASSWORD_CHARS = {
+      UPPER: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      LOWER: 'abcdefghijklmnopqrstuvwxyz',
+      DIGITS: '0123456789',
+      SPECIAL: '@$!%*?&',
+    } as const;
+
+    const DEFAULT_LENGTH = 12;
+    const MIN_LENGTH = 8;
+    const MAX_LENGTH = 16;
+
     // If email provided, use it as password
     if (options?.useEmailAsPassword) {
       return options.useEmailAsPassword;
     }
 
     // Generate random password
-    const length = options?.length ?? DEFAULT_PASSWORD_LENGTH;
+    const length = options?.length ?? DEFAULT_LENGTH;
 
-    if (length < MIN_PASSWORD_LENGTH || length > MAX_PASSWORD_LENGTH) {
-      throw new Error(
-        `Password length must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
-      );
+    if (length < MIN_LENGTH || length > MAX_LENGTH) {
+      throw new Error(USER_MESSAGES.ERROR.PASSWORD_LENGTH_INVALID);
     }
 
     const allChars =
@@ -504,7 +488,7 @@ export class UserService {
 
     if (!department) {
       throw new NotFoundError(
-        VALIDATION_MESSAGES.DEPARTMENT_NOT_FOUND(departmentId),
+        USER_ERROR_MESSAGES.DEPARTMENT_NOT_FOUND(departmentId),
       );
     }
 
@@ -527,13 +511,13 @@ export class UserService {
 
     if (!template) {
       throw new NotFoundError(
-        VALIDATION_MESSAGES.PERMISSION_TEMPLATE_NOT_FOUND(templateId),
+        USER_ERROR_MESSAGES.PERMISSION_TEMPLATE_NOT_FOUND(templateId),
       );
     }
 
     if (!template.isActive) {
       throw new NotFoundError(
-        VALIDATION_MESSAGES.PERMISSION_TEMPLATE_INACTIVE(templateId),
+        USER_ERROR_MESSAGES.PERMISSION_TEMPLATE_INACTIVE(templateId),
       );
     }
 
@@ -560,7 +544,7 @@ export class UserService {
 
     if (!orgLevel) {
       throw new NotFoundError(
-        VALIDATION_MESSAGES.ORGANIZATION_LEVEL_NOT_FOUND(organizationLevelId),
+        USER_ERROR_MESSAGES.ORGANIZATION_LEVEL_NOT_FOUND(organizationLevelId),
       );
     }
 
@@ -588,7 +572,7 @@ export class UserService {
 
     if (!empStatus) {
       throw new NotFoundError(
-        VALIDATION_MESSAGES.EMPLOYMENT_STATUS_NOT_FOUND(employmentStatusId),
+        USER_ERROR_MESSAGES.EMPLOYMENT_STATUS_NOT_FOUND(employmentStatusId),
       );
     }
 
@@ -644,7 +628,7 @@ export class UserService {
 
     if (!memberRole) {
       throw new InternalServerErrorException(
-        `Role "${MEMBER_ROLE_LABEL}" not found in workspace ${workspaceId}`,
+        USER_ERROR_MESSAGES.ROLE_NOT_FOUND(MEMBER_ROLE_LABEL, workspaceId),
       );
     }
 
@@ -701,11 +685,15 @@ export class UserService {
       );
     } catch (error) {
       this.logger.error(
-        `[CREATE USER] Error creating user: ${error instanceof Error ? error.message : String(error)}`,
+        USER_LOG_MESSAGES.CREATE_FAILED(
+          error instanceof Error ? error.message : String(error),
+        ),
         error instanceof Error ? error.stack : undefined,
       );
       await this.cleanupOnError(coreUserId, userWorkspaceId, workspaceId);
-      throw new InternalServerErrorException('Failed to create user');
+      throw new InternalServerErrorException(
+        USER_MESSAGES.ERROR.FAILED_TO_CREATE,
+      );
     }
   }
 
@@ -728,7 +716,7 @@ export class UserService {
       defaultAvatarUrl: avatarUrl,
     });
 
-    this.logger.log(`Created core user: ${email}`);
+    this.logger.log(USER_LOG_MESSAGES.CREATE_SUCCESS(email));
 
     return coreUser;
   }
@@ -745,7 +733,7 @@ export class UserService {
       defaultAvatarUrl: avatarUrl,
     });
 
-    this.logger.log(`Created user workspace for user: ${userId}`);
+    this.logger.log(USER_LOG_MESSAGES.WORKSPACE_CREATED(userId));
 
     return userWorkspace;
   }
@@ -761,9 +749,7 @@ export class UserService {
       roleId,
     });
 
-    this.logger.log(
-      `Assigned role ${roleId} to user workspace ${userWorkspaceId}`,
-    );
+    this.logger.log(USER_LOG_MESSAGES.ROLE_ASSIGNED(roleId, userWorkspaceId));
   }
 
   /**
@@ -789,7 +775,11 @@ export class UserService {
     });
 
     this.logger.log(
-      `Assigned permission template ${permissionTemplateId} to member ${workspaceMemberId} in department ${departmentId}`,
+      USER_LOG_MESSAGES.PERMISSION_ASSIGNED(
+        permissionTemplateId,
+        workspaceMemberId,
+        departmentId,
+      ),
     );
   }
 
@@ -823,7 +813,11 @@ export class UserService {
       );
 
       this.logger.log(
-        `Updated permission template to ${newTemplateId} for member ${workspaceMemberId} in department ${departmentId}`,
+        USER_LOG_MESSAGES.PERMISSION_UPDATED(
+          newTemplateId,
+          workspaceMemberId,
+          departmentId,
+        ),
       );
     } else {
       // Create new assignment
@@ -848,7 +842,7 @@ export class UserService {
     );
 
     this.logger.log(
-      `Deactivated permission template assignments for member ${workspaceMemberId}`,
+      USER_LOG_MESSAGES.PERMISSION_DEACTIVATED(workspaceMemberId),
     );
   }
 
@@ -895,12 +889,9 @@ export class UserService {
         password,
       );
     } catch (error) {
-      this.logger.error(
-        'User created successfully, but failed to send welcome email',
-        error,
-      );
+      this.logger.error(USER_LOG_MESSAGES.EMAIL_FAILED(), error);
       throw new SendEmailToolException(
-        'User created successfully, but failed to send welcome email',
+        USER_MESSAGES.ERROR.WELCOME_EMAIL_FAILED,
         SendEmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
       );
     }
@@ -911,13 +902,16 @@ export class UserService {
     userWorkspaceId: string | undefined,
     workspaceId: string,
   ): Promise<void> {
-    this.logger.error('Failed to create user, performing cleanup');
+    this.logger.error(USER_LOG_MESSAGES.CLEANUP_START());
 
     if (userWorkspaceId && coreUserId) {
       try {
         await this.deleteUserWorkspace(coreUserId, workspaceId);
       } catch (cleanupError) {
-        this.logger.error('Failed to cleanup user workspace', cleanupError);
+        this.logger.error(
+          USER_LOG_MESSAGES.CLEANUP_WORKSPACE_FAILED(),
+          cleanupError,
+        );
       }
     }
 
@@ -925,7 +919,10 @@ export class UserService {
       try {
         await this.softDeleteUserIfNoWorkspaces(coreUserId);
       } catch (cleanupError) {
-        this.logger.error('Failed to cleanup core user', cleanupError);
+        this.logger.error(
+          USER_LOG_MESSAGES.CLEANUP_USER_FAILED(),
+          cleanupError,
+        );
       }
     }
   }
@@ -965,16 +962,13 @@ export class UserService {
       permissionTemplate,
       organizationLevel,
       employmentStatus,
-      // Legacy fields (deprecated)
-      departmentId: savedWorkspaceMember.departmentId ?? undefined,
-      departmentName: department.departmentName,
-      organizationLevelId:
-        savedWorkspaceMember.organizationLevelId ?? undefined,
-      employmentStatusId: savedWorkspaceMember.employmentStatusId ?? undefined,
-      permissionTemplateId: permissionTemplate.id,
-      permissionTemplateName: permissionTemplate.templateName,
-      createdAt: new Date(savedWorkspaceMember.createdAt),
-      updatedAt: new Date(savedWorkspaceMember.updatedAt),
+      // Timestamps
+      createdAt: DateTimeUtils.toDate(
+        DateTimeUtils.fromISO(savedWorkspaceMember.createdAt),
+      ) as Date,
+      updatedAt: DateTimeUtils.toDate(
+        DateTimeUtils.fromISO(savedWorkspaceMember.updatedAt),
+      ) as Date,
     };
   }
 
@@ -984,7 +978,7 @@ export class UserService {
    * @param permissionAssignment - Optional permission template assignment with loaded template relation
    */
   private mapWorkspaceMemberToUserOutput(
-    member: WorkspaceMemberWorkspaceEntity,
+    member: WorkspaceMemberWithRelations,
     permissionAssignment?: {
       templateId: string;
       template?: {
@@ -1020,15 +1014,13 @@ export class UserService {
       permissionTemplate,
       organizationLevel,
       employmentStatus,
-      // Legacy fields (deprecated)
-      departmentId: member.departmentId ?? undefined,
-      departmentName: department?.departmentName,
-      organizationLevelId: member.organizationLevelId ?? undefined,
-      employmentStatusId: member.employmentStatusId ?? undefined,
-      permissionTemplateId: permissionAssignment?.templateId,
-      permissionTemplateName: permissionAssignment?.template?.templateName,
-      createdAt: new Date(member.createdAt),
-      updatedAt: new Date(member.updatedAt),
+      // Timestamps
+      createdAt: DateTimeUtils.toDate(
+        DateTimeUtils.fromISO(member.createdAt),
+      ) as Date,
+      updatedAt: DateTimeUtils.toDate(
+        DateTimeUtils.fromISO(member.updatedAt),
+      ) as Date,
     };
   }
 
@@ -1037,10 +1029,9 @@ export class UserService {
   // ============================================
 
   private buildDepartmentOutput(
-    member: WorkspaceMemberWorkspaceEntity,
+    member: WorkspaceMemberWithRelations,
   ): DepartmentBasicOutput | null {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dept = (member as any).department;
+    const dept = member.department;
 
     if (!dept || !member.departmentId) {
       return null;
@@ -1055,10 +1046,9 @@ export class UserService {
   }
 
   private buildOrganizationLevelOutput(
-    member: WorkspaceMemberWorkspaceEntity,
+    member: WorkspaceMemberWithRelations,
   ): OrganizationLevelBasicOutput | null {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orgLevel = (member as any).organizationLevel;
+    const orgLevel = member.organizationLevel;
 
     if (!orgLevel || !member.organizationLevelId) {
       return null;
@@ -1074,10 +1064,9 @@ export class UserService {
   }
 
   private buildEmploymentStatusOutput(
-    member: WorkspaceMemberWorkspaceEntity,
+    member: WorkspaceMemberWithRelations,
   ): EmploymentStatusBasicOutput | null {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const empStatus = (member as any).employmentStatus;
+    const empStatus = member.employmentStatus;
 
     if (!empStatus || !member.employmentStatusId) {
       return null;

@@ -688,6 +688,57 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   }
 
   // ============================================
+  // CUSTOMER ORDER QUERIES WITH FILTERS
+  // ============================================
+
+  /**
+   * Find valid orders by customer ID with status filter
+   * Excludes soft-deleted orders and filters by allowed statuses
+   *
+   * @param customerId - Customer ID
+   * @param statuses - Array of allowed order statuses (default: COMPLETED, CONFIRMED)
+   * @param options - Find options including relations
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
+   */
+  async findValidOrdersByCustomerId(
+    customerId: string,
+    statuses: ORDER_STATUS[] = [ORDER_STATUS.COMPLETED, ORDER_STATUS.CONFIRMED],
+    options?: FindOrderOptions,
+    workspaceId?: string,
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    this.logger.debug(
+      `Finding valid orders for customer ${customerId} with statuses: ${statuses.join(', ')}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    // Build query with relations support
+    const qb = repository
+      .createQueryBuilder('order')
+      .where('order.mktCustomerId = :customerId', { customerId })
+      .andWhere('order.deletedAt IS NULL')
+      .andWhere('order.status IN (:...statuses)', { statuses })
+      .orderBy('order.createdAt', 'DESC');
+
+    // Add relation joins if specified (filter soft-deleted items)
+    if (options?.relations?.orderItems) {
+      qb.leftJoinAndSelect(
+        'order.orderItems',
+        'orderItems',
+        'orderItems.deletedAt IS NULL',
+      );
+    }
+
+    const orders = await qb.getMany();
+
+    this.logger.debug(
+      `Found ${orders.length} valid orders for customer ${customerId}`,
+    );
+
+    return orders;
+  }
+
+  // ============================================
   // PAYMENT DEADLINE OPERATIONS
   // ============================================
 

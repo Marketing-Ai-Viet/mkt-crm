@@ -3,7 +3,36 @@ import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 import GraphQLJSON from 'graphql-type-json';
 
 import { CustomerNoteOutput } from 'src/mkt-core/customer/dto/customer-note.dto';
+import { PurchasedProductOutput } from 'src/mkt-core/customer/dto/purchase-history.dto';
 import { LinkedAccount } from 'src/mkt-core/customer/types/linked-account.types';
+
+// ============================================
+// NESTED OBJECT TYPES
+// ============================================
+
+/**
+ * Basic workspace member info for relations
+ */
+@ObjectType({ description: 'Basic workspace member information' })
+export class WorkspaceMemberBasicOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string;
+
+  @Field(() => String, { nullable: true })
+  lastName?: string;
+
+  @Field(() => String)
+  email: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl?: string;
+
+  @Field(() => String, { nullable: true })
+  memberCode?: string;
+}
 
 /**
  * Customer output for GraphQL queries
@@ -156,12 +185,18 @@ export class CustomerOutput {
   })
   updatedAt?: string;
 
-  // ============ RELATIONS ============
-  @Field(() => String, { nullable: true, description: 'Account owner ID' })
-  accountOwnerId?: string;
+  // ============ RELATIONS - NESTED OBJECTS ============
+  @Field(() => WorkspaceMemberBasicOutput, {
+    nullable: true,
+    description: 'Account owner (sales responsible)',
+  })
+  accountOwner?: WorkspaceMemberBasicOutput;
 
-  @Field(() => String, { nullable: true, description: 'Support owner ID' })
-  supportOwnerId?: string;
+  @Field(() => WorkspaceMemberBasicOutput, {
+    nullable: true,
+    description: 'Support owner (support responsible)',
+  })
+  supportOwner?: WorkspaceMemberBasicOutput;
 
   // ============ CREATED BY ============
   @Field(() => String, {
@@ -192,6 +227,14 @@ export class CustomerOutput {
     description: 'Customer notes and interaction records',
   })
   customerNotes?: CustomerNoteOutput[];
+
+  // ============ PURCHASED PRODUCTS ============
+  @Field(() => [PurchasedProductOutput], {
+    nullable: true,
+    description:
+      'List of products purchased by customer (aggregated from COMPLETED/CONFIRMED orders)',
+  })
+  purchasedProducts?: PurchasedProductOutput[];
 }
 
 /**

@@ -122,3 +122,79 @@ export class PurchaseHistoryOutput {
   @Field(() => PurchasePaginationOutput)
   pagination: PurchasePaginationOutput;
 }
+
+/**
+ * Purchased Product Output
+ *
+ * Aggregated information about a product purchased by customer
+ */
+@ObjectType()
+export class PurchasedProductOutput {
+  @Field(() => String, { description: 'Product name from snapshot' })
+  productName: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Package name if applicable',
+  })
+  packageName?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'External MKT product ID',
+  })
+  externalProductId?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'External MKT product code',
+  })
+  externalProductCode?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'External MKT package ID',
+  })
+  externalPackageId?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'External MKT package code',
+  })
+  externalPackageCode?: string;
+
+  @Field(() => String, { nullable: true, description: 'Type of item' })
+  itemType?: string;
+
+  @Field(() => Int, { description: 'Number of times purchased' })
+  purchaseCount: number;
+
+  @Field(() => Float, { description: 'Total quantity purchased' })
+  totalQuantity: number;
+
+  @Field(() => Float, { description: 'Total amount spent on this product' })
+  totalSpent: number;
+
+  @Field(() => String, { description: 'First purchase date (ISO 8601)' })
+  firstPurchaseDate: string;
+
+  @Field(() => String, { description: 'Last purchase date (ISO 8601)' })
+  lastPurchaseDate: string;
+
+  @Field(() => String, {
+    description: 'Created at - same as first purchase date (ISO 8601)',
+  })
+  createdAt: string;
+}
+
+@ObjectType()
+export class PurchasedProductsOutput {
+  @Field(() => [PurchasedProductOutput])
+  products: PurchasedProductOutput[];
+
+  @Field(() => Int, { description: 'Total unique products purchased' })
+  totalUniqueProducts: number;
+
+  @Field(() => PurchasePaginationOutput)
+  pagination: PurchasePaginationOutput;
+}
