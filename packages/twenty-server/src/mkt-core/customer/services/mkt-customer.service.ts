@@ -31,6 +31,7 @@ import {
   UpdateCustomerInput,
   CustomerOutput,
   CustomerNoteOutput,
+  WorkspaceMemberBasicOutput,
 } from 'src/mkt-core/customer/dto';
 import { MktCustomerNoteWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-note.workspace-entity';
 
@@ -434,7 +435,7 @@ export class MktCustomerService {
   }
 
   /**
-   * Find customer by email with customerNotes
+   * Find customer by email with relations
    */
   async findByEmail(
     email: string,
@@ -444,12 +445,12 @@ export class MktCustomerService {
 
     return repository.findOne({
       where: { email, deletedAt: IsNull() },
-      relations: ['customerNotes'],
+      relations: ['customerNotes', 'accountOwner', 'supportOwner'],
     });
   }
 
   /**
-   * Find customer by customer code with customerNotes
+   * Find customer by customer code with relations
    */
   async findByCode(
     customerCode: string,
@@ -459,12 +460,12 @@ export class MktCustomerService {
 
     return repository.findOne({
       where: { mktCustomerCode: customerCode, deletedAt: IsNull() },
-      relations: ['customerNotes'],
+      relations: ['customerNotes', 'accountOwner', 'supportOwner'],
     });
   }
 
   /**
-   * Find all customers with pagination and customerNotes
+   * Find all customers with pagination and relations
    */
   async findAll(
     options: CustomerQueryOptions | undefined,
@@ -481,7 +482,7 @@ export class MktCustomerService {
 
     return repository.find({
       where: { deletedAt: IsNull() },
-      relations: ['customerNotes'],
+      relations: ['customerNotes', 'accountOwner', 'supportOwner'],
       take,
       skip: options?.skip ?? this.defaults.skip,
       order: { createdAt: 'ASC' },
@@ -489,7 +490,7 @@ export class MktCustomerService {
   }
 
   /**
-   * Find customers by status with customerNotes
+   * Find customers by status with relations
    */
   async findByStatus(
     status: string,
@@ -507,7 +508,7 @@ export class MktCustomerService {
 
     return repository.find({
       where: { status, deletedAt: IsNull() },
-      relations: ['customerNotes'],
+      relations: ['customerNotes', 'accountOwner', 'supportOwner'],
       take,
       skip: options?.skip ?? this.defaults.skip,
       order: { createdAt: 'DESC' },
@@ -515,7 +516,7 @@ export class MktCustomerService {
   }
 
   /**
-   * Find customers by tier with customerNotes
+   * Find customers by tier with relations
    */
   async findByTier(
     tier: string,
@@ -533,7 +534,7 @@ export class MktCustomerService {
 
     return repository.find({
       where: { tier, deletedAt: IsNull() },
-      relations: ['customerNotes'],
+      relations: ['customerNotes', 'accountOwner', 'supportOwner'],
       take,
       skip: options?.skip ?? this.defaults.skip,
       order: { totalOrderValue: 'DESC' },
@@ -692,9 +693,9 @@ export class MktCustomerService {
       createdAt: this.dateToISOString(customer.createdAt),
       updatedAt: this.dateToISOString(customer.updatedAt),
 
-      // Relations
-      accountOwnerId: customer.accountOwnerId ?? undefined,
-      supportOwnerId: customer.supportOwnerId ?? undefined,
+      // Relations - Nested Objects
+      accountOwner: this.mapWorkspaceMemberToBasicOutput(customer.accountOwner),
+      supportOwner: this.mapWorkspaceMemberToBasicOutput(customer.supportOwner),
 
       // Created By
       createdBySource: customer.createdBy?.source ?? undefined,
@@ -728,6 +729,35 @@ export class MktCustomerService {
       createdAt: this.dateToISOString(note.createdAt) ?? '',
       updatedAt: this.dateToISOString(note.updatedAt) ?? '',
     }));
+  }
+
+  /**
+   * Map workspace member entity to basic output DTO
+   */
+  private mapWorkspaceMemberToBasicOutput(
+    member:
+      | {
+          id: string;
+          name?: { firstName?: string; lastName?: string };
+          userEmail: string;
+          avatarUrl?: string | null;
+          memberCode?: string | null;
+        }
+      | null
+      | undefined,
+  ): WorkspaceMemberBasicOutput | undefined {
+    if (!member) {
+      return undefined;
+    }
+
+    return {
+      id: member.id,
+      firstName: member.name?.firstName ?? undefined,
+      lastName: member.name?.lastName ?? undefined,
+      email: member.userEmail,
+      avatarUrl: member.avatarUrl ?? undefined,
+      memberCode: member.memberCode ?? undefined,
+    };
   }
 
   /**

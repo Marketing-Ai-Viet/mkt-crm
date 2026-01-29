@@ -138,46 +138,6 @@ export class UserOutput {
   organizationLevel?: OrganizationLevelBasicOutput | null;
 
   // ============================================
-  // LEGACY ID FIELDS (kept for backward compatibility)
-  // ============================================
-
-  @Field(() => String, {
-    nullable: true,
-    deprecationReason: 'Use department.id instead',
-  })
-  departmentId?: string;
-
-  @Field(() => String, {
-    nullable: true,
-    deprecationReason: 'Use department.departmentName instead',
-  })
-  departmentName?: string;
-
-  @Field(() => String, {
-    nullable: true,
-    deprecationReason: 'Use permissionTemplate.id instead',
-  })
-  permissionTemplateId?: string;
-
-  @Field(() => String, {
-    nullable: true,
-    deprecationReason: 'Use permissionTemplate.templateName instead',
-  })
-  permissionTemplateName?: string;
-
-  @Field(() => String, {
-    nullable: true,
-    deprecationReason: 'Use organizationLevel.id instead',
-  })
-  organizationLevelId?: string;
-
-  @Field(() => String, {
-    nullable: true,
-    deprecationReason: 'Use employmentStatus.id instead',
-  })
-  employmentStatusId?: string;
-
-  // ============================================
   // TIMESTAMPS
   // ============================================
 
