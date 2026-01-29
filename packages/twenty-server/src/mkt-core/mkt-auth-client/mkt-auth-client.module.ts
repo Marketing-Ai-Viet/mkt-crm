@@ -7,6 +7,7 @@ import {
   MktAuthCacheService,
   MktAuthLockService,
   MktAuthClientService,
+  MktAuthHttpService,
 } from './services';
 
 import {
@@ -71,8 +72,9 @@ import {
     MktAuthCacheService,
     MktAuthLockService,
     MktAuthClientService,
+    // HTTP Client (Phase 3)
+    MktAuthHttpService,
     // MktAuthMetricsService (Phase 4)
-    // MktAuthHttpService (Phase 3)
   ],
   exports: [
     // Configuration
@@ -80,7 +82,8 @@ import {
     // Public API
     MktAuthClientService,
     MktAuthCacheService,
-    // MktAuthHttpService (Phase 3)
+    // HTTP Client (Phase 3)
+    MktAuthHttpService,
   ],
 })
 export class MktAuthClientModule implements OnModuleInit {

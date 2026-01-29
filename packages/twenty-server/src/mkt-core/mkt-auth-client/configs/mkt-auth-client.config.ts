@@ -267,7 +267,9 @@ export function parseMktAuthClientConfig(): MktAuthClientEnvConfig {
     );
   }
 
-  return result.success ? result.data : (envConfig as MktAuthClientEnvConfig);
+  return result.success
+    ? result.data
+    : (envConfig as unknown as MktAuthClientEnvConfig);
 }
 
 /**
