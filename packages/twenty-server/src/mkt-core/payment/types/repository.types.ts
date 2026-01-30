@@ -1,6 +1,7 @@
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { WebhookLogStatus } from 'src/mkt-core/payment/objects/mkt-webhook-log.workspace-entity';
 import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
+import { PaymentProviderType } from 'src/mkt-core/payment/constants/payment-provider.constants';
 
 // ============================================
 // PAYMENT REPOSITORY TYPES
@@ -54,6 +55,22 @@ export type UpdatePaymentData = Partial<{
   qrCodeUrl: string;
   expiredAt: string;
   createdBy: ActorMetadata;
+  // Provider fields
+  providerType: PaymentProviderType;
+  providerTransactionId: string;
+  providerResponse: JSON | null;
+  providerMetadata: JSON | null;
+  // Confirmation fields
+  confirmedAt: string;
+  confirmedById: string | null;
+  // Rejection fields
+  rejectedAt: string;
+  rejectedById: string | null;
+  rejectionReason: string;
+  // Refund fields
+  refundedAmount: number;
+  // Metadata
+  metadata: JSON | null;
 }>;
 
 // ============================================

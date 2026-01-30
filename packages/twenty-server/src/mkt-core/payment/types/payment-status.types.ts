@@ -1,16 +1,21 @@
 /**
  * Payment status types
+ *
+ * Matches PAYMENT_TRANSACTION_STATUS constants.
  */
 export type PaymentStatus =
   | 'PENDING'
   | 'PROCESSING'
-  | 'COMPLETED'
-  | 'PARTIAL' // Partial payment received
-  | 'OVERPAID' // More than expected amount
+  | 'COMPLETED' // Legacy status, prefer CONFIRMED for new code
+  | 'CONFIRMED'
   | 'FAILED'
-  | 'CANCELLED'
+  | 'REJECTED'
   | 'REFUNDED'
-  | 'EXPIRED';
+  | 'PARTIALLY_REFUNDED'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'PARTIAL' // Partial payment received
+  | 'OVERPAID'; // More than expected amount
 
 /**
  * Payment status constants
