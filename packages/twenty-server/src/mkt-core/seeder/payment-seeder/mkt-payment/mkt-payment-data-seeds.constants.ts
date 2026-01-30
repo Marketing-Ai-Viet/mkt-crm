@@ -110,7 +110,11 @@ export const MKT_PAYMENT_DATA_SEEDS_IDS = {
 };
 
 // Default values for payment seed
+// IMPORTANT: Property order must match MKT_PAYMENT_DATA_SEED_COLUMNS order
+// because TypeORM extracts values based on object property order
 const DEFAULT_PAYMENT_SEED = {
+  id: '', // Placeholder - will be overwritten
+  name: '', // Placeholder - will be overwritten
   amount: 0,
   currency: 'VND' as PaymentCurrency,
   status: PAYMENT_TRANSACTION_STATUS.PENDING,
