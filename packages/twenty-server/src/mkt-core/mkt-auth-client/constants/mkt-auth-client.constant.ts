@@ -120,8 +120,29 @@ export const MKT_AUTH_DEFAULTS = {
     /** Server-side token TTL in milliseconds (from MKT Server) - 24 hours */
     SERVER_TTL_MS: 24 * 60 * 60 * 1000,
 
-    /** Buffer time before expiry to trigger refresh - 1 hour */
+    /**
+     * Buffer time before expiry to trigger proactive refresh - 1 hour
+     *
+     * Note: This creates a "double buffer" effect:
+     * - Cache TTL = serverTtlMs - bufferMs = 23h
+     * - Proactive refresh = cacheTtl - bufferMs = 22h
+     * - Effective safety window = 2 hours
+     *
+     * This is intentional to provide extra safety for:
+     * - Network latency and retry delays
+     * - Clock drift between servers
+     * - Multiple refresh failure recovery
+     */
     BUFFER_MS: 60 * 60 * 1000,
+
+    /**
+     * Safety margin before token expiry - 5 seconds
+     *
+     * If token has less than this time remaining, treat as expired
+     * and refresh immediately. Prevents race conditions where token
+     * expires between check and actual HTTP request.
+     */
+    SAFETY_MARGIN_MS: 5 * 1000,
   },
 
   // Cache configuration

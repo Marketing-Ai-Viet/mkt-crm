@@ -17,6 +17,8 @@ import {
   MktAuthTokenData,
   LocalCacheEntry,
   CacheMetrics,
+  TokenValidityResult,
+  TOKEN_VALIDITY_STATUS,
 } from 'src/mkt-core/mkt-auth-client/types';
 
 /**
@@ -158,6 +160,63 @@ export class MktAuthCacheService {
     return (
       DateTimeUtils.toMillis(expiresAt) <= DateTimeUtils.toMillis(threshold)
     );
+  }
+
+  /**
+   * Get comprehensive token validity status
+   *
+   * @param token - The token to check
+   * @param bufferMs - Buffer threshold for "expiring soon" status
+   * @param safetyMarginMs - Safety margin for "nearly expired" status
+   * @returns TokenValidityResult with status, remaining time, and usage flags
+   */
+  getTokenValidity(
+    token: MktAuthTokenData,
+    bufferMs: number,
+    safetyMarginMs: number,
+  ): TokenValidityResult {
+    const expiresAt = DateTimeUtils.fromISO(token.expiresAt);
+    const now = DateTimeUtils.now();
+    const remainingMs =
+      DateTimeUtils.toMillis(expiresAt) - DateTimeUtils.toMillis(now);
+
+    // Token has expired
+    if (remainingMs <= 0) {
+      return {
+        status: TOKEN_VALIDITY_STATUS.EXPIRED,
+        remainingMs: 0,
+        shouldRefresh: true,
+        canUse: false,
+      };
+    }
+
+    // Token is nearly expired (within safety margin) - too risky to use
+    if (remainingMs <= safetyMarginMs) {
+      return {
+        status: TOKEN_VALIDITY_STATUS.NEARLY_EXPIRED,
+        remainingMs,
+        shouldRefresh: true,
+        canUse: false,
+      };
+    }
+
+    // Token is expiring soon - can use but should refresh
+    if (remainingMs <= bufferMs) {
+      return {
+        status: TOKEN_VALIDITY_STATUS.EXPIRING_SOON,
+        remainingMs,
+        shouldRefresh: true,
+        canUse: true,
+      };
+    }
+
+    // Token is valid
+    return {
+      status: TOKEN_VALIDITY_STATUS.VALID,
+      remainingMs,
+      shouldRefresh: false,
+      canUse: true,
+    };
   }
 
   /**
