@@ -313,6 +313,50 @@ export type MktAuthTokenConfig = {
 
   /** Buffer time before expiry to trigger refresh */
   bufferMs: number;
+
+  /** Safety margin before expiry to treat as expired */
+  safetyMarginMs: number;
+};
+
+// ============================================
+// TOKEN VALIDITY TYPES
+// ============================================
+
+/**
+ * Token validity status constants
+ */
+export const TOKEN_VALIDITY_STATUS = {
+  /** Token is valid and can be used normally */
+  VALID: 'VALID',
+
+  /** Token is expiring soon, should refresh but can still use */
+  EXPIRING_SOON: 'EXPIRING_SOON',
+
+  /** Token is nearly expired (within safety margin), must refresh */
+  NEARLY_EXPIRED: 'NEARLY_EXPIRED',
+
+  /** Token has expired */
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export type TokenValidityStatus =
+  (typeof TOKEN_VALIDITY_STATUS)[keyof typeof TOKEN_VALIDITY_STATUS];
+
+/**
+ * Result of token validity check
+ */
+export type TokenValidityResult = {
+  /** Current validity status */
+  status: TokenValidityStatus;
+
+  /** Milliseconds remaining until expiry */
+  remainingMs: number;
+
+  /** Whether token should be refreshed */
+  shouldRefresh: boolean;
+
+  /** Whether token can still be used for requests */
+  canUse: boolean;
 };
 
 /**

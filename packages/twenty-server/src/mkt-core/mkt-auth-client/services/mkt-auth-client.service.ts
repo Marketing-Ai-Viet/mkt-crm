@@ -167,8 +167,15 @@ export class MktAuthClientService
    * Flow:
    * 1. Check circuit breaker
    * 2. Try cache
-   * 3. If expiring soon, refresh with lock
-   * 4. If no cache, fetch with lock
+   * 3. If nearly expired (within safety margin), must refresh
+   * 4. If expiring soon (within buffer), refresh with lock
+   * 5. If no cache, fetch with lock
+   *
+   * Token Validity States:
+   * - VALID: Use immediately
+   * - EXPIRING_SOON: Refresh (synchronous blocking)
+   * - NEARLY_EXPIRED: Must refresh (within safety margin)
+   * - EXPIRED: Cache returns null, fetch new
    */
   async getAccessToken(): Promise<string> {
     // Check circuit breaker first
@@ -188,12 +195,26 @@ export class MktAuthClientService
     const cached = await this.cacheService.get();
 
     if (cached) {
-      // Check if expiring soon (with jitter)
-      const threshold = this.getRefreshThresholdWithJitter();
+      // Get comprehensive validity status
+      const validity = this.cacheService.getTokenValidity(
+        cached,
+        this.getRefreshThresholdWithJitter(),
+        this.config.token.safetyMarginMs,
+      );
 
-      if (this.cacheService.isExpiringSoon(cached, threshold)) {
+      // Token nearly expired or expired - must refresh immediately
+      if (!validity.canUse) {
         this.logger.debug(
-          `Token expiring soon (threshold: ${threshold}ms), refreshing...`,
+          `Token ${validity.status} (${validity.remainingMs}ms remaining), refreshing...`,
+        );
+
+        return this.fetchTokenWithLock(true);
+      }
+
+      // Token expiring soon - refresh (synchronous blocking)
+      if (validity.shouldRefresh) {
+        this.logger.debug(
+          `Token expiring soon (${validity.remainingMs}ms remaining), refreshing...`,
         );
 
         return this.fetchTokenWithLock(true);
