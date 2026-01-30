@@ -37,6 +37,12 @@ export type ConfirmOrderSagaContext = SagaContext & {
   /** IDs of scheduled reminder jobs for cleanup */
   scheduledReminderJobIds?: string[];
 
+  // Contract fields
+  /** Contract ID created for the order */
+  contractId?: string;
+  /** Contract number */
+  contractNumber?: string;
+
   // Rollback data (typed)
   rollbackOrder?: {
     status: ORDER_STATUS;

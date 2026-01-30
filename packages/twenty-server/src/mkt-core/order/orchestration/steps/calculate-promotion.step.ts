@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { QueryRunner } from 'typeorm';
 
-import { OrderItemForPromotion } from 'src/mkt-core/mkt-promotion/types';
 import { CreateOrderSagaContext } from 'src/mkt-core/order/orchestration/context';
 import {
   SagaContext,
@@ -10,63 +9,61 @@ import {
   SagaStepResult,
 } from 'src/mkt-core/order/types/order-saga.interface';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
-import { OrderPromotionIntegrationService } from 'src/mkt-core/order/services/integration/order-promotion.integration';
 import {
   CalculatePromotionStepOutput,
   CreateOrderWithItemsInput,
-  OrderDiscountContext,
-  OrderPromotionResult,
 } from 'src/mkt-core/order/types';
-
-// ============================================
-// STEP CONSTANTS
-// ============================================
-
-const STEP_NAME = 'calculate_promotion';
-const STEP_DESCRIPTION = 'Calculate and apply promotions/discounts to order';
-const DEFAULT_APPLY_AUTO_PROMOTIONS = true;
+import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
 /**
- * CalculatePromotionStep - Calculate promotions and discounts
+ * CalculatePromotionStep - Calculate discount from percentage input
  *
  * Thực hiện:
- * - Build evaluation context từ order items
- * - Calculate discounts (auto promotions + coupon)
- * - Update order với promotion discount và applied promotions
+ * - Tính discount dựa trên discountPercent từ client input
+ * - Update order với discount amount
  *
  * Compensate:
- * - Reset promotion fields về giá trị mặc định
+ * - Reset discount về 0
  *
  * Skip condition:
- * - applyAutoPromotions = false AND không có couponCode
+ * - Không có discountPercent hoặc discountPercent = 0
  */
 @Injectable()
 export class CalculatePromotionStep extends SagaStep<
   CreateOrderWithItemsInput,
   CalculatePromotionStepOutput
 > {
-  readonly name = STEP_NAME;
-  readonly description = STEP_DESCRIPTION;
+  // ============================================
+  // STEP CONSTANTS
+  // ============================================
+  private static readonly STEP_NAME = 'calculate_discount';
+  private static readonly STEP_DESCRIPTION =
+    'Calculate and apply discount percentage to order';
+  private static readonly MAX_DISCOUNT_PERCENT = 100;
+  private static readonly MIN_DISCOUNT_PERCENT = 0;
+
+  readonly name = CalculatePromotionStep.STEP_NAME;
+  readonly description = CalculatePromotionStep.STEP_DESCRIPTION;
 
   private readonly logger = new Logger(CalculatePromotionStep.name);
 
-  constructor(
-    private readonly orderRepository: MktOrderRepository,
-    private readonly promotionIntegration: OrderPromotionIntegrationService,
-  ) {
+  constructor(private readonly orderRepository: MktOrderRepository) {
     super();
   }
 
   /**
-   * Skip if no promotions to apply
+   * Skip if no discount to apply
    */
   shouldSkip(_context: SagaContext, input: CreateOrderWithItemsInput): boolean {
-    const applyAutoPromotions =
-      input.applyAutoPromotions ?? DEFAULT_APPLY_AUTO_PROMOTIONS;
-    const hasCoupon = !!input.couponCode;
+    const discountPercent = input.discountPercent ?? 0;
 
-    if (!applyAutoPromotions && !hasCoupon) {
-      this.logger.debug('Skipping: No promotions to apply');
+    if (
+      discountPercent <= CalculatePromotionStep.MIN_DISCOUNT_PERCENT ||
+      discountPercent > CalculatePromotionStep.MAX_DISCOUNT_PERCENT
+    ) {
+      this.logger.debug('Skipping: No valid discount percentage provided', {
+        discountPercent,
+      });
 
       return true;
     }
@@ -87,71 +84,45 @@ export class CalculatePromotionStep extends SagaStep<
         };
       }
 
-      this.logger.log(`Calculating promotions for order: ${context.orderId}`);
+      const discountPercent = input.discountPercent ?? 0;
+
+      this.logger.log(`Calculating discount for order: ${context.orderId}`, {
+        discountPercent,
+      });
 
       // Cast to typed context for type safety
       const typedContext = context as CreateOrderSagaContext;
 
       // Get order subtotal from typed context (set by CreateOrderItemsStep)
-      // Note: Uses totalAmount which already includes combo discount
       const orderSubtotal = typedContext.totals?.totalAmount ?? 0;
 
-      // Build order items for promotion evaluation
-      const orderItems = this.buildOrderItemsForPromotion(context);
-
-      // Build discount context
-      const discountContext: OrderDiscountContext = {
-        workspaceId: context.workspaceId,
-        customerId: input.customerId,
-        orderItems,
+      // Calculate discount amount using MoneyUtils
+      const discountAmount = MoneyUtils.percentage(
         orderSubtotal,
-        couponCode: input.couponCode,
-        // Customer tags can be added from context if available
-        customerTags: context.metadata.get('customerTags') as
-          | string[]
-          | undefined,
-        isFirstOrder: context.metadata.get('isFirstOrder') as
-          | boolean
-          | undefined,
-      };
+        discountPercent,
+      ).toNumber();
+      const finalAmount = MoneyUtils.subtract(
+        orderSubtotal,
+        discountAmount,
+      ).toNumber();
 
-      // Calculate discount
-      const promotionResult =
-        await this.promotionIntegration.calculateDiscount(discountContext);
-
-      if (!promotionResult.success) {
-        // Log warning but continue - promotions are optional
-        this.logger.warn('Promotion calculation failed', {
-          errors: promotionResult.errors,
-        });
-
-        // Return success with empty promotions
-        return {
-          success: true,
-          data: {
-            promotionResult,
-            appliedPromotions: [],
-            totalDiscount: 0,
-            finalAmount: orderSubtotal,
-          },
-        };
-      }
-
-      // Update order with promotion data
-      await this.updateOrderPromotions(
-        context,
-        promotionResult,
-        input.couponCode,
+      // Update order with discount
+      await this.orderRepository.updateOrder(
+        context.orderId,
+        {
+          promotionDiscount: discountAmount,
+          totalAmount: Math.max(0, finalAmount),
+        },
+        context.workspaceId,
       );
 
       // Store in typed context for subsequent steps
-      // promotionResult.promotions is already PromotionSnapshot[]
       typedContext.promotionResult = {
-        totalDiscount: promotionResult.totalDiscount,
-        appliedPromotions: promotionResult.promotions,
-        couponUsed: input.couponCode,
+        totalDiscount: discountAmount,
+        appliedPromotions: [],
+        couponUsed: undefined,
       };
-      typedContext.finalAmount = promotionResult.finalOrderAmount;
+      typedContext.finalAmount = Math.max(0, finalAmount);
 
       // Store rollback data
       context.rollbackData.set(this.name, {
@@ -159,23 +130,29 @@ export class CalculatePromotionStep extends SagaStep<
         originalTotalAmount: orderSubtotal,
       });
 
-      this.logger.log('Promotions calculated successfully', {
-        totalDiscount: promotionResult.totalDiscount,
-        promotionCount: promotionResult.promotions.length,
-        finalAmount: promotionResult.finalOrderAmount,
+      this.logger.log('Discount calculated successfully', {
+        discountPercent,
+        discountAmount,
+        orderSubtotal,
+        finalAmount,
       });
 
       return {
         success: true,
         data: {
-          promotionResult,
-          appliedPromotions: promotionResult.promotions,
-          totalDiscount: promotionResult.totalDiscount,
-          finalAmount: promotionResult.finalOrderAmount,
+          promotionResult: {
+            success: true,
+            totalDiscount: discountAmount,
+            finalOrderAmount: Math.max(0, finalAmount),
+            promotions: [],
+          },
+          appliedPromotions: [],
+          totalDiscount: discountAmount,
+          finalAmount: Math.max(0, finalAmount),
         },
       };
     } catch (error) {
-      this.logger.error('Failed to calculate promotions', error);
+      this.logger.error('Failed to calculate discount', error);
 
       return {
         success: false,
@@ -194,108 +171,28 @@ export class CalculatePromotionStep extends SagaStep<
     } | null;
 
     if (!rollbackData?.orderId) {
-      this.logger.warn('No promotion data to compensate');
+      this.logger.warn('No discount data to compensate');
 
       return;
     }
 
     try {
-      this.logger.warn(
-        'Compensating promotion step - resetting promotion data',
-      );
+      this.logger.warn('Compensating discount step - resetting discount data');
 
-      // Reset promotion fields using repository - pass workspaceId for saga context
+      // Reset discount fields using repository
       await this.orderRepository.updateOrder(
         rollbackData.orderId,
         {
-          couponCode: null,
           promotionDiscount: 0,
-          appliedPromotions: null,
           totalAmount: rollbackData.originalTotalAmount,
         },
         context.workspaceId,
       );
 
-      // Clear metadata
-      context.metadata.delete('promotionResult');
-      context.metadata.delete('appliedPromotions');
-      context.metadata.delete('promotionDiscount');
-
-      this.logger.log('Promotion data reset successfully');
+      this.logger.log('Discount data reset successfully');
     } catch (error) {
-      this.logger.error('Failed to compensate promotion step', error);
+      this.logger.error('Failed to compensate discount step', error);
       throw error;
     }
-  }
-
-  // ============================================
-  // PRIVATE METHODS
-  // ============================================
-
-  /**
-   * Build order items for promotion evaluation from typed context
-   *
-   * P0 fix: Uses typed context field instead of metadata Map
-   * - Type safety: TypeScript catches missing fields at compile time
-   * - Data flow: CreateOrderItemsStep sets typedContext.orderItems
-   */
-  private buildOrderItemsForPromotion(
-    context: SagaContext,
-  ): OrderItemForPromotion[] {
-    // Cast to typed context (set by CreateOrderItemsStep)
-    const typedContext = context as CreateOrderSagaContext;
-    const orderItems = typedContext.orderItems;
-
-    if (!orderItems || orderItems.length === 0) {
-      this.logger.warn(
-        'No order items found in context - promotion calculation will use empty items',
-      );
-
-      return [];
-    }
-
-    return orderItems.map((item) => ({
-      productId: item.externalMktProductId ?? '',
-      variantId: item.externalMktPackageId ?? null,
-      categoryId: null, // Category info not available in current context
-      quantity: item.quantity ?? 1,
-      unitPrice: item.unitPrice ?? 0,
-      totalPrice: item.totalPrice ?? 0,
-    }));
-  }
-
-  /**
-   * Update order with promotion data
-   */
-  private async updateOrderPromotions(
-    context: SagaContext,
-    result: OrderPromotionResult,
-    couponCode: string | undefined,
-  ): Promise<void> {
-    // Cast to typed context
-    const typedContext = context as CreateOrderSagaContext;
-    const currentTotalAmount = typedContext.totals?.totalAmount ?? 0;
-
-    const finalAmount = currentTotalAmount - result.totalDiscount;
-
-    if (!context.orderId) {
-      throw new Error('Order ID is required');
-    }
-
-    // Use repository for update - pass workspaceId for saga context
-    await this.orderRepository.updateOrder(
-      context.orderId,
-      {
-        couponCode: couponCode ?? null,
-        promotionDiscount: result.totalDiscount,
-        appliedPromotions:
-          result.promotions.length > 0 ? result.promotions : null,
-        totalAmount: Math.max(0, finalAmount), // Ensure non-negative
-      },
-      context.workspaceId,
-    );
-
-    // Update finalAmount in typed context for subsequent steps
-    typedContext.finalAmount = Math.max(0, finalAmount);
   }
 }

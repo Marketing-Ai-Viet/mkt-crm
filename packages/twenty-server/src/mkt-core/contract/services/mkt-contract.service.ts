@@ -4,7 +4,9 @@ import {
   CONTRACT_NUMBER_PREFIX,
   CONTRACT_SEQUENCE_DIGITS,
   DEFAULT_CONTRACT_DURATION_YEARS,
+  DEFAULT_CONTRACT_TYPE,
   MKT_CONTRACT_STATUS,
+  ORDER_ACTION_TO_CONTRACT_TYPE,
   TIMESTAMP_DIGITS,
 } from 'src/mkt-core/contract/constants';
 import {
@@ -115,12 +117,19 @@ export class MktContractService {
   /**
    * Create contract for order
    * Tạo hợp đồng mới khi đơn hàng được xác nhận
+   *
+   * @param order - Order entity
+   * @param workspaceId - Workspace ID
+   * @param mktCustomerId - Customer ID
+   * @param generatedOrderCode - Order code
+   * @param orderAction - Order action để xác định loại hợp đồng (NEW_ORDER, TRIAL_TO_PAID, LICENSE_RENEWING, CHANGE_VARIANT)
    */
   async createContractForOrder(
     order: MktOrderWorkspaceEntity,
     workspaceId: string,
     mktCustomerId: string | null,
     generatedOrderCode: string | null,
+    orderAction?: string,
   ): Promise<MktContractWorkspaceEntity> {
     try {
       this.logger.log(`Creating contract for order: ${order.id}`);
@@ -141,15 +150,22 @@ export class MktContractService {
         years: DEFAULT_CONTRACT_DURATION_YEARS,
       });
 
+      // Determine contract type from order action
+      const contractType = orderAction
+        ? (ORDER_ACTION_TO_CONTRACT_TYPE[orderAction] ?? DEFAULT_CONTRACT_TYPE)
+        : DEFAULT_CONTRACT_TYPE;
+
       // Create the contract with ownership fields
+      // Status = PENDING_CONVERSION: Contract được tạo để tham chiếu, đợi chuyển đổi thành hợp đồng chính thức
       const savedContract =
         await this.contractRepository.createContractWithOwnership(
           {
             name: contractName,
             contractNumber,
+            contractType,
             startDate: DateTimeUtils.toDate(now),
             endDate: DateTimeUtils.toDate(endDateTime),
-            status: MKT_CONTRACT_STATUS.ACTIVE,
+            status: MKT_CONTRACT_STATUS.PENDING_CONVERSION,
             customerId: mktCustomerId,
           },
           order.createdById ?? undefined,
@@ -157,7 +173,7 @@ export class MktContractService {
         );
 
       this.logger.log(
-        `Successfully created contract ${contractNumber} for order ${order.id}`,
+        `Successfully created contract ${contractNumber} (type: ${contractType}) for order ${order.id}`,
       );
 
       return savedContract;

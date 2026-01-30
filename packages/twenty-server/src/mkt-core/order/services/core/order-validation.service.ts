@@ -215,14 +215,18 @@ export class OrderValidationService {
 
   /**
    * Validate input để confirm order
+   *
+   * @param workspaceId - Workspace ID để truy cập repository
+   * @param input - Confirm order input
    */
   async validateConfirmOrderInput(
+    workspaceId: string,
     input: ConfirmOrderInput,
   ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
     // Check order exists
-    const order = await this.findOrder(input.orderId);
+    const order = await this.findOrder(input.orderId, workspaceId);
 
     if (!order) {
       errors.push({
@@ -351,12 +355,20 @@ export class OrderValidationService {
   }
 
   /**
-   * Tìm order
+   * Tìm order với workspace context
+   *
+   * @param orderId - Order ID to find
+   * @param workspaceId - Workspace ID để truy cập repository
    */
   private async findOrder(
     orderId: string,
+    workspaceId: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
-    return this.orderRepository.findById(orderId);
+    return this.orderRepository.findByIdWithOptions(
+      orderId,
+      undefined,
+      workspaceId,
+    );
   }
 
   /**

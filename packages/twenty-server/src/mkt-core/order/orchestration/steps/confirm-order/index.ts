@@ -2,6 +2,7 @@ export * from './validate-order.step';
 export * from './validate-transition.step';
 export * from './update-status.step';
 export * from './create-licenses-on-confirm.step';
+export * from './create-contract-on-confirm.step';
 export * from './complete-order-after-license.step';
 
 // New Payment Flow Steps

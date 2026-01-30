@@ -66,9 +66,6 @@ export const OrderInputMapper = {
       licenseId: dto.licenseId,
       // Trial duration for TRIAL_TO_PAID action (default: 1 day)
       trialDurationDays: dto.trialDurationDays,
-      // Promotion fields
-      couponCode: dto.couponCode,
-      applyAutoPromotions: dto.applyAutoPromotions ?? true,
       // Draft mode
       isDraft: dto.isDraft ?? false,
       // MKT Server email override

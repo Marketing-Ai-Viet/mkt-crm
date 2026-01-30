@@ -180,6 +180,7 @@ export class FinalizeOrderStep extends SagaStep<
         context.workspaceId,
         input.customerId,
         context.orderCode ?? '',
+        input.action, // Pass order action to determine contract type
       );
 
       this.logger.log(

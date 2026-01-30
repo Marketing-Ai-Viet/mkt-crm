@@ -165,11 +165,23 @@ export abstract class BaseWorkspaceRepository<
    * this method automatically returns a repository bound to the active transaction.
    * This ensures all database operations within the transaction use the same connection.
    *
-   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
+   * Workspace ID resolution order:
+   * 1. Explicitly passed workspaceId parameter
+   * 2. Transaction context (ALS) workspaceId (when running in saga/transaction)
+   * 3. Scoped workspace context (request-scoped)
+   *
+   * @param workspaceId - Optional workspace ID (uses transaction or scoped context if not provided)
    */
   async getRepository(workspaceId?: string): Promise<WorkspaceRepository<T>> {
+    // Try to get workspaceId from transaction context first (for saga execution)
+    const txWorkspaceId = TRANSACTION_CONFIG.ALS_ENABLED
+      ? transactionContextStore.get()?.workspaceId
+      : undefined;
+
     const wsId =
-      workspaceId ?? this.scopedWorkspaceContextFactory.create().workspaceId;
+      workspaceId ??
+      txWorkspaceId ??
+      this.scopedWorkspaceContextFactory.create().workspaceId;
 
     if (!wsId) {
       throw new NotFoundException(
