@@ -29,7 +29,7 @@ import { SepayWebhookPayload } from 'src/mkt-core/payment/providers/sepay/sepay.
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories/mkt-payment.repository';
 import { MktWebhookLogRepository } from 'src/mkt-core/payment/repositories/mkt-webhook-log.repository';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
-import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
+import { MKT_PAYMENT_STATUS } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-data-seeds.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 
