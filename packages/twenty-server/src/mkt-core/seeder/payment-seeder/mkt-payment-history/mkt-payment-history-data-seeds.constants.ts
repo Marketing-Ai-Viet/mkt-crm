@@ -10,7 +10,7 @@ type MktPaymentHistoryDataSeed = {
   id: string;
   name: string;
   paymentType: string | null;
-  amount: string;
+  amount: number;
   note: string | null;
   position: number;
   createdBySource: string;
@@ -67,6 +67,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS = {
 // Default values for payment history seed
 const DEFAULT_PAYMENT_HISTORY_SEED = {
   paymentType: null,
+  amount: 0,
   note: null,
   position: 0,
   createdBySource: 'API',
@@ -90,7 +91,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_1,
     name: 'Payment Created - PAY-2024-001',
     paymentType: PAYMENT_HISTORY_TYPE.PAYMENT,
-    amount: '500000',
+    amount: 500000,
     note: 'Tạo thanh toán mới qua SEPay',
     position: 1,
     action: PAYMENT_ACTION.CREATED,
@@ -110,7 +111,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_2,
     name: 'Payment Confirmed - PAY-2024-001',
     paymentType: PAYMENT_HISTORY_TYPE.PAYMENT,
-    amount: '500000',
+    amount: 500000,
     note: 'Thanh toán đã được xác nhận thành công',
     position: 2,
     action: PAYMENT_ACTION.CONFIRMED,
@@ -130,7 +131,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_3,
     name: 'Payment Created - PAY-2024-003',
     paymentType: PAYMENT_HISTORY_TYPE.PAYMENT,
-    amount: '350000',
+    amount: 350000,
     note: 'Tạo thanh toán MoMo',
     position: 1,
     action: PAYMENT_ACTION.CREATED,
@@ -146,7 +147,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_4,
     name: 'Payment Refunded - PAY-2024-003',
     paymentType: PAYMENT_HISTORY_TYPE.REFUND,
-    amount: '350000',
+    amount: 350000,
     note: 'Hoàn tiền theo yêu cầu khách hàng',
     position: 2,
     action: PAYMENT_ACTION.REFUNDED,
@@ -166,7 +167,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_5,
     name: 'Payment Rejected - PAY-2024-004',
     paymentType: PAYMENT_HISTORY_TYPE.PAYMENT,
-    amount: '2500000',
+    amount: 2500000,
     note: 'Thanh toán bị từ chối - Số tiền không khớp',
     position: 1,
     action: PAYMENT_ACTION.REJECTED,
@@ -187,7 +188,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_6,
     name: 'Partial Refund - PAY-2024-005',
     paymentType: PAYMENT_HISTORY_TYPE.REFUND,
-    amount: '200000',
+    amount: 200000,
     note: 'Hoàn tiền một phần do sản phẩm hết hàng',
     position: 2,
     action: PAYMENT_ACTION.PARTIALLY_REFUNDED,
@@ -209,7 +210,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_7,
     name: 'Payment Cancelled - PAY-2024-009',
     paymentType: PAYMENT_HISTORY_TYPE.PAYMENT,
-    amount: '680000',
+    amount: 680000,
     note: 'Khách hàng hủy thanh toán',
     position: 1,
     action: PAYMENT_ACTION.CANCELLED,
@@ -229,7 +230,7 @@ export const MKT_PAYMENT_HISTORY_DATA_SEEDS: MktPaymentHistoryDataSeed[] = [
     id: MKT_PAYMENT_HISTORY_DATA_SEEDS_IDS.ID_8,
     name: 'License Renewal Payment',
     paymentType: PAYMENT_HISTORY_TYPE.RENEW,
-    amount: '450000',
+    amount: 450000,
     note: 'Thanh toán gia hạn license 1 năm',
     position: 1,
     action: PAYMENT_ACTION.CONFIRMED,
