@@ -167,7 +167,6 @@ export class MktDigitalProductResolver {
     try {
       const pkg = await this.productProxyService.getPackage(
         input.packageId,
-        undefined,
         input.productId,
       );
 

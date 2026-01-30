@@ -8,6 +8,7 @@ import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
 // API ENDPOINTS
 // ============================================
 
+// TODO: replace oauth by mkt in all endpoints
 /**
  * MKT Product API Endpoints
  *
@@ -17,7 +18,7 @@ import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
  */
 export const MKT_PRODUCT_ENDPOINTS = {
   // Product endpoints (từ ProductOAuthController)
-  LIST: '/api/oauth/products',
+  LIST: '/api/v1/products',
   GET_BY_ID: '/api/oauth/products/:id',
   GET_BY_CODE: '/api/oauth/products/by-code/:code',
   GET_LOCALIZED: '/api/oauth/products/:id/localized',
@@ -26,7 +27,7 @@ export const MKT_PRODUCT_ENDPOINTS = {
 
   // Package endpoints (từ ProductPackageOAuthController)
   // FIX: Changed from /api/oauth/packages to /api/oauth/product-packages
-  PACKAGES_LIST: '/api/oauth/product-packages',
+  PACKAGES_LIST: '/api/v1/plans',
   GET_PACKAGE: '/api/oauth/product-packages/:id',
   GET_PACKAGE_BY_CODE: '/api/oauth/product-packages/by-code/:code',
   GET_PACKAGES_BY_PRODUCT: '/api/oauth/product-packages/by-product/:productId',

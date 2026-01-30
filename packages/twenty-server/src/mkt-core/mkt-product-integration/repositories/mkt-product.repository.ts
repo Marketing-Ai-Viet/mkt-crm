@@ -1,13 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
-import { OAuth2HttpService } from 'src/mkt-core/oauth2-client/services/oauth2-http.service';
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
+import { MktAuthHttpService } from 'src/mkt-core/mkt-auth-client';
 import {
-  MktApiResponse,
-  MktPaginatedData,
   MktProduct,
   MktProductQueryParams,
+  OffsetPaginatedProductDto,
 } from 'src/mkt-core/mkt-product-integration/types';
 import {
   MKT_PRODUCT_ENDPOINTS,
@@ -15,7 +12,7 @@ import {
   MKT_PRODUCT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-product-integration/constants';
 import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
-import { buildUrl, getErrorMessage } from 'src/mkt-core/utils';
+import { buildEndpoint, getErrorMessage } from 'src/mkt-core/utils';
 
 /**
  * MktProductRepository - Data access layer for MKT Product API
@@ -28,49 +25,34 @@ import { buildUrl, getErrorMessage } from 'src/mkt-core/utils';
  * Does NOT handle:
  * - Caching (handled by CacheService)
  * - Business logic (handled by Service layer)
+ *
+ * Uses MktAuthHttpService which automatically:
+ * - Injects Bearer token
+ * - Handles 401 with re-login
+ * - Retries on 5xx errors
  */
 @Injectable()
 export class MktProductRepository {
   private readonly logger = new Logger(`${MKT_PRODUCT_LOG_CONTEXT}:Repository`);
-  private readonly apiBaseUrl: string;
 
-  constructor(
-    private readonly oauth2Http: OAuth2HttpService,
-    private readonly configService: ConfigService,
-  ) {
-    this.apiBaseUrl =
-      this.configService.get<string>('oauth2Client.serverUrl') ?? '';
-  }
+  constructor(private readonly httpService: MktAuthHttpService) {}
 
   /**
    * Fetch product by ID from MKT Server
    */
-  async findById(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async findById(productId: string): Promise<MktProduct | null> {
     this.logger.debug(MKT_PRODUCT_MESSAGES.OPERATION.FETCH_FROM_MKT, {
       productId,
     });
 
     try {
-      const url = buildUrl(
-        MKT_PRODUCT_ENDPOINTS.GET_BY_ID,
-        { id: productId },
-        this.apiBaseUrl,
-      );
+      const endpoint = buildEndpoint(MKT_PRODUCT_ENDPOINTS.GET_BY_ID, {
+        id: productId,
+      });
 
-      const response = await this.oauth2Http.get<MktApiResponse<MktProduct>>(
-        url,
-        undefined,
-        userContext,
-      );
+      const product = await this.httpService.get<MktProduct>(endpoint);
 
-      if (!response.success || !response.data) {
-        return null;
-      }
-
-      return response.data;
+      return product ?? null;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(getErrorMessage(error)),
@@ -84,30 +66,17 @@ export class MktProductRepository {
   /**
    * Fetch product by code from MKT Server
    */
-  async findByCode(
-    code: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async findByCode(code: string): Promise<MktProduct | null> {
     this.logger.debug(MKT_PRODUCT_MESSAGES.OPERATION.FETCH_BY_CODE, { code });
 
     try {
-      const url = buildUrl(
-        MKT_PRODUCT_ENDPOINTS.GET_BY_CODE,
-        { code },
-        this.apiBaseUrl,
-      );
+      const endpoint = buildEndpoint(MKT_PRODUCT_ENDPOINTS.GET_BY_CODE, {
+        code,
+      });
 
-      const response = await this.oauth2Http.get<MktApiResponse<MktProduct>>(
-        url,
-        undefined,
-        userContext,
-      );
+      const product = await this.httpService.get<MktProduct>(endpoint);
 
-      if (!response.success || !response.data) {
-        return null;
-      }
-
-      return response.data;
+      return product ?? null;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(getErrorMessage(error)),
@@ -123,24 +92,20 @@ export class MktProductRepository {
    */
   async findAll(
     params: MktProductQueryParams = {},
-    userContext?: UserContext,
-  ): Promise<MktPaginatedData<MktProduct>> {
+  ): Promise<OffsetPaginatedProductDto> {
     this.logger.debug(MKT_PRODUCT_MESSAGES.OPERATION.FETCH_LIST_FROM_MKT, {
       params,
     });
 
     try {
-      const url = buildUrl(
-        MKT_PRODUCT_ENDPOINTS.LIST,
-        undefined,
-        this.apiBaseUrl,
+      const endpoint = buildEndpoint(MKT_PRODUCT_ENDPOINTS.LIST);
+
+      const result = await this.httpService.get<OffsetPaginatedProductDto>(
+        endpoint,
+        { params },
       );
 
-      const response = await this.oauth2Http.get<
-        MktApiResponse<MktPaginatedData<MktProduct>>
-      >(url, { params }, userContext);
-
-      return response.data;
+      return result;
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(getErrorMessage(error)),

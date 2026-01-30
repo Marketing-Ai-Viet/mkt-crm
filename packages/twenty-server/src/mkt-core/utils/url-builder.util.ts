@@ -136,3 +136,26 @@ export const buildUrlWithQuery = (
 
   return `${url}${separator}${queryString}`;
 };
+
+/**
+ * Build API endpoint with path parameters (alias for buildUrl without baseUrl)
+ * Used with MktAuthHttpService which already has baseUrl configured
+ *
+ * @example buildEndpoint('/api/products/:id', { id: '123' }) => '/api/products/123'
+ */
+export const buildEndpoint = (
+  path: string,
+  params?: Record<string, string | number>,
+): string => {
+  if (!params) {
+    return path;
+  }
+
+  let processedPath = path;
+
+  for (const [key, value] of Object.entries(params)) {
+    processedPath = processedPath.replace(`:${key}`, String(value));
+  }
+
+  return processedPath;
+};

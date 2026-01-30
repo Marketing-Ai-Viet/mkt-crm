@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import {
   MktOrderValidationItem,
   MktPackageSnapshot,
@@ -24,6 +23,7 @@ import {
   MktProductRepository,
 } from 'src/mkt-core/mkt-product-integration/repositories';
 import { getErrorMessage } from 'src/mkt-core/utils';
+import { mapPaginatedProductDtoToMktPaginatedData } from 'src/mkt-core/mkt-product-integration/utils';
 
 import { MktProductCacheService } from './mkt-product-cache.service';
 import { MktSnapshotService } from './mkt-snapshot.service';
@@ -64,10 +64,7 @@ export class MktProductProxyService {
    * Get product by ID with caching
    * Gracefully handles OAuth2 server unavailability by returning cached data or null
    */
-  async getProduct(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async getProduct(productId: string): Promise<MktProduct | null> {
     // Check cache first
     const cached = await this.cacheService.getProduct(productId);
 
@@ -79,10 +76,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const product = await this.productRepository.findById(
-        productId,
-        userContext,
-      );
+      const product = await this.productRepository.findById(productId);
 
       if (!product) {
         return null;
@@ -107,10 +101,7 @@ export class MktProductProxyService {
    * Get product by code with caching
    * Gracefully handles OAuth2 server unavailability by returning cached data or null
    */
-  async getProductByCode(
-    code: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async getProductByCode(code: string): Promise<MktProduct | null> {
     // Check cache first
     const cached = await this.cacheService.getProductByCode(code);
 
@@ -122,10 +113,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const product = await this.productRepository.findByCode(
-        code,
-        userContext,
-      );
+      const product = await this.productRepository.findByCode(code);
 
       if (!product) {
         return null;
@@ -153,10 +141,10 @@ export class MktProductProxyService {
    */
   async getProducts(
     params: MktProductQueryParams = {},
-    userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProduct>> {
     try {
-      const result = await this.productRepository.findAll(params, userContext);
+      const rawResult = await this.productRepository.findAll(params);
+      const result = mapPaginatedProductDtoToMktPaginatedData(rawResult);
 
       // Cache products and attach packages
       if (result.data.length > 0) {
@@ -184,21 +172,15 @@ export class MktProductProxyService {
   /**
    * Get product with packages (ensures packages are loaded)
    */
-  async getProductWithPackages(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
-    const product = await this.getProduct(productId, userContext);
+  async getProductWithPackages(productId: string): Promise<MktProduct | null> {
+    const product = await this.getProduct(productId);
 
     if (!product) {
       return null;
     }
 
     if (!product.packages || product.packages.length === 0) {
-      product.packages = await this.getPackagesByProductId(
-        productId,
-        userContext,
-      );
+      product.packages = await this.getPackagesByProductId(productId);
     }
 
     return product;
@@ -214,7 +196,6 @@ export class MktProductProxyService {
    */
   async getPackage(
     packageId: string,
-    userContext?: UserContext,
     productId?: string,
   ): Promise<MktProductPackage | null> {
     // Check cache first (if productId provided)
@@ -233,7 +214,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const pkg = await this.packageRepository.findById(packageId, userContext);
+      const pkg = await this.packageRepository.findById(packageId);
 
       if (!pkg) {
         return null;
@@ -263,10 +244,9 @@ export class MktProductProxyService {
    */
   async getPackages(
     params: { page?: number; limit?: number } = {},
-    userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProductPackage>> {
     try {
-      return await this.packageRepository.findAll(params, userContext);
+      return await this.packageRepository.findAll(params);
     } catch (error) {
       // OAuth2 server unavailable - return empty result instead of crashing
       this.logger.warn(
@@ -290,7 +270,6 @@ export class MktProductProxyService {
    */
   async getPackagesByProductId(
     productId: string,
-    userContext?: UserContext,
   ): Promise<MktProductPackage[]> {
     // Check cache first
     const cached = await this.cacheService.getPackagesByProductId(productId);
@@ -306,10 +285,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const packages = await this.packageRepository.findByProductId(
-        productId,
-        userContext,
-      );
+      const packages = await this.packageRepository.findByProductId(productId);
 
       // Cache result
       if (packages.length > 0) {
@@ -372,13 +348,11 @@ export class MktProductProxyService {
    */
   async validateForOrder(
     items: MktOrderValidationItem[],
-    userContext?: UserContext,
   ): Promise<MktValidationResult> {
     return this.validationService.validateForOrder(
       items,
-      (productId, ctx) => this.getProduct(productId, ctx),
-      (packageId, ctx, prodId) => this.getPackage(packageId, ctx, prodId),
-      userContext,
+      (productId) => this.getProduct(productId),
+      (packageId, prodId) => this.getPackage(packageId, prodId),
     );
   }
 
@@ -396,7 +370,6 @@ export class MktProductProxyService {
    */
   async getProductsByIds(
     productIds: string[],
-    userContext?: UserContext,
   ): Promise<Map<string, MktProduct | null>> {
     const uniqueIds = [...new Set(productIds)];
     const results = new Map<string, MktProduct | null>();
@@ -407,7 +380,7 @@ export class MktProductProxyService {
 
     // Fetch all products in parallel
     const promises = uniqueIds.map(async (productId) => {
-      const product = await this.getProduct(productId, userContext);
+      const product = await this.getProduct(productId);
 
       return { productId, product };
     });
@@ -431,7 +404,6 @@ export class MktProductProxyService {
    */
   async getPackagesByIds(
     items: Array<{ packageId: string; productId?: string }>,
-    userContext?: UserContext,
   ): Promise<Map<string, MktProductPackage | null>> {
     const results = new Map<string, MktProductPackage | null>();
 
@@ -453,7 +425,7 @@ export class MktProductProxyService {
 
     // Fetch all packages in parallel
     const promises = uniqueItems.map(async ({ packageId, productId }) => {
-      const pkg = await this.getPackage(packageId, userContext, productId);
+      const pkg = await this.getPackage(packageId, productId);
 
       return { packageId, pkg };
     });

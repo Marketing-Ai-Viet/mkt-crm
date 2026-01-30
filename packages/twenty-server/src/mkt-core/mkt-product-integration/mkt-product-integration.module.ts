@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { OAuth2ClientModule } from 'src/mkt-core/oauth2-client/oauth2-client.module';
+import { MktAuthClientModule } from 'src/mkt-core/mkt-auth-client';
 import { RedisInfrastructureModule } from 'src/mkt-core/infrastructure/redis';
 
 import { MktPackageRepository, MktProductRepository } from './repositories';
@@ -31,10 +31,10 @@ import { MktDigitalProductResolver } from './resolvers';
  * - Product/Package proxy (API calls with caching)
  * - Product/Package snapshots (for order immutability)
  * - Order validation
- * - Auto-sync products on OAuth2 token acquisition
+ * - Auto-sync products on token acquisition
  *
  * Dependencies:
- * - OAuth2ClientModule: Token management and HTTP client
+ * - MktAuthClientModule: Token management and authenticated HTTP client
  * - RedisInfrastructureModule: Distributed caching, circuit breaker, rate limiter
  *
  * NOTE: EventEmitter2 is available globally via CoreEngineModule.
@@ -42,7 +42,7 @@ import { MktDigitalProductResolver } from './resolvers';
  */
 @Module({
   imports: [
-    OAuth2ClientModule, // Token management and OAuth2 HTTP client
+    MktAuthClientModule, // Token management and authenticated HTTP client
     RedisInfrastructureModule, // Distributed caching infrastructure
     MessageQueueModule, // For cron job registration
     // For MktProductSyncCronRegistrationService to access workspace list from core schema

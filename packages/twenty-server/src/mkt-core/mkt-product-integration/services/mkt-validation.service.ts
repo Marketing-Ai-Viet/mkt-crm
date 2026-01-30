@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import {
   MktOrderValidationItem,
   MktProduct,
@@ -40,13 +39,11 @@ export class MktValidationService {
    * @param items - Items to validate
    * @param productFetcher - Function to fetch product by ID
    * @param packageFetcher - Function to fetch package by ID
-   * @param userContext - Optional user context for API calls
    */
   async validateForOrder(
     items: MktOrderValidationItem[],
     productFetcher: ProductFetcher,
     packageFetcher: PackageFetcher,
-    userContext?: UserContext,
   ): Promise<MktValidationResult> {
     this.logger.debug(MKT_ORDER_VALIDATION_MESSAGES.OPERATION.START, {
       itemCount: items.length,
@@ -59,7 +56,6 @@ export class MktValidationService {
         item,
         productFetcher,
         packageFetcher,
-        userContext,
       );
 
       errors.push(...validationErrors);
@@ -87,12 +83,11 @@ export class MktValidationService {
     item: MktOrderValidationItem,
     productFetcher: ProductFetcher,
     packageFetcher: PackageFetcher,
-    userContext?: UserContext,
   ): Promise<MktValidationResult['errors']> {
     const errors: MktValidationResult['errors'] = [];
 
     // Validate product
-    const product = await productFetcher(item.productId, userContext);
+    const product = await productFetcher(item.productId);
     const productError = this.validateProduct(product, item.productId);
 
     if (productError) {
@@ -103,11 +98,7 @@ export class MktValidationService {
 
     // Validate package if provided
     if (item.packageId) {
-      const pkg = await packageFetcher(
-        item.packageId,
-        userContext,
-        item.productId,
-      );
+      const pkg = await packageFetcher(item.packageId, item.productId);
 
       const packageErrors = this.validatePackage(
         pkg,

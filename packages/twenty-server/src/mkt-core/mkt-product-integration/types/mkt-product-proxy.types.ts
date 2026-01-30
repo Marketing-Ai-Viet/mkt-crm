@@ -8,7 +8,7 @@
 // MULTI-LANGUAGE SUPPORT
 // ============================================
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
+import { OffsetPaginatedDto } from 'src/mkt-core/common/types/external.types';
 
 /**
  * Multi-language field từ MKT Server
@@ -228,14 +228,33 @@ export type SyncItemResult = {
 /**
  * Product/Package fetcher interface for dependency injection
  * This allows the validation service to be decoupled from the data fetching logic
+ *
+ * Note: These fetchers use mkt-auth-client for authentication,
+ * which handles session-based auth automatically (no userContext needed)
  */
-export type ProductFetcher = (
-  productId: string,
-  userContext?: UserContext,
-) => Promise<MktProduct | null>;
+export type ProductFetcher = (productId: string) => Promise<MktProduct | null>;
 
 export type PackageFetcher = (
   packageId: string,
-  userContext?: UserContext,
   productId?: string,
 ) => Promise<MktProductPackage | null>;
+
+// ============================================
+
+export type ProductStatus = 'Draft' | 'Active' | 'Deprecated' | 'Archived';
+
+export type ProductDto = {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  version?: string;
+  status: ProductStatus;
+  icon?: string;
+  banner?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OffsetPaginatedProductDto = OffsetPaginatedDto<ProductDto>;

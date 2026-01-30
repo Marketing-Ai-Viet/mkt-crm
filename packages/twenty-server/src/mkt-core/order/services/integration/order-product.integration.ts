@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import { MktProductProxyService } from 'src/mkt-core/mkt-product-integration/services';
 import { MktSnapshotService } from 'src/mkt-core/mkt-product-integration/services/mkt-snapshot.service';
 import { MktValidationService } from 'src/mkt-core/mkt-product-integration/services/mkt-validation.service';
@@ -47,12 +46,10 @@ export class OrderProductIntegrationService {
    * Validate products/packages for order creation
    *
    * @param items - External product inputs from order request
-   * @param userContext - OAuth2 user context for API calls
    * @returns Validation result with errors if any
    */
   async validateProducts(
     items: ExternalMktProductInput[],
-    userContext?: UserContext,
   ): Promise<ProductValidationResult> {
     this.logger.debug('Validating products for order', {
       itemCount: items.length,
@@ -65,11 +62,9 @@ export class OrderProductIntegrationService {
 
     const result = await this.validationService.validateForOrder(
       validationItems,
-      (productId: string, ctx?: UserContext) =>
-        this.productProxyService.getProduct(productId, ctx),
-      (packageId: string, ctx?: UserContext, productId?: string) =>
-        this.productProxyService.getPackage(packageId, ctx, productId),
-      userContext,
+      (productId: string) => this.productProxyService.getProduct(productId),
+      (packageId: string, productId?: string) =>
+        this.productProxyService.getPackage(packageId, productId),
     );
 
     return {
@@ -84,13 +79,11 @@ export class OrderProductIntegrationService {
    *
    * @param items - External product inputs from order request
    * @param language - Display language for snapshots
-   * @param userContext - OAuth2 user context for API calls
    * @returns Products with their snapshots
    */
   async createSnapshots(
     items: ExternalMktProductInput[],
     language: MktSupportedLanguage = 'vi',
-    userContext?: UserContext,
   ): Promise<ProductWithSnapshot[]> {
     this.logger.debug('Creating snapshots for order items', {
       itemCount: items.length,
@@ -103,10 +96,8 @@ export class OrderProductIntegrationService {
 
     // Batch fetch all products in parallel (prevents N+1)
     const productIds = items.map((item) => item.productId);
-    const productMap = await this.productProxyService.getProductsByIds(
-      productIds,
-      userContext,
-    );
+    const productMap =
+      await this.productProxyService.getProductsByIds(productIds);
 
     // Batch fetch all packages in parallel (prevents N+1)
     const packageItems = items
@@ -115,10 +106,8 @@ export class OrderProductIntegrationService {
         packageId: item.packageId as string,
         productId: item.productId,
       }));
-    const packageMap = await this.productProxyService.getPackagesByIds(
-      packageItems,
-      userContext,
-    );
+    const packageMap =
+      await this.productProxyService.getPackagesByIds(packageItems);
 
     // Build results using fetched data
     const results: ProductWithSnapshot[] = [];
@@ -169,19 +158,17 @@ export class OrderProductIntegrationService {
    *
    * @param items - External product inputs from order request
    * @param language - Display language for snapshots
-   * @param userContext - OAuth2 user context for API calls
    * @returns Validation result and snapshots if valid
    */
   async validateAndCreateSnapshots(
     items: ExternalMktProductInput[],
     language: MktSupportedLanguage = 'vi',
-    userContext?: UserContext,
   ): Promise<{
     validation: ProductValidationResult;
     snapshots: ProductWithSnapshot[];
   }> {
     // First validate
-    const validation = await this.validateProducts(items, userContext);
+    const validation = await this.validateProducts(items);
 
     if (!validation.valid) {
       return {
@@ -191,7 +178,7 @@ export class OrderProductIntegrationService {
     }
 
     // Then create snapshots
-    const snapshots = await this.createSnapshots(items, language, userContext);
+    const snapshots = await this.createSnapshots(items, language);
 
     return {
       validation,
@@ -212,11 +199,8 @@ export class OrderProductIntegrationService {
   /**
    * Get product by ID
    */
-  async getProductById(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
-    return this.productProxyService.getProduct(productId, userContext);
+  async getProductById(productId: string): Promise<MktProduct | null> {
+    return this.productProxyService.getProduct(productId);
   }
 
   /**
@@ -225,12 +209,7 @@ export class OrderProductIntegrationService {
   async getPackageById(
     packageId: string,
     productId: string,
-    userContext?: UserContext,
   ): Promise<MktProductPackage | null> {
-    return this.productProxyService.getPackage(
-      packageId,
-      userContext,
-      productId,
-    );
+    return this.productProxyService.getPackage(packageId, productId);
   }
 }

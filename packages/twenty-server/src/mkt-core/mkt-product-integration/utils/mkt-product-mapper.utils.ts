@@ -3,8 +3,11 @@ import {
   MktDigitalPackageDto,
 } from 'src/mkt-core/mkt-product-integration/dto/mkt-digital-product.output';
 import {
+  MktPaginatedData,
   MktProduct,
   MktProductPackage,
+  OffsetPaginatedProductDto,
+  ProductDto,
 } from 'src/mkt-core/mkt-product-integration/types';
 
 /**
@@ -61,3 +64,43 @@ export const mapProductsToDto = (
 export const mapPackagesToDto = (
   packages: MktProductPackage[],
 ): MktDigitalPackageDto[] => packages.map(mapPackageToDto);
+
+// ============================================
+// API Response to Internal Type Mappers
+// ============================================
+
+/**
+ * Map ProductDto (API response) to MktProduct (internal type)
+ * Handles field name differences between API and internal model
+ */
+export const mapProductDtoToMktProduct = (dto: ProductDto): MktProduct => ({
+  id: dto.id,
+  productName: dto.name,
+  productDescription: dto.description ?? null,
+  productOverview: null,
+  code: dto.code,
+  status: dto.status.toLowerCase() as MktProduct['status'],
+  version: dto.version ?? null,
+  basePrice: null,
+  iconUrl: dto.icon ?? null,
+  bannerUrl: dto.banner ?? null,
+  gallery: [],
+  sortOrder: 0,
+  metadata: dto.metadata ?? {},
+  packages: undefined,
+  createdAt: dto.createdAt,
+  updatedAt: dto.updatedAt,
+});
+
+/**
+ * Map OffsetPaginatedProductDto (API response) to MktPaginatedData<MktProduct>
+ */
+export const mapPaginatedProductDtoToMktPaginatedData = (
+  dto: OffsetPaginatedProductDto,
+): MktPaginatedData<MktProduct> => ({
+  data: dto.data.map(mapProductDtoToMktProduct),
+  total: dto.pagination.totalRecords,
+  page: dto.pagination.currentPage,
+  limit: dto.pagination.limit,
+  totalPages: dto.pagination.totalPages,
+});
