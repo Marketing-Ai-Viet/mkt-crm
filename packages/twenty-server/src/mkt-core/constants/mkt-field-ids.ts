@@ -640,15 +640,31 @@ export const MKT_PAYMENT_FIELD_IDS = {
   invoiceId: 'ae9a8b82-6d5f-4e38-9c21-8b7f6e5d4c42',
   qrCodeUrl: '3b1e43e9-31e1-4e35-a55c-e6aa1e5b7c99',
   paymentPageUrl: 'a125b6bc-db84-4b01-98e1-8bd16e83e175',
-  //relations
+
+  // Confirmation fields (2026-01-30)
+  confirmedAt: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+  confirmedBy: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
+  rejectedAt: 'c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f',
+  rejectedBy: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
+  rejectionReason: 'e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b',
+  refundedAmount: 'f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c',
+  metadata: 'a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d',
+
+  // Multi-gateway provider fields (2026-01-30)
+  providerType: 'c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f',
+  providerTransactionId: 'd0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a',
+  providerResponse: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  providerMetadata: 'f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c',
+
+  // relations
   mktOrder: '4b889a4f-bfea-4938-a4e2-66271ebeca12',
   mktPaymentHistories: 'd911020f-6776-4dd7-9e3a-21f478aa65cf',
   mktTemplate: 'be4400ab-ce40-42aa-a72d-271c2caf806c',
 
-  // SePay integration fields
+  // SePay integration fields (deprecated - use providerTransactionId)
   sepayTransactionId: 'b637c9af-f198-4d24-9f7a-b0c8cede17b8',
 
-  //common relations or fields
+  // common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',
   createdBy: 'ce9a8b84-6d5f-4e3a-9c23-8b7f6e5d4c44',
   mktPaymentMethod: 'de9a8b85-6d5f-4e3b-9c24-8b7f6e5d4c45',
@@ -663,6 +679,15 @@ export const MKT_PAYMENT_HISTORY_FIELD_IDS = {
   paymentType: 'e9636196-341a-4546-ae3b-321993c8afea',
   amount: 'd56c04a7-1336-4ef1-8aa8-33cc4b516a0e',
   note: '9cf5ac2a-eacc-412f-994a-e8bafcc96e2a',
+
+  // Action tracking fields (2026-01-30)
+  action: 'a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d',
+  previousStatus: 'b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e',
+  newStatus: 'c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f',
+  historyMetadata: 'd6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a',
+  performedAt: 'e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b',
+  performedBy: 'f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c',
+
   // relations
   mktOrder: '08680373-af4a-4684-b4dd-f711feb241a2',
   mktLicense: '524cd350-4be3-4fd3-bc47-35595a1edf97',
@@ -786,6 +811,10 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   accountOwnerForMktPaymentMethods: 'ef8a9b93-6d5e-4f43-9c33-8b7f6e5d4c53',
   //payment
   accountOwnerForMktPaymentHistories: '9e3f9606-e06a-4177-8cb3-53612bfda424',
+  // Payment confirmation/rejection inverse relations (2026-01-30)
+  confirmedPayments: 'a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d',
+  rejectedPayments: 'b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e',
+  performedPaymentHistoryActions: 'c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f',
   //invoices
   accountOwnerForMktInvoices: 'ab600d66-5755-4934-b5c3-19036927cf92',
   accountOwnerForMktSInvoiceAuths: '6b134cc7-ca30-4576-9b91-29912326de57',

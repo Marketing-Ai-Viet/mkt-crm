@@ -47,6 +47,7 @@ import { MktContractWorkspaceEntity } from 'src/mkt-core/contract/workspace-enti
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
@@ -280,6 +281,46 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   accountOwnerForMktPaymentHistories: Relation<
     MktPaymentHistoryWorkspaceEntity[]
   >;
+
+  // Payment confirmation/rejection inverse relations
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.confirmedPayments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Confirmed Payments`,
+    description: msg`Payments confirmed by this member`,
+    icon: 'IconUserCheck',
+    inverseSideTarget: () => MktPaymentWorkspaceEntity,
+    inverseSideFieldKey: 'confirmedBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  confirmedPayments: Relation<MktPaymentWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.rejectedPayments,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Rejected Payments`,
+    description: msg`Payments rejected by this member`,
+    icon: 'IconUserX',
+    inverseSideTarget: () => MktPaymentWorkspaceEntity,
+    inverseSideFieldKey: 'rejectedBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  rejectedPayments: Relation<MktPaymentWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.performedPaymentHistoryActions,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Payment History Actions`,
+    description: msg`Payment history actions performed by this member`,
+    icon: 'IconActivity',
+    inverseSideTarget: () => MktPaymentHistoryWorkspaceEntity,
+    inverseSideFieldKey: 'performedBy',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsSystem()
+  performedPaymentHistoryActions: Relation<MktPaymentHistoryWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.accountOwnerForMktSInvoiceAuths,

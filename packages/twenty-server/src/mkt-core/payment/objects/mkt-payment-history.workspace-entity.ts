@@ -28,6 +28,10 @@ import {
   PAYMENT_HISTORY_OPTIONS,
   PAYMENT_HISTORY_TYPE,
 } from 'src/mkt-core/payment/types/payment.type';
+import {
+  PAYMENT_ACTION_OPTIONS,
+  PaymentAction,
+} from 'src/mkt-core/payment/constants/payment-action.constants';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -89,6 +93,77 @@ export class MktPaymentHistoryWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   note: string;
+
+  // ============================================
+  // ACTION TRACKING FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.action,
+    type: FieldMetadataType.SELECT,
+    label: msg`Action`,
+    description: msg`Action performed on the payment`,
+    icon: 'IconActivity',
+    options: PAYMENT_ACTION_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  action?: PaymentAction;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.previousStatus,
+    type: FieldMetadataType.TEXT,
+    label: msg`Previous Status`,
+    description: msg`Status before the action`,
+    icon: 'IconArrowLeft',
+  })
+  @WorkspaceIsNullable()
+  previousStatus?: string;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.newStatus,
+    type: FieldMetadataType.TEXT,
+    label: msg`New Status`,
+    description: msg`Status after the action`,
+    icon: 'IconArrowRight',
+  })
+  @WorkspaceIsNullable()
+  newStatus?: string;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.historyMetadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional action metadata`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  historyMetadata: JSON | null;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.performedAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Performed At`,
+    description: msg`Timestamp when action was performed`,
+    icon: 'IconClock',
+  })
+  @WorkspaceIsNullable()
+  performedAt?: string;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.performedBy,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Performed By`,
+    description: msg`User who performed the action`,
+    icon: 'IconUser',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'performedPaymentHistoryActions',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  performedBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('performedBy')
+  performedById: string | null;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_HISTORY_FIELD_IDS.position,
