@@ -5,3 +5,4 @@
  */
 
 export * from './payment-mutation.resolver';
+export * from './payment-confirmation.resolver';

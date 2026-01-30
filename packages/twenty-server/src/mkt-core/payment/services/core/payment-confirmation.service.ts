@@ -183,6 +183,7 @@ export class PaymentConfirmationService {
   async rejectPayment(
     input: RejectPaymentInput,
     rejectedById: string,
+    workspaceId: string,
   ): Promise<ConfirmPaymentResult> {
     const { paymentId, rejectionReason, note } = input;
 
@@ -227,6 +228,15 @@ export class PaymentConfirmationService {
       note: note ?? rejectionReason,
       amount: payment.amount ?? 0,
       metadata: { rejectionReason },
+    });
+
+    // Step 4: Emit rejected event
+    this.eventEmitter.emit(PAYMENT_EVENTS.PAYMENT_REJECTED, {
+      paymentId,
+      orderId: payment.mktOrderId,
+      rejectedById,
+      rejectionReason,
+      workspaceId,
     });
 
     this.logger.log({

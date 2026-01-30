@@ -37,7 +37,10 @@ import {
   MktPaymentRepository,
   MktWebhookLogRepository,
 } from 'src/mkt-core/payment/repositories';
-import { PaymentMutationResolver } from 'src/mkt-core/payment/resolvers';
+import {
+  PaymentMutationResolver,
+  PaymentConfirmationResolver,
+} from 'src/mkt-core/payment/resolvers';
 import { SepayPaymentController } from 'src/mkt-core/payment/sepay-payment/sepay-payment.controller';
 // Services - organized by domain
 import {
@@ -100,6 +103,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktWorkspaceMemberRepository,
     // Resolvers
     PaymentMutationResolver,
+    PaymentConfirmationResolver,
     // Services - Core
     PaymentFacadeService,
     MktPaymentPrepareService,
