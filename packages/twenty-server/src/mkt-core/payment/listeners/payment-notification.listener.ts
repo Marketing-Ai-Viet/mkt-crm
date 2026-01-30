@@ -5,9 +5,12 @@ import {
   OrderConfirmedEvent,
   PAYMENT_EVENTS,
   PaymentCompletedEvent,
+  PaymentConfirmedEvent,
   PaymentFailedEvent,
   PaymentOverpaidEvent,
   PaymentPartialEvent,
+  PaymentRefundedEvent,
+  PaymentRejectedEvent,
 } from 'src/mkt-core/payment/events';
 
 /**
@@ -146,5 +149,91 @@ export class PaymentNotificationListener {
     // - Send order confirmation email
     // - Update CRM opportunity status
     // - Trigger license activation (handled by LicenseActivationListener)
+  }
+
+  // ============================================
+  // PHASE 2: MULTI-PAYMENT EVENT HANDLERS
+  // ============================================
+
+  /**
+   * Handle payment confirmed manually event
+   *
+   * Actions:
+   * - Send confirmation email to customer
+   * - Log manual confirmation for audit
+   * - Trigger license creation if applicable
+   */
+  @OnEvent(PAYMENT_EVENTS.PAYMENT_CONFIRMED)
+  async handlePaymentConfirmed(event: PaymentConfirmedEvent): Promise<void> {
+    this.logger.log({
+      message: 'Processing manual payment confirmation',
+      paymentId: event.paymentId,
+      orderId: event.orderId,
+      orderCode: event.orderCode,
+      amount: event.amount,
+      totalPaidAmount: event.totalPaidAmount,
+      confirmedById: event.confirmedById,
+      newOrderPaymentStatus: event.newOrderPaymentStatus,
+    });
+
+    // TODO: Implement manual confirmation handling
+    // - Send confirmation email to customer
+    // - Record audit log for compliance
+    // - Notify relevant team members
+  }
+
+  /**
+   * Handle payment rejected event
+   *
+   * Actions:
+   * - Send rejection notification to customer
+   * - Log rejection reason for audit
+   * - Create follow-up task
+   */
+  @OnEvent(PAYMENT_EVENTS.PAYMENT_REJECTED)
+  async handlePaymentRejected(event: PaymentRejectedEvent): Promise<void> {
+    this.logger.warn({
+      message: 'Processing payment rejection',
+      paymentId: event.paymentId,
+      orderId: event.orderId,
+      rejectedById: event.rejectedById,
+      rejectionReason: event.rejectionReason,
+    });
+
+    // TODO: Implement rejection handling
+    // - Send rejection notification to customer (with reason if appropriate)
+    // - Create follow-up task for sales team
+    // - Record audit log
+  }
+
+  /**
+   * Handle payment refunded event
+   *
+   * Actions:
+   * - Send refund confirmation email
+   * - Update accounting records
+   * - Handle license revocation if full refund
+   */
+  @OnEvent(PAYMENT_EVENTS.PAYMENT_REFUNDED)
+  async handlePaymentRefunded(event: PaymentRefundedEvent): Promise<void> {
+    this.logger.log({
+      message: event.isFullRefund
+        ? 'Processing full refund'
+        : 'Processing partial refund',
+      paymentId: event.paymentId,
+      orderId: event.orderId,
+      orderCode: event.orderCode,
+      refundAmount: event.refundAmount,
+      totalRefunded: event.totalRefunded,
+      isFullRefund: event.isFullRefund,
+      refundedById: event.refundedById,
+      newOrderPaymentStatus: event.newOrderPaymentStatus,
+    });
+
+    // TODO: Implement refund handling
+    // - Send refund confirmation email to customer
+    // - Update accounting records
+    // - If full refund, trigger license revocation
+    // - Create audit trail for compliance
   }
 }
