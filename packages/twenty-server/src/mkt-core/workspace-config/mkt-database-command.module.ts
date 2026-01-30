@@ -19,10 +19,10 @@ import { SeedOrderModuleCommand } from 'src/mkt-core/seeder/order-seeder/mkt-ord
 import { SeedMktOrderHistoryModuleCommand } from 'src/mkt-core/seeder/order-seeder/mkt-order-history-data-seed-dev-workspace.command';
 import { SeedOrderItemModuleCommand } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
-import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-payment-data-seed-dev-workspace.command';
-import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/seeder/commands/mkt-payment-history-data-seed-dev-workspace.command';
+import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-data-seed-dev-workspace.command';
+import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/mkt-payment-history-data-seed-dev-workspace.command';
 import { MktWebhookLogDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-webhook-log-data-seed-dev-workspace.command';
-import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/commands/mkt-payment-method-data-seed-dev-workspace.command';
+import { MktPaymentMethodDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/payment-seeder/payment-method/mkt-payment-method-data-seed-dev-workspace.command';
 import { SeedMktPermissionAuditCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-data-seed-dev-workspace.command';
 import { SeedTagModuleCommand } from 'src/mkt-core/seeder/commands/mkt-tag-data-seed-dev-workspace.command';
 import { SeedTemplateModuleCommand } from 'src/mkt-core/seeder/commands/mkt-template-data-seed-dev-workspace.command';

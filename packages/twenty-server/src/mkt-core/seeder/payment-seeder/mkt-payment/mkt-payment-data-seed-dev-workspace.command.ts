@@ -4,7 +4,7 @@ import { Command, CommandRunner } from 'nest-commander';
 
 import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/workspace-entity-manager';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { prefillMktPayments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payments';
+import { prefillMktPayments } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/prefill-mkt-payments';
 
 @Command({
   name: 'workspace-seed-dev:mkt-payments',

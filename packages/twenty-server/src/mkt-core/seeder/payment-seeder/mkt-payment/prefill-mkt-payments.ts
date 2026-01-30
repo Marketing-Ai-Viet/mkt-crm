@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_PAYMENT_DATA_SEED_COLUMNS,
   MKT_PAYMENT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
+} from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-data-seeds.constants';
 
 export const prefillMktPayments = async (
   entityManager: WorkspaceEntityManager,
