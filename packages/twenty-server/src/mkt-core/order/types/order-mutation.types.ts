@@ -98,11 +98,9 @@ export type CreateOrderWithItemsInput = {
    */
   trialDurationDays?: number;
 
-  // Promotion fields
-  /** Coupon code to apply for discount */
-  couponCode?: string;
-  /** Whether to automatically apply eligible promotions (default: true) */
-  applyAutoPromotions?: boolean;
+  // Discount fields
+  /** Discount percentage to apply (0-100). Direct discount without promotion system. */
+  discountPercent?: number;
 
   // Draft mode
   /**

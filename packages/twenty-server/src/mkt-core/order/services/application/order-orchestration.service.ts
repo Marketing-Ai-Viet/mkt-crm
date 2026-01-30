@@ -312,9 +312,12 @@ export class OrderOrchestrationService {
       };
     }
 
-    // Validate input
+    // Validate input (pass workspaceId for repository access)
     const validationResult =
-      await this.validationService.validateConfirmOrderInput(input);
+      await this.validationService.validateConfirmOrderInput(
+        workspaceId,
+        input,
+      );
 
     if (!validationResult.valid) {
       const errorMessages = validationResult.errors

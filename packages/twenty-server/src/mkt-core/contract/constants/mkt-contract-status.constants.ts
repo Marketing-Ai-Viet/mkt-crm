@@ -5,9 +5,15 @@
  */
 
 export enum MKT_CONTRACT_STATUS {
+  /** Chờ chuyển đổi - Contract được tạo để tham chiếu, đợi chuyển đổi thành hợp đồng chính thức */
+  PENDING_CONVERSION = 'PENDING_CONVERSION',
+  /** Hoạt động - Contract đang có hiệu lực */
   ACTIVE = 'ACTIVE',
+  /** Không hoạt động - Contract tạm ngừng */
   INACTIVE = 'INACTIVE',
+  /** Hết hạn - Contract đã hết thời hạn */
   EXPIRED = 'EXPIRED',
+  /** Bị thu hồi - Contract bị hủy bỏ */
   REVOKED = 'REVOKED',
 }
 
@@ -20,6 +26,12 @@ export enum MKT_CONTRACT_TYPE {
 export const MKT_CONTRACT_STATUS_OPTIONS = {
   status: MKT_CONTRACT_STATUS,
   options: [
+    {
+      value: MKT_CONTRACT_STATUS.PENDING_CONVERSION,
+      color: 'yellow',
+      label: 'Chờ chuyển đổi',
+      position: 0,
+    },
     {
       value: MKT_CONTRACT_STATUS.ACTIVE,
       color: 'green',
@@ -47,12 +59,14 @@ export const MKT_CONTRACT_STATUS_OPTIONS = {
   ],
   labels: {
     EN: {
+      PENDING_CONVERSION: 'Pending Conversion',
       ACTIVE: 'Active',
       INACTIVE: 'Inactive',
       EXPIRED: 'Expired',
       REVOKED: 'Revoked',
     },
     VI: {
+      PENDING_CONVERSION: 'Chờ chuyển đổi',
       ACTIVE: 'Hoạt động',
       INACTIVE: 'Không hoạt động',
       EXPIRED: 'Hết hạn',
@@ -108,3 +122,22 @@ export const CONTRACT_SEQUENCE_DIGITS = 3;
 
 // Số chữ số cho timestamp fallback
 export const TIMESTAMP_DIGITS = 6;
+
+/**
+ * Mapping từ ORDER_ACTION sang MKT_CONTRACT_TYPE
+ *
+ * Dùng để xác định loại hợp đồng khi tạo từ đơn hàng:
+ * - NEW_ORDER, TRIAL_TO_PAID → ORIGIN (hợp đồng gốc)
+ * - LICENSE_RENEWING → RENEW (hợp đồng gia hạn)
+ * - CHANGE_VARIANT → UPGRADE (hợp đồng nâng cấp)
+ */
+export const ORDER_ACTION_TO_CONTRACT_TYPE: Record<string, MKT_CONTRACT_TYPE> =
+  {
+    NEW_ORDER: MKT_CONTRACT_TYPE.ORIGIN,
+    TRIAL_TO_PAID: MKT_CONTRACT_TYPE.ORIGIN,
+    LICENSE_RENEWING: MKT_CONTRACT_TYPE.RENEW,
+    CHANGE_VARIANT: MKT_CONTRACT_TYPE.UPGRADE,
+  } as const;
+
+/** Default contract type khi không xác định được từ order action */
+export const DEFAULT_CONTRACT_TYPE = MKT_CONTRACT_TYPE.ORIGIN;

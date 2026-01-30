@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -256,25 +257,20 @@ export class CreateOrderWithItemsInputDto {
   trialDurationDays?: number;
 
   // ============================================
-  // PROMOTION FIELDS
+  // DISCOUNT FIELDS
   // ============================================
 
-  @Field(() => String, {
+  @Field(() => Number, {
     nullable: true,
-    description: 'Coupon code to apply for discount',
+    defaultValue: 0,
+    description:
+      'Discount percentage to apply (0-100). Direct discount without promotion system.',
   })
   @IsOptional()
-  @IsString()
-  couponCode?: string;
-
-  @Field(() => Boolean, {
-    nullable: true,
-    defaultValue: true,
-    description: 'Whether to automatically apply eligible promotions',
-  })
-  @IsOptional()
-  @IsBoolean()
-  applyAutoPromotions?: boolean;
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
 
   // ============================================
   // DRAFT MODE

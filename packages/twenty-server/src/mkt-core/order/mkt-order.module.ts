@@ -87,6 +87,7 @@ import {
   ValidateTransitionStep,
   UpdateStatusStep,
   CreateLicensesOnConfirmStep,
+  CreateContractOnConfirmStep,
   CompleteOrderAfterLicenseStep,
   // New Payment Flow Steps
   CalculatePaymentDeadlineStep,
@@ -177,6 +178,7 @@ import {
     ValidateTransitionStep,
     UpdateStatusStep,
     CreateLicensesOnConfirmStep,
+    CreateContractOnConfirmStep,
     CompleteOrderAfterLicenseStep,
     // New Payment Flow Steps
     CalculatePaymentDeadlineStep,

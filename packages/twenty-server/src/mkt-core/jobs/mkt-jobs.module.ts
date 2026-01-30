@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 
 import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
-import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
+// import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration/mkt-product-integration.module';
-import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
+// import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 
 /**
  * MktJobsModule
@@ -55,13 +55,13 @@ import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.mod
     MktOrderModule,
 
     // Invoice integration jobs (billingQueue)
-    MktInvoiceModule,
+    // MktInvoiceModule,
 
     // Product sync jobs (cronQueue)
     MktProductIntegrationModule,
 
     // Promotion expiration jobs (cronQueue)
-    MktPromotionModule,
+    // MktPromotionModule,
 
     // RBAC cache warmer jobs (cronQueue)
     CasbinModule,
