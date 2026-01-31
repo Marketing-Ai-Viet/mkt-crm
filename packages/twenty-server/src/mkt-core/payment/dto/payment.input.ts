@@ -108,9 +108,10 @@ export class UpdatePaymentInputDto {
 
 /**
  * Input DTO for confirming a payment manually
+ * Note: Named differently from order's ConfirmPaymentInputDto which is for order-level payment
  */
 @InputType()
-export class ConfirmPaymentInputDto {
+export class ManualConfirmPaymentInputDto {
   @Field(() => ID, { description: 'Payment ID to confirm' })
   @IsNotEmpty()
   @IsString()

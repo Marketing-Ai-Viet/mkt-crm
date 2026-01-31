@@ -7,7 +7,7 @@ import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
-  ConfirmPaymentInputDto,
+  ManualConfirmPaymentInputDto,
   RejectPaymentInputDto,
   RefundPaymentInputDto,
 } from 'src/mkt-core/payment/dto/payment.input';
@@ -42,7 +42,7 @@ export class PaymentConfirmationResolver {
   async confirmPayment(
     @AuthWorkspace() workspace: Workspace,
     @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
-    @Args('input') input: ConfirmPaymentInputDto,
+    @Args('input') input: ManualConfirmPaymentInputDto,
   ): Promise<PaymentActionResponseDto> {
     if (!workspaceMemberId) {
       return {
