@@ -37,14 +37,21 @@ import {
   MktPaymentRepository,
   MktWebhookLogRepository,
 } from 'src/mkt-core/payment/repositories';
-import { PaymentMutationResolver } from 'src/mkt-core/payment/resolvers';
+import {
+  PaymentMutationResolver,
+  PaymentConfirmationResolver,
+} from 'src/mkt-core/payment/resolvers';
 import { SepayPaymentController } from 'src/mkt-core/payment/sepay-payment/sepay-payment.controller';
 // Services - organized by domain
 import {
   MktPaymentService,
   MktPaymentPrepareService,
   PaymentFacadeService,
+  PaymentConfirmationService,
+  PaymentRefundService,
+  PaymentHistoryService,
 } from 'src/mkt-core/payment/services/core';
+import { OrderPaymentCalculationService } from 'src/mkt-core/order/services/core/order-payment-calculation.service';
 import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook';
 import {
   SepayAuthService,
@@ -96,16 +103,24 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktWorkspaceMemberRepository,
     // Resolvers
     PaymentMutationResolver,
-    // Services
+    PaymentConfirmationResolver,
+    // Services - Core
     PaymentFacadeService,
     MktPaymentPrepareService,
     MktPaymentService,
+    PaymentConfirmationService,
+    PaymentRefundService,
+    PaymentHistoryService,
+    // Services - Webhook & Events
     MktPaymentWebhookService,
     MktPaymentListenerService,
     PaymentEventService,
+    // Services - SEPay
     SepayAuthService,
     SepayQrPageService,
     SepayQrService,
+    // Services - Order (for payment calculation)
+    OrderPaymentCalculationService,
     // Event Listeners
     PaymentNotificationListener,
   ],
@@ -120,11 +135,16 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentHistoryRepository,
     MktWebhookLogRepository,
     MktPaymentMethodRepository,
-    // Services
+    // Services - Core
     PaymentFacadeService,
     MktPaymentPrepareService,
     MktPaymentService,
+    PaymentConfirmationService,
+    PaymentRefundService,
+    PaymentHistoryService,
+    // Services - Webhook
     MktPaymentWebhookService,
+    // Services - SEPay
     SepayQrService,
   ],
 })

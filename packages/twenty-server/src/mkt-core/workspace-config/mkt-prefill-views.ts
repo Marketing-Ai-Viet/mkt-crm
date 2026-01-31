@@ -10,8 +10,8 @@ import { mktContractsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-contra
 // import { mktLicensesAllView } from 'src/mkt-core/seeder/prefill-data/mkt-license-all.view';
 import { mktOrdersAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-all.view';
 import { mktOrderItemsAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-all.view';
-import { mktPaymentsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-all.view';
-import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-payment-method-all.view';
+import { mktPaymentsAllView } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-all.view';
+import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/payment-seeder/payment-method/mkt-payment-method-all.view';
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-all.view';
 import { mktCustomerTagsAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/mkt-customer-tag-all.view';
 import { mktCustomerTierHistoriesAllView } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-all.view';
@@ -30,7 +30,7 @@ import { mktKpisAllView } from 'src/mkt-core/seeder/prefill-view/mkt-kpi-all.vie
 // REMOVED: License history module has been deleted
 // import { mktLicenseHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-organization-level-all.view';
-import { mktPaymentHistoriesAllView } from 'src/mkt-core/seeder/prefill-view/mkt-payment-history-all.view';
+import { mktPaymentHistoriesAllView } from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/mkt-payment-history-all.view';
 import { mktPermissionAuditsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-all.view';
 import { mktStaffStatusHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-staff-status-history-all.view';
 import { mktTagsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-tag-all.view';

@@ -20,6 +20,12 @@ export const PAYMENT_EVENTS = {
   PAYMENT_FAILED: 'payment.failed',
   /** Emitted when order is confirmed after payment */
   ORDER_CONFIRMED: 'order.confirmed',
+  /** Emitted when payment is confirmed manually */
+  PAYMENT_CONFIRMED: 'payment.confirmed',
+  /** Emitted when payment is rejected */
+  PAYMENT_REJECTED: 'payment.rejected',
+  /** Emitted when payment is refunded (full or partial) */
+  PAYMENT_REFUNDED: 'payment.refunded',
 } as const;
 
 export type PaymentEventType =
@@ -118,4 +124,70 @@ export type OrderConfirmedEvent = {
   workspaceId: string;
   /** Confirmation timestamp (ISO string) */
   confirmedAt: string;
+};
+
+// ============================================
+// NEW EVENT PAYLOAD TYPES (Multi-Payment)
+// ============================================
+
+/**
+ * Payment confirmed manually event payload
+ */
+export type PaymentConfirmedEvent = {
+  /** Payment ID */
+  paymentId: string;
+  /** Order ID */
+  orderId: string;
+  /** Order code */
+  orderCode?: string;
+  /** Payment amount */
+  amount: number;
+  /** Total paid amount for order */
+  totalPaidAmount: number;
+  /** User who confirmed */
+  confirmedById: string;
+  /** New order payment status */
+  newOrderPaymentStatus?: string;
+  /** Workspace ID */
+  workspaceId: string;
+};
+
+/**
+ * Payment rejected event payload
+ */
+export type PaymentRejectedEvent = {
+  /** Payment ID */
+  paymentId: string;
+  /** Order ID */
+  orderId: string;
+  /** User who rejected */
+  rejectedById: string;
+  /** Rejection reason */
+  rejectionReason: string;
+  /** Workspace ID */
+  workspaceId: string;
+};
+
+/**
+ * Payment refunded event payload
+ */
+export type PaymentRefundedEvent = {
+  /** Payment ID */
+  paymentId: string;
+  /** Order ID */
+  orderId: string;
+  /** Order code */
+  orderCode?: string;
+  /** Amount refunded in this transaction */
+  refundAmount: number;
+  /** Total amount refunded for this payment */
+  totalRefunded: number;
+  /** Whether this is a full refund */
+  isFullRefund: boolean;
+  /** User who processed refund */
+  refundedById: string;
+  /** New order payment status */
+  newOrderPaymentStatus?: string;
+  /** Workspace ID */
+  workspaceId: string;
 };

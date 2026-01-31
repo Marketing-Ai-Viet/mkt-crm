@@ -30,8 +30,11 @@ import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-ent
 import {
   PAYMENT_CURRENCY_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
+  PAYMENT_PROVIDER_OPTIONS,
 } from 'src/mkt-core/payment/constants';
 import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
+import { PaymentProviderType } from 'src/mkt-core/payment/constants/payment-provider.constants';
+import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 const SEARCH_FIELDS_FOR_PAYMENT: FieldTypeAndNameMetadata[] = [
   { name: 'name', type: FieldMetadataType.TEXT },
@@ -161,16 +164,162 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   invoiceId?: string;
 
   // SePay integration - unique transaction ID for idempotency check
+  // @deprecated Use providerTransactionId instead
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.sepayTransactionId,
     type: FieldMetadataType.TEXT,
     label: msg`SePay Transaction ID`,
-    description: msg`Unique transaction ID from SePay webhook for idempotency`,
+    description: msg`[DEPRECATED] Use providerTransactionId instead`,
     icon: 'IconId',
   })
   @WorkspaceIsNullable()
   @WorkspaceFieldIndex()
   sepayTransactionId?: string;
+
+  // ============================================
+  // MULTI-GATEWAY PROVIDER FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.providerType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Provider Type`,
+    description: msg`Payment gateway provider type`,
+    icon: 'IconBuildingBank',
+    options: PAYMENT_PROVIDER_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  providerType?: PaymentProviderType;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.providerTransactionId,
+    type: FieldMetadataType.TEXT,
+    label: msg`Provider Transaction ID`,
+    description: msg`Unique transaction ID from payment provider`,
+    icon: 'IconHash',
+  })
+  @WorkspaceIsNullable()
+  @WorkspaceFieldIndex()
+  providerTransactionId?: string;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.providerResponse,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Provider Response`,
+    description: msg`Raw response data from payment provider`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  providerResponse: JSON | null;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.providerMetadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Provider Metadata`,
+    description: msg`Provider-specific configuration and data`,
+    icon: 'IconSettings',
+  })
+  @WorkspaceIsNullable()
+  providerMetadata: JSON | null;
+
+  // ============================================
+  // CONFIRMATION FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.confirmedAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Confirmed At`,
+    description: msg`Timestamp when payment was confirmed`,
+    icon: 'IconCheck',
+  })
+  @WorkspaceIsNullable()
+  confirmedAt?: string;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.confirmedBy,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Confirmed By`,
+    description: msg`User who confirmed the payment`,
+    icon: 'IconUserCheck',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'confirmedPayments',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  confirmedBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('confirmedBy')
+  confirmedById: string | null;
+
+  // ============================================
+  // REJECTION FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.rejectedAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Rejected At`,
+    description: msg`Timestamp when payment was rejected`,
+    icon: 'IconX',
+  })
+  @WorkspaceIsNullable()
+  rejectedAt?: string;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.rejectedBy,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Rejected By`,
+    description: msg`User who rejected the payment`,
+    icon: 'IconUserX',
+    inverseSideTarget: () => WorkspaceMemberWorkspaceEntity,
+    inverseSideFieldKey: 'rejectedPayments',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  rejectedBy: Relation<WorkspaceMemberWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('rejectedBy')
+  rejectedById: string | null;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.rejectionReason,
+    type: FieldMetadataType.TEXT,
+    label: msg`Rejection Reason`,
+    description: msg`Reason for payment rejection`,
+    icon: 'IconAlertCircle',
+  })
+  @WorkspaceIsNullable()
+  rejectionReason?: string;
+
+  // ============================================
+  // REFUND FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.refundedAmount,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Refunded Amount`,
+    description: msg`Amount that has been refunded`,
+    icon: 'IconReceipt2',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  refundedAmount?: number;
+
+  // ============================================
+  // METADATA
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.metadata,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`Metadata`,
+    description: msg`Additional payment metadata`,
+    icon: 'IconCode',
+  })
+  @WorkspaceIsNullable()
+  metadata: JSON | null;
 
   @WorkspaceField({
     standardId: MKT_PAYMENT_FIELD_IDS.position,

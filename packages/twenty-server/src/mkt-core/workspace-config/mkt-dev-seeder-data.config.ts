@@ -86,15 +86,15 @@ import {
 import {
   MKT_PAYMENT_DATA_SEED_COLUMNS,
   MKT_PAYMENT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-payment-data-seeds.constants';
+} from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-data-seeds.constants';
 import {
   MKT_PAYMENT_HISTORY_DATA_SEED_COLUMNS,
   MKT_PAYMENT_HISTORY_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-payment-history-data-seeds.constants';
+} from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/mkt-payment-history-data-seeds.constants';
 import {
   MKT_PAYMENT_METHOD_DATA_SEED_COLUMNS,
   MKT_PAYMENT_METHOD_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-payment-method-data-seeds.constants';
+} from 'src/mkt-core/seeder/payment-seeder/payment-method/mkt-payment-method-data-seeds.constants';
 import {
   MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
   MKT_PERMISSION_AUDIT_DATA_SEEDS,

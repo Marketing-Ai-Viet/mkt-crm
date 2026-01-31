@@ -79,15 +79,23 @@ export type QrCodeResult = {
 
 /**
  * Payment status
+ *
+ * Matches PAYMENT_TRANSACTION_STATUS constants:
+ * PENDING → CONFIRMED → (REFUNDED | PARTIALLY_REFUNDED)
+ * PENDING → REJECTED
+ * PENDING → FAILED | CANCELLED | EXPIRED
  */
 export type PaymentStatus =
   | 'PENDING'
   | 'PROCESSING'
-  | 'COMPLETED'
+  | 'COMPLETED' // Legacy status, prefer CONFIRMED for new code
+  | 'CONFIRMED'
   | 'FAILED'
+  | 'REJECTED'
+  | 'REFUNDED'
+  | 'PARTIALLY_REFUNDED'
   | 'CANCELLED'
   | 'EXPIRED'
-  | 'REFUNDED'
   | 'PARTIAL'
   | 'OVERPAID';
 

@@ -484,71 +484,116 @@ export class MktPaymentService {
     currentPayment: MktPaymentWorkspaceEntity,
     input: UpdatePaymentInputDto,
   ): Promise<{ qrCodeUrl?: string }> {
-    const result: { qrCodeUrl?: string } = {};
-
     try {
-      const newPaymentMethodId = input.mktPaymentMethodId;
-      const currentPaymentMethodId = currentPayment.mktPaymentMethodId;
-
-      // Case 1: Payment method is being changed
-      if (newPaymentMethodId && newPaymentMethodId !== currentPaymentMethodId) {
-        const newPaymentMethod =
-          await this.mktPaymentMethodRepository.findById(newPaymentMethodId);
-
-        if (newPaymentMethod) {
-          if (newPaymentMethod.name === SEPAY_QR_METHOD_NAME) {
-            // Switching to SEPay QR - generate QR code
-            const qrResult =
-              await this.mktPaymentPrepareService._draftSepayQrCodeUrl(
-                newPaymentMethod,
-                input.amount ?? currentPayment.amount,
-                currentPayment.mktOrder?.orderCode,
-              );
-
-            if (qrResult.qrCodeUrl) {
-              result.qrCodeUrl = qrResult.qrCodeUrl;
-              this.logger.log(
-                `Generated SEPay QR code URL for payment method change`,
-              );
-            }
-          } else {
-            // Switching from SEPay QR - clear QR code
-            result.qrCodeUrl = '';
-            this.logger.log(
-              'Cleared QR code URL for non-SEPay QR payment method',
-            );
-          }
-        }
-
-        return result;
+      if (this.isPaymentMethodChanging(input, currentPayment)) {
+        return this.handlePaymentMethodChange(currentPayment, input);
       }
 
-      // Case 2: Amount is being changed for existing SEPay QR payment
-      const currentPaymentMethod = currentPayment.mktPaymentMethod;
-
-      if (
-        currentPaymentMethod?.name === SEPAY_QR_METHOD_NAME &&
-        input.amount !== undefined &&
-        input.amount !== currentPayment.amount
-      ) {
-        const qrResult =
-          await this.mktPaymentPrepareService._draftSepayQrCodeUrl(
-            currentPaymentMethod,
-            input.amount,
-            currentPayment.mktOrder?.orderCode,
-          );
-
-        if (qrResult.qrCodeUrl) {
-          result.qrCodeUrl = qrResult.qrCodeUrl;
-          this.logger.log(`Regenerated SEPay QR code URL for amount change`);
-        }
+      if (this.isAmountChangingForSepay(input, currentPayment)) {
+        return this.handleAmountChange(currentPayment, input);
       }
+
+      return {};
     } catch (error) {
       this.logger.error('Error handling QR code logic:', error);
-      // Don't throw - QR code generation failure shouldn't block payment update
+
+      return {};
+    }
+  }
+
+  private isPaymentMethodChanging(
+    input: UpdatePaymentInputDto,
+    currentPayment: MktPaymentWorkspaceEntity,
+  ): boolean {
+    const { mktPaymentMethodId } = input;
+
+    return (
+      !!mktPaymentMethodId &&
+      mktPaymentMethodId !== currentPayment.mktPaymentMethodId
+    );
+  }
+
+  private isAmountChangingForSepay(
+    input: UpdatePaymentInputDto,
+    currentPayment: MktPaymentWorkspaceEntity,
+  ): boolean {
+    return (
+      currentPayment.mktPaymentMethod?.name === SEPAY_QR_METHOD_NAME &&
+      input.amount !== undefined &&
+      input.amount !== currentPayment.amount
+    );
+  }
+
+  private async handlePaymentMethodChange(
+    currentPayment: MktPaymentWorkspaceEntity,
+    input: UpdatePaymentInputDto,
+  ): Promise<{ qrCodeUrl?: string }> {
+    const { mktPaymentMethodId } = input;
+
+    if (!mktPaymentMethodId) {
+      return {};
     }
 
-    return result;
+    const newPaymentMethod =
+      await this.mktPaymentMethodRepository.findById(mktPaymentMethodId);
+
+    if (!newPaymentMethod) {
+      return {};
+    }
+
+    if (newPaymentMethod.name !== SEPAY_QR_METHOD_NAME) {
+      this.logger.log('Cleared QR code URL for non-SEPay QR payment method');
+
+      return { qrCodeUrl: '' };
+    }
+
+    return this.generateSepayQrCode(
+      newPaymentMethod,
+      input.amount ?? currentPayment.amount,
+      currentPayment.mktOrder?.orderCode,
+      'Generated SEPay QR code URL for payment method change',
+    );
+  }
+
+  private async handleAmountChange(
+    currentPayment: MktPaymentWorkspaceEntity,
+    input: UpdatePaymentInputDto,
+  ): Promise<{ qrCodeUrl?: string }> {
+    const { mktPaymentMethod } = currentPayment;
+    const { amount } = input;
+
+    if (!mktPaymentMethod || amount === undefined) {
+      return {};
+    }
+
+    return this.generateSepayQrCode(
+      mktPaymentMethod,
+      amount,
+      currentPayment.mktOrder?.orderCode,
+      'Regenerated SEPay QR code URL for amount change',
+    );
+  }
+
+  private async generateSepayQrCode(
+    paymentMethod: MktPaymentMethodWorkspaceEntity,
+    amount: number,
+    orderCode: string | undefined | null,
+    logMessage: string,
+  ): Promise<{ qrCodeUrl?: string }> {
+    const { qrCodeUrl } =
+      await this.mktPaymentPrepareService._draftSepayQrCodeUrl(
+        paymentMethod,
+        amount,
+        orderCode,
+      );
+
+    if (!qrCodeUrl) {
+      return {};
+    }
+
+    this.logger.log(logMessage);
+
+    return { qrCodeUrl };
   }
 
   /**

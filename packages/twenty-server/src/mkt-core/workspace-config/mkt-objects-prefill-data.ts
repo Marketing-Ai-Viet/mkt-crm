@@ -25,9 +25,9 @@ import { prefillMktOrderHistories } from 'src/mkt-core/seeder/order-seeder/prefi
 import { prefillMktOrderItems } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-organization-levels';
-import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-histories';
-import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payment-methods';
-import { prefillMktPayments } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-payments';
+import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/prefill-mkt-payment-histories';
+import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/payment-seeder/payment-method/prefill-mkt-payment-methods';
+import { prefillMktPayments } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/prefill-mkt-payments';
 import { prefillMktPermissionAudits } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/prefill-mkt-permission-audits';
 import { prefillMktStaffStatusHistories } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-staff-status-histories';
 import { prefillMktTags } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-tags';

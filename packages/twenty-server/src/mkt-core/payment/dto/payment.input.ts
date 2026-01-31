@@ -101,3 +101,65 @@ export class UpdatePaymentInputDto {
   @IsString()
   paymentDate?: string;
 }
+
+// ============================================
+// PHASE 2: CONFIRM/REJECT/REFUND DTOs
+// ============================================
+
+/**
+ * Input DTO for confirming a payment manually
+ * Note: Named differently from order's ConfirmPaymentInputDto which is for order-level payment
+ */
+@InputType()
+export class ManualConfirmPaymentInputDto {
+  @Field(() => ID, { description: 'Payment ID to confirm' })
+  @IsNotEmpty()
+  @IsString()
+  paymentId: string;
+
+  @Field({ nullable: true, description: 'Confirmation note' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+/**
+ * Input DTO for rejecting a payment
+ */
+@InputType()
+export class RejectPaymentInputDto {
+  @Field(() => ID, { description: 'Payment ID to reject' })
+  @IsNotEmpty()
+  @IsString()
+  paymentId: string;
+
+  @Field({ description: 'Rejection reason' })
+  @IsNotEmpty()
+  @IsString()
+  reason: string;
+}
+
+/**
+ * Input DTO for refunding a payment
+ */
+@InputType()
+export class RefundPaymentInputDto {
+  @Field(() => ID, { description: 'Payment ID to refund' })
+  @IsNotEmpty()
+  @IsString()
+  paymentId: string;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Amount to refund. If null, full remaining amount is refunded',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  amount?: number;
+
+  @Field({ description: 'Refund reason' })
+  @IsNotEmpty()
+  @IsString()
+  reason: string;
+}
