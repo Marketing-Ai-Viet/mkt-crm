@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MktPaymentHistoryRepository } from 'src/mkt-core/payment/repositories/mkt-payment-history.repository';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { PaymentAction } from 'src/mkt-core/payment/constants/payment-action.constants';
 import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
@@ -49,8 +48,6 @@ export class PaymentHistoryService {
    * Record a payment history entry
    */
   async record(input: RecordHistoryInput): Promise<void> {
-    const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
-
     await this.mktPaymentHistoryRepository.createPaymentHistory({
       name: this.buildHistoryName(input),
       mktPaymentId: input.paymentId,

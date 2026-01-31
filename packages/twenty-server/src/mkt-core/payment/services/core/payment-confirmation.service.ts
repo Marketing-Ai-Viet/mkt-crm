@@ -314,8 +314,6 @@ export class PaymentConfirmationService {
     amount: number;
     metadata?: Record<string, unknown>;
   }) {
-    const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
-
     await this.mktPaymentHistoryRepository.createPaymentHistory({
       name: `${data.action} - ${data.newStatus}`,
       mktPaymentId: data.paymentId,
