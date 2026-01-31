@@ -43,8 +43,8 @@ export type SepayWebhookPayload = {
   /** Loại giao dịch: in (tiền vào) / out (tiền ra) */
   transferType: SepayTransferType;
 
-  /** Mô tả đầy đủ từ ngân hàng */
-  description: string;
+  /** Mô tả đầy đủ từ ngân hàng (nullable) */
+  description?: string | null;
 
   /** Số tiền giao dịch (VND) */
   transferAmount: number;

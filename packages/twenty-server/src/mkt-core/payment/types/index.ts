@@ -6,3 +6,4 @@ export * from './provider.types';
 export * from './payment-provider.interface';
 export * from './webhook-handler.interface';
 export * from './payment.type';
+export * from './sepay-qr.types';

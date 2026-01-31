@@ -7,30 +7,7 @@ import {
 import { ConfigType } from '@nestjs/config';
 
 import { paymentConfig } from 'src/mkt-core/payment/config';
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const SEPAY_AUTH_MESSAGES = {
-  ERROR: {
-    API_KEY_NOT_CONFIGURED: 'SEPAY_WEBHOOK_API_KEY not configured',
-    AUTHORIZATION_REQUIRED: 'Authorization header is required',
-    INVALID_AUTH_FORMAT: 'Authorization header must start with "Apikey "',
-    API_KEY_REQUIRED: 'API key is required',
-    INVALID_API_KEY: 'Invalid API key',
-  },
-  LOG: {
-    VALIDATION_SUCCESS: 'API key validation successful',
-    INVALID_API_KEY: 'Invalid API key provided',
-  },
-} as const;
-
-const API_KEY_PREFIX = 'Apikey ';
-
-// ============================================
-// SERVICE
-// ============================================
+import { SEPAY_AUTH_MESSAGES } from 'src/mkt-core/payment/messages';
 
 /**
  * SepayAuthService - Handles SEPay webhook authentication
@@ -45,6 +22,8 @@ const API_KEY_PREFIX = 'Apikey ';
  */
 @Injectable()
 export class SepayAuthService {
+  private static readonly API_KEY_PREFIX = 'Apikey ';
+
   private readonly logger = new Logger(SepayAuthService.name);
 
   constructor(
@@ -65,13 +44,15 @@ export class SepayAuthService {
       );
     }
 
-    if (!authorization.startsWith(API_KEY_PREFIX)) {
+    if (!authorization.startsWith(SepayAuthService.API_KEY_PREFIX)) {
       throw new UnauthorizedException(
         SEPAY_AUTH_MESSAGES.ERROR.INVALID_AUTH_FORMAT,
       );
     }
 
-    const apiKey = authorization.substring(API_KEY_PREFIX.length).trim();
+    const apiKey = authorization
+      .substring(SepayAuthService.API_KEY_PREFIX.length)
+      .trim();
 
     if (!apiKey) {
       throw new UnauthorizedException(

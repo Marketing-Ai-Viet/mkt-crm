@@ -6,75 +6,18 @@ import { firstValueFrom } from 'rxjs';
 
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import { SEPAY_DEFAULT_DURATION } from 'src/mkt-core/payment/constants';
+import { SEPAY_QR_MESSAGES } from 'src/mkt-core/payment/messages';
 import { SepayQrGenerator } from 'src/mkt-core/payment/providers/sepay/sepay-qr.generator';
-import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import {
   BidvSepayApiResponse,
   BidvSepayOrderRequest,
 } from 'src/mkt-core/payment/types/bidv-sepay.types';
+import {
+  EMPTY_QR_RESULT,
+  QrCodeGenerationInput,
+  QrCodeGenerationResult,
+} from 'src/mkt-core/payment/types/sepay-qr.types';
 import { isSepayPaymentMethod } from 'src/mkt-core/payment/utils';
-
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * QR code generation result
- */
-export type QrCodeGenerationResult = {
-  /** Generated QR code URL */
-  qrCodeUrl: string;
-  /** Expiration time for BIDV API mode (ISO string) */
-  expiredAt: string | null;
-};
-
-/**
- * QR code generation input
- */
-export type QrCodeGenerationInput = {
-  /** Payment method entity to check if SEPay type */
-  paymentMethod?: MktPaymentMethodWorkspaceEntity;
-  /** Payment amount */
-  amount: number;
-  /** Order code for reference */
-  orderCode: string;
-  /** Payment duration in seconds (for BIDV API mode) */
-  duration?: number;
-};
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const SEPAY_QR_MESSAGES = {
-  LOG: {
-    GENERATING: 'Generating SEPay QR code...',
-    GENERATED_SEPAY: (orderCode: string, amount: number) =>
-      `Generated SEPay QR URL for order ${orderCode} with amount ${amount}`,
-    GENERATED_BIDV: (orderCode: string, orderId: string) =>
-      `Generated BIDV SEPay QR for order ${orderCode}, order_id: ${orderId}`,
-    CALLING_BIDV: (orderCode: string, amount: number) =>
-      `Calling BIDV SEPay API for order ${orderCode} with amount ${amount}`,
-  },
-  WARN: {
-    NOT_SEPAY_METHOD:
-      'Payment method is not SEPay type, skipping QR generation',
-    SEPAY_NOT_CONFIGURED: 'SEPay account or bank not configured',
-    NO_ORDER_CODE: 'No order code provided for QR generation',
-    INVALID_AMOUNT: 'Invalid amount for QR generation',
-    BIDV_NOT_CONFIGURED: 'BIDV SEPay API URL or Auth Token not configured',
-  },
-  ERROR: {
-    GENERATE_FAILED: 'Error generating SEPay QR code',
-    BIDV_API_ERROR: (message: string) => `BIDV SEPay API error: ${message}`,
-    BIDV_API_CALL_FAILED: 'Error calling BIDV SEPay API',
-  },
-} as const;
-
-const EMPTY_QR_RESULT: QrCodeGenerationResult = {
-  qrCodeUrl: '',
-  expiredAt: null,
-};
 
 // ============================================
 // SERVICE

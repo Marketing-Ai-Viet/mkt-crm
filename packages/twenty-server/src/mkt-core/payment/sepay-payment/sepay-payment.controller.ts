@@ -24,7 +24,6 @@ import { Response } from 'express';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { paymentConfig } from 'src/mkt-core/payment/config';
 import { SepayWebhookDto } from 'src/mkt-core/payment/dto';
-import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
 import { MktPaymentWebhookService } from 'src/mkt-core/payment/services/webhook';
 import {
   SepayAuthService,
@@ -49,7 +48,7 @@ export class SepayPaymentController {
     private readonly sepayQrPageService: SepayQrPageService,
   ) {}
 
-  @UseGuards(PublicEndpointGuard, IpWhitelistGuard)
+  @UseGuards(PublicEndpointGuard)
   @Post('hooks/sepay-payment')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))

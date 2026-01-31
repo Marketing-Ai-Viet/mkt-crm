@@ -23,9 +23,15 @@ export {
   SepayAuthService,
   SepayQrPageService,
   SepayQrService,
-  type QrCodeGenerationResult,
-  type QrCodeGenerationInput,
 } from 'src/mkt-core/payment/services/sepay';
+
+// Re-export SEPay types from centralized types directory
+export type {
+  QrCodeGenerationResult,
+  QrCodeGenerationInput,
+  QrPageResult,
+  QrPageTemplateVariables,
+} from 'src/mkt-core/payment/types/sepay-qr.types';
 
 // Event Services
 export {
