@@ -1,8 +1,9 @@
 # Multi-Payment Test Cases
 
 **Ngày tạo:** 2026-01-31
-**Phiên bản:** 1.0.0
+**Phiên bản:** 1.1.0
 **Module:** PaymentConfirmationResolver
+**Database:** PostgreSQL (workspace_1wgvd1injqtife6y4rvfbu3h5)
 
 ---
 
@@ -19,55 +20,221 @@
 
 ## 1. Test Environment Setup
 
-### 1.1 Prerequisite Data
+### 1.1 Prerequisite Data (Real Database Values)
 
 ```typescript
-// Test workspace
-const testWorkspace = {
-  id: 'ws-test-001',
-  name: 'Test Workspace',
+// Workspace
+const workspace = {
+  id: '20202020-1c25-4d02-bf25-6aeccf7ea419',
+  displayName: 'MKT CRM',
+  subdomain: 'mkt-crm',
 };
 
-// Test user (workspace member)
-const testUser = {
-  id: 'user-test-001',
-  workspaceMemberId: 'wm-test-001',
-  email: 'test@example.com',
+// Workspace Members
+const workspaceMembers = {
+  timApple: {
+    id: '20202020-0687-4c41-b707-ed1bfca972a7',
+    userId: '20202020-9e3b-46d4-a556-88b9ddc2b034',
+    email: 'tim@apple.dev',
+    name: 'Tim Apple',
+  },
+  jonyIve: {
+    id: '20202020-77d5-4cb6-b60a-f4a835a85d61',
+    userId: '20202020-3957-4908-9c36-2929a23f8357',
+    email: 'jony.ive@apple.dev',
+    name: 'Jony Ive',
+  },
+  janeAusten: {
+    id: '81caea88-92a5-4e88-8a9a-614ec785d244',
+    userId: '20202020-e6b5-4680-8a32-b8209737156b',
+    email: 'jane.austen@apple.dev',
+    name: 'Jane Austen',
+  },
+  philSchiler: {
+    id: '20202020-1553-45c6-a028-5a9064cce07f',
+    userId: '20202020-7169-42cf-bc47-1cfef15264b8',
+    email: 'phil.schiler@apple.dev',
+    name: 'Phil Schiler',
+  },
 };
 
-// Test order
-const testOrder = {
-  id: 'order-test-001',
-  orderCode: 'ORD-2026-001',
-  totalAmount: 2000000, // 2,000,000 VND
-  paidAmount: 0,
-  remainingAmount: 2000000,
-  paymentStatus: 'UNPAID',
+// Orders với paymentStatus = PENDING (chưa thanh toán)
+const pendingOrders = {
+  uidOrder: {
+    id: '0200e865-6bb2-4645-904c-1ee9fc021c1e',
+    orderCode: 'MKT-UID-2024-003',
+    totalAmount: 6600000,
+    paidAmount: 0,
+    remainingAmount: 6600000,
+    paymentStatus: 'PENDING',
+  },
+  twitterOrder: {
+    id: '28e054f6-4ce2-48aa-93cc-89519a3cf267',
+    orderCode: 'MKT-TWITTER-2024-009',
+    totalAmount: 3300000,
+    paidAmount: 0,
+    remainingAmount: 3300000,
+    paymentStatus: 'PENDING',
+  },
 };
 
-// Test payments
-const testPayments = {
+// Orders với paymentStatus = PAID (đã thanh toán đủ)
+const paidOrders = {
+  viralOrder: {
+    id: '09f33908-d459-44c3-999e-97f42faf6d30',
+    orderCode: 'MKT-VIRAL-2024-002',
+    totalAmount: 17100000,
+    paidAmount: 17100000,
+    remainingAmount: 0,
+    paymentStatus: 'PAID',
+  },
+  instaOrder: {
+    id: 'd4a05376-ec12-4f11-92d9-cd5722d70c0b',
+    orderCode: 'MKT-INSTA-2024-004',
+    totalAmount: 16500000,
+    paidAmount: 16500000,
+    remainingAmount: 0,
+    paymentStatus: 'PAID',
+  },
+};
+
+// Payments theo status
+const payments = {
+  // PENDING payments
   pending: {
-    id: 'payment-pending-001',
-    amount: 1000000,
-    status: 'PENDING',
-    mktOrderId: 'order-test-001',
+    pay002: {
+      id: 'f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c',
+      name: 'PAY-2024-002',
+      amount: 1200000,
+      status: 'PENDING',
+      providerType: 'VNPAY',
+      refundedAmount: 0,
+    },
+    pay010: {
+      id: '5e6f7a8b-9c0d-4eb1-c2d3-b4c5d6e7f8a9',
+      name: 'PAY-2024-010',
+      amount: 1500000,
+      status: 'PENDING',
+      providerType: 'CREDIT_CARD',
+      refundedAmount: 0,
+    },
   },
+  // CONFIRMED payments
   confirmed: {
-    id: 'payment-confirmed-001',
-    amount: 500000,
-    status: 'CONFIRMED',
-    mktOrderId: 'order-test-001',
-    refundedAmount: 0,
+    pay001: {
+      id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      name: 'PAY-2024-001',
+      amount: 500000,
+      status: 'CONFIRMED',
+      providerType: 'SEPAY',
+      refundedAmount: 0,
+      confirmedAt: '2024-01-15T10:35:00Z',
+    },
+    pay007: {
+      id: '2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6f',
+      name: 'PAY-2024-007',
+      amount: 450000,
+      status: 'CONFIRMED',
+      providerType: 'CASH',
+      refundedAmount: 0,
+      confirmedAt: '2024-01-22T11:00:00Z',
+    },
   },
+  // REJECTED payment
+  rejected: {
+    pay004: {
+      id: 'd5e4f3a2-b1c0-4d9e-8f7a-6b5c4d3e2f1a',
+      name: 'PAY-2024-004',
+      amount: 2500000,
+      status: 'REJECTED',
+      providerType: 'BANK_TRANSFER',
+      refundedAmount: 0,
+      rejectedAt: '2024-01-18T09:45:00Z',
+      rejectionReason: 'Số tiền không khớp với đơn hàng',
+    },
+  },
+  // REFUNDED payment
+  refunded: {
+    pay003: {
+      id: 'c6b5a4f3-e2d1-4c0b-a9b8-7c6d5e4f3a2b',
+      name: 'PAY-2024-003',
+      amount: 350000,
+      status: 'REFUNDED',
+      providerType: 'MOMO',
+      refundedAmount: 350000,
+      confirmedAt: '2024-01-10T14:25:00Z',
+    },
+  },
+  // PARTIALLY_REFUNDED payment
   partiallyRefunded: {
-    id: 'payment-partial-001',
-    amount: 800000,
-    status: 'PARTIALLY_REFUNDED',
-    mktOrderId: 'order-test-001',
-    refundedAmount: 300000,
+    pay005: {
+      id: 'e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4',
+      name: 'PAY-2024-005',
+      amount: 800000,
+      status: 'PARTIALLY_REFUNDED',
+      providerType: 'ZALOPAY',
+      refundedAmount: 200000,
+      availableForRefund: 600000, // 800000 - 200000
+      confirmedAt: '2024-01-08T16:05:00Z',
+    },
+  },
+  // Other statuses
+  processing: {
+    pay006: {
+      id: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5e',
+      name: 'PAY-2024-006',
+      amount: 150000,
+      status: 'PROCESSING',
+      providerType: 'SEPAY',
+    },
+  },
+  failed: {
+    pay008: {
+      id: '3c4d5e6f-7a8b-4c9d-a0b1-f2a3b4c5d6e7',
+      name: 'PAY-2024-008',
+      amount: 3000000,
+      status: 'FAILED',
+      providerType: 'VNPAY',
+    },
+  },
+  cancelled: {
+    pay009: {
+      id: '4d5e6f7a-8b9c-4da0-b1c2-a3b4c5d6e7f8',
+      name: 'PAY-2024-009',
+      amount: 680000,
+      status: 'CANCELLED',
+      providerType: 'MOMO',
+    },
   },
 };
+
+// Payment History samples
+const paymentHistories = [
+  {
+    id: '7e78c48b-b437-469d-a726-5f2b6679fef1',
+    name: 'Payment Created - PAY-2024-001',
+    paymentType: 'PAYMENT',
+    amount: 500000,
+    note: 'Tạo thanh toán mới qua SEPay',
+    mktPaymentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+  },
+  {
+    id: '26cd1db7-0a36-4951-b1f5-2d41ed0b5b68',
+    name: 'Payment Confirmed - PAY-2024-001',
+    paymentType: 'PAYMENT',
+    amount: 500000,
+    note: 'Thanh toán đã được xác nhận thành công',
+    mktPaymentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+  },
+  {
+    id: 'd1a2b3c4-5678-4901-23de-f12345678901',
+    name: 'Partial Refund - PAY-2024-005',
+    paymentType: 'REFUND',
+    amount: 200000,
+    note: 'Hoàn tiền một phần do sản phẩm hết hàng',
+    mktPaymentId: 'e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4',
+  },
+];
 ```
 
 ### 1.2 GraphQL Headers
@@ -75,7 +242,7 @@ const testPayments = {
 ```json
 {
   "Authorization": "Bearer <valid-jwt-token>",
-  "x-workspace-id": "ws-test-001"
+  "x-workspace-id": "20202020-1c25-4d02-bf25-6aeccf7ea419"
 }
 ```
 
@@ -88,15 +255,15 @@ const testPayments = {
 #### TC-CONFIRM-001: Xác nhận payment PENDING thành công
 
 **Precondition:**
-- Payment tồn tại với status = PENDING
-- User có quyền trong workspace
+- Payment `f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c` (PAY-2024-002) với status = PENDING, amount = 1,200,000
+- User `tim@apple.dev` có quyền trong workspace
 
 **Input:**
 ```graphql
 mutation {
   confirmPayment(input: {
-    paymentId: "payment-pending-001"
-    note: "Đã xác nhận qua sao kê ngân hàng"
+    paymentId: "f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c"
+    note: "Đã xác nhận qua sao kê ngân hàng VNPAY"
   }) {
     success
     message
@@ -123,16 +290,10 @@ mutation {
       "success": true,
       "message": "Payment action completed successfully",
       "payment": {
-        "id": "payment-pending-001",
+        "id": "f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c",
         "status": "CONFIRMED"
       },
-      "order": {
-        "orderId": "order-test-001",
-        "paidAmount": 1000000,
-        "remainingAmount": 1000000,
-        "paymentStatus": "PARTIAL_PAID",
-        "paidPercent": 50
-      }
+      "order": null
     }
   }
 }
@@ -141,28 +302,30 @@ mutation {
 **Postcondition:**
 - Payment status = CONFIRMED
 - Payment.confirmedAt = timestamp hiện tại
-- Payment.confirmedById = user ID
-- Order.paidAmount được cập nhật
+- Payment.confirmedById = `20202020-0687-4c41-b707-ed1bfca972a7` (Tim Apple)
 - PaymentHistory được tạo với action = CONFIRMED
 
 ---
 
-#### TC-CONFIRM-002: Xác nhận payment và trigger license creation
+#### TC-CONFIRM-002: Xác nhận payment với order và trigger license creation
 
 **Precondition:**
-- Order có totalAmount = 1,000,000 VND
-- Payment amount = 1,000,000 VND (đủ để fully paid)
+- Tạo payment mới cho order `0200e865-6bb2-4645-904c-1ee9fc021c1e` (MKT-UID-2024-003)
+- Order có totalAmount = 6,600,000 VND, paidAmount = 0
+- Payment amount = 6,600,000 VND (đủ để fully paid)
 - Payment status = PENDING
 
 **Input:**
 ```graphql
 mutation {
   confirmPayment(input: {
-    paymentId: "payment-full-001"
+    paymentId: "<new-payment-id>"
   }) {
     success
     payment { id status }
     order {
+      orderId
+      orderCode
       paymentStatus
       paidPercent
     }
@@ -177,11 +340,13 @@ mutation {
     "confirmPayment": {
       "success": true,
       "payment": {
-        "id": "payment-full-001",
+        "id": "<new-payment-id>",
         "status": "CONFIRMED"
       },
       "order": {
-        "paymentStatus": "FULLY_PAID",
+        "orderId": "0200e865-6bb2-4645-904c-1ee9fc021c1e",
+        "orderCode": "MKT-UID-2024-003",
+        "paymentStatus": "PAID",
         "paidPercent": 100
       }
     }
@@ -190,7 +355,7 @@ mutation {
 ```
 
 **Postcondition:**
-- Order.paymentStatus = FULLY_PAID
+- Order.paymentStatus = PAID
 - Event PAYMENT_COMPLETED được emit
 - License creation được trigger (nếu có listener)
 
@@ -202,7 +367,7 @@ mutation {
 ```graphql
 mutation {
   confirmPayment(input: {
-    paymentId: "payment-pending-001"
+    paymentId: "5e6f7a8b-9c0d-4eb1-c2d3-b4c5d6e7f8a9"
   }) {
     success
     payment { id status }
@@ -222,7 +387,7 @@ mutation {
 ```graphql
 mutation {
   confirmPayment(input: {
-    paymentId: "non-existent-id"
+    paymentId: "00000000-0000-0000-0000-000000000000"
   }) {
     success
     message
@@ -236,7 +401,7 @@ mutation {
   "data": {
     "confirmPayment": {
       "success": false,
-      "message": "Payment not found: non-existent-id"
+      "message": "Payment not found: 00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -246,13 +411,13 @@ mutation {
 
 #### TC-CONFIRM-ERR-002: Payment đã được confirm
 
-**Precondition:** Payment status = CONFIRMED
+**Precondition:** Payment `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` (PAY-2024-001) có status = CONFIRMED
 
 **Input:**
 ```graphql
 mutation {
   confirmPayment(input: {
-    paymentId: "payment-confirmed-001"
+    paymentId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
   }) {
     success
     message
@@ -276,7 +441,19 @@ mutation {
 
 #### TC-CONFIRM-ERR-003: Payment đã bị reject
 
-**Precondition:** Payment status = REJECTED
+**Precondition:** Payment `d5e4f3a2-b1c0-4d9e-8f7a-6b5c4d3e2f1a` (PAY-2024-004) có status = REJECTED
+
+**Input:**
+```graphql
+mutation {
+  confirmPayment(input: {
+    paymentId: "d5e4f3a2-b1c0-4d9e-8f7a-6b5c4d3e2f1a"
+  }) {
+    success
+    message
+  }
+}
+```
 
 **Expected Output:**
 ```json
@@ -294,7 +471,19 @@ mutation {
 
 #### TC-CONFIRM-ERR-004: Payment đã refunded
 
-**Precondition:** Payment status = REFUNDED
+**Precondition:** Payment `c6b5a4f3-e2d1-4c0b-a9b8-7c6d5e4f3a2b` (PAY-2024-003) có status = REFUNDED
+
+**Input:**
+```graphql
+mutation {
+  confirmPayment(input: {
+    paymentId: "c6b5a4f3-e2d1-4c0b-a9b8-7c6d5e4f3a2b"
+  }) {
+    success
+    message
+  }
+}
+```
 
 **Expected Output:**
 ```json
@@ -334,7 +523,7 @@ mutation {
 ```graphql
 mutation {
   confirmPayment(input: {
-    paymentId: "invalid-uuid"
+    paymentId: "invalid-uuid-format"
   }) {
     success
     message
@@ -353,15 +542,15 @@ mutation {
 #### TC-REJECT-001: Từ chối payment PENDING thành công
 
 **Precondition:**
-- Payment tồn tại với status = PENDING
-- User có quyền trong workspace
+- Payment `f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c` (PAY-2024-002) với status = PENDING
+- User `jony.ive@apple.dev` có quyền trong workspace
 
 **Input:**
 ```graphql
 mutation {
   rejectPayment(input: {
-    paymentId: "payment-pending-001"
-    reason: "Không tìm thấy giao dịch trong sao kê ngân hàng"
+    paymentId: "f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c"
+    reason: "Không tìm thấy giao dịch trong sao kê VNPAY"
   }) {
     success
     message
@@ -381,7 +570,7 @@ mutation {
       "success": true,
       "message": "Payment action completed successfully",
       "payment": {
-        "id": "payment-pending-001",
+        "id": "f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c",
         "status": "REJECTED"
       }
     }
@@ -392,8 +581,8 @@ mutation {
 **Postcondition:**
 - Payment status = REJECTED
 - Payment.rejectedAt = timestamp hiện tại
-- Payment.rejectedById = user ID
-- Payment.rejectionReason = reason từ input
+- Payment.rejectedById = `20202020-77d5-4cb6-b60a-f4a835a85d61` (Jony Ive)
+- Payment.rejectionReason = "Không tìm thấy giao dịch trong sao kê VNPAY"
 - Order totals KHÔNG thay đổi (vì payment chưa confirmed)
 - PaymentHistory được tạo với action = REJECTED
 - Event PAYMENT_REJECTED được emit
@@ -408,7 +597,7 @@ mutation {
 ```graphql
 mutation {
   rejectPayment(input: {
-    paymentId: "payment-pending-001"
+    paymentId: "5e6f7a8b-9c0d-4eb1-c2d3-b4c5d6e7f8a9"
     reason: ""
   }) {
     success
@@ -423,13 +612,13 @@ mutation {
 
 #### TC-REJECT-ERR-002: Payment không ở trạng thái PENDING
 
-**Precondition:** Payment status = CONFIRMED
+**Precondition:** Payment `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` (PAY-2024-001) có status = CONFIRMED
 
 **Input:**
 ```graphql
 mutation {
   rejectPayment(input: {
-    paymentId: "payment-confirmed-001"
+    paymentId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
     reason: "Test rejection"
   }) {
     success
@@ -458,7 +647,7 @@ mutation {
 ```graphql
 mutation {
   rejectPayment(input: {
-    paymentId: "non-existent-id"
+    paymentId: "00000000-0000-0000-0000-000000000000"
     reason: "Test"
   }) {
     success
@@ -473,7 +662,7 @@ mutation {
   "data": {
     "rejectPayment": {
       "success": false,
-      "message": "Payment not found: non-existent-id"
+      "message": "Payment not found: 00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -504,15 +693,15 @@ mutation {
 #### TC-REFUND-001: Hoàn tiền đầy đủ (full refund)
 
 **Precondition:**
-- Payment status = CONFIRMED
-- Payment amount = 1,000,000 VND
+- Payment `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` (PAY-2024-001) có status = CONFIRMED
+- Payment amount = 500,000 VND
 - Payment refundedAmount = 0
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-confirmed-001"
+    paymentId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
     reason: "Khách hàng yêu cầu hủy đơn"
   }) {
     success
@@ -540,16 +729,12 @@ mutation {
       "success": true,
       "message": "Payment refunded successfully",
       "payment": {
-        "id": "payment-confirmed-001",
+        "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
         "status": "REFUNDED",
-        "refundedAmount": 1000000
+        "refundedAmount": 500000
       },
-      "order": {
-        "paidAmount": 0,
-        "remainingAmount": 2000000,
-        "paymentStatus": "UNPAID"
-      },
-      "refundedAmount": 1000000
+      "order": null,
+      "refundedAmount": 500000
     }
   }
 }
@@ -557,8 +742,7 @@ mutation {
 
 **Postcondition:**
 - Payment status = REFUNDED
-- Payment.refundedAmount = payment.amount
-- Order.paidAmount giảm
+- Payment.refundedAmount = 500,000 (= payment.amount)
 - PaymentHistory được tạo với action = REFUNDED
 - Event PAYMENT_REFUNDED được emit với isFullRefund = true
 
@@ -567,16 +751,16 @@ mutation {
 #### TC-REFUND-002: Hoàn tiền một phần (partial refund)
 
 **Precondition:**
-- Payment status = CONFIRMED
-- Payment amount = 1,000,000 VND
+- Payment `2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6f` (PAY-2024-007) có status = CONFIRMED
+- Payment amount = 450,000 VND
 - Payment refundedAmount = 0
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-confirmed-001"
-    amount: 300000
+    paymentId: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6f"
+    amount: 150000
     reason: "Hoàn tiền sản phẩm bị lỗi"
   }) {
     success
@@ -597,11 +781,11 @@ mutation {
     "refundPayment": {
       "success": true,
       "payment": {
-        "id": "payment-confirmed-001",
+        "id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6f",
         "status": "PARTIALLY_REFUNDED",
-        "refundedAmount": 300000
+        "refundedAmount": 150000
       },
-      "refundedAmount": 300000
+      "refundedAmount": 150000
     }
   }
 }
@@ -609,26 +793,26 @@ mutation {
 
 **Postcondition:**
 - Payment status = PARTIALLY_REFUNDED
-- Payment.refundedAmount = 300,000
-- Available for next refund = 700,000
+- Payment.refundedAmount = 150,000
+- Available for next refund = 300,000 (450,000 - 150,000)
 
 ---
 
 #### TC-REFUND-003: Hoàn tiền tiếp từ PARTIALLY_REFUNDED
 
 **Precondition:**
-- Payment status = PARTIALLY_REFUNDED
+- Payment `e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4` (PAY-2024-005) có status = PARTIALLY_REFUNDED
 - Payment amount = 800,000 VND
-- Payment refundedAmount = 300,000 VND
-- Available = 500,000 VND
+- Payment refundedAmount = 200,000 VND
+- Available = 600,000 VND
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-partial-001"
-    amount: 200000
-    reason: "Hoàn tiền thêm"
+    paymentId: "e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4"
+    amount: 300000
+    reason: "Hoàn tiền thêm theo yêu cầu"
   }) {
     success
     payment {
@@ -650,7 +834,7 @@ mutation {
         "status": "PARTIALLY_REFUNDED",
         "refundedAmount": 500000
       },
-      "refundedAmount": 200000
+      "refundedAmount": 300000
     }
   }
 }
@@ -661,16 +845,16 @@ mutation {
 #### TC-REFUND-004: Hoàn hết số tiền còn lại (amount = null)
 
 **Precondition:**
-- Payment status = PARTIALLY_REFUNDED
+- Payment `e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4` (PAY-2024-005) sau TC-REFUND-003
 - Payment amount = 800,000 VND
-- Payment refundedAmount = 500,000 VND
+- Payment refundedAmount = 500,000 VND (after TC-REFUND-003)
 - Available = 300,000 VND
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-partial-001"
+    paymentId: "e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4"
     reason: "Hoàn hết số còn lại"
   }) {
     success
@@ -705,13 +889,13 @@ mutation {
 
 #### TC-REFUND-ERR-001: Payment chưa được confirm
 
-**Precondition:** Payment status = PENDING
+**Precondition:** Payment `f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c` (PAY-2024-002) có status = PENDING
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-pending-001"
+    paymentId: "f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c"
     reason: "Test refund"
   }) {
     success
@@ -737,16 +921,17 @@ mutation {
 #### TC-REFUND-ERR-002: Số tiền refund vượt quá available
 
 **Precondition:**
-- Payment amount = 1,000,000 VND
-- Payment refundedAmount = 800,000 VND
-- Available = 200,000 VND
+- Payment `e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4` (PAY-2024-005)
+- Payment amount = 800,000 VND
+- Payment refundedAmount = 200,000 VND
+- Available = 600,000 VND
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-partial-001"
-    amount: 500000
+    paymentId: "e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4"
+    amount: 700000
     reason: "Test"
   }) {
     success
@@ -761,7 +946,7 @@ mutation {
   "data": {
     "refundPayment": {
       "success": false,
-      "message": "Refund amount (500000) exceeds available amount (200000)"
+      "message": "Refund amount (700000) exceeds available amount (600000)"
     }
   }
 }
@@ -771,13 +956,13 @@ mutation {
 
 #### TC-REFUND-ERR-003: Payment đã refund hết
 
-**Precondition:** Payment status = REFUNDED (refundedAmount = amount)
+**Precondition:** Payment `c6b5a4f3-e2d1-4c0b-a9b8-7c6d5e4f3a2b` (PAY-2024-003) có status = REFUNDED
 
 **Input:**
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-refunded-001"
+    paymentId: "c6b5a4f3-e2d1-4c0b-a9b8-7c6d5e4f3a2b"
     amount: 100000
     reason: "Test"
   }) {
@@ -807,7 +992,7 @@ mutation {
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-confirmed-001"
+    paymentId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
     amount: 0
     reason: "Test"
   }) {
@@ -837,7 +1022,7 @@ mutation {
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-confirmed-001"
+    paymentId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
     amount: -100000
     reason: "Test"
   }) {
@@ -857,7 +1042,7 @@ mutation {
 ```graphql
 mutation {
   refundPayment(input: {
-    paymentId: "payment-confirmed-001"
+    paymentId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
     amount: 100000
     reason: ""
   }) {
@@ -879,7 +1064,7 @@ mutation {
   "data": {
     "refundPayment": {
       "success": false,
-      "message": "Payment not found: non-existent-id"
+      "message": "Payment not found: 00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -894,23 +1079,27 @@ mutation {
 #### TC-INT-001: Create → Confirm → Full Refund
 
 ```
+Sử dụng Order: MKT-TWITTER-2024-009
+  - ID: 28e054f6-4ce2-48aa-93cc-89519a3cf267
+  - totalAmount: 3,300,000 VND
+  - paymentStatus: PENDING
+
 Step 1: Create payment
-  - Order totalAmount = 1,000,000
-  - Payment amount = 1,000,000
+  - Tạo payment mới amount = 3,300,000
   - Payment status = PENDING
-  - Order paymentStatus = UNPAID
+  - Order paymentStatus vẫn = PENDING
 
 Step 2: Confirm payment
   - Payment status → CONFIRMED
-  - Order paidAmount = 1,000,000
-  - Order paymentStatus = FULLY_PAID
+  - Order paidAmount = 3,300,000
+  - Order paymentStatus = PAID
   - License creation triggered ✓
 
 Step 3: Full refund
   - Payment status → REFUNDED
-  - Payment refundedAmount = 1,000,000
+  - Payment refundedAmount = 3,300,000
   - Order paidAmount = 0
-  - Order paymentStatus = UNPAID
+  - Order paymentStatus = PENDING
   - License revocation triggered ✓
 ```
 
@@ -919,22 +1108,24 @@ Step 3: Full refund
 #### TC-INT-002: Multiple Partial Payments
 
 ```
-Order: totalAmount = 2,000,000
+Sử dụng Order: MKT-UID-2024-003
+  - ID: 0200e865-6bb2-4645-904c-1ee9fc021c1e
+  - totalAmount: 6,600,000 VND
 
-Step 1: Create Payment 1 (1,000,000) → PENDING
+Step 1: Create Payment 1 (3,000,000) → PENDING
 Step 2: Confirm Payment 1
-  - Order paidAmount = 1,000,000
+  - Order paidAmount = 3,000,000
   - Order paymentStatus = PARTIAL_PAID
 
-Step 3: Create Payment 2 (500,000) → PENDING
+Step 3: Create Payment 2 (2,000,000) → PENDING
 Step 4: Confirm Payment 2
-  - Order paidAmount = 1,500,000
+  - Order paidAmount = 5,000,000
   - Order paymentStatus = PARTIAL_PAID
 
-Step 5: Create Payment 3 (500,000) → PENDING
+Step 5: Create Payment 3 (1,600,000) → PENDING
 Step 6: Confirm Payment 3
-  - Order paidAmount = 2,000,000
-  - Order paymentStatus = FULLY_PAID
+  - Order paidAmount = 6,600,000
+  - Order paymentStatus = PAID
   - License creation triggered ✓
 ```
 
@@ -943,18 +1134,19 @@ Step 6: Confirm Payment 3
 #### TC-INT-003: Partial Refund không ảnh hưởng license
 
 ```
-Precondition:
-  - Order totalAmount = 2,000,000
-  - Payment 1: 2,000,000 CONFIRMED
-  - Order paymentStatus = FULLY_PAID
+Precondition (sau TC-INT-002):
+  - Order: MKT-UID-2024-003
+  - totalAmount: 6,600,000
+  - paidAmount: 6,600,000
+  - paymentStatus: PAID
   - Licenses đã được tạo
 
-Step 1: Partial refund 500,000
-  - Payment status → PARTIALLY_REFUNDED
-  - Payment refundedAmount = 500,000
-  - Order paidAmount = 1,500,000
+Step 1: Partial refund 1,000,000 từ Payment 1
+  - Payment 1 status → PARTIALLY_REFUNDED
+  - Payment 1 refundedAmount = 1,000,000
+  - Order paidAmount = 5,600,000
   - Order paymentStatus = PARTIAL_PAID
-  - Licenses vẫn ACTIVE (vì partial refund)
+  - Licenses vẫn ACTIVE (vì partial refund không đủ để revoke)
 ```
 
 ---
@@ -962,14 +1154,16 @@ Step 1: Partial refund 500,000
 #### TC-INT-004: Reject không ảnh hưởng order totals
 
 ```
+Sử dụng Order: MKT-UID-2024-003
+  - totalAmount: 6,600,000
+
 Precondition:
-  - Order totalAmount = 1,000,000
-  - Payment 1: 500,000 CONFIRMED → paidAmount = 500,000
-  - Payment 2: 500,000 PENDING
+  - Payment 1: 3,300,000 CONFIRMED → paidAmount = 3,300,000
+  - Payment 2: 3,300,000 PENDING
 
 Step 1: Reject Payment 2
   - Payment 2 status → REJECTED
-  - Order paidAmount vẫn = 500,000 (không đổi)
+  - Order paidAmount vẫn = 3,300,000 (không đổi)
   - Order paymentStatus vẫn = PARTIAL_PAID
 ```
 
@@ -981,8 +1175,9 @@ Step 1: Reject Payment 2
 
 ```
 Setup:
-  - Payment 1: PENDING
-  - Payment 2: PENDING
+  - Payment 1: 5e6f7a8b-9c0d-4eb1-c2d3-b4c5d6e7f8a9 (PENDING, 1,500,000)
+  - Payment 2: f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c (PENDING, 1,200,000)
+  - Cả 2 thuộc cùng 1 order
 
 Concurrent:
   - Thread 1: Confirm Payment 1
@@ -990,7 +1185,7 @@ Concurrent:
 
 Expected:
   - Cả 2 payments đều CONFIRMED
-  - Order paidAmount = sum of both payments
+  - Order paidAmount = sum of both payments (2,700,000)
   - PaymentHistory có 2 records
 ```
 
@@ -1003,8 +1198,9 @@ Expected:
 #### TC-EDGE-001: Refund exact remaining amount
 
 **Precondition:**
-- Payment amount = 1,000,000
-- Payment refundedAmount = 999,999
+- Payment `e8f7a6b5-c4d3-4e2f-b1a0-f9e8d7c6b5a4` (PAY-2024-005)
+- Payment amount = 800,000
+- Payment refundedAmount = 799,999
 - Available = 1
 
 **Input:** refund amount = 1
@@ -1012,13 +1208,13 @@ Expected:
 **Expected:**
 - Success
 - Payment status = REFUNDED
-- refundedAmount = 1,000,000
+- refundedAmount = 800,000
 
 ---
 
 #### TC-EDGE-002: Very large amount
 
-**Input:** Payment amount = 999,999,999,999 (gần max int)
+**Input:** Payment amount = 999,999,999 VND (gần max safe integer)
 
 **Expected:** Xử lý đúng với MoneyUtils
 
@@ -1042,8 +1238,8 @@ Expected:
 ```graphql
 mutation {
   rejectPayment(input: {
-    paymentId: "payment-001"
-    reason: "Lý do: 中文 日本語 한국어 🎉"
+    paymentId: "f0e9d8c7-b6a5-4f4e-9d3c-2b1a0f9e8d7c"
+    reason: "Lý do từ chối: Không tìm thấy giao dịch 中文 日本語"
   }) {
     success
   }
@@ -1087,20 +1283,40 @@ mutation {
 ## Appendix: Test Data SQL
 
 ```sql
--- Create test order
-INSERT INTO "workspace_test"."mktOrder" (
-  id, "orderCode", "totalAmount", "paidAmount", "remainingAmount", "paymentStatus"
-) VALUES (
-  'order-test-001', 'ORD-2026-001', 2000000, 0, 2000000, 'UNPAID'
-);
+-- Workspace info
+-- ID: 20202020-1c25-4d02-bf25-6aeccf7ea419
+-- Schema: workspace_1wgvd1injqtife6y4rvfbu3h5
 
--- Create test payments
-INSERT INTO "workspace_test"."mktPayment" (
-  id, name, amount, status, "mktOrderId", "refundedAmount"
-) VALUES
-  ('payment-pending-001', 'Payment 1', 1000000, 'PENDING', 'order-test-001', 0),
-  ('payment-confirmed-001', 'Payment 2', 500000, 'CONFIRMED', 'order-test-001', 0),
-  ('payment-partial-001', 'Payment 3', 800000, 'PARTIALLY_REFUNDED', 'order-test-001', 300000);
+-- View existing payments
+SELECT id, name, amount, status, "refundedAmount", "providerType"
+FROM workspace_1wgvd1injqtife6y4rvfbu3h5."mktPayment"
+WHERE "deletedAt" IS NULL
+ORDER BY "createdAt" DESC;
+
+-- View existing orders
+SELECT id, "orderCode", "totalAmount", "paidAmount", "remainingAmount", "paymentStatus"
+FROM workspace_1wgvd1injqtife6y4rvfbu3h5."mktOrder"
+WHERE "deletedAt" IS NULL
+ORDER BY "createdAt" DESC;
+
+-- View payment history
+SELECT id, name, "paymentType", amount, note, "mktPaymentId"
+FROM workspace_1wgvd1injqtife6y4rvfbu3h5."mktPaymentHistory"
+WHERE "deletedAt" IS NULL
+ORDER BY "createdAt" DESC;
+
+-- Create test payment for order MKT-UID-2024-003
+INSERT INTO workspace_1wgvd1injqtife6y4rvfbu3h5."mktPayment" (
+  id, name, amount, status, "providerType", "mktOrderId", "refundedAmount"
+) VALUES (
+  uuid_generate_v4(),
+  'TEST-PAY-001',
+  6600000,
+  'PENDING',
+  'BANK_TRANSFER',
+  '0200e865-6bb2-4645-904c-1ee9fc021c1e',
+  0
+);
 ```
 
 ---
