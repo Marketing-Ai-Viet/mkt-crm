@@ -47,14 +47,17 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
 
   /**
    * Skip this step if:
-   * - Action is NOT ACCOUNTING_CONFIRMED
+   * - Action is NOT PAYMENT_CONFIRMED
    * - No licenses were created in previous step
+   *
+   * Note: CONFIRM_ORDER creates licenses with PENDING_PAYMENT status,
+   * order stays at PROCESSING until PAYMENT_CONFIRMED.
    */
   shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
     const _typedContext = context as ConfirmOrderSagaContext;
 
-    // Only run after ACCOUNTING_CONFIRMED action
-    if (input.action !== ORDER_ACTION.ACCOUNTING_CONFIRMED) {
+    // Only run after PAYMENT_CONFIRMED action
+    if (input.action !== ORDER_ACTION.PAYMENT_CONFIRMED) {
       this.logger.debug(
         `Skipping: Action "${input.action}" does not require auto-complete`,
       );
@@ -71,7 +74,7 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
 
     if (!licenseData?.licenseIds?.length) {
       this.logger.debug(
-        'Skipping: No licenses created, order stays at CONFIRMED status',
+        'Skipping: No licenses created, order stays at PROCESSING status',
       );
 
       return true;

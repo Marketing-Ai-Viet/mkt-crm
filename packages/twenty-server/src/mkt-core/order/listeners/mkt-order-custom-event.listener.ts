@@ -176,11 +176,18 @@ export class MktOrderCustomEventListener {
         break;
       case MKT_ORDER_EVENT_TYPES.ORDER_UPDATED:
         break;
-      case MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED:
-        action = ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMED;
-        fieldName = 'accountingConfirmed';
-        newValue = 'true';
-        note = 'Trạng thái hiện tại: Kế toán đã xác nhận';
+      case MKT_ORDER_EVENT_TYPES.ORDER_CONFIRMED:
+        action = ORDER_HISTORY_ACTION.ORDER_CONFIRMED;
+        fieldName = 'status';
+        newValue = ORDER_STATUS.PROCESSING;
+        note =
+          'Đơn hàng đã được xác nhận, license tạo với trạng thái PENDING_PAYMENT';
+        break;
+      case MKT_ORDER_EVENT_TYPES.PAYMENT_CONFIRMED:
+        action = ORDER_HISTORY_ACTION.PAYMENT_CONFIRMED;
+        fieldName = 'paymentStatus';
+        newValue = 'PAID';
+        note = 'Thanh toán đã được xác nhận, license đã kích hoạt';
         break;
       case MKT_ORDER_EVENT_TYPES.FROM_LICENSE:
         action = ORDER_HISTORY_ACTION.LICENSE_UPDATED;

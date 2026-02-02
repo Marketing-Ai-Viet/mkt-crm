@@ -344,18 +344,16 @@ export const ORDER_ACTION = {
   TRIAL: 'TRIAL',
   LICENSE_RENEWING: 'LICENSE_RENEWING',
   CHANGE_VARIANT: 'CHANGE_VARIANT',
-  CONFIRM_ORDER: 'CONFIRM_ORDER',           // NEW: Xác nhận đơn hàng (tạo license)
-  PAYMENT_CONFIRMED: 'PAYMENT_CONFIRMED',   // NEW: Thanh toán được xác nhận
-  LOCK_OVERDUE: 'LOCK_OVERDUE',             // NEW: Khóa do quá hạn
-  UNLOCK_AFTER_PAYMENT: 'UNLOCK_AFTER_PAYMENT', // NEW: Mở khóa sau thanh toán muộn
+  CONFIRM_ORDER: 'CONFIRM_ORDER',           // Xác nhận đơn hàng (tạo license)
+  PAYMENT_CONFIRMED: 'PAYMENT_CONFIRMED',   // Thanh toán được xác nhận
+  LOCK_OVERDUE: 'LOCK_OVERDUE',             // Khóa do quá hạn
+  UNLOCK_AFTER_PAYMENT: 'UNLOCK_AFTER_PAYMENT', // Mở khóa sau thanh toán muộn
   COMPLETE: 'COMPLETE',
   CANCEL: 'CANCEL',
   BLOCK: 'BLOCK',
   TRIAL_TO_PAID: 'TRIAL_TO_PAID',
   REFUND: 'REFUND',
   REFUND_PARTIAL: 'REFUND_PARTIAL',
-  // DEPRECATED
-  ACCOUNTING_CONFIRMED: 'ACCOUNTING_CONFIRMED', // → sử dụng PAYMENT_CONFIRMED
 } as const;
 ```
 

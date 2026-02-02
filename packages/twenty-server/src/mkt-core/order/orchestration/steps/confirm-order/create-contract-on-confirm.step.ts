@@ -22,10 +22,10 @@ type CreateContractStepOutput = {
 };
 
 /**
- * CreateContractOnConfirmStep - Create contract when accounting confirms payment
+ * CreateContractOnConfirmStep - Create contract when order is confirmed
  *
  * This step is triggered ONLY when:
- * - Action is ACCOUNTING_CONFIRMED
+ * - Action is CONFIRM_ORDER
  * - Order doesn't already have a contract linked
  *
  * Flow:
@@ -65,14 +65,14 @@ export class CreateContractOnConfirmStep extends SagaStep<
 
   /**
    * Skip this step if:
-   * - Action is NOT ACCOUNTING_CONFIRMED
+   * - Action is NOT CONFIRM_ORDER
    * - Order already has a contract linked
    */
   shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
     const typedContext = context as ConfirmOrderSagaContext;
 
-    // Only create contract when accounting confirms
-    if (input.action !== ORDER_ACTION.ACCOUNTING_CONFIRMED) {
+    // Only create contract when order is confirmed
+    if (input.action !== ORDER_ACTION.CONFIRM_ORDER) {
       this.logger.debug(
         `Skipping: Action "${input.action}" does not trigger contract creation`,
       );
@@ -90,7 +90,7 @@ export class CreateContractOnConfirmStep extends SagaStep<
     }
 
     this.logger.debug(
-      'Proceeding with contract creation for ACCOUNTING_CONFIRMED action',
+      'Proceeding with contract creation for CONFIRM_ORDER action',
     );
 
     return false;

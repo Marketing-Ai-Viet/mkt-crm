@@ -52,14 +52,19 @@ export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWork
 
   /**
    * Find payment by ID with options (logging included)
+   *
+   * @param paymentId - Payment ID to find
+   * @param options - Find options including relations
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async findByIdWithOptions(
     paymentId: string,
     options?: FindPaymentOptions,
+    workspaceId?: string,
   ): Promise<MktPaymentWorkspaceEntity | null> {
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.FIND_BY_ID_START(paymentId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const payment = await repository.findOne({
       where: { id: paymentId },
@@ -81,13 +86,19 @@ export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWork
 
   /**
    * Find payment by ID with default relations
+   *
+   * @param paymentId - Payment ID to find
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async findByIdWithRelations(
     paymentId: string,
+    workspaceId?: string,
   ): Promise<MktPaymentWorkspaceEntity | null> {
-    return this.findByIdWithOptions(paymentId, {
-      relations: [...DEFAULT_PAYMENT_RELATIONS],
-    });
+    return this.findByIdWithOptions(
+      paymentId,
+      { relations: [...DEFAULT_PAYMENT_RELATIONS] },
+      workspaceId,
+    );
   }
 
   /**
@@ -226,14 +237,19 @@ export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWork
 
   /**
    * Update payment by ID
+   *
+   * @param paymentId - Payment ID to update
+   * @param data - Data to update
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
   async updatePayment(
     paymentId: string,
     data: UpdatePaymentData,
+    workspaceId?: string,
   ): Promise<void> {
     this.logger.debug(MKT_PAYMENT_LOG_MESSAGES.UPDATE_START(paymentId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     await repository.update(paymentId, data);
 

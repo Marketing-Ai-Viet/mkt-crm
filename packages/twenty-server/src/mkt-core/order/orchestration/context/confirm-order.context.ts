@@ -46,12 +46,12 @@ export type ConfirmOrderSagaContext = SagaContext & {
   // Rollback data (typed)
   rollbackOrder?: {
     status: ORDER_STATUS;
-    accountingConfirmed?: boolean;
     note?: string;
     // Payment fields for rollback
     paymentStatus?: string;
     paidAmount?: number;
     remainingAmount?: number;
+    paymentDeadline?: Date;
   };
 };
 

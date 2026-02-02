@@ -53,58 +53,6 @@ export class CreateOrderResponseDto {
 // Note: Trial license creation moved to MktLicenseResolver.mktCreateTrialLicense
 
 @ObjectType()
-export class ConfirmOrderResponseDto {
-  @Field(() => Boolean)
-  success: boolean;
-
-  @Field(() => String, { nullable: true })
-  orderId?: string;
-
-  @Field(() => String, { nullable: true })
-  orderCode?: string;
-
-  @Field(() => ORDER_STATUS, { nullable: true })
-  newStatus?: ORDER_STATUS;
-
-  @Field(() => Number, { nullable: true, description: 'Total order amount' })
-  totalAmount?: number;
-
-  @Field(() => Number, { nullable: true, description: 'Amount already paid' })
-  paidAmount?: number;
-
-  @Field(() => Number, {
-    nullable: true,
-    description: 'Remaining amount to pay',
-  })
-  remainingAmount?: number;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'Payment status',
-  })
-  paymentStatus?: string;
-
-  // New payment flow fields
-  @Field(() => Date, { nullable: true, description: 'Payment deadline' })
-  paymentDeadline?: Date;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'Payment deadline source',
-  })
-  paymentDeadlineSource?: string;
-
-  @Field(() => Number, {
-    nullable: true,
-    description: 'Payment deadline in hours',
-  })
-  paymentDeadlineHours?: number;
-
-  @Field(() => String, { nullable: true })
-  error?: string;
-}
-
-@ObjectType()
 export class RefundOrderResponseDto {
   @Field(() => Boolean)
   success: boolean;

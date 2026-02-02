@@ -102,11 +102,13 @@ export class OrderOrchestrationService {
    *
    * @param orderId - Order ID để check
    * @param expectedVersion - Version mà client expect (optional)
+   * @param workspaceId - Workspace ID để resolve repository context
    * @returns null nếu OK, hoặc error response nếu version mismatch
    */
   private async checkVersionIfRequired(
     orderId: string,
     expectedVersion?: number,
+    workspaceId?: string,
   ): Promise<{
     error?: string;
     currentVersion?: number;
@@ -146,13 +148,16 @@ export class OrderOrchestrationService {
         orderId,
         expectedVersion,
         {}, // Không cần update data, chỉ check version và increment
+        workspaceId,
       );
 
     if (affected === 0) {
       // Version mismatch - có người khác đã update order này
       // Fetch current version để trả về cho client
-      const currentVersion =
-        await this.orderRepository.getCurrentVersion(orderId);
+      const currentVersion = await this.orderRepository.getCurrentVersion(
+        orderId,
+        workspaceId,
+      );
 
       this.logger.warn(
         `[OptimisticLock] ATOMIC version conflict: orderId=${orderId}, ` +
@@ -303,6 +308,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -385,6 +391,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -444,6 +451,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -588,6 +596,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -598,8 +607,12 @@ export class OrderOrchestrationService {
     }
 
     try {
-      // 1. Get and validate order
-      const order = await this.orderRepository.findById(input.orderId);
+      // 1. Get and validate order (pass workspaceId explicitly)
+      const order = await this.orderRepository.findByIdWithOptions(
+        input.orderId,
+        undefined,
+        workspaceId,
+      );
 
       if (!order) {
         return {
@@ -638,10 +651,14 @@ export class OrderOrchestrationService {
         ? `[PUBLISHED] ${input.note}`
         : '[PUBLISHED] Draft order published';
 
-      await this.orderRepository.update(order.id, {
-        status: ORDER_STATUS.PROCESSING,
-        note: order.note ? `${order.note}\n${updateNote}` : updateNote,
-      });
+      await this.orderRepository.updateOrder(
+        order.id,
+        {
+          status: ORDER_STATUS.PROCESSING,
+          note: order.note ? `${order.note}\n${updateNote}` : updateNote,
+        },
+        workspaceId,
+      );
 
       // Note: Payment deadline scheduling is now handled by ConfirmOrderSaga
       // via SchedulePaymentRemindersStep using PaymentDeadlineProcessor
@@ -775,6 +792,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -877,6 +895,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -887,8 +906,12 @@ export class OrderOrchestrationService {
     }
 
     try {
-      // 1. Get order
-      const order = await this.orderRepository.findById(input.orderId);
+      // 1. Get order (pass workspaceId explicitly to resolve workspace context)
+      const order = await this.orderRepository.findByIdWithOptions(
+        input.orderId,
+        undefined,
+        workspaceId,
+      );
 
       if (!order) {
         return {
@@ -919,12 +942,16 @@ export class OrderOrchestrationService {
       // 4. If fully paid, update order status to COMPLETED and activate licenses
       // TODO: Implement license activation via OrderLicenseIntegrationService
 
-      await this.orderRepository.update(order.id, {
-        status: ORDER_STATUS.COMPLETED,
-        paidAmount: input.amount,
-        remainingAmount: 0,
-        paymentStatus: PAYMENT_STATUS.PAID,
-      });
+      await this.orderRepository.updateOrder(
+        order.id,
+        {
+          status: ORDER_STATUS.COMPLETED,
+          paidAmount: input.amount,
+          remainingAmount: 0,
+          paymentStatus: PAYMENT_STATUS.PAID,
+        },
+        workspaceId,
+      );
 
       this.logger.log(
         `[ConfirmOrderPayment] Success - Order ${input.orderId} completed`,
@@ -993,6 +1020,7 @@ export class OrderOrchestrationService {
     const versionCheck = await this.checkVersionIfRequired(
       input.orderId,
       input.expectedVersion,
+      workspaceId,
     );
 
     if (versionCheck?.error) {
@@ -1003,8 +1031,12 @@ export class OrderOrchestrationService {
     }
 
     try {
-      // 1. Get order
-      const order = await this.orderRepository.findById(input.orderId);
+      // 1. Get order (pass workspaceId explicitly to resolve workspace context)
+      const order = await this.orderRepository.findByIdWithOptions(
+        input.orderId,
+        undefined,
+        workspaceId,
+      );
 
       if (!order) {
         return {
@@ -1027,14 +1059,18 @@ export class OrderOrchestrationService {
       // TODO: Implement via OrderLockService.unlockLicenses()
 
       // 4. Update order status to COMPLETED
-      await this.orderRepository.update(order.id, {
-        status: ORDER_STATUS.COMPLETED,
-        lockedAt: null,
-        lockedReason: null,
-        paidAmount: input.amount,
-        remainingAmount: 0,
-        paymentStatus: PAYMENT_STATUS.PAID,
-      });
+      await this.orderRepository.updateOrder(
+        order.id,
+        {
+          status: ORDER_STATUS.COMPLETED,
+          lockedAt: null,
+          lockedReason: null,
+          paidAmount: input.amount,
+          remainingAmount: 0,
+          paymentStatus: PAYMENT_STATUS.PAID,
+        },
+        workspaceId,
+      );
 
       const unlockedAt = new Date();
 

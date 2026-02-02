@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 import {
   ConfirmOrderInput,
@@ -17,7 +18,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
  *
  * Responsibilities:
  * - Update order status to target status
- * - Update accounting confirmation if provided
+ * - Update payment fields based on action (CONFIRM_ORDER or PAYMENT_CONFIRMED)
  * - Update note if provided
  * - Store metadata with action and timestamp
  *
@@ -69,24 +70,31 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
         updatedAt: nowISO,
       };
 
-      // Handle accounting confirmation
-      if (input.accountingConfirmed !== undefined) {
-        updateData.accountingConfirmed = input.accountingConfirmed;
+      // Handle payment fields based on action
+      if (input.action === ORDER_ACTION.CONFIRM_ORDER) {
+        // CONFIRM_ORDER: Set payment to PENDING, license created with PENDING_PAYMENT
+        updateData.paymentStatus = PAYMENT_STATUS.PENDING;
 
-        // When ACCOUNTING_CONFIRMED, update payment fields
-        // Accounting confirms = payment is complete
-        if (input.accountingConfirmed) {
-          const totalAmount = typedContext.currentOrder?.totalAmount ?? 0;
-
-          updateData.paymentStatus = PAYMENT_STATUS.PAID;
-          updateData.paidAmount = totalAmount;
-          updateData.remainingAmount = 0;
-
-          this.logger.log(
-            `Payment confirmed for order ${typedContext.orderId}: ` +
-              `paymentStatus=PAID, paidAmount=${totalAmount}`,
-          );
+        // Set payment deadline if calculated
+        if (typedContext.paymentDeadline) {
+          updateData.paymentDeadline = typedContext.paymentDeadline;
         }
+
+        this.logger.log(
+          `Order ${typedContext.orderId} confirmed: paymentStatus=PENDING`,
+        );
+      } else if (input.action === ORDER_ACTION.PAYMENT_CONFIRMED) {
+        // PAYMENT_CONFIRMED: Payment complete, license activated
+        const totalAmount = typedContext.currentOrder?.totalAmount ?? 0;
+
+        updateData.paymentStatus = PAYMENT_STATUS.PAID;
+        updateData.paidAmount = totalAmount;
+        updateData.remainingAmount = 0;
+
+        this.logger.log(
+          `Payment confirmed for order ${typedContext.orderId}: ` +
+            `paymentStatus=PAID, paidAmount=${totalAmount}`,
+        );
       }
 
       // Handle note
@@ -142,12 +150,12 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
       // Use repository - queryRunner.manager doesn't have workspace entity metadata
       await this.orderRepository.update(typedContext.orderId, {
         status: typedContext.rollbackOrder.status,
-        accountingConfirmed: typedContext.rollbackOrder.accountingConfirmed,
         note: typedContext.rollbackOrder.note,
         // Restore payment fields
         paymentStatus: typedContext.rollbackOrder.paymentStatus,
         paidAmount: typedContext.rollbackOrder.paidAmount,
         remainingAmount: typedContext.rollbackOrder.remainingAmount,
+        paymentDeadline: typedContext.rollbackOrder.paymentDeadline,
         updatedAt: nowISO,
         metadata: safeJsonStringify({
           rolledBackAt: nowISO,

@@ -29,15 +29,15 @@ import { ORDER_ITEM_TYPE } from 'src/mkt-core/order/types/order-combo.types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
- * CreateLicensesOnConfirmStep - Create licenses when accounting confirms payment
+ * CreateLicensesOnConfirmStep - Create licenses when order is confirmed
  *
  * This step is triggered ONLY when:
- * - Action is ACCOUNTING_CONFIRMED
+ * - Action is CONFIRM_ORDER
  * - Order has items with externalMktPackageId but no license yet
  *
  * Flow:
- * - NEW_ORDER: Created with PENDING_PAYMENT status, no license
- * - ACCOUNTING_CONFIRMED: This step creates licenses
+ * - NEW_ORDER: Created with DRAFT status, no license
+ * - CONFIRM_ORDER: This step creates licenses with PENDING_PAYMENT status
  *
  * Compensate:
  * - Revoke created licenses on MKT Server
@@ -68,19 +68,18 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
 
   /**
    * Skip this step if:
-   * - Action is NOT ACCOUNTING_CONFIRMED
+   * - Action is NOT CONFIRM_ORDER
    * - Order is TRIAL (trial creates license immediately in CreateOrderSaga)
    *
    * Note: We don't check paymentStatus here because:
    * - UpdateStatusStep runs BEFORE this step
-   * - UpdateStatusStep sets paymentStatus = PAID when ACCOUNTING_CONFIRMED
    * - The order in context is from ValidateOrderStep (before update)
    */
   shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
     const typedContext = context as ConfirmOrderSagaContext;
 
-    // Only create licenses when accounting confirms
-    if (input.action !== ORDER_ACTION.ACCOUNTING_CONFIRMED) {
+    // Only create licenses when order is confirmed
+    if (input.action !== ORDER_ACTION.CONFIRM_ORDER) {
       this.logger.debug(
         `Skipping: Action "${input.action}" does not trigger license creation`,
       );
@@ -95,10 +94,8 @@ export class CreateLicensesOnConfirmStep extends SagaStep<
       return true;
     }
 
-    // When ACCOUNTING_CONFIRMED, UpdateStatusStep has already set paymentStatus = PAID
-    // So we can proceed with license creation
     this.logger.debug(
-      'Proceeding with license creation for ACCOUNTING_CONFIRMED action',
+      'Proceeding with license creation for CONFIRM_ORDER action',
     );
 
     return false;

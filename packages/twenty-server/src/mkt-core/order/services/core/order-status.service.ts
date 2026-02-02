@@ -163,8 +163,13 @@ export class OrderStatusService {
       case ORDER_ACTION.TRIAL:
         return ORDER_STATUS.TRIAL;
 
-      case ORDER_ACTION.ACCOUNTING_CONFIRMED:
-        return ORDER_STATUS.CONFIRMED;
+      // New payment flow: CONFIRM_ORDER creates licenses with PENDING_PAYMENT
+      case ORDER_ACTION.CONFIRM_ORDER:
+        return ORDER_STATUS.PROCESSING;
+
+      // New payment flow: PAYMENT_CONFIRMED activates licenses, completes order
+      case ORDER_ACTION.PAYMENT_CONFIRMED:
+        return ORDER_STATUS.COMPLETED;
 
       case ORDER_ACTION.COMPLETE:
         return ORDER_STATUS.COMPLETED;

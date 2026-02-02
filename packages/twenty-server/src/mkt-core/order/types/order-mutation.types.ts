@@ -126,15 +126,14 @@ export type CreateOrderWithItemsInput = {
  * Input để confirm order
  *
  * Actions supported:
- * - ACCOUNTING_CONFIRMED: Legacy flow (create license after payment)
- * - CONFIRM_ORDER: New payment flow (create license immediately with PENDING_PAYMENT)
+ * - CONFIRM_ORDER: Create licenses with PENDING_PAYMENT status, schedule deadline
+ * - PAYMENT_CONFIRMED: Activate licenses, complete order
  */
 export type ConfirmOrderInput = {
   orderId: string;
   action: ConfirmOrderAction;
-  accountingConfirmed?: boolean;
   note?: string;
-  /** Manual override for payment deadline (hours) - new payment flow */
+  /** Manual override for payment deadline (hours) - for CONFIRM_ORDER action */
   manualDeadlineHours?: number;
   /** Expected version for optimistic locking. If provided, update will fail if version mismatch. */
   expectedVersion?: number;
