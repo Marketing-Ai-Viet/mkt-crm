@@ -23,7 +23,7 @@ import { prefillMktKpiTemplates } from 'src/mkt-core/seeder/prefill-data/prefill
 import { prefillMktKpis } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpis';
 import { prefillMktOrderHistories } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-histories';
 import { prefillMktOrderItems } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-items';
-import { prefillMktOrders } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-orders';
+import { prefillMktOrders } from 'src/mkt-core/seeder/order-seeder/order/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-organization-levels';
 import { prefillMktPaymentHistories } from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/prefill-mkt-payment-histories';
 import { prefillMktPaymentMethods } from 'src/mkt-core/seeder/payment-seeder/payment-method/prefill-mkt-payment-methods';

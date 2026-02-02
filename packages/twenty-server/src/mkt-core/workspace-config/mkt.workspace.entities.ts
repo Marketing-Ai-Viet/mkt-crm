@@ -51,6 +51,7 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktVirtualAccountWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-virtual-account.workspace-entity';
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 import {
@@ -106,6 +107,7 @@ export const MKT_WORKSPACE_ENTITIES = [
   MktSInvoiceFileWorkspaceEntity,
   // Payment
   MktPaymentMethodWorkspaceEntity,
+  MktVirtualAccountWorkspaceEntity,
   MktPaymentWorkspaceEntity,
   MktPaymentHistoryWorkspaceEntity,
   // Report

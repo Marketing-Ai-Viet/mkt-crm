@@ -30,6 +30,7 @@ import { MktOrderHistoryWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-o
 import { MktOrderItemWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order-item.workspace-entity';
 import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktVirtualAccountWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-virtual-account.workspace-entity';
 import { MktPromotionUsageWorkspaceEntity } from 'src/mkt-core/mkt-promotion/workspace-entities/mkt-promotion-usage.workspace-entity';
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
 import { GenericComboSnapshot } from 'src/mkt-core/mkt-combo/types/generic-combo.types';
@@ -506,6 +507,19 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_ORDER_FIELD_IDS.mktVirtualAccounts,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Virtual Accounts`,
+    description: msg`Virtual accounts linked to the order`,
+    icon: 'IconCreditCard',
+    inverseSideTarget: () => MktVirtualAccountWorkspaceEntity,
+    inverseSideFieldKey: 'mktOrder',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  mktVirtualAccounts: Relation<MktVirtualAccountWorkspaceEntity[]>;
 
   @WorkspaceRelation({
     standardId: MKT_ORDER_FIELD_IDS.accountOwner,

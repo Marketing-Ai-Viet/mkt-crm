@@ -2,7 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
-} from 'src/mkt-core/seeder/order-seeder/mkt-order-data-seeds.constants';
+} from 'src/mkt-core/seeder/order-seeder/order/mkt-order-data-seeds.constants';
 
 export const prefillMktOrders = async (
   entityManager: WorkspaceEntityManager,

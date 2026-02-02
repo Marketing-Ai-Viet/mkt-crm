@@ -70,7 +70,7 @@ import {
 import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
-} from 'src/mkt-core/seeder/order-seeder/mkt-order-data-seeds.constants';
+} from 'src/mkt-core/seeder/order-seeder/order/mkt-order-data-seeds.constants';
 import {
   MKT_ORDER_HISTORY_DATA_SEED_COLUMNS,
   MKT_ORDER_HISTORY_DATA_SEEDS,
@@ -95,6 +95,10 @@ import {
   MKT_PAYMENT_METHOD_DATA_SEED_COLUMNS,
   MKT_PAYMENT_METHOD_DATA_SEEDS,
 } from 'src/mkt-core/seeder/payment-seeder/payment-method/mkt-payment-method-data-seeds.constants';
+import {
+  MKT_VIRTUAL_ACCOUNT_DATA_SEED_COLUMNS,
+  MKT_VIRTUAL_ACCOUNT_DATA_SEEDS,
+} from 'src/mkt-core/seeder/payment-seeder/mkt-virtual-account/mkt-virtual-account-data-seeds.constants';
 import {
   MKT_PERMISSION_AUDIT_DATA_SEED_COLUMNS,
   MKT_PERMISSION_AUDIT_DATA_SEEDS,
@@ -343,11 +347,16 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
     pgColumns: MKT_SINVOICE_METADATA_DATA_SEED_COLUMNS,
     recordSeeds: MKT_SINVOICE_METADATA_DATA_SEEDS,
   },
-  // Payment configs
+  // Payment configs (order: PaymentMethod -> VirtualAccount -> Payment -> PaymentHistory)
   {
     tableName: 'mktPaymentMethod',
     pgColumns: MKT_PAYMENT_METHOD_DATA_SEED_COLUMNS,
     recordSeeds: MKT_PAYMENT_METHOD_DATA_SEEDS,
+  },
+  {
+    tableName: 'mktVirtualAccount',
+    pgColumns: MKT_VIRTUAL_ACCOUNT_DATA_SEED_COLUMNS,
+    recordSeeds: MKT_VIRTUAL_ACCOUNT_DATA_SEEDS,
   },
   {
     tableName: 'mktPayment',

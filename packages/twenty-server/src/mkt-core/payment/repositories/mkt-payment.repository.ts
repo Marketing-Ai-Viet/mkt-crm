@@ -127,6 +127,7 @@ export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWork
 
   /**
    * Find payment by SePay transaction ID
+   * @deprecated Use findByProviderTransactionId instead
    */
   async findBySepayTransactionId(
     transactionId: string,
@@ -138,8 +139,52 @@ export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWork
 
     const repository = await this.getRepository();
 
+    // Try providerTransactionId first (new field), fallback to sepayTransactionId
+    let payment = await repository.findOne({
+      where: { providerTransactionId: transactionId },
+      relations: options?.relations,
+    });
+
+    if (!payment) {
+      // Fallback to deprecated field for backwards compatibility
+      payment = await repository.findOne({
+        where: { sepayTransactionId: transactionId },
+        relations: options?.relations,
+      });
+    }
+
+    if (!payment) {
+      this.logger.debug(
+        MKT_PAYMENT_LOG_MESSAGES.FIND_BY_TRANSACTION_ID_NOT_FOUND(
+          transactionId,
+        ),
+      );
+
+      return null;
+    }
+
+    this.logger.debug(
+      MKT_PAYMENT_LOG_MESSAGES.FIND_BY_TRANSACTION_ID_SUCCESS(transactionId),
+    );
+
+    return payment;
+  }
+
+  /**
+   * Find payment by provider transaction ID (preferred method)
+   */
+  async findByProviderTransactionId(
+    transactionId: string,
+    options?: FindPaymentOptions,
+  ): Promise<MktPaymentWorkspaceEntity | null> {
+    this.logger.debug(
+      MKT_PAYMENT_LOG_MESSAGES.FIND_BY_TRANSACTION_ID_START(transactionId),
+    );
+
+    const repository = await this.getRepository();
+
     const payment = await repository.findOne({
-      where: { sepayTransactionId: transactionId },
+      where: { providerTransactionId: transactionId },
       relations: options?.relations,
     });
 
@@ -193,15 +238,35 @@ export class MktPaymentRepository extends BaseWorkspaceRepository<MktPaymentWork
 
   /**
    * Check if payment exists by transaction ID
+   * @deprecated Use existsByProviderTransactionId instead
    */
   async existsByTransactionId(transactionId: string): Promise<boolean> {
+    return this.existsByProviderTransactionId(transactionId);
+  }
+
+  /**
+   * Check if payment exists by provider transaction ID (preferred method)
+   * Checks both providerTransactionId (new) and sepayTransactionId (legacy)
+   * for backwards compatibility during migration
+   */
+  async existsByProviderTransactionId(transactionId: string): Promise<boolean> {
     const repository = await this.getRepository();
 
-    const count = await repository.count({
+    // Check new field first
+    const countNew = await repository.count({
+      where: { providerTransactionId: transactionId },
+    });
+
+    if (countNew > 0) {
+      return true;
+    }
+
+    // Fallback to legacy field for backwards compatibility
+    const countLegacy = await repository.count({
       where: { sepayTransactionId: transactionId },
     });
 
-    return count > 0;
+    return countLegacy > 0;
   }
 
   // ============================================

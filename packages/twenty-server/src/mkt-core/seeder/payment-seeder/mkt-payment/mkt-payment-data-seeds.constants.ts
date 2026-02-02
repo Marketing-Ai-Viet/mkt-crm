@@ -6,7 +6,16 @@ import {
   PAYMENT_TRANSACTION_STATUS,
   PaymentTransactionStatus,
 } from 'src/mkt-core/payment/constants/payment-status.constants';
+import {
+  TRANSFER_TYPE_ENTITY,
+  TransferTypeEntity,
+} from 'src/mkt-core/payment/constants/transfer-type.constants';
+import {
+  MATCH_TYPE_ENTITY,
+  MatchTypeEntity,
+} from 'src/mkt-core/payment/constants/match-type.constants';
 import { PaymentCurrency } from 'src/mkt-core/payment/types';
+import { MKT_VIRTUAL_ACCOUNT_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/payment-seeder/mkt-virtual-account/mkt-virtual-account-data-seeds.constants';
 
 type MktPaymentDataSeed = {
   id: string;
@@ -43,6 +52,11 @@ type MktPaymentDataSeed = {
   rejectionReason: string | null;
   // Refund fields
   refundedAmount: number;
+  // VA Support & Matching fields
+  transferType: TransferTypeEntity | null;
+  matchType: MatchTypeEntity | null;
+  matchConfidence: number;
+  virtualAccountId: string | null;
   // Metadata
   metadata: string | null;
 };
@@ -87,6 +101,11 @@ export const MKT_PAYMENT_DATA_SEED_COLUMNS: (keyof MktPaymentDataSeed)[] = [
   'rejectionReason',
   // Refund fields
   'refundedAmount',
+  // VA Support & Matching fields
+  'transferType',
+  'matchType',
+  'matchConfidence',
+  'virtualAccountId',
   // Metadata
   'metadata',
 ];
@@ -142,11 +161,16 @@ const DEFAULT_PAYMENT_SEED = {
   rejectedById: null,
   rejectionReason: null,
   refundedAmount: 0,
+  // VA Support & Matching fields
+  transferType: TRANSFER_TYPE_ENTITY.REGULAR,
+  matchType: null,
+  matchConfidence: 0,
+  virtualAccountId: null,
   metadata: null,
 };
 
 export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
-  // Payment 1: Confirmed payment via SEPay
+  // Payment 1: Confirmed payment via SEPay with VA match
   {
     ...DEFAULT_PAYMENT_SEED,
     id: MKT_PAYMENT_DATA_SEEDS_IDS.ID_1,
@@ -160,6 +184,11 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     providerType: PAYMENT_PROVIDER_TYPE.SEPAY,
     providerTransactionId: 'SP-TXN-20240115-001',
     confirmedAt: '2024-01-15T10:35:00.000Z',
+    // VA Support fields
+    transferType: TRANSFER_TYPE_ENTITY.VIRTUAL_ACCOUNT,
+    matchType: MATCH_TYPE_ENTITY.VA,
+    matchConfidence: 1,
+    virtualAccountId: MKT_VIRTUAL_ACCOUNT_DATA_SEEDS_IDS.VA_1,
     metadata: JSON.stringify({
       orderRef: 'ORD-001',
       note: 'Thanh toán thành công',
@@ -183,7 +212,7 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     paymentPageUrl: 'https://vnpay.vn/checkout/abc123',
   },
 
-  // Payment 3: Refunded payment via MoMo
+  // Payment 3: Refunded payment via MoMo with exact code match
   {
     ...DEFAULT_PAYMENT_SEED,
     id: MKT_PAYMENT_DATA_SEEDS_IDS.ID_3,
@@ -198,6 +227,10 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     providerTransactionId: 'MOMO-TXN-20240110-003',
     confirmedAt: '2024-01-10T14:25:00.000Z',
     refundedAmount: 350000,
+    // Match fields
+    transferType: TRANSFER_TYPE_ENTITY.REGULAR,
+    matchType: MATCH_TYPE_ENTITY.EXACT_CODE,
+    matchConfidence: 1,
     metadata: JSON.stringify({
       refundReason: 'Customer requested cancellation',
     }),
@@ -218,7 +251,7 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     rejectionReason: 'Số tiền không khớp với đơn hàng',
   },
 
-  // Payment 5: Partially refunded via ZaloPay
+  // Payment 5: Partially refunded via ZaloPay with fuzzy match
   {
     ...DEFAULT_PAYMENT_SEED,
     id: MKT_PAYMENT_DATA_SEEDS_IDS.ID_5,
@@ -233,6 +266,10 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     providerTransactionId: 'ZLP-TXN-20240108-005',
     confirmedAt: '2024-01-08T16:05:00.000Z',
     refundedAmount: 200000,
+    // Fuzzy match example
+    transferType: TRANSFER_TYPE_ENTITY.REGULAR,
+    matchType: MATCH_TYPE_ENTITY.FUZZY,
+    matchConfidence: 0.85,
     metadata: JSON.stringify({ partialRefundReason: 'Product out of stock' }),
   },
 
@@ -251,7 +288,7 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     qrCodeUrl: 'https://sepay.vn/qr/def456',
   },
 
-  // Payment 7: Cash payment - Confirmed
+  // Payment 7: Cash payment - Confirmed with manual match
   {
     ...DEFAULT_PAYMENT_SEED,
     id: MKT_PAYMENT_DATA_SEEDS_IDS.ID_7,
@@ -264,6 +301,10 @@ export const MKT_PAYMENT_DATA_SEEDS: MktPaymentDataSeed[] = [
     position: 7,
     providerType: PAYMENT_PROVIDER_TYPE.CASH,
     confirmedAt: '2024-01-22T11:00:00.000Z',
+    // Manual match for cash payments
+    transferType: TRANSFER_TYPE_ENTITY.REGULAR,
+    matchType: MATCH_TYPE_ENTITY.MANUAL,
+    matchConfidence: 1,
   },
 
   // Payment 8: Failed payment via VNPay

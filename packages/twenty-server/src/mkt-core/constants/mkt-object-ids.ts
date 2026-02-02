@@ -104,4 +104,6 @@ export const MKT_OBJECT_IDS = {
   mktDepartmentSubManager: '6f7a8b9c-d0e1-2345-f012-345678901235',
   // payment deadline configuration
   mktPaymentDeadlineConfig: '7a8b9c0d-e1f2-3456-0123-456789012346',
+  // virtual account
+  mktVirtualAccount: '8b9c0d1e-f2a3-4567-1234-567890123457',
 };

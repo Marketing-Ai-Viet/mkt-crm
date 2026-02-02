@@ -14,6 +14,7 @@ import {
   partialPaymentConfig,
   paymentConfig,
   securityConfig,
+  transferModeConfig,
 } from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
 import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
@@ -29,17 +30,18 @@ import {
   sepayConfig,
   SepayProvider,
   SepayQrGenerator,
-  SepayWebhookHandler,
   SEPAY_PROVIDER_METADATA,
 } from 'src/mkt-core/payment/providers/sepay';
 import {
   MktPaymentHistoryRepository,
   MktPaymentRepository,
   MktWebhookLogRepository,
+  MktVirtualAccountRepository,
 } from 'src/mkt-core/payment/repositories';
 import {
   PaymentMutationResolver,
   PaymentConfirmationResolver,
+  VAMutationResolver,
 } from 'src/mkt-core/payment/resolvers';
 import { SepayPaymentController } from 'src/mkt-core/payment/sepay-payment/sepay-payment.controller';
 // Services - organized by domain
@@ -64,6 +66,36 @@ import {
 } from 'src/mkt-core/payment/services/events';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
+// Application Layer - Use Cases
+import {
+  ProcessWebhookUseCase,
+  CreateVAUseCase,
+} from 'src/mkt-core/payment/application/use-cases';
+// Domain Layer - Strategies & Ports
+import {
+  CompositeMatchingStrategy,
+  CodeMatchingStrategy,
+  FuzzyMatchingStrategy,
+  VAMatchingStrategy,
+  DEFAULT_FUZZY_CONFIG,
+  FUZZY_CONFIG_TOKEN,
+} from 'src/mkt-core/payment/domain/strategies';
+import {
+  ORDER_REPOSITORY_PORT_TOKEN,
+  VA_REPOSITORY_PORT_TOKEN,
+  VA_PROVIDER_TOKEN,
+} from 'src/mkt-core/payment/domain/ports';
+// Infrastructure Layer - Adapters
+import {
+  OrderRepositoryAdapter,
+  VARepositoryAdapter,
+  SepayVAProvider,
+} from 'src/mkt-core/payment/infrastructure/adapters';
+// Jobs
+import {
+  VAExpirationScanJob,
+  WebhookRetryJob,
+} from 'src/mkt-core/payment/jobs';
 
 @Module({
   controllers: [SepayPaymentController],
@@ -74,6 +106,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(securityConfig),
     ConfigModule.forFeature(orderCodeConfig),
     ConfigModule.forFeature(partialPaymentConfig),
+    ConfigModule.forFeature(transferModeConfig),
     HttpModule,
     RecordPositionModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
@@ -90,7 +123,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     // Providers - SePay
     SepayProvider,
     SepayQrGenerator,
-    SepayWebhookHandler,
+    // Note: SepayWebhookHandler removed - webhook processing handled by MktPaymentWebhookService
     // Providers - BIDV
     BidvProvider,
     BidvApiClient,
@@ -98,12 +131,14 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentRepository,
     MktPaymentHistoryRepository,
     MktWebhookLogRepository,
+    MktVirtualAccountRepository,
     MktOrderRepository,
     MktPaymentMethodRepository,
     MktWorkspaceMemberRepository,
     // Resolvers
     PaymentMutationResolver,
     PaymentConfirmationResolver,
+    VAMutationResolver,
     // Services - Core
     PaymentFacadeService,
     MktPaymentPrepareService,
@@ -123,6 +158,38 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     OrderPaymentCalculationService,
     // Event Listeners
     PaymentNotificationListener,
+    // Infrastructure Layer - Adapters & Configs
+    OrderRepositoryAdapter,
+    VARepositoryAdapter,
+    {
+      provide: ORDER_REPOSITORY_PORT_TOKEN,
+      useExisting: OrderRepositoryAdapter,
+    },
+    {
+      provide: VA_REPOSITORY_PORT_TOKEN,
+      useExisting: VARepositoryAdapter,
+    },
+    {
+      provide: FUZZY_CONFIG_TOKEN,
+      useValue: DEFAULT_FUZZY_CONFIG,
+    },
+    // Domain Layer - Matching Strategies
+    CodeMatchingStrategy,
+    FuzzyMatchingStrategy,
+    VAMatchingStrategy,
+    CompositeMatchingStrategy,
+    // Use Cases
+    ProcessWebhookUseCase,
+    CreateVAUseCase,
+    // Infrastructure Layer - VA Provider
+    SepayVAProvider,
+    {
+      provide: VA_PROVIDER_TOKEN,
+      useExisting: SepayVAProvider,
+    },
+    // Jobs
+    VAExpirationScanJob,
+    WebhookRetryJob,
   ],
   exports: [
     // Factory
@@ -146,6 +213,18 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentWebhookService,
     // Services - SEPay
     SepayQrService,
+    // Repositories - VA
+    MktVirtualAccountRepository,
+    // Domain Strategies
+    CompositeMatchingStrategy,
+    // Use Cases
+    ProcessWebhookUseCase,
+    CreateVAUseCase,
+    // VA Provider
+    SepayVAProvider,
+    // Jobs
+    VAExpirationScanJob,
+    WebhookRetryJob,
   ],
 })
 export class MktPaymentModule implements OnModuleInit {
@@ -154,7 +233,6 @@ export class MktPaymentModule implements OnModuleInit {
   constructor(
     private readonly providerFactory: PaymentProviderFactory,
     private readonly sepayProvider: SepayProvider,
-    private readonly sepayWebhookHandler: SepayWebhookHandler,
     private readonly bidvProvider: BidvProvider,
   ) {}
 
@@ -177,11 +255,9 @@ export class MktPaymentModule implements OnModuleInit {
       },
     );
 
-    // Register SePay webhook handler
-    this.providerFactory.registerWebhookHandler(
-      PAYMENT_PROVIDER_TYPE.SEPAY_QR,
-      this.sepayWebhookHandler,
-    );
+    // Note: SepayWebhookHandler removed (Phase 0 Critical Fix)
+    // Webhook processing is now handled by MktPaymentWebhookService
+    // which has full partial payment support and proper amount analysis
 
     // Register BIDV provider
     this.providerFactory.registerProvider(
@@ -196,9 +272,6 @@ export class MktPaymentModule implements OnModuleInit {
         configuredFields: [...BIDV_PROVIDER_METADATA.configuredFields],
       },
     );
-
-    // Note: BIDV uses the same webhook handler as SePay
-    // The webhook controller routes BIDV webhooks to the SePay handler
 
     this.logger.log('Payment providers registered successfully');
   }
