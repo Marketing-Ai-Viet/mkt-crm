@@ -66,6 +66,8 @@ type MktOrderDataSeed = {
   lockedReason: string | null;
   remindersSent: number;
   lastReminderAt: Date | null;
+  // Optimistic locking
+  version: number;
 };
 
 // prettier-ignore
@@ -109,6 +111,8 @@ export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
   'lockedReason',
   'remindersSent',
   'lastReminderAt',
+  // Optimistic locking
+  'version',
 ];
 
 // Default promotion fields for seed data
@@ -139,6 +143,7 @@ const DEFAULT_PAYMENT_DEADLINE_FIELDS = {
   lockedReason: null,
   remindersSent: 0,
   lastReminderAt: null,
+  version: 1,
 };
 
 /**
@@ -161,6 +166,7 @@ const CREATE_PROCESSING_DEADLINE_FIELDS = (
   | 'lockedReason'
   | 'remindersSent'
   | 'lastReminderAt'
+  | 'version'
 > => {
   const NOW = DateTimeUtils.now();
   const DEADLINE = DateTimeUtils.add(NOW, { hours: hoursFromNow });
@@ -176,6 +182,7 @@ const CREATE_PROCESSING_DEADLINE_FIELDS = (
     lastReminderAt: LAST_REMINDER
       ? (DateTimeUtils.toDate(LAST_REMINDER) ?? null)
       : null,
+    version: 1,
   };
 };
 
@@ -199,6 +206,7 @@ const CREATE_LOCKED_DEADLINE_FIELDS = (
   | 'lockedReason'
   | 'remindersSent'
   | 'lastReminderAt'
+  | 'version'
 > => {
   const NOW = DateTimeUtils.now();
   const LOCKED_AT = DateTimeUtils.subtract(NOW, { hours: hoursAgoLocked });
@@ -214,6 +222,7 @@ const CREATE_LOCKED_DEADLINE_FIELDS = (
     lockedReason: reason,
     remindersSent: 3, // All 3 reminders were sent (6h, 2h, 30min)
     lastReminderAt: DateTimeUtils.toDate(LAST_REMINDER) ?? null,
+    version: 1,
   };
 };
 
@@ -308,7 +317,6 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(12100000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
-    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.ID_2,
@@ -336,7 +344,6 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(17100000, true),
-    ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
   },
   {

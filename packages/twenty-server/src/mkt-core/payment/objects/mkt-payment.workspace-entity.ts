@@ -25,12 +25,17 @@ import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { MktPaymentMethodWorkspaceEntity } from 'src/mkt-core/payment-method/workspace-entities/mkt-payment-method.workspace-entity';
 import { MktPaymentHistoryWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-payment-history.workspace-entity';
+import { MktVirtualAccountWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-virtual-account.workspace-entity';
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-entities';
 import {
   PAYMENT_CURRENCY_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   PAYMENT_PROVIDER_OPTIONS,
+  TRANSFER_TYPE_OPTIONS,
+  MATCH_TYPE_OPTIONS,
+  TransferTypeEntity,
+  MatchTypeEntity,
 } from 'src/mkt-core/payment/constants';
 import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
 import { PaymentProviderType } from 'src/mkt-core/payment/constants/payment-provider.constants';
@@ -308,6 +313,43 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   refundedAmount?: number;
 
   // ============================================
+  // VA SUPPORT & MATCHING FIELDS
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.transferType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Transfer Type`,
+    description: msg`Type of transfer (VA or Regular)`,
+    icon: 'IconArrowsExchange',
+    options: TRANSFER_TYPE_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  transferType?: TransferTypeEntity;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.matchType,
+    type: FieldMetadataType.SELECT,
+    label: msg`Match Type`,
+    description: msg`How the payment was matched to an order`,
+    icon: 'IconLink',
+    options: MATCH_TYPE_OPTIONS,
+  })
+  @WorkspaceIsNullable()
+  matchType?: MatchTypeEntity;
+
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.matchConfidence,
+    type: FieldMetadataType.NUMBER,
+    label: msg`Match Confidence`,
+    description: msg`Confidence score of the match (0-1)`,
+    icon: 'IconPercentage',
+    defaultValue: 0,
+  })
+  @WorkspaceIsNullable()
+  matchConfidence?: number;
+
+  // ============================================
   // METADATA
   // ============================================
 
@@ -387,6 +429,22 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   mktPaymentHistories: Relation<MktPaymentHistoryWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: MKT_PAYMENT_FIELD_IDS.virtualAccount,
+    type: RelationType.MANY_TO_ONE,
+    label: msg`Virtual Account`,
+    description: msg`Virtual account used for this payment`,
+    icon: 'IconCreditCard',
+    inverseSideTarget: () => MktVirtualAccountWorkspaceEntity,
+    inverseSideFieldKey: 'mktPayments',
+    onDelete: RelationOnDeleteAction.SET_NULL,
+  })
+  @WorkspaceIsNullable()
+  virtualAccount: Relation<MktVirtualAccountWorkspaceEntity>;
+
+  @WorkspaceJoinColumn('virtualAccount')
+  virtualAccountId: string;
 
   @WorkspaceRelation({
     standardId: MKT_PAYMENT_FIELD_IDS.mktTemplate,

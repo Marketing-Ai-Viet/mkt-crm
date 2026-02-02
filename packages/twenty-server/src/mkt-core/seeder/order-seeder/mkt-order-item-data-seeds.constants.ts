@@ -1,4 +1,4 @@
-import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/order-seeder/mkt-order-data-seeds.constants';
+import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/order-seeder/order/mkt-order-data-seeds.constants';
 import {
   MktPackageSnapshot,
   MktProductSnapshot,

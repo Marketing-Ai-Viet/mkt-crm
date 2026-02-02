@@ -214,6 +214,7 @@ export const MKT_ORDER_FIELD_IDS = {
   mktPayments: '06240e4d-a9ab-4dcb-b3e9-0bbdf2085242',
   mktOrderHistories: '55e1c6c5-d27b-45c6-8978-956a37be205e',
   mktPaymentHistories: '4d1ad383-7178-43a4-9720-a4e76278f372',
+  mktVirtualAccounts: 'f7a8b9c0-d1e2-4567-8901-234567890abc',
   //common relations or fields
   position: '9d970deb-f1e5-4cc4-8b36-9ad83ca03ee5',
   createdBy: '6d52adfa-9230-4df0-84fc-d51c646e8538',
@@ -664,6 +665,13 @@ export const MKT_PAYMENT_FIELD_IDS = {
   // SePay integration fields (deprecated - use providerTransactionId)
   sepayTransactionId: 'b637c9af-f198-4d24-9f7a-b0c8cede17b8',
 
+  // Phase 3: VA support and matching fields
+  transferType: 'a1b2c3d4-5678-4a9b-8c0d-1e2f3a4b5c6d',
+  matchType: 'b2c3d4e5-6789-4b0c-9d1e-2f3a4b5c6d7e',
+  matchConfidence: 'c3d4e5f6-789a-4c1d-0e2f-3a4b5c6d7e8f',
+  virtualAccount: 'd4e5f6a7-89ab-4d2e-1f3a-4b5c6d7e8f9a',
+  virtualAccountId: 'e5f6a7b8-9abc-4e3f-2a4b-5c6d7e8f9a0b',
+
   // common relations or fields
   position: 'be9a8b83-6d5f-4e39-9c22-8b7f6e5d4c43',
   createdBy: 'ce9a8b84-6d5f-4e3a-9c23-8b7f6e5d4c44',
@@ -671,6 +679,30 @@ export const MKT_PAYMENT_FIELD_IDS = {
   accountOwner: 'ee9a8b86-6d5f-4e3c-9c25-8b7f6e5d4c46',
   timelineActivities: 'fe9a8b87-6d5f-4e3d-9c26-8b7f6e5d4c47',
   searchVector: '0f9a8b88-6d5f-4e3e-9c27-8b7f6e5d4c48',
+};
+
+export const MKT_VIRTUAL_ACCOUNT_FIELD_IDS = {
+  // fields
+  name: 'f6a7b8c9-0def-4a1b-2c3d-4e5f6a7b8c9d',
+  vaNumber: 'a7b8c9d0-1ef2-4b2c-3d4e-5f6a7b8c9d0e',
+  bankCode: 'b8c9d0e1-2f3a-4c3d-4e5f-6a7b8c9d0e1f',
+  bankName: 'c9d0e1f2-3a4b-4d4e-5f6a-7b8c9d0e1f2a',
+  accountName: 'd0e1f2a3-4b5c-4e5f-6a7b-8c9d0e1f2a3b',
+  amount: 'e1f2a3b4-5c6d-4f6a-7b8c-9d0e1f2a3b4c',
+  qrCodeUrl: 'f2a3b4c5-6d7e-4a7b-8c9d-0e1f2a3b4c5d',
+  expiresAt: 'a3b4c5d6-7e8f-4b8c-9d0e-1f2a3b4c5d6e',
+  isActive: 'b4c5d6e7-8f9a-4c9d-0e1f-2a3b4c5d6e7f',
+  provider: 'c5d6e7f8-9a0b-4d0e-1f2a-3b4c5d6e7f8a',
+  providerResponse: 'd6e7f8a9-0b1c-4e1f-2a3b-4c5d6e7f8a9b',
+  // relations
+  mktOrder: 'e7f8a9b0-1c2d-4f2a-3b4c-5d6e7f8a9b0c',
+  mktPayments: 'f8a9b0c1-2d3e-4a3b-4c5d-6e7f8a9b0c1d',
+  // common relations or fields
+  position: 'a9b0c1d2-3e4f-4b4c-5d6e-7f8a9b0c1d2e',
+  createdBy: 'b0c1d2e3-4f5a-4c5d-6e7f-8a9b0c1d2e3f',
+  accountOwner: 'c1d2e3f4-5a6b-4d6e-7f8a-9b0c1d2e3f4a',
+  timelineActivities: 'd2e3f4a5-6b7c-4e7f-8a9b-0c1d2e3f4a5b',
+  searchVector: 'e3f4a5b6-7c8d-4f8a-9b0c-1d2e3f4a5b6c',
 };
 
 export const MKT_PAYMENT_HISTORY_FIELD_IDS = {

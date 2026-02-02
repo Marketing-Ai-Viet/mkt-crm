@@ -14,6 +14,7 @@ import {
   partialPaymentConfig,
   paymentConfig,
   securityConfig,
+  transferModeConfig,
 } from 'src/mkt-core/payment/config';
 import { PaymentProviderFactory } from 'src/mkt-core/payment/factory/payment-provider.factory';
 import { IpWhitelistGuard } from 'src/mkt-core/payment/guards/ip-whitelist.guard';
@@ -35,6 +36,7 @@ import {
   MktPaymentHistoryRepository,
   MktPaymentRepository,
   MktWebhookLogRepository,
+  MktVirtualAccountRepository,
 } from 'src/mkt-core/payment/repositories';
 import {
   PaymentMutationResolver,
@@ -63,6 +65,29 @@ import {
 } from 'src/mkt-core/payment/services/events';
 import { PAYMENT_PROVIDER_TYPE } from 'src/mkt-core/payment/types/provider.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
+// Application Layer - Use Cases
+import {
+  ProcessWebhookUseCase,
+  CreateVAUseCase,
+} from 'src/mkt-core/payment/application/use-cases';
+// Domain Layer - Strategies & Ports
+import {
+  CompositeMatchingStrategy,
+  CodeMatchingStrategy,
+  FuzzyMatchingStrategy,
+  VAMatchingStrategy,
+  DEFAULT_FUZZY_CONFIG,
+  FUZZY_CONFIG_TOKEN,
+} from 'src/mkt-core/payment/domain/strategies';
+import {
+  ORDER_REPOSITORY_PORT_TOKEN,
+  VA_REPOSITORY_PORT_TOKEN,
+} from 'src/mkt-core/payment/domain/ports';
+// Infrastructure Layer - Adapters
+import {
+  OrderRepositoryAdapter,
+  VARepositoryAdapter,
+} from 'src/mkt-core/payment/infrastructure/adapters';
 
 @Module({
   controllers: [SepayPaymentController],
@@ -73,6 +98,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     ConfigModule.forFeature(securityConfig),
     ConfigModule.forFeature(orderCodeConfig),
     ConfigModule.forFeature(partialPaymentConfig),
+    ConfigModule.forFeature(transferModeConfig),
     HttpModule,
     RecordPositionModule,
     forwardRef(() => MktOrderModule), // Circular dependency with MktOrderModule
@@ -97,6 +123,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentRepository,
     MktPaymentHistoryRepository,
     MktWebhookLogRepository,
+    MktVirtualAccountRepository,
     MktOrderRepository,
     MktPaymentMethodRepository,
     MktWorkspaceMemberRepository,
@@ -122,6 +149,29 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     OrderPaymentCalculationService,
     // Event Listeners
     PaymentNotificationListener,
+    // Infrastructure Layer - Adapters & Configs
+    OrderRepositoryAdapter,
+    VARepositoryAdapter,
+    {
+      provide: ORDER_REPOSITORY_PORT_TOKEN,
+      useExisting: OrderRepositoryAdapter,
+    },
+    {
+      provide: VA_REPOSITORY_PORT_TOKEN,
+      useExisting: VARepositoryAdapter,
+    },
+    {
+      provide: FUZZY_CONFIG_TOKEN,
+      useValue: DEFAULT_FUZZY_CONFIG,
+    },
+    // Domain Layer - Matching Strategies
+    CodeMatchingStrategy,
+    FuzzyMatchingStrategy,
+    VAMatchingStrategy,
+    CompositeMatchingStrategy,
+    // Use Cases
+    ProcessWebhookUseCase,
+    CreateVAUseCase,
   ],
   exports: [
     // Factory
@@ -145,6 +195,13 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     MktPaymentWebhookService,
     // Services - SEPay
     SepayQrService,
+    // Repositories - VA
+    MktVirtualAccountRepository,
+    // Domain Strategies
+    CompositeMatchingStrategy,
+    // Use Cases
+    ProcessWebhookUseCase,
+    CreateVAUseCase,
   ],
 })
 export class MktPaymentModule implements OnModuleInit {

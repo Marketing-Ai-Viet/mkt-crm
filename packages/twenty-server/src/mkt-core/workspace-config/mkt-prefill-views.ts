@@ -8,7 +8,7 @@ import { mktOrderHistoryAllView } from 'src/mkt-core/seeder/order-seeder/mkt-ord
 import { mktContractsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-contract-all.view';
 // REMOVED: License module has been deleted
 // import { mktLicensesAllView } from 'src/mkt-core/seeder/prefill-data/mkt-license-all.view';
-import { mktOrdersAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-all.view';
+import { mktOrdersAllView } from 'src/mkt-core/seeder/order-seeder/order/mkt-order-all.view';
 import { mktOrderItemsAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-all.view';
 import { mktPaymentsAllView } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-all.view';
 import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/payment-seeder/payment-method/mkt-payment-method-all.view';
@@ -31,6 +31,7 @@ import { mktKpisAllView } from 'src/mkt-core/seeder/prefill-view/mkt-kpi-all.vie
 // import { mktLicenseHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-license-history-all.view';
 import { mktOrganizationLevelsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-organization-level-all.view';
 import { mktPaymentHistoriesAllView } from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/mkt-payment-history-all.view';
+import { mktVirtualAccountsAllView } from 'src/mkt-core/seeder/payment-seeder/mkt-virtual-account/mkt-virtual-account-all.view';
 import { mktPermissionAuditsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-audit/mkt-permission-audit-all.view';
 import { mktStaffStatusHistoryAllView } from 'src/mkt-core/seeder/prefill-view/mkt-staff-status-history-all.view';
 import { mktTagsAllView } from 'src/mkt-core/seeder/prefill-view/mkt-tag-all.view';
@@ -102,6 +103,7 @@ export const MKT_ALL_VIEWS = [
   mktPaymentMethodsAllView,
   mktPaymentsAllView,
   mktPaymentHistoriesAllView,
+  mktVirtualAccountsAllView,
   // organization level views
   mktOrganizationLevelsAllView,
   mktEmploymentStatusesAllView,
