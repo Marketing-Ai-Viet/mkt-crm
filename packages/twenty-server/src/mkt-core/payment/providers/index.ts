@@ -2,6 +2,9 @@
  * Payment Providers Module Exports
  *
  * Re-exports all payment provider implementations.
+ *
+ * Note: SepayWebhookHandler has been removed (Phase 0 Critical Fix).
+ * Webhook processing is now handled by MktPaymentWebhookService.
  */
 
 // Base provider
@@ -10,7 +13,6 @@ export { BasePaymentProvider } from 'src/mkt-core/payment/providers/base/base-pa
 // SePay provider
 export {
   SepayProvider,
-  SepayWebhookHandler,
   SepayQrGenerator,
   sepayConfig,
   SEPAY_CONFIG_KEY,

@@ -1,9 +1,11 @@
 /**
  * SePay Provider Module Exports
+ *
+ * Note: SepayWebhookHandler has been removed (Phase 0 Critical Fix).
+ * Webhook processing is now handled by MktPaymentWebhookService.
  */
 
 export { SepayProvider } from 'src/mkt-core/payment/providers/sepay/sepay.provider';
-export { SepayWebhookHandler } from 'src/mkt-core/payment/providers/sepay/sepay-webhook.handler';
 export { SepayQrGenerator } from 'src/mkt-core/payment/providers/sepay/sepay-qr.generator';
 export {
   sepayConfig,

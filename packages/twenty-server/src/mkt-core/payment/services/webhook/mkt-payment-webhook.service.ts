@@ -26,6 +26,10 @@ import {
   SepayWebhookResponse,
   SepayWebhookResponseStatus,
 } from 'src/mkt-core/payment/types';
+import {
+  PAYMENT_PROVIDER_TYPE,
+  PaymentProviderType,
+} from 'src/mkt-core/payment/constants/payment-provider.constants';
 import { RequestSepayJWT } from 'src/mkt-core/payment/types/payment.type';
 import { PaymentEventService } from 'src/mkt-core/payment/services/events';
 import {
@@ -111,8 +115,8 @@ export class MktPaymentWebhookService {
         });
 
         try {
-          // Step 2: Idempotency check
-          const existingPayment = await this.findBySepayTransactionId(
+          // Step 2: Idempotency check using providerTransactionId
+          const existingPayment = await this.findByProviderTransactionId(
             payload.id,
           );
 
@@ -241,7 +245,8 @@ export class MktPaymentWebhookService {
             paymentDate: payload.transactionDate,
             amount: payload.transferAmount,
             description: payload.content || payload.description || undefined,
-            sepayTransactionId: String(payload.id),
+            providerTransactionId: String(payload.id),
+            providerType: PAYMENT_PROVIDER_TYPE.SEPAY,
             createdBy: await this.buildActorMetadata(authContext),
           });
 
@@ -382,13 +387,14 @@ export class MktPaymentWebhookService {
   // ============================================
 
   /**
-   * Find payment by SePay transaction ID
+   * Find payment by provider transaction ID
+   * Uses new providerTransactionId field with fallback to legacy sepayTransactionId
    */
-  private async findBySepayTransactionId(
-    sepayTransactionId: number,
+  private async findByProviderTransactionId(
+    transactionId: number,
   ): Promise<MktPaymentWorkspaceEntity | null> {
-    return this.mktPaymentRepository.findBySepayTransactionId(
-      String(sepayTransactionId),
+    return this.mktPaymentRepository.findByProviderTransactionId(
+      String(transactionId),
     );
   }
 
@@ -442,6 +448,7 @@ export class MktPaymentWebhookService {
 
   /**
    * Update payment by ID using repository
+   * Uses providerTransactionId (new) instead of sepayTransactionId (deprecated)
    */
   private async updatePayment(
     paymentId: string,
@@ -450,7 +457,8 @@ export class MktPaymentWebhookService {
       paymentDate?: string;
       amount?: number;
       description?: string;
-      sepayTransactionId: string;
+      providerTransactionId: string;
+      providerType?: PaymentProviderType;
       createdBy: ActorMetadata;
     },
   ): Promise<void> {
@@ -464,16 +472,20 @@ export class MktPaymentWebhookService {
   /**
    * Calculate previously paid amount from existing payments
    * Excludes the current transaction to avoid double counting
+   * Uses providerTransactionId (new) with fallback to sepayTransactionId (legacy)
    */
   private calculatePreviouslyPaidAmount(
     payments: MktPaymentWorkspaceEntity[],
     currentTransactionId: number,
   ): number {
+    const currentTxIdStr = String(currentTransactionId);
+
     return payments
       .filter(
         (p) =>
           (p.status === 'COMPLETED' || p.status === 'PARTIAL') &&
-          p.sepayTransactionId !== String(currentTransactionId),
+          p.providerTransactionId !== currentTxIdStr &&
+          p.sepayTransactionId !== currentTxIdStr, // Legacy fallback
       )
       .reduce((sum, p) => MoneyUtils.add(sum, p.amount ?? 0).toNumber(), 0);
   }

@@ -29,7 +29,6 @@ import {
   sepayConfig,
   SepayProvider,
   SepayQrGenerator,
-  SepayWebhookHandler,
   SEPAY_PROVIDER_METADATA,
 } from 'src/mkt-core/payment/providers/sepay';
 import {
@@ -90,7 +89,7 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
     // Providers - SePay
     SepayProvider,
     SepayQrGenerator,
-    SepayWebhookHandler,
+    // Note: SepayWebhookHandler removed - webhook processing handled by MktPaymentWebhookService
     // Providers - BIDV
     BidvProvider,
     BidvApiClient,
@@ -154,7 +153,6 @@ export class MktPaymentModule implements OnModuleInit {
   constructor(
     private readonly providerFactory: PaymentProviderFactory,
     private readonly sepayProvider: SepayProvider,
-    private readonly sepayWebhookHandler: SepayWebhookHandler,
     private readonly bidvProvider: BidvProvider,
   ) {}
 
@@ -177,11 +175,9 @@ export class MktPaymentModule implements OnModuleInit {
       },
     );
 
-    // Register SePay webhook handler
-    this.providerFactory.registerWebhookHandler(
-      PAYMENT_PROVIDER_TYPE.SEPAY_QR,
-      this.sepayWebhookHandler,
-    );
+    // Note: SepayWebhookHandler removed (Phase 0 Critical Fix)
+    // Webhook processing is now handled by MktPaymentWebhookService
+    // which has full partial payment support and proper amount analysis
 
     // Register BIDV provider
     this.providerFactory.registerProvider(
@@ -196,9 +192,6 @@ export class MktPaymentModule implements OnModuleInit {
         configuredFields: [...BIDV_PROVIDER_METADATA.configuredFields],
       },
     );
-
-    // Note: BIDV uses the same webhook handler as SePay
-    // The webhook controller routes BIDV webhooks to the SePay handler
 
     this.logger.log('Payment providers registered successfully');
   }
