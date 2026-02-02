@@ -24,6 +24,9 @@ export enum MKT_ORDER_EVENT_TYPES {
   ORDER_REFUNDED = 'ORDER_REFUNDED',
   /** Order locked due to payment deadline exceeded (new payment flow) */
   ORDER_LOCKED = 'ORDER_LOCKED',
-  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
+  /** Order confirmed - licenses created with PENDING_PAYMENT status */
+  ORDER_CONFIRMED = 'ORDER_CONFIRMED',
+  /** Payment confirmed - licenses activated */
+  PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED',
   FROM_LICENSE = 'FROM_LICENSE',
 }

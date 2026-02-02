@@ -117,6 +117,78 @@ export const MKT_PAYMENT_LOG_MESSAGES = {
 // WEBHOOK LOG MESSAGES
 // ============================================
 
+// ============================================
+// SEPAY AUTH MESSAGES
+// ============================================
+
+export const SEPAY_AUTH_MESSAGES = {
+  ERROR: {
+    API_KEY_NOT_CONFIGURED: 'SEPAY_WEBHOOK_API_KEY not configured',
+    AUTHORIZATION_REQUIRED: 'Authorization header is required',
+    INVALID_AUTH_FORMAT: 'Authorization header must start with "Apikey "',
+    API_KEY_REQUIRED: 'API key is required',
+    INVALID_API_KEY: 'Invalid API key',
+  },
+  LOG: {
+    VALIDATION_SUCCESS: 'API key validation successful',
+    INVALID_API_KEY: 'Invalid API key provided',
+  },
+} as const;
+
+// ============================================
+// SEPAY QR MESSAGES
+// ============================================
+
+export const SEPAY_QR_MESSAGES = {
+  LOG: {
+    GENERATING: 'Generating SEPay QR code...',
+    GENERATED_SEPAY: (orderCode: string, amount: number) =>
+      `Generated SEPay QR URL for order ${orderCode} with amount ${amount}`,
+    GENERATED_BIDV: (orderCode: string, orderId: string) =>
+      `Generated BIDV SEPay QR for order ${orderCode}, order_id: ${orderId}`,
+    CALLING_BIDV: (orderCode: string, amount: number) =>
+      `Calling BIDV SEPay API for order ${orderCode} with amount ${amount}`,
+  },
+  WARN: {
+    NOT_SEPAY_METHOD:
+      'Payment method is not SEPay type, skipping QR generation',
+    SEPAY_NOT_CONFIGURED: 'SEPay account or bank not configured',
+    NO_ORDER_CODE: 'No order code provided for QR generation',
+    INVALID_AMOUNT: 'Invalid amount for QR generation',
+    BIDV_NOT_CONFIGURED: 'BIDV SEPay API URL or Auth Token not configured',
+  },
+  ERROR: {
+    GENERATE_FAILED: 'Error generating SEPay QR code',
+    BIDV_API_ERROR: (message: string) => `BIDV SEPay API error: ${message}`,
+    BIDV_API_CALL_FAILED: 'Error calling BIDV SEPay API',
+  },
+} as const;
+
+// ============================================
+// SEPAY QR PAGE MESSAGES
+// ============================================
+
+export const SEPAY_QR_PAGE_MESSAGES = {
+  LOG: {
+    FETCHING_QR: (orderCode: string) =>
+      `Fetching payment QR for order: ${orderCode}`,
+    PAGE_GENERATED: (orderCode: string) =>
+      `Generated payment page for order ${orderCode}`,
+    DATE_FORMAT_ERROR: 'Error formatting expired_at',
+  },
+  ERROR: {
+    WORKSPACE_NOT_CONFIGURED: 'Workspace not configured',
+    ORDER_NOT_FOUND: (orderCode: string) => `Order ${orderCode} not found`,
+    NO_PAYMENTS: (orderCode: string) =>
+      `No payments found for order ${orderCode}`,
+    TEMPLATE_NOT_FOUND: 'Payment template not found',
+  },
+} as const;
+
+// ============================================
+// WEBHOOK LOG DETAIL MESSAGES
+// ============================================
+
 export const MKT_WEBHOOK_LOG_LOG_MESSAGES = {
   // Find operations
   FIND_BY_ID_START: (logId: string) => `Finding webhook log by ID: ${logId}`,

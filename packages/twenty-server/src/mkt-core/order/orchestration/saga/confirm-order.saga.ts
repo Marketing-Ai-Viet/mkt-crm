@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { TransactionScopeService } from 'src/mkt-core/common/transaction';
+import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
 import {
   ConfirmOrderSagaContext,
   createConfirmOrderContext,
@@ -37,32 +38,31 @@ import { BaseSaga } from './base/base-saga';
  * 2. ValidateTransitionStep - Validate status transition is allowed
  * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
  * 4. UpdateStatusStep - Update order status and payment fields
- * 5. CreateLicensesOnConfirmStep - Create licenses when accounting confirms
- * 6. CreateContractOnConfirmStep - Create contract when accounting confirms
+ * 5. CreateLicensesOnConfirmStep - Create licenses when order is confirmed
+ * 6. CreateContractOnConfirmStep - Create contract when order is confirmed
  * 7. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
- * 8. CompleteOrderAfterLicenseStep - Auto-complete order after licenses created
+ * 8. CompleteOrderAfterLicenseStep - Auto-complete order after payment confirmed
  *
- * CONFIRM_ORDER Flow (New Payment Flow):
+ * CONFIRM_ORDER Flow:
  * 1. Validate order exists
  * 2. Validate status transition (DRAFT → PROCESSING)
  * 3. Calculate payment deadline based on priority rules
  * 4. Update: status = PROCESSING, paymentDeadline, paymentStatus = PENDING
  * 5. Create licenses on MKT Server with PENDING_PAYMENT status
- * 6. Schedule payment reminders and deadline check jobs
- * 7. Emit success events
+ * 6. Create contract and link to order
+ * 7. Schedule payment reminders and deadline check jobs
+ * 8. Emit success events
  *
- * ACCOUNTING_CONFIRMED Flow (Legacy):
+ * PAYMENT_CONFIRMED Flow:
  * 1. Validate order exists
- * 2. Validate status transition is allowed
- * 3. Update: status = CONFIRMED, paymentStatus = PAID, paidAmount = totalAmount
- * 4. Create licenses on MKT Server
- * 5. Create contract and link to order
- * 6. Auto-update: status = COMPLETED (if licenses created)
- * 7. Emit success events
+ * 2. Validate status transition (PROCESSING → COMPLETED)
+ * 3. Update: status = COMPLETED, paymentStatus = PAID
+ * 4. Activate licenses on MKT Server
+ * 5. Emit success events
  *
  * Supports actions:
- * - CONFIRM_ORDER: New flow - create licenses immediately, schedule deadline
- * - ACCOUNTING_CONFIRMED: Confirm payment, create licenses, create contract, auto-complete
+ * - CONFIRM_ORDER: Create licenses with PENDING_PAYMENT, schedule deadline
+ * - PAYMENT_CONFIRMED: Activate licenses, complete order
  * - COMPLETE: Complete the order
  * - CANCEL: Cancel the order
  * - BLOCK: Block the order
@@ -103,10 +103,10 @@ export class ConfirmOrderSaga
    * 2. ValidateTransitionStep - Validate status transition
    * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
    * 4. UpdateStatusStep - Update order status
-   * 5. CreateLicensesOnConfirmStep - Create licenses
-   * 6. CreateContractOnConfirmStep - Create contract (ACCOUNTING_CONFIRMED only)
+   * 5. CreateLicensesOnConfirmStep - Create licenses (CONFIRM_ORDER only)
+   * 6. CreateContractOnConfirmStep - Create contract (CONFIRM_ORDER only)
    * 7. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
-   * 8. CompleteOrderAfterLicenseStep - Auto-complete (skipped for CONFIRM_ORDER)
+   * 8. CompleteOrderAfterLicenseStep - Auto-complete (PAYMENT_CONFIRMED only)
    */
   private initializeSteps(): void {
     this.registerSteps([
@@ -155,6 +155,11 @@ export class ConfirmOrderSaga
 
   /**
    * Emit success event after saga completion
+   *
+   * Event types based on action:
+   * - CONFIRM_ORDER → ORDER_CONFIRMED
+   * - PAYMENT_CONFIRMED → PAYMENT_CONFIRMED
+   * - Others → ORDER_UPDATED
    */
   protected emitSuccessEvent(
     context: SagaContext,
@@ -166,9 +171,8 @@ export class ConfirmOrderSaga
       return;
     }
 
-    const eventType = input.accountingConfirmed
-      ? MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED
-      : MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
+    // Determine event type based on action
+    const eventType = this.getEventTypeForAction(input.action);
 
     this.eventEmitter.emit(eventType, {
       name: eventType,
@@ -184,7 +188,6 @@ export class ConfirmOrderSaga
             previousStatus: typedContext.previousStatus,
             newStatus: typedContext.targetStatus,
             action: typedContext.action,
-            accountingConfirmed: input.accountingConfirmed,
           },
           timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         },
@@ -192,5 +195,19 @@ export class ConfirmOrderSaga
     });
 
     this.logger.log(`Emitted ${eventType} for order: ${typedContext.orderId}`);
+  }
+
+  /**
+   * Map action to event type
+   */
+  private getEventTypeForAction(action: ORDER_ACTION): MKT_ORDER_EVENT_TYPES {
+    switch (action) {
+      case ORDER_ACTION.CONFIRM_ORDER:
+        return MKT_ORDER_EVENT_TYPES.ORDER_CONFIRMED;
+      case ORDER_ACTION.PAYMENT_CONFIRMED:
+        return MKT_ORDER_EVENT_TYPES.PAYMENT_CONFIRMED;
+      default:
+        return MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
+    }
   }
 }

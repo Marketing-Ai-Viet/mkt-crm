@@ -212,38 +212,34 @@ export const ORDER_STATUS_OPTIONS = {
  * Order Action - Hành động trên đơn hàng
  *
  * Phân loại:
- * - Create actions: NEW_ORDER, TRIAL, LICENSE_RENEWING
- * - Status change actions: ACCOUNTING_CONFIRMED, COMPLETE, CANCEL, BLOCK
- * - New payment flow actions: CONFIRM_ORDER, PAYMENT_CONFIRMED, LOCK_OVERDUE, UNLOCK_AFTER_PAYMENT
+ * - Create actions: NEW_ORDER, TRIAL, LICENSE_RENEWING, CHANGE_VARIANT, TRIAL_TO_PAID
+ * - Status change actions: COMPLETE, CANCEL, BLOCK
+ * - Payment flow actions: CONFIRM_ORDER, PAYMENT_CONFIRMED, LOCK_OVERDUE, UNLOCK_AFTER_PAYMENT
  * - Refund actions: REFUND, REFUND_PARTIAL
- * - Special actions: TRIAL_TO_PAID, CHANGE_VARIANT
  */
 export enum ORDER_ACTION {
-  /** Tạo đơn hàng mới - License tạo sau khi xác nhận thanh toán */
+  /** Tạo đơn hàng mới - License tạo khi confirm */
   NEW_ORDER = 'NEW_ORDER',
 
   /** Tạo đơn trial - License trial được tạo ngay */
   TRIAL = 'TRIAL',
 
-  /** Gia hạn license - License gia hạn sau khi xác nhận thanh toán */
+  /** Gia hạn license - License gia hạn khi confirm */
   LICENSE_RENEWING = 'LICENSE_RENEWING',
 
   /** Đổi gói - Thay đổi variant/package của license */
   CHANGE_VARIANT = 'CHANGE_VARIANT',
 
-  /** Kế toán xác nhận thanh toán - Trigger tạo license (legacy) */
-  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
-
-  /** Xác nhận đơn hàng - Tạo license ngay với status PENDING_PAYMENT (NEW) */
+  /** Xác nhận đơn hàng - Tạo license ngay với status PENDING_PAYMENT */
   CONFIRM_ORDER = 'CONFIRM_ORDER',
 
-  /** Thanh toán được xác nhận - License → ACTIVE, Order → COMPLETED (NEW) */
+  /** Thanh toán được xác nhận - License → ACTIVE, Order → COMPLETED */
   PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED',
 
-  /** Khóa do quá hạn thanh toán - License → LOCKED trên MKT Server (NEW) */
+  /** Khóa do quá hạn thanh toán - License → LOCKED trên MKT Server */
   LOCK_OVERDUE = 'LOCK_OVERDUE',
 
-  /** Mở khóa sau thanh toán muộn - License → ACTIVE, Order → COMPLETED (NEW) */
+  /** Mở khóa sau thanh toán muộn - License → ACTIVE, Order → COMPLETED */
   UNLOCK_AFTER_PAYMENT = 'UNLOCK_AFTER_PAYMENT',
 
   /** Hoàn thành đơn hàng */
@@ -255,7 +251,7 @@ export enum ORDER_ACTION {
   /** Khóa đơn hàng */
   BLOCK = 'BLOCK',
 
-  /** Chuyển trial sang đơn trả phí - License mới sau xác nhận */
+  /** Chuyển trial sang đơn trả phí - License mới khi confirm */
   TRIAL_TO_PAID = 'TRIAL_TO_PAID',
 
   /** Hoàn tiền toàn bộ */
@@ -388,28 +384,28 @@ export const IS_CREATE_ORDER_ACTION = (
   CREATE_ORDER_ACTIONS.includes(action as CreateOrderAction);
 
 /**
- * Actions cho phép khi XÁC NHẬN đơn hàng (confirmOrder mutation)
+ * Actions cho phép khi XÁC NHẬN đơn hàng (confirmOrderWithLicense, confirmOrderPayment mutations)
  *
- * - ACCOUNTING_CONFIRMED: Legacy flow - tạo license sau khi thanh toán
- * - CONFIRM_ORDER: New payment flow - tạo license ngay với PENDING_PAYMENT status
+ * - CONFIRM_ORDER: Tạo license ngay với PENDING_PAYMENT status
+ * - PAYMENT_CONFIRMED: Kích hoạt license, chuyển order sang COMPLETED
  *
  * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation.
  */
 export type ConfirmOrderAction = Extract<
   ORDER_ACTION,
-  ORDER_ACTION.ACCOUNTING_CONFIRMED | ORDER_ACTION.CONFIRM_ORDER
+  ORDER_ACTION.CONFIRM_ORDER | ORDER_ACTION.PAYMENT_CONFIRMED
 >;
 
 /**
  * Array các actions cho phép khi confirm
  */
 export const CONFIRM_ORDER_ACTIONS: ConfirmOrderAction[] = [
-  ORDER_ACTION.ACCOUNTING_CONFIRMED,
   ORDER_ACTION.CONFIRM_ORDER,
+  ORDER_ACTION.PAYMENT_CONFIRMED,
 ];
 
 /**
- * Check if action is valid for confirming order payment
+ * Check if action is valid for confirming order
  */
 export const IS_CONFIRM_ORDER_ACTION = (
   action: ORDER_ACTION,

@@ -9,57 +9,16 @@ import {
   SEPAY_TEMPLATE_DEFAULTS,
   VIETNAM_TIMEZONE,
 } from 'src/mkt-core/payment/constants/sepay.constants';
+import { SEPAY_QR_PAGE_MESSAGES } from 'src/mkt-core/payment/messages';
 import { MktPaymentService } from 'src/mkt-core/payment/services/core';
+import {
+  QrPageResult,
+  QrPageTemplateVariables,
+} from 'src/mkt-core/payment/types/sepay-qr.types';
 import {
   DATE_TIME_FORMATS,
   DateTimeUtils,
 } from 'src/mkt-core/utils/date-time.utils';
-
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * Template variables for QR payment page
- */
-type QrPageTemplateVariables = {
-  customer_name: string;
-  order_code: string;
-  amount: string;
-  currency: string;
-  qr_code_url: string;
-  expired_at: string;
-  company_name: string;
-};
-
-/**
- * Result from generating QR page
- */
-export type QrPageResult = {
-  success: true;
-  htmlContent: string;
-};
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const QR_PAGE_MESSAGES = {
-  LOG: {
-    FETCHING_QR: (orderCode: string) =>
-      `Fetching payment QR for order: ${orderCode}`,
-    PAGE_GENERATED: (orderCode: string) =>
-      `Generated payment page for order ${orderCode}`,
-    DATE_FORMAT_ERROR: 'Error formatting expired_at',
-  },
-  ERROR: {
-    WORKSPACE_NOT_CONFIGURED: 'Workspace not configured',
-    ORDER_NOT_FOUND: (orderCode: string) => `Order ${orderCode} not found`,
-    NO_PAYMENTS: (orderCode: string) =>
-      `No payments found for order ${orderCode}`,
-    TEMPLATE_NOT_FOUND: 'Payment template not found',
-  },
-} as const;
 
 // ============================================
 // SERVICE
@@ -97,14 +56,14 @@ export class SepayQrPageService {
    * @throws NotFoundException if order, payment, or template not found
    */
   async generateQrPage(orderCode: string): Promise<QrPageResult> {
-    this.logger.log(QR_PAGE_MESSAGES.LOG.FETCHING_QR(orderCode));
+    this.logger.log(SEPAY_QR_PAGE_MESSAGES.LOG.FETCHING_QR(orderCode));
 
     const workspaceId = this.config.workspace.mktWorkspaceId;
 
     if (!workspaceId) {
-      this.logger.error(QR_PAGE_MESSAGES.ERROR.WORKSPACE_NOT_CONFIGURED);
+      this.logger.error(SEPAY_QR_PAGE_MESSAGES.ERROR.WORKSPACE_NOT_CONFIGURED);
       throw new NotFoundException(
-        QR_PAGE_MESSAGES.ERROR.WORKSPACE_NOT_CONFIGURED,
+        SEPAY_QR_PAGE_MESSAGES.ERROR.WORKSPACE_NOT_CONFIGURED,
       );
     }
 
@@ -112,9 +71,11 @@ export class SepayQrPageService {
     const order = await this.mktPaymentService.findOneByOrderCode(orderCode);
 
     if (!order) {
-      this.logger.error(QR_PAGE_MESSAGES.ERROR.ORDER_NOT_FOUND(orderCode));
+      this.logger.error(
+        SEPAY_QR_PAGE_MESSAGES.ERROR.ORDER_NOT_FOUND(orderCode),
+      );
       throw new NotFoundException(
-        QR_PAGE_MESSAGES.ERROR.ORDER_NOT_FOUND(orderCode),
+        SEPAY_QR_PAGE_MESSAGES.ERROR.ORDER_NOT_FOUND(orderCode),
       );
     }
 
@@ -124,9 +85,9 @@ export class SepayQrPageService {
     );
 
     if (payments.length === 0) {
-      this.logger.error(QR_PAGE_MESSAGES.ERROR.NO_PAYMENTS(orderCode));
+      this.logger.error(SEPAY_QR_PAGE_MESSAGES.ERROR.NO_PAYMENTS(orderCode));
       throw new NotFoundException(
-        QR_PAGE_MESSAGES.ERROR.NO_PAYMENTS(orderCode),
+        SEPAY_QR_PAGE_MESSAGES.ERROR.NO_PAYMENTS(orderCode),
       );
     }
 
@@ -136,8 +97,10 @@ export class SepayQrPageService {
     const template = await this.fetchQrTemplate(workspaceId);
 
     if (!template) {
-      this.logger.error(QR_PAGE_MESSAGES.ERROR.TEMPLATE_NOT_FOUND);
-      throw new NotFoundException(QR_PAGE_MESSAGES.ERROR.TEMPLATE_NOT_FOUND);
+      this.logger.error(SEPAY_QR_PAGE_MESSAGES.ERROR.TEMPLATE_NOT_FOUND);
+      throw new NotFoundException(
+        SEPAY_QR_PAGE_MESSAGES.ERROR.TEMPLATE_NOT_FOUND,
+      );
     }
 
     // Tạo template variables
@@ -153,7 +116,7 @@ export class SepayQrPageService {
       templateVariables,
     );
 
-    this.logger.log(QR_PAGE_MESSAGES.LOG.PAGE_GENERATED(orderCode));
+    this.logger.log(SEPAY_QR_PAGE_MESSAGES.LOG.PAGE_GENERATED(orderCode));
 
     return {
       success: true,
@@ -250,7 +213,7 @@ export class SepayQrPageService {
         .setZone(VIETNAM_TIMEZONE)
         .toFormat(DATE_TIME_FORMATS.DISPLAY_DATE_TIME);
     } catch (error) {
-      this.logger.warn(QR_PAGE_MESSAGES.LOG.DATE_FORMAT_ERROR, error);
+      this.logger.warn(SEPAY_QR_PAGE_MESSAGES.LOG.DATE_FORMAT_ERROR, error);
 
       return SEPAY_TEMPLATE_DEFAULTS.DEFAULT_EXPIRY_TEXT;
     }

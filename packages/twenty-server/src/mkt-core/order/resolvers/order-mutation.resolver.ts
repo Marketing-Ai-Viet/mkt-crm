@@ -9,14 +9,12 @@ import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
 import {
-  ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
   RefundOrderInputDto,
   PublishDraftOrderInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
-  ConfirmOrderResponseDto,
   CreateOrderResponseDto,
   RefundOrderResponseDto,
   UpdateOrderStatusResponseDto,
@@ -47,9 +45,12 @@ import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
  *
  * Provides mutations for:
  * - createOrderWithItems: Create new order with items, licenses, and payment
- * - confirmOrder: Confirm/update order status
  * - updateOrderStatus: Update order status with state machine validation
  * - refundOrder: Full or partial order refund
+ * - publishDraftOrder: Convert draft order to pending payment
+ * - confirmOrderWithLicense: Confirm order and create licenses (New Payment Flow)
+ * - confirmOrderPayment: Confirm payment and activate licenses (New Payment Flow)
+ * - unlockOrderAfterPayment: Unlock order after late payment (New Payment Flow)
  *
  * Note: Trial license creation is handled by MktLicenseResolver.mktCreateTrialLicense
  */
@@ -84,29 +85,6 @@ export class OrderMutationResolver {
     const domainInput = OrderInputMapper.toCreateOrderInput(input);
 
     return this.orderOrchestrationService.createOrderWithItems(
-      workspace.id,
-      workspaceMemberId,
-      domainInput,
-    );
-  }
-
-  /**
-   * Confirm an order (change status)
-   *
-   * Authorization: ACCOUNTING department + Executives only
-   */
-  // @RequireDepartment(ORDER_AUTHORIZATION.CONFIRM_ORDER) // TEMPORARILY DISABLED FOR TESTING
-  @Mutation(() => ConfirmOrderResponseDto, {
-    description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER,
-  })
-  async confirmOrder(
-    @AuthWorkspace() workspace: Workspace,
-    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
-    @Args('input') input: ConfirmOrderInputDto,
-  ): Promise<ConfirmOrderResponseDto> {
-    const domainInput = OrderInputMapper.toConfirmOrderInput(input);
-
-    return this.orderOrchestrationService.confirmOrder(
       workspace.id,
       workspaceMemberId,
       domainInput,

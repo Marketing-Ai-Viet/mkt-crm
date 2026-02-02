@@ -1,21 +1,15 @@
 import {
-  ConfirmOrderInputDto,
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
   RefundOrderInputDto,
 } from 'src/mkt-core/order/dto/create-order.input';
 import {
-  ConfirmOrderInput,
   CreateOrderWithItemsInput,
   UpdateOrderStatusInput,
   RefundOrderInput,
 } from 'src/mkt-core/order/types';
 import { MktSupportedLanguage } from 'src/mkt-core/order/types/mkt-product-proxy.types';
-import {
-  ORDER_STATUS,
-  CreateOrderAction,
-  ConfirmOrderAction,
-} from 'src/mkt-core/order/constants';
+import { ORDER_STATUS, CreateOrderAction } from 'src/mkt-core/order/constants';
 import { PaymentCurrency } from 'src/mkt-core/payment/types';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 
@@ -70,22 +64,6 @@ export const OrderInputMapper = {
       isDraft: dto.isDraft ?? false,
       // MKT Server email override
       mktServerEmail: dto.mktServerEmail,
-    };
-  },
-
-  /**
-   * Map ConfirmOrderInputDto to ConfirmOrderInput
-   *
-   * Simplified: Only ACCOUNTING_CONFIRMED action is supported.
-   * Other actions (COMPLETE, CANCEL, BLOCK) use updateOrderStatus mutation.
-   */
-  toConfirmOrderInput(dto: ConfirmOrderInputDto): ConfirmOrderInput {
-    return {
-      orderId: dto.orderId,
-      action: dto.action as unknown as ConfirmOrderAction,
-      accountingConfirmed: true, // Always true for ACCOUNTING_CONFIRMED
-      note: dto.note,
-      expectedVersion: dto.expectedVersion,
     };
   },
 

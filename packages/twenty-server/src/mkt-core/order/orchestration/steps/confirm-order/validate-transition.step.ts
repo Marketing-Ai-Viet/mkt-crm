@@ -77,7 +77,6 @@ export class ValidateTransitionStep extends SagaStep<
         typedContext.currentOrder,
         {
           status: targetStatus,
-          accountingConfirmed: input.accountingConfirmed,
         },
       );
 

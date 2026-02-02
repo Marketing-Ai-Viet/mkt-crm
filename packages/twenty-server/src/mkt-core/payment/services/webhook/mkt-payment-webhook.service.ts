@@ -240,7 +240,7 @@ export class MktPaymentWebhookService {
             status: paymentStatus,
             paymentDate: payload.transactionDate,
             amount: payload.transferAmount,
-            description: payload.content || payload.description,
+            description: payload.content || payload.description || undefined,
             sepayTransactionId: String(payload.id),
             createdBy: await this.buildActorMetadata(authContext),
           });

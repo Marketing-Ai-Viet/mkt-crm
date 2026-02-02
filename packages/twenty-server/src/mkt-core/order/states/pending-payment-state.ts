@@ -15,7 +15,7 @@ import {
  * PendingPaymentState - State for orders waiting for payment confirmation
  *
  * Transitions:
- * - PENDING_PAYMENT → CONFIRMED (kế toán xác nhận thanh toán)
+ * - PENDING_PAYMENT → PROCESSING (xác nhận đơn hàng, tạo license PENDING_PAYMENT)
  * - PENDING_PAYMENT → CANCELED (hủy đơn)
  * - PENDING_PAYMENT → OVERDUE (quá hạn thanh toán)
  */
@@ -30,22 +30,19 @@ export class PendingPaymentState extends OrderState {
     _input: OrderStateInput,
   ): boolean {
     return [
-      ORDER_STATUS.CONFIRMED,
+      ORDER_STATUS.PROCESSING,
       ORDER_STATUS.CANCELED,
       ORDER_STATUS.OVERDUE,
     ].includes(newStatus);
   }
 
   getAction(
-    context: OrderStateContext,
+    _context: OrderStateContext,
     input: OrderStateInput,
   ): ORDER_ACTION | null {
-    // PENDING_PAYMENT → CONFIRMED (kế toán xác nhận)
-    if (
-      input.status === ORDER_STATUS.CONFIRMED ||
-      input.accountingConfirmed === true
-    ) {
-      return ORDER_ACTION.ACCOUNTING_CONFIRMED;
+    // PENDING_PAYMENT → PROCESSING (xác nhận đơn hàng)
+    if (input.status === ORDER_STATUS.PROCESSING) {
+      return ORDER_ACTION.CONFIRM_ORDER;
     }
 
     // PENDING_PAYMENT → CANCELED
@@ -66,13 +63,12 @@ export class PendingPaymentState extends OrderState {
     action: ORDER_ACTION,
   ): UpdateOneResolverArgs<Partial<MktOrderWorkspaceEntity>> {
     switch (action) {
-      case ORDER_ACTION.ACCOUNTING_CONFIRMED:
+      case ORDER_ACTION.CONFIRM_ORDER:
         return {
           ...payload,
           data: {
             ...payload.data,
-            status: ORDER_STATUS.CONFIRMED,
-            accountingConfirmed: true,
+            status: ORDER_STATUS.PROCESSING,
           },
         };
 

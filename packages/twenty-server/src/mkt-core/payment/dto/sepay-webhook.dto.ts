@@ -80,10 +80,11 @@ export class SepayWebhookDto {
   transferType: SepayTransferType;
 
   /**
-   * Mô tả đầy đủ từ ngân hàng
+   * Mô tả đầy đủ từ ngân hàng (nullable)
    */
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string | null;
 
   /**
    * Số tiền giao dịch (VND)

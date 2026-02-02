@@ -584,18 +584,20 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
    * @param orderId - Order ID to update
    * @param expectedVersion - Version that client expects (must match current DB version)
    * @param data - Partial data to update
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    * @returns Object with affected count and new version
    */
   async updateWithOptimisticLock(
     orderId: string,
     expectedVersion: number,
     data: DeepPartial<MktOrderWorkspaceEntity>,
+    workspaceId?: string,
   ): Promise<{ affected: number; newVersion: number }> {
     this.logger.debug(
       `[OptimisticLock] Atomic update: orderId=${orderId}, expectedVersion=${expectedVersion}`,
     );
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     // Atomic conditional update - version check happens in WHERE clause
     const result = await repository
@@ -630,9 +632,15 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   /**
    * Get current version of an order
    * Used to fetch version before optimistic lock update
+   *
+   * @param orderId - Order ID
+   * @param workspaceId - Optional workspace ID (uses scoped context if not provided)
    */
-  async getCurrentVersion(orderId: string): Promise<number | null> {
-    const repository = await this.getRepository();
+  async getCurrentVersion(
+    orderId: string,
+    workspaceId?: string,
+  ): Promise<number | null> {
+    const repository = await this.getRepository(workspaceId);
 
     const result = await repository
       .createQueryBuilder('order')

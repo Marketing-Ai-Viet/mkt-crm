@@ -49,7 +49,7 @@ export class CalculatePaymentDeadlineStep extends SagaStep<
 
   /**
    * Skip this step if action is not CONFIRM_ORDER
-   * Other actions (ACCOUNTING_CONFIRMED, COMPLETE, etc.) don't need deadline calculation
+   * Other actions (PAYMENT_CONFIRMED, COMPLETE, etc.) don't need deadline calculation
    */
   shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
     // Chỉ tính deadline khi action là CONFIRM_ORDER (luồng mới)

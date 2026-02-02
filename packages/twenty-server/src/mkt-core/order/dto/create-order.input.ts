@@ -36,31 +36,15 @@ export enum CREATE_ORDER_ACTION {
   TRIAL_TO_PAID = 'TRIAL_TO_PAID',
 }
 
-/**
- * Actions cho phép khi XÁC NHẬN thanh toán đơn hàng
- *
- * Chỉ dùng cho confirmOrder mutation.
- * Các action khác (COMPLETE, CANCEL, BLOCK) sử dụng updateOrderStatus mutation với ORDER_ACTION enum.
- */
-export enum CONFIRM_ORDER_ACTION {
-  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
-}
-
 // Register enums for GraphQL
 registerEnumType(ORDER_ACTION, {
   name: 'OrderAction',
-  description: 'All order actions (for backward compatibility)',
+  description: 'All order actions',
 });
 
 registerEnumType(CREATE_ORDER_ACTION, {
   name: 'CreateOrderAction',
   description: 'Actions allowed when creating an order',
-});
-
-registerEnumType(CONFIRM_ORDER_ACTION, {
-  name: 'ConfirmOrderAction',
-  description:
-    'Action for accounting confirmation (use updateOrderStatus for other actions)',
 });
 
 /**
@@ -298,41 +282,6 @@ export class CreateOrderWithItemsInputDto {
   @IsOptional()
   @IsString()
   mktServerEmail?: string;
-}
-
-/**
- * Input cho xác nhận thanh toán đơn hàng
- *
- * Chỉ hỗ trợ ACCOUNTING_CONFIRMED action.
- * Sử dụng updateOrderStatus mutation cho các action khác (COMPLETE, CANCEL, BLOCK).
- */
-@InputType()
-export class ConfirmOrderInputDto {
-  @Field(() => String, { description: 'Order ID to confirm' })
-  @IsUUID()
-  orderId: string;
-
-  @Field(() => CONFIRM_ORDER_ACTION, {
-    description: 'Confirmation action (ACCOUNTING_CONFIRMED only)',
-    defaultValue: CONFIRM_ORDER_ACTION.ACCOUNTING_CONFIRMED,
-  })
-  @IsEnum(CONFIRM_ORDER_ACTION)
-  action: CONFIRM_ORDER_ACTION;
-
-  @Field(() => String, { nullable: true, description: 'Optional note' })
-  @IsOptional()
-  @IsString()
-  note?: string;
-
-  @Field(() => Int, {
-    nullable: true,
-    description:
-      'Expected version for optimistic locking. If provided, update will fail if version mismatch.',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  expectedVersion?: number;
 }
 
 @InputType()

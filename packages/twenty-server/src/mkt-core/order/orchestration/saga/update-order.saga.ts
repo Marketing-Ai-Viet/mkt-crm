@@ -156,9 +156,11 @@ export class UpdateOrderSaga {
     input: UpdateOrderStatusInput,
   ): Promise<SagaStepResult<MktOrderWorkspaceEntity>> {
     try {
+      // Pass workspaceId explicitly to resolve workspace context
       const order = await this.mktOrderRepository.findByIdWithOptions(
         input.orderId,
         { relations: { orderItems: true } },
+        context.workspaceId,
       );
 
       if (!order) {
@@ -230,7 +232,12 @@ export class UpdateOrderSaga {
         updatedAt: nowISO,
       }) as unknown as JSON;
 
-      await this.mktOrderRepository.update(input.orderId, updateData);
+      // Pass workspaceId explicitly to resolve workspace context
+      await this.mktOrderRepository.updateOrder(
+        input.orderId,
+        updateData,
+        context.workspaceId,
+      );
 
       context.metadata.set('newStatus', newStatus);
       context.metadata.set('action', action);

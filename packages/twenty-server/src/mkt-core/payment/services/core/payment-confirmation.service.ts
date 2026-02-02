@@ -92,9 +92,11 @@ export class PaymentConfirmationService {
   ): Promise<ConfirmPaymentResult> {
     const { paymentId, note } = input;
 
-    // Step 1: Get and validate payment
-    const payment =
-      await this.mktPaymentRepository.findByIdWithRelations(paymentId);
+    // Step 1: Get and validate payment (pass workspaceId explicitly)
+    const payment = await this.mktPaymentRepository.findByIdWithRelations(
+      paymentId,
+      workspaceId,
+    );
 
     if (!payment) {
       return {
@@ -114,13 +116,17 @@ export class PaymentConfirmationService {
     const newStatus = PAYMENT_TRANSACTION_STATUS.CONFIRMED;
     const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
 
-    // Step 2: Update payment status
-    await this.mktPaymentRepository.updatePayment(paymentId, {
-      status: newStatus,
-      confirmedAt: nowISO,
-      confirmedById,
-      paymentDate: nowISO,
-    });
+    // Step 2: Update payment status (pass workspaceId explicitly)
+    await this.mktPaymentRepository.updatePayment(
+      paymentId,
+      {
+        status: newStatus,
+        confirmedAt: nowISO,
+        confirmedById,
+        paymentDate: nowISO,
+      },
+      workspaceId,
+    );
 
     // Step 3: Record history
     await this.recordHistory({
@@ -134,9 +140,9 @@ export class PaymentConfirmationService {
       amount: payment.amount ?? 0,
     });
 
-    // Step 4: Recalculate order payment totals
+    // Step 4: Recalculate order payment totals (pass workspaceId)
     const orderResult = payment.mktOrderId
-      ? await this.recalculateOrderPayment(payment.mktOrderId)
+      ? await this.recalculateOrderPayment(payment.mktOrderId, workspaceId)
       : null;
 
     // Step 5: Check license creation eligibility
@@ -187,9 +193,11 @@ export class PaymentConfirmationService {
   ): Promise<ConfirmPaymentResult> {
     const { paymentId, rejectionReason, note } = input;
 
-    // Step 1: Get and validate payment
-    const payment =
-      await this.mktPaymentRepository.findByIdWithRelations(paymentId);
+    // Step 1: Get and validate payment (pass workspaceId explicitly)
+    const payment = await this.mktPaymentRepository.findByIdWithRelations(
+      paymentId,
+      workspaceId,
+    );
 
     if (!payment) {
       return {
@@ -209,13 +217,17 @@ export class PaymentConfirmationService {
     const newStatus = PAYMENT_TRANSACTION_STATUS.REJECTED;
     const nowISO = DateTimeUtils.toISO(DateTimeUtils.now());
 
-    // Step 2: Update payment status
-    await this.mktPaymentRepository.updatePayment(paymentId, {
-      status: newStatus,
-      rejectedAt: nowISO,
-      rejectedById,
-      rejectionReason,
-    });
+    // Step 2: Update payment status (pass workspaceId explicitly)
+    await this.mktPaymentRepository.updatePayment(
+      paymentId,
+      {
+        status: newStatus,
+        rejectedAt: nowISO,
+        rejectedById,
+        rejectionReason,
+      },
+      workspaceId,
+    );
 
     // Step 3: Record history
     await this.recordHistory({
@@ -263,9 +275,13 @@ export class PaymentConfirmationService {
 
   private async recalculateOrderPayment(
     orderId: string,
+    workspaceId: string,
   ): Promise<OrderResult | null> {
-    const order =
-      await this.mktOrderRepository.findByIdWithPaymentSummary(orderId);
+    const order = await this.mktOrderRepository.findByIdWithOptions(
+      orderId,
+      { relations: { mktPayments: true } },
+      workspaceId,
+    );
 
     if (!order) {
       return null;
@@ -283,14 +299,16 @@ export class PaymentConfirmationService {
       confirmedPayments,
     );
 
-    // Update order
-    const repository = await this.mktOrderRepository.getRepository();
-
-    await repository.update(orderId, {
-      paidAmount: summary.paidAmount,
-      remainingAmount: summary.remainingAmount,
-      paymentStatus: summary.paymentStatus,
-    });
+    // Update order (pass workspaceId explicitly)
+    await this.mktOrderRepository.updateOrder(
+      orderId,
+      {
+        paidAmount: summary.paidAmount,
+        remainingAmount: summary.remainingAmount,
+        paymentStatus: summary.paymentStatus,
+      },
+      workspaceId,
+    );
 
     return {
       orderId,

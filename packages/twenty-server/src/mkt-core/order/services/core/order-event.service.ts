@@ -89,9 +89,9 @@ export class OrderEventService {
   }
 
   /**
-   * Emit accounting confirmed event
+   * Emit order confirmed event (licenses created with PENDING_PAYMENT)
    */
-  async emitAccountingConfirmed(
+  async emitOrderConfirmed(
     orderId: string,
     workspaceId: string,
     additionalData?: Record<string, unknown>,
@@ -99,7 +99,23 @@ export class OrderEventService {
     await this.emitOrderEvent(
       orderId,
       workspaceId,
-      MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED,
+      MKT_ORDER_EVENT_TYPES.ORDER_CONFIRMED,
+      additionalData,
+    );
+  }
+
+  /**
+   * Emit payment confirmed event (licenses activated)
+   */
+  async emitPaymentConfirmed(
+    orderId: string,
+    workspaceId: string,
+    additionalData?: Record<string, unknown>,
+  ): Promise<void> {
+    await this.emitOrderEvent(
+      orderId,
+      workspaceId,
+      MKT_ORDER_EVENT_TYPES.PAYMENT_CONFIRMED,
       additionalData,
     );
   }
@@ -112,21 +128,10 @@ export class OrderEventService {
     orderId: string,
     workspaceId: string,
     action: ORDER_ACTION,
-    accountingConfirmed?: boolean,
     additionalData?: Record<string, unknown>,
   ): Promise<void> {
-    let eventType: MKT_ORDER_EVENT_TYPES = MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
-
-    // Check accounting confirmed first
-    if (accountingConfirmed) {
-      eventType = MKT_ORDER_EVENT_TYPES.ACCOUNTING_CONFIRMED;
-    } else {
-      const mappedEventType = ACTION_TO_ORDER_EVENT_TYPE[action];
-
-      if (mappedEventType) {
-        eventType = mappedEventType;
-      }
-    }
+    const eventType =
+      ACTION_TO_ORDER_EVENT_TYPE[action] ?? MKT_ORDER_EVENT_TYPES.ORDER_UPDATED;
 
     await this.emitOrderEvent(orderId, workspaceId, eventType, additionalData);
   }
@@ -303,22 +308,14 @@ export class OrderEventService {
     workspaceId: string,
     action: ORDER_ACTION,
     options?: {
-      accountingConfirmed?: boolean;
       emitPaymentEvent?: boolean;
       additionalData?: Record<string, unknown>;
     },
   ): Promise<void> {
-    const { accountingConfirmed, emitPaymentEvent, additionalData } =
-      options ?? {};
+    const { emitPaymentEvent, additionalData } = options ?? {};
 
     // Emit order event
-    await this.emitEventForAction(
-      orderId,
-      workspaceId,
-      action,
-      accountingConfirmed,
-      additionalData,
-    );
+    await this.emitEventForAction(orderId, workspaceId, action, additionalData);
 
     // Emit payment event if requested
     if (emitPaymentEvent) {

@@ -13,19 +13,11 @@ import {
   SepayQrTemplate,
 } from 'src/mkt-core/payment/providers/sepay/sepay.types';
 
-// ============================================
-// CONSTANTS
-// ============================================
-
-const SEPAY_QR_BASE_URL = 'https://qr.sepay.vn/img';
-const DEFAULT_TEMPLATE: SepayQrTemplate = 'qronly';
-
-// ============================================
-// GENERATOR SERVICE
-// ============================================
-
 @Injectable()
 export class SepayQrGenerator {
+  private static readonly QR_BASE_URL = 'https://qr.sepay.vn/img';
+  private static readonly DEFAULT_TEMPLATE: SepayQrTemplate = 'qronly';
+
   private readonly logger = new Logger(SepayQrGenerator.name);
 
   /**
@@ -107,11 +99,11 @@ export class SepayQrGenerator {
       bank: bank,
       amount: String(amount),
       des: des,
-      template: template ?? DEFAULT_TEMPLATE,
+      template: template ?? SepayQrGenerator.DEFAULT_TEMPLATE,
       download: 'false',
     });
 
-    return `${SEPAY_QR_BASE_URL}?${urlParams.toString()}`;
+    return `${SepayQrGenerator.QR_BASE_URL}?${urlParams.toString()}`;
   }
 
   /**
