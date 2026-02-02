@@ -250,6 +250,61 @@ export class MktVirtualAccountRepository extends BaseWorkspaceRepository<MktVirt
   }
 
   // ============================================
+  // EXPIRATION QUERIES
+  // ============================================
+
+  /**
+   * Find all active VAs that have expired
+   * Used by VA expiration scan job
+   */
+  async findExpiredActiveVAs(
+    workspaceId?: string,
+  ): Promise<MktVirtualAccountWorkspaceEntity[]> {
+    this.logger.debug('Finding expired active VAs');
+
+    const repository = await this.getRepository(workspaceId);
+
+    const now = new Date().toISOString();
+
+    const expiredVAs = await repository
+      .createQueryBuilder('va')
+      .where('va.isActive = :isActive', { isActive: true })
+      .andWhere('va.expiresAt IS NOT NULL')
+      .andWhere('va.expiresAt < :now', { now })
+      .andWhere('va.deletedAt IS NULL')
+      .leftJoinAndSelect('va.mktOrder', 'mktOrder')
+      .getMany();
+
+    this.logger.debug(`Found ${expiredVAs.length} expired active VAs`);
+
+    return expiredVAs;
+  }
+
+  /**
+   * Bulk deactivate VAs by IDs
+   */
+  async bulkDeactivate(ids: string[], workspaceId?: string): Promise<number> {
+    if (ids.length === 0) {
+      return 0;
+    }
+
+    this.logger.debug(`Bulk deactivating ${ids.length} VAs`);
+
+    const repository = await this.getRepository(workspaceId);
+
+    const result = await repository
+      .createQueryBuilder()
+      .update()
+      .set({ isActive: false })
+      .whereInIds(ids)
+      .execute();
+
+    this.logger.debug(`Deactivated ${result.affected ?? 0} VAs`);
+
+    return result.affected ?? 0;
+  }
+
+  // ============================================
   // HELPER METHODS
   // ============================================
 

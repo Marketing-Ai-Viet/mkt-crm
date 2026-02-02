@@ -6,3 +6,4 @@
 
 export * from './payment-mutation.resolver';
 export * from './payment-confirmation.resolver';
+export * from './va-mutation.resolver';

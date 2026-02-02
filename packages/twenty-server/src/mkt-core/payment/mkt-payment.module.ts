@@ -41,6 +41,7 @@ import {
 import {
   PaymentMutationResolver,
   PaymentConfirmationResolver,
+  VAMutationResolver,
 } from 'src/mkt-core/payment/resolvers';
 import { SepayPaymentController } from 'src/mkt-core/payment/sepay-payment/sepay-payment.controller';
 // Services - organized by domain
@@ -82,12 +83,19 @@ import {
 import {
   ORDER_REPOSITORY_PORT_TOKEN,
   VA_REPOSITORY_PORT_TOKEN,
+  VA_PROVIDER_TOKEN,
 } from 'src/mkt-core/payment/domain/ports';
 // Infrastructure Layer - Adapters
 import {
   OrderRepositoryAdapter,
   VARepositoryAdapter,
+  SepayVAProvider,
 } from 'src/mkt-core/payment/infrastructure/adapters';
+// Jobs
+import {
+  VAExpirationScanJob,
+  WebhookRetryJob,
+} from 'src/mkt-core/payment/jobs';
 
 @Module({
   controllers: [SepayPaymentController],
@@ -130,6 +138,7 @@ import {
     // Resolvers
     PaymentMutationResolver,
     PaymentConfirmationResolver,
+    VAMutationResolver,
     // Services - Core
     PaymentFacadeService,
     MktPaymentPrepareService,
@@ -172,6 +181,15 @@ import {
     // Use Cases
     ProcessWebhookUseCase,
     CreateVAUseCase,
+    // Infrastructure Layer - VA Provider
+    SepayVAProvider,
+    {
+      provide: VA_PROVIDER_TOKEN,
+      useExisting: SepayVAProvider,
+    },
+    // Jobs
+    VAExpirationScanJob,
+    WebhookRetryJob,
   ],
   exports: [
     // Factory
@@ -202,6 +220,11 @@ import {
     // Use Cases
     ProcessWebhookUseCase,
     CreateVAUseCase,
+    // VA Provider
+    SepayVAProvider,
+    // Jobs
+    VAExpirationScanJob,
+    WebhookRetryJob,
   ],
 })
 export class MktPaymentModule implements OnModuleInit {
