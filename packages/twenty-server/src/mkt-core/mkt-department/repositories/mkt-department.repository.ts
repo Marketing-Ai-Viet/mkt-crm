@@ -117,6 +117,21 @@ export class MktDepartmentRepository extends BaseWorkspaceRepository<MktDepartme
   }
 
   /**
+   * Find departments by manager ID with explicit workspace context
+   * Used by RBAC context service in global interceptor context
+   */
+  async findByManagerIdWithWorkspace(
+    workspaceId: string,
+    managerId: string,
+  ): Promise<MktDepartmentWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where: { managerId },
+    });
+  }
+
+  /**
    * Create department with explicit workspace context
    */
   async createInWorkspace(

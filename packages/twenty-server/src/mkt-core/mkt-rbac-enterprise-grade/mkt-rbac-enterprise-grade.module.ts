@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
@@ -25,6 +26,7 @@ import {
   DataAccessPolicyService,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/services';
 import { DepartmentAuthorizationGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/department-authorization.guard';
+import { DataScopeInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/data-scope.interceptor';
 import { UserManagementModule } from 'src/mkt-core/user-management/user-management.module';
 import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/department-tree.service';
 
@@ -56,6 +58,7 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
  * async mktCustomers(): Promise<MktCustomer[]> { ... }
  * ```
  */
+@Global()
 @Module({
   imports: [
     TwentyORMModule,
@@ -91,6 +94,31 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     // Guards
     DepartmentAuthorizationGuard,
 
+    // Global Interceptor for @DataScope decorator
+    // Using factory provider to explicitly inject all dependencies
+    // The interceptor checks for @DataScope metadata and skips if not present
+    {
+      provide: APP_INTERCEPTOR,
+      useFactory: (
+        reflector: Reflector,
+        rbacEnforcerService: RbacEnforcerService,
+        rbacContextService: RbacContextService,
+        rbacCacheService: RbacCacheService,
+      ) =>
+        new DataScopeInterceptor(
+          reflector,
+          rbacEnforcerService,
+          rbacContextService,
+          rbacCacheService,
+        ),
+      inject: [
+        Reflector,
+        RbacEnforcerService,
+        RbacContextService,
+        RbacCacheService,
+      ],
+    },
+
     // GraphQL Resolvers
     ...RBAC_RESOLVERS,
 
@@ -120,6 +148,9 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
 
     // Export guards
     DepartmentAuthorizationGuard,
+
+    // Note: DataScopeInterceptor is now a global interceptor via APP_INTERCEPTOR
+    // No need to export it - it will automatically run for methods with @DataScope decorator
   ],
 })
 export class MktRbacEnterpriseGradeModule {}

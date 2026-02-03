@@ -196,8 +196,12 @@ export class RbacContextService {
 
     this.logger.debug(RBAC_CONTEXT_MESSAGES.RESOLVE_START(userId));
 
-    // 1. Get workspace member
-    const member = await this.workspaceMemberRepository.findByUserId(userId);
+    // 1. Get workspace member (use explicit workspaceId for global interceptor context)
+    const member =
+      await this.workspaceMemberRepository.findByUserIdWithWorkspace(
+        workspaceId,
+        userId,
+      );
 
     if (!member) {
       this.logger.warn(RBAC_CONTEXT_MESSAGES.MEMBER_NOT_FOUND(userId));
@@ -205,9 +209,10 @@ export class RbacContextService {
       return null;
     }
 
-    // 2. Resolve organization level
+    // 2. Resolve organization level (use explicit workspaceId)
     const orgLevel = member.organizationLevelId
-      ? await this.organizationLevelRepository.findById(
+      ? await this.organizationLevelRepository.findByIdWithWorkspace(
+          workspaceId,
           member.organizationLevelId,
         )
       : null;
@@ -225,7 +230,8 @@ export class RbacContextService {
     let departmentDescendantIds: string[] = [];
 
     if (member.departmentId) {
-      const department = await this.departmentRepository.findById(
+      const department = await this.departmentRepository.findByIdWithWorkspace(
+        workspaceId,
         member.departmentId,
       );
 
@@ -242,12 +248,12 @@ export class RbacContextService {
       ]);
     }
 
-    // 4. Resolve subordinates and supporting members
+    // 4. Resolve subordinates and supporting members (pass workspaceId explicitly)
     const [subordinateMemberIds, teamMemberIds, supportingMemberIds] =
       await Promise.all([
         this.getSubordinates(workspaceId, member.id, hierarchyLevel),
-        this.getTeamMembers(member.departmentId, member.id),
-        this.getSupportingMembers(member.id),
+        this.getTeamMembers(workspaceId, member.departmentId, member.id),
+        this.getSupportingMembers(workspaceId, member.id),
       ]);
 
     // 5. Check if user is manager or sub-manager
@@ -445,9 +451,12 @@ export class RbacContextService {
 
     const subordinateIds: string[] = [];
 
-    // Get departments where user is manager
+    // Get departments where user is manager (use workspace-scoped method)
     const managedDepts =
-      await this.departmentRepository.findByManagerId(workspaceMemberId);
+      await this.departmentRepository.findByManagerIdWithWorkspace(
+        workspaceId,
+        workspaceMemberId,
+      );
 
     // Get departments where user is sub-manager
     const subManagedAssignments =
@@ -465,10 +474,13 @@ export class RbacContextService {
         .filter((id): id is string => id !== null),
     ];
 
-    // Get members from these departments
+    // Get members from these departments (use workspace-scoped method)
     for (const deptId of allManagedDeptIds) {
       const members =
-        await this.workspaceMemberRepository.findByDepartment(deptId);
+        await this.workspaceMemberRepository.findByDepartmentWithWorkspace(
+          workspaceId,
+          deptId,
+        );
 
       for (const member of members) {
         // Exclude self
@@ -478,9 +490,12 @@ export class RbacContextService {
       }
     }
 
-    // If user has full access (level 1-3), get all members
+    // If user has full access (level 1-3), get all members (use workspace-scoped method)
     if (hasFullAccess(hierarchyLevel)) {
-      const allMembers = await this.workspaceMemberRepository.findAllActive();
+      const allMembers =
+        await this.workspaceMemberRepository.findAllActiveWithWorkspace(
+          workspaceId,
+        );
 
       for (const member of allMembers) {
         if (
@@ -499,6 +514,7 @@ export class RbacContextService {
    * Get team members in the same department
    */
   async getTeamMembers(
+    workspaceId: string,
     departmentId: string | undefined | null,
     excludeMemberId: string,
   ): Promise<string[]> {
@@ -507,7 +523,10 @@ export class RbacContextService {
     }
 
     const members =
-      await this.workspaceMemberRepository.findByDepartment(departmentId);
+      await this.workspaceMemberRepository.findByDepartmentWithWorkspace(
+        workspaceId,
+        departmentId,
+      );
 
     return members.filter((m) => m.id !== excludeMemberId).map((m) => m.id);
   }
@@ -516,11 +535,15 @@ export class RbacContextService {
    * Get member IDs that this user is supporting
    * (via supportForMemberId field in workspace member)
    */
-  async getSupportingMembers(workspaceMemberId: string): Promise<string[]> {
+  async getSupportingMembers(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<string[]> {
     const supportedMembers =
-      await this.workspaceMemberRepository.findManyMembers({
-        supportForMemberId: workspaceMemberId,
-      });
+      await this.workspaceMemberRepository.findManyMembersWithWorkspace(
+        workspaceId,
+        { supportForMemberId: workspaceMemberId },
+      );
 
     return supportedMembers.map((m) => m.id);
   }
@@ -537,7 +560,10 @@ export class RbacContextService {
     workspaceMemberId: string,
   ): Promise<boolean> {
     const managedDepts =
-      await this.departmentRepository.findByManagerId(workspaceMemberId);
+      await this.departmentRepository.findByManagerIdWithWorkspace(
+        workspaceId,
+        workspaceMemberId,
+      );
 
     return managedDepts.length > 0;
   }

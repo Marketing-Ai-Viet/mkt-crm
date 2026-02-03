@@ -140,7 +140,14 @@ export class RbacCacheService {
       return localResult;
     }
 
-    // Check Redis cache
+    // Check Redis cache (with null safety for cache storage)
+    if (!this.userCacheStorage) {
+      this.logger.warn('userCacheStorage is not initialized');
+      this.stats.misses++;
+
+      return null;
+    }
+
     const redisResult = await this.userCacheStorage.get<UserContext>(cacheKey);
 
     if (redisResult) {
@@ -172,8 +179,10 @@ export class RbacCacheService {
     const cacheKey = CASBIN_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
     const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.USER_CONTEXT;
 
-    // Set Redis cache
-    await this.userCacheStorage.set(cacheKey, context, cacheTtl);
+    // Set Redis cache (with null safety)
+    if (this.userCacheStorage) {
+      await this.userCacheStorage.set(cacheKey, context, cacheTtl);
+    }
 
     // Set local cache
     this.setLocalCache(this.contextCache, cacheKey, context);
@@ -218,7 +227,13 @@ export class RbacCacheService {
       return { ...localResult, cached: true };
     }
 
-    // Check Redis cache
+    // Check Redis cache (with null safety)
+    if (!this.permissionCacheStorage) {
+      this.stats.misses++;
+
+      return null;
+    }
+
     const redisResult =
       await this.permissionCacheStorage.get<CheckPermissionResult>(cacheKey);
 
@@ -260,8 +275,10 @@ export class RbacCacheService {
     );
     const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.PERMISSION_CHECK;
 
-    // Set Redis cache
-    await this.permissionCacheStorage.set(cacheKey, result, cacheTtl);
+    // Set Redis cache (with null safety)
+    if (this.permissionCacheStorage) {
+      await this.permissionCacheStorage.set(cacheKey, result, cacheTtl);
+    }
 
     // Set local cache
     this.setLocalCache(this.checkResultCache, cacheKey, result);
@@ -293,7 +310,13 @@ export class RbacCacheService {
       return localResult;
     }
 
-    // Check Redis cache
+    // Check Redis cache (with null safety)
+    if (!this.permissionCacheStorage) {
+      this.stats.misses++;
+
+      return null;
+    }
+
     const redisResult =
       await this.permissionCacheStorage.get<PermissionSummary>(cacheKey);
 
@@ -326,8 +349,10 @@ export class RbacCacheService {
     const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
     const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.PERMISSION_SUMMARY;
 
-    // Set Redis cache
-    await this.permissionCacheStorage.set(cacheKey, summary, cacheTtl);
+    // Set Redis cache (with null safety)
+    if (this.permissionCacheStorage) {
+      await this.permissionCacheStorage.set(cacheKey, summary, cacheTtl);
+    }
 
     // Set local cache
     this.setLocalCache(this.summaryCache, cacheKey, summary);
@@ -369,7 +394,14 @@ export class RbacCacheService {
       return localResult;
     }
 
-    // Check Redis cache
+    // Check Redis cache (with null safety for cache storage)
+    if (!this.permissionCacheStorage) {
+      this.logger.warn('permissionCacheStorage is not initialized');
+      this.stats.misses++;
+
+      return null;
+    }
+
     const redisResult =
       await this.permissionCacheStorage.get<FilterCondition>(cacheKey);
 
@@ -408,8 +440,10 @@ export class RbacCacheService {
     );
     const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.DATA_FILTER;
 
-    // Set Redis cache
-    await this.permissionCacheStorage.set(cacheKey, filter, cacheTtl);
+    // Set Redis cache (with null safety)
+    if (this.permissionCacheStorage) {
+      await this.permissionCacheStorage.set(cacheKey, filter, cacheTtl);
+    }
 
     // Set local cache
     this.setLocalCache(this.filterCache, cacheKey, filter);
@@ -446,23 +480,31 @@ export class RbacCacheService {
       `${workspaceId}:${userId}`,
     );
 
-    // Clear Redis caches using pattern
+    // Clear Redis caches using pattern (with null safety)
     const userContextKey = CASBIN_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
     const summaryKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(
       workspaceId,
       userId,
     );
 
-    await Promise.all([
-      this.userCacheStorage.del(userContextKey),
-      this.permissionCacheStorage.del(summaryKey),
-      this.permissionCacheStorage.flushByPattern(
-        `rbac:check:${workspaceId}:${userId}:*`,
-      ),
-      this.permissionCacheStorage.flushByPattern(
-        `rbac:filter:${workspaceId}:${userId}:*`,
-      ),
-    ]);
+    const promises: Promise<unknown>[] = [];
+
+    if (this.userCacheStorage) {
+      promises.push(this.userCacheStorage.del(userContextKey));
+    }
+    if (this.permissionCacheStorage) {
+      promises.push(
+        this.permissionCacheStorage.del(summaryKey),
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:check:${workspaceId}:${userId}:*`,
+        ),
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:filter:${workspaceId}:${userId}:*`,
+        ),
+      );
+    }
+
+    await Promise.all(promises);
 
     this.logger.debug(
       `Invalidated all cache for user: ${userId} in workspace: ${workspaceId}`,
@@ -485,15 +527,17 @@ export class RbacCacheService {
     this.invalidateLocalCacheByPattern(this.checkResultCache, `:${resource}:`);
     this.invalidateLocalCacheByPattern(this.filterCache, `:${resource}`);
 
-    // Clear Redis caches using pattern
-    await Promise.all([
-      this.permissionCacheStorage.flushByPattern(
-        `rbac:check:${workspaceId}:*:${resource}:*`,
-      ),
-      this.permissionCacheStorage.flushByPattern(
-        `rbac:filter:${workspaceId}:*:${resource}`,
-      ),
-    ]);
+    // Clear Redis caches using pattern (with null safety)
+    if (this.permissionCacheStorage) {
+      await Promise.all([
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:check:${workspaceId}:*:${resource}:*`,
+        ),
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:filter:${workspaceId}:*:${resource}`,
+        ),
+      ]);
+    }
 
     this.logger.debug(
       `Invalidated cache for resource: ${resource} in workspace: ${workspaceId}`,
@@ -514,17 +558,29 @@ export class RbacCacheService {
     this.summaryCache.clear();
     this.filterCache.clear();
 
-    // Clear Redis caches using pattern
-    await Promise.all([
-      this.userCacheStorage.flushByPattern(`rbac:context:${workspaceId}:*`),
-      this.permissionCacheStorage.flushByPattern(`rbac:check:${workspaceId}:*`),
-      this.permissionCacheStorage.flushByPattern(
-        `rbac:summary:${workspaceId}:*`,
-      ),
-      this.permissionCacheStorage.flushByPattern(
-        `rbac:filter:${workspaceId}:*`,
-      ),
-    ]);
+    // Clear Redis caches using pattern (with null safety)
+    const promises: Promise<unknown>[] = [];
+
+    if (this.userCacheStorage) {
+      promises.push(
+        this.userCacheStorage.flushByPattern(`rbac:context:${workspaceId}:*`),
+      );
+    }
+    if (this.permissionCacheStorage) {
+      promises.push(
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:check:${workspaceId}:*`,
+        ),
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:summary:${workspaceId}:*`,
+        ),
+        this.permissionCacheStorage.flushByPattern(
+          `rbac:filter:${workspaceId}:*`,
+        ),
+      );
+    }
+
+    await Promise.all(promises);
 
     this.logger.log(`Invalidated all RBAC cache for workspace: ${workspaceId}`);
   }
@@ -541,13 +597,21 @@ export class RbacCacheService {
     this.summaryCache.clear();
     this.filterCache.clear();
 
-    // Clear Redis caches using pattern
-    await Promise.all([
-      this.userCacheStorage.flushByPattern('rbac:context:*'),
-      this.permissionCacheStorage.flushByPattern('rbac:check:*'),
-      this.permissionCacheStorage.flushByPattern('rbac:summary:*'),
-      this.permissionCacheStorage.flushByPattern('rbac:filter:*'),
-    ]);
+    // Clear Redis caches using pattern (with null safety)
+    const promises: Promise<unknown>[] = [];
+
+    if (this.userCacheStorage) {
+      promises.push(this.userCacheStorage.flushByPattern('rbac:context:*'));
+    }
+    if (this.permissionCacheStorage) {
+      promises.push(
+        this.permissionCacheStorage.flushByPattern('rbac:check:*'),
+        this.permissionCacheStorage.flushByPattern('rbac:summary:*'),
+        this.permissionCacheStorage.flushByPattern('rbac:filter:*'),
+      );
+    }
+
+    await Promise.all(promises);
 
     this.logger.log('Invalidated all RBAC cache globally');
   }

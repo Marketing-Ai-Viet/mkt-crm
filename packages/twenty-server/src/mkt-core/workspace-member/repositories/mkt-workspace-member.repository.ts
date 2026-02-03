@@ -602,6 +602,81 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
   // ============================================
 
   /**
+   * Find workspace member by user ID with explicit workspaceId
+   * Used by RBAC context service and other cross-module operations
+   */
+  async findByUserIdWithWorkspace(
+    workspaceId: string,
+    userId: string,
+    options?: FindWorkspaceMemberOptions,
+  ): Promise<WorkspaceMemberWorkspaceEntity | null> {
+    this.logger.debug(
+      `[FIND BY USER ID WITH WORKSPACE] workspaceId=${workspaceId}, userId=${userId}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    const member = await repository.findOne({
+      where: { userId, deletedAt: IsNull() },
+      relations: options?.relations,
+    });
+
+    if (!member) {
+      this.logger.debug(
+        `[FIND BY USER ID WITH WORKSPACE] Member not found for userId: ${userId}`,
+      );
+
+      return null;
+    }
+
+    return member;
+  }
+
+  /**
+   * Find workspace members by department with explicit workspaceId
+   * Used by RBAC context service
+   */
+  async findByDepartmentWithWorkspace(
+    workspaceId: string,
+    departmentId: string,
+    options?: FindWorkspaceMemberOptions,
+  ): Promise<WorkspaceMemberWorkspaceEntity[]> {
+    this.logger.debug(
+      `[FIND BY DEPARTMENT WITH WORKSPACE] workspaceId=${workspaceId}, departmentId=${departmentId}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where: { departmentId, deletedAt: IsNull() },
+      relations: options?.relations,
+      order: { position: 'ASC' },
+    });
+  }
+
+  /**
+   * Find workspace members with custom where clause and explicit workspaceId
+   * Used by RBAC context service
+   */
+  async findManyMembersWithWorkspace(
+    workspaceId: string,
+    where: FindOptionsWhere<WorkspaceMemberWorkspaceEntity>,
+    options?: FindWorkspaceMemberOptions,
+  ): Promise<WorkspaceMemberWorkspaceEntity[]> {
+    this.logger.debug(
+      `[FIND MANY WITH WORKSPACE] workspaceId=${workspaceId}, where=${JSON.stringify(where)}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where: { ...where, deletedAt: IsNull() },
+      relations: options?.relations,
+      order: { position: 'ASC' },
+    });
+  }
+
+  /**
    * Find workspace member by ID with explicit workspaceId
    */
   async findMemberByIdWithWorkspace(
@@ -672,6 +747,27 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
     this.logger.warn(
       `[DELETE WITH WORKSPACE] Soft deleted member: ${memberId} in workspace: ${workspaceId}`,
     );
+  }
+
+  /**
+   * Find all active workspace members with explicit workspaceId
+   * Used by RBAC context service in global interceptor context
+   */
+  async findAllActiveWithWorkspace(
+    workspaceId: string,
+    options?: FindWorkspaceMemberOptions,
+  ): Promise<WorkspaceMemberWorkspaceEntity[]> {
+    this.logger.debug(
+      `[FIND ALL ACTIVE WITH WORKSPACE] workspaceId=${workspaceId}`,
+    );
+
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where: { deletedAt: IsNull() },
+      relations: options?.relations,
+      order: { position: 'ASC' },
+    });
   }
 
   /**
