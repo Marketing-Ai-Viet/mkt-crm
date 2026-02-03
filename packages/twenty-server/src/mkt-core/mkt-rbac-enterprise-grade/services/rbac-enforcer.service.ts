@@ -13,10 +13,13 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import uniqBy from 'lodash.uniqby';
+
 import { DATA_ACCESS_SCOPE } from 'src/mkt-core/seeder/constants/mkt-organization-level-data-seeds.constants';
 import { MKT_RBAC_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
 import { DEFAULT_OWNERSHIP_FIELD } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { safeJsonParse } from 'src/mkt-core/utils/json.util';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
 import { MktDataAccessPolicyRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
@@ -25,6 +28,19 @@ import {
   ResolvedFilterConditions,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/filter-expression.types';
 import { RBACUserContext } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/rbac-context.types';
+import {
+  RbacFilterOperator,
+  RbacFilterConditionItem,
+  RbacFilterCondition,
+  RbacAppliedPolicy,
+  RbacCheckPermissionResult,
+  RbacResourcePermission,
+  RbacActivePolicy,
+  RbacPermissionSummary,
+  RbacResourcePermissionData,
+  RbacPermissionEntry,
+  RBAC_FILTER_OPERATOR_MAP,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
 import { RbacContextService, UserContext } from './rbac-context.service';
 import { FilterExpressionResolverService } from './filter-expression-resolver.service';
@@ -32,111 +48,144 @@ import { FilterExpressionResolverService } from './filter-expression-resolver.se
 import { PermissionContextService } from './bases/permission-context.service';
 import { DataAccessPolicyService } from './bases/data-access-policy.service';
 
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * Filter operator for data filtering
- */
-export type FilterOperator =
-  | '='
-  | '!='
-  | '>'
-  | '>='
-  | '<'
-  | '<='
-  | 'IN'
-  | 'NOT_IN'
-  | 'LIKE'
-  | 'IS_NULL'
-  | 'IS_NOT_NULL'
-  | 'ALL';
-
-/**
- * Single filter condition
- */
-export type FilterConditionItem = {
-  field: string;
-  operator: FilterOperator;
-  value: unknown;
-  description?: string;
-};
-
-/**
- * Filter condition (AND/OR)
- */
-export type FilterCondition = {
-  type: 'AND' | 'OR';
-  conditions: FilterConditionItem[];
-};
-
-/**
- * Applied policy info
- */
-export type AppliedPolicy = {
-  policyId: string;
-  policyName: string;
-  policyType: string;
-  effect: 'allow' | 'deny';
-};
-
-/**
- * Permission check result
- */
-export type CheckPermissionResult = {
-  allowed: boolean;
-  reason: string;
-  latencyMs: number;
-  cached: boolean;
-  appliedPolicies: AppliedPolicy[];
-  dataFilter: FilterCondition | null;
-};
-
-/**
- * Resource permission summary
- */
-export type ResourcePermission = {
-  resourceKey: string;
-  resourceName: string;
-  allowedActions: string[];
-  deniedActions: string[];
-  hasDataFilter: boolean;
-};
-
-/**
- * Active policy info
- */
-export type ActivePolicy = {
-  policyId: string;
-  policyName: string;
-  objectName: string;
-  policyType: string;
-};
-
-/**
- * User permission summary
- */
-export type PermissionSummary = {
-  userId: string;
-  workspaceMemberId: string;
-  departmentId: string | null;
-  departmentName: string | null;
-  hierarchyLevel: number;
-  levelCode: string;
-  roles: string[];
-  permissionCount: number;
-  resources: ResourcePermission[];
-  activePolicies: ActivePolicy[];
-};
-
-// ============================================
-// SERVICE
-// ============================================
+// Re-export types for external consumers (with aliases for backward compatibility)
+export type FilterCondition = RbacFilterCondition;
+export type CheckPermissionResult = RbacCheckPermissionResult;
+export type ResourcePermission = RbacResourcePermission;
+export type ActivePolicy = RbacActivePolicy;
+export type PermissionSummary = RbacPermissionSummary;
+export type FilterOperator = RbacFilterOperator;
+export type FilterConditionItem = RbacFilterConditionItem;
+export type AppliedPolicy = RbacAppliedPolicy;
 
 @Injectable()
 export class RbacEnforcerService {
   private readonly logger = new Logger(RbacEnforcerService.name);
+
+  // ============================================
+  // STATIC CONSTANTS
+  // ============================================
+
+  /**
+   * Permission entry indices
+   * Format: [subject, object, action, effect?, condition?]
+   */
+  private static readonly PERM_INDEX = {
+    RESOURCE: 1,
+    ACTION: 2,
+    EFFECT: 3,
+  } as const;
+
+  // ============================================
+  // STATIC HELPER METHODS
+  // ============================================
+
+  /**
+   * Tạo kết quả check permission thất bại
+   */
+  private static createFailedResult(
+    reason: string,
+    startTime: ReturnType<typeof DateTimeUtils.now>,
+  ): CheckPermissionResult {
+    return {
+      allowed: false,
+      reason,
+      latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
+      cached: false,
+      appliedPolicies: [],
+      dataFilter: null,
+    };
+  }
+
+  /**
+   * Tính latency từ startTime đến hiện tại
+   */
+  private static calculateLatency(
+    startTime: ReturnType<typeof DateTimeUtils.now>,
+  ): number {
+    return DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now());
+  }
+
+  /**
+   * Parse permission entry để extract resource, action, effect
+   */
+  private static parsePermissionEntry(perm: RbacPermissionEntry): {
+    resource: string;
+    action: string;
+    effect: 'allow' | 'deny';
+  } {
+    return {
+      resource: perm[RbacEnforcerService.PERM_INDEX.RESOURCE],
+      action: perm[RbacEnforcerService.PERM_INDEX.ACTION],
+      effect:
+        perm[RbacEnforcerService.PERM_INDEX.EFFECT] === 'deny'
+          ? 'deny'
+          : 'allow',
+    };
+  }
+
+  /**
+   * Lấy hoặc khởi tạo resource data trong map
+   */
+  private static getOrInitResourceData(
+    resourceMap: Map<string, RbacResourcePermissionData>,
+    resource: string,
+  ): RbacResourcePermissionData {
+    const existing = resourceMap.get(resource);
+
+    if (existing) {
+      return existing;
+    }
+
+    const newData: RbacResourcePermissionData = { allowed: [], denied: [] };
+
+    resourceMap.set(resource, newData);
+
+    return newData;
+  }
+
+  /**
+   * Thêm action vào resource data theo effect
+   */
+  private static addActionToResourceData(
+    resourceData: RbacResourcePermissionData,
+    action: string,
+    effect: 'allow' | 'deny',
+  ): void {
+    const targetList =
+      effect === 'allow' ? resourceData.allowed : resourceData.denied;
+
+    targetList.push(action);
+  }
+
+  /**
+   * Group permissions by resource và phân loại allow/deny
+   */
+  private static groupPermissionsByResource(
+    permissions: RbacPermissionEntry[],
+  ): Map<string, RbacResourcePermissionData> {
+    const resourceMap = new Map<string, RbacResourcePermissionData>();
+
+    for (const perm of permissions) {
+      const { resource, action, effect } =
+        RbacEnforcerService.parsePermissionEntry(perm);
+      const resourceData = RbacEnforcerService.getOrInitResourceData(
+        resourceMap,
+        resource,
+      );
+
+      RbacEnforcerService.addActionToResourceData(resourceData, action, effect);
+    }
+
+    return resourceMap;
+  }
+
+  /**
+   * Map filter expression operator sang FilterOperator
+   */
+  private static mapOperator(op: string): RbacFilterOperator {
+    return RBAC_FILTER_OPERATOR_MAP[op] ?? '=';
+  }
 
   constructor(
     private readonly casbinEnforcerService: CasbinEnforcerService,
@@ -150,6 +199,7 @@ export class RbacEnforcerService {
 
   /**
    * Check permission for user on resource/action
+   * Kiểm tra quyền truy cập của user đối với resource và action cụ thể
    */
   async checkPermission(
     userId: string,
@@ -158,27 +208,23 @@ export class RbacEnforcerService {
     action: string,
   ): Promise<CheckPermissionResult> {
     const startTime = DateTimeUtils.now();
-    const appliedPolicies: AppliedPolicy[] = [];
 
     try {
-      // Get user context
+      // Lấy user context
       const userContext = await this.rbacContextService.resolveContext(
         userId,
         workspaceId,
       );
 
+      // Trả về kết quả thất bại nếu không tìm thấy user context
       if (!userContext) {
-        return {
-          allowed: false,
-          reason: 'User context not found',
-          latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
-          cached: false,
-          appliedPolicies: [],
-          dataFilter: null,
-        };
+        return RbacEnforcerService.createFailedResult(
+          'User context not found',
+          startTime,
+        );
       }
 
-      // Check permission via Casbin
+      // Kiểm tra quyền qua Casbin
       const casbinResult = await this.casbinEnforcerService.checkPermission({
         userId,
         workspaceId,
@@ -187,37 +233,28 @@ export class RbacEnforcerService {
         attributes: this.buildAttributes(userContext),
       });
 
-      // Get data filter if allowed
-      let dataFilter: FilterCondition | null = null;
-
-      if (casbinResult.allowed) {
-        dataFilter = await this.buildDataFilter(
-          workspaceId,
-          userContext,
-          resource,
-        );
-
-        // Track applied policies
-        const policies = await this.getAppliedPolicies(
-          workspaceId,
-          userContext,
-          resource,
-        );
-
-        for (const policy of policies) {
-          appliedPolicies.push({
-            policyId: policy.id,
-            policyName: policy.name,
-            policyType: policy.policyType,
-            effect: 'allow',
-          });
-        }
+      // Nếu không được phép, trả về kết quả ngay
+      if (!casbinResult.allowed) {
+        return {
+          allowed: false,
+          reason: casbinResult.reason ?? '',
+          latencyMs: RbacEnforcerService.calculateLatency(startTime),
+          cached: casbinResult.cached ?? false,
+          appliedPolicies: [],
+          dataFilter: null,
+        };
       }
 
+      // Lấy data filter và applied policies cho request được phép
+      const [dataFilter, appliedPolicies] = await Promise.all([
+        this.buildDataFilter(workspaceId, userContext, resource),
+        this.getAppliedPoliciesInfo(workspaceId, userContext, resource),
+      ]);
+
       return {
-        allowed: casbinResult.allowed,
+        allowed: true,
         reason: casbinResult.reason ?? '',
-        latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
+        latencyMs: RbacEnforcerService.calculateLatency(startTime),
         cached: casbinResult.cached ?? false,
         appliedPolicies,
         dataFilter,
@@ -225,54 +262,79 @@ export class RbacEnforcerService {
     } catch (error) {
       this.logger.error(`Permission check failed: ${error}`);
 
-      return {
-        allowed: false,
-        reason: `Permission check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        latencyMs: DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now()),
-        cached: false,
-        appliedPolicies: [],
-        dataFilter: null,
-      };
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      return RbacEnforcerService.createFailedResult(
+        `Permission check failed: ${errorMessage}`,
+        startTime,
+      );
     }
   }
 
   /**
-   * Batch permission check
+   * Lấy thông tin applied policies dưới dạng AppliedPolicy[]
+   */
+  private async getAppliedPoliciesInfo(
+    workspaceId: string,
+    userContext: UserContext,
+    resource: string,
+  ): Promise<AppliedPolicy[]> {
+    const policies = await this.getAppliedPolicies(
+      workspaceId,
+      userContext,
+      resource,
+    );
+
+    return policies.map((policy) => ({
+      policyId: policy.id,
+      policyName: policy.name,
+      policyType: policy.policyType,
+      effect: 'allow' as const,
+    }));
+  }
+
+  /**
+   * Batch permission check - Kiểm tra nhiều quyền cùng lúc
+   * Chạy song song để tối ưu hiệu năng
    */
   async checkPermissions(
     userId: string,
     workspaceId: string,
     checks: Array<{ resource: string; action: string }>,
   ): Promise<CheckPermissionResult[]> {
-    const results: CheckPermissionResult[] = [];
-
-    // Run checks in parallel
+    // Chạy tất cả checks song song
     const promises = checks.map((check) =>
       this.checkPermission(userId, workspaceId, check.resource, check.action),
     );
 
     const settledResults = await Promise.allSettled(promises);
 
-    for (const result of settledResults) {
-      if (result.status === 'fulfilled') {
-        results.push(result.value);
-      } else {
-        results.push({
-          allowed: false,
-          reason: `Check failed: ${result.reason}`,
-          latencyMs: 0,
-          cached: false,
-          appliedPolicies: [],
-          dataFilter: null,
-        });
-      }
-    }
+    // Map kết quả, xử lý cả fulfilled và rejected
+    return settledResults.map((result) =>
+      result.status === 'fulfilled'
+        ? result.value
+        : this.createRejectedCheckResult(result.reason),
+    );
+  }
 
-    return results;
+  /**
+   * Tạo kết quả check permission cho rejected promise
+   */
+  private createRejectedCheckResult(reason: unknown): CheckPermissionResult {
+    return {
+      allowed: false,
+      reason: `Check failed: ${reason}`,
+      latencyMs: 0,
+      cached: false,
+      appliedPolicies: [],
+      dataFilter: null,
+    };
   }
 
   /**
    * Get user permission summary
+   * Lấy tổng hợp quyền của user trong workspace
    */
   async getUserPermissionSummary(
     userId: string,
@@ -287,65 +349,20 @@ export class RbacEnforcerService {
       return null;
     }
 
-    // Get roles
-    const roles = await this.casbinEnforcerService.getUserRoles(
-      userId,
-      workspaceId,
-    );
+    // Lấy roles và permissions song song
+    const [roles, permissions, activePolicies] = await Promise.all([
+      this.casbinEnforcerService.getUserRoles(userId, workspaceId),
+      this.casbinEnforcerService.getUserPermissions(userId, workspaceId),
+      this.getActivePoliciesForUser(workspaceId, userContext),
+    ]);
 
-    // Get permissions
-    const permissions = await this.casbinEnforcerService.getUserPermissions(
-      userId,
-      workspaceId,
-    );
+    // Group permissions by resource
+    const resourceMap =
+      RbacEnforcerService.groupPermissionsByResource(permissions);
 
-    // Group by resource
-    const resourceMap = new Map<
-      string,
-      { allowed: string[]; denied: string[] }
-    >();
-
-    for (const perm of permissions) {
-      // Permission format: [subject, object, action, effect?, condition?]
-      const resource = perm[1];
-      const action = perm[2];
-      const effect = perm[3] === 'deny' ? 'deny' : 'allow';
-
-      if (!resourceMap.has(resource)) {
-        resourceMap.set(resource, { allowed: [], denied: [] });
-      }
-
-      const resourceData = resourceMap.get(resource);
-
-      if (resourceData) {
-        if (effect === 'allow') {
-          resourceData.allowed.push(action);
-        } else {
-          resourceData.denied.push(action);
-        }
-      }
-    }
-
-    // Build resource permissions
-    const resources: ResourcePermission[] = [];
-
-    for (const [resourceKey, data] of resourceMap.entries()) {
-      const hasFilter = await this.hasDataFilter(userContext);
-
-      resources.push({
-        resourceKey,
-        resourceName: resourceKey, // Could be enhanced with a lookup
-        allowedActions: [...new Set(data.allowed)],
-        deniedActions: [...new Set(data.denied)],
-        hasDataFilter: hasFilter,
-      });
-    }
-
-    // Get active policies
-    const activePolicies = await this.getActivePoliciesForUser(
-      workspaceId,
-      userContext,
-    );
+    // Build resource permissions với hasFilter check
+    const hasFilter = await this.hasDataFilter(userContext);
+    const resources = this.buildResourcePermissions(resourceMap, hasFilter);
 
     return {
       userId,
@@ -357,13 +374,44 @@ export class RbacEnforcerService {
       roles,
       permissionCount: permissions.length,
       resources,
-      activePolicies: activePolicies.map((p) => ({
-        policyId: p.id,
-        policyName: p.name,
-        objectName: p.objectName,
-        policyType: p.policyType,
-      })),
+      activePolicies: this.mapPoliciesToActivePolicy(activePolicies),
     };
+  }
+
+  /**
+   * Build resource permissions từ grouped data
+   */
+  private buildResourcePermissions(
+    resourceMap: Map<string, RbacResourcePermissionData>,
+    hasFilter: boolean,
+  ): ResourcePermission[] {
+    const resources: ResourcePermission[] = [];
+
+    for (const [resourceKey, data] of resourceMap.entries()) {
+      resources.push({
+        resourceKey,
+        resourceName: resourceKey,
+        allowedActions: [...new Set(data.allowed)],
+        deniedActions: [...new Set(data.denied)],
+        hasDataFilter: hasFilter,
+      });
+    }
+
+    return resources;
+  }
+
+  /**
+   * Map policies sang ActivePolicy format
+   */
+  private mapPoliciesToActivePolicy(
+    policies: MktDataAccessPolicyWorkspaceEntity[],
+  ): ActivePolicy[] {
+    return policies.map((p) => ({
+      policyId: p.id,
+      policyName: p.name,
+      objectName: p.objectName,
+      policyType: p.policyType,
+    }));
   }
 
   /**
@@ -689,77 +737,101 @@ export class RbacEnforcerService {
   private convertPolicyToFilterCondition(
     policy: MktDataAccessPolicyWorkspaceEntity,
   ): FilterCondition | null {
-    const conditions: FilterConditionItem[] = [];
     const filterConditions = policy.filterConditions as Record<string, unknown>;
 
+    // Early return nếu không có filter conditions
     if (!filterConditions || Object.keys(filterConditions).length === 0) {
-      return null; // Empty filter = no restriction
+      return null;
     }
 
-    // Handle ownership filter
+    const conditions: FilterConditionItem[] = [
+      ...this.extractOwnershipConditions(filterConditions),
+      ...this.extractStatusConditions(filterConditions),
+      ...this.extractExplicitConditions(filterConditions),
+    ];
+
+    return conditions.length > 0 ? { type: 'AND', conditions } : null;
+  }
+
+  /**
+   * Extract ownership filter conditions từ policy
+   */
+  private extractOwnershipConditions(
+    filterConditions: Record<string, unknown>,
+  ): FilterConditionItem[] {
     const ownership = filterConditions.ownership as
       | Record<string, unknown>
       | undefined;
 
-    if (ownership?.enabled) {
-      conditions.push({
-        field: (ownership.field as string) ?? DEFAULT_OWNERSHIP_FIELD,
-        operator: '=',
-        value: '${user.workspaceMemberId}', // Will be resolved later
-        description: 'Ownership filter',
-      });
+    if (!ownership?.enabled) {
+      return [];
     }
 
-    // Handle status filter
+    return [
+      {
+        field: (ownership.field as string) ?? DEFAULT_OWNERSHIP_FIELD,
+        operator: '=',
+        value: '${user.workspaceMemberId}',
+        description: 'Ownership filter',
+      },
+    ];
+  }
+
+  /**
+   * Extract status filter conditions từ policy
+   */
+  private extractStatusConditions(
+    filterConditions: Record<string, unknown>,
+  ): FilterConditionItem[] {
     const status = filterConditions.status as
       | Record<string, unknown>
       | undefined;
 
-    if (status) {
-      if (status.allowedValues && Array.isArray(status.allowedValues)) {
-        conditions.push({
-          field: 'status',
-          operator: 'IN',
-          value: status.allowedValues,
-          description: 'Allowed status values',
-        });
-      }
-
-      if (status.deniedValues && Array.isArray(status.deniedValues)) {
-        conditions.push({
-          field: 'status',
-          operator: 'NOT_IN',
-          value: status.deniedValues,
-          description: 'Denied status values',
-        });
-      }
+    if (!status) {
+      return [];
     }
 
-    // Handle explicit conditions array
-    if (
-      filterConditions.conditions &&
-      Array.isArray(filterConditions.conditions)
-    ) {
-      for (const cond of filterConditions.conditions as Array<
-        Record<string, unknown>
-      >) {
-        conditions.push({
-          field: cond.field as string,
-          operator: cond.operator as FilterOperator,
-          value: cond.value,
-          description: cond.description as string | undefined,
-        });
-      }
+    const conditions: FilterConditionItem[] = [];
+
+    if (status.allowedValues && Array.isArray(status.allowedValues)) {
+      conditions.push({
+        field: 'status',
+        operator: 'IN',
+        value: status.allowedValues,
+        description: 'Allowed status values',
+      });
     }
 
-    if (conditions.length === 0) {
-      return null;
+    if (status.deniedValues && Array.isArray(status.deniedValues)) {
+      conditions.push({
+        field: 'status',
+        operator: 'NOT_IN',
+        value: status.deniedValues,
+        description: 'Denied status values',
+      });
     }
 
-    return {
-      type: 'AND',
-      conditions,
-    };
+    return conditions;
+  }
+
+  /**
+   * Extract explicit conditions array từ policy
+   */
+  private extractExplicitConditions(
+    filterConditions: Record<string, unknown>,
+  ): FilterConditionItem[] {
+    const conditions = filterConditions.conditions;
+
+    if (!conditions || !Array.isArray(conditions)) {
+      return [];
+    }
+
+    return (conditions as Array<Record<string, unknown>>).map((cond) => ({
+      field: cond.field as string,
+      operator: cond.operator as FilterOperator,
+      value: cond.value,
+      description: cond.description as string | undefined,
+    }));
   }
 
   /**
@@ -768,65 +840,63 @@ export class RbacEnforcerService {
   private convertResolvedFilterToCondition(
     resolvedFilter: ResolvedFilterConditions,
   ): FilterCondition {
-    const conditions: FilterConditionItem[] = [];
-
     // Handle $or operator
     if (resolvedFilter.$or && Array.isArray(resolvedFilter.$or)) {
-      for (const orCondition of resolvedFilter.$or) {
-        // Chỉ xử lý objects, bỏ qua primitives
-        if (
-          orCondition &&
-          typeof orCondition === 'object' &&
-          !Array.isArray(orCondition)
-        ) {
-          const subConditions = this.flattenFilterObject(
-            orCondition as Record<string, unknown>,
-          );
-
-          conditions.push(...subConditions);
-        }
-      }
-
       return {
         type: 'OR',
-        conditions,
+        conditions: this.extractConditionsFromArray(resolvedFilter.$or),
       };
     }
 
     // Handle $and operator
     if (resolvedFilter.$and && Array.isArray(resolvedFilter.$and)) {
-      for (const andCondition of resolvedFilter.$and) {
-        // Chỉ xử lý objects, bỏ qua primitives
-        if (
-          andCondition &&
-          typeof andCondition === 'object' &&
-          !Array.isArray(andCondition)
-        ) {
-          const subConditions = this.flattenFilterObject(
-            andCondition as Record<string, unknown>,
-          );
-
-          conditions.push(...subConditions);
-        }
-      }
-
       return {
         type: 'AND',
-        conditions,
+        conditions: this.extractConditionsFromArray(resolvedFilter.$and),
       };
     }
 
     // Handle flat conditions
-    const flatConditions = this.flattenFilterObject(resolvedFilter);
-
     return {
       type: 'AND',
-      conditions: flatConditions,
+      conditions: this.flattenFilterObject(resolvedFilter),
     };
   }
 
   /**
+   * Extract conditions từ array (cho $or hoặc $and)
+   * Chỉ xử lý objects, bỏ qua primitives
+   */
+  private extractConditionsFromArray(
+    conditionArray: unknown[],
+  ): FilterConditionItem[] {
+    const conditions: FilterConditionItem[] = [];
+
+    for (const condition of conditionArray) {
+      if (!this.isValidFilterObject(condition)) {
+        continue;
+      }
+
+      const subConditions = this.flattenFilterObject(
+        condition as Record<string, unknown>,
+      );
+
+      conditions.push(...subConditions);
+    }
+
+    return conditions;
+  }
+
+  /**
+   * Kiểm tra xem value có phải là filter object hợp lệ không
+   */
+  private isValidFilterObject(value: unknown): boolean {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  /**
    * Flatten filter object to array of FilterConditionItems
+   * Chuyển đổi nested filter object thành flat array
    */
   private flattenFilterObject(
     obj: Record<string, unknown>,
@@ -834,29 +904,22 @@ export class RbacEnforcerService {
     const conditions: FilterConditionItem[] = [];
 
     for (const [field, value] of Object.entries(obj)) {
-      // Skip special operators at root level
+      // Skip special operators tại root level ($or, $and, etc.)
       if (field.startsWith('$')) {
         continue;
       }
 
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        // Handle operator objects like { $in: [...] }
-        const operatorObj = value as Record<string, unknown>;
-
-        for (const [op, opValue] of Object.entries(operatorObj)) {
-          conditions.push({
-            field,
-            operator: this.mapOperator(op),
-            value: opValue,
-          });
-        }
-      } else {
-        // Direct value = equality
-        conditions.push({
+      // Xử lý operator objects như { $in: [...] }
+      if (this.isValidFilterObject(value)) {
+        const operatorConditions = this.extractOperatorConditions(
           field,
-          operator: '=',
-          value,
-        });
+          value as Record<string, unknown>,
+        );
+
+        conditions.push(...operatorConditions);
+      } else {
+        // Direct value = equality check
+        conditions.push({ field, operator: '=', value });
       }
     }
 
@@ -864,24 +927,18 @@ export class RbacEnforcerService {
   }
 
   /**
-   * Map filter expression operator to FilterOperator
+   * Extract conditions từ operator object
+   * VD: { field: { $in: [1,2,3], $ne: 0 } }
    */
-  private mapOperator(op: string): FilterOperator {
-    const operatorMap: Record<string, FilterOperator> = {
-      $eq: '=',
-      $ne: '!=',
-      $gt: '>',
-      $gte: '>=',
-      $lt: '<',
-      $lte: '<=',
-      $in: 'IN',
-      $nin: 'NOT_IN',
-      $like: 'LIKE',
-      $isNull: 'IS_NULL',
-      $exists: 'IS_NOT_NULL',
-    };
-
-    return operatorMap[op] ?? '=';
+  private extractOperatorConditions(
+    field: string,
+    operatorObj: Record<string, unknown>,
+  ): FilterConditionItem[] {
+    return Object.entries(operatorObj).map(([op, opValue]) => ({
+      field,
+      operator: RbacEnforcerService.mapOperator(op),
+      value: opValue,
+    }));
   }
 
   /**
@@ -910,36 +967,54 @@ export class RbacEnforcerService {
 
   /**
    * Parse filter conditions from policy JSON
+   * Hỗ trợ cả string (JSON) và object input
    */
   private parseFilterConditions(
     filterConditions: string | Record<string, unknown>,
     userContext: UserContext,
   ): FilterConditionItem[] {
-    const conditions: FilterConditionItem[] = [];
+    // Parse JSON string nếu cần
+    const parsed = this.parseFilterConditionsInput(filterConditions);
 
-    try {
-      const parsed =
-        typeof filterConditions === 'string'
-          ? JSON.parse(filterConditions)
-          : filterConditions;
-
-      if (parsed.conditions && Array.isArray(parsed.conditions)) {
-        for (const cond of parsed.conditions) {
-          const value = this.resolvePlaceholder(cond.value, userContext);
-
-          conditions.push({
-            field: cond.field,
-            operator: cond.operator,
-            value,
-            description: cond.description,
-          });
-        }
-      }
-    } catch {
-      this.logger.warn('Failed to parse filter conditions');
+    if (!parsed) {
+      return [];
     }
 
-    return conditions;
+    // Early return nếu không có conditions array
+    if (!parsed.conditions || !Array.isArray(parsed.conditions)) {
+      return [];
+    }
+
+    // Map conditions với placeholder resolution
+    return parsed.conditions.map((cond) => ({
+      field: cond.field,
+      operator: cond.operator,
+      value: this.resolvePlaceholder(cond.value, userContext),
+      description: cond.description,
+    }));
+  }
+
+  /**
+   * Parse filter conditions input - xử lý cả string và object
+   */
+  private parseFilterConditionsInput(
+    input: string | Record<string, unknown>,
+  ): Record<string, unknown> | null {
+    // Nếu đã là object, trả về ngay
+    if (typeof input !== 'string') {
+      return input;
+    }
+
+    // Parse JSON string với safe utility
+    const parseResult = safeJsonParse<Record<string, unknown>>(input);
+
+    if (!parseResult.success) {
+      this.logger.warn('Failed to parse filter conditions');
+
+      return null;
+    }
+
+    return parseResult.data ?? null;
   }
 
   /**
@@ -1001,55 +1076,63 @@ export class RbacEnforcerService {
 
   /**
    * Get all active policies for user
+   * Lấy tất cả policies áp dụng cho user (department, org level, member-specific)
    */
   private async getActivePoliciesForUser(
     workspaceId: string,
     userContext: UserContext,
   ): Promise<MktDataAccessPolicyWorkspaceEntity[]> {
-    const policies: MktDataAccessPolicyWorkspaceEntity[] = [];
+    // Fetch policies từ nhiều nguồn song song
+    const policyPromises = this.buildPolicyFetchPromises(
+      workspaceId,
+      userContext,
+    );
 
-    // Get department-specific policies
+    const policyResults = await Promise.all(policyPromises);
+
+    // Gộp tất cả policies và loại bỏ duplicates bằng lodash
+    const allPolicies = policyResults.flat();
+
+    return uniqBy(allPolicies, 'id');
+  }
+
+  /**
+   * Build array of policy fetch promises based on user context
+   */
+  private buildPolicyFetchPromises(
+    workspaceId: string,
+    userContext: UserContext,
+  ): Promise<MktDataAccessPolicyWorkspaceEntity[]>[] {
+    const promises: Promise<MktDataAccessPolicyWorkspaceEntity[]>[] = [];
+
+    // Department-specific policies
     if (userContext.departmentId) {
-      const deptPolicies =
-        await this.dataAccessPolicyRepository.findByDepartmentId(
+      promises.push(
+        this.dataAccessPolicyRepository.findByDepartmentId(
           workspaceId,
           userContext.departmentId,
-        );
-
-      policies.push(...deptPolicies);
+        ),
+      );
     }
 
-    // Get organization level policies
+    // Organization level policies
     if (userContext.organizationLevelId) {
-      const levelPolicies =
-        await this.dataAccessPolicyRepository.findByOrganizationLevelId(
+      promises.push(
+        this.dataAccessPolicyRepository.findByOrganizationLevelId(
           workspaceId,
           userContext.organizationLevelId,
-        );
-
-      policies.push(...levelPolicies);
+        ),
+      );
     }
 
-    // Get member-specific policies
-    const memberPolicies =
-      await this.dataAccessPolicyRepository.findBySpecificMemberId(
+    // Member-specific policies (luôn fetch)
+    promises.push(
+      this.dataAccessPolicyRepository.findBySpecificMemberId(
         workspaceId,
         userContext.workspaceMemberId,
-      );
+      ),
+    );
 
-    policies.push(...memberPolicies);
-
-    // Deduplicate by ID
-    const seen = new Set<string>();
-    const uniquePolicies: MktDataAccessPolicyWorkspaceEntity[] = [];
-
-    for (const policy of policies) {
-      if (!seen.has(policy.id)) {
-        seen.add(policy.id);
-        uniquePolicies.push(policy);
-      }
-    }
-
-    return uniquePolicies;
+    return promises;
   }
 }

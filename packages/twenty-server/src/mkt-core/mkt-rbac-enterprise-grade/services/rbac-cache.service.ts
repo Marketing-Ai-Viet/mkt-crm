@@ -9,6 +9,10 @@ import {
 } from 'src/mkt-core/infrastructure/redis/constants/rbac';
 import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import {
+  CacheStats,
+  LocalCacheEntry,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
 import {
   CheckPermissionResult,
@@ -16,40 +20,6 @@ import {
   PermissionSummary,
 } from './rbac-enforcer.service';
 import { UserContext } from './rbac-context.service';
-
-/**
- * Cache stats type
- */
-type CacheStats = {
-  localCacheSize: number;
-  hits: number;
-  misses: number;
-  invalidations: number;
-  workspaces: string[];
-};
-
-/**
- * Local cache entry with timestamp
- */
-type LocalCacheEntry<T> = {
-  data: T;
-  timestamp: number;
-};
-
-/**
- * Default cache TTLs in milliseconds
- */
-const DEFAULT_CACHE_TTL = {
-  USER_CONTEXT: CASBIN_CACHE_TTL.USER_ROLES * 1000, // 15 minutes
-  PERMISSION_CHECK: 5 * 60 * 1000, // 5 minutes
-  PERMISSION_SUMMARY: 5 * 60 * 1000, // 5 minutes
-  DATA_FILTER: 5 * 60 * 1000, // 5 minutes
-} as const;
-
-/**
- * Local cache TTL in milliseconds (shorter than Redis for freshness)
- */
-const LOCAL_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 /**
  * RBAC Cache Service
@@ -80,6 +50,25 @@ const LOCAL_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
  */
 @Injectable()
 export class RbacCacheService {
+  // ============================================
+  // CONSTANTS
+  // ============================================
+
+  /** Default cache TTLs in milliseconds */
+  private static readonly DEFAULT_CACHE_TTL = {
+    USER_CONTEXT: CASBIN_CACHE_TTL.USER_ROLES * 1000, // 15 minutes
+    PERMISSION_CHECK: 5 * 60 * 1000, // 5 minutes
+    PERMISSION_SUMMARY: 5 * 60 * 1000, // 5 minutes
+    DATA_FILTER: 5 * 60 * 1000, // 5 minutes
+  } as const;
+
+  /** Local cache TTL in milliseconds (shorter than Redis for freshness) */
+  private static readonly LOCAL_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
+  // ============================================
+  // PROPERTIES
+  // ============================================
+
   private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:RbacCache`);
 
   // In-memory cache for hot data
@@ -177,7 +166,7 @@ export class RbacCacheService {
     ttl?: number,
   ): Promise<void> {
     const cacheKey = CASBIN_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
-    const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.USER_CONTEXT;
+    const cacheTtl = ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.USER_CONTEXT;
 
     // Set Redis cache (with null safety)
     if (this.userCacheStorage) {
@@ -273,7 +262,7 @@ export class RbacCacheService {
       resource,
       action,
     );
-    const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.PERMISSION_CHECK;
+    const cacheTtl = ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.PERMISSION_CHECK;
 
     // Set Redis cache (with null safety)
     if (this.permissionCacheStorage) {
@@ -347,7 +336,8 @@ export class RbacCacheService {
     ttl?: number,
   ): Promise<void> {
     const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
-    const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.PERMISSION_SUMMARY;
+    const cacheTtl =
+      ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.PERMISSION_SUMMARY;
 
     // Set Redis cache (with null safety)
     if (this.permissionCacheStorage) {
@@ -438,7 +428,7 @@ export class RbacCacheService {
       userId,
       resource,
     );
-    const cacheTtl = ttl ?? DEFAULT_CACHE_TTL.DATA_FILTER;
+    const cacheTtl = ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.DATA_FILTER;
 
     // Set Redis cache (with null safety)
     if (this.permissionCacheStorage) {
@@ -697,7 +687,8 @@ export class RbacCacheService {
     }
 
     const currentTime = this.getCurrentTimestamp();
-    const isExpired = currentTime - entry.timestamp > LOCAL_CACHE_TTL_MS;
+    const isExpired =
+      currentTime - entry.timestamp > RbacCacheService.LOCAL_CACHE_TTL_MS;
 
     if (isExpired) {
       cache.delete(key);
