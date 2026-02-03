@@ -24,20 +24,16 @@ import {
   UserTemporaryPermissionsSummary,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
-// ============================================
-// CONSTANTS
-// ============================================
-
-const DEFAULT_DURATION_HOURS = 24;
-const MAX_DURATION_HOURS = 720; // 30 days
-
-// ============================================
-// SERVICE
-// ============================================
-
 @Injectable()
 export class TemporaryPermissionService {
   private readonly logger = new Logger(TemporaryPermissionService.name);
+
+  // ============================================
+  // STATIC CONSTANTS
+  // ============================================
+
+  private static readonly DEFAULT_DURATION_HOURS = 24;
+  private static readonly MAX_DURATION_HOURS = 720; // 30 days
 
   constructor(
     private readonly permissionRepository: MktTemporaryPermissionRepository,
@@ -107,11 +103,15 @@ export class TemporaryPermissionService {
     if (input.expiresAt) {
       expiresAt = input.expiresAt;
     } else {
-      const hours = input.durationHours ?? DEFAULT_DURATION_HOURS;
+      const hours =
+        input.durationHours ??
+        TemporaryPermissionService.DEFAULT_DURATION_HOURS;
 
-      if (hours < 1 || hours > MAX_DURATION_HOURS) {
+      if (hours < 1 || hours > TemporaryPermissionService.MAX_DURATION_HOURS) {
         throw new Error(
-          TEMP_PERMISSION_SERVICE_MESSAGES.INVALID_DURATION(MAX_DURATION_HOURS),
+          TEMP_PERMISSION_SERVICE_MESSAGES.INVALID_DURATION(
+            TemporaryPermissionService.MAX_DURATION_HOURS,
+          ),
         );
       }
 
@@ -413,9 +413,14 @@ export class TemporaryPermissionService {
     if (newExpiresAt) {
       expiresAt = newExpiresAt;
     } else if (additionalHours) {
-      if (additionalHours < 1 || additionalHours > MAX_DURATION_HOURS) {
+      if (
+        additionalHours < 1 ||
+        additionalHours > TemporaryPermissionService.MAX_DURATION_HOURS
+      ) {
         throw new Error(
-          TEMP_PERMISSION_SERVICE_MESSAGES.INVALID_DURATION(MAX_DURATION_HOURS),
+          TEMP_PERMISSION_SERVICE_MESSAGES.INVALID_DURATION(
+            TemporaryPermissionService.MAX_DURATION_HOURS,
+          ),
         );
       }
 
@@ -435,7 +440,7 @@ export class TemporaryPermissionService {
       expiresAt =
         DateTimeUtils.toDate(
           DateTimeUtils.add(DateTimeUtils.now(), {
-            hours: DEFAULT_DURATION_HOURS,
+            hours: TemporaryPermissionService.DEFAULT_DURATION_HOURS,
           }),
         ) ?? new Date();
     }

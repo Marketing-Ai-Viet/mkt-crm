@@ -31,12 +31,7 @@ export {
   TemporaryPermissionPurpose,
   RevokeReason,
 } from './bases/temporary-permission.service';
-export {
-  PermissionContextService,
-  CreateContextInput,
-  ContextQueryOptions,
-  ContextListResult,
-} from './bases/permission-context.service';
+export { PermissionContextService } from './bases/permission-context.service';
 export { RbacAuditService } from './rbac-audit.service';
 export { HierarchicalAccessEvaluatorService } from './hierarchical-access-evaluator.service';
 export { FilterExpressionResolverService } from './filter-expression-resolver.service';

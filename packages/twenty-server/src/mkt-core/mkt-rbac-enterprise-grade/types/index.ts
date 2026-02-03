@@ -129,3 +129,6 @@ export * from './data-access-scope.types';
 
 // RBAC Enforcer types
 export * from './rbac-enforcer.types';
+
+// Permission Context types
+export * from './permission-context.types';

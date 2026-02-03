@@ -20,57 +20,21 @@ import {
   DATA_ACCESS_SCOPE_TO_CONTEXT_KEY,
   MKT_PERMISSION_CONTEXT_DATA_SEEDS,
 } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-data-seeds.constants';
-
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * Input để tạo permission context mới
- */
-export type CreateContextInput = {
-  contextKey: string;
-  contextType: CONTEXT_TYPE;
-  name: string;
-  description?: string;
-  filterExpression: Record<string, unknown>;
-  priority?: number;
-  isSystemDefault?: boolean;
-  isActive?: boolean;
-  position?: number;
-  validationRules?: Record<string, unknown>;
-};
-
-/**
- * Options khi query permission context
- */
-export type ContextQueryOptions = {
-  includeInactive?: boolean;
-  includeRelations?: boolean;
-};
-
-/**
- * Result trả về khi list contexts
- */
-export type ContextListResult = {
-  contexts: MktPermissionContextWorkspaceEntity[];
-  total: number;
-};
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const DEFAULT_PRIORITY = 0;
-const LOG_CONTEXT = 'PermissionContextService';
-
-// ============================================
-// SERVICE
-// ============================================
+import {
+  PermissionContextCreateInput,
+  PermissionContextListResult,
+  PermissionContextQueryOptions,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
 @Injectable()
 export class PermissionContextService {
-  private readonly logger = new Logger(LOG_CONTEXT);
+  private readonly logger = new Logger(PermissionContextService.name);
+
+  // ============================================
+  // STATIC CONSTANTS
+  // ============================================
+
+  private static readonly DEFAULT_PRIORITY = 0;
 
   constructor(
     private readonly contextRepository: MktPermissionContextRepository,
@@ -191,8 +155,8 @@ export class PermissionContextService {
    */
   async listContexts(
     workspaceId: string,
-    options?: ContextQueryOptions,
-  ): Promise<ContextListResult> {
+    options?: PermissionContextQueryOptions,
+  ): Promise<PermissionContextListResult> {
     let contexts: MktPermissionContextWorkspaceEntity[];
 
     if (options?.includeInactive) {
@@ -250,7 +214,7 @@ export class PermissionContextService {
    */
   async createContext(
     workspaceId: string,
-    input: CreateContextInput,
+    input: PermissionContextCreateInput,
   ): Promise<MktPermissionContextWorkspaceEntity> {
     // Check duplicate contextKey
     const existing = await this.getByContextKey(workspaceId, input.contextKey);
@@ -268,7 +232,7 @@ export class PermissionContextService {
       name: input.name,
       description: input.description,
       filterExpression: input.filterExpression,
-      priority: input.priority ?? DEFAULT_PRIORITY,
+      priority: input.priority ?? PermissionContextService.DEFAULT_PRIORITY,
       isSystemDefault: input.isSystemDefault ?? false,
       isActive: input.isActive ?? true,
       position: input.position ?? 0,
@@ -325,7 +289,7 @@ export class PermissionContextService {
   async updateContext(
     workspaceId: string,
     id: string,
-    input: Partial<CreateContextInput>,
+    input: Partial<PermissionContextCreateInput>,
   ): Promise<MktPermissionContextWorkspaceEntity> {
     await this.getByIdOrThrow(workspaceId, id);
 
