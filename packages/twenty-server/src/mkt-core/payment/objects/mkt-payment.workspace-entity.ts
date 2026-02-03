@@ -30,7 +30,7 @@ import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-o
 import { MktTemplateWorkspaceEntity } from 'src/mkt-core/mkt-email/workspace-entities';
 import {
   PAYMENT_CURRENCY_OPTIONS,
-  PAYMENT_STATUS_OPTIONS,
+  PAYMENT_TRANSACTION_STATUS_OPTIONS,
   PAYMENT_PROVIDER_OPTIONS,
   TRANSFER_TYPE_OPTIONS,
   MATCH_TYPE_OPTIONS,
@@ -134,9 +134,9 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
     standardId: MKT_PAYMENT_FIELD_IDS.status,
     type: FieldMetadataType.SELECT,
     label: msg`Status`,
-    description: msg`Payment status`,
+    description: msg`Payment transaction status`,
     icon: 'IconCheck',
-    options: PAYMENT_STATUS_OPTIONS,
+    options: PAYMENT_TRANSACTION_STATUS_OPTIONS,
   })
   @WorkspaceIsNullable()
   status?: PaymentStatus;

@@ -14,6 +14,7 @@ import {
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   DEFAULT_ORDER_RELATIONS,
+  ORDER_DETAIL_RELATIONS,
   FindOrderOptions,
   PAYMENT_SUMMARY_RELATIONS,
   UpdatePaymentAmountsData,
@@ -296,6 +297,141 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       relations: options?.relations,
       order: { createdAt: 'DESC' },
     });
+  }
+
+  // ============================================
+  // FIND WITH DETAIL RELATIONS (for OrderOutput)
+  // ============================================
+
+  /**
+   * Find single order with full detail relations for OrderOutput
+   * Includes: mktCustomer, orderItems, createdBy, mktPayments.mktPaymentMethod
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - TypeORM where clause (single object or array for OR)
+   */
+  async findOneWithDetailsWorkspace(
+    workspaceId: string,
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where,
+      relations: ORDER_DETAIL_RELATIONS,
+    });
+  }
+
+  /**
+   * Find orders with full detail relations for OrderOutput
+   * Includes: mktCustomer, orderItems, createdBy, mktPayments.mktPaymentMethod
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - TypeORM where clause (single object or array for OR)
+   */
+  async findManyWithDetailsWorkspace(
+    workspaceId: string,
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where,
+      relations: ORDER_DETAIL_RELATIONS,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Find orders with pagination, sorting, and search
+   * Returns both orders and total count for pagination
+   */
+  async findPaginatedWithDetailsWorkspace(
+    workspaceId: string,
+    options: {
+      where?:
+        | FindOptionsWhere<MktOrderWorkspaceEntity>
+        | FindOptionsWhere<MktOrderWorkspaceEntity>[];
+      search?: string;
+      orderBy?: { field: string; direction: 'ASC' | 'DESC' };
+      skip?: number;
+      take?: number;
+    },
+  ): Promise<{ orders: MktOrderWorkspaceEntity[]; totalCount: number }> {
+    const repository = await this.getRepository(workspaceId);
+
+    // Build query builder for complex search
+    const qb = repository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.mktCustomer', 'customer')
+      .leftJoinAndSelect('order.orderItems', 'orderItems')
+      .leftJoinAndSelect('order.mktPayments', 'payments')
+      .leftJoinAndSelect('payments.mktPaymentMethod', 'paymentMethod')
+      .leftJoinAndSelect('order.createdBy', 'createdBy')
+      .where('order.deletedAt IS NULL');
+
+    // Apply where conditions
+    if (options.where) {
+      const whereConditions = Array.isArray(options.where)
+        ? options.where
+        : [options.where];
+
+      for (const condition of whereConditions) {
+        if (condition.status) {
+          qb.andWhere('order.status = :status', { status: condition.status });
+        }
+        if (condition.paymentStatus) {
+          qb.andWhere('order.paymentStatus = :paymentStatus', {
+            paymentStatus: condition.paymentStatus,
+          });
+        }
+        if (condition.mktCustomerId) {
+          qb.andWhere('order.mktCustomerId = :customerId', {
+            customerId: condition.mktCustomerId,
+          });
+        }
+        if (condition.createdById) {
+          qb.andWhere('order.createdById = :createdById', {
+            createdById: condition.createdById,
+          });
+        }
+      }
+    }
+
+    // Apply search across multiple fields
+    if (options.search) {
+      const searchTerm = `%${options.search}%`;
+
+      qb.andWhere(
+        '(order.orderCode ILIKE :search OR order.name ILIKE :search OR customer.name ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)',
+        { search: searchTerm },
+      );
+    }
+
+    // Get total count before pagination
+    const totalCount = await qb.getCount();
+
+    // Apply sorting
+    const sortField = options.orderBy?.field ?? 'createdAt';
+    const sortDirection = options.orderBy?.direction ?? 'DESC';
+
+    qb.orderBy(`order.${sortField}`, sortDirection);
+
+    // Apply pagination
+    if (options.skip !== undefined) {
+      qb.skip(options.skip);
+    }
+    if (options.take !== undefined) {
+      qb.take(options.take);
+    }
+
+    const orders = await qb.getMany();
+
+    return { orders, totalCount };
   }
 
   // ============================================

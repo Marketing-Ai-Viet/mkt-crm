@@ -51,6 +51,7 @@ import {
   OrderCrudService,
   OrderItemService,
   OrderLicenseQueryService,
+  OrderQueryService,
   // Application Services
   OrderOrchestrationService,
 } from './services';
@@ -154,6 +155,7 @@ import {
     OrderCrudService,
     OrderItemService,
     OrderLicenseQueryService,
+    OrderQueryService,
 
     // Application Services (orchestration)
     OrderOrchestrationService,

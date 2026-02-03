@@ -29,6 +29,8 @@ export const ORDER_GRAPHQL_DESCRIPTIONS = {
   // ==================== QUERIES ====================
 
   VALIDATE_ORDER_INPUT: 'Validate order input before creation',
+  GET_ORDERS:
+    'Get paginated list of orders with sorting and search (supports orderCode, customer name/email/phone)',
   GET_ORDER_BY_ID: 'Get order by ID with full details',
   GET_ORDER_BY_CODE: 'Get order by order code',
   GET_ORDERS_BY_CUSTOMER: 'Get all orders for a specific customer',

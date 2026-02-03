@@ -11,17 +11,22 @@ import {
   ORDER_STATUS,
 } from 'src/mkt-core/order/constants';
 import {
+  toPaginationOptions,
+  calculatePageInfo,
+} from 'src/mkt-core/common/dto/pagination.input';
+import { GetOrdersInput } from 'src/mkt-core/order/dto/order-query.input';
+import {
   OrderPaymentSummaryOutput,
   OrderOutput,
   OrderListOutput,
   CustomerOrderStatsOutput,
+  PaginatedOrdersOutput,
 } from 'src/mkt-core/order/dto/order-response.output';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
-import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 import { DataScopeContext } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/types';
-import { filterToWhere } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/utils';
+import { OrderQueryService } from 'src/mkt-core/order/services/domain/order-query.service';
 
 // ============================================
 // TYPES
@@ -49,6 +54,7 @@ const ORDER_RESOURCE = 'mktOrder';
  * - Executive (level 1-3): See all orders
  *
  * Provides queries for:
+ * - getOrders: Get paginated list of orders with sorting and search
  * - getOrderById: Get order by ID
  * - getOrderByCode: Get order by order code
  * - getOrdersByCustomer: Get orders by customer ID
@@ -59,7 +65,10 @@ const ORDER_RESOURCE = 'mktOrder';
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
 export class OrderQueryResolver {
-  constructor(private readonly orderRepository: MktOrderRepository) {}
+  constructor(
+    private readonly orderRepository: MktOrderRepository,
+    private readonly orderQueryService: OrderQueryService,
+  ) {}
 
   /**
    * Get order by ID with hierarchical access filtering
@@ -78,8 +87,11 @@ export class OrderQueryResolver {
     @Context() ctx: GraphQLContext,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderOutput | null> {
-    const whereClause = this.buildWhereClause({ id: orderId }, ctx);
-    const order = await this.orderRepository.findOneWithWhereWorkspace(
+    const whereClause = this.orderQueryService.buildWhereClause(
+      { id: orderId },
+      ctx,
+    );
+    const order = await this.orderRepository.findOneWithDetailsWorkspace(
       workspace.id,
       whereClause,
     );
@@ -88,7 +100,7 @@ export class OrderQueryResolver {
       return null;
     }
 
-    return this.mapOrderToOutput(order);
+    return this.orderQueryService.mapOrderToOutput(order);
   }
 
   /**
@@ -108,8 +120,11 @@ export class OrderQueryResolver {
     @Context() ctx: GraphQLContext,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderOutput | null> {
-    const whereClause = this.buildWhereClause({ orderCode }, ctx);
-    const order = await this.orderRepository.findOneWithWhereWorkspace(
+    const whereClause = this.orderQueryService.buildWhereClause(
+      { orderCode },
+      ctx,
+    );
+    const order = await this.orderRepository.findOneWithDetailsWorkspace(
       workspace.id,
       whereClause,
     );
@@ -118,7 +133,87 @@ export class OrderQueryResolver {
       return null;
     }
 
-    return this.mapOrderToOutput(order);
+    return this.orderQueryService.mapOrderToOutput(order);
+  }
+
+  /**
+   * Get paginated list of orders with sorting and search
+   *
+   * Supports:
+   * - Pagination (page, limit)
+   * - Sorting (createdAt, updatedAt, orderCode, totalAmount, status, paymentStatus, paymentDeadline)
+   * - Filtering (status, paymentStatus, customerId, salesStaffId)
+   * - Search (orderCode, customer name/email/phone)
+   */
+  @Query(() => PaginatedOrdersOutput, {
+    description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDERS,
+  })
+  @DataScope({
+    resource: ORDER_RESOURCE,
+    mode: 'AUTO',
+    auditLevel: 'low',
+  })
+  async getOrders(
+    @Args('input', { type: () => GetOrdersInput, nullable: true })
+    input: GetOrdersInput | null,
+    @Context() ctx: GraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<PaginatedOrdersOutput> {
+    // Build pagination options
+    const paginationOptions = toPaginationOptions(input?.pagination);
+
+    // Build where clause from filter and hierarchical access
+    const baseWhere: Record<string, unknown> = {};
+
+    if (input?.filter?.status) {
+      baseWhere.status = input.filter.status;
+    }
+    if (input?.filter?.paymentStatus) {
+      baseWhere.paymentStatus = input.filter.paymentStatus;
+    }
+    if (input?.filter?.customerId) {
+      baseWhere.mktCustomerId = input.filter.customerId;
+    }
+    if (input?.filter?.salesStaffId) {
+      baseWhere.createdById = input.filter.salesStaffId;
+    }
+
+    // Apply hierarchical access filtering
+    const whereClause = this.orderQueryService.buildWhereClause(baseWhere, ctx);
+
+    // Build sort options
+    const orderBy = input?.sort?.field
+      ? {
+          field: input.sort.field,
+          direction: input.sort.direction ?? 'DESC',
+        }
+      : undefined;
+
+    // Execute paginated query
+    const { orders, totalCount } =
+      await this.orderRepository.findPaginatedWithDetailsWorkspace(
+        workspace.id,
+        {
+          where: whereClause as
+            | Record<string, unknown>
+            | Record<string, unknown>[],
+          search: input?.filter?.search,
+          orderBy: orderBy as { field: string; direction: 'ASC' | 'DESC' },
+          skip: paginationOptions.skip,
+          take: paginationOptions.limit,
+        },
+      );
+
+    // Calculate page info
+    const pageInfo = calculatePageInfo(totalCount, paginationOptions);
+
+    return {
+      orders: orders.map((order) =>
+        this.orderQueryService.mapOrderToOutput(order),
+      ),
+      totalCount,
+      pageInfo,
+    };
   }
 
   /**
@@ -137,17 +232,19 @@ export class OrderQueryResolver {
     @Context() ctx: GraphQLContext,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderListOutput> {
-    const whereClause = this.buildWhereClause(
+    const whereClause = this.orderQueryService.buildWhereClause(
       { mktCustomerId: customerId },
       ctx,
     );
-    const orders = await this.orderRepository.findManyWithWhereWorkspace(
+    const orders = await this.orderRepository.findManyWithDetailsWorkspace(
       workspace.id,
       whereClause,
     );
 
     return {
-      orders: orders.map((order) => this.mapOrderToOutput(order)),
+      orders: orders.map((order) =>
+        this.orderQueryService.mapOrderToOutput(order),
+      ),
       totalCount: orders.length,
     };
   }
@@ -168,14 +265,19 @@ export class OrderQueryResolver {
     @Context() ctx: GraphQLContext,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderListOutput> {
-    const whereClause = this.buildWhereClause({ status }, ctx);
-    const orders = await this.orderRepository.findManyWithWhereWorkspace(
+    const whereClause = this.orderQueryService.buildWhereClause(
+      { status },
+      ctx,
+    );
+    const orders = await this.orderRepository.findManyWithDetailsWorkspace(
       workspace.id,
       whereClause,
     );
 
     return {
-      orders: orders.map((order) => this.mapOrderToOutput(order)),
+      orders: orders.map((order) =>
+        this.orderQueryService.mapOrderToOutput(order),
+      ),
       totalCount: orders.length,
     };
   }
@@ -204,7 +306,10 @@ export class OrderQueryResolver {
     @Context() ctx: GraphQLContext,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderPaymentSummaryOutput | null> {
-    const whereClause = this.buildWhereClause({ id: orderId }, ctx);
+    const whereClause = this.orderQueryService.buildWhereClause(
+      { id: orderId },
+      ctx,
+    );
     const order = await this.orderRepository.findOneWithWhereWorkspace(
       workspace.id,
       whereClause,
@@ -270,81 +375,6 @@ export class OrderQueryResolver {
       firstOrderDate: stats.firstOrderDate ?? undefined,
       lastOrderDate: stats.lastOrderDate ?? undefined,
       averageOrderInterval: stats.averageOrderInterval,
-    };
-  }
-
-  // ============================================
-  // PRIVATE HELPER METHODS
-  // ============================================
-
-  /**
-   * Build TypeORM where clause combining base conditions with hierarchical filter
-   */
-  private buildWhereClause(
-    baseWhere: Record<string, unknown>,
-    ctx: GraphQLContext,
-  ): Record<string, unknown> | Record<string, unknown>[] {
-    const dataScope = ctx.req?.dataScope;
-
-    // No filter or full access - return base where only
-    if (!dataScope?.filter || dataScope.hasFullAccess) {
-      return baseWhere;
-    }
-
-    // Convert hierarchical filter to TypeORM where clause
-    const hierarchicalWhere = filterToWhere(dataScope.filter);
-
-    // No hierarchical conditions
-    if (!hierarchicalWhere) {
-      return baseWhere;
-    }
-
-    // Merge base where with hierarchical filter
-    return this.mergeWhereConditions(baseWhere, hierarchicalWhere);
-  }
-
-  /**
-   * Merge base where conditions with hierarchical filter
-   */
-  private mergeWhereConditions(
-    baseWhere: Record<string, unknown>,
-    hierarchicalWhere: Record<string, unknown> | Record<string, unknown>[],
-  ): Record<string, unknown> | Record<string, unknown>[] {
-    // If hierarchical is array (OR conditions), merge base into each
-    if (Array.isArray(hierarchicalWhere)) {
-      return hierarchicalWhere.map((hw) => ({ ...baseWhere, ...hw }));
-    }
-
-    // Simple merge for AND conditions
-    return { ...baseWhere, ...hierarchicalWhere };
-  }
-
-  /**
-   * Map order entity to output DTO
-   */
-  private mapOrderToOutput(order: MktOrderWorkspaceEntity): OrderOutput {
-    return {
-      id: order.id,
-      name: order.name,
-      orderCode: order.orderCode,
-      status: order.status as ORDER_STATUS,
-      totalAmount: order.totalAmount,
-      subtotal: order.subtotal,
-      tax: order.tax,
-      discount: order.discount,
-      promotionDiscount: order.promotionDiscount,
-      comboDiscount: order.comboDiscount,
-      currency: order.currency,
-      note: order.note,
-      paidAmount: order.paidAmount,
-      remainingAmount: order.remainingAmount,
-      paymentStatus: order.paymentStatus as PAYMENT_STATUS,
-      accountingConfirmed: order.accountingConfirmed,
-      mktCustomerId: order.mktCustomerId ?? undefined,
-      accountOwnerId: order.accountOwnerId,
-      createdById: order.createdById ?? undefined,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
     };
   }
 }

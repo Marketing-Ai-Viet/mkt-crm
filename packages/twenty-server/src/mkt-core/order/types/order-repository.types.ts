@@ -46,6 +46,20 @@ export const DEFAULT_ORDER_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEnti
   };
 
 /**
+ * Relations for order detail queries (includes all data for OrderOutput)
+ * Used by order query resolvers to populate full OrderOutput DTO
+ */
+export const ORDER_DETAIL_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEntity> =
+  {
+    orderItems: true,
+    mktCustomer: true,
+    mktPayments: {
+      mktPaymentMethod: true, // Nested relation for payment method name
+    },
+    createdBy: true, // Sales staff info
+  };
+
+/**
  * Relations for payment summary queries
  */
 export const PAYMENT_SUMMARY_RELATIONS: FindOptionsRelations<MktOrderWorkspaceEntity> =
