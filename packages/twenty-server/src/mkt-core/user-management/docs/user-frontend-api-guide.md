@@ -60,6 +60,16 @@ query GetMyProfile {
       departmentName
       departmentNameEn
     }
+    directManager {
+      id
+      firstName
+      lastName
+      fullName
+      email
+      avatarUrl
+      memberCode
+      jobTitle
+    }
     permissionTemplate {
       id
       templateKey
@@ -102,9 +112,19 @@ query GetMyProfile {
       "startDate": "2024-01-01T00:00:00.000Z",
       "department": {
         "id": "...",
-        "departmentCode": "TECH",
-        "departmentName": "Technology",
-        "departmentNameEn": "Technology"
+        "departmentCode": "SALES",
+        "departmentName": "Nhân viên kinh doanh",
+        "departmentNameEn": "Sales Staff"
+      },
+      "directManager": {
+        "id": "20202020-77d5-4cb6-b60a-f4a835a85d61",
+        "firstName": "Jony",
+        "lastName": "Ive",
+        "fullName": "Jony Ive",
+        "email": "jony.ive@apple.dev",
+        "avatarUrl": null,
+        "memberCode": "MGR-001",
+        "jobTitle": "Sales Manager"
       },
       "permissionTemplate": {
         "id": "...",
@@ -151,6 +171,12 @@ query GetPersonUser($memberId: String!) {
       departmentCode
       departmentName
     }
+    directManager {
+      id
+      fullName
+      email
+      jobTitle
+    }
     permissionTemplate {
       id
       templateKey
@@ -179,7 +205,13 @@ query GetPersonUser($memberId: String!) {
       "firstName": "Tim",
       "lastName": "Apple",
       "memberCode": "EMP-001",
-      "status": "ACTIVE"
+      "status": "ACTIVE",
+      "directManager": {
+        "id": "20202020-77d5-4cb6-b60a-f4a835a85d61",
+        "fullName": "Jony Ive",
+        "email": "jony.ive@apple.dev",
+        "jobTitle": "Sales Manager"
+      }
     }
   }
 }
@@ -207,6 +239,11 @@ query SearchPersonUsers($input: SearchUserInput!) {
         id
         departmentCode
         departmentName
+      }
+      directManager {
+        id
+        fullName
+        email
       }
       organizationLevel {
         id
@@ -265,7 +302,17 @@ query SearchPersonUsers($input: SearchUserInput!) {
           "firstName": "Tim",
           "lastName": "Apple",
           "memberCode": "EMP-001",
-          "status": "ACTIVE"
+          "status": "ACTIVE",
+          "department": {
+            "id": "...",
+            "departmentCode": "SALES",
+            "departmentName": "Nhân viên kinh doanh"
+          },
+          "directManager": {
+            "id": "20202020-77d5-4cb6-b60a-f4a835a85d61",
+            "fullName": "Jony Ive",
+            "email": "jony.ive@apple.dev"
+          }
         }
       ],
       "total": 1,
@@ -618,6 +665,7 @@ mutation DeletePersonUser($memberId: String!) {
 | `grade` | String | Yes | Cấp bậc |
 | `address` | String | Yes | Địa chỉ |
 | `department` | DepartmentBasicOutput | Yes | Thông tin phòng ban |
+| `directManager` | DirectManagerOutput | Yes | Quản lý trực tiếp (manager của department) |
 | `permissionTemplate` | PermissionTemplateBasicOutput | Yes | Thông tin quyền hạn |
 | `employmentStatus` | EmploymentStatusBasicOutput | Yes | Tình trạng làm việc |
 | `organizationLevel` | OrganizationLevelBasicOutput | Yes | Cấp tổ chức |
@@ -632,6 +680,26 @@ mutation DeletePersonUser($memberId: String!) {
 | `departmentCode` | String | Mã phòng ban |
 | `departmentName` | String | Tên phòng ban |
 | `departmentNameEn` | String | Tên tiếng Anh |
+
+### DirectManagerOutput
+
+Thông tin quản lý trực tiếp (manager của department mà user thuộc về).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | String | Manager ID (workspace member ID) |
+| `firstName` | String | Tên |
+| `lastName` | String | Họ |
+| `fullName` | String | Họ tên đầy đủ |
+| `email` | String | Email |
+| `avatarUrl` | String | URL avatar |
+| `memberCode` | String | Mã nhân viên |
+| `jobTitle` | String | Chức danh |
+
+**Lưu ý:**
+- `directManager` là manager của **department** mà user thuộc về, không phải manager trực tiếp được chỉ định
+- Nếu user là manager của chính department đó, `directManager` sẽ trỏ về chính user đó
+- Nếu department không có manager, `directManager` sẽ là `null`
 
 ### PermissionTemplateBasicOutput
 
@@ -771,3 +839,4 @@ query SearchUsers($page: Int!, $limit: Int!) {
 | 1.0.0 | 2026-02-03 | Initial release |
 | 1.1.0 | 2026-02-03 | Add `getMyProfile` and `updateMyProfile` with token-based auth |
 | 1.2.0 | 2026-02-03 | Add `email` field to UpdateUserInput with unique check |
+| 1.3.0 | 2026-02-03 | Add `directManager` field to UserOutput (manager of user's department) |
