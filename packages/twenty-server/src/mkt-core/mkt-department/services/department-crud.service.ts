@@ -27,6 +27,7 @@ import {
   MktDepartmentRepository,
   MktDepartmentSubManagerRepository,
 } from 'src/mkt-core/mkt-department/repositories';
+import { MktDepartmentAncestryRepository } from 'src/mkt-core/mkt-department/repositories/mkt-department-ancestry.repository';
 import {
   CreatedHierarchyInfo,
   CreateDepartmentData,
@@ -62,6 +63,7 @@ export class DepartmentCrudService {
     private readonly hierarchyRepository: MktDepartmentHierarchyRepository,
     private readonly transactionScopeService: TransactionScopeService,
     private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
+    private readonly ancestryRepository: MktDepartmentAncestryRepository,
   ) {}
 
   /**
@@ -353,8 +355,17 @@ export class DepartmentCrudService {
       `[SEARCH DEPARTMENTS] Found ${total} departments in workspace ${workspaceId}, page ${page}/${totalPages}`,
     );
 
+    // Get total member counts for all departments in one batch
+    const departmentIds = items.map((dept) => dept.id);
+    const memberCountsMap = await this.getTotalMemberCountsForDepartments(
+      workspaceId,
+      departmentIds,
+    );
+
     return {
-      items: items.map((department) => this.mapToOutput(department)),
+      items: items.map((department) =>
+        this.mapToOutput(department, memberCountsMap.get(department.id)),
+      ),
       total,
       page,
       limit,
@@ -370,8 +381,14 @@ export class DepartmentCrudService {
 
   /**
    * Map Department entity to DepartmentOutput
+   *
+   * @param entity - The department entity
+   * @param totalMemberCount - Optional total member count (including descendants)
    */
-  mapToOutput(entity: MktDepartmentWorkspaceEntity): DepartmentOutput {
+  mapToOutput(
+    entity: MktDepartmentWorkspaceEntity,
+    totalMemberCount?: number,
+  ): DepartmentOutput {
     return {
       id: entity.id,
       departmentCode: entity.departmentCode,
@@ -398,6 +415,7 @@ export class DepartmentCrudService {
       ),
       createdAt: new Date(entity.createdAt ?? Date.now()),
       updatedAt: new Date(entity.updatedAt ?? Date.now()),
+      totalMemberCount,
     };
   }
 
@@ -471,6 +489,101 @@ export class DepartmentCrudService {
    */
   buildFullName(firstName?: string, lastName?: string): string {
     return [firstName, lastName].filter(Boolean).join(' ') || '';
+  }
+
+  // ============================================
+  // MEMBER COUNT METHODS
+  // ============================================
+
+  /**
+   * Get total member count for a department including all descendant departments
+   *
+   * @param workspaceId - The workspace ID
+   * @param departmentId - The department ID
+   * @returns Total count of members in this department and all its descendants
+   */
+  async getTotalMemberCount(
+    workspaceId: string,
+    departmentId: string,
+  ): Promise<number> {
+    // Get all descendant department IDs
+    const descendantIds = await this.ancestryRepository.findDescendantIds(
+      workspaceId,
+      departmentId,
+    );
+
+    // Include the current department
+    const allDepartmentIds = [departmentId, ...descendantIds];
+
+    // Count members in all departments
+    const totalCount =
+      await this.workspaceMemberRepository.countTotalByDepartmentIds(
+        workspaceId,
+        allDepartmentIds,
+      );
+
+    return totalCount;
+  }
+
+  /**
+   * Get total member counts for multiple departments
+   * Returns a Map of departmentId -> totalMemberCount
+   *
+   * @param workspaceId - The workspace ID
+   * @param departmentIds - Array of department IDs
+   * @returns Map of departmentId to total member count
+   */
+  async getTotalMemberCountsForDepartments(
+    workspaceId: string,
+    departmentIds: string[],
+  ): Promise<Map<string, number>> {
+    if (departmentIds.length === 0) {
+      return new Map();
+    }
+
+    const countMap = new Map<string, number>();
+
+    // Fetch descendants for all departments in one batch
+    const descendantsMap =
+      await this.ancestryRepository.findDescendantIdsForMany(
+        workspaceId,
+        departmentIds,
+      );
+
+    // Build a set of all department IDs we need to count
+    const allDeptIdsToCount = new Set<string>();
+
+    for (const deptId of departmentIds) {
+      allDeptIdsToCount.add(deptId);
+      const descendants = descendantsMap.get(deptId) ?? [];
+
+      for (const descendantId of descendants) {
+        allDeptIdsToCount.add(descendantId);
+      }
+    }
+
+    // Get member counts for all departments in one query
+    const memberCountMap =
+      await this.workspaceMemberRepository.countByDepartmentIds(
+        workspaceId,
+        Array.from(allDeptIdsToCount),
+      );
+
+    // Calculate total for each department
+    for (const deptId of departmentIds) {
+      const descendants = descendantsMap.get(deptId) ?? [];
+      const allDeptIds = [deptId, ...descendants];
+
+      let total = 0;
+
+      for (const id of allDeptIds) {
+        total += memberCountMap.get(id) ?? 0;
+      }
+
+      countMap.set(deptId, total);
+    }
+
+    return countMap;
   }
 
   // ============================================
