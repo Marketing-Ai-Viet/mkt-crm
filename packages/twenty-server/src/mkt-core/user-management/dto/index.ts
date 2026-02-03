@@ -8,6 +8,7 @@ export * from './user-list.output';
 // Re-export nested output types for convenience
 export {
   DepartmentBasicOutput,
+  DirectManagerOutput,
   PermissionTemplateBasicOutput,
   EmploymentStatusBasicOutput,
   OrganizationLevelBasicOutput,

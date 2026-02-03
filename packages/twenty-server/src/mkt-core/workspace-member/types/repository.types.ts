@@ -14,9 +14,11 @@ export type WorkspaceMemberLocale = keyof typeof APP_LOCALES;
 
 /**
  * Default relations for workspace member queries
+ * Includes department.manager for direct manager information
  */
 export const DEFAULT_WORKSPACE_MEMBER_RELATIONS = [
   'department',
+  'department.manager',
   'organizationLevel',
   'employmentStatus',
 ] as const;

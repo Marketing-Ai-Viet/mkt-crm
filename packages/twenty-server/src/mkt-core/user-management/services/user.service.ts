@@ -35,6 +35,7 @@ import { MktEmploymentStatusRepository } from 'src/mkt-core/user-management/repo
 import {
   CreateUserInput,
   DepartmentBasicOutput,
+  DirectManagerOutput,
   EmploymentStatusBasicOutput,
   OrganizationLevelBasicOutput,
   PermissionTemplateBasicOutput,
@@ -1123,6 +1124,7 @@ export class UserService {
     const employmentStatus = this.buildEmploymentStatusOutput(member);
     const permissionTemplate =
       this.buildPermissionTemplateOutput(permissionAssignment);
+    const directManager = this.buildDirectManagerOutput(member);
 
     return {
       id: member.id,
@@ -1143,6 +1145,7 @@ export class UserService {
       permissionTemplate,
       organizationLevel,
       employmentStatus,
+      directManager,
       // Timestamps
       createdAt: DateTimeUtils.toDate(
         DateTimeUtils.fromISO(member.createdAt),
@@ -1227,6 +1230,35 @@ export class UserService {
       templateName: permissionAssignment.template?.templateName ?? '',
       templateNameEn:
         permissionAssignment.template?.templateNameEn ?? undefined,
+    };
+  }
+
+  /**
+   * Build DirectManagerOutput từ department.manager relation
+   * Direct manager = manager của department mà user thuộc về
+   */
+  private buildDirectManagerOutput(
+    member: WorkspaceMemberWithRelations,
+  ): DirectManagerOutput | null {
+    const manager = member.department?.manager;
+
+    if (!manager || !manager.id) {
+      return null;
+    }
+
+    const firstName = manager.name?.firstName ?? '';
+    const lastName = manager.name?.lastName ?? '';
+
+    return {
+      id: manager.id,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      fullName:
+        firstName || lastName ? `${firstName} ${lastName}`.trim() : undefined,
+      email: manager.userEmail ?? undefined,
+      avatarUrl: manager.avatarUrl ?? undefined,
+      memberCode: manager.memberCode ?? undefined,
+      jobTitle: manager.jobTitle ?? undefined,
     };
   }
 }
