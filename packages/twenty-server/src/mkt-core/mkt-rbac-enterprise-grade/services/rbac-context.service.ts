@@ -23,153 +23,48 @@ import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repo
 import { MktUserPermissionTemplateRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { MktPermissionTemplateWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
-import { HierarchyLevel } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/hierarchy.types';
+import { RBAC_CONTEXT_SERVICE_MESSAGES } from 'src/mkt-core/mkt-rbac-enterprise-grade/message';
+import {
+  HierarchyLevel,
+  RBACUserContext,
+  DepartmentTree,
+  DataAccessScopeType,
+  DATA_ACCESS_SCOPE,
+  getDataAccessScopeByLevel,
+  hasFullAccess,
+  canManageTeam,
+  canViewSubordinates,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
-// ============================================
-// DATA ACCESS SCOPE TYPES
-// ============================================
-
-export const DATA_ACCESS_SCOPE = {
-  ALL_DEPARTMENTS: 'ALL_DEPARTMENTS',
-  OWN_AND_CHILD_DEPARTMENTS: 'OWN_AND_CHILD_DEPARTMENTS',
-  OWN_DEPARTMENT_AND_TEAM: 'OWN_DEPARTMENT_AND_TEAM',
-  OWN_RECORDS: 'OWN_RECORDS',
-} as const;
-
-export type DataAccessScopeType =
-  (typeof DATA_ACCESS_SCOPE)[keyof typeof DATA_ACCESS_SCOPE];
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-/**
- * Get data access scope by hierarchy level
- * Levels 1-3: Full access to all departments
- * Levels 4-6: Access to own and child departments
- * Level 7: Access to own department and team
- * Levels 8-11: Access to own records only
- */
-export const getDataAccessScopeByLevel = (
-  hierarchyLevel: number,
-): DataAccessScopeType => {
-  if (hierarchyLevel <= 3) return DATA_ACCESS_SCOPE.ALL_DEPARTMENTS;
-  if (hierarchyLevel <= 6) return DATA_ACCESS_SCOPE.OWN_AND_CHILD_DEPARTMENTS;
-  if (hierarchyLevel === 7) return DATA_ACCESS_SCOPE.OWN_DEPARTMENT_AND_TEAM;
-
-  return DATA_ACCESS_SCOPE.OWN_RECORDS;
+// Re-export types for backward compatibility
+export type { RBACUserContext, DepartmentTree, DataAccessScopeType };
+export {
+  DATA_ACCESS_SCOPE,
+  getDataAccessScopeByLevel,
+  hasFullAccess,
+  canManageTeam,
+  canViewSubordinates,
 };
 
-/**
- * Check if user has full access (level 1-3: CEO, C_LEVEL, VP)
- */
-export const hasFullAccess = (hierarchyLevel: number): boolean =>
-  hierarchyLevel <= 3;
-
-/**
- * Check if user can manage team (level 1-7)
- */
-export const canManageTeam = (hierarchyLevel: number): boolean =>
-  hierarchyLevel <= 7;
-
-/**
- * Check if user can view subordinates (level 1-7)
- */
-export const canViewSubordinates = (hierarchyLevel: number): boolean =>
-  hierarchyLevel <= 7;
-
-// ============================================
-// TYPES
-// ============================================
-
-/**
- * User context for RBAC permission checks
- */
-export type UserContext = {
-  // Core identifiers
-  userId: string;
-  workspaceMemberId: string;
-  workspaceId: string;
-
-  // Department info
-  departmentId: string | null;
-  departmentCode: string | null;
-  departmentName: string | null;
-  departmentType: string | null;
-  departmentAncestorIds: string[];
-  departmentDescendantIds: string[];
-
-  // Organization level
-  organizationLevelId: string | null;
-  hierarchyLevel: HierarchyLevel;
-  levelCode: string;
-  levelName: string;
-
-  // Data access scope
-  dataAccessScope: DataAccessScopeType;
-  hasFullAccess: boolean;
-
-  // Team info
-  isManager: boolean;
-  isSubManager: boolean;
-  canManageTeam: boolean;
-  canViewSubordinates: boolean;
-
-  // Member relationships
-  subordinateMemberIds: string[];
-  teamMemberIds: string[];
-  supportingMemberIds: string[];
-
-  // Templates
-  templateKeys: string[];
-  templates: MktPermissionTemplateWorkspaceEntity[];
-
-  // Metadata
-  resolvedAt: string;
-  cacheKey: string;
-};
-
-/**
- * Department tree structure for hierarchy navigation
- */
-export type DepartmentTree = {
-  id: string;
-  departmentCode: string;
-  departmentName: string;
-  managerId: string | null;
-  children: DepartmentTree[];
-  depth: number;
-  path: string[];
-};
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const RBAC_CONTEXT_LOG_CONTEXT = 'RBAC:ContextService';
-
-const RBAC_CONTEXT_MESSAGES = {
-  RESOLVE_START: (userId: string) => `Resolving context for user ${userId}`,
-  RESOLVE_SUCCESS: (userId: string, ms: number) =>
-    `Context resolved for user ${userId} in ${ms}ms`,
-  MEMBER_NOT_FOUND: (userId: string) =>
-    `Workspace member not found for user ${userId}`,
-  DEPARTMENT_NOT_FOUND: (deptId: string) => `Department ${deptId} not found`,
-  CACHE_INVALIDATED: (userId: string) => `Cache invalidated for user ${userId}`,
-};
-
-// Default hierarchy level for users without organization level assigned
-const DEFAULT_HIERARCHY_LEVEL: HierarchyLevel = 11; // INTERN
-const DEFAULT_LEVEL_CODE = 'INTERN';
-const DEFAULT_LEVEL_NAME = 'Intern';
-
-// ============================================
-// SERVICE
-// ============================================
+// Alias for backward compatibility
+export type UserContext = RBACUserContext;
 
 @Injectable()
 export class RbacContextService {
-  private readonly logger = new Logger(RBAC_CONTEXT_LOG_CONTEXT);
+  // ============================================
+  // CONSTANTS
+  // ============================================
+
+  /** Default hierarchy level for users without organization level assigned */
+  private static readonly DEFAULT_HIERARCHY_LEVEL: HierarchyLevel = 11; // INTERN
+  private static readonly DEFAULT_LEVEL_CODE = 'INTERN';
+  private static readonly DEFAULT_LEVEL_NAME = 'Intern';
+
+  // ============================================
+  // PROPERTIES
+  // ============================================
+
+  private readonly logger = new Logger(RbacContextService.name);
 
   constructor(
     private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
@@ -194,28 +89,35 @@ export class RbacContextService {
   ): Promise<UserContext | null> {
     const startTime = DateTimeUtils.now();
 
-    this.logger.debug(RBAC_CONTEXT_MESSAGES.RESOLVE_START(userId));
+    this.logger.debug(RBAC_CONTEXT_SERVICE_MESSAGES.RESOLVE_START(userId));
 
-    // 1. Get workspace member
-    const member = await this.workspaceMemberRepository.findByUserId(userId);
+    // 1. Get workspace member (use explicit workspaceId for global interceptor context)
+    const member =
+      await this.workspaceMemberRepository.findByUserIdWithWorkspace(
+        workspaceId,
+        userId,
+      );
 
     if (!member) {
-      this.logger.warn(RBAC_CONTEXT_MESSAGES.MEMBER_NOT_FOUND(userId));
+      this.logger.warn(RBAC_CONTEXT_SERVICE_MESSAGES.MEMBER_NOT_FOUND(userId));
 
       return null;
     }
 
-    // 2. Resolve organization level
+    // 2. Resolve organization level (use explicit workspaceId)
     const orgLevel = member.organizationLevelId
-      ? await this.organizationLevelRepository.findById(
+      ? await this.organizationLevelRepository.findByIdWithWorkspace(
+          workspaceId,
           member.organizationLevelId,
         )
       : null;
 
     const hierarchyLevel: HierarchyLevel = (orgLevel?.hierarchyLevel ??
-      DEFAULT_HIERARCHY_LEVEL) as HierarchyLevel;
-    const levelCode = orgLevel?.levelCode ?? DEFAULT_LEVEL_CODE;
-    const levelName = orgLevel?.levelName ?? DEFAULT_LEVEL_NAME;
+      RbacContextService.DEFAULT_HIERARCHY_LEVEL) as HierarchyLevel;
+    const levelCode =
+      orgLevel?.levelCode ?? RbacContextService.DEFAULT_LEVEL_CODE;
+    const levelName =
+      orgLevel?.levelName ?? RbacContextService.DEFAULT_LEVEL_NAME;
 
     // 3. Resolve department info
     let departmentCode: string | null = null;
@@ -225,7 +127,8 @@ export class RbacContextService {
     let departmentDescendantIds: string[] = [];
 
     if (member.departmentId) {
-      const department = await this.departmentRepository.findById(
+      const department = await this.departmentRepository.findByIdWithWorkspace(
+        workspaceId,
         member.departmentId,
       );
 
@@ -242,12 +145,12 @@ export class RbacContextService {
       ]);
     }
 
-    // 4. Resolve subordinates and supporting members
+    // 4. Resolve subordinates and supporting members (pass workspaceId explicitly)
     const [subordinateMemberIds, teamMemberIds, supportingMemberIds] =
       await Promise.all([
         this.getSubordinates(workspaceId, member.id, hierarchyLevel),
-        this.getTeamMembers(member.departmentId, member.id),
-        this.getSupportingMembers(member.id),
+        this.getTeamMembers(workspaceId, member.departmentId, member.id),
+        this.getSupportingMembers(workspaceId, member.id),
       ]);
 
     // 5. Check if user is manager or sub-manager
@@ -315,7 +218,9 @@ export class RbacContextService {
       DateTimeUtils.now(),
     );
 
-    this.logger.debug(RBAC_CONTEXT_MESSAGES.RESOLVE_SUCCESS(userId, latencyMs));
+    this.logger.debug(
+      RBAC_CONTEXT_SERVICE_MESSAGES.RESOLVE_SUCCESS(userId, latencyMs),
+    );
 
     return context;
   }
@@ -354,20 +259,36 @@ export class RbacContextService {
    * Get department tree structure starting from a root department
    */
   async getDepartmentTree(
-    workspaceId: string,
+    _workspaceId: string,
     rootDepartmentId?: string,
   ): Promise<DepartmentTree | null> {
-    // Get all departments
     const departments = await this.departmentRepository.findMany({});
 
     if (departments.length === 0) {
       return null;
     }
 
-    // Get all hierarchy records to build parent-child relationships
     const hierarchies = await this.departmentHierarchyRepository.findMany({});
+    const parentMap = this.buildParentChildMap(hierarchies);
+    const deptMap = this.buildDepartmentTreeNodes(departments, parentMap);
+    const rootNodes = this.linkParentChildNodes(deptMap);
 
-    // Create a map of child -> parent relationships
+    if (rootDepartmentId) {
+      return deptMap.get(rootDepartmentId) ?? null;
+    }
+
+    return rootNodes[0] ?? null;
+  }
+
+  /**
+   * Build parent-child relationship map from hierarchies
+   */
+  private buildParentChildMap(
+    hierarchies: Array<{
+      childDepartmentId?: string;
+      parentDepartmentId?: string;
+    }>,
+  ): Map<string, string> {
     const parentMap = new Map<string, string>();
 
     for (const h of hierarchies) {
@@ -376,12 +297,24 @@ export class RbacContextService {
       }
     }
 
-    // Build tree structure
+    return parentMap;
+  }
+
+  /**
+   * Build department tree nodes from departments
+   */
+  private buildDepartmentTreeNodes(
+    departments: Array<{
+      id: string;
+      departmentCode?: string | null;
+      departmentName?: string | null;
+      managerId?: string | null;
+    }>,
+    parentMap: Map<string, string>,
+  ): Map<string, DepartmentTree & { parentId?: string }> {
     const deptMap = new Map<string, DepartmentTree & { parentId?: string }>();
 
     for (const dept of departments) {
-      const parentId = parentMap.get(dept.id);
-
       deptMap.set(dept.id, {
         id: dept.id,
         departmentCode: dept.departmentCode ?? '',
@@ -390,36 +323,40 @@ export class RbacContextService {
         children: [],
         depth: 0,
         path: [dept.id],
-        parentId,
+        parentId: parentMap.get(dept.id),
       });
     }
 
-    // Build parent-child relationships
+    return deptMap;
+  }
+
+  /**
+   * Link parent-child nodes and return root nodes
+   */
+  private linkParentChildNodes(
+    deptMap: Map<string, DepartmentTree & { parentId?: string }>,
+  ): DepartmentTree[] {
     const rootNodes: DepartmentTree[] = [];
 
     for (const dept of deptMap.values()) {
-      if (dept.parentId) {
-        const parent = deptMap.get(dept.parentId);
-
-        if (parent) {
-          dept.path = [...parent.path, dept.id];
-          dept.depth = parent.depth + 1;
-          parent.children.push(dept);
-        } else {
-          rootNodes.push(dept);
-        }
-      } else {
+      if (!dept.parentId) {
         rootNodes.push(dept);
+        continue;
       }
+
+      const parent = deptMap.get(dept.parentId);
+
+      if (!parent) {
+        rootNodes.push(dept);
+        continue;
+      }
+
+      dept.path = [...parent.path, dept.id];
+      dept.depth = parent.depth + 1;
+      parent.children.push(dept);
     }
 
-    // Find root
-    if (rootDepartmentId) {
-      return deptMap.get(rootDepartmentId) ?? null;
-    }
-
-    // Return first root node if no specific root requested
-    return rootNodes[0] ?? null;
+    return rootNodes;
   }
 
   // ============================================
@@ -445,9 +382,12 @@ export class RbacContextService {
 
     const subordinateIds: string[] = [];
 
-    // Get departments where user is manager
+    // Get departments where user is manager (use workspace-scoped method)
     const managedDepts =
-      await this.departmentRepository.findByManagerId(workspaceMemberId);
+      await this.departmentRepository.findByManagerIdWithWorkspace(
+        workspaceId,
+        workspaceMemberId,
+      );
 
     // Get departments where user is sub-manager
     const subManagedAssignments =
@@ -465,10 +405,13 @@ export class RbacContextService {
         .filter((id): id is string => id !== null),
     ];
 
-    // Get members from these departments
+    // Get members from these departments (use workspace-scoped method)
     for (const deptId of allManagedDeptIds) {
       const members =
-        await this.workspaceMemberRepository.findByDepartment(deptId);
+        await this.workspaceMemberRepository.findByDepartmentWithWorkspace(
+          workspaceId,
+          deptId,
+        );
 
       for (const member of members) {
         // Exclude self
@@ -478,9 +421,12 @@ export class RbacContextService {
       }
     }
 
-    // If user has full access (level 1-3), get all members
+    // If user has full access (level 1-3), get all members (use workspace-scoped method)
     if (hasFullAccess(hierarchyLevel)) {
-      const allMembers = await this.workspaceMemberRepository.findAllActive();
+      const allMembers =
+        await this.workspaceMemberRepository.findAllActiveWithWorkspace(
+          workspaceId,
+        );
 
       for (const member of allMembers) {
         if (
@@ -499,6 +445,7 @@ export class RbacContextService {
    * Get team members in the same department
    */
   async getTeamMembers(
+    workspaceId: string,
     departmentId: string | undefined | null,
     excludeMemberId: string,
   ): Promise<string[]> {
@@ -507,7 +454,10 @@ export class RbacContextService {
     }
 
     const members =
-      await this.workspaceMemberRepository.findByDepartment(departmentId);
+      await this.workspaceMemberRepository.findByDepartmentWithWorkspace(
+        workspaceId,
+        departmentId,
+      );
 
     return members.filter((m) => m.id !== excludeMemberId).map((m) => m.id);
   }
@@ -516,11 +466,15 @@ export class RbacContextService {
    * Get member IDs that this user is supporting
    * (via supportForMemberId field in workspace member)
    */
-  async getSupportingMembers(workspaceMemberId: string): Promise<string[]> {
+  async getSupportingMembers(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<string[]> {
     const supportedMembers =
-      await this.workspaceMemberRepository.findManyMembers({
-        supportForMemberId: workspaceMemberId,
-      });
+      await this.workspaceMemberRepository.findManyMembersWithWorkspace(
+        workspaceId,
+        { supportForMemberId: workspaceMemberId },
+      );
 
     return supportedMembers.map((m) => m.id);
   }
@@ -537,7 +491,10 @@ export class RbacContextService {
     workspaceMemberId: string,
   ): Promise<boolean> {
     const managedDepts =
-      await this.departmentRepository.findByManagerId(workspaceMemberId);
+      await this.departmentRepository.findByManagerIdWithWorkspace(
+        workspaceId,
+        workspaceMemberId,
+      );
 
     return managedDepts.length > 0;
   }
@@ -601,7 +558,7 @@ export class RbacContextService {
    */
   async invalidateCache(userId: string): Promise<void> {
     // Note: Actual cache invalidation will be implemented in RbacCacheService
-    this.logger.debug(RBAC_CONTEXT_MESSAGES.CACHE_INVALIDATED(userId));
+    this.logger.debug(RBAC_CONTEXT_SERVICE_MESSAGES.CACHE_INVALIDATED(userId));
   }
 
   /**

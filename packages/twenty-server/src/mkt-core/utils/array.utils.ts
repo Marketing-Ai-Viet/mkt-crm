@@ -209,4 +209,57 @@ export class ArrayUtils {
   static difference<T>(array1: T[], array2: T[]): T[] {
     return array1.filter((item) => !array2.includes(item));
   }
+
+  /**
+   * Count occurrences by key or function (like lodash countBy)
+   * Khác với countBy ở trên (đếm match condition), method này đếm theo grouping
+   */
+  static countByKey<T>(
+    array: T[],
+    iteratee: keyof T | ((item: T) => string),
+  ): Record<string, number> {
+    return array.reduce(
+      (acc, item) => {
+        const key =
+          typeof iteratee === 'function'
+            ? iteratee(item)
+            : String(item[iteratee] ?? 'undefined');
+
+        acc[key] = (acc[key] ?? 0) + 1;
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+  }
+
+  /**
+   * Order array by keys with directions (like lodash orderBy)
+   */
+  static orderBy<T>(
+    array: T[],
+    iteratees: (keyof T)[],
+    orders: ('asc' | 'desc')[],
+  ): T[] {
+    return [...array].sort((a, b) => {
+      for (let i = 0; i < iteratees.length; i++) {
+        const key = iteratees[i];
+        const order = orders[i] ?? 'asc';
+        const aVal = a[key];
+        const bVal = b[key];
+
+        if (aVal < bVal) return order === 'asc' ? -1 : 1;
+        if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      }
+
+      return 0;
+    });
+  }
+
+  /**
+   * Take first n elements from array (like lodash take)
+   */
+  static take<T>(array: T[], n: number): T[] {
+    return array.slice(0, n);
+  }
 }

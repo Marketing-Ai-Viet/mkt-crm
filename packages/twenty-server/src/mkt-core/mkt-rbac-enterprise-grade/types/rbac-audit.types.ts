@@ -1,5 +1,7 @@
 /**
  * RBAC Audit Service Types
+ *
+ * Types cho audit logging, querying và statistics
  */
 
 import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
@@ -8,6 +10,51 @@ import {
   PermissionSource,
   RbacAction,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
+
+// ============================================
+// DATE RANGE TYPES
+// ============================================
+
+/**
+ * Options for date range queries (input - có thể undefined)
+ */
+export type DateRangeOptions = {
+  fromDate?: Date;
+  toDate?: Date;
+};
+
+/**
+ * Required date range (output - luôn có giá trị)
+ */
+export type RequiredDateRange = {
+  fromDate: Date;
+  toDate: Date;
+};
+
+// ============================================
+// STATISTICS TYPES
+// ============================================
+
+/**
+ * Object count entry for statistics
+ */
+export type ObjectCountEntry = {
+  objectName: string;
+  count: number;
+};
+
+/**
+ * Failure reason entry for statistics
+ */
+export type FailureReasonEntry = {
+  reason: string;
+  count: number;
+};
+
+/**
+ * Internal audit item type for processing
+ */
+export type AuditItem = MktPermissionAuditWorkspaceEntity;
 
 // ============================================
 // AUDIT LOG TYPES

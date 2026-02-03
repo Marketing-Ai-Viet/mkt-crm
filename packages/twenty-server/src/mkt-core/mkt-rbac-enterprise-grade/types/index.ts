@@ -97,6 +97,11 @@ export {
   type SecurityAlert as ServiceSecurityAlert,
   type SecurityAlertType,
   type SecurityAlertSeverity,
+  type DateRangeOptions,
+  type RequiredDateRange,
+  type ObjectCountEntry,
+  type FailureReasonEntry,
+  type AuditItem,
 } from './rbac-audit.types';
 
 // Department authorization types
@@ -110,3 +115,20 @@ export * from './rbac-context.types';
 
 // Filter expression types (Template layer)
 export * from './filter-expression.types';
+
+// RBAC Cache types
+export * from './rbac-cache.types';
+
+// Hierarchy types - only export unique types (re-exports from mkt-department.constant)
+// Note: Other types like Department, Team, OrganizationLevel are already exported from hierarchy-context.type
+// Note: ReportingRelationship is already exported from validation-step.types
+export { HierarchyLevel, DepartmentCode } from './hierarchy.types';
+
+// Data access scope types and helpers
+export * from './data-access-scope.types';
+
+// RBAC Enforcer types
+export * from './rbac-enforcer.types';
+
+// Permission Context types
+export * from './permission-context.types';

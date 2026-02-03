@@ -137,6 +137,32 @@ export const AUDIT_MESSAGES = createModuleMessages({
   },
 });
 
+/**
+ * Dynamic messages for RBAC Audit Service
+ */
+export const AUDIT_SERVICE_MESSAGES = {
+  LOG_CREATED: (action: string, object: string, result: string) =>
+    `Audit: ${action} on ${object} - ${result}`,
+  BATCH_LOGGED: (count: number) => `${count} audit entries logged`,
+  CLEANUP_COMPLETED: (deleted: number, retentionDays: number) =>
+    `Audit cleanup: ${deleted} entries older than ${retentionDays} days deleted`,
+  ALERT_DETECTED: (type: string, severity: string) =>
+    `Security alert detected: ${type} (${severity})`,
+} as const;
+
+/**
+ * Dynamic messages for RBAC Context Service
+ */
+export const RBAC_CONTEXT_SERVICE_MESSAGES = {
+  RESOLVE_START: (userId: string) => `Resolving context for user ${userId}`,
+  RESOLVE_SUCCESS: (userId: string, ms: number) =>
+    `Context resolved for user ${userId} in ${ms}ms`,
+  MEMBER_NOT_FOUND: (userId: string) =>
+    `Workspace member not found for user ${userId}`,
+  DEPARTMENT_NOT_FOUND: (deptId: string) => `Department ${deptId} not found`,
+  CACHE_INVALIDATED: (userId: string) => `Cache invalidated for user ${userId}`,
+} as const;
+
 // ============================================
 // CACHE MESSAGES
 // ============================================

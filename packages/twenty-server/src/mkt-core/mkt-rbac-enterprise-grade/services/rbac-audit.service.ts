@@ -1,8 +1,15 @@
 /**
  * RbacAuditService - Business logic for RBAC Audit Logging
  *
- * Provides operations for logging, querying, and analyzing permission checks
- * and access control decisions.
+ * Cung cấp các operations để logging, querying và phân tích permission checks
+ * và access control decisions.
+ *
+ * Responsibilities:
+ * - Ghi log permission checks (single và batch)
+ * - Query audit logs với pagination
+ * - Thống kê và phân tích audit data
+ * - Phát hiện security alerts
+ * - Cleanup old audit logs
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -11,57 +18,62 @@ import { MktPermissionAuditRepository } from 'src/mkt-core/mkt-rbac-enterprise-g
 import { MktPermissionAuditWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { CheckResult } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { ArrayUtils } from 'src/mkt-core/utils/array.utils';
 import {
   CreateAuditLogInput,
   AuditQueryOptions,
   PaginatedAuditLogResult,
   AuditStatistics,
   UserAuditSummary,
-  ServiceSecurityAlert as SecurityAlert,
+  ServiceSecurityAlert,
+  DateRangeOptions,
+  RequiredDateRange,
+  ObjectCountEntry,
+  FailureReasonEntry,
+  AuditItem,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
-
-// Alias for backward compatibility
-type AuditLogQueryOptions = AuditQueryOptions;
-
-// Re-export types for backward compatibility
-export type {
-  CreateAuditLogInput,
-  AuditLogQueryOptions,
-  PaginatedAuditLogResult,
-  AuditStatistics,
-  UserAuditSummary,
-  SecurityAlert,
-};
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const LOG_CONTEXT = 'RBAC:AuditService';
-
-const DEFAULT_PAGE_SIZE = 50;
-const MAX_PAGE_SIZE = 500;
-const FAILURE_THRESHOLD_FOR_ALERT = 5;
-const HIGH_VOLUME_THRESHOLD = 100;
-const DEFAULT_RETENTION_DAYS = 90;
-
-const AUDIT_MESSAGES = {
-  LOG_CREATED: (action: string, object: string, result: string) =>
-    `Audit: ${action} on ${object} - ${result}`,
-  BATCH_LOGGED: (count: number) => `${count} audit entries logged`,
-  CLEANUP_COMPLETED: (deleted: number, retentionDays: number) =>
-    `Audit cleanup: ${deleted} entries older than ${retentionDays} days deleted`,
-  ALERT_DETECTED: (type: string, severity: string) =>
-    `Security alert detected: ${type} (${severity})`,
-} as const;
-
-// ============================================
-// SERVICE
-// ============================================
+import { AUDIT_SERVICE_MESSAGES } from 'src/mkt-core/mkt-rbac-enterprise-grade/message';
 
 @Injectable()
 export class RbacAuditService {
-  private readonly logger = new Logger(LOG_CONTEXT);
+  // ============================================
+  // CONSTANTS
+  // ============================================
+
+  private static readonly LOG_CONTEXT = 'RBAC:AuditService';
+
+  /** Default page size for paginated queries */
+  private static readonly DEFAULT_PAGE_SIZE = 50;
+
+  /** Maximum allowed page size */
+  private static readonly MAX_PAGE_SIZE = 500;
+
+  /** Number of failures before triggering an alert */
+  private static readonly FAILURE_THRESHOLD_FOR_ALERT = 5;
+
+  /** High activity threshold for alerts */
+  private static readonly HIGH_VOLUME_THRESHOLD = 100;
+
+  /** Default log retention period in days */
+  private static readonly DEFAULT_RETENTION_DAYS = 90;
+
+  /** Default statistics time window in days */
+  private static readonly DEFAULT_STATS_WINDOW_DAYS = 30;
+
+  /** Maximum items to fetch for statistics */
+  private static readonly MAX_STATS_ITEMS = 10000;
+
+  /** Maximum items to fetch for user summary */
+  private static readonly MAX_USER_SUMMARY_ITEMS = 5000;
+
+  /** Top N items to show in summaries */
+  private static readonly TOP_N_ITEMS = 10;
+
+  // ============================================
+  // PROPERTIES
+  // ============================================
+
+  private readonly logger = new Logger(RbacAuditService.LOG_CONTEXT);
 
   constructor(private readonly auditRepository: MktPermissionAuditRepository) {}
 
@@ -71,33 +83,20 @@ export class RbacAuditService {
 
   /**
    * Log a single permission check
+   *
+   * @param workspaceId - Workspace ID
+   * @param input - Audit log input data
+   * @returns Created audit log entity
    */
   async logPermissionCheck(
     workspaceId: string,
     input: CreateAuditLogInput,
   ): Promise<MktPermissionAuditWorkspaceEntity> {
-    const audit = await this.auditRepository.create({
-      workspaceMemberId: input.workspaceMemberId,
-      userId: input.userId,
-      action: input.action,
-      objectName: input.objectName,
-      recordId: input.recordId,
-      permissionSource: input.permissionSource,
-      checkResult: input.checkResult,
-      denialReason: input.denialReason,
-      requestContext: input.requestContext,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-      checkDurationMs: input.checkDurationMs,
-      stepResults: input.stepResults,
-      cacheHit: input.cacheHit ?? false,
-      executionPath: input.executionPath,
-      requestId: input.requestId,
-      metadata: input.metadata,
-    });
+    const auditData = this.buildAuditData(input);
+    const audit = await this.auditRepository.create(auditData);
 
     this.logger.debug(
-      AUDIT_MESSAGES.LOG_CREATED(
+      AUDIT_SERVICE_MESSAGES.LOG_CREATED(
         input.action,
         input.objectName,
         input.checkResult,
@@ -109,34 +108,19 @@ export class RbacAuditService {
 
   /**
    * Log multiple permission checks in batch
+   *
+   * @param workspaceId - Workspace ID (reserved for future use)
+   * @param entries - Array of audit log inputs
+   * @returns Array of created audit log entities
    */
   async logBatch(
     _workspaceId: string,
     entries: CreateAuditLogInput[],
   ): Promise<MktPermissionAuditWorkspaceEntity[]> {
-    const auditEntries = entries.map((input) => ({
-      workspaceMemberId: input.workspaceMemberId,
-      userId: input.userId,
-      action: input.action,
-      objectName: input.objectName,
-      recordId: input.recordId,
-      permissionSource: input.permissionSource,
-      checkResult: input.checkResult,
-      denialReason: input.denialReason,
-      requestContext: input.requestContext,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-      checkDurationMs: input.checkDurationMs,
-      stepResults: input.stepResults,
-      cacheHit: input.cacheHit ?? false,
-      executionPath: input.executionPath,
-      requestId: input.requestId,
-      metadata: input.metadata,
-    }));
-
+    const auditEntries = entries.map((input) => this.buildAuditData(input));
     const audits = await this.auditRepository.createBatch(auditEntries);
 
-    this.logger.log(AUDIT_MESSAGES.BATCH_LOGGED(audits.length));
+    this.logger.log(AUDIT_SERVICE_MESSAGES.BATCH_LOGGED(audits.length));
 
     return audits;
   }
@@ -157,14 +141,18 @@ export class RbacAuditService {
 
   /**
    * Query audit logs with pagination
+   *
+   * @param workspaceId - Workspace ID
+   * @param options - Query options including filters and pagination
+   * @returns Paginated result with items and metadata
    */
   async queryAuditLogs(
     workspaceId: string,
-    options: AuditLogQueryOptions,
+    options: AuditQueryOptions,
   ): Promise<PaginatedAuditLogResult> {
     const pageSize = Math.min(
-      options.limit ?? DEFAULT_PAGE_SIZE,
-      MAX_PAGE_SIZE,
+      options.limit ?? RbacAuditService.DEFAULT_PAGE_SIZE,
+      RbacAuditService.MAX_PAGE_SIZE,
     );
     const offset = options.offset ?? 0;
     const page = Math.floor(offset / pageSize) + 1;
@@ -247,180 +235,87 @@ export class RbacAuditService {
 
   /**
    * Get audit statistics for a workspace
+   *
+   * Tính toán các metrics từ audit logs trong khoảng thời gian:
+   * - Số lượng checks theo result (pass/fail/skip/warning/error)
+   * - Cache hit rate
+   * - Average check duration
+   * - Distribution by action, object, source
+   * - Failure reasons breakdown
+   *
+   * @param workspaceId - Workspace ID
+   * @param options - Optional date range
+   * @returns Audit statistics
    */
   async getStatistics(
     workspaceId: string,
-    options?: { fromDate?: Date; toDate?: Date },
+    options?: DateRangeOptions,
   ): Promise<AuditStatistics> {
-    const fromDate =
-      options?.fromDate ??
-      DateTimeUtils.toDate(
-        DateTimeUtils.subtract(DateTimeUtils.now(), { days: 30 }),
-      );
-    const toDate = options?.toDate ?? DateTimeUtils.toDate(DateTimeUtils.now());
+    const { fromDate, toDate } = this.getDefaultDateRange(options);
 
     const { items } = await this.auditRepository.query(workspaceId, {
       fromDate,
       toDate,
-      limit: 10000, // Get a large batch for statistics
+      limit: RbacAuditService.MAX_STATS_ITEMS,
     });
 
-    let passedChecks = 0;
-    let failedChecks = 0;
-    let skippedChecks = 0;
-    let warningChecks = 0;
-    let errorChecks = 0;
-    let cacheHits = 0;
-    let totalDuration = 0;
-    let durationCount = 0;
-    const checksByAction: Record<string, number> = {};
-    const checksByObject: Record<string, number> = {};
-    const checksBySource: Record<string, number> = {};
-    const failuresByReason: Record<string, number> = {};
-
-    for (const audit of items) {
-      // Count by result
-      switch (audit.checkResult) {
-        case CheckResult.PASS:
-          passedChecks++;
-          break;
-        case CheckResult.FAIL:
-          failedChecks++;
-
-          if (audit.denialReason) {
-            failuresByReason[audit.denialReason] =
-              (failuresByReason[audit.denialReason] ?? 0) + 1;
-          }
-          break;
-        case CheckResult.SKIP:
-          skippedChecks++;
-          break;
-        case CheckResult.WARNING:
-          warningChecks++;
-          break;
-        case CheckResult.ERROR:
-          errorChecks++;
-          break;
-      }
-
-      // Count cache hits
-      if (audit.cacheHit) {
-        cacheHits++;
-      }
-
-      // Sum durations
-      if (audit.checkDurationMs) {
-        totalDuration += audit.checkDurationMs;
-        durationCount++;
-      }
-
-      // Count by action
-      checksByAction[audit.action] = (checksByAction[audit.action] ?? 0) + 1;
-
-      // Count by object
-      checksByObject[audit.objectName] =
-        (checksByObject[audit.objectName] ?? 0) + 1;
-
-      // Count by source
-      if (audit.permissionSource) {
-        checksBySource[audit.permissionSource] =
-          (checksBySource[audit.permissionSource] ?? 0) + 1;
-      }
-    }
-
-    const totalChecks = items.length;
+    const resultCounts = this.countByCheckResult(items);
 
     return {
-      totalChecks,
-      passedChecks,
-      failedChecks,
-      skippedChecks,
-      warningChecks,
-      errorChecks,
-      cacheHitRate: totalChecks > 0 ? cacheHits / totalChecks : 0,
-      averageCheckDurationMs:
-        durationCount > 0 ? totalDuration / durationCount : 0,
-      checksByAction,
-      checksByObject,
-      checksBySource,
-      failuresByReason,
+      totalChecks: items.length,
+      passedChecks: resultCounts[CheckResult.PASS],
+      failedChecks: resultCounts[CheckResult.FAIL],
+      skippedChecks: resultCounts[CheckResult.SKIP],
+      warningChecks: resultCounts[CheckResult.WARNING],
+      errorChecks: resultCounts[CheckResult.ERROR],
+      cacheHitRate: this.calculateCacheHitRate(items),
+      averageCheckDurationMs: this.calculateAverageCheckDuration(items),
+      checksByAction: ArrayUtils.countByKey(items, 'action'),
+      checksByObject: ArrayUtils.countByKey(items, 'objectName'),
+      checksBySource: this.countByPermissionSource(items),
+      failuresByReason: this.countFailureReasons(items),
     };
   }
 
   /**
    * Get user audit summary
+   *
+   * Tổng hợp thông tin audit cho một user cụ thể:
+   * - Tổng số checks và tỷ lệ pass/fail
+   * - Thời gian activity cuối
+   * - Top accessed objects
+   * - Top failure reasons
+   *
+   * @param workspaceId - Workspace ID
+   * @param workspaceMemberId - Workspace member ID
+   * @param options - Optional date range
+   * @returns User audit summary
    */
   async getUserAuditSummary(
     workspaceId: string,
     workspaceMemberId: string,
-    options?: { fromDate?: Date; toDate?: Date },
+    options?: DateRangeOptions,
   ): Promise<UserAuditSummary> {
-    const fromDate =
-      options?.fromDate ??
-      DateTimeUtils.toDate(
-        DateTimeUtils.subtract(DateTimeUtils.now(), { days: 30 }),
-      );
-    const toDate = options?.toDate ?? DateTimeUtils.toDate(DateTimeUtils.now());
+    const { fromDate, toDate } = this.getDefaultDateRange(options);
 
     const { items } = await this.auditRepository.query(workspaceId, {
       workspaceMemberId,
       fromDate,
       toDate,
-      limit: 5000,
+      limit: RbacAuditService.MAX_USER_SUMMARY_ITEMS,
     });
 
-    let passedChecks = 0;
-    let failedChecks = 0;
-    let lastActivity: Date | undefined;
-    const objectCounts: Record<string, number> = {};
-    const failureReasonCounts: Record<string, number> = {};
-
-    for (const audit of items) {
-      // Count results
-      if (audit.checkResult === CheckResult.PASS) {
-        passedChecks++;
-      } else if (audit.checkResult === CheckResult.FAIL) {
-        failedChecks++;
-
-        if (audit.denialReason) {
-          failureReasonCounts[audit.denialReason] =
-            (failureReasonCounts[audit.denialReason] ?? 0) + 1;
-        }
-      }
-
-      // Track last activity - convert createdAt to Date for comparison
-      const auditDate = new Date(audit.createdAt);
-
-      if (!lastActivity || auditDate > lastActivity) {
-        lastActivity = auditDate;
-      }
-
-      // Count objects
-      objectCounts[audit.objectName] =
-        (objectCounts[audit.objectName] ?? 0) + 1;
-    }
-
-    // Sort and limit most accessed objects
-    const mostAccessedObjects = Object.entries(objectCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
-      .map(([objectName, count]) => ({ objectName, count }));
-
-    // Sort and limit failure reasons
-    const failureReasons = Object.entries(failureReasonCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
-      .map(([reason, count]) => ({ reason, count }));
+    const resultCounts = this.countByCheckResult(items);
 
     return {
       workspaceMemberId,
       userId: items[0]?.userId,
       totalChecks: items.length,
-      passedChecks,
-      failedChecks,
-      lastActivity,
-      mostAccessedObjects,
-      failureReasons,
+      passedChecks: resultCounts[CheckResult.PASS],
+      failedChecks: resultCounts[CheckResult.FAIL],
+      lastActivity: this.getLastActivityDate(items),
+      mostAccessedObjects: this.getTopObjectCounts(items),
+      failureReasons: this.getTopFailureReasons(items),
     };
   }
 
@@ -430,78 +325,51 @@ export class RbacAuditService {
 
   /**
    * Detect security alerts based on audit patterns
+   *
+   * Phát hiện các patterns đáng ngờ:
+   * - REPEATED_FAILURES: User có nhiều permission check failures
+   * - HIGH_VOLUME: User có activity cao bất thường
+   *
+   * @param workspaceId - Workspace ID
+   * @param options - Optional time window in hours
+   * @returns Array of detected security alerts
    */
   async detectSecurityAlerts(
     workspaceId: string,
     options?: { timeWindowHours?: number },
-  ): Promise<SecurityAlert[]> {
+  ): Promise<ServiceSecurityAlert[]> {
     const timeWindowHours = options?.timeWindowHours ?? 24;
-    const fromDate = DateTimeUtils.toDate(
+    const fromDate = DateTimeUtils.toDateRequired(
       DateTimeUtils.subtract(DateTimeUtils.now(), { hours: timeWindowHours }),
     );
 
-    const alerts: SecurityAlert[] = [];
+    const alerts: ServiceSecurityAlert[] = [];
+    const now = DateTimeUtils.toDateRequired(DateTimeUtils.now());
 
-    // Get recent denied access
-    const deniedAccess = await this.auditRepository.findDeniedAccess(
+    // Detect repeated failures
+    const failureAlerts = await this.detectRepeatedFailures(
       workspaceId,
-      { fromDate, limit: 1000 },
+      fromDate,
+      timeWindowHours,
+      now,
     );
 
-    // Analyze failures by user
-    const failuresByUser: Record<string, number> = {};
+    alerts.push(...failureAlerts);
 
-    for (const audit of deniedAccess) {
-      failuresByUser[audit.workspaceMemberId] =
-        (failuresByUser[audit.workspaceMemberId] ?? 0) + 1;
-    }
-
-    // Check for repeated failures
-    const now = DateTimeUtils.toDate(DateTimeUtils.now()) ?? new Date();
-
-    for (const [userId, count] of Object.entries(failuresByUser)) {
-      if (count >= FAILURE_THRESHOLD_FOR_ALERT) {
-        alerts.push({
-          type: 'REPEATED_FAILURES',
-          severity:
-            count >= FAILURE_THRESHOLD_FOR_ALERT * 2 ? 'HIGH' : 'MEDIUM',
-          workspaceMemberId: userId,
-          description: `User has ${count} failed permission checks in the last ${timeWindowHours} hours`,
-          details: { failureCount: count, timeWindowHours },
-          detectedAt: now,
-        });
-      }
-    }
-
-    // Check for high volume
-    const volumeByUser: Record<string, number> = {};
-    const { items: recentActivity } = await this.auditRepository.query(
+    // Detect high volume activity
+    const volumeAlerts = await this.detectHighVolumeActivity(
       workspaceId,
-      { fromDate, limit: 5000 },
+      fromDate,
+      timeWindowHours,
+      now,
     );
 
-    for (const audit of recentActivity) {
-      volumeByUser[audit.workspaceMemberId] =
-        (volumeByUser[audit.workspaceMemberId] ?? 0) + 1;
-    }
+    alerts.push(...volumeAlerts);
 
-    for (const [userId, count] of Object.entries(volumeByUser)) {
-      if (count >= HIGH_VOLUME_THRESHOLD) {
-        alerts.push({
-          type: 'HIGH_VOLUME',
-          severity: 'LOW',
-          workspaceMemberId: userId,
-          description: `Unusually high activity: ${count} permission checks in ${timeWindowHours} hours`,
-          details: { checkCount: count, timeWindowHours },
-          detectedAt: now,
-        });
-      }
-    }
-
-    // Log alerts
+    // Log all detected alerts
     for (const alert of alerts) {
       this.logger.warn(
-        AUDIT_MESSAGES.ALERT_DETECTED(alert.type, alert.severity),
+        AUDIT_SERVICE_MESSAGES.ALERT_DETECTED(alert.type, alert.severity),
         alert,
       );
     }
@@ -515,23 +383,31 @@ export class RbacAuditService {
 
   /**
    * Clean up old audit logs
+   *
+   * Xóa các audit logs cũ hơn retention period.
+   * Mặc định là 90 ngày.
+   *
+   * @param workspaceId - Workspace ID
+   * @param retentionDays - Optional retention period in days
+   * @returns Number of deleted records
    */
   async cleanupOldLogs(
     workspaceId: string,
     retentionDays?: number,
   ): Promise<number> {
-    const days = retentionDays ?? DEFAULT_RETENTION_DAYS;
-    const cutoffDate =
-      DateTimeUtils.toDate(
-        DateTimeUtils.subtract(DateTimeUtils.now(), { days }),
-      ) ?? new Date();
+    const days = retentionDays ?? RbacAuditService.DEFAULT_RETENTION_DAYS;
+    const cutoffDate = DateTimeUtils.toDateRequired(
+      DateTimeUtils.subtract(DateTimeUtils.now(), { days }),
+    );
 
     const deletedCount = await this.auditRepository.deleteOlderThan(
       workspaceId,
       cutoffDate,
     );
 
-    this.logger.log(AUDIT_MESSAGES.CLEANUP_COMPLETED(deletedCount, days));
+    this.logger.log(
+      AUDIT_SERVICE_MESSAGES.CLEANUP_COMPLETED(deletedCount, days),
+    );
 
     return deletedCount;
   }
@@ -551,5 +427,261 @@ export class RbacAuditService {
     checkResult: CheckResult,
   ): Promise<number> {
     return this.auditRepository.countByCheckResult(workspaceId, checkResult);
+  }
+
+  // ============================================
+  // PRIVATE HELPER METHODS
+  // ============================================
+
+  /**
+   * Build audit data from input
+   * Centralized method để tạo audit data object
+   */
+  private buildAuditData(
+    input: CreateAuditLogInput,
+  ): Partial<MktPermissionAuditWorkspaceEntity> {
+    return {
+      workspaceMemberId: input.workspaceMemberId,
+      userId: input.userId,
+      action: input.action,
+      objectName: input.objectName,
+      recordId: input.recordId,
+      permissionSource: input.permissionSource,
+      checkResult: input.checkResult,
+      denialReason: input.denialReason,
+      requestContext: input.requestContext,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+      checkDurationMs: input.checkDurationMs,
+      stepResults: input.stepResults,
+      cacheHit: input.cacheHit ?? false,
+      executionPath: input.executionPath,
+      requestId: input.requestId,
+      metadata: input.metadata,
+    };
+  }
+
+  /**
+   * Count items by permission source, filtering out null/undefined sources
+   */
+  private countByPermissionSource(items: AuditItem[]): Record<string, number> {
+    const itemsWithSource = items.filter(
+      (item) =>
+        item.permissionSource !== null && item.permissionSource !== undefined,
+    );
+
+    return ArrayUtils.countByKey(itemsWithSource, 'permissionSource');
+  }
+
+  /**
+   * Detect repeated failure patterns
+   */
+  private async detectRepeatedFailures(
+    workspaceId: string,
+    fromDate: Date,
+    timeWindowHours: number,
+    detectedAt: Date,
+  ): Promise<ServiceSecurityAlert[]> {
+    const deniedAccess = await this.auditRepository.findDeniedAccess(
+      workspaceId,
+      { fromDate, limit: 1000 },
+    );
+
+    const failuresByUser = ArrayUtils.groupBy(
+      deniedAccess,
+      'workspaceMemberId',
+    );
+    const alerts: ServiceSecurityAlert[] = [];
+
+    for (const [userId, userFailures] of Object.entries(failuresByUser)) {
+      const failureCount = userFailures.length;
+
+      if (failureCount >= RbacAuditService.FAILURE_THRESHOLD_FOR_ALERT) {
+        const severity =
+          failureCount >= RbacAuditService.FAILURE_THRESHOLD_FOR_ALERT * 2
+            ? 'HIGH'
+            : 'MEDIUM';
+
+        alerts.push({
+          type: 'REPEATED_FAILURES',
+          severity,
+          workspaceMemberId: userId,
+          description: `User has ${failureCount} failed permission checks in the last ${timeWindowHours} hours`,
+          details: { failureCount, timeWindowHours },
+          detectedAt,
+        });
+      }
+    }
+
+    return alerts;
+  }
+
+  /**
+   * Detect high volume activity patterns
+   */
+  private async detectHighVolumeActivity(
+    workspaceId: string,
+    fromDate: Date,
+    timeWindowHours: number,
+    detectedAt: Date,
+  ): Promise<ServiceSecurityAlert[]> {
+    const { items: recentActivity } = await this.auditRepository.query(
+      workspaceId,
+      { fromDate, limit: 5000 },
+    );
+
+    const volumeByUser = ArrayUtils.groupBy(
+      recentActivity,
+      'workspaceMemberId',
+    );
+    const alerts: ServiceSecurityAlert[] = [];
+
+    for (const [userId, userActivity] of Object.entries(volumeByUser)) {
+      const checkCount = userActivity.length;
+
+      if (checkCount >= RbacAuditService.HIGH_VOLUME_THRESHOLD) {
+        alerts.push({
+          type: 'HIGH_VOLUME',
+          severity: 'LOW',
+          workspaceMemberId: userId,
+          description: `Unusually high activity: ${checkCount} permission checks in ${timeWindowHours} hours`,
+          details: { checkCount, timeWindowHours },
+          detectedAt,
+        });
+      }
+    }
+
+    return alerts;
+  }
+
+  // ============================================
+  // HELPER METHODS
+  // ============================================
+
+  /**
+   * Tính default date range cho statistics
+   * Mặc định là 30 ngày gần nhất
+   */
+  private getDefaultDateRange(options?: DateRangeOptions): RequiredDateRange {
+    const now = DateTimeUtils.now();
+    const defaultFromDate = DateTimeUtils.toDateRequired(
+      DateTimeUtils.subtract(now, {
+        days: RbacAuditService.DEFAULT_STATS_WINDOW_DAYS,
+      }),
+    );
+    const defaultToDate = DateTimeUtils.toDateRequired(now);
+
+    return {
+      fromDate: options?.fromDate ?? defaultFromDate,
+      toDate: options?.toDate ?? defaultToDate,
+    };
+  }
+
+  /**
+   * Đếm audit items theo check result
+   */
+  private countByCheckResult(items: AuditItem[]): Record<CheckResult, number> {
+    const counts = ArrayUtils.countByKey(items, 'checkResult');
+
+    return {
+      [CheckResult.PASS]: counts[CheckResult.PASS] ?? 0,
+      [CheckResult.FAIL]: counts[CheckResult.FAIL] ?? 0,
+      [CheckResult.SKIP]: counts[CheckResult.SKIP] ?? 0,
+      [CheckResult.WARNING]: counts[CheckResult.WARNING] ?? 0,
+      [CheckResult.ERROR]: counts[CheckResult.ERROR] ?? 0,
+    };
+  }
+
+  /**
+   * Đếm failure reasons từ danh sách audit items
+   */
+  private countFailureReasons(items: AuditItem[]): Record<string, number> {
+    const failedItems = items.filter(
+      (item) => item.checkResult === CheckResult.FAIL && item.denialReason,
+    );
+
+    return ArrayUtils.countByKey(failedItems, 'denialReason');
+  }
+
+  /**
+   * Tính toán cache hit rate
+   */
+  private calculateCacheHitRate(items: AuditItem[]): number {
+    if (items.length === 0) return 0;
+
+    const cacheHits = items.filter((item) => item.cacheHit).length;
+
+    return cacheHits / items.length;
+  }
+
+  /**
+   * Tính toán average check duration
+   */
+  private calculateAverageCheckDuration(items: AuditItem[]): number {
+    const itemsWithDuration = items.filter(
+      (item) =>
+        item.checkDurationMs !== null && item.checkDurationMs !== undefined,
+    );
+
+    if (itemsWithDuration.length === 0) return 0;
+
+    const totalDuration = ArrayUtils.sumBy(
+      itemsWithDuration,
+      'checkDurationMs',
+    );
+
+    return totalDuration / itemsWithDuration.length;
+  }
+
+  /**
+   * Convert audit items to sorted top N object counts
+   */
+  private getTopObjectCounts(
+    items: AuditItem[],
+    limit: number = RbacAuditService.TOP_N_ITEMS,
+  ): ObjectCountEntry[] {
+    const objectCounts = ArrayUtils.countByKey(items, 'objectName');
+    const entries = Object.entries(objectCounts).map(([objectName, count]) => ({
+      objectName,
+      count,
+    }));
+
+    return ArrayUtils.take(
+      ArrayUtils.orderBy(entries, ['count'], ['desc']),
+      limit,
+    );
+  }
+
+  /**
+   * Convert failure reasons to sorted top N entries
+   */
+  private getTopFailureReasons(
+    items: AuditItem[],
+    limit: number = RbacAuditService.TOP_N_ITEMS,
+  ): FailureReasonEntry[] {
+    const reasonCounts = this.countFailureReasons(items);
+    const entries = Object.entries(reasonCounts).map(([reason, count]) => ({
+      reason,
+      count,
+    }));
+
+    return ArrayUtils.take(
+      ArrayUtils.orderBy(entries, ['count'], ['desc']),
+      limit,
+    );
+  }
+
+  /**
+   * Lấy ngày activity cuối cùng từ danh sách audit items
+   */
+  private getLastActivityDate(items: AuditItem[]): Date | undefined {
+    if (items.length === 0) return undefined;
+
+    const sorted = ArrayUtils.orderBy(items, ['createdAt'], ['desc']);
+    const lastItem = sorted[0];
+
+    return lastItem
+      ? DateTimeUtils.toDate(DateTimeUtils.fromISO(lastItem.createdAt))
+      : undefined;
   }
 }

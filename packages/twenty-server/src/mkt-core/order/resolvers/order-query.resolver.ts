@@ -1,6 +1,8 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Context, Query, Resolver } from '@nestjs/graphql';
 
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
@@ -74,9 +76,13 @@ export class OrderQueryResolver {
   async getOrderById(
     @Args('orderId', { type: () => String }) orderId: string,
     @Context() ctx: GraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderOutput | null> {
     const whereClause = this.buildWhereClause({ id: orderId }, ctx);
-    const order = await this.orderRepository.findOneWithWhere(whereClause);
+    const order = await this.orderRepository.findOneWithWhereWorkspace(
+      workspace.id,
+      whereClause,
+    );
 
     if (!order) {
       return null;
@@ -100,9 +106,13 @@ export class OrderQueryResolver {
   async getOrderByCode(
     @Args('orderCode', { type: () => String }) orderCode: string,
     @Context() ctx: GraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderOutput | null> {
     const whereClause = this.buildWhereClause({ orderCode }, ctx);
-    const order = await this.orderRepository.findOneWithWhere(whereClause);
+    const order = await this.orderRepository.findOneWithWhereWorkspace(
+      workspace.id,
+      whereClause,
+    );
 
     if (!order) {
       return null;
@@ -125,12 +135,16 @@ export class OrderQueryResolver {
   async getOrdersByCustomer(
     @Args('customerId', { type: () => String }) customerId: string,
     @Context() ctx: GraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderListOutput> {
     const whereClause = this.buildWhereClause(
       { mktCustomerId: customerId },
       ctx,
     );
-    const orders = await this.orderRepository.findManyWithWhere(whereClause);
+    const orders = await this.orderRepository.findManyWithWhereWorkspace(
+      workspace.id,
+      whereClause,
+    );
 
     return {
       orders: orders.map((order) => this.mapOrderToOutput(order)),
@@ -152,9 +166,13 @@ export class OrderQueryResolver {
   async getOrdersByStatus(
     @Args('status', { type: () => ORDER_STATUS }) status: ORDER_STATUS,
     @Context() ctx: GraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderListOutput> {
     const whereClause = this.buildWhereClause({ status }, ctx);
-    const orders = await this.orderRepository.findManyWithWhere(whereClause);
+    const orders = await this.orderRepository.findManyWithWhereWorkspace(
+      workspace.id,
+      whereClause,
+    );
 
     return {
       orders: orders.map((order) => this.mapOrderToOutput(order)),
@@ -184,9 +202,13 @@ export class OrderQueryResolver {
   async getOrderPaymentSummary(
     @Args('orderId', { type: () => String }) orderId: string,
     @Context() ctx: GraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<OrderPaymentSummaryOutput | null> {
     const whereClause = this.buildWhereClause({ id: orderId }, ctx);
-    const order = await this.orderRepository.findOneWithWhere(whereClause);
+    const order = await this.orderRepository.findOneWithWhereWorkspace(
+      workspace.id,
+      whereClause,
+    );
 
     if (!order) {
       return null;
@@ -235,8 +257,12 @@ export class OrderQueryResolver {
   })
   async getCustomerOrderStats(
     @Args('customerId', { type: () => String }) customerId: string,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<CustomerOrderStatsOutput> {
-    const stats = await this.orderRepository.getCustomerOrderStats(customerId);
+    const stats = await this.orderRepository.getCustomerOrderStatsWithWorkspace(
+      workspace.id,
+      customerId,
+    );
 
     return {
       orderCount: stats.orderCount,

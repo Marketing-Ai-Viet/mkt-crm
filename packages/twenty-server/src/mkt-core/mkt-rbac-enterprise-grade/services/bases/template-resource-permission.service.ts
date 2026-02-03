@@ -27,20 +27,21 @@ import {
   EffectiveResourcePermission,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
-// ============================================
-// CONSTANTS
-// ============================================
-
-// Standard RBAC actions
-const STANDARD_ACTIONS = ['READ', 'CREATE', 'UPDATE', 'DELETE'] as const;
-
-// ============================================
-// SERVICE
-// ============================================
-
 @Injectable()
 export class TemplateResourcePermissionService {
   private readonly logger = new Logger(TemplateResourcePermissionService.name);
+
+  // ============================================
+  // STATIC CONSTANTS
+  // ============================================
+
+  /** Standard RBAC actions */
+  private static readonly STANDARD_ACTIONS = [
+    'READ',
+    'CREATE',
+    'UPDATE',
+    'DELETE',
+  ] as const;
 
   constructor(
     private readonly resourcePermissionRepository: MktTemplateResourcePermissionRepository,
@@ -684,7 +685,9 @@ export class TemplateResourcePermissionService {
     valid: boolean;
     invalidActions: string[];
   } {
-    const standardActionSet = new Set<string>(STANDARD_ACTIONS);
+    const standardActionSet = new Set<string>(
+      TemplateResourcePermissionService.STANDARD_ACTIONS,
+    );
     const invalidActions = actions.filter((a) => !standardActionSet.has(a));
 
     return {

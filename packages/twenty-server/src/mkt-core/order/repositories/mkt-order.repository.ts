@@ -230,6 +230,29 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   }
 
   /**
+   * Find single order with dynamic where clause and explicit workspaceId
+   * Used by resolvers with global interceptor context
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - TypeORM where clause (single object or array for OR)
+   * @param options - Find options
+   */
+  async findOneWithWhereWorkspace(
+    workspaceId: string,
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+    options?: FindOrderOptions,
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where,
+      relations: options?.relations ?? DEFAULT_ORDER_RELATIONS,
+    });
+  }
+
+  /**
    * Find orders with dynamic where clause (supports AND/OR conditions)
    * Used by custom resolvers with hierarchical access filtering
    *
@@ -243,6 +266,30 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     options?: FindOrderOptions,
   ): Promise<MktOrderWorkspaceEntity[]> {
     const repository = await this.getRepository();
+
+    return repository.find({
+      where,
+      relations: options?.relations,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Find orders with dynamic where clause and explicit workspaceId
+   * Used by resolvers with global interceptor context
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - TypeORM where clause (single object or array for OR)
+   * @param options - Find options
+   */
+  async findManyWithWhereWorkspace(
+    workspaceId: string,
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+    options?: FindOrderOptions,
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
 
     return repository.find({
       where,
@@ -479,6 +526,67 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
     averageOrderInterval: number;
   }> {
     const repository = await this.getRepository();
+
+    const result = await repository
+      .createQueryBuilder('order')
+      .select('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalValue')
+      .addSelect('MIN(order.createdAt)', 'firstOrderDate')
+      .addSelect('MAX(order.createdAt)', 'lastOrderDate')
+      .where('order.mktCustomerId = :customerId', { customerId })
+      .getRawOne();
+
+    const orderCount = parseInt(result?.orderCount, 10) || 0;
+
+    // Calculate average order interval in days
+    let averageOrderInterval = 0;
+
+    if (orderCount > 1 && result?.firstOrderDate && result?.lastOrderDate) {
+      // createdAt is stored as milliseconds timestamp string
+      const firstMillis = parseInt(result.firstOrderDate, 10);
+      const lastMillis = parseInt(result.lastOrderDate, 10);
+
+      // Validate parsed values are valid numbers
+      if (!Number.isNaN(firstMillis) && !Number.isNaN(lastMillis)) {
+        const firstDateTime = DateTimeUtils.fromMillis(firstMillis);
+        const lastDateTime = DateTimeUtils.fromMillis(lastMillis);
+        const totalDays = DateTimeUtils.diffInDays(lastDateTime, firstDateTime);
+
+        // Ensure totalDays is valid before division
+        if (!Number.isNaN(totalDays) && totalDays >= 0) {
+          averageOrderInterval = Math.round(totalDays / (orderCount - 1));
+        }
+      }
+    }
+
+    return {
+      orderCount,
+      totalValue: parseFloat(result?.totalValue) || 0,
+      firstOrderDate: result?.firstOrderDate ?? null,
+      lastOrderDate: result?.lastOrderDate ?? null,
+      averageOrderInterval,
+    };
+  }
+
+  /**
+   * Get order statistics for a single customer with explicit workspaceId
+   * Used by resolvers with global interceptor context
+   *
+   * @param workspaceId - Workspace ID
+   * @param customerId - Customer ID
+   * @returns Order statistics including counts, totals, and dates
+   */
+  async getCustomerOrderStatsWithWorkspace(
+    workspaceId: string,
+    customerId: string,
+  ): Promise<{
+    orderCount: number;
+    totalValue: number;
+    firstOrderDate: string | null;
+    lastOrderDate: string | null;
+    averageOrderInterval: number;
+  }> {
+    const repository = await this.getRepository(workspaceId);
 
     const result = await repository
       .createQueryBuilder('order')

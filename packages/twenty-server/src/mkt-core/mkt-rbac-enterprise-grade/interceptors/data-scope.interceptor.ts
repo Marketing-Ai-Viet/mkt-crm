@@ -190,6 +190,11 @@ export class DataScopeInterceptor implements NestInterceptor {
       const ctx = gqlContext.getContext();
       const request = ctx.req as DataScopedRequest;
 
+      // Debug logging
+      this.logger.debug(
+        `[extractContext] GraphQL request - user: ${request?.user?.id}, workspace: ${request?.workspace?.id}, workspaceId: ${request?.workspaceId}`,
+      );
+
       return {
         userId: request?.user?.id,
         workspaceId: request?.workspace?.id ?? request?.workspaceId,
@@ -199,6 +204,11 @@ export class DataScopeInterceptor implements NestInterceptor {
 
     // Handle HTTP context
     const request = context.switchToHttp().getRequest() as DataScopedRequest;
+
+    // Debug logging
+    this.logger.debug(
+      `[extractContext] HTTP request - user: ${request?.user?.id}, workspace: ${request?.workspace?.id}, workspaceId: ${request?.workspaceId}`,
+    );
 
     return {
       userId: request?.user?.id,

@@ -7,7 +7,7 @@
  * Works with DataScopeInterceptor to apply row-level security.
  */
 
-import { SetMetadata, applyDecorators, UseInterceptors } from '@nestjs/common';
+import { SetMetadata, applyDecorators } from '@nestjs/common';
 
 import {
   DataScopeOptions,
@@ -16,7 +16,8 @@ import {
   DATA_SCOPE_DEFAULTS,
   FilterConditionItem,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/types';
-import { DataScopeInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/data-scope.interceptor';
+// Note: DataScopeInterceptor is registered as a global interceptor via APP_INTERCEPTOR
+// in MktRbacEnterpriseGradeModule, so we don't need to use UseInterceptors here
 
 /**
  * @DataScope decorator for row-level security
@@ -120,10 +121,9 @@ export const DataScope = (options: DataScopeOptions): MethodDecorator => {
     additionalConditions: options.additionalConditions,
   };
 
-  return applyDecorators(
-    SetMetadata(DATA_SCOPE_METADATA_KEY, metadata),
-    UseInterceptors(DataScopeInterceptor),
-  );
+  // Only set metadata - the global DataScopeInterceptor will check for this
+  // and apply row-level security filters automatically
+  return applyDecorators(SetMetadata(DATA_SCOPE_METADATA_KEY, metadata));
 };
 
 /**

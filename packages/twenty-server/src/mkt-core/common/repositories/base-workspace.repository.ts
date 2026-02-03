@@ -332,6 +332,24 @@ export abstract class BaseWorkspaceRepository<
   }
 
   /**
+   * Find entity by ID with explicit workspaceId
+   * Use this when workspace context is not available via ScopedWorkspaceContextFactory
+   * (e.g., in global interceptors, scheduled jobs, etc.)
+   */
+  async findByIdWithWorkspace(
+    workspaceId: string,
+    id: string,
+    options?: BaseRepositoryOptions,
+  ): Promise<T | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { id } as FindOptionsWhere<T>,
+      relations: options?.relations,
+    });
+  }
+
+  /**
    * Find entities by IDs
    */
   async findByIds(
