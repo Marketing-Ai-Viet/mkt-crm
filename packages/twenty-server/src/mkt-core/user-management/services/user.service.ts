@@ -148,6 +148,7 @@ export class UserService {
   ): Promise<UserOutput> {
     const {
       memberId,
+      email,
       firstName,
       lastName,
       permissionTemplateId,
@@ -165,6 +166,11 @@ export class UserService {
       throw new NotFoundError(USER_ERROR_MESSAGES.MEMBER_NOT_FOUND(memberId));
     }
 
+    // Handle email update if provided
+    if (email !== undefined) {
+      await this.updateUserEmail(existingMember, email);
+    }
+
     // Validate departmentId if provided
     if (departmentId !== undefined) {
       await this.fetchAndValidateDepartment(departmentId);
@@ -176,6 +182,7 @@ export class UserService {
     }
 
     // Chuẩn bị dữ liệu update với lodash omitBy
+    // userEmail được cập nhật qua updateUserEmail() nên không cần thêm vào đây
     const updatePayload = omitBy(
       {
         name:
@@ -186,6 +193,7 @@ export class UserService {
               }
             : undefined,
         departmentId,
+        userEmail: email, // Update userEmail in workspace member
         ...updateData,
       },
       (value) => value === undefined,
@@ -234,6 +242,50 @@ export class UserService {
       updatedMember,
       permissionAssignments[0],
     );
+  }
+
+  /**
+   * Update user email with uniqueness check
+   * Cập nhật email trong core User table và validate unique
+   */
+  private async updateUserEmail(
+    existingMember: WorkspaceMemberWorkspaceEntity,
+    newEmail: string,
+  ): Promise<void> {
+    const normalizedEmail = newEmail.toLowerCase().trim();
+    const currentEmail = existingMember.userEmail?.toLowerCase().trim();
+
+    // Bỏ qua nếu email không thay đổi
+    if (normalizedEmail === currentEmail) {
+      return;
+    }
+
+    // Validate email format
+    if (!isEmail(normalizedEmail)) {
+      throw new BadRequestException(USER_MESSAGES.ERROR.INVALID_EMAIL);
+    }
+
+    // Check uniqueness - tìm user khác có email này
+    const existingUser = await this.findCoreUserByEmail(normalizedEmail);
+
+    // Nếu email đã tồn tại và không phải của user hiện tại
+    if (existingUser && existingUser.id !== existingMember.userId) {
+      this.logger.warn(
+        USER_LOG_MESSAGES.EMAIL_DUPLICATE_UPDATE(normalizedEmail),
+      );
+      throw new ConflictError(USER_MESSAGES.ERROR.EMAIL_ALREADY_EXISTS_UPDATE);
+    }
+
+    // Update email trong core User table
+    if (existingMember.userId) {
+      await this.userRepository.update(existingMember.userId, {
+        email: normalizedEmail,
+      });
+
+      this.logger.log(
+        USER_LOG_MESSAGES.EMAIL_UPDATED(currentEmail ?? '', normalizedEmail),
+      );
+    }
   }
 
   /**

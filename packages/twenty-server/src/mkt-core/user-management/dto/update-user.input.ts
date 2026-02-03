@@ -1,12 +1,29 @@
 import { Field, InputType } from '@nestjs/graphql';
 
-import { IsDate, IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsDate,
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 @InputType()
 export class UpdateUserInput {
   @Field(() => String)
   @IsString()
   memberId: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'New email address (must be unique)',
+  })
+  @IsOptional()
+  @IsEmail()
+  @Transform(({ value }) => value?.toLowerCase?.().trim() ?? value)
+  email?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
