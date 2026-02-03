@@ -75,7 +75,19 @@ export class UserManagementResolver {
 
   @Query(() => UserOutput, {
     nullable: true,
-    description: 'Lấy thông tin user theo ID',
+    description:
+      'Lấy thông tin profile của chính user đang đăng nhập (từ token)',
+  })
+  async getMyProfile(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @AuthWorkspaceMemberId() memberId: string,
+  ): Promise<UserOutput | null> {
+    return this.userService.getUserById(workspaceId, memberId);
+  }
+
+  @Query(() => UserOutput, {
+    nullable: true,
+    description: 'Lấy thông tin user theo ID - Admin only',
   })
   async getPersonUser(
     @AuthWorkspace() { id: workspaceId }: Workspace,
