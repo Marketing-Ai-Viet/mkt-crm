@@ -113,6 +113,13 @@ export class DepartmentOutput {
 
   @Field({ description: 'Updated timestamp' })
   updatedAt: Date;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Total member count including this department and all descendant departments',
+  })
+  totalMemberCount?: number;
 }
 
 /**

@@ -67,6 +67,41 @@ export class OrganizationLevelBasicOutput {
   hierarchyLevel: number;
 }
 
+@ObjectType({
+  description: 'Direct manager information (manager of user department)',
+})
+export class DirectManagerOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string;
+
+  @Field(() => String, { nullable: true })
+  lastName?: string;
+
+  @Field(() => String, { nullable: true })
+  fullName?: string;
+
+  @Field(() => String, { nullable: true })
+  email?: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Member code of the manager',
+  })
+  memberCode?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Job title/position of the manager',
+  })
+  jobTitle?: string;
+}
+
 // ============================================
 // MAIN USER OUTPUT
 // ============================================
@@ -136,6 +171,12 @@ export class UserOutput {
 
   @Field(() => OrganizationLevelBasicOutput, { nullable: true })
   organizationLevel?: OrganizationLevelBasicOutput | null;
+
+  @Field(() => DirectManagerOutput, {
+    nullable: true,
+    description: 'Direct manager (manager of user department)',
+  })
+  directManager?: DirectManagerOutput | null;
 
   // ============================================
   // TIMESTAMPS

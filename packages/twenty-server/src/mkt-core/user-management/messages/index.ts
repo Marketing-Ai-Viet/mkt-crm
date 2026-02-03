@@ -26,6 +26,8 @@ export const USER_MESSAGES = createModuleMessages({
   },
   customError: {
     EMAIL_ALREADY_EXISTS: 'An account already exists with this email',
+    EMAIL_ALREADY_EXISTS_UPDATE:
+      'Cannot update: this email is already used by another account',
     INVALID_EMAIL: 'Invalid email format',
     MEMBER_NOT_FOUND: 'Workspace member not found',
     FAILED_TO_RETRIEVE: 'Failed to retrieve updated member',
@@ -75,6 +77,10 @@ export const USER_LOG_MESSAGES = {
   // Update operations
   UPDATE_START: (memberId: string) => `Updating user: ${memberId}`,
   UPDATE_SUCCESS: (memberId: string) => `User updated: ${memberId}`,
+  EMAIL_UPDATED: (oldEmail: string, newEmail: string) =>
+    `Email updated from ${oldEmail} to ${newEmail}`,
+  EMAIL_DUPLICATE_UPDATE: (email: string) =>
+    `Cannot update: email ${email} is already used by another account`,
 
   // Delete operations
   DELETE_START: (memberId: string) => `Deleting user: ${memberId}`,

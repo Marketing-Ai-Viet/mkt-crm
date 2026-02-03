@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { FindOptionsWhere, IsNull, DeepPartial, ILike } from 'typeorm';
+import { FindOptionsWhere, IsNull, DeepPartial, ILike, In } from 'typeorm';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -462,6 +462,67 @@ export class MktWorkspaceMemberRepository extends BaseWorkspaceRepository<Worksp
     return repository.count({
       where: { departmentId },
     });
+  }
+
+  /**
+   * Count workspace members by multiple department IDs
+   * Returns a Map of departmentId -> count
+   */
+  async countByDepartmentIds(
+    workspaceId: string,
+    departmentIds: string[],
+  ): Promise<Map<string, number>> {
+    if (departmentIds.length === 0) {
+      return new Map();
+    }
+
+    const repository = await this.getRepository(workspaceId);
+
+    const results = await repository
+      .createQueryBuilder('member')
+      .select('member.departmentId', 'departmentId')
+      .addSelect('COUNT(*)', 'count')
+      .where('member.departmentId IN (:...departmentIds)', { departmentIds })
+      .andWhere('member.deletedAt IS NULL')
+      .groupBy('member.departmentId')
+      .getRawMany<{ departmentId: string; count: string }>();
+
+    const countMap = new Map<string, number>();
+
+    // Initialize all departments with 0
+    for (const deptId of departmentIds) {
+      countMap.set(deptId, 0);
+    }
+
+    // Populate with actual counts
+    for (const result of results) {
+      countMap.set(result.departmentId, parseInt(result.count, 10));
+    }
+
+    return countMap;
+  }
+
+  /**
+   * Count total workspace members by multiple department IDs (sum of all)
+   */
+  async countTotalByDepartmentIds(
+    workspaceId: string,
+    departmentIds: string[],
+  ): Promise<number> {
+    if (departmentIds.length === 0) {
+      return 0;
+    }
+
+    const repository = await this.getRepository(workspaceId);
+
+    const count = await repository.count({
+      where: {
+        departmentId: In(departmentIds),
+        deletedAt: IsNull(),
+      },
+    });
+
+    return count;
   }
 
   /**

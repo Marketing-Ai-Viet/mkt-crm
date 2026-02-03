@@ -59,7 +59,13 @@ export class DepartmentCrudResolver {
       return null;
     }
 
-    return this.crudService.mapToOutput(department);
+    // Get total member count including descendants
+    const totalMemberCount = await this.crudService.getTotalMemberCount(
+      workspaceId,
+      id,
+    );
+
+    return this.crudService.mapToOutput(department, totalMemberCount);
   }
 
   /**
@@ -79,7 +85,13 @@ export class DepartmentCrudResolver {
       return null;
     }
 
-    return this.crudService.mapToOutput(department);
+    // Get total member count including descendants
+    const totalMemberCount = await this.crudService.getTotalMemberCount(
+      workspaceId,
+      department.id,
+    );
+
+    return this.crudService.mapToOutput(department, totalMemberCount);
   }
 
   /**

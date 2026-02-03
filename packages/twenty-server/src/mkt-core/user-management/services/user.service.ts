@@ -35,10 +35,12 @@ import { MktEmploymentStatusRepository } from 'src/mkt-core/user-management/repo
 import {
   CreateUserInput,
   DepartmentBasicOutput,
+  DirectManagerOutput,
   EmploymentStatusBasicOutput,
   OrganizationLevelBasicOutput,
   PermissionTemplateBasicOutput,
   SearchUserInput,
+  UpdateMyProfileInput,
   UpdateUserInput,
   UserListOutput,
   UserOutput,
@@ -148,6 +150,7 @@ export class UserService {
   ): Promise<UserOutput> {
     const {
       memberId,
+      email,
       firstName,
       lastName,
       permissionTemplateId,
@@ -165,6 +168,11 @@ export class UserService {
       throw new NotFoundError(USER_ERROR_MESSAGES.MEMBER_NOT_FOUND(memberId));
     }
 
+    // Handle email update if provided
+    if (email !== undefined) {
+      await this.updateUserEmail(existingMember, email);
+    }
+
     // Validate departmentId if provided
     if (departmentId !== undefined) {
       await this.fetchAndValidateDepartment(departmentId);
@@ -176,6 +184,7 @@ export class UserService {
     }
 
     // Chuẩn bị dữ liệu update với lodash omitBy
+    // userEmail được cập nhật qua updateUserEmail() nên không cần thêm vào đây
     const updatePayload = omitBy(
       {
         name:
@@ -186,6 +195,7 @@ export class UserService {
               }
             : undefined,
         departmentId,
+        userEmail: email, // Update userEmail in workspace member
         ...updateData,
       },
       (value) => value === undefined,
@@ -234,6 +244,126 @@ export class UserService {
       updatedMember,
       permissionAssignments[0],
     );
+  }
+
+  /**
+   * Update current user's own profile
+   * Sử dụng memberId từ token để đảm bảo user chỉ có thể update profile của chính mình
+   * Chỉ cho phép update các field cá nhân, không cho phép update departmentId, permissionTemplateId
+   */
+  async updateMyProfile(
+    workspaceId: string,
+    memberId: string,
+    input: UpdateMyProfileInput,
+  ): Promise<UserOutput> {
+    const { email, firstName, lastName, ...updateData } = input;
+
+    const existingMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!existingMember) {
+      throw new NotFoundError(USER_ERROR_MESSAGES.MEMBER_NOT_FOUND(memberId));
+    }
+
+    // Handle email update if provided
+    if (email !== undefined) {
+      await this.updateUserEmail(existingMember, email);
+    }
+
+    // Chuẩn bị dữ liệu update với lodash omitBy
+    const updatePayload = omitBy(
+      {
+        name:
+          firstName !== undefined || lastName !== undefined
+            ? {
+                firstName: firstName ?? existingMember.name?.firstName ?? '',
+                lastName: lastName ?? existingMember.name?.lastName ?? '',
+              }
+            : undefined,
+        userEmail: email,
+        ...updateData,
+      },
+      (value) => value === undefined,
+    );
+
+    await this.workspaceMemberService.updateWorkspaceMember(
+      workspaceId,
+      memberId,
+      updatePayload,
+    );
+
+    const updatedMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!updatedMember) {
+      throw new InternalServerErrorException(
+        USER_MESSAGES.ERROR.FAILED_TO_RETRIEVE,
+      );
+    }
+
+    // Get permission template info for output
+    const permissionAssignments =
+      await this.userPermissionTemplateRepository.findActiveByWorkspaceMemberId(
+        workspaceId,
+        memberId,
+      );
+
+    this.logger.log(USER_LOG_MESSAGES.UPDATE_SUCCESS(memberId));
+
+    return this.mapWorkspaceMemberToUserOutput(
+      updatedMember,
+      permissionAssignments[0],
+    );
+  }
+
+  /**
+   * Update user email with uniqueness check
+   * Cập nhật email trong core User table và validate unique
+   */
+  private async updateUserEmail(
+    existingMember: WorkspaceMemberWorkspaceEntity,
+    newEmail: string,
+  ): Promise<void> {
+    const normalizedEmail = newEmail.toLowerCase().trim();
+    const currentEmail = existingMember.userEmail?.toLowerCase().trim();
+
+    // Bỏ qua nếu email không thay đổi
+    if (normalizedEmail === currentEmail) {
+      return;
+    }
+
+    // Validate email format
+    if (!isEmail(normalizedEmail)) {
+      throw new BadRequestException(USER_MESSAGES.ERROR.INVALID_EMAIL);
+    }
+
+    // Check uniqueness - tìm user khác có email này
+    const existingUser = await this.findCoreUserByEmail(normalizedEmail);
+
+    // Nếu email đã tồn tại và không phải của user hiện tại
+    if (existingUser && existingUser.id !== existingMember.userId) {
+      this.logger.warn(
+        USER_LOG_MESSAGES.EMAIL_DUPLICATE_UPDATE(normalizedEmail),
+      );
+      throw new ConflictError(USER_MESSAGES.ERROR.EMAIL_ALREADY_EXISTS_UPDATE);
+    }
+
+    // Update email trong core User table
+    if (existingMember.userId) {
+      await this.userRepository.update(existingMember.userId, {
+        email: normalizedEmail,
+      });
+
+      this.logger.log(
+        USER_LOG_MESSAGES.EMAIL_UPDATED(currentEmail ?? '', normalizedEmail),
+      );
+    }
   }
 
   /**
@@ -994,6 +1124,7 @@ export class UserService {
     const employmentStatus = this.buildEmploymentStatusOutput(member);
     const permissionTemplate =
       this.buildPermissionTemplateOutput(permissionAssignment);
+    const directManager = this.buildDirectManagerOutput(member);
 
     return {
       id: member.id,
@@ -1014,6 +1145,7 @@ export class UserService {
       permissionTemplate,
       organizationLevel,
       employmentStatus,
+      directManager,
       // Timestamps
       createdAt: DateTimeUtils.toDate(
         DateTimeUtils.fromISO(member.createdAt),
@@ -1098,6 +1230,35 @@ export class UserService {
       templateName: permissionAssignment.template?.templateName ?? '',
       templateNameEn:
         permissionAssignment.template?.templateNameEn ?? undefined,
+    };
+  }
+
+  /**
+   * Build DirectManagerOutput từ department.manager relation
+   * Direct manager = manager của department mà user thuộc về
+   */
+  private buildDirectManagerOutput(
+    member: WorkspaceMemberWithRelations,
+  ): DirectManagerOutput | null {
+    const manager = member.department?.manager;
+
+    if (!manager || !manager.id) {
+      return null;
+    }
+
+    const firstName = manager.name?.firstName ?? '';
+    const lastName = manager.name?.lastName ?? '';
+
+    return {
+      id: manager.id,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      fullName:
+        firstName || lastName ? `${firstName} ${lastName}`.trim() : undefined,
+      email: manager.userEmail ?? undefined,
+      avatarUrl: manager.avatarUrl ?? undefined,
+      memberCode: manager.memberCode ?? undefined,
+      jobTitle: manager.jobTitle ?? undefined,
     };
   }
 }

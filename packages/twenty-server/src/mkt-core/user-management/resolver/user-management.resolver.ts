@@ -4,10 +4,12 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/resolver-validation.pipe';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import {
   CreateUserInput,
   SearchUserInput,
+  UpdateMyProfileInput,
   UpdateUserInput,
   UserListOutput,
   UserOutput,
@@ -35,7 +37,7 @@ export class UserManagementResolver {
   }
 
   @Mutation(() => UserOutput, {
-    description: 'Cập nhật thông tin user (workspace member)',
+    description: 'Cập nhật thông tin user (workspace member) - Admin only',
   })
   async updatePersonUser(
     @AuthWorkspace() { id: workspaceId }: Workspace,
@@ -43,6 +45,19 @@ export class UserManagementResolver {
     input: UpdateUserInput,
   ): Promise<UserOutput> {
     return this.userService.updateUser(workspaceId, input);
+  }
+
+  @Mutation(() => UserOutput, {
+    description:
+      'Cập nhật profile của chính user đang đăng nhập (lấy memberId từ token)',
+  })
+  async updateMyProfile(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @AuthWorkspaceMemberId() memberId: string,
+    @Args('input', { type: () => UpdateMyProfileInput })
+    input: UpdateMyProfileInput,
+  ): Promise<UserOutput> {
+    return this.userService.updateMyProfile(workspaceId, memberId, input);
   }
 
   @Mutation(() => Boolean, {
@@ -60,7 +75,19 @@ export class UserManagementResolver {
 
   @Query(() => UserOutput, {
     nullable: true,
-    description: 'Lấy thông tin user theo ID',
+    description:
+      'Lấy thông tin profile của chính user đang đăng nhập (từ token)',
+  })
+  async getMyProfile(
+    @AuthWorkspace() { id: workspaceId }: Workspace,
+    @AuthWorkspaceMemberId() memberId: string,
+  ): Promise<UserOutput | null> {
+    return this.userService.getUserById(workspaceId, memberId);
+  }
+
+  @Query(() => UserOutput, {
+    nullable: true,
+    description: 'Lấy thông tin user theo ID - Admin only',
   })
   async getPersonUser(
     @AuthWorkspace() { id: workspaceId }: Workspace,
