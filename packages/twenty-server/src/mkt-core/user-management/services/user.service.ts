@@ -39,6 +39,7 @@ import {
   OrganizationLevelBasicOutput,
   PermissionTemplateBasicOutput,
   SearchUserInput,
+  UpdateMyProfileInput,
   UpdateUserInput,
   UserListOutput,
   UserOutput,
@@ -237,6 +238,82 @@ export class UserService {
         workspaceId,
         memberId,
       );
+
+    return this.mapWorkspaceMemberToUserOutput(
+      updatedMember,
+      permissionAssignments[0],
+    );
+  }
+
+  /**
+   * Update current user's own profile
+   * Sử dụng memberId từ token để đảm bảo user chỉ có thể update profile của chính mình
+   * Chỉ cho phép update các field cá nhân, không cho phép update departmentId, permissionTemplateId
+   */
+  async updateMyProfile(
+    workspaceId: string,
+    memberId: string,
+    input: UpdateMyProfileInput,
+  ): Promise<UserOutput> {
+    const { email, firstName, lastName, ...updateData } = input;
+
+    const existingMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!existingMember) {
+      throw new NotFoundError(USER_ERROR_MESSAGES.MEMBER_NOT_FOUND(memberId));
+    }
+
+    // Handle email update if provided
+    if (email !== undefined) {
+      await this.updateUserEmail(existingMember, email);
+    }
+
+    // Chuẩn bị dữ liệu update với lodash omitBy
+    const updatePayload = omitBy(
+      {
+        name:
+          firstName !== undefined || lastName !== undefined
+            ? {
+                firstName: firstName ?? existingMember.name?.firstName ?? '',
+                lastName: lastName ?? existingMember.name?.lastName ?? '',
+              }
+            : undefined,
+        userEmail: email,
+        ...updateData,
+      },
+      (value) => value === undefined,
+    );
+
+    await this.workspaceMemberService.updateWorkspaceMember(
+      workspaceId,
+      memberId,
+      updatePayload,
+    );
+
+    const updatedMember =
+      await this.workspaceMemberService.findWorkspaceMemberById(
+        workspaceId,
+        memberId,
+      );
+
+    if (!updatedMember) {
+      throw new InternalServerErrorException(
+        USER_MESSAGES.ERROR.FAILED_TO_RETRIEVE,
+      );
+    }
+
+    // Get permission template info for output
+    const permissionAssignments =
+      await this.userPermissionTemplateRepository.findActiveByWorkspaceMemberId(
+        workspaceId,
+        memberId,
+      );
+
+    this.logger.log(USER_LOG_MESSAGES.UPDATE_SUCCESS(memberId));
 
     return this.mapWorkspaceMemberToUserOutput(
       updatedMember,
