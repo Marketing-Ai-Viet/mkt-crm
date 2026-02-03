@@ -994,6 +994,44 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   // PAYMENT DEADLINE OPERATIONS
   // ============================================
 
+  // ============================================
+  // PESSIMISTIC LOCKING FOR PAYMENT CONFIRMATION
+  // ============================================
+
+  /**
+   * Find order by ID with pessimistic lock (SELECT ... FOR UPDATE)
+   * Used by PaymentConfirmationService to prevent race conditions
+   *
+   * @param orderId - Order ID to find
+   * @param workspaceId - Workspace ID
+   * @returns Order with lock or null if not found
+   */
+  async findByIdForUpdate(
+    orderId: string,
+    workspaceId: string,
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    this.logger.debug(`[PessimisticLock] Finding order ${orderId} FOR UPDATE`);
+
+    const repository = await this.getRepository(workspaceId);
+
+    const order = await repository
+      .createQueryBuilder('order')
+      .setLock('pessimistic_write')
+      .where('order.id = :orderId', { orderId })
+      .andWhere('order.deletedAt IS NULL')
+      .getOne();
+
+    if (order) {
+      this.logger.debug(
+        `[PessimisticLock] Acquired lock on order ${orderId}, version=${order.version}`,
+      );
+    } else {
+      this.logger.debug(`[PessimisticLock] Order ${orderId} not found`);
+    }
+
+    return order;
+  }
+
   /**
    * Find orders that are overdue (PROCESSING status with deadline passed)
    * Used by PaymentOverdueScanService

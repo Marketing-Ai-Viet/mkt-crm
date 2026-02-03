@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { In } from 'typeorm';
+
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
@@ -100,6 +102,56 @@ export class MktOrderHistoryRepository extends BaseWorkspaceRepository<MktOrderH
 
     return repository.findOne({
       where: { mktOrderId: orderId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Find the latest history record for a specific action
+   * Used by PaymentConfirmationService to get confirmation details
+   *
+   * @param orderId - Order ID
+   * @param action - Specific action to find
+   */
+  async findLatestByAction(
+    orderId: string,
+    action: ORDER_HISTORY_ACTION,
+  ): Promise<MktOrderHistoryWorkspaceEntity | null> {
+    this.logger.debug(`Finding latest ${action} history for order: ${orderId}`);
+
+    const repository = await this.getRepository();
+
+    return repository.findOne({
+      where: {
+        mktOrderId: orderId,
+        action,
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Find all history records for an order with specific actions
+   * Used by PaymentConfirmationService to get confirmation history
+   *
+   * @param orderId - Order ID
+   * @param actions - Array of actions to filter by
+   */
+  async findByOrderAndActions(
+    orderId: string,
+    actions: ORDER_HISTORY_ACTION[],
+  ): Promise<MktOrderHistoryWorkspaceEntity[]> {
+    this.logger.debug(
+      `Finding history for order ${orderId} with actions: ${actions.join(', ')}`,
+    );
+
+    const repository = await this.getRepository();
+
+    return repository.find({
+      where: {
+        mktOrderId: orderId,
+        action: In(actions),
+      },
       order: { createdAt: 'DESC' },
     });
   }
