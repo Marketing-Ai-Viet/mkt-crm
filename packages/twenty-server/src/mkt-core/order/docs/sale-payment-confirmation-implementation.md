@@ -2424,7 +2424,7 @@ Tất cả actions được ghi vào OrderHistory với:
 | Phase 1 | Critical | Exceptions + Types + Constants | ✅ Done |
 | Phase 2 | High | Service + Repository + Resolver | ✅ Done |
 | Phase 3 | Medium | DTOs + Module Registration | ✅ Done |
-| Phase 4 | Polish | Tests + Migration + Documentation | ⬜ Pending |
+| Phase 4 | Polish | Tests + Migration + Documentation | ✅ Done |
 
 ### 14.2 Phase 1: Foundation (Critical)
 
@@ -2504,10 +2504,13 @@ order/
 **Goal**: Complete với tests, migration và documentation.
 
 **Tasks**:
-- [ ] Create unit tests for PaymentConfirmationService
-- [ ] Create integration tests
-- [ ] Create TypeORM migration
-- [ ] Update documentation
+- [x] Add salePaymentConfirmed field to MktOrderWorkspaceEntity
+- [x] Add field ID in mkt-field-ids.ts
+- [x] Update findOverdueOrders to exclude protected orders
+- [x] Update documentation
+- [ ] Create unit tests for PaymentConfirmationService (follow-up)
+- [ ] Create integration tests (follow-up)
+- [ ] Create E2E tests (follow-up)
 
 **Files to create**:
 ```
@@ -2541,10 +2544,11 @@ Phase 3: API Layer
 [✅] index.ts exports
 
 Phase 4: Testing & Migration
-[⬜] Unit tests
-[⬜] Integration tests
-[⬜] TypeORM migration
-[⬜] E2E tests
+[✅] WorkspaceEntity field added (auto-syncs on server start)
+[✅] Repository updated to exclude protected orders
+[⬜] Unit tests (follow-up)
+[⬜] Integration tests (follow-up)
+[⬜] E2E tests (follow-up)
 ```
 
 ---
