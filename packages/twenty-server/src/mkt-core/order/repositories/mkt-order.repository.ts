@@ -1035,6 +1035,10 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   /**
    * Find orders that are overdue (PROCESSING status with deadline passed)
    * Used by PaymentOverdueScanService
+   *
+   * IMPORTANT: Excludes orders protected by sale/accounting confirmation.
+   * Orders with salePaymentConfirmed=true or accountingConfirmed=true
+   * should NOT be auto-locked.
    */
   async findOverdueOrders(
     workspaceId: string,
@@ -1056,6 +1060,13 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
         deadline: options.paymentDeadlineBefore,
       })
       .andWhere('order.paymentDeadline IS NOT NULL')
+      // Exclude protected orders (sale or accounting has confirmed payment)
+      .andWhere(
+        '(order.salePaymentConfirmed IS NULL OR order.salePaymentConfirmed = false)',
+      )
+      .andWhere(
+        '(order.accountingConfirmed IS NULL OR order.accountingConfirmed = false)',
+      )
       .orderBy('order.paymentDeadline', 'ASC')
       .getMany();
 

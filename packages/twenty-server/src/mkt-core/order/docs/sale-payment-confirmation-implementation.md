@@ -2422,8 +2422,8 @@ Tất cả actions được ghi vào OrderHistory với:
 | Phase | Priority | Scope | Status |
 |-------|----------|-------|--------|
 | Phase 1 | Critical | Exceptions + Types + Constants | ✅ Done |
-| Phase 2 | High | Service + Repository + Resolver | ⬜ Pending |
-| Phase 3 | Medium | DTOs + Module Registration | ⬜ Pending |
+| Phase 2 | High | Service + Repository + Resolver | ✅ Done |
+| Phase 3 | Medium | DTOs + Module Registration | ✅ Done |
 | Phase 4 | Polish | Tests + Migration + Documentation | ⬜ Pending |
 
 ### 14.2 Phase 1: Foundation (Critical)
@@ -2457,13 +2457,13 @@ order/
 **Goal**: Implement service layer với transaction, optimistic locking.
 
 **Tasks**:
-- [ ] Create `PaymentConfirmationService` with transaction wrapping
-- [ ] Implement `confirmBySale` method
-- [ ] Implement `confirmByAccounting` method
-- [ ] Implement `revokeConfirmation` method
-- [ ] Implement `getConfirmationStatus` method
-- [ ] Implement `getConfirmationHistory` method
-- [ ] Create `PaymentConfirmationResolver`
+- [x] Create `PaymentConfirmationService` with transaction wrapping
+- [x] Implement `confirmBySale` method
+- [x] Implement `confirmByAccounting` method
+- [x] Implement `revokeConfirmation` method
+- [x] Implement `getConfirmationStatus` method
+- [x] Implement `getConfirmationHistory` method
+- [x] Create `PaymentConfirmationResolver`
 
 **Files to create**:
 ```
@@ -2480,10 +2480,10 @@ order/
 **Goal**: Complete GraphQL API với DTOs và module registration.
 
 **Tasks**:
-- [ ] Create `dto/payment-confirmation.dto.ts`
-- [ ] Register in `mkt-order.module.ts`
-- [ ] Add permission constants
-- [ ] Update index exports
+- [x] Create `dto/payment-confirmation.dto.ts`
+- [x] Register in `mkt-order.module.ts`
+- [ ] Add permission constants (optional - can use existing RBAC)
+- [x] Update index exports
 
 **Files to create/modify**:
 ```
@@ -2531,14 +2531,14 @@ Phase 1: Foundation
 [✅] mkt-order-history.repository.ts (findLatestByAction, findByOrderAndActions)
 
 Phase 2: Core Implementation
-[⬜] payment-confirmation.service.ts
-[⬜] payment-confirmation.resolver.ts
+[✅] payment-confirmation.service.ts
+[✅] payment-confirmation.resolver.ts
 
 Phase 3: API Layer
-[⬜] payment-confirmation.dto.ts
-[⬜] mkt-order.module.ts registration
-[⬜] permissions.constants.ts
-[⬜] index.ts exports
+[✅] payment-confirmation.dto.ts
+[✅] mkt-order.module.ts registration
+[⬜] permissions.constants.ts (optional - using existing RBAC)
+[✅] index.ts exports
 
 Phase 4: Testing & Migration
 [⬜] Unit tests
