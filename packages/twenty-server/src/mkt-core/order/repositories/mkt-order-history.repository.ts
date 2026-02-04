@@ -165,12 +165,13 @@ export class MktOrderHistoryRepository extends BaseWorkspaceRepository<MktOrderH
    */
   async createOrderHistory(
     data: CreateOrderHistoryData,
+    workspaceId?: string,
   ): Promise<MktOrderHistoryWorkspaceEntity> {
     this.logger.log(
       `Creating order history: ${data.action} for order ${data.orderId}`,
     );
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const history = repository.create({
       name: data.name,

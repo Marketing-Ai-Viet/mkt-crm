@@ -4,7 +4,10 @@ import { z } from 'zod';
 // DEFAULTS
 // ============================================
 
-const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
+// IMPORTANT: Must be less than pg driver's query_timeout (10000ms in engine)
+// If statement_timeout > query_timeout, client disconnects first but PostgreSQL
+// transaction stays open as "idle in transaction" (zombie) holding locks indefinitely
+const DEFAULT_TIMEOUT_MS = 8000; // 8 seconds (< query_timeout 10s)
 
 // ============================================
 // ZOD SCHEMAS

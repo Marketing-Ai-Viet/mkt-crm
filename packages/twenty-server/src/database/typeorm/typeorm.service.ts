@@ -27,7 +27,8 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
           }
         : undefined,
       extra: {
-        query_timeout: 10000,
+        // query_timeout must be >= statement_timeout (30s) to avoid zombie transactions
+        query_timeout: 35000,
       },
     });
   }

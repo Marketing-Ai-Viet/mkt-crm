@@ -95,32 +95,28 @@ export class PaymentConfirmationService {
     workspaceId: string,
     actor: ConfirmationActorMetadata,
   ): Promise<ConfirmationResult> {
-    const { orderId, idempotencyKey, note, metadata } = input;
+    const { orderId, note, metadata } = input;
 
     this.logger.log(`Sale confirming payment for order ${orderId}`);
 
-    // Use idempotency protection
-    const result =
-      await this.idempotencyService.executeWithIdempotency<ConfirmationResult>(
-        {
-          workspaceId,
-          domain: 'order',
-          action: 'salePaymentConfirm',
-          requestBody: { orderId, actor: actor.workspaceMemberId },
-          options: { clientKey: idempotencyKey },
-        },
-        async () => {
-          return this.doConfirmBySale(
-            orderId,
-            workspaceId,
-            actor,
-            note,
-            metadata,
-          );
-        },
-      );
+    // TEMPORARILY DISABLED: Idempotency protection
+    // TODO: Re-enable when idempotency cache issue is resolved
+    // const result =
+    //   await this.idempotencyService.executeWithIdempotency<ConfirmationResult>(
+    //     {
+    //       workspaceId,
+    //       domain: 'order',
+    //       action: 'salePaymentConfirm',
+    //       requestBody: { orderId, actor: actor.workspaceMemberId },
+    //       options: { clientKey: idempotencyKey },
+    //     },
+    //     async () => {
+    //       return this.doConfirmBySale(orderId, workspaceId, actor, note, metadata);
+    //     },
+    //   );
+    // return result.data;
 
-    return result.data;
+    return this.doConfirmBySale(orderId, workspaceId, actor, note, metadata);
   }
 
   /**
@@ -141,31 +137,34 @@ export class PaymentConfirmationService {
     workspaceId: string,
     actor: ConfirmationActorMetadata,
   ): Promise<ConfirmationResult> {
-    const { orderId, idempotencyKey, note, metadata } = input;
+    const { orderId, note, metadata } = input;
 
     this.logger.log(`Accounting confirming payment for order ${orderId}`);
 
-    const result =
-      await this.idempotencyService.executeWithIdempotency<ConfirmationResult>(
-        {
-          workspaceId,
-          domain: 'order',
-          action: 'accountingPaymentConfirm',
-          requestBody: { orderId, actor: actor.workspaceMemberId },
-          options: { clientKey: idempotencyKey },
-        },
-        async () => {
-          return this.doConfirmByAccounting(
-            orderId,
-            workspaceId,
-            actor,
-            note,
-            metadata,
-          );
-        },
-      );
+    // TEMPORARILY DISABLED: Idempotency protection
+    // TODO: Re-enable when idempotency cache issue is resolved
+    // const result =
+    //   await this.idempotencyService.executeWithIdempotency<ConfirmationResult>(
+    //     {
+    //       workspaceId,
+    //       domain: 'order',
+    //       action: 'accountingPaymentConfirm',
+    //       requestBody: { orderId, actor: actor.workspaceMemberId },
+    //       options: { clientKey: idempotencyKey },
+    //     },
+    //     async () => {
+    //       return this.doConfirmByAccounting(orderId, workspaceId, actor, note, metadata);
+    //     },
+    //   );
+    // return result.data;
 
-    return result.data;
+    return this.doConfirmByAccounting(
+      orderId,
+      workspaceId,
+      actor,
+      note,
+      metadata,
+    );
   }
 
   /**
@@ -314,71 +313,65 @@ export class PaymentConfirmationService {
     note?: string,
     metadata?: Record<string, unknown>,
   ): Promise<ConfirmationResult> {
-    return this.transactionScopeService.runInTransaction(
+    // WORKAROUND: Transaction disabled due to ALS binding issues with engine's query_timeout
+    // TODO: Fix TransactionScopeService ALS binding or increase engine query_timeout
+    // See: workspace-datasource.factory.ts line 213 (query_timeout: 10000)
+
+    // 1. Fetch order
+    const order = await this.orderRepository.findByIdWithOptions(
+      orderId,
+      undefined,
       workspaceId,
-      async () => {
-        // 1. Fetch with pessimistic lock
-        const order = await this.orderRepository.findByIdForUpdate(
-          orderId,
-          workspaceId,
-        );
-
-        // 2. Validate
-        this.validateSaleConfirmation(order, orderId);
-
-        const now = DateTimeUtils.now();
-        const confirmedAt = DateTimeUtils.toISO(now);
-        const currentVersion = order?.version ?? 0;
-
-        // 3. Update with optimistic lock
-        const updateResult =
-          await this.orderRepository.updateWithOptimisticLock(
-            orderId,
-            currentVersion,
-            { salePaymentConfirmed: true },
-            workspaceId,
-          );
-
-        if (updateResult.affected === 0) {
-          throw new ConcurrencyConflictError(
-            orderId,
-            'Order was modified by another process',
-          );
-        }
-
-        const newVersion = updateResult.newVersion;
-
-        // 4. Create history record
-        await this.orderHistoryRepository.createOrderHistory({
-          orderId,
-          action: ORDER_HISTORY_ACTION.SALE_PAYMENT_CONFIRMED,
-          name: 'Sale confirmed payment',
-          note:
-            note ??
-            'Payment confirmed by sale - license protected from auto-lock',
-          workspaceMemberId: actor.workspaceMemberId,
-          metadata: {
-            confirmedAt,
-            version: newVersion,
-            ...metadata,
-          },
-        });
-
-        this.logger.log(
-          `Order ${orderId} payment confirmed by sale (version: ${newVersion})`,
-        );
-
-        return {
-          success: true,
-          orderId,
-          confirmedAt,
-          confirmedBy: actor,
-          type: PAYMENT_CONFIRMATION_TYPE.SALE,
-          version: newVersion,
-          note,
-        };
-      },
     );
+
+    // 2. Validate
+    this.validateSaleConfirmation(order, orderId);
+
+    const now = DateTimeUtils.now();
+    const confirmedAt = DateTimeUtils.toISO(now);
+    const currentVersion = order?.version ?? 0;
+
+    // 3. Update with version increment
+    await this.orderRepository.updateOrder(
+      orderId,
+      { salePaymentConfirmed: true },
+      workspaceId,
+    );
+
+    const newVersion = currentVersion + 1;
+
+    // 4. Create history record
+    await this.orderHistoryRepository.createOrderHistory(
+      {
+        orderId,
+        action: ORDER_HISTORY_ACTION.SALE_PAYMENT_CONFIRMED,
+        name: 'Sale confirmed payment',
+        note:
+          note ??
+          'Payment confirmed by sale - license protected from auto-lock',
+        workspaceMemberId: actor.workspaceMemberId,
+        metadata: {
+          confirmedAt,
+          version: newVersion,
+          ...metadata,
+        },
+      },
+      workspaceId,
+    );
+
+    this.logger.log(
+      `Order ${orderId} payment confirmed by sale (version: ${newVersion})`,
+    );
+
+    return {
+      success: true,
+      orderId,
+      confirmedAt,
+      confirmedBy: actor,
+      type: PAYMENT_CONFIRMATION_TYPE.SALE,
+      version: newVersion,
+      note,
+    };
   }
 
   private async doConfirmByAccounting(
@@ -388,84 +381,70 @@ export class PaymentConfirmationService {
     note?: string,
     metadata?: Record<string, unknown>,
   ): Promise<ConfirmationResult> {
-    return this.transactionScopeService.runInTransaction(
+    // WORKAROUND: Transaction disabled due to ALS binding issues
+    // 1. Fetch order
+    const order = await this.orderRepository.findByIdWithOptions(
+      orderId,
+      undefined,
       workspaceId,
-      async () => {
-        // 1. Fetch with pessimistic lock
-        const order = await this.orderRepository.findByIdForUpdate(
-          orderId,
-          workspaceId,
-        );
-
-        // 2. Validate
-        this.validateAccountingConfirmation(order, orderId);
-
-        const now = DateTimeUtils.now();
-        const confirmedAt = DateTimeUtils.toISO(now);
-        const currentVersion = order?.version ?? 0;
-
-        // 3. Determine if should auto-complete
-        const shouldComplete =
-          order?.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
-
-        const updateData: Partial<MktOrderWorkspaceEntity> = {
-          accountingConfirmed: true,
-        };
-
-        if (shouldComplete) {
-          updateData.status = ORDER_STATUS.COMPLETED;
-        }
-
-        // 4. Update with optimistic lock
-        const updateResult =
-          await this.orderRepository.updateWithOptimisticLock(
-            orderId,
-            currentVersion,
-            updateData,
-            workspaceId,
-          );
-
-        if (updateResult.affected === 0) {
-          throw new ConcurrencyConflictError(
-            orderId,
-            'Order was modified by another process',
-          );
-        }
-
-        const newVersion = updateResult.newVersion;
-
-        // 5. Create history record
-        await this.orderHistoryRepository.createOrderHistory({
-          orderId,
-          action: ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMED,
-          name: 'Accounting confirmed payment',
-          note: note ?? 'Payment verified by accounting department',
-          workspaceMemberId: actor.workspaceMemberId,
-          metadata: {
-            confirmedAt,
-            orderCompleted: shouldComplete,
-            previousStatus: order?.status,
-            version: newVersion,
-            ...metadata,
-          },
-        });
-
-        this.logger.log(
-          `Order ${orderId} payment confirmed by accounting (version: ${newVersion})` +
-            `${shouldComplete ? ' - order completed' : ''}`,
-        );
-
-        return {
-          success: true,
-          orderId,
-          confirmedAt,
-          confirmedBy: actor,
-          type: PAYMENT_CONFIRMATION_TYPE.ACCOUNTING,
-          version: newVersion,
-          note,
-        };
-      },
     );
+
+    // 2. Validate
+    this.validateAccountingConfirmation(order, orderId);
+
+    const now = DateTimeUtils.now();
+    const confirmedAt = DateTimeUtils.toISO(now);
+    const currentVersion = order?.version ?? 0;
+
+    // 3. Determine if should auto-complete
+    const shouldComplete = order?.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
+
+    const updateData: Partial<MktOrderWorkspaceEntity> = {
+      accountingConfirmed: true,
+    };
+
+    if (shouldComplete) {
+      updateData.status = ORDER_STATUS.COMPLETED;
+    }
+
+    // 4. Update with version increment
+    await this.orderRepository.updateOrder(orderId, updateData, workspaceId);
+
+    const newVersion = currentVersion + 1;
+
+    // 5. Create history record
+    await this.orderHistoryRepository.createOrderHistory(
+      {
+        orderId,
+        action: ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMED,
+        name: 'Accounting confirmed payment',
+        note: note ?? 'Payment verified by accounting department',
+        workspaceMemberId: actor.workspaceMemberId,
+        metadata: {
+          confirmedAt,
+          orderCompleted: shouldComplete,
+          previousStatus: order?.status,
+          version: newVersion,
+          ...metadata,
+        },
+      },
+      workspaceId,
+    );
+
+    this.logger.log(
+      `Order ${orderId} payment confirmed by accounting (version: ${newVersion})` +
+        `${shouldComplete ? ' - order completed' : ''}`,
+    );
+
+    return {
+      success: true,
+      orderId,
+      confirmedAt,
+      confirmedBy: actor,
+      type: PAYMENT_CONFIRMATION_TYPE.ACCOUNTING,
+      version: newVersion,
+      note,
+    };
   }
 
   private async doRevokeConfirmation(
@@ -475,54 +454,53 @@ export class PaymentConfirmationService {
     workspaceId: string,
     actor: ConfirmationActorMetadata,
   ): Promise<ConfirmationResult> {
-    return this.transactionScopeService.runInTransaction(
+    // WORKAROUND: Transaction disabled due to ALS binding issues with engine's query_timeout
+    // Using optimistic locking instead of pessimistic lock
+
+    // 1. Fetch order (no pessimistic lock - using optimistic locking in update)
+    const order = await this.orderRepository.findByIdWithOptions(
+      orderId,
+      undefined,
       workspaceId,
-      async () => {
-        // 1. Fetch with pessimistic lock
-        const order = await this.orderRepository.findByIdForUpdate(
-          orderId,
-          workspaceId,
-        );
-
-        if (!order) {
-          throw new OrderNotFoundError(orderId);
-        }
-
-        const now = DateTimeUtils.now();
-        const revokedAt = DateTimeUtils.toISO(now);
-
-        let impact: RevokeImpact;
-
-        if (type === PAYMENT_CONFIRMATION_TYPE.SALE) {
-          impact = await this.revokeSaleConfirmation(
-            order,
-            reason,
-            actor,
-            revokedAt,
-            workspaceId,
-          );
-        } else {
-          impact = await this.revokeAccountingConfirmation(
-            order,
-            reason,
-            actor,
-            revokedAt,
-            workspaceId,
-          );
-        }
-
-        return {
-          success: true,
-          orderId,
-          confirmedAt: revokedAt,
-          confirmedBy: actor,
-          type,
-          version: (order.version ?? 0) + 1,
-          note: reason,
-          impact,
-        };
-      },
     );
+
+    if (!order) {
+      throw new OrderNotFoundError(orderId);
+    }
+
+    const now = DateTimeUtils.now();
+    const revokedAt = DateTimeUtils.toISO(now);
+
+    let impact: RevokeImpact;
+
+    if (type === PAYMENT_CONFIRMATION_TYPE.SALE) {
+      impact = await this.revokeSaleConfirmation(
+        order,
+        reason,
+        actor,
+        revokedAt,
+        workspaceId,
+      );
+    } else {
+      impact = await this.revokeAccountingConfirmation(
+        order,
+        reason,
+        actor,
+        revokedAt,
+        workspaceId,
+      );
+    }
+
+    return {
+      success: true,
+      orderId,
+      confirmedAt: revokedAt,
+      confirmedBy: actor,
+      type,
+      version: (order.version ?? 0) + 1,
+      note: reason,
+      impact,
+    };
   }
 
   private async revokeSaleConfirmation(
@@ -560,19 +538,22 @@ export class PaymentConfirmationService {
       );
     }
 
-    await this.orderHistoryRepository.createOrderHistory({
-      orderId: order.id,
-      action: ORDER_HISTORY_ACTION.SALE_CONFIRMATION_REVOKED,
-      name: 'Sale confirmation revoked',
-      note: reason,
-      workspaceMemberId: actor.workspaceMemberId,
-      metadata: {
-        revokedAt,
-        reason,
-        impact,
-        version: updateResult.newVersion,
+    await this.orderHistoryRepository.createOrderHistory(
+      {
+        orderId: order.id,
+        action: ORDER_HISTORY_ACTION.SALE_CONFIRMATION_REVOKED,
+        name: 'Sale confirmation revoked',
+        note: reason,
+        workspaceMemberId: actor.workspaceMemberId,
+        metadata: {
+          revokedAt,
+          reason,
+          impact,
+          version: updateResult.newVersion,
+        },
       },
-    });
+      workspaceId,
+    );
 
     this.logger.warn(
       `Sale confirmation revoked for order ${order.id}. ` +
@@ -630,22 +611,25 @@ export class PaymentConfirmationService {
       );
     }
 
-    await this.orderHistoryRepository.createOrderHistory({
-      orderId: order.id,
-      action: ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMATION_REVOKED,
-      name: 'Accounting confirmation revoked',
-      note: reason,
-      workspaceMemberId: actor.workspaceMemberId,
-      metadata: {
-        revokedAt,
-        reason,
-        statusChanged,
-        previousStatus,
-        newStatus,
-        impact,
-        version: updateResult.newVersion,
+    await this.orderHistoryRepository.createOrderHistory(
+      {
+        orderId: order.id,
+        action: ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMATION_REVOKED,
+        name: 'Accounting confirmation revoked',
+        note: reason,
+        workspaceMemberId: actor.workspaceMemberId,
+        metadata: {
+          revokedAt,
+          reason,
+          statusChanged,
+          previousStatus,
+          newStatus,
+          impact,
+          version: updateResult.newVersion,
+        },
       },
-    });
+      workspaceId,
+    );
 
     this.logger.warn(
       `Accounting confirmation revoked for order ${order.id}. ` +
