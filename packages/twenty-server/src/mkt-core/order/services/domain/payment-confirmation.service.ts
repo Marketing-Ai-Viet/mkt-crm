@@ -328,7 +328,7 @@ export class PaymentConfirmationService {
 
         const now = DateTimeUtils.now();
         const confirmedAt = DateTimeUtils.toISO(now);
-        const currentVersion = order!.version ?? 0;
+        const currentVersion = order?.version ?? 0;
 
         // 3. Update with optimistic lock
         const updateResult =
@@ -402,11 +402,11 @@ export class PaymentConfirmationService {
 
         const now = DateTimeUtils.now();
         const confirmedAt = DateTimeUtils.toISO(now);
-        const currentVersion = order!.version ?? 0;
+        const currentVersion = order?.version ?? 0;
 
         // 3. Determine if should auto-complete
         const shouldComplete =
-          order!.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
+          order?.paymentStatus === ORDER_PAYMENT_STATUS.PAID;
 
         const updateData: Partial<MktOrderWorkspaceEntity> = {
           accountingConfirmed: true,
@@ -444,7 +444,7 @@ export class PaymentConfirmationService {
           metadata: {
             confirmedAt,
             orderCompleted: shouldComplete,
-            previousStatus: order!.status,
+            previousStatus: order?.status,
             version: newVersion,
             ...metadata,
           },
