@@ -56,6 +56,7 @@ import {
   PaymentConfirmationService,
   PaymentReminderService,
   OrderExportService,
+  OrderExportTokenService,
   // Application Services
   OrderOrchestrationService,
 } from './services';
@@ -67,6 +68,7 @@ import {
   PaymentReminderResolver,
   OrderExportResolver,
 } from './resolvers';
+import { OrderExportController } from './controllers';
 import {
   MktOrderCustomEventListener,
   LicenseLifecycleListener,
@@ -109,6 +111,9 @@ import {
 } from './services/integration';
 
 @Module({
+  controllers: [
+    OrderExportController, // REST endpoint for file download
+  ],
   imports: [
     ConfigModule.forFeature(orderConfig), // Order module configuration
     TypeOrmModule.forFeature([Workspace], 'core'), // Workspace entity for migration service
@@ -167,6 +172,7 @@ import {
     PaymentConfirmationService,
     PaymentReminderService,
     OrderExportService,
+    OrderExportTokenService,
 
     // Application Services (orchestration)
     OrderOrchestrationService,

@@ -13,10 +13,22 @@ import {
 } from 'src/mkt-core/common/excel';
 import { OrderExportService } from 'src/mkt-core/order/services/domain/order-export.service';
 import {
+  OrderExportTokenService,
+  EXPORT_TOKEN_CONFIG,
+} from 'src/mkt-core/order/services/domain/order-export-token.service';
+import {
   ExportOrdersInput,
+  ExportOrdersByIdsInput,
   ExportFileOutput,
   AsyncExportOutput,
 } from 'src/mkt-core/order/dto/order-export.dto';
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+/** Base URL cho export endpoint */
+const EXPORT_BASE_URL = '/api/orders/export';
 
 // ============================================
 // RESOLVER
@@ -26,13 +38,14 @@ import {
  * OrderExportResolver - GraphQL resolver cho order export
  *
  * Features:
- * - Sync export (< 10K rows): Returns Base64 encoded file immediately
+ * - Sync export (< 10K rows): Returns download URL, frontend redirect để tải file
  * - Async export (> 10K rows): Returns job ID, client polls for completion
  * - Audit logging for all export operations
  *
  * Security:
  * - WorkspaceAuthGuard: Ensures data is scoped to workspace
  * - UserAuthGuard: Ensures authenticated user
+ * - Export token: One-time use, expires after 5 minutes
  * - PII columns require additional permission check
  *
  * @remarks
@@ -48,20 +61,23 @@ export class OrderExportResolver {
   constructor(
     private readonly orderExportService: OrderExportService,
     private readonly exportAuditService: ExportAuditService,
+    private readonly exportTokenService: OrderExportTokenService,
   ) {}
 
   /**
-   * Export danh sách đơn hàng ra file Excel/CSV (sync)
+   * Export danh sách đơn hàng ra file Excel/CSV theo filter
    *
    * @remarks
    * - Giới hạn sync export: 10K rows
-   * - Support filter by status, date range, customer, sales staff
+   * - Trả về downloadUrl, frontend redirect đến URL này để tải file
+   * - URL chứa one-time token, hết hạn sau 5 phút
+   * - Support filter by customerId, salesStaffId
    * - Support xlsx và csv format
    * - Audit log được tạo sau khi export thành công
    */
   @Mutation(() => ExportFileOutput, {
     description:
-      'Export danh sách đơn hàng ra file Excel/CSV (max 10K rows cho sync)',
+      'Export danh sách đơn hàng theo filter (customerId, salesStaffId). Trả về download URL.',
   })
   async mktExportOrdersToFile(
     @AuthWorkspace() workspace: Workspace,
@@ -70,19 +86,35 @@ export class OrderExportResolver {
     input?: ExportOrdersInput,
   ): Promise<ExportFileOutput> {
     this.logger.log(
-      `User ${user.id} exporting orders for workspace: ${workspace.id}`,
+      `User ${user.id} requesting order export for workspace: ${workspace.id}`,
     );
 
-    const result = await this.orderExportService.exportOrders(
+    // Count rows để kiểm tra limit và hiển thị cho user
+    const rowCount = await this.orderExportService.countOrdersForExport(
       input,
       workspace.id,
     );
+
+    // Generate one-time token
+    const token = await this.exportTokenService.generateToken(
+      workspace.id,
+      user.id,
+      input,
+    );
+
+    // Build download URL
+    const downloadUrl = `${EXPORT_BASE_URL}/${token}`;
+
+    // Calculate expiry time
+    const expiresAt = new Date(
+      Date.now() + EXPORT_TOKEN_CONFIG.TOKEN_TTL_SECONDS * 1000,
+    ).toISOString();
 
     // Audit log export action
     await this.exportAuditService.logSyncExport(
       user.id,
       workspace.id,
-      result.rowCount,
+      rowCount,
       {
         filter: input as Record<string, unknown>,
         format: input?.format === 'csv' ? 'csv' : 'xlsx',
@@ -91,10 +123,81 @@ export class OrderExportResolver {
     );
 
     this.logger.log(
-      `Export completed: ${result.rowCount} rows, file: ${result.filename}`,
+      `Export token generated for ${rowCount} rows, expires at ${expiresAt}`,
     );
 
-    return result;
+    return {
+      downloadUrl,
+      rowCount,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Export đơn hàng theo danh sách IDs
+   *
+   * @remarks
+   * - Export 1 hoặc nhiều đơn hàng đã chọn
+   * - Giới hạn sync export: 10K rows
+   * - Trả về downloadUrl, frontend redirect đến URL này để tải file
+   * - URL chứa one-time token, hết hạn sau 5 phút
+   */
+  @Mutation(() => ExportFileOutput, {
+    description:
+      'Export đơn hàng theo danh sách IDs đã chọn. Trả về download URL.',
+  })
+  async mktExportOrdersByIds(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthUser() user: User,
+    @Args('input', { type: () => ExportOrdersByIdsInput })
+    input: ExportOrdersByIdsInput,
+  ): Promise<ExportFileOutput> {
+    this.logger.log(
+      `User ${user.id} requesting export ${input.orderIds.length} orders by IDs for workspace: ${workspace.id}`,
+    );
+
+    // Count rows
+    const rowCount = await this.orderExportService.countOrdersByIds(
+      input.orderIds,
+      workspace.id,
+    );
+
+    // Generate one-time token với orderIds
+    const token = await this.exportTokenService.generateToken(
+      workspace.id,
+      user.id,
+      { orderIds: input.orderIds, format: input.format },
+    );
+
+    // Build download URL
+    const downloadUrl = `${EXPORT_BASE_URL}/${token}`;
+
+    // Calculate expiry time
+    const expiresAt = new Date(
+      Date.now() + EXPORT_TOKEN_CONFIG.TOKEN_TTL_SECONDS * 1000,
+    ).toISOString();
+
+    // Audit log export action
+    await this.exportAuditService.logSyncExport(
+      user.id,
+      workspace.id,
+      rowCount,
+      {
+        filter: { orderIds: input.orderIds },
+        format: input.format === 'csv' ? 'csv' : 'xlsx',
+        includedPii: false,
+      },
+    );
+
+    this.logger.log(
+      `Export by IDs token generated for ${rowCount} rows, expires at ${expiresAt}`,
+    );
+
+    return {
+      downloadUrl,
+      rowCount,
+      expiresAt,
+    };
   }
 
   /**

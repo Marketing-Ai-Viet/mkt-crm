@@ -18,3 +18,4 @@ export * from './order-query.service';
 export * from './payment-confirmation.service';
 export * from './payment-reminder.service';
 export * from './order-export.service';
+export * from './order-export-token.service';

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { In } from 'typeorm';
+
 import {
   ExcelColumn,
   EXCEL_CONSTANTS,
@@ -16,7 +18,7 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import {
   ExportOrdersInput,
-  ExportFileOutput,
+  ExportOrdersByIdsInput,
   ExportFormatEnum,
 } from 'src/mkt-core/order/dto/order-export.dto';
 
@@ -90,27 +92,30 @@ export class OrderExportService {
   // ============================================
 
   /**
-   * Export danh sách orders ra Excel/CSV
+   * Export danh sách orders ra Buffer (cho REST endpoint download trực tiếp)
    *
    * @param input - Filter và format options
    * @param workspaceId - Workspace ID (data scope)
-   * @returns ExportFileOutput với Base64 content
+   * @returns Object với buffer, filename, mimeType, rowCount
    */
-  async exportOrders(
+  async exportOrdersToBuffer(
     input: ExportOrdersInput | undefined,
     workspaceId: string,
-  ): Promise<ExportFileOutput> {
-    this.logger.log(`Starting order export for workspace: ${workspaceId}`);
+  ): Promise<{
+    buffer: Buffer;
+    filename: string;
+    mimeType: string;
+    rowCount: number;
+  }> {
+    this.logger.log(
+      `Starting order export to buffer for workspace: ${workspaceId}`,
+    );
 
     // Fetch orders với filter
     const orders = await this.fetchOrdersWithFilter(input, workspaceId);
 
-    // Handle empty data
-    if (orders.length === 0) {
-      this.logger.warn(EXCEL_MESSAGES.WARN.EMPTY_DATA('orders'));
-
-      return this.exportEmptyFile(input?.format);
-    }
+    // Transform to export rows (empty array nếu không có data)
+    const exportData = orders.map((order) => this.mapOrderToExportRow(order));
 
     // Check limit
     if (orders.length > EXCEL_CONSTANTS.LIMITS.SYNC_MAX_ROWS) {
@@ -120,7 +125,6 @@ export class OrderExportService {
           EXCEL_CONSTANTS.LIMITS.SYNC_MAX_ROWS,
         ),
       );
-      // TODO: Return async job info instead of throwing
       throw new Error(
         EXCEL_MESSAGES.ERROR.ROW_LIMIT_EXCEEDED(
           orders.length,
@@ -128,9 +132,6 @@ export class OrderExportService {
         ),
       );
     }
-
-    // Transform to export rows
-    const exportData = orders.map((order) => this.mapOrderToExportRow(order));
 
     // Export based on format
     const format = input?.format ?? ExportFormatEnum.XLSX;
@@ -143,27 +144,109 @@ export class OrderExportService {
       });
 
       return {
-        content: result.buffer.toString('base64'),
-        mimeType: result.mimeType,
+        buffer: result.buffer,
         filename: result.filename,
+        mimeType: result.mimeType,
         rowCount: result.rowCount,
       };
     }
 
     // Default: XLSX
-    return this.excelService.exportToBase64(exportData, {
+    const result = this.excelService.exportToBuffer(exportData, {
       sheetName: 'Đơn hàng',
       columns: ORDER_EXPORT_COLUMNS,
       filename: 'danh-sach-don-hang',
       freezeHeader: true,
       autoFilter: true,
     });
+
+    return {
+      buffer: result.buffer,
+      filename: result.filename,
+      mimeType: result.mimeType,
+      rowCount: result.rowCount,
+    };
+  }
+
+  /**
+   * Export orders theo danh sách IDs ra Buffer
+   *
+   * @param input - Order IDs và format options
+   * @param workspaceId - Workspace ID (data scope)
+   * @returns Object với buffer, filename, mimeType, rowCount
+   */
+  async exportOrdersByIdsToBuffer(
+    input: ExportOrdersByIdsInput,
+    workspaceId: string,
+  ): Promise<{
+    buffer: Buffer;
+    filename: string;
+    mimeType: string;
+    rowCount: number;
+  }> {
+    this.logger.log(
+      `Starting export ${input.orderIds.length} orders by IDs for workspace: ${workspaceId}`,
+    );
+
+    // Fetch orders by IDs
+    const orders = await this.fetchOrdersByIds(input.orderIds, workspaceId);
+
+    // Transform to export rows
+    const exportData = orders.map((order) => this.mapOrderToExportRow(order));
+
+    // Check limit
+    if (orders.length > EXCEL_CONSTANTS.LIMITS.SYNC_MAX_ROWS) {
+      this.logger.warn(
+        EXCEL_MESSAGES.WARN.LARGE_DATASET(
+          orders.length,
+          EXCEL_CONSTANTS.LIMITS.SYNC_MAX_ROWS,
+        ),
+      );
+      throw new Error(
+        EXCEL_MESSAGES.ERROR.ROW_LIMIT_EXCEEDED(
+          orders.length,
+          EXCEL_CONSTANTS.LIMITS.SYNC_MAX_ROWS,
+        ),
+      );
+    }
+
+    // Export based on format
+    const format = input.format ?? ExportFormatEnum.XLSX;
+
+    if (format === ExportFormatEnum.CSV) {
+      const result = this.excelService.exportToCsv(exportData, {
+        sheetName: 'Đơn hàng',
+        columns: ORDER_EXPORT_COLUMNS,
+        filename: 'don-hang-da-chon',
+      });
+
+      return {
+        buffer: result.buffer,
+        filename: result.filename,
+        mimeType: result.mimeType,
+        rowCount: result.rowCount,
+      };
+    }
+
+    // Default: XLSX
+    const result = this.excelService.exportToBuffer(exportData, {
+      sheetName: 'Đơn hàng',
+      columns: ORDER_EXPORT_COLUMNS,
+      filename: 'don-hang-da-chon',
+      freezeHeader: true,
+      autoFilter: true,
+    });
+
+    return {
+      buffer: result.buffer,
+      filename: result.filename,
+      mimeType: result.mimeType,
+      rowCount: result.rowCount,
+    };
   }
 
   /**
    * Count orders matching filter criteria
-   *
-   * Used for async export to estimate job size
    *
    * @param input - Filter criteria
    * @param workspaceId - Workspace ID
@@ -173,8 +256,23 @@ export class OrderExportService {
     input: ExportOrdersInput | undefined,
     workspaceId: string,
   ): Promise<number> {
-    // Fetch orders with filter (reuse existing method)
     const orders = await this.fetchOrdersWithFilter(input, workspaceId);
+
+    return orders.length;
+  }
+
+  /**
+   * Count orders by IDs
+   *
+   * @param orderIds - Order IDs
+   * @param workspaceId - Workspace ID
+   * @returns Count
+   */
+  async countOrdersByIds(
+    orderIds: string[],
+    workspaceId: string,
+  ): Promise<number> {
+    const orders = await this.fetchOrdersByIds(orderIds, workspaceId);
 
     return orders.length;
   }
@@ -184,7 +282,7 @@ export class OrderExportService {
   // ============================================
 
   /**
-   * Fetch orders với filter từ input
+   * Fetch orders với filter từ input (customerId, salesStaffId)
    */
   private async fetchOrdersWithFilter(
     input: ExportOrdersInput | undefined,
@@ -193,10 +291,6 @@ export class OrderExportService {
     // Build where clause
     const where: Record<string, unknown> = {};
 
-    if (input?.status) {
-      where.status = input.status;
-    }
-
     if (input?.customerId) {
       where.mktCustomerId = input.customerId;
     }
@@ -204,8 +298,6 @@ export class OrderExportService {
     if (input?.salesStaffId) {
       where.createdById = input.salesStaffId;
     }
-
-    // TODO: Add date range filter with startDate/endDate
 
     // Fetch với relations
     const orders = await this.orderRepository.findManyWithDetailsWorkspace(
@@ -219,31 +311,28 @@ export class OrderExportService {
   }
 
   /**
-   * Export empty file (chỉ có header)
+   * Fetch orders theo danh sách IDs
    */
-  private exportEmptyFile(format?: ExportFormatEnum): ExportFileOutput {
-    const emptyData: OrderExportRow[] = [];
-
-    if (format === ExportFormatEnum.CSV) {
-      const result = this.excelService.exportToCsv(emptyData, {
-        sheetName: 'Đơn hàng',
-        columns: ORDER_EXPORT_COLUMNS,
-        filename: 'danh-sach-don-hang',
-      });
-
-      return {
-        content: result.buffer.toString('base64'),
-        mimeType: result.mimeType,
-        filename: result.filename,
-        rowCount: 0,
-      };
+  private async fetchOrdersByIds(
+    orderIds: string[],
+    workspaceId: string,
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    if (orderIds.length === 0) {
+      return [];
     }
 
-    return this.excelService.exportToBase64(emptyData, {
-      sheetName: 'Đơn hàng',
-      columns: ORDER_EXPORT_COLUMNS,
-      filename: 'danh-sach-don-hang',
-    });
+    const where: Record<string, unknown> = {
+      id: In(orderIds),
+    };
+
+    const orders = await this.orderRepository.findManyWithDetailsWorkspace(
+      workspaceId,
+      where,
+    );
+
+    this.logger.log(`Fetched ${orders.length} orders by IDs for export`);
+
+    return orders;
   }
 
   /**
@@ -271,16 +360,17 @@ export class OrderExportService {
 
     // Format createdAt - handle Date object, string (ISO), or number (millis)
     let createdAtStr = '';
+    const createdAt = order.createdAt as Date | string | number | undefined;
 
-    if (order.createdAt) {
-      if (order.createdAt instanceof Date) {
+    if (createdAt) {
+      if (createdAt instanceof Date) {
         createdAtStr = DateTimeUtils.format(
-          DateTimeUtils.fromDate(order.createdAt),
+          DateTimeUtils.fromDate(createdAt),
           'dd/MM/yyyy HH:mm',
         );
-      } else if (typeof order.createdAt === 'string') {
+      } else if (typeof createdAt === 'string') {
         // ISO string or numeric string
-        const parsed = Date.parse(order.createdAt);
+        const parsed = Date.parse(createdAt);
 
         if (!isNaN(parsed)) {
           createdAtStr = DateTimeUtils.format(
@@ -288,9 +378,9 @@ export class OrderExportService {
             'dd/MM/yyyy HH:mm',
           );
         }
-      } else if (typeof order.createdAt === 'number') {
+      } else if (typeof createdAt === 'number') {
         createdAtStr = DateTimeUtils.format(
-          DateTimeUtils.fromMillis(order.createdAt),
+          DateTimeUtils.fromMillis(createdAt),
           'dd/MM/yyyy HH:mm',
         );
       }
