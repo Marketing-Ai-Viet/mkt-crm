@@ -15,8 +15,8 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 **Framework**: NestJS (Backend) + React (Frontend)
 **Architecture**: Twenty CRM + mkt-core Custom Module
 **Monorepo**: Nx Workspace
-**Version**: 1.1
-**Last Updated**: 2025-12-26
+**Version**: 1.3
+**Last Updated**: 2026-02-04
 
 ---
 
@@ -154,6 +154,202 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 - `mktCalculateGenericComboPrice` - Calculate price
 - `mktValidateGenericCombo` - Validate for order
 - `mktCreateGenericCombo`, `mktUpdateGenericCombo`, `mktDeleteGenericCombo` - Mutations
+
+---
+
+### Task: Work with Excel Export
+
+**Load**:
+1. `reference/architecture.md` - Excel Export Module section
+2. Read source files in `mkt-core/common/excel/`
+
+**Key Concepts**:
+- **Sync Export**: Trả về file trực tiếp (max 10K rows)
+- **Async Export**: Background job cho dataset lớn (max 50K rows)
+- **Audit Logging**: Tất cả export operations đều được log
+- **PII Protection**: Các cột chứa PII cần permission riêng
+
+**Key Services**:
+- `MktExcelService` - Core service tạo Excel/CSV files
+- `ExportAuditService` - Audit logging cho export operations
+- `ExcelExportJob` - Background job processor (BullMQ)
+
+**Key Constants** (`mkt-core/common/excel/constants/`):
+- `EXCEL_CONSTANTS` - Limits, batch size, MIME types
+- `EXPORT_AUDIT_ACTION` - Audit action types
+- `PII_COLUMNS` - Columns requiring special permission
+- `ASYNC_EXPORT_CONFIG` - Job configuration
+
+**GraphQL Operations**:
+```graphql
+# Sync export (< 10K rows) - Returns Base64 file
+mutation exportOrders($input: ExportOrdersInput): ExportFileOutput
+
+# Async export (> 10K rows) - Returns job ID
+mutation requestAsyncExportOrders($input: ExportOrdersInput): AsyncExportOutput
+
+# Check async job status
+query getExportJobStatus($jobId: String!): AsyncExportOutput
+```
+
+**Usage Example**:
+```typescript
+import {
+  MktExcelService,
+  ExcelColumn,
+  EXCEL_CONSTANTS,
+} from 'src/mkt-core/common/excel';
+
+// Define columns
+const columns: ExcelColumn<MyRow>[] = [
+  { header: 'Mã', key: 'code', width: 15 },
+  { header: 'Tên', key: 'name', width: 30 },
+];
+
+// Export to Base64 (for GraphQL response)
+const result = this.excelService.exportToBase64(data, {
+  sheetName: 'Data',
+  columns,
+  filename: 'export',
+  freezeHeader: true,
+  autoFilter: true,
+});
+
+// Export to CSV
+const csvResult = this.excelService.exportToCsv(data, {
+  sheetName: 'Data',
+  columns,
+  filename: 'export',
+});
+```
+
+---
+
+### Task: Work with Order Payment Features
+
+**Load**:
+1. Read source files in `mkt-core/order/services/domain/`
+2. Read `mkt-core/order/docs/` for API guides
+
+**Payment Confirmation** - Xác nhận thanh toán từ Sale và Accounting:
+```typescript
+// Key Services
+PaymentConfirmationService - Handle sale/accounting confirmation
+  - confirmSalePayment()      // Sale xác nhận đã nhận tiền
+  - confirmAccountingPayment() // Kế toán xác nhận
+  - revokeConfirmation()      // Thu hồi xác nhận
+  - getConfirmationStatus()   // Lấy trạng thái
+
+// GraphQL Operations
+mutation confirmSalePayment($input: ConfirmPaymentInput!): ConfirmationResult
+mutation confirmAccountingPayment($input: ConfirmPaymentInput!): ConfirmationResult
+mutation revokePaymentConfirmation($input: RevokeConfirmationInput!): ConfirmationResult
+query getOrderConfirmationStatus($orderId: String!): OrderConfirmationStatus
+```
+
+**Payment Reminder** - Gửi nhắc nhở thanh toán:
+```typescript
+// Key Services
+PaymentReminderService - Handle manual payment reminder emails
+  - sendReminder()            // Gửi reminder cho 1 order
+  - sendBulkReminders()       // Gửi cho nhiều orders
+  - getOrdersNeedingReminder() // Lấy danh sách cần nhắc
+
+// GraphQL Operations
+mutation sendPaymentReminder($input: SendPaymentReminderInput!): PaymentReminderResult
+mutation sendBulkPaymentReminders($input: SendBulkRemindersInput!): BulkReminderResult
+query ordersNeedingPaymentReminder($input: PaymentReminderFilterInput): PaginatedOrdersNeedingReminder
+```
+
+**Key Constants**:
+- `PAYMENT_REMINDER_CONFIG` - Max reminders, min interval
+- `CONFIRMATION_RULES` - Confirmation business rules
+- `IS_PROTECTED_FROM_AUTO_LOCK` - Protect orders with sale confirmation
+
+---
+
+### Task: Work with Customer Notes & Purchase History
+
+**Load**:
+1. Read source files in `mkt-core/customer/`
+2. `reference/code-patterns.md` - WorkspaceEntity pattern
+
+**Customer Note Entity** (`MktCustomerNoteWorkspaceEntity`):
+- Note types: GENERAL, CALL, MEETING, ISSUE, FOLLOWUP
+- Rich text content
+- Linked to customer with cascade delete
+
+```typescript
+// GraphQL Operations
+query mktCustomerNotes($customerId: String!): [MktCustomerNote]
+mutation createMktCustomerNote($input: CreateCustomerNoteInput!): MktCustomerNote
+mutation updateMktCustomerNote($id: String!, $input: UpdateCustomerNoteInput!): MktCustomerNote
+mutation deleteMktCustomerNote($id: String!): Boolean
+```
+
+**Purchase History Service** (`MktCustomerPurchaseHistoryService`):
+```typescript
+// Key Methods
+getPurchaseHistory(args, workspaceId)     // Get orders with pagination
+getPurchasedProducts(args, workspaceId)   // Get unique products purchased
+
+// GraphQL Operations
+query customerPurchaseHistory($input: GetPurchaseHistoryArgs!): PurchaseHistoryOutput
+query customerPurchasedProducts($input: GetPurchasedProductsArgs!): PurchasedProductsOutput
+```
+
+---
+
+### Task: Work with Paginated Queries
+
+**Load**: `mkt-core/common/dto/` và `mkt-core/order/dto/order-query.input.ts`
+
+**Pagination Pattern**:
+```typescript
+import {
+  PaginationInput,
+  SortDirection,
+  toPaginationOptions,
+  calculatePageInfo,
+} from 'src/mkt-core/common/dto';
+
+// In resolver
+@Query(() => OrderListOutput)
+async getOrders(
+  @Args('input', { nullable: true }) input?: GetOrdersInput,
+): Promise<OrderListOutput> {
+  const pagination = toPaginationOptions(input?.pagination);
+  // { page: 1, limit: 20, skip: 0 }
+
+  const [orders, total] = await this.orderRepository.findWithPagination(
+    workspaceId,
+    input?.filter,
+    pagination,
+  );
+
+  return {
+    data: orders,
+    pageInfo: calculatePageInfo(total, pagination),
+    totalCount: total,
+  };
+}
+```
+
+**Order Query Features**:
+```graphql
+query getOrders($input: GetOrdersInput) {
+  getOrders(input: $input) {
+    data { id orderCode status totalAmount }
+    pageInfo { currentPage totalPages hasNextPage }
+    totalCount
+  }
+}
+
+# Input supports:
+# - pagination: { page, limit }
+# - filter: { status, paymentStatus, customerId, salesStaffId, search }
+# - sort: { field, direction }
+```
 
 ---
 
@@ -299,6 +495,10 @@ npx nx command twenty-server -- mkt-customer-tag-data-seed-dev-workspace
 - **Understand architecture** -> Load: `architecture.md`
 - **Work with MKT Product Integration** -> Load: `architecture.md` (MKT Product Integration section)
 - **Work with Generic Combo** -> Read: `mkt-core/mkt-combo/` source files
+- **Work with Excel Export** -> Load: `architecture.md` (Excel Export section) + `mkt-core/common/excel/`
+- **Work with Order Payments** -> Read: `mkt-core/order/services/domain/payment-*.service.ts`
+- **Work with Customer Notes** -> Read: `mkt-core/customer/` source files
+- **Work with Paginated Queries** -> Use: `mkt-core/common/dto/pagination.*`
 - **Money calculations** -> Use: `MoneyUtils` from `mkt-core/utils/money.utils.ts`
 
 ---
@@ -336,24 +536,44 @@ mkt-core/{module}/
 
 ```
 packages/twenty-server/src/mkt-core/
-├── invoice/           # 📚 Reference module - follow this structure
-├── license/           # License management
-├── order/             # Order processing
-├── payment/           # Payment integration
-├── customer/          # Customer management
-├── product/           # Product & variants
-├── mkt-department/    # Department hierarchy
-├── mkt-kpi/           # KPI tracking
-├── mkt-reseller/      # Reseller management
+├── invoice/                  # 📚 Reference module - follow this structure
+├── order/                    # Order processing (Clean Architecture)
+├── payment/                  # Payment integration (SEPay, BIDV)
+├── customer/                 # Customer lifecycle & tier system
+├── contract/                 # Contract management (RBAC protected)
+├── mkt-combo/                # Product combo management
+├── mkt-promotion/            # Promotions & coupons
+├── mkt-department/           # Department hierarchy (tree structure)
+├── mkt-organization-level/   # Organization levels
+├── mkt-rbac-enterprise-grade/  # Enterprise RBAC (Casbin)
 ├── mkt-product-integration/  # MKT Server product integration
-├── mkt-combo/         # Generic Combo (bán theo package)
+├── mkt-license-integration/  # MKT Server license integration
+├── mkt-user-integration/     # MKT Server user integration
+├── oauth2-client/            # OAuth2 HTTP client
+├── mkt-auth-client/          # MKT Server auth (Better Auth)
+├── mkt-email/                # Email templates
+├── user-management/          # User & role management
+├── workspace-member/         # Workspace member management
+├── mkt-two-facetor-authentication/  # 2FA (OTP)
+├── infrastructure/           # Redis, delayed jobs
+├── common/                   # Shared infrastructure
+│   ├── dto/                  # Pagination DTOs
+│   ├── excel/                # Excel/CSV export utilities
+│   ├── hooks/                # Reusable hook utilities
+│   ├── idempotency/          # Duplicate request prevention
+│   ├── messages/             # Centralized message system
+│   ├── optimistic-locking/   # Concurrent edit protection
+│   ├── repositories/         # Base repository pattern
+│   └── transaction/          # Transaction scope service
 ├── utils/
-│   ├── money.utils.ts      # MoneyUtils - precise decimal calculations
-│   ├── date-time.utils.ts  # DateTimeUtils - date/time operations
-│   └── json.util.ts        # Safe JSON parse/stringify
+│   ├── money.utils.ts        # MoneyUtils - precise decimal calculations
+│   ├── date-time.utils.ts    # DateTimeUtils - date/time operations
+│   ├── json.util.ts          # Safe JSON parse/stringify
+│   └── array.utils.ts        # Array utilities
+├── seeder/                   # Development data seeders
 └── constants/
-    ├── mkt-object-ids.ts   # Entity IDs (IMMUTABLE)
-    └── mkt-field-ids.ts    # Field IDs (IMMUTABLE)
+    ├── mkt-object-ids.ts     # Entity IDs (IMMUTABLE)
+    └── mkt-field-ids.ts      # Field IDs (IMMUTABLE)
 ```
 
 ### Hooks vs Resolvers Decision
