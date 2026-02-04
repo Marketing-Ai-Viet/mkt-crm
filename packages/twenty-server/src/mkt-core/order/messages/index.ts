@@ -1,8 +1,4 @@
 import { createModuleMessages } from 'src/mkt-core/common/messages';
-import {
-  PAYMENT_REMINDER_ERROR_CODE,
-  PaymentReminderErrorCode,
-} from 'src/mkt-core/order/constants';
 
 // ============================================
 // LOG CONTEXT
@@ -494,31 +490,3 @@ export const ORDER_VALIDATION_ERROR_CODES = {
 
 export type OrderValidationErrorCode =
   (typeof ORDER_VALIDATION_ERROR_CODES)[keyof typeof ORDER_VALIDATION_ERROR_CODES];
-
-export const PAYMENT_REMINDER_ERROR_MESSAGES: Record<
-  PaymentReminderErrorCode,
-  string
-> = {
-  [PAYMENT_REMINDER_ERROR_CODE.ORDER_NOT_FOUND]: 'Order not found',
-  [PAYMENT_REMINDER_ERROR_CODE.INVALID_ORDER_STATUS]:
-    'Order status is not valid for reminder. Only PROCESSING orders can receive reminders.',
-  [PAYMENT_REMINDER_ERROR_CODE.PAYMENT_ALREADY_COMPLETE]:
-    'Payment is already complete. No reminder needed.',
-  [PAYMENT_REMINDER_ERROR_CODE.ORDER_ALREADY_CONFIRMED]:
-    'Order payment has already been confirmed by sale or accounting.',
-  [PAYMENT_REMINDER_ERROR_CODE.NO_CUSTOMER_EMAIL]:
-    'Customer has no email address.',
-  [PAYMENT_REMINDER_ERROR_CODE.MAX_REMINDERS_REACHED]:
-    'Maximum number of reminders has been reached.',
-  [PAYMENT_REMINDER_ERROR_CODE.REMINDER_TOO_SOON]:
-    'Reminder sent too recently. Please wait before sending another.',
-  [PAYMENT_REMINDER_ERROR_CODE.DUPLICATE_REQUEST]:
-    'Duplicate request detected. This reminder has already been sent.',
-  [PAYMENT_REMINDER_ERROR_CODE.TEMPLATE_NOT_FOUND]: 'Email template not found.',
-  [PAYMENT_REMINDER_ERROR_CODE.EMAIL_QUEUE_FAILED]:
-    'Failed to queue reminder email.',
-  [PAYMENT_REMINDER_ERROR_CODE.BULK_LIMIT_EXCEEDED]:
-    'Bulk request exceeds maximum allowed orders.',
-  [PAYMENT_REMINDER_ERROR_CODE.NO_ORDERS_TO_PROCESS]:
-    'No orders match the specified criteria.',
-};

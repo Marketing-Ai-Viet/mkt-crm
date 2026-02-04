@@ -31,6 +31,7 @@ import {
   MktOrderHistoryRepository,
 } from 'src/mkt-core/order/repositories';
 import { IdempotencyModule } from 'src/mkt-core/common/idempotency';
+import { MktExcelModule } from 'src/mkt-core/common/excel';
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 
 import {
@@ -54,6 +55,8 @@ import {
   OrderQueryService,
   PaymentConfirmationService,
   PaymentReminderService,
+  OrderExportService,
+  OrderExportTokenService,
   // Application Services
   OrderOrchestrationService,
 } from './services';
@@ -63,7 +66,9 @@ import {
   OrderItemMutationResolver,
   PaymentConfirmationResolver,
   PaymentReminderResolver,
+  OrderExportResolver,
 } from './resolvers';
+import { OrderExportController } from './controllers';
 import {
   MktOrderCustomEventListener,
   LicenseLifecycleListener,
@@ -106,6 +111,9 @@ import {
 } from './services/integration';
 
 @Module({
+  controllers: [
+    OrderExportController, // REST endpoint for file download
+  ],
   imports: [
     ConfigModule.forFeature(orderConfig), // Order module configuration
     TypeOrmModule.forFeature([Workspace], 'core'), // Workspace entity for migration service
@@ -127,6 +135,7 @@ import {
     IdempotencyModule.register(), // Idempotency protection for order operations
     MktRbacEnterpriseGradeModule, // RBAC authorization for order operations
     TokenModule,
+    MktExcelModule, // Excel export functionality
   ],
   providers: [
     // Block Hooks - Disable auto-generated GraphQL operations
@@ -162,6 +171,8 @@ import {
     OrderQueryService,
     PaymentConfirmationService,
     PaymentReminderService,
+    OrderExportService,
+    OrderExportTokenService,
 
     // Application Services (orchestration)
     OrderOrchestrationService,
@@ -208,6 +219,7 @@ import {
     OrderItemMutationResolver,
     PaymentConfirmationResolver,
     PaymentReminderResolver,
+    OrderExportResolver,
   ],
   exports: [
     // Repositories

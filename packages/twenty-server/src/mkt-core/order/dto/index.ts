@@ -4,3 +4,4 @@ export * from './order-item-response.output';
 export * from './payment-flow.dto';
 export * from './payment-confirmation.dto';
 export * from './payment-reminder.dto';
+export * from './order-export.dto';
