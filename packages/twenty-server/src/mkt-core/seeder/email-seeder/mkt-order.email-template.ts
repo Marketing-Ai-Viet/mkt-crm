@@ -370,6 +370,230 @@ const ORDER_WAIT_EMAIL = [
   },
 ];
 
+const PAYMENT_REMINDER_EMAIL = [
+  {
+    id: MKT_TEMPLATE_DATA_SEEDS_IDS.PAYMENT_REMINDER_EMAIL_ID,
+    name: 'Nhắc nhở thanh toán đơn hàng',
+    type: MKT_TEMPLATE_TYPE.ORDER_EMAIL,
+    content: `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhắc nhở thanh toán đơn hàng #{{order_code}}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f7fa;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">⏰</div>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                                Nhắc nhở thanh toán
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: #fef3c7; font-size: 14px;">
+                                Đơn hàng #{{order_code}}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Xin chào <strong>{{customer_name}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+                                Chúng tôi xin nhắc nhở về khoản thanh toán cho đơn hàng của bạn đã đến hạn.
+                            </p>
+
+                            <!-- Payment Status Banner -->
+                            {{#if days_overdue}}
+                            <table role="presentation" style="width: 100%; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; margin: 30px 0; border: 2px solid #f59e0b;">
+                                <tr>
+                                    <td style="padding: 20px; text-align: center;">
+                                        <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">
+                                            ⚠️ Đơn hàng đã quá hạn thanh toán <strong>{{days_overdue}} ngày</strong>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <!-- Order Info Box -->
+                            <table role="presentation" style="width: 100%; background-color: #fef9c3; border-radius: 8px; margin: 30px 0; border-left: 4px solid #f59e0b;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h2 style="margin: 0 0 20px 0; color: #92400e; font-size: 18px; font-weight: 600;">
+                                            📋 Thông tin đơn hàng
+                                        </h2>
+
+                                        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;">
+                                                    Mã đơn hàng:
+                                                </td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600;">
+                                                    #{{order_code}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Tổng giá trị:
+                                                </td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600;">
+                                                    {{total_amount}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Đã thanh toán:
+                                                </td>
+                                                <td style="padding: 8px 0; color: #10b981; font-size: 14px; font-weight: 600;">
+                                                    {{paid_amount}}
+                                                </td>
+                                            </tr>
+                                            <tr style="border-top: 2px solid #fde68a;">
+                                                <td style="padding: 15px 0 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Còn lại:
+                                                </td>
+                                                <td style="padding: 15px 0 8px 0; color: #dc2626; font-size: 20px; font-weight: 700;">
+                                                    {{remaining_amount}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Hạn thanh toán:
+                                                </td>
+                                                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600;">
+                                                    {{payment_deadline}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                                    Lần nhắc thứ:
+                                                </td>
+                                                <td style="padding: 8px 0;">
+                                                    <span style="display: inline-block; padding: 4px 12px; background-color: #fde68a; color: #92400e; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                        {{reminder_count}}/3
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- QR Code Payment -->
+                            {{#if qr_code_url}}
+                            <table role="presentation" style="width: 100%; background-color: #f0fdf4; border-radius: 8px; margin: 30px 0; border-left: 4px solid #10b981;">
+                                <tr>
+                                    <td style="padding: 25px; text-align: center;">
+                                        <h3 style="margin: 0 0 20px 0; color: #065f46; font-size: 16px; font-weight: 600;">
+                                            💳 Quét mã QR để thanh toán
+                                        </h3>
+                                        <img src="{{qr_code_url}}" alt="QR Code thanh toán" style="max-width: 300px; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 15px;" />
+                                        <p style="margin: 0; color: #059669; font-size: 13px; line-height: 1.6;">
+                                            Quét mã QR bằng ứng dụng ngân hàng để thanh toán nhanh chóng
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <!-- Payment Link -->
+                            {{#if payment_url}}
+                            <table role="presentation" style="width: 100%; margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{payment_url}}" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                                            💳 Thanh toán ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <!-- Custom Note -->
+                            {{#if custom_note}}
+                            <table role="presentation" style="width: 100%; background-color: #f8f9fc; border-radius: 8px; margin: 30px 0; border-left: 4px solid #6366f1;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 style="margin: 0 0 12px 0; color: #3730a3; font-size: 15px; font-weight: 600;">
+                                            📝 Ghi chú từ nhân viên
+                                        </h3>
+                                        <p style="margin: 0; color: #4338ca; font-size: 14px; line-height: 1.6;">
+                                            {{custom_note}}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <!-- Contact Info -->
+                            <table role="presentation" style="width: 100%; background-color: #eff6ff; border-radius: 8px; margin: 30px 0; border-left: 4px solid #3b82f6;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #1e40af; font-size: 16px; font-weight: 600;">
+                                            📞 Cần hỗ trợ?
+                                        </h3>
+                                        <p style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 14px; line-height: 1.6;">
+                                            Nếu bạn đã thanh toán hoặc cần hỗ trợ, vui lòng liên hệ:
+                                        </p>
+                                        <p style="margin: 0; color: #1e3a8a; font-size: 14px; line-height: 1.8;">
+                                            📧 Email: <a href="mailto:{{support_email}}" style="color: #2563eb; text-decoration: none;">{{support_email}}</a><br>
+                                            📱 Hotline: <a href="tel:{{support_phone}}" style="color: #2563eb; text-decoration: none;">{{support_phone}}</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 30px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.8; text-align: center;">
+                                Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi! 🙏
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fc; padding: 30px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0 0 10px 0; color: #333333; font-size: 15px; font-weight: 600;">
+                                Trân trọng,
+                            </p>
+                            <p style="margin: 0; color: #f59e0b; font-size: 16px; font-weight: 700;">
+                                Đội ngũ {{company_name}}
+                            </p>
+
+                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                <p style="margin: 0; color: #999999; font-size: 12px; line-height: 1.5;">
+                                    Email này được gửi tự động, vui lòng không trả lời.<br>
+                                    © 2025 {{company_name}}. Tất cả quyền được bảo lưu.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`,
+    version: '1.0.0',
+    position: 22,
+    createdBySource: 'API',
+    createdByWorkspaceMemberId: null,
+    createdByName: 'System',
+    locale: 'VI',
+    templateKey: 'payment_reminder',
+  },
+];
+
 const ORDER_TRIAL_EMAIL = [
   {
     id: MKT_TEMPLATE_DATA_SEEDS_IDS.ORDER_TRIAL_EMAIL_ID,
@@ -579,4 +803,5 @@ export const ORDER_EMAIL_TEMPLATE = [
   ...ORDER_COMPLETED_EMAIL,
   ...ORDER_WAIT_EMAIL,
   ...ORDER_TRIAL_EMAIL,
+  ...PAYMENT_REMINDER_EMAIL,
 ];
