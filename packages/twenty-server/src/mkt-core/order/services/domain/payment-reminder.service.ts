@@ -25,7 +25,8 @@ import { GraphQLError } from 'graphql';
 
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { IdempotencyService } from 'src/mkt-core/common/idempotency';
+// TODO: Re-enable khi cần idempotency
+// import { IdempotencyService } from 'src/mkt-core/common/idempotency';
 import { MktTemplateRepository } from 'src/mkt-core/mkt-email/repositories';
 import { MktEmailService } from 'src/mkt-core/mkt-email/services';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
@@ -92,7 +93,8 @@ export class PaymentReminderService {
     private readonly mktEmailService: MktEmailService,
     private readonly templateRepository: MktTemplateRepository,
     private readonly emailService: EmailService,
-    private readonly idempotencyService: IdempotencyService,
+    // TODO: Re-enable khi cần idempotency
+    // private readonly idempotencyService: IdempotencyService,
     private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
@@ -104,13 +106,12 @@ export class PaymentReminderService {
    * Gửi payment reminder cho một order
    *
    * Flow:
-   * 1. Check idempotency (nếu có idempotencyKey)
-   * 2. Fetch order với relations
-   * 3. Validate order
-   * 4. Build email data
-   * 5. Queue email
-   * 6. Update order tracking
-   * 7. Return result
+   * 1. Fetch order với relations
+   * 2. Validate order
+   * 3. Build email data
+   * 4. Queue email
+   * 5. Update order tracking
+   * 6. Return result
    *
    * @throws GraphQLError với extension code khi có lỗi
    */
@@ -118,42 +119,15 @@ export class PaymentReminderService {
     options: SendReminderOptions,
     context: PaymentReminderContext,
   ): Promise<SendReminderResult> {
-    const { orderId, idempotencyKey, forceResend } = options;
+    const { orderId, forceResend } = options;
 
     this.logger.log(
       `Sending payment reminder for order ${orderId}, forceResend=${forceResend ?? false}`,
     );
 
-    // Nếu có idempotencyKey, sử dụng idempotency service
-    if (idempotencyKey) {
-      const result =
-        await this.idempotencyService.executeWithIdempotency<SendReminderResult>(
-          {
-            workspaceId: context.workspaceId,
-            domain: 'order',
-            action: 'sendPaymentReminder',
-            requestBody: { orderId, userId: context.userId },
-            options: { clientKey: idempotencyKey },
-          },
-          async () => {
-            return this.doSendReminder(options, context);
-          },
-        );
+    // TODO: Re-enable idempotency check khi cần thiết
+    // Hiện tại bỏ qua idempotency để đơn giản hóa
 
-      // Nếu là duplicate request đã thành công trước đó
-      if (result.fromCache) {
-        this.logger.log(
-          `Returning cached result for idempotency key: ${idempotencyKey}`,
-        );
-
-        // Trả về cached result nhưng không throw error
-        return result.data;
-      }
-
-      return result.data;
-    }
-
-    // Không có idempotencyKey, thực hiện trực tiếp
     return this.doSendReminder(options, context);
   }
 
