@@ -27,8 +27,8 @@ registerEnumType(PAYMENT_CONFIRMATION_TYPE, {
 // INPUT TYPES
 // ============================================
 
-@InputType({ description: 'Input for confirming payment' })
-export class ConfirmPaymentInputDto {
+@InputType({ description: 'Input for sale/accounting payment confirmation' })
+export class PaymentConfirmationInputDto {
   @Field({ description: 'Order ID to confirm' })
   @IsNotEmpty()
   @IsUUID()

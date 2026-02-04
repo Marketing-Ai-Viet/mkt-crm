@@ -16,14 +16,13 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { WorkspaceMember } from 'src/engine/core-modules/user/dtos/workspace-member.dto';
-import { AuthWorkspaceMember } from 'src/engine/decorators/auth/auth-workspace-member.decorator';
+import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { PAYMENT_CONFIRMATION_TYPE } from 'src/mkt-core/order/constants/confirmation-rules.constants';
 import { PaymentConfirmationService } from 'src/mkt-core/order/services/domain/payment-confirmation.service';
 import {
-  ConfirmPaymentInputDto,
+  PaymentConfirmationInputDto,
   RevokeConfirmationInputDto,
   ConfirmationResultOutput,
   OrderConfirmationStatusOutput,
@@ -51,11 +50,11 @@ export class PaymentConfirmationResolver {
       'Confirm payment by sale staff. Protects license from auto-lock.',
   })
   async confirmPaymentBySale(
-    @Args('input') input: ConfirmPaymentInputDto,
+    @Args('input') input: PaymentConfirmationInputDto,
     @AuthWorkspace() workspace: Workspace,
-    @AuthWorkspaceMember() workspaceMember: WorkspaceMember,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
   ): Promise<ConfirmationResultOutput> {
-    const actor = this.buildActorMetadata(workspaceMember);
+    const actor = this.buildActorMetadata(workspaceMemberId);
 
     const result = await this.paymentConfirmationService.confirmBySale(
       {
@@ -68,7 +67,7 @@ export class PaymentConfirmationResolver {
       actor,
     );
 
-    return this.mapToResultOutput(result, workspaceMember);
+    return this.mapToResultOutput(result, workspaceMemberId);
   }
 
   /**
@@ -80,11 +79,11 @@ export class PaymentConfirmationResolver {
       'Confirm payment by accounting. May complete the order if payment is PAID.',
   })
   async confirmPaymentByAccounting(
-    @Args('input') input: ConfirmPaymentInputDto,
+    @Args('input') input: PaymentConfirmationInputDto,
     @AuthWorkspace() workspace: Workspace,
-    @AuthWorkspaceMember() workspaceMember: WorkspaceMember,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
   ): Promise<ConfirmationResultOutput> {
-    const actor = this.buildActorMetadata(workspaceMember);
+    const actor = this.buildActorMetadata(workspaceMemberId);
 
     const result = await this.paymentConfirmationService.confirmByAccounting(
       {
@@ -97,7 +96,7 @@ export class PaymentConfirmationResolver {
       actor,
     );
 
-    return this.mapToResultOutput(result, workspaceMember);
+    return this.mapToResultOutput(result, workspaceMemberId);
   }
 
   /**
@@ -112,9 +111,9 @@ export class PaymentConfirmationResolver {
   async revokePaymentConfirmation(
     @Args('input') input: RevokeConfirmationInputDto,
     @AuthWorkspace() workspace: Workspace,
-    @AuthWorkspaceMember() workspaceMember: WorkspaceMember,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
   ): Promise<ConfirmationResultOutput> {
-    const actor = this.buildActorMetadata(workspaceMember);
+    const actor = this.buildActorMetadata(workspaceMemberId);
 
     const result = await this.paymentConfirmationService.revokeConfirmation(
       {
@@ -127,7 +126,7 @@ export class PaymentConfirmationResolver {
       actor,
     );
 
-    return this.mapToResultOutput(result, workspaceMember);
+    return this.mapToResultOutput(result, workspaceMemberId);
   }
 
   /**
@@ -197,20 +196,13 @@ export class PaymentConfirmationResolver {
   // ============================================
 
   private buildActorMetadata(
-    workspaceMember: WorkspaceMember,
+    workspaceMemberId: string | undefined,
   ): ConfirmationActorMetadata {
     return {
       source: 'MANUAL',
-      name: this.getFullName(workspaceMember),
-      workspaceMemberId: workspaceMember.id,
+      name: 'Unknown', // Will be resolved from workspaceMemberId in service if needed
+      workspaceMemberId: workspaceMemberId ?? '',
     };
-  }
-
-  private getFullName(workspaceMember: WorkspaceMember): string {
-    const firstName = workspaceMember.name?.firstName ?? '';
-    const lastName = workspaceMember.name?.lastName ?? '';
-
-    return `${firstName} ${lastName}`.trim() || 'Unknown';
   }
 
   private mapToResultOutput(
@@ -229,7 +221,7 @@ export class PaymentConfirmationResolver {
         newStatus?: string;
       };
     },
-    workspaceMember: WorkspaceMember,
+    workspaceMemberId: string | undefined,
   ): ConfirmationResultOutput {
     return {
       success: result.success,
@@ -237,8 +229,8 @@ export class PaymentConfirmationResolver {
       confirmedAt: result.confirmedAt,
       type: result.type,
       actor: {
-        id: workspaceMember.id,
-        name: this.getFullName(workspaceMember),
+        id: workspaceMemberId ?? '',
+        name: 'Unknown',
         email: undefined,
         role: undefined,
       },

@@ -289,12 +289,12 @@ export class PaymentConfirmationService {
 
     const confirmations: ConfirmationDetail[] = histories.map((h) => ({
       id: h.id,
-      action: h.action,
+      action: h.action ?? '',
       confirmedAt: this.formatTimestamp(h.createdAt),
       confirmedBy: this.mapActorInfo(h.createdBy),
       note: h.note ?? undefined,
       reason: this.extractReason(h),
-      metadata: h.metadata as Record<string, unknown> | undefined,
+      metadata: (h.metadata as unknown as Record<string, unknown>) ?? undefined,
     }));
 
     return {
@@ -674,16 +674,18 @@ export class PaymentConfirmationService {
     const { validOrderStatuses, excludePaymentStatuses } =
       CONFIRMATION_RULES.saleCanConfirm;
 
-    if (!validOrderStatuses.includes(order.status as ORDER_STATUS)) {
-      throw new InvalidOrderStatusError(
-        orderId,
-        order.status,
-        validOrderStatuses,
-      );
+    if (
+      !(validOrderStatuses as readonly ORDER_STATUS[]).includes(
+        order.status as ORDER_STATUS,
+      )
+    ) {
+      throw new InvalidOrderStatusError(orderId, order.status ?? '', [
+        ...validOrderStatuses,
+      ]);
     }
 
     if (
-      excludePaymentStatuses.includes(
+      (excludePaymentStatuses as readonly ORDER_PAYMENT_STATUS[]).includes(
         order.paymentStatus as ORDER_PAYMENT_STATUS,
       )
     ) {
@@ -705,12 +707,14 @@ export class PaymentConfirmationService {
 
     const { validOrderStatuses } = CONFIRMATION_RULES.accountingCanConfirm;
 
-    if (!validOrderStatuses.includes(order.status as ORDER_STATUS)) {
-      throw new InvalidOrderStatusError(
-        orderId,
-        order.status,
-        validOrderStatuses,
-      );
+    if (
+      !(validOrderStatuses as readonly ORDER_STATUS[]).includes(
+        order.status as ORDER_STATUS,
+      )
+    ) {
+      throw new InvalidOrderStatusError(orderId, order.status ?? '', [
+        ...validOrderStatuses,
+      ]);
     }
 
     // Accounting needs payment evidence
@@ -743,7 +747,8 @@ export class PaymentConfirmationService {
       };
     }
 
-    const isPastDeadline = DateTimeUtils.isBefore(deadline, now);
+    // Compare DateTime using luxon's comparison - deadline < now means past deadline
+    const isPastDeadline = deadline < now;
 
     // After revoke, check if still protected
     const stillProtected =

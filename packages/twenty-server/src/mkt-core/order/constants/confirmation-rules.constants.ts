@@ -87,7 +87,10 @@ export enum PAYMENT_CONFIRMATION_TYPE {
  * Check if order status allows sale confirmation
  */
 export const CAN_SALE_CONFIRM_STATUS = (status: ORDER_STATUS): boolean =>
-  CONFIRMATION_RULES.saleCanConfirm.validOrderStatuses.includes(status);
+  (
+    CONFIRMATION_RULES.saleCanConfirm
+      .validOrderStatuses as readonly ORDER_STATUS[]
+  ).includes(status);
 
 /**
  * Check if payment status allows sale confirmation
@@ -95,15 +98,19 @@ export const CAN_SALE_CONFIRM_STATUS = (status: ORDER_STATUS): boolean =>
 export const CAN_SALE_CONFIRM_PAYMENT_STATUS = (
   paymentStatus: ORDER_PAYMENT_STATUS,
 ): boolean =>
-  !CONFIRMATION_RULES.saleCanConfirm.excludePaymentStatuses.includes(
-    paymentStatus,
-  );
+  !(
+    CONFIRMATION_RULES.saleCanConfirm
+      .excludePaymentStatuses as readonly ORDER_PAYMENT_STATUS[]
+  ).includes(paymentStatus);
 
 /**
  * Check if order status allows accounting confirmation
  */
 export const CAN_ACCOUNTING_CONFIRM_STATUS = (status: ORDER_STATUS): boolean =>
-  CONFIRMATION_RULES.accountingCanConfirm.validOrderStatuses.includes(status);
+  (
+    CONFIRMATION_RULES.accountingCanConfirm
+      .validOrderStatuses as readonly ORDER_STATUS[]
+  ).includes(status);
 
 /**
  * Check if order should auto-complete after accounting confirmation
