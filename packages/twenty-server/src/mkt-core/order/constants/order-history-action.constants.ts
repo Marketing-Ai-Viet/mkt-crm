@@ -28,6 +28,12 @@ export enum ORDER_HISTORY_ACTION {
   RESTORED = 'RESTORED',
   PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED',
   ORDER_CONFIRMED = 'ORDER_CONFIRMED',
+
+  // Payment Confirmation Actions (Sale/Accounting)
+  SALE_PAYMENT_CONFIRMED = 'SALE_PAYMENT_CONFIRMED',
+  SALE_CONFIRMATION_REVOKED = 'SALE_CONFIRMATION_REVOKED',
+  ACCOUNTING_CONFIRMED = 'ACCOUNTING_CONFIRMED',
+  ACCOUNTING_CONFIRMATION_REVOKED = 'ACCOUNTING_CONFIRMATION_REVOKED',
 }
 
 export const ORDER_HISTORY_ACTION_OPTIONS = [
@@ -180,5 +186,30 @@ export const ORDER_HISTORY_ACTION_OPTIONS = [
     label: 'Restored',
     color: 'green' as TagColor,
     position: 24,
+  },
+  // Payment Confirmation Actions
+  {
+    value: ORDER_HISTORY_ACTION.SALE_PAYMENT_CONFIRMED,
+    label: 'Sale Payment Confirmed',
+    color: 'green' as TagColor,
+    position: 25,
+  },
+  {
+    value: ORDER_HISTORY_ACTION.SALE_CONFIRMATION_REVOKED,
+    label: 'Sale Confirmation Revoked',
+    color: 'orange' as TagColor,
+    position: 26,
+  },
+  {
+    value: ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMED,
+    label: 'Accounting Confirmed',
+    color: 'green' as TagColor,
+    position: 27,
+  },
+  {
+    value: ORDER_HISTORY_ACTION.ACCOUNTING_CONFIRMATION_REVOKED,
+    label: 'Accounting Confirmation Revoked',
+    color: 'orange' as TagColor,
+    position: 28,
   },
 ];

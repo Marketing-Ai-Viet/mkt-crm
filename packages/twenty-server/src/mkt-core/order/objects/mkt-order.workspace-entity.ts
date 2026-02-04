@@ -229,6 +229,17 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   accountingConfirmed?: boolean;
 
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.salePaymentConfirmed,
+    type: FieldMetadataType.BOOLEAN,
+    label: msg`Sale Payment Confirmed`,
+    description: msg`Whether sale has confirmed payment (protects license from auto-lock)`,
+    icon: 'IconCheck',
+    defaultValue: false,
+  })
+  @WorkspaceIsNullable()
+  salePaymentConfirmed?: boolean;
+
   // ============================================
   // MULTI-PAYMENT FIELDS
   // ============================================

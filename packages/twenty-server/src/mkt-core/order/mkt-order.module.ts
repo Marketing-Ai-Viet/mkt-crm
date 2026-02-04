@@ -51,6 +51,9 @@ import {
   OrderCrudService,
   OrderItemService,
   OrderLicenseQueryService,
+  OrderQueryService,
+  PaymentConfirmationService,
+  PaymentReminderService,
   // Application Services
   OrderOrchestrationService,
 } from './services';
@@ -58,6 +61,8 @@ import {
   OrderMutationResolver,
   OrderQueryResolver,
   OrderItemMutationResolver,
+  PaymentConfirmationResolver,
+  PaymentReminderResolver,
 } from './resolvers';
 import {
   MktOrderCustomEventListener,
@@ -154,6 +159,9 @@ import {
     OrderCrudService,
     OrderItemService,
     OrderLicenseQueryService,
+    OrderQueryService,
+    PaymentConfirmationService,
+    PaymentReminderService,
 
     // Application Services (orchestration)
     OrderOrchestrationService,
@@ -198,6 +206,8 @@ import {
     OrderMutationResolver,
     OrderQueryResolver,
     OrderItemMutationResolver,
+    PaymentConfirmationResolver,
+    PaymentReminderResolver,
   ],
   exports: [
     // Repositories

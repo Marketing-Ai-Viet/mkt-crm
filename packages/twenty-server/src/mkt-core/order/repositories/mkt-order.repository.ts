@@ -14,6 +14,7 @@ import {
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
   DEFAULT_ORDER_RELATIONS,
+  ORDER_DETAIL_RELATIONS,
   FindOrderOptions,
   PAYMENT_SUMMARY_RELATIONS,
   UpdatePaymentAmountsData,
@@ -296,6 +297,141 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       relations: options?.relations,
       order: { createdAt: 'DESC' },
     });
+  }
+
+  // ============================================
+  // FIND WITH DETAIL RELATIONS (for OrderOutput)
+  // ============================================
+
+  /**
+   * Find single order with full detail relations for OrderOutput
+   * Includes: mktCustomer, orderItems, createdBy, mktPayments.mktPaymentMethod
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - TypeORM where clause (single object or array for OR)
+   */
+  async findOneWithDetailsWorkspace(
+    workspaceId: string,
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where,
+      relations: ORDER_DETAIL_RELATIONS,
+    });
+  }
+
+  /**
+   * Find orders with full detail relations for OrderOutput
+   * Includes: mktCustomer, orderItems, createdBy, mktPayments.mktPaymentMethod
+   *
+   * @param workspaceId - Workspace ID
+   * @param where - TypeORM where clause (single object or array for OR)
+   */
+  async findManyWithDetailsWorkspace(
+    workspaceId: string,
+    where:
+      | FindOptionsWhere<MktOrderWorkspaceEntity>
+      | FindOptionsWhere<MktOrderWorkspaceEntity>[],
+  ): Promise<MktOrderWorkspaceEntity[]> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.find({
+      where,
+      relations: ORDER_DETAIL_RELATIONS,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Find orders with pagination, sorting, and search
+   * Returns both orders and total count for pagination
+   */
+  async findPaginatedWithDetailsWorkspace(
+    workspaceId: string,
+    options: {
+      where?:
+        | FindOptionsWhere<MktOrderWorkspaceEntity>
+        | FindOptionsWhere<MktOrderWorkspaceEntity>[];
+      search?: string;
+      orderBy?: { field: string; direction: 'ASC' | 'DESC' };
+      skip?: number;
+      take?: number;
+    },
+  ): Promise<{ orders: MktOrderWorkspaceEntity[]; totalCount: number }> {
+    const repository = await this.getRepository(workspaceId);
+
+    // Build query builder for complex search
+    const qb = repository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.mktCustomer', 'customer')
+      .leftJoinAndSelect('order.orderItems', 'orderItems')
+      .leftJoinAndSelect('order.mktPayments', 'payments')
+      .leftJoinAndSelect('payments.mktPaymentMethod', 'paymentMethod')
+      .leftJoinAndSelect('order.createdBy', 'createdBy')
+      .where('order.deletedAt IS NULL');
+
+    // Apply where conditions
+    if (options.where) {
+      const whereConditions = Array.isArray(options.where)
+        ? options.where
+        : [options.where];
+
+      for (const condition of whereConditions) {
+        if (condition.status) {
+          qb.andWhere('order.status = :status', { status: condition.status });
+        }
+        if (condition.paymentStatus) {
+          qb.andWhere('order.paymentStatus = :paymentStatus', {
+            paymentStatus: condition.paymentStatus,
+          });
+        }
+        if (condition.mktCustomerId) {
+          qb.andWhere('order.mktCustomerId = :customerId', {
+            customerId: condition.mktCustomerId,
+          });
+        }
+        if (condition.createdById) {
+          qb.andWhere('order.createdById = :createdById', {
+            createdById: condition.createdById,
+          });
+        }
+      }
+    }
+
+    // Apply search across multiple fields
+    if (options.search) {
+      const searchTerm = `%${options.search}%`;
+
+      qb.andWhere(
+        '(order.orderCode ILIKE :search OR order.name ILIKE :search OR customer.name ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)',
+        { search: searchTerm },
+      );
+    }
+
+    // Get total count before pagination
+    const totalCount = await qb.getCount();
+
+    // Apply sorting
+    const sortField = options.orderBy?.field ?? 'createdAt';
+    const sortDirection = options.orderBy?.direction ?? 'DESC';
+
+    qb.orderBy(`order.${sortField}`, sortDirection);
+
+    // Apply pagination
+    if (options.skip !== undefined) {
+      qb.skip(options.skip);
+    }
+    if (options.take !== undefined) {
+      qb.take(options.take);
+    }
+
+    const orders = await qb.getMany();
+
+    return { orders, totalCount };
   }
 
   // ============================================
@@ -858,9 +994,51 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   // PAYMENT DEADLINE OPERATIONS
   // ============================================
 
+  // ============================================
+  // PESSIMISTIC LOCKING FOR PAYMENT CONFIRMATION
+  // ============================================
+
+  /**
+   * Find order by ID with pessimistic lock (SELECT ... FOR UPDATE)
+   * Used by PaymentConfirmationService to prevent race conditions
+   *
+   * @param orderId - Order ID to find
+   * @param workspaceId - Workspace ID
+   * @returns Order with lock or null if not found
+   */
+  async findByIdForUpdate(
+    orderId: string,
+    workspaceId: string,
+  ): Promise<MktOrderWorkspaceEntity | null> {
+    this.logger.debug(`[PessimisticLock] Finding order ${orderId} FOR UPDATE`);
+
+    const repository = await this.getRepository(workspaceId);
+
+    const order = await repository
+      .createQueryBuilder('order')
+      .setLock('pessimistic_write')
+      .where('order.id = :orderId', { orderId })
+      .andWhere('order.deletedAt IS NULL')
+      .getOne();
+
+    if (order) {
+      this.logger.debug(
+        `[PessimisticLock] Acquired lock on order ${orderId}, version=${order.version}`,
+      );
+    } else {
+      this.logger.debug(`[PessimisticLock] Order ${orderId} not found`);
+    }
+
+    return order;
+  }
+
   /**
    * Find orders that are overdue (PROCESSING status with deadline passed)
    * Used by PaymentOverdueScanService
+   *
+   * IMPORTANT: Excludes orders protected by sale/accounting confirmation.
+   * Orders with salePaymentConfirmed=true or accountingConfirmed=true
+   * should NOT be auto-locked.
    */
   async findOverdueOrders(
     workspaceId: string,
@@ -882,6 +1060,13 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
         deadline: options.paymentDeadlineBefore,
       })
       .andWhere('order.paymentDeadline IS NOT NULL')
+      // Exclude protected orders (sale or accounting has confirmed payment)
+      .andWhere(
+        '(order.salePaymentConfirmed IS NULL OR order.salePaymentConfirmed = false)',
+      )
+      .andWhere(
+        '(order.accountingConfirmed IS NULL OR order.accountingConfirmed = false)',
+      )
       .orderBy('order.paymentDeadline', 'ASC')
       .getMany();
 

@@ -1,5 +1,6 @@
-import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { Field, ObjectType, registerEnumType, Int } from '@nestjs/graphql';
 
+import { OffsetPageInfo } from 'src/mkt-core/common/dto/pagination.output';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 
@@ -221,6 +222,100 @@ export class PublishDraftOrderResponseDto {
 // ============================================
 
 /**
+ * Basic customer info for order display
+ */
+@ObjectType({ description: 'Customer basic info' })
+export class OrderCustomerInfo {
+  @Field(() => String, { nullable: true, description: 'Customer ID' })
+  id?: string;
+
+  @Field(() => String, { nullable: true, description: 'Customer name' })
+  name?: string;
+
+  @Field(() => String, { nullable: true, description: 'Customer email' })
+  email?: string;
+
+  @Field(() => String, { nullable: true, description: 'Customer phone' })
+  phone?: string;
+}
+
+/**
+ * Basic sales staff info for order display
+ */
+@ObjectType({ description: 'Sales staff basic info' })
+export class OrderSalesStaffInfo {
+  @Field(() => String, { nullable: true, description: 'Sales staff ID' })
+  id?: string;
+
+  @Field(() => String, { nullable: true, description: 'Sales staff full name' })
+  name?: string;
+
+  @Field(() => String, { nullable: true, description: 'Sales staff email' })
+  email?: string;
+}
+
+/**
+ * Payment method info for order display
+ * Extracted from the latest confirmed payment
+ */
+@ObjectType({ description: 'Payment method info' })
+export class OrderPaymentMethodInfo {
+  @Field(() => String, { nullable: true, description: 'Payment method ID' })
+  id?: string;
+
+  @Field(() => String, { nullable: true, description: 'Payment method name' })
+  name?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Payment method type (e.g., BANK_TRANSFER, QR_CODE, CASH)',
+  })
+  type?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Payment method description',
+  })
+  description?: string;
+}
+
+/**
+ * Order item output for query responses
+ */
+@ObjectType({ description: 'Order item details' })
+export class OrderItemOutput {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  name?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Product name from snapshot',
+  })
+  productName?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Package name from snapshot',
+  })
+  packageName?: string;
+
+  @Field(() => Number, { nullable: true })
+  quantity?: number;
+
+  @Field(() => Number, { nullable: true })
+  unitPrice?: number;
+
+  @Field(() => Number, { nullable: true })
+  totalPrice?: number;
+
+  @Field(() => Number, { nullable: true, description: 'Item discount amount' })
+  discount?: number;
+}
+
+/**
  * Order output for query responses
  */
 @ObjectType()
@@ -287,10 +382,69 @@ export class OrderOutput {
 
   @Field(() => String, { nullable: true })
   updatedAt?: string;
+
+  // ============================================
+  // CUSTOMER INFO (from mktCustomer relation)
+  // ============================================
+
+  @Field(() => OrderCustomerInfo, {
+    nullable: true,
+    description: 'Customer basic info',
+  })
+  customer?: OrderCustomerInfo;
+
+  // ============================================
+  // ORDER ITEMS
+  // ============================================
+
+  @Field(() => [OrderItemOutput], {
+    nullable: true,
+    description: 'Order items list',
+  })
+  orderItems?: OrderItemOutput[];
+
+  // ============================================
+  // SALES STAFF INFO (from createdBy relation)
+  // ============================================
+
+  @Field(() => OrderSalesStaffInfo, {
+    nullable: true,
+    description: 'Sales staff basic info',
+  })
+  salesStaff?: OrderSalesStaffInfo;
+
+  // ============================================
+  // PAYMENT INFO (from mktPayments relation)
+  // ============================================
+
+  @Field(() => OrderPaymentMethodInfo, {
+    nullable: true,
+    description: 'Payment method info from latest confirmed payment',
+  })
+  paymentMethod?: OrderPaymentMethodInfo;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Last payment date (ISO format)',
+  })
+  lastPaymentDate?: string;
+
+  // ============================================
+  // DIRECT FIELDS FROM ENTITY
+  // ============================================
+
+  @Field(() => String, { nullable: true, description: 'S-Invoice status' })
+  sInvoiceStatus?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Payment deadline (ISO format)',
+  })
+  paymentDeadline?: string;
 }
 
 /**
- * Paginated orders list response
+ * Paginated orders list response (simple)
  */
 @ObjectType()
 export class OrderListOutput {
@@ -299,6 +453,21 @@ export class OrderListOutput {
 
   @Field(() => Number)
   totalCount: number;
+}
+
+/**
+ * Paginated orders response with full pagination info
+ */
+@ObjectType({ description: 'Paginated orders response' })
+export class PaginatedOrdersOutput {
+  @Field(() => [OrderOutput], { description: 'List of orders' })
+  orders: OrderOutput[];
+
+  @Field(() => Int, { description: 'Total number of orders matching filter' })
+  totalCount: number;
+
+  @Field(() => OffsetPageInfo, { description: 'Pagination info' })
+  pageInfo: OffsetPageInfo;
 }
 
 /**
