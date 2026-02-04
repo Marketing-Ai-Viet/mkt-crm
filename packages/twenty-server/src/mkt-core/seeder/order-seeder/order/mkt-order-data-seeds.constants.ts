@@ -45,6 +45,7 @@ type MktOrderDataSeed = {
   licenseStatus: string | null;
   metadata: JSON | null;
   accountingConfirmed: boolean;
+  salePaymentConfirmed: boolean;
   accountOwnerId: string;
   mktCustomerId: string;
   createdById: string;
@@ -91,6 +92,7 @@ export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
   'licenseStatus',
   'metadata',
   'accountingConfirmed',
+  'salePaymentConfirmed',
   'accountOwnerId',
   'mktCustomerId',
   'createdById',
@@ -137,6 +139,7 @@ const DEFAULT_COMBO_FIELDS = {
  * (Orders without new payment flow)
  */
 const DEFAULT_PAYMENT_DEADLINE_FIELDS = {
+  salePaymentConfirmed: false,
   paymentDeadline: null,
   paymentDeadlineSource: null,
   lockedAt: null,
@@ -153,13 +156,16 @@ const DEFAULT_PAYMENT_DEADLINE_FIELDS = {
  * @param hoursFromNow - Hours from now for payment deadline
  * @param source - Source of deadline configuration
  * @param remindersSent - Number of reminders already sent
+ * @param saleConfirmed - Whether sale has confirmed payment (protects from auto-lock)
  */
 const CREATE_PROCESSING_DEADLINE_FIELDS = (
   hoursFromNow: number,
   source: PaymentDeadlineSource,
   remindersSent = 0,
+  saleConfirmed = false,
 ): Pick<
   MktOrderDataSeed,
+  | 'salePaymentConfirmed'
   | 'paymentDeadline'
   | 'paymentDeadlineSource'
   | 'lockedAt'
@@ -174,6 +180,7 @@ const CREATE_PROCESSING_DEADLINE_FIELDS = (
     remindersSent > 0 ? DateTimeUtils.subtract(NOW, { hours: 2 }) : null;
 
   return {
+    salePaymentConfirmed: saleConfirmed,
     paymentDeadline: DateTimeUtils.toDate(DEADLINE) ?? null,
     paymentDeadlineSource: source,
     lockedAt: null,
@@ -200,6 +207,7 @@ const CREATE_LOCKED_DEADLINE_FIELDS = (
   reason = 'Payment overdue - deadline exceeded',
 ): Pick<
   MktOrderDataSeed,
+  | 'salePaymentConfirmed'
   | 'paymentDeadline'
   | 'paymentDeadlineSource'
   | 'lockedAt'
@@ -216,6 +224,7 @@ const CREATE_LOCKED_DEADLINE_FIELDS = (
   const LAST_REMINDER = DateTimeUtils.subtract(DEADLINE, { minutes: 30 });
 
   return {
+    salePaymentConfirmed: false, // LOCKED orders don't have sale confirmation
     paymentDeadline: DateTimeUtils.toDate(DEADLINE) ?? null,
     paymentDeadlineSource: source,
     lockedAt: DateTimeUtils.toDate(LOCKED_AT) ?? null,
@@ -1363,7 +1372,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.PROCESSING_ORDER_2,
-    name: 'Đơn hàng MKT Enterprise - Đang chờ thanh toán (deadline 48h, VIP)',
+    name: 'Đơn hàng MKT Enterprise - Sale đã xác nhận (PROTECTED từ auto-lock)',
     position: 39,
     orderCode: 'MKT-PROC-2024-039',
     status: ORDER_STATUS.PROCESSING,
@@ -1374,7 +1383,7 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     refundAmount: 0,
     totalAmount: 52500000,
     currency: 'VND',
-    note: 'Đơn hàng PROCESSING - Khách VIP có deadline 48h, đã gửi 0 reminder',
+    note: 'Đơn hàng PROCESSING - Sale đã xác nhận thanh toán, được bảo vệ khỏi auto-lock dù quá deadline',
     trialLicense: false,
     requireContract: true,
     sInvoiceStatus: SINVOICE_STATUS.PENDING,
@@ -1387,7 +1396,8 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...DEFAULT_PROMOTION_FIELDS,
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(52500000, false),
-    ...CREATE_PROCESSING_DEADLINE_FIELDS(48, PAYMENT_DEADLINE_SOURCE.CUSTOMER_TYPE, 0),
+    // Sale đã xác nhận - salePaymentConfirmed = true, deadline đã quá nhưng không bị lock
+    ...CREATE_PROCESSING_DEADLINE_FIELDS(-24, PAYMENT_DEADLINE_SOURCE.CUSTOMER_TYPE, 2, true),
   },
   {
     id: MKT_ORDER_DATA_SEEDS_IDS.PROCESSING_ORDER_3,
