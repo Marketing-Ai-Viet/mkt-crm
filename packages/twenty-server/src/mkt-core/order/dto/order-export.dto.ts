@@ -79,3 +79,32 @@ export class ExportFileOutput {
   @Field(() => Int, { description: 'Số rows đã export' })
   rowCount: number;
 }
+
+@ObjectType({ description: 'Response từ async export request' })
+export class AsyncExportOutput {
+  @Field(() => String, { description: 'Job ID để track progress' })
+  jobId: string;
+
+  @Field(() => String, {
+    description: 'Status: QUEUED, PROCESSING, COMPLETED, FAILED',
+  })
+  status: string;
+
+  @Field(() => Int, { description: 'Estimated row count' })
+  estimatedRows: number;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Download URL khi completed',
+  })
+  downloadUrl?: string;
+
+  @Field(() => String, { nullable: true, description: 'URL expiry time (ISO)' })
+  expiresAt?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Error message khi failed',
+  })
+  error?: string;
+}

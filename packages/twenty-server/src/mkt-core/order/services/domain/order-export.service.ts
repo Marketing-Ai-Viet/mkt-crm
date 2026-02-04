@@ -160,6 +160,25 @@ export class OrderExportService {
     });
   }
 
+  /**
+   * Count orders matching filter criteria
+   *
+   * Used for async export to estimate job size
+   *
+   * @param input - Filter criteria
+   * @param workspaceId - Workspace ID
+   * @returns Estimated row count
+   */
+  async countOrdersForExport(
+    input: ExportOrdersInput | undefined,
+    workspaceId: string,
+  ): Promise<number> {
+    // Fetch orders with filter (reuse existing method)
+    const orders = await this.fetchOrdersWithFilter(input, workspaceId);
+
+    return orders.length;
+  }
+
   // ============================================
   // PRIVATE METHODS
   // ============================================
