@@ -10,3 +10,4 @@ export * from './order-saga.interface';
 export * from './order-overdue.types';
 export * from './order-combo.types';
 export * from './payment-confirmation.types';
+export * from './payment-reminder.types';
