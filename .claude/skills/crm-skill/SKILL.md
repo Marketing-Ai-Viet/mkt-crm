@@ -183,13 +183,13 @@ description: Skill for developing Twenty CRM with mkt-core module. Use when crea
 **GraphQL Operations**:
 ```graphql
 # Sync export (< 10K rows) - Returns Base64 file
-mutation exportOrders($input: ExportOrdersInput): ExportFileOutput
+mutation mktExportOrdersToFile($input: ExportOrdersInput): ExportFileOutput
 
 # Async export (> 10K rows) - Returns job ID
-mutation requestAsyncExportOrders($input: ExportOrdersInput): AsyncExportOutput
+mutation mktRequestAsyncOrderExport($input: ExportOrdersInput): AsyncExportOutput
 
 # Check async job status
-query getExportJobStatus($jobId: String!): AsyncExportOutput
+query mktGetOrderExportJobStatus($jobId: String!): AsyncExportOutput
 ```
 
 **Usage Example**:

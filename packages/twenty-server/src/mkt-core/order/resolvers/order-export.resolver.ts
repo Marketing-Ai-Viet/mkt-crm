@@ -19,12 +19,6 @@ import {
 } from 'src/mkt-core/order/dto/order-export.dto';
 
 // ============================================
-// CONSTANTS
-// ============================================
-
-const RESOLVER_LOG_CONTEXT = 'OrderExportResolver';
-
-// ============================================
 // RESOLVER
 // ============================================
 
@@ -49,7 +43,7 @@ const RESOLVER_LOG_CONTEXT = 'OrderExportResolver';
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
 export class OrderExportResolver {
-  private readonly logger = new Logger(RESOLVER_LOG_CONTEXT);
+  private readonly logger = new Logger(OrderExportResolver.name);
 
   constructor(
     private readonly orderExportService: OrderExportService,
@@ -66,11 +60,10 @@ export class OrderExportResolver {
    * - Audit log được tạo sau khi export thành công
    */
   @Mutation(() => ExportFileOutput, {
-    name: 'exportOrders',
     description:
       'Export danh sách đơn hàng ra file Excel/CSV (max 10K rows cho sync)',
   })
-  async exportOrders(
+  async mktExportOrdersToFile(
     @AuthWorkspace() workspace: Workspace,
     @AuthUser() user: User,
     @Args('input', { type: () => ExportOrdersInput, nullable: true })
@@ -114,11 +107,10 @@ export class OrderExportResolver {
    * - URL có thời hạn 24 giờ
    */
   @Mutation(() => AsyncExportOutput, {
-    name: 'requestAsyncExportOrders',
     description:
       'Request async export cho dataset lớn (> 10K rows). Returns job ID để track progress.',
   })
-  async requestAsyncExportOrders(
+  async mktRequestAsyncOrderExport(
     @AuthWorkspace() workspace: Workspace,
     @AuthUser() user: User,
     @Args('input', { type: () => ExportOrdersInput, nullable: true })
@@ -178,11 +170,10 @@ export class OrderExportResolver {
    * - URL có thời hạn, check expiresAt trước khi download
    */
   @Query(() => AsyncExportOutput, {
-    name: 'getExportJobStatus',
     description: 'Check status của async export job',
   })
-  async getExportJobStatus(
-    @AuthWorkspace() workspace: Workspace,
+  async mktGetOrderExportJobStatus(
+    @AuthWorkspace() _workspace: Workspace,
     @Args('jobId') jobId: string,
   ): Promise<AsyncExportOutput> {
     this.logger.debug(`Checking export job status: ${jobId}`);

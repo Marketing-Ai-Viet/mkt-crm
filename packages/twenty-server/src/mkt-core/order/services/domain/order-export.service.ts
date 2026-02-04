@@ -269,17 +269,32 @@ export class OrderExportService {
         order.paymentStatus as keyof typeof PAYMENT_STATUS_OPTIONS.labels.VI
       ] ?? order.paymentStatus;
 
-    // Format createdAt
-    const createdAtStr = order.createdAt
-      ? DateTimeUtils.format(
-          DateTimeUtils.fromMillis(
-            typeof order.createdAt === 'string'
-              ? parseInt(order.createdAt, 10)
-              : (order.createdAt as number),
-          ),
+    // Format createdAt - handle Date object, string (ISO), or number (millis)
+    let createdAtStr = '';
+
+    if (order.createdAt) {
+      if (order.createdAt instanceof Date) {
+        createdAtStr = DateTimeUtils.format(
+          DateTimeUtils.fromDate(order.createdAt),
           'dd/MM/yyyy HH:mm',
-        )
-      : '';
+        );
+      } else if (typeof order.createdAt === 'string') {
+        // ISO string or numeric string
+        const parsed = Date.parse(order.createdAt);
+
+        if (!isNaN(parsed)) {
+          createdAtStr = DateTimeUtils.format(
+            DateTimeUtils.fromMillis(parsed),
+            'dd/MM/yyyy HH:mm',
+          );
+        }
+      } else if (typeof order.createdAt === 'number') {
+        createdAtStr = DateTimeUtils.format(
+          DateTimeUtils.fromMillis(order.createdAt),
+          'dd/MM/yyyy HH:mm',
+        );
+      }
+    }
 
     // Get customer name từ relation
     const customerName =
