@@ -15,3 +15,4 @@ export * from './order-item.service';
 export * from './order-license-query.service';
 export * from './order-query.service';
 export * from './payment-confirmation.service';
+export * from './payment-reminder.service';
