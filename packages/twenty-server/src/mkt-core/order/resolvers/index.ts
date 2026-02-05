@@ -4,3 +4,4 @@ export * from './order-item-mutation.resolver';
 export * from './payment-confirmation.resolver';
 export * from './payment-reminder.resolver';
 export * from './order-export.resolver';
+export * from './order-public.resolver';

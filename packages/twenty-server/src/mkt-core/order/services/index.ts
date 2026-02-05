@@ -19,3 +19,6 @@ export * from './application';
 
 // Integration Services
 export * from './integration';
+
+// Public Services
+export * from './public';

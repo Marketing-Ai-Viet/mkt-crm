@@ -60,6 +60,8 @@ import {
   OrderExportTokenService,
   // Application Services
   OrderOrchestrationService,
+  // Public Services
+  OrderPublicService,
 } from './services';
 import {
   OrderMutationResolver,
@@ -68,6 +70,7 @@ import {
   PaymentConfirmationResolver,
   PaymentReminderResolver,
   OrderExportResolver,
+  OrderPublicResolver,
 } from './resolvers';
 import { OrderExportController } from './controllers';
 import {
@@ -179,6 +182,9 @@ import {
     // Application Services (orchestration)
     OrderOrchestrationService,
 
+    // Public Services
+    OrderPublicService,
+
     // Sagas (workflow orchestration)
     CreateOrderSaga,
     ConfirmOrderSaga,
@@ -222,6 +228,7 @@ import {
     PaymentConfirmationResolver,
     PaymentReminderResolver,
     OrderExportResolver,
+    OrderPublicResolver,
   ],
   exports: [
     // Repositories
