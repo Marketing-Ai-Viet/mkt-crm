@@ -5,3 +5,4 @@ export * from './payment-flow.dto';
 export * from './payment-confirmation.dto';
 export * from './payment-reminder.dto';
 export * from './order-export.dto';
+export * from './public';

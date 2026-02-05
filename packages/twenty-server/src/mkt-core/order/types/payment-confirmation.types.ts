@@ -161,3 +161,9 @@ export type FindUnprotectedOverdueOrdersOptions = {
   salePaymentConfirmed: false;
   accountingConfirmed: false;
 };
+
+export type PublicOrderLogResult =
+  | 'SUCCESS'
+  | 'NOT_FOUND'
+  | 'BLOCKED'
+  | 'NO_PAYMENT';
