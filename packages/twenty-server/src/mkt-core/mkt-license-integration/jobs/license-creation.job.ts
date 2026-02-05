@@ -39,7 +39,7 @@ export class LicenseCreationJob {
   @Process(LICENSE_JOB_NAMES.CREATION)
   async handle(data: LicenseCreationJobData): Promise<void> {
     const { workspaceId, orderItemId, action, payload, metadata } = data;
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.toMillis(DateTimeUtils.now());
 
     this.logger.log({
       message: 'Processing license creation job',
@@ -148,7 +148,7 @@ export class LicenseCreationJob {
         workspaceId,
       );
 
-      const duration = Date.now() - startTime;
+      const duration = DateTimeUtils.toMillis(DateTimeUtils.now()) - startTime;
 
       this.logger.log({
         message: 'License created successfully',
@@ -159,7 +159,7 @@ export class LicenseCreationJob {
         duration,
       });
     } catch (error) {
-      const duration = Date.now() - startTime;
+      const duration = DateTimeUtils.toMillis(DateTimeUtils.now()) - startTime;
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 

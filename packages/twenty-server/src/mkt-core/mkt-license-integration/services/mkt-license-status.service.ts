@@ -2,6 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import {
+  LicenseJobFailedEvent,
+  LicenseStatusAnalysis,
+  OrderLicenseStatusChangedEvent,
+} from 'src/mkt-core/mkt-license-integration/types/license-status.types';
+import {
   LICENSE_ITEM_STATUS,
   LICENSE_ITEM_SUCCESS_STATUSES,
   LicenseItemStatus,
@@ -9,28 +14,6 @@ import {
 import { ORDER_STATUS } from 'src/mkt-core/order/constants/order-status.constants';
 import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
-
-// ============================================
-// EVENT TYPES
-// ============================================
-
-type OrderLicenseStatusChangedEvent = {
-  workspaceId: string;
-  orderId: string;
-  newStatus: ORDER_STATUS;
-  previousStatus?: ORDER_STATUS;
-};
-
-type LicenseJobFailedEvent = {
-  workspaceId: string;
-  orderId: string;
-  orderItemId: string;
-  failedAt: string;
-};
-
-// ============================================
-// SERVICE
-// ============================================
 
 /**
  * MKT License Status Service
@@ -325,24 +308,3 @@ export class MktLicenseStatusService {
     this.eventEmitter.emit('order.license.status.changed', event);
   }
 }
-
-// ============================================
-// INTERNAL TYPES
-// ============================================
-
-type LicenseStatusAnalysis = {
-  total: number;
-  pending: number;
-  processing: number;
-  created: number;
-  upgraded: number;
-  activated: number;
-  revoked: number;
-  failed: number;
-
-  // Derived flags
-  allCreated: boolean;
-  allActivated: boolean;
-  anyFailed: boolean;
-  anyPending: boolean;
-};

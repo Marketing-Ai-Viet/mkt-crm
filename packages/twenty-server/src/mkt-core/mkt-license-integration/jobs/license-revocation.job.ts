@@ -10,6 +10,7 @@ import {
 } from 'src/mkt-core/mkt-license-integration/types/license-job.types';
 import { LICENSE_ITEM_STATUS } from 'src/mkt-core/order/constants/license-item-status.constants';
 import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 /**
  * License Revocation Job Processor
@@ -37,7 +38,7 @@ export class LicenseRevocationJob {
   @Process(LICENSE_JOB_NAMES.REVOCATION)
   async handle(data: LicenseRevocationJobData): Promise<void> {
     const { workspaceId, orderItemId, licenseId, metadata } = data;
-    const startTime = Date.now();
+    const startTime = DateTimeUtils.toMillis(DateTimeUtils.now());
 
     this.logger.log({
       message: 'Processing license revocation job',
@@ -90,7 +91,7 @@ export class LicenseRevocationJob {
         workspaceId,
       );
 
-      const duration = Date.now() - startTime;
+      const duration = DateTimeUtils.toMillis(DateTimeUtils.now()) - startTime;
 
       this.logger.log({
         message: 'License revocation job completed',
@@ -101,7 +102,7 @@ export class LicenseRevocationJob {
         duration,
       });
     } catch (error) {
-      const duration = Date.now() - startTime;
+      const duration = DateTimeUtils.toMillis(DateTimeUtils.now()) - startTime;
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
