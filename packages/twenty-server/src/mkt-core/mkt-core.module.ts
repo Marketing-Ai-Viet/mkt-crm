@@ -38,7 +38,7 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
     CustomerModule,
     OAuth2ClientModule,
     MktProductIntegrationModule,
-    MktLicenseIntegrationModule,
+    MktLicenseIntegrationModule, // License API + Queue processing
     MktUserIntegrationModule,
     MktComboModule,
     MktPromotionModule,

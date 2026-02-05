@@ -24,6 +24,11 @@ import { MKT_ORDER_ITEM_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
 import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.workspace-entity';
 import {
+  LICENSE_ITEM_STATUS,
+  LICENSE_ITEM_STATUS_OPTIONS,
+  LicenseItemStatus,
+} from 'src/mkt-core/order/constants/license-item-status.constants';
+import {
   MktPackageSnapshot,
   MktProductSnapshot,
   MktSupportedLanguage,
@@ -267,6 +272,22 @@ export class MktOrderItemWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   maxDevices: number | null;
+
+  /**
+   * License processing status for async license creation flow.
+   * Tracks the status of license creation/activation for this item.
+   */
+  @WorkspaceField({
+    standardId: MKT_ORDER_ITEM_FIELD_IDS.licenseStatus,
+    type: FieldMetadataType.SELECT,
+    label: msg`License Status`,
+    description: msg`Status of license processing for this item`,
+    icon: 'IconStatusChange',
+    options: LICENSE_ITEM_STATUS_OPTIONS.options,
+    defaultValue: `'${LICENSE_ITEM_STATUS.NOT_APPLICABLE}'`,
+  })
+  @WorkspaceIsNullable()
+  licenseStatus: LicenseItemStatus | null;
 
   // ============================================
   // DISPLAY FIELDS (denormalized for quick access)
