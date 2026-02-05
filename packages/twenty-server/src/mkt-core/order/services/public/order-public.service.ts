@@ -6,7 +6,6 @@ import { FindOptionsRelations } from 'typeorm';
 import {
   ACTIVE_PAYMENT_TRANSACTION_STATUSES,
   ANTI_ENUMERATION,
-  ORDER_CODE_PATTERN,
   ORDER_STATUS_ERROR_MAP,
   PAYABLE_ORDER_STATUSES,
   PAYABLE_PAYMENT_STATUSES,
@@ -106,23 +105,27 @@ export class OrderPublicService {
   // ============================================
 
   async getOrderPaymentPublicInfo(
+    workspaceId: string,
     orderCode: string,
     clientIp: string,
   ): Promise<MktPublicOrderPaymentResponseDto> {
     const startMs = DateTimeUtils.toMillis(DateTimeUtils.now());
 
+    // TODO: Uncomment khi order code format duoc chuan hoa
     // 1. Validate format (same response as not found - anti-enumeration)
-    if (!ORDER_CODE_PATTERN.test(orderCode)) {
-      await this.antiEnumerationDelay();
-      this.logQuery(orderCode, clientIp, 'NOT_FOUND', startMs);
-
-      return this.notFoundResponse();
-    }
+    // if (!ORDER_CODE_PATTERN.test(orderCode)) {
+    //   await this.antiEnumerationDelay();
+    //   this.logQuery(orderCode, clientIp, 'NOT_FOUND', startMs);
+    //
+    //   return this.notFoundResponse();
+    // }
 
     // 2. Find order with relations
-    const order = await this.mktOrderRepository.findByOrderCode(orderCode, {
-      relations: this.findRelations,
-    });
+    const order = await this.mktOrderRepository.findByOrderCode(
+      orderCode,
+      { relations: this.findRelations },
+      workspaceId,
+    );
 
     if (!order) {
       await this.antiEnumerationDelay();

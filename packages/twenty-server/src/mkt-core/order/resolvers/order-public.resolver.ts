@@ -1,6 +1,8 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Context, Query, Resolver } from '@nestjs/graphql';
 
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { MktPublicOrderPaymentResponseDto } from 'src/mkt-core/order/dto/public/order-payment-public.output';
 import { OrderPublicService } from 'src/mkt-core/order/services/public/order-public.service';
@@ -31,10 +33,12 @@ export class OrderPublicResolver {
   async mktPublicOrderPayment(
     @Args('orderCode', { type: () => String }) orderCode: string,
     @Context() ctx: PublicGraphQLContext,
+    @AuthWorkspace() workspace: Workspace,
   ): Promise<MktPublicOrderPaymentResponseDto> {
     const clientIp = ctx.req?.ip ?? ctx.req?.socket?.remoteAddress ?? 'unknown';
 
     return this.orderPublicService.getOrderPaymentPublicInfo(
+      workspace.id,
       orderCode,
       clientIp,
     );

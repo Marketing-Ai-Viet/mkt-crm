@@ -129,11 +129,15 @@ export class PaymentOverdueScanService {
     // Cập nhật order status
     const lockUpdateData = this.orderLockService.getLockUpdateData();
 
-    await this.orderRepository.update(orderId, {
-      status: lockUpdateData.status,
-      lockedAt: lockUpdateData.lockedAt,
-      lockedReason: lockUpdateData.lockedReason,
-    });
+    await this.orderRepository.updateOrder(
+      orderId,
+      {
+        status: lockUpdateData.status,
+        lockedAt: lockUpdateData.lockedAt,
+        lockedReason: lockUpdateData.lockedReason,
+      },
+      workspaceId,
+    );
 
     this.logger.log(
       `Đơn hàng ${orderId} đã khóa do quá hạn thanh toán (qua scan)`,

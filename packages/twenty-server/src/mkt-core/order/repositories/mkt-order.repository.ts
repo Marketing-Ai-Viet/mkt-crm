@@ -118,10 +118,11 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
   async findByOrderCode(
     orderCode: string,
     options?: FindOrderOptions,
+    workspaceId?: string,
   ): Promise<MktOrderWorkspaceEntity | null> {
     this.logger.debug(MKT_ORDER_LOG_MESSAGES.FIND_BY_CODE_START(orderCode));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const order = await repository.findOne({
       where: { orderCode },
@@ -1051,7 +1052,7 @@ export class MktOrderRepository extends BaseWorkspaceRepository<MktOrderWorkspac
       `Finding overdue orders with status ${options.status} and deadline before ${options.paymentDeadlineBefore}`,
     );
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const orders = await repository
       .createQueryBuilder('order')
