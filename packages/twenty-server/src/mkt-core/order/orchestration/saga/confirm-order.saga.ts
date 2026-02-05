@@ -11,7 +11,7 @@ import {
   ValidateOrderStep,
   ValidateTransitionStep,
   UpdateStatusStep,
-  CreateLicensesOnConfirmStep,
+  EnqueueLicensesOnConfirmStep,
   CreateContractOnConfirmStep,
   CompleteOrderAfterLicenseStep,
   // New Payment Flow Steps
@@ -38,7 +38,7 @@ import { BaseSaga } from './base/base-saga';
  * 2. ValidateTransitionStep - Validate status transition is allowed
  * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
  * 4. UpdateStatusStep - Update order status and payment fields
- * 5. CreateLicensesOnConfirmStep - Create licenses when order is confirmed
+ * 5. EnqueueLicensesOnConfirmStep - Enqueue license jobs when order is confirmed
  * 6. CreateContractOnConfirmStep - Create contract when order is confirmed
  * 7. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
  * 8. CompleteOrderAfterLicenseStep - Auto-complete order after payment confirmed
@@ -84,7 +84,7 @@ export class ConfirmOrderSaga
     private readonly validateTransitionStep: ValidateTransitionStep,
     private readonly calculatePaymentDeadlineStep: CalculatePaymentDeadlineStep,
     private readonly updateStatusStep: UpdateStatusStep,
-    private readonly createLicensesOnConfirmStep: CreateLicensesOnConfirmStep,
+    private readonly enqueueLicensesOnConfirmStep: EnqueueLicensesOnConfirmStep,
     private readonly createContractOnConfirmStep: CreateContractOnConfirmStep,
     private readonly schedulePaymentRemindersStep: SchedulePaymentRemindersStep,
     private readonly completeOrderAfterLicenseStep: CompleteOrderAfterLicenseStep,
@@ -103,7 +103,7 @@ export class ConfirmOrderSaga
    * 2. ValidateTransitionStep - Validate status transition
    * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
    * 4. UpdateStatusStep - Update order status
-   * 5. CreateLicensesOnConfirmStep - Create licenses (CONFIRM_ORDER only)
+   * 5. EnqueueLicensesOnConfirmStep - Enqueue license jobs (CONFIRM_ORDER only)
    * 6. CreateContractOnConfirmStep - Create contract (CONFIRM_ORDER only)
    * 7. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
    * 8. CompleteOrderAfterLicenseStep - Auto-complete (PAYMENT_CONFIRMED only)
@@ -114,7 +114,7 @@ export class ConfirmOrderSaga
       this.validateTransitionStep,
       this.calculatePaymentDeadlineStep,
       this.updateStatusStep,
-      this.createLicensesOnConfirmStep,
+      this.enqueueLicensesOnConfirmStep,
       this.createContractOnConfirmStep,
       this.schedulePaymentRemindersStep,
       this.completeOrderAfterLicenseStep,

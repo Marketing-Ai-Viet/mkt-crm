@@ -82,11 +82,11 @@ import {
   RefundOrderSaga,
 } from './orchestration/saga';
 import {
-  CreateLicensesStep,
   CreateOrderItemsStep,
   CreateOrderStep,
   CreatePaymentStep,
   FinalizeOrderStep,
+  EnqueueLicenseJobsStep,
   // New steps for snapshots and promotions
   CreateSnapshotsStep,
   CalculatePromotionStep,
@@ -96,7 +96,7 @@ import {
   ValidateOrderStep,
   ValidateTransitionStep,
   UpdateStatusStep,
-  CreateLicensesOnConfirmStep,
+  EnqueueLicensesOnConfirmStep,
   CreateContractOnConfirmStep,
   CompleteOrderAfterLicenseStep,
   // New Payment Flow Steps
@@ -186,7 +186,7 @@ import {
     // Saga Steps - CreateOrder
     CreateOrderStep,
     CreateOrderItemsStep,
-    CreateLicensesStep,
+    EnqueueLicenseJobsStep,
     CreatePaymentStep,
     FinalizeOrderStep,
     CreateSnapshotsStep,
@@ -196,7 +196,7 @@ import {
     ValidateOrderStep,
     ValidateTransitionStep,
     UpdateStatusStep,
-    CreateLicensesOnConfirmStep,
+    EnqueueLicensesOnConfirmStep,
     CreateContractOnConfirmStep,
     CompleteOrderAfterLicenseStep,
     // New Payment Flow Steps

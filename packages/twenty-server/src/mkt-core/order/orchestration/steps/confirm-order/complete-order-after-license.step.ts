@@ -18,17 +18,15 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 /**
- * CompleteOrderAfterLicenseStep - Step 5: Update order status to COMPLETED after licenses created
+ * CompleteOrderAfterLicenseStep - DEPRECATED (Phase 3)
  *
- * This step runs AFTER CreateLicensesOnConfirmStep
+ * Previously: Updated order status to COMPLETED after synchronous license creation.
  *
- * Responsibilities:
- * - Check if licenses were created in previous step
- * - Update order status from CONFIRMED to COMPLETED
- * - Store completion metadata
+ * Now: Always skips. Order completion is handled asynchronously by
+ * MktLicenseStatusService when all license items reach terminal status
+ * (PROCESSING → COMPLETED when all licenses activated).
  *
- * Compensate:
- * - Revert status back to CONFIRMED
+ * Kept in codebase for safe rollback if needed.
  */
 @Injectable()
 export class CompleteOrderAfterLicenseStep extends SagaStep<
@@ -46,41 +44,15 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
   }
 
   /**
-   * Skip this step if:
-   * - Action is NOT PAYMENT_CONFIRMED
-   * - No licenses were created in previous step
-   *
-   * Note: CONFIRM_ORDER creates licenses with PENDING_PAYMENT status,
-   * order stays at PROCESSING until PAYMENT_CONFIRMED.
+   * Always skip - order completion is now handled asynchronously
+   * by MktLicenseStatusService when all license items are activated.
    */
-  shouldSkip(context: SagaContext, input: ConfirmOrderInput): boolean {
-    const _typedContext = context as ConfirmOrderSagaContext;
+  shouldSkip(_context: SagaContext, _input: ConfirmOrderInput): boolean {
+    this.logger.debug(
+      'Skipping: Order completion delegated to MktLicenseStatusService (async flow)',
+    );
 
-    // Only run after PAYMENT_CONFIRMED action
-    if (input.action !== ORDER_ACTION.PAYMENT_CONFIRMED) {
-      this.logger.debug(
-        `Skipping: Action "${input.action}" does not require auto-complete`,
-      );
-
-      return true;
-    }
-
-    // Check if licenses were created (stored in rollbackData by CreateLicensesOnConfirmStep)
-    const licenseData = context.rollbackData.get(
-      'create_licenses_on_confirm',
-    ) as {
-      licenseIds: string[];
-    } | null;
-
-    if (!licenseData?.licenseIds?.length) {
-      this.logger.debug(
-        'Skipping: No licenses created, order stays at PROCESSING status',
-      );
-
-      return true;
-    }
-
-    return false;
+    return true;
   }
 
   async execute(context: SagaContext): Promise<SagaStepResult<void>> {

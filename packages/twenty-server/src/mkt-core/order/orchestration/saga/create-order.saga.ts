@@ -11,7 +11,7 @@ import {
   CreateSnapshotsStep,
   CreateOrderItemsStep,
   CalculatePromotionStep,
-  CreateLicensesStep,
+  EnqueueLicenseJobsStep,
   CreatePaymentStep,
   FinalizeOrderStep,
 } from 'src/mkt-core/order/orchestration/steps';
@@ -38,7 +38,7 @@ import { BaseSaga } from './base/base-saga';
  * 2. CreateSnapshotsStep - Validate & create product/package snapshots
  * 3. CreateOrderItemsStep - Create order items with snapshots
  * 4. CalculatePromotionStep - Calculate and apply promotions
- * 5. CreateLicensesStep - Create licenses for order items
+ * 5. EnqueueLicenseJobsStep - Enqueue license creation jobs (async)
  * 6. CreatePaymentStep - Create payment (if not TRIAL)
  * 7. FinalizeOrderStep - Finalize order status
  */
@@ -58,7 +58,7 @@ export class CreateOrderSaga
     private readonly createSnapshotsStep: CreateSnapshotsStep,
     private readonly createOrderItemsStep: CreateOrderItemsStep,
     private readonly calculatePromotionStep: CalculatePromotionStep,
-    private readonly createLicensesStep: CreateLicensesStep,
+    private readonly enqueueLicenseJobsStep: EnqueueLicenseJobsStep,
     private readonly createPaymentStep: CreatePaymentStep,
     private readonly finalizeOrderStep: FinalizeOrderStep,
   ) {
@@ -76,7 +76,7 @@ export class CreateOrderSaga
       { name: 'createSnapshotsStep', instance: this.createSnapshotsStep },
       { name: 'createOrderItemsStep', instance: this.createOrderItemsStep },
       { name: 'calculatePromotionStep', instance: this.calculatePromotionStep },
-      { name: 'createLicensesStep', instance: this.createLicensesStep },
+      { name: 'enqueueLicenseJobsStep', instance: this.enqueueLicenseJobsStep },
       { name: 'createPaymentStep', instance: this.createPaymentStep },
       { name: 'finalizeOrderStep', instance: this.finalizeOrderStep },
     ];
@@ -99,7 +99,7 @@ export class CreateOrderSaga
       this.createSnapshotsStep,
       this.createOrderItemsStep,
       this.calculatePromotionStep,
-      this.createLicensesStep,
+      this.enqueueLicenseJobsStep,
       this.createPaymentStep,
       this.finalizeOrderStep,
     ]);
