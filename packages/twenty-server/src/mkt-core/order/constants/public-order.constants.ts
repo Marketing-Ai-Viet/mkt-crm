@@ -115,6 +115,16 @@ export const PAYMENT_STATUS_ERROR_MAP: Partial<
 };
 
 // ============================================
+// PUBLIC ORDER - PII MASKING
+// ============================================
+
+export const PII_MASK = {
+  EMAIL_VISIBLE_PREFIX: 2,
+  PHONE_VISIBLE_SUFFIX: 4,
+  MASK_CHAR: '*',
+} as const;
+
+// ============================================
 // PUBLIC ORDER - DEFAULTS
 // ============================================
 

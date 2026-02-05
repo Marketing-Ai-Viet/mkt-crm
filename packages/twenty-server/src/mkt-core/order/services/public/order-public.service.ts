@@ -11,6 +11,7 @@ import {
   PAYABLE_ORDER_STATUSES,
   PAYABLE_PAYMENT_STATUSES,
   PAYMENT_STATUS_ERROR_MAP,
+  PII_MASK,
   PUBLIC_ORDER_DEFAULTS,
   PUBLIC_ORDER_ERROR_CODE,
   PUBLIC_ORDER_ERROR_MESSAGE,
@@ -61,6 +62,43 @@ export class OrderPublicService {
 
   private toInt(value: number | null | undefined): number {
     return Math.round(value ?? 0);
+  }
+
+  // ============================================
+  // PII SANITIZATION
+  // ============================================
+
+  /**
+   * ph***@gmail.com
+   */
+  private maskEmail(email: string | null | undefined): string | null {
+    if (!email) return null;
+
+    const atIndex = email.indexOf('@');
+
+    if (atIndex <= 0) return PII_MASK.MASK_CHAR.repeat(3);
+
+    const visible = email.slice(0, PII_MASK.EMAIL_VISIBLE_PREFIX);
+    const domain = email.slice(atIndex);
+    const maskedLen = Math.max(atIndex - PII_MASK.EMAIL_VISIBLE_PREFIX, 1);
+
+    return `${visible}${PII_MASK.MASK_CHAR.repeat(maskedLen)}${domain}`;
+  }
+
+  /**
+   * ******6789
+   */
+  private maskPhone(phone: string | null | undefined): string | null {
+    if (!phone) return null;
+
+    if (phone.length <= PII_MASK.PHONE_VISIBLE_SUFFIX) {
+      return PII_MASK.MASK_CHAR.repeat(phone.length);
+    }
+
+    const suffix = phone.slice(-PII_MASK.PHONE_VISIBLE_SUFFIX);
+    const maskedLen = phone.length - PII_MASK.PHONE_VISIBLE_SUFFIX;
+
+    return `${PII_MASK.MASK_CHAR.repeat(maskedLen)}${suffix}`;
   }
 
   // ============================================
@@ -231,8 +269,8 @@ export class OrderPublicService {
       },
       customer: {
         name: order.mktCustomer?.name ?? PUBLIC_ORDER_DEFAULTS.CUSTOMER_NAME,
-        email: order.mktCustomer?.email ?? null,
-        phone: order.mktCustomer?.phone ?? null,
+        email: this.maskEmail(order.mktCustomer?.email),
+        phone: this.maskPhone(order.mktCustomer?.phone),
       },
       items: (order.orderItems ?? []).map((item) => ({
         name: item.name,
