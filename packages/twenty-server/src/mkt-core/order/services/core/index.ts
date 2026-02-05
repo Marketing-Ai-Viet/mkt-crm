@@ -25,3 +25,4 @@ export * from './order-validation.service';
 export * from './order-event.service';
 export * from './order-confirm-utils.service';
 export * from './order-metadata.service';
+export * from './order-cron-registration.service';

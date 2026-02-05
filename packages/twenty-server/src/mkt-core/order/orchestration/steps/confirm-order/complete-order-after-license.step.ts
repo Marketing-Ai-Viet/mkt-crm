@@ -18,7 +18,7 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
 
 /**
- * CompleteOrderAfterLicenseStep - DEPRECATED (Phase 3)
+ * CompleteOrderAfterLicenseStep - DEPRECATED (async flow)
  *
  * Previously: Updated order status to COMPLETED after synchronous license creation.
  *
@@ -26,7 +26,7 @@ import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
  * MktLicenseStatusService when all license items reach terminal status
  * (PROCESSING → COMPLETED when all licenses activated).
  *
- * Kept in codebase for safe rollback if needed.
+ * Kept in saga pipeline for backward compatibility.
  */
 @Injectable()
 export class CompleteOrderAfterLicenseStep extends SagaStep<
@@ -44,7 +44,7 @@ export class CompleteOrderAfterLicenseStep extends SagaStep<
   }
 
   /**
-   * Always skip - order completion is now handled asynchronously
+   * Always skip - order completion is handled asynchronously
    * by MktLicenseStatusService when all license items are activated.
    */
   shouldSkip(_context: SagaContext, _input: ConfirmOrderInput): boolean {

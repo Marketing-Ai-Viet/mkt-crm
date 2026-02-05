@@ -97,10 +97,11 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
   async findByOrderId(
     orderId: string,
     options?: FindOrderItemOptions,
+    workspaceId?: string,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.FIND_BY_ORDER_START(orderId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const items = await repository.find({
       where: { mktOrderId: orderId },

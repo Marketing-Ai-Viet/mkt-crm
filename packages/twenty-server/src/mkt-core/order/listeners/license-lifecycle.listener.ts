@@ -25,8 +25,7 @@ const LICENSE_LIFECYCLE_LOG_CONTEXT = 'LicenseLifecycleListener';
  * - When order is COMPLETED: Enqueue license activation jobs
  * - When order is REFUNDED: Enqueue license revocation jobs
  *
- * Phase 3: Replaced synchronous MktLicenseProxyService calls with
- * MktLicenseQueueService for async processing via BullMQ.
+ * Uses MktLicenseQueueService for async processing via BullMQ.
  */
 @Injectable()
 export class LicenseLifecycleListener {
@@ -103,7 +102,10 @@ export class LicenseLifecycleListener {
   ): Promise<void> {
     this.logger.log(LICENSE_LIFECYCLE_MESSAGES.ACTIVATE_START(orderId));
 
-    const licensePairs = await this.getExternalLicensePairs(orderId);
+    const licensePairs = await this.getExternalLicensePairs(
+      orderId,
+      workspaceId,
+    );
 
     if (licensePairs.length === 0) {
       this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
@@ -131,7 +133,10 @@ export class LicenseLifecycleListener {
   ): Promise<void> {
     this.logger.log(LICENSE_LIFECYCLE_MESSAGES.REVOKE_START(orderId));
 
-    const licensePairs = await this.getExternalLicensePairs(orderId);
+    const licensePairs = await this.getExternalLicensePairs(
+      orderId,
+      workspaceId,
+    );
 
     if (licensePairs.length === 0) {
       this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
@@ -156,8 +161,13 @@ export class LicenseLifecycleListener {
    */
   private async getExternalLicensePairs(
     orderId: string,
+    workspaceId?: string,
   ): Promise<Array<{ orderItemId: string; licenseId: string }>> {
-    const orderItems = await this.orderItemRepository.findByOrderId(orderId);
+    const orderItems = await this.orderItemRepository.findByOrderId(
+      orderId,
+      undefined,
+      workspaceId,
+    );
 
     return orderItems.flatMap((item) =>
       (item.licenses ?? []).map((license) => ({

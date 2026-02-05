@@ -38,7 +38,7 @@ import { BaseSaga } from './base/base-saga';
  * 2. CreateSnapshotsStep - Validate & create product/package snapshots
  * 3. CreateOrderItemsStep - Create order items with snapshots
  * 4. CalculatePromotionStep - Calculate and apply promotions
- * 5. EnqueueLicenseJobsStep - Enqueue license creation jobs (async)
+ * 5. EnqueueLicenseJobsStep - Enqueue license creation jobs (async via BullMQ)
  * 6. CreatePaymentStep - Create payment (if not TRIAL)
  * 7. FinalizeOrderStep - Finalize order status
  */

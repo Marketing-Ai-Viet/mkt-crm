@@ -17,7 +17,7 @@ import { SeedMktKpiCommand } from 'src/mkt-core/seeder/commands/mkt-kpi-data-see
 import { SeedMktKpiTemplateCommand } from 'src/mkt-core/seeder/commands/mkt-kpi-template-data-seed-dev-workspace.command';
 import { SeedOrderModuleCommand } from 'src/mkt-core/seeder/order-seeder/order/mkt-order-data-seed-dev-workspace.command';
 import { SeedMktOrderHistoryModuleCommand } from 'src/mkt-core/seeder/order-seeder/mkt-order-history-data-seed-dev-workspace.command';
-import { SeedOrderItemModuleCommand } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-data-seed-dev-workspace.command';
+import { SeedOrderItemModuleCommand } from 'src/mkt-core/seeder/order-seeder/mkt-order-item/mkt-order-item-data-seed-dev-workspace.command';
 import { SeedOrganizationLevelModuleCommand } from 'src/mkt-core/seeder/commands/mkt-organization-level-data-seed-dev-workspace.command';
 import { MktPaymentDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-data-seed-dev-workspace.command';
 import { SeedMktPaymentHistoryModuleCommand } from 'src/mkt-core/seeder/payment-seeder/mkt-payment-history/mkt-payment-history-data-seed-dev-workspace.command';

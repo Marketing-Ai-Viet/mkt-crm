@@ -1,5 +1,9 @@
 import { MKT_ORDER_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/order-seeder/order/mkt-order-data-seeds.constants';
 import {
+  LICENSE_ITEM_STATUS,
+  LicenseItemStatus,
+} from 'src/mkt-core/order/constants/license-item-status.constants';
+import {
   MktPackageSnapshot,
   MktProductSnapshot,
   MktSupportedLanguage,
@@ -50,6 +54,8 @@ type MktOrderItemDataSeed = {
   // Internal product/variant snapshots
   internalProductSnapshot: InternalProductSnapshot | null;
   internalVariantSnapshot: InternalVariantSnapshot | null;
+  // License item status
+  licenseStatus: LicenseItemStatus | null;
   // Actor metadata (createdBy composite type)
   createdBySource: string;
   createdByWorkspaceMemberId: string | null;
@@ -90,6 +96,8 @@ export const MKT_ORDER_ITEM_DATA_SEED_COLUMNS: (keyof MktOrderItemDataSeed)[] =
     // Internal product/variant snapshots
     'internalProductSnapshot',
     'internalVariantSnapshot',
+    // License item status
+    'licenseStatus',
     'createdBySource',
     'createdByWorkspaceMemberId',
     'createdByName',
@@ -144,6 +152,8 @@ const DEFAULT_EXTERNAL_FIELDS = {
   // Internal product/variant snapshots
   internalProductSnapshot: null,
   internalVariantSnapshot: null,
+  // License item status (ACTIVATED for COMPLETED orders with DIGITAL_EXTERNAL items)
+  licenseStatus: LICENSE_ITEM_STATUS.ACTIVATED,
   // Actor metadata (createdBy composite type)
   createdBySource: 'MANUAL',
   createdByWorkspaceMemberId: null,

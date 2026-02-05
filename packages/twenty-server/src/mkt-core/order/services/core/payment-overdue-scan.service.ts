@@ -116,25 +116,15 @@ export class PaymentOverdueScanService {
    * @param workspaceId - ID workspace để lookup license
    */
   async lockOverdueOrder(orderId: string, workspaceId: string): Promise<void> {
-    // Lấy license IDs từ order
-    const licenses = await this.orderRepository.getOrderLicenses(
-      orderId,
+    // Enqueue license revocation jobs via async queue
+    const enqueueResult = await this.orderLockService.lockLicenses(
       workspaceId,
+      orderId,
     );
 
-    const licenseIds = (licenses ?? []).map((l) => l.id);
-
-    // Khóa licenses trên MKT Server
-    if (licenseIds.length > 0) {
-      const lockResult = await this.orderLockService.lockLicenses(licenseIds);
-
-      if (!lockResult.success) {
-        this.logger.warn(
-          `Một số licenses khóa thất bại cho order ${orderId}:`,
-          lockResult.results.filter((r) => !r.success),
-        );
-      }
-    }
+    this.logger.log(
+      `Enqueued ${enqueueResult.count} license revocation jobs for order ${orderId}`,
+    );
 
     // Cập nhật order status
     const lockUpdateData = this.orderLockService.getLockUpdateData();

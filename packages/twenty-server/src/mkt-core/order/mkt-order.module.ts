@@ -43,6 +43,7 @@ import {
   OrderPaymentCalculationService,
   OrderConfirmUtilsService,
   OrderMetadataService,
+  OrderCronRegistrationService,
   // New Payment Flow Services
   PaymentDeadlineService,
   OrderConfirmService,
@@ -158,6 +159,7 @@ import {
     OrderPaymentCalculationService,
     OrderConfirmUtilsService,
     OrderMetadataService,
+    OrderCronRegistrationService,
     // New Payment Flow Services
     PaymentDeadlineService,
     OrderConfirmService,

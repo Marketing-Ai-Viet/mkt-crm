@@ -70,7 +70,7 @@ import {
 import {
   MKT_ORDER_ITEM_DATA_SEED_COLUMNS,
   MKT_ORDER_ITEM_DATA_SEEDS,
-} from 'src/mkt-core/seeder/order-seeder/mkt-order-item-data-seeds.constants';
+} from 'src/mkt-core/seeder/order-seeder/mkt-order-item/mkt-order-item-data-seeds.constants';
 import {
   MKT_ORDER_HISTORY_DATA_SEED_COLUMNS,
   MKT_ORDER_HISTORY_DATA_SEEDS,

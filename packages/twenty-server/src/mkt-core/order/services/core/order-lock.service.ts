@@ -7,8 +7,9 @@ import {
 } from 'src/mkt-core/order/constants/order-status.constants';
 import { MKT_LICENSE_STATUS } from 'src/mkt-core/mkt-license-integration/types/mkt-license.types';
 import { MktLicenseResponse } from 'src/mkt-core/mkt-license-integration/types';
-import { OrderLicenseIntegrationService } from 'src/mkt-core/order/services/integration/order-license.integration';
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
+import { MktLicenseQueueService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-queue.service';
+import { MktOrderItemRepository } from 'src/mkt-core/order/repositories';
+import { BulkEnqueueResult } from 'src/mkt-core/mkt-license-integration/types/license-queue.types';
 
 /**
  * Order data for lock operations
@@ -61,15 +62,15 @@ const LOCK_REASON_PAYMENT_OVERDUE = 'Payment overdue - deadline exceeded';
 /**
  * OrderLockService
  *
- * Handles order and license locking/unlocking for new payment flow.
+ * Handles order and license locking/unlocking for payment flow.
  *
  * Lock Flow (when payment deadline exceeded):
- * 1. Update license status → LOCKED on MKT Server
+ * 1. Enqueue license revocation jobs via BullMQ (async)
  * 2. Record lockedAt and lockedReason on order
  * 3. Order status → LOCKED
  *
  * Unlock Flow (when late payment confirmed):
- * 1. Update license status → ACTIVE on MKT Server
+ * 1. Enqueue license activation jobs via BullMQ (async)
  * 2. Clear lockedAt and lockedReason on order
  * 3. Order status → COMPLETED
  */
@@ -78,7 +79,8 @@ export class OrderLockService {
   private readonly logger = new Logger(OrderLockService.name);
 
   constructor(
-    private readonly licenseIntegration: OrderLicenseIntegrationService,
+    private readonly mktLicenseQueueService: MktLicenseQueueService,
+    private readonly orderItemRepository: MktOrderItemRepository,
   ) {}
 
   /**
@@ -116,105 +118,77 @@ export class OrderLockService {
   }
 
   /**
-   * Lock licenses for an order on MKT Server
+   * Lock licenses for an order via async queue.
+   * Enqueues revocation jobs for all licenses in the order.
    *
-   * Updates license status to LOCKED via update API
+   * @param workspaceId - Workspace ID
+   * @param orderId - Order ID
+   * @returns Enqueue result with job count
    */
   async lockLicenses(
-    licenseIds: string[],
-    reason: string = LOCK_REASON_PAYMENT_OVERDUE,
-    userContext?: UserContext,
-  ): Promise<{
-    success: boolean;
-    results: { licenseId: string; success: boolean; error?: string }[];
-  }> {
-    this.logger.debug(`Locking ${licenseIds.length} licenses`, { reason });
+    workspaceId: string,
+    orderId: string,
+  ): Promise<BulkEnqueueResult> {
+    const licensePairs = await this.getOrderLicensePairs(orderId);
 
-    const results: { licenseId: string; success: boolean; error?: string }[] =
-      [];
+    if (licensePairs.length === 0) {
+      this.logger.debug(`No licenses to lock for order ${orderId}`);
 
-    if (licenseIds.length === 0) {
-      return { success: true, results };
+      return { jobIds: [], correlationIds: [], count: 0 };
     }
 
-    // Lock each license by updating status
-    // Note: MKT Server should have an endpoint for this
-    // For now, we use revoke which sets status to REVOKED
-    // TODO: Add proper lock endpoint on MKT Server that sets status to LOCKED
-    const revokeResult = await this.licenseIntegration.revokeLicenses(
-      licenseIds,
-      userContext,
+    this.logger.log(
+      `Enqueuing ${licensePairs.length} license revocation jobs for lock (order: ${orderId})`,
     );
 
-    for (const licenseId of licenseIds) {
-      const error = revokeResult.errors.find((e) => e.licenseId === licenseId);
+    const result = await this.mktLicenseQueueService.enqueueBulkRevocation(
+      workspaceId,
+      orderId,
+      licensePairs,
+    );
 
-      results.push({
-        licenseId,
-        success: !error,
-        error: error?.error,
-      });
-    }
+    this.logger.log(
+      `Lock licenses enqueued: ${result.count} jobs for order ${orderId}`,
+    );
 
-    const success = results.every((r) => r.success);
-
-    this.logger.log(`Lock licenses completed`, {
-      total: licenseIds.length,
-      success: results.filter((r) => r.success).length,
-      failed: results.filter((r) => !r.success).length,
-    });
-
-    return { success, results };
+    return result;
   }
 
   /**
-   * Unlock licenses for an order on MKT Server
+   * Unlock licenses for an order via async queue.
+   * Enqueues activation jobs for all licenses in the order.
    *
-   * Updates license status to ACTIVE via activate API
+   * @param workspaceId - Workspace ID
+   * @param orderId - Order ID
+   * @returns Enqueue result with job count
    */
   async unlockLicenses(
-    licenseIds: string[],
-    userContext?: UserContext,
-  ): Promise<{
-    success: boolean;
-    results: { licenseId: string; success: boolean; error?: string }[];
-  }> {
-    this.logger.debug(`Unlocking ${licenseIds.length} licenses`);
+    workspaceId: string,
+    orderId: string,
+  ): Promise<BulkEnqueueResult> {
+    const licensePairs = await this.getOrderLicensePairs(orderId);
 
-    const results: { licenseId: string; success: boolean; error?: string }[] =
-      [];
+    if (licensePairs.length === 0) {
+      this.logger.debug(`No licenses to unlock for order ${orderId}`);
 
-    if (licenseIds.length === 0) {
-      return { success: true, results };
+      return { jobIds: [], correlationIds: [], count: 0 };
     }
 
-    // Unlock by activating licenses
-    const activateResult = await this.licenseIntegration.activateLicenses(
-      licenseIds,
-      userContext,
+    this.logger.log(
+      `Enqueuing ${licensePairs.length} license activation jobs for unlock (order: ${orderId})`,
     );
 
-    for (const licenseId of licenseIds) {
-      const error = activateResult.errors.find(
-        (e) => e.licenseId === licenseId,
-      );
+    const result = await this.mktLicenseQueueService.enqueueBulkActivation(
+      workspaceId,
+      orderId,
+      licensePairs,
+    );
 
-      results.push({
-        licenseId,
-        success: !error,
-        error: error?.error,
-      });
-    }
+    this.logger.log(
+      `Unlock licenses enqueued: ${result.count} jobs for order ${orderId}`,
+    );
 
-    const success = results.every((r) => r.success);
-
-    this.logger.log(`Unlock licenses completed`, {
-      total: licenseIds.length,
-      success: results.filter((r) => r.success).length,
-      failed: results.filter((r) => !r.success).length,
-    });
-
-    return { success, results };
+    return result;
   }
 
   /**
@@ -304,6 +278,27 @@ export class OrderLockService {
       unlockableStatuses.includes(
         l.status as (typeof unlockableStatuses)[number],
       ),
+    );
+  }
+
+  // ============================================
+  // PRIVATE METHODS
+  // ============================================
+
+  /**
+   * Get license pairs (orderItemId + licenseId) from order items.
+   * Queue service needs orderItemId for deterministic job IDs.
+   */
+  private async getOrderLicensePairs(
+    orderId: string,
+  ): Promise<Array<{ orderItemId: string; licenseId: string }>> {
+    const orderItems = await this.orderItemRepository.findByOrderId(orderId);
+
+    return orderItems.flatMap((item) =>
+      (item.licenses ?? []).map((license) => ({
+        orderItemId: item.id,
+        licenseId: license.id,
+      })),
     );
   }
 }
