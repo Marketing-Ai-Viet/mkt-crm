@@ -37,6 +37,12 @@ export type ConfirmOrderSagaContext = SagaContext & {
   /** IDs of scheduled reminder jobs for cleanup */
   scheduledReminderJobIds?: string[];
 
+  // Enqueued license jobs (async flow)
+  /** Job IDs enqueued for license creation/upgrade */
+  enqueuedLicenseJobIds?: string[];
+  /** Correlation IDs for tracing enqueued license jobs */
+  enqueuedLicenseCorrelationIds?: string[];
+
   // Contract fields
   /** Contract ID created for the order */
   contractId?: string;

@@ -268,6 +268,8 @@ export const MKT_ORDER_ITEM_FIELD_IDS = {
   licenses: 'a8e2c7f1-3d5b-4a9e-8c6d-2f1e0b9a8c7d',
   // License configuration
   maxDevices: '4aa5bb85-50f3-45b0-bc7e-df41930b6350',
+  // License processing status for async queue
+  licenseStatus: '4d26a7c8-475d-44a7-9223-f3318f1a8556',
 
   // relations
   mktOrder: '7081a3b4-c5d6-e7f8-8901-234567890123',

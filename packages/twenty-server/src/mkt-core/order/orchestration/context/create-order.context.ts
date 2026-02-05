@@ -19,7 +19,7 @@ import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types';
  * 2. CreateSnapshotsStep → snapshots, snapshotsMap
  * 3. CreateOrderItemsStep → orderItems, totals
  * 4. CalculatePromotionStep → promotionResult, appliedPromotions
- * 5. CreateLicensesStep → licenses
+ * 5. EnqueueLicenseJobsStep → enqueuedJobIds, enqueuedCorrelationIds
  * 6. CreatePaymentStep → payments, paymentQrCode
  * 7. FinalizeOrderStep → finalStatus
  */
@@ -73,13 +73,17 @@ export type CreateOrderSagaContext = SagaContext & {
   /** Final amount after all discounts */
   finalAmount?: number;
 
-  // === Step 5: CreateLicensesStep outputs ===
-  /** Created license info */
+  // === Step 5: EnqueueLicenseJobsStep outputs ===
+  /** Created license info (legacy, kept for backward compat) */
   licenses?: Array<{
     id: string;
     licenseKey: string;
     orderItemId: string;
   }>;
+  /** Job IDs enqueued for license creation (async flow) */
+  enqueuedJobIds?: string[];
+  /** Correlation IDs for tracing enqueued jobs */
+  enqueuedCorrelationIds?: string[];
 
   // === Step 6: CreatePaymentStep outputs ===
   /** Created payment IDs */

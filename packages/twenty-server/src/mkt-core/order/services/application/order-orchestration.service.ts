@@ -29,6 +29,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import {
   OrderValidationService,
   OrderConfirmUtilsService,
+  OrderLockService,
 } from 'src/mkt-core/order/services/core';
 import { OrderItemService } from 'src/mkt-core/order/services/domain';
 import {
@@ -80,6 +81,7 @@ export class OrderOrchestrationService {
     private readonly paymentRepository: MktPaymentRepository,
     private readonly paymentMethodRepository: MktPaymentMethodRepository,
     private readonly orderConfirmUtilsService: OrderConfirmUtilsService,
+    private readonly orderLockService: OrderLockService,
     @Inject(ORDER_CONFIG_KEY)
     private readonly config: OrderConfig,
   ) {}
@@ -1055,8 +1057,15 @@ export class OrderOrchestrationService {
 
       const previousStatus = order.status as ORDER_STATUS;
 
-      // 3. Unlock licenses
-      // TODO: Implement via OrderLockService.unlockLicenses()
+      // 3. Unlock licenses via async queue
+      const enqueueResult = await this.orderLockService.unlockLicenses(
+        workspaceId,
+        order.id,
+      );
+
+      this.logger.log(
+        `[UnlockOrderAfterPayment] Enqueued ${enqueueResult.count} license activation jobs for order ${input.orderId}`,
+      );
 
       // 4. Update order status to COMPLETED
       await this.orderRepository.updateOrder(

@@ -3,6 +3,7 @@ export * from './create-order-items.step';
 export * from './create-licenses.step';
 export * from './create-payment.step';
 export * from './finalize-order.step';
+export * from './enqueue-license-jobs.step';
 
 // New steps for promotion and snapshots
 export * from './create-snapshots.step';

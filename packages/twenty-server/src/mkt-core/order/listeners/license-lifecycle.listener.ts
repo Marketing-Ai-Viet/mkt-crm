@@ -4,11 +4,10 @@ import { OnEvent } from '@nestjs/event-emitter';
 import {
   MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
-  LicenseOperationResult,
   MktOrderCustomEventData,
   MktOrderCustomEventPayload,
 } from 'src/mkt-core/order/types';
-import { MktLicenseProxyService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-proxy.service';
+import { MktLicenseQueueService } from 'src/mkt-core/mkt-license-integration/services/mkt-license-queue.service';
 import { ORDER_STATUS } from 'src/mkt-core/order/constants';
 import { MktOrderItemRepository } from 'src/mkt-core/order/repositories/mkt-order-item.repository';
 import { LICENSE_LIFECYCLE_MESSAGES } from 'src/mkt-core/order/messages';
@@ -22,19 +21,18 @@ const LICENSE_LIFECYCLE_LOG_CONTEXT = 'LicenseLifecycleListener';
 /**
  * LicenseLifecycleListener - Handle license lifecycle based on order events
  *
- * This listener manages the lifecycle of licenses on MKT Server:
- * - When order is COMPLETED: Activate licenses
- * - When order is REFUNDED: Revoke licenses
+ * This listener manages the lifecycle of licenses via async queue:
+ * - When order is COMPLETED: Enqueue license activation jobs
+ * - When order is REFUNDED: Enqueue license revocation jobs
  *
- * Note: This listener is separate from MktOrderCustomEventListener to
- * maintain single responsibility principle and allow independent testing.
+ * Uses MktLicenseQueueService for async processing via BullMQ.
  */
 @Injectable()
 export class LicenseLifecycleListener {
   private readonly logger = new Logger(LICENSE_LIFECYCLE_LOG_CONTEXT);
 
   constructor(
-    private readonly mktLicenseProxy: MktLicenseProxyService,
+    private readonly mktLicenseQueueService: MktLicenseQueueService,
     private readonly orderItemRepository: MktOrderItemRepository,
   ) {}
 
@@ -76,16 +74,16 @@ export class LicenseLifecycleListener {
       return;
     }
 
-    // Handle order completion - activate licenses
+    // Handle order completion - enqueue license activation jobs
     if (orderData.status === ORDER_STATUS.COMPLETED) {
-      await this.activateLicensesForOrder(orderId);
+      await this.activateLicensesForOrder(event.workspaceId, orderId);
 
       return;
     }
 
-    // Handle order refund - revoke licenses
+    // Handle order refund - enqueue license revocation jobs
     if (eventType === MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED) {
-      await this.revokeLicensesForOrder(orderId);
+      await this.revokeLicensesForOrder(event.workspaceId, orderId);
 
       return;
     }
@@ -96,129 +94,86 @@ export class LicenseLifecycleListener {
   }
 
   /**
-   * Activate all licenses for an order on MKT Server
+   * Enqueue activation jobs for all licenses in an order
    */
-  private async activateLicensesForOrder(orderId: string): Promise<void> {
+  private async activateLicensesForOrder(
+    workspaceId: string,
+    orderId: string,
+  ): Promise<void> {
     this.logger.log(LICENSE_LIFECYCLE_MESSAGES.ACTIVATE_START(orderId));
 
-    const licenseIds = await this.getExternalLicenseIds(orderId);
+    const licensePairs = await this.getExternalLicensePairs(
+      orderId,
+      workspaceId,
+    );
 
-    if (licenseIds.length === 0) {
+    if (licensePairs.length === 0) {
       this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
 
       return;
     }
 
-    const results = await this.activateLicenses(licenseIds);
-    const successCount = results.filter((r) => r.success).length;
+    const result = await this.mktLicenseQueueService.enqueueBulkActivation(
+      workspaceId,
+      orderId,
+      licensePairs,
+    );
 
-    if (successCount === licenseIds.length) {
-      this.logger.log(
-        LICENSE_LIFECYCLE_MESSAGES.ACTIVATE_SUCCESS(orderId, successCount),
-      );
-    } else {
-      this.logger.warn(
-        `Partial license activation for order ${orderId}: ${successCount}/${licenseIds.length} succeeded`,
-      );
-    }
-  }
-
-  /**
-   * Revoke all licenses for an order on MKT Server
-   */
-  private async revokeLicensesForOrder(orderId: string): Promise<void> {
-    this.logger.log(LICENSE_LIFECYCLE_MESSAGES.REVOKE_START(orderId));
-
-    const licenseIds = await this.getExternalLicenseIds(orderId);
-
-    if (licenseIds.length === 0) {
-      this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
-
-      return;
-    }
-
-    const results = await this.revokeLicenses(licenseIds);
-    const successCount = results.filter((r) => r.success).length;
-
-    if (successCount === licenseIds.length) {
-      this.logger.log(
-        LICENSE_LIFECYCLE_MESSAGES.REVOKE_SUCCESS(orderId, successCount),
-      );
-    } else {
-      this.logger.warn(
-        `Partial license revocation for order ${orderId}: ${successCount}/${licenseIds.length} succeeded`,
-      );
-    }
-  }
-
-  /**
-   * Get external MKT license IDs from order items
-   * Extracts all license IDs from the licenses array of each order item
-   */
-  private async getExternalLicenseIds(orderId: string): Promise<string[]> {
-    const orderItems = await this.orderItemRepository.findByOrderId(orderId);
-
-    // Flatten all license IDs from all order items
-    return orderItems.flatMap((item) =>
-      (item.licenses ?? []).map((license) => license.id),
+    this.logger.log(
+      LICENSE_LIFECYCLE_MESSAGES.ACTIVATE_SUCCESS(orderId, result.count),
     );
   }
 
   /**
-   * Activate multiple licenses on MKT Server
+   * Enqueue revocation jobs for all licenses in an order
    */
-  private async activateLicenses(
-    licenseIds: string[],
-  ): Promise<LicenseOperationResult[]> {
-    const results: LicenseOperationResult[] = [];
+  private async revokeLicensesForOrder(
+    workspaceId: string,
+    orderId: string,
+  ): Promise<void> {
+    this.logger.log(LICENSE_LIFECYCLE_MESSAGES.REVOKE_START(orderId));
 
-    for (const licenseId of licenseIds) {
-      try {
-        await this.mktLicenseProxy.activate(licenseId);
-        results.push({ success: true, licenseId });
-        this.logger.debug(`Activated license: ${licenseId}`);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
+    const licensePairs = await this.getExternalLicensePairs(
+      orderId,
+      workspaceId,
+    );
 
-        results.push({
-          success: false,
-          licenseId,
-          error: errorMessage,
-        });
-        this.logger.error(`Failed to activate license ${licenseId}`, error);
-      }
+    if (licensePairs.length === 0) {
+      this.logger.debug(LICENSE_LIFECYCLE_MESSAGES.NO_LICENSES(orderId));
+
+      return;
     }
 
-    return results;
+    const result = await this.mktLicenseQueueService.enqueueBulkRevocation(
+      workspaceId,
+      orderId,
+      licensePairs,
+    );
+
+    this.logger.log(
+      LICENSE_LIFECYCLE_MESSAGES.REVOKE_SUCCESS(orderId, result.count),
+    );
   }
 
   /**
-   * Revoke multiple licenses on MKT Server
+   * Get external MKT license pairs (orderItemId + licenseId) from order items.
+   * Queue service needs orderItemId for deterministic job IDs.
    */
-  private async revokeLicenses(
-    licenseIds: string[],
-  ): Promise<LicenseOperationResult[]> {
-    const results: LicenseOperationResult[] = [];
+  private async getExternalLicensePairs(
+    orderId: string,
+    workspaceId?: string,
+  ): Promise<Array<{ orderItemId: string; licenseId: string }>> {
+    const orderItems = await this.orderItemRepository.findByOrderId(
+      orderId,
+      undefined,
+      workspaceId,
+    );
 
-    for (const licenseId of licenseIds) {
-      try {
-        await this.mktLicenseProxy.revoke(licenseId);
-        results.push({ success: true, licenseId });
-        this.logger.debug(`Revoked license: ${licenseId}`);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-
-        results.push({
-          success: false,
-          licenseId,
-          error: errorMessage,
-        });
-        this.logger.error(`Failed to revoke license ${licenseId}`, error);
-      }
-    }
-
-    return results;
+    return orderItems.flatMap((item) =>
+      (item.licenses ?? []).map((license) => ({
+        orderItemId: item.id,
+        licenseId: license.id,
+      })),
+    );
   }
 }

@@ -11,7 +11,7 @@ import {
   ValidateOrderStep,
   ValidateTransitionStep,
   UpdateStatusStep,
-  CreateLicensesOnConfirmStep,
+  EnqueueLicensesOnConfirmStep,
   CreateContractOnConfirmStep,
   CompleteOrderAfterLicenseStep,
   // New Payment Flow Steps
@@ -38,27 +38,10 @@ import { BaseSaga } from './base/base-saga';
  * 2. ValidateTransitionStep - Validate status transition is allowed
  * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
  * 4. UpdateStatusStep - Update order status and payment fields
- * 5. CreateLicensesOnConfirmStep - Create licenses when order is confirmed
+ * 5. EnqueueLicensesOnConfirmStep - Enqueue license jobs (async via BullMQ)
  * 6. CreateContractOnConfirmStep - Create contract when order is confirmed
  * 7. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
- * 8. CompleteOrderAfterLicenseStep - Auto-complete order after payment confirmed
- *
- * CONFIRM_ORDER Flow:
- * 1. Validate order exists
- * 2. Validate status transition (DRAFT → PROCESSING)
- * 3. Calculate payment deadline based on priority rules
- * 4. Update: status = PROCESSING, paymentDeadline, paymentStatus = PENDING
- * 5. Create licenses on MKT Server with PENDING_PAYMENT status
- * 6. Create contract and link to order
- * 7. Schedule payment reminders and deadline check jobs
- * 8. Emit success events
- *
- * PAYMENT_CONFIRMED Flow:
- * 1. Validate order exists
- * 2. Validate status transition (PROCESSING → COMPLETED)
- * 3. Update: status = COMPLETED, paymentStatus = PAID
- * 4. Activate licenses on MKT Server
- * 5. Emit success events
+ * 8. CompleteOrderAfterLicenseStep - Always skips (async completion via MktLicenseStatusService)
  *
  * Supports actions:
  * - CONFIRM_ORDER: Create licenses with PENDING_PAYMENT, schedule deadline
@@ -84,7 +67,7 @@ export class ConfirmOrderSaga
     private readonly validateTransitionStep: ValidateTransitionStep,
     private readonly calculatePaymentDeadlineStep: CalculatePaymentDeadlineStep,
     private readonly updateStatusStep: UpdateStatusStep,
-    private readonly createLicensesOnConfirmStep: CreateLicensesOnConfirmStep,
+    private readonly enqueueLicensesOnConfirmStep: EnqueueLicensesOnConfirmStep,
     private readonly createContractOnConfirmStep: CreateContractOnConfirmStep,
     private readonly schedulePaymentRemindersStep: SchedulePaymentRemindersStep,
     private readonly completeOrderAfterLicenseStep: CompleteOrderAfterLicenseStep,
@@ -97,16 +80,6 @@ export class ConfirmOrderSaga
 
   /**
    * Initialize and register steps
-   *
-   * Step order:
-   * 1. ValidateOrderStep - Load and validate order
-   * 2. ValidateTransitionStep - Validate status transition
-   * 3. CalculatePaymentDeadlineStep - Calculate deadline (CONFIRM_ORDER only)
-   * 4. UpdateStatusStep - Update order status
-   * 5. CreateLicensesOnConfirmStep - Create licenses (CONFIRM_ORDER only)
-   * 6. CreateContractOnConfirmStep - Create contract (CONFIRM_ORDER only)
-   * 7. SchedulePaymentRemindersStep - Schedule reminders (CONFIRM_ORDER only)
-   * 8. CompleteOrderAfterLicenseStep - Auto-complete (PAYMENT_CONFIRMED only)
    */
   private initializeSteps(): void {
     this.registerSteps([
@@ -114,7 +87,7 @@ export class ConfirmOrderSaga
       this.validateTransitionStep,
       this.calculatePaymentDeadlineStep,
       this.updateStatusStep,
-      this.createLicensesOnConfirmStep,
+      this.enqueueLicensesOnConfirmStep,
       this.createContractOnConfirmStep,
       this.schedulePaymentRemindersStep,
       this.completeOrderAfterLicenseStep,

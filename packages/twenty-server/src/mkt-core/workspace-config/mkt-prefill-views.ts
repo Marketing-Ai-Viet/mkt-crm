@@ -9,7 +9,7 @@ import { mktContractsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-contra
 // REMOVED: License module has been deleted
 // import { mktLicensesAllView } from 'src/mkt-core/seeder/prefill-data/mkt-license-all.view';
 import { mktOrdersAllView } from 'src/mkt-core/seeder/order-seeder/order/mkt-order-all.view';
-import { mktOrderItemsAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-item-all.view';
+import { mktOrderItemsAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-item/mkt-order-item-all.view';
 import { mktPaymentsAllView } from 'src/mkt-core/seeder/payment-seeder/mkt-payment/mkt-payment-all.view';
 import { mktPaymentMethodsAllView } from 'src/mkt-core/seeder/payment-seeder/payment-method/mkt-payment-method-all.view';
 import { mktCustomersAllView } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-all.view';

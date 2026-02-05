@@ -57,11 +57,17 @@ export enum ORDER_STATUS {
   /** Đã xác nhận - Đơn hàng đã xác nhận, sẵn sàng tạo license */
   CONFIRMED = 'CONFIRMED',
 
+  /** Chờ tạo license - Jobs đã enqueue, đang chờ worker xử lý (ASYNC) */
+  LICENSE_PENDING = 'LICENSE_PENDING',
+
   /** Đang xử lý - License đã cấp, đang chờ thanh toán (NEW) */
   PROCESSING = 'PROCESSING',
 
   /** Hoàn thành - Đơn hàng hoàn tất, license đã active */
   COMPLETED = 'COMPLETED',
+
+  /** Tạo license thất bại - Cần xử lý thủ công (ASYNC) */
+  LICENSE_FAILED = 'LICENSE_FAILED',
 
   /** Bị khóa do quá hạn thanh toán - License bị lock trên MKT Server (NEW) */
   LOCKED = 'LOCKED',
@@ -110,64 +116,76 @@ export const ORDER_STATUS_OPTIONS = {
       position: 2,
     },
     {
+      value: ORDER_STATUS.LICENSE_PENDING,
+      label: 'Chờ tạo license',
+      color: 'sky' as TagColor,
+      position: 3,
+    },
+    {
       value: ORDER_STATUS.PROCESSING,
       label: 'Đang xử lý',
       color: 'sky' as TagColor,
-      position: 3,
+      position: 4,
     },
     {
       value: ORDER_STATUS.COMPLETED,
       label: 'Hoàn thành',
       color: 'green' as TagColor,
-      position: 4,
+      position: 5,
+    },
+    {
+      value: ORDER_STATUS.LICENSE_FAILED,
+      label: 'Tạo license thất bại',
+      color: 'red' as TagColor,
+      position: 6,
     },
     {
       value: ORDER_STATUS.LOCKED,
       label: 'Khóa do quá hạn',
       color: 'red' as TagColor,
-      position: 5,
+      position: 7,
     },
     {
       value: ORDER_STATUS.TRIAL,
       label: 'Dùng thử',
       color: 'yellow' as TagColor,
-      position: 6,
+      position: 8,
     },
     {
       value: ORDER_STATUS.TRIAL_EXPIRED,
       label: 'Trial hết hạn',
       color: 'red' as TagColor,
-      position: 7,
+      position: 9,
     },
     {
       value: ORDER_STATUS.CANCELED,
       label: 'Đã hủy',
       color: 'gray' as TagColor,
-      position: 8,
+      position: 10,
     },
     {
       value: ORDER_STATUS.OVERDUE,
       label: 'Quá hạn',
       color: 'red' as TagColor,
-      position: 9,
+      position: 11,
     },
     {
       value: ORDER_STATUS.BLOCKED,
       label: 'Bị khóa',
       color: 'purple' as TagColor,
-      position: 10,
+      position: 12,
     },
     {
       value: ORDER_STATUS.REFUND,
       label: 'Hoàn tiền',
       color: 'cyan' as TagColor,
-      position: 11,
+      position: 13,
     },
     {
       value: ORDER_STATUS.REFUND_PARTIAL,
       label: 'Hoàn tiền một phần',
       color: 'cyan' as TagColor,
-      position: 12,
+      position: 14,
     },
   ],
   labels: {
@@ -175,8 +193,10 @@ export const ORDER_STATUS_OPTIONS = {
       DRAFT: 'Draft',
       PENDING_PAYMENT: 'Pending Payment',
       CONFIRMED: 'Confirmed',
+      LICENSE_PENDING: 'License Pending',
       PROCESSING: 'Processing',
       COMPLETED: 'Completed',
+      LICENSE_FAILED: 'License Failed',
       LOCKED: 'Locked (Overdue)',
       TRIAL: 'Trial',
       TRIAL_EXPIRED: 'Trial Expired',
@@ -190,8 +210,10 @@ export const ORDER_STATUS_OPTIONS = {
       DRAFT: 'Nháp',
       PENDING_PAYMENT: 'Chờ thanh toán',
       CONFIRMED: 'Đã xác nhận',
+      LICENSE_PENDING: 'Chờ tạo license',
       PROCESSING: 'Đang xử lý',
       COMPLETED: 'Hoàn thành',
+      LICENSE_FAILED: 'Tạo license thất bại',
       LOCKED: 'Khóa do quá hạn',
       TRIAL: 'Dùng thử',
       TRIAL_EXPIRED: 'Trial hết hạn',

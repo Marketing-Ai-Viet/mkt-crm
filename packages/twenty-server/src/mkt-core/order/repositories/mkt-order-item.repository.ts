@@ -5,6 +5,7 @@ import { DeepPartial, FindOptionsWhere, In } from 'typeorm';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { BaseWorkspaceRepository } from 'src/mkt-core/common/repositories';
+import { LicenseItemStatus } from 'src/mkt-core/order/constants/license-item-status.constants';
 import {
   MKT_ORDER_ITEM_LOG_CONTEXT,
   MKT_ORDER_ITEM_LOG_MESSAGES,
@@ -96,10 +97,11 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
   async findByOrderId(
     orderId: string,
     options?: FindOrderItemOptions,
+    workspaceId?: string,
   ): Promise<MktOrderItemWorkspaceEntity[]> {
     this.logger.debug(MKT_ORDER_ITEM_LOG_MESSAGES.FIND_BY_ORDER_START(orderId));
 
-    const repository = await this.getRepository();
+    const repository = await this.getRepository(workspaceId);
 
     const items = await repository.find({
       where: { mktOrderId: orderId },
@@ -355,4 +357,201 @@ export class MktOrderItemRepository extends BaseWorkspaceRepository<MktOrderItem
       MKT_ORDER_ITEM_LOG_MESSAGES.DELETE_BY_ORDER_SUCCESS(orderId),
     );
   }
+
+  // ============================================
+  // LICENSE OPERATIONS
+  // ============================================
+
+  /**
+   * Update license status of an order item.
+   *
+   * Used by license job processors to track license creation progress.
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderItemId - Order item ID
+   * @param licenseStatus - New license status
+   */
+  async updateLicenseStatus(
+    workspaceId: string,
+    orderItemId: string,
+    licenseStatus: LicenseItemStatus,
+  ): Promise<void> {
+    this.logger.debug(
+      `Updating license status for item ${orderItemId} to ${licenseStatus}`,
+    );
+
+    await this.updateOrderItem(orderItemId, { licenseStatus }, workspaceId);
+
+    this.logger.debug(
+      `License status updated for item ${orderItemId} to ${licenseStatus}`,
+    );
+  }
+
+  /**
+   * Find existing license by deviceIndex in item's licenses array.
+   *
+   * Used for idempotency check before creating license.
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderItemId - Order item ID
+   * @param deviceIndex - Device index to find
+   * @returns License info if found, undefined otherwise
+   */
+  async findLicenseByDeviceIndex(
+    workspaceId: string,
+    orderItemId: string,
+    deviceIndex: number,
+  ): Promise<OrderItemLicenseInfo | undefined> {
+    const orderItem = await this.findByIdWithOptions(orderItemId);
+
+    if (!orderItem || !Array.isArray(orderItem.licenses)) {
+      return undefined;
+    }
+
+    const licenses = orderItem.licenses as OrderItemLicenseInfo[];
+
+    return licenses.find((license) => license.deviceIndex === deviceIndex);
+  }
+
+  /**
+   * Add a new license to order item's licenses array.
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderItemId - Order item ID
+   * @param licenseInfo - License info to add
+   */
+  async addLicenseToOrderItem(
+    workspaceId: string,
+    orderItemId: string,
+    licenseInfo: OrderItemLicenseInfo,
+  ): Promise<void> {
+    const orderItem = await this.findByIdWithOptions(orderItemId);
+
+    if (!orderItem) {
+      this.logger.warn(
+        `Order item ${orderItemId} not found for adding license`,
+      );
+
+      return;
+    }
+
+    const existingLicenses = Array.isArray(orderItem.licenses)
+      ? (orderItem.licenses as OrderItemLicenseInfo[])
+      : [];
+
+    const updatedLicenses = [...existingLicenses, licenseInfo];
+
+    await this.updateOrderItem(
+      orderItemId,
+      { licenses: updatedLicenses },
+      workspaceId,
+    );
+
+    this.logger.debug(
+      `Added license ${licenseInfo.id} to order item ${orderItemId}`,
+    );
+  }
+
+  /**
+   * Update existing license info in order item's licenses array.
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderItemId - Order item ID
+   * @param licenseId - License ID to update
+   * @param updates - Partial license info updates
+   */
+  async updateLicenseInOrderItem(
+    workspaceId: string,
+    orderItemId: string,
+    licenseId: string,
+    updates: Partial<OrderItemLicenseInfo>,
+  ): Promise<void> {
+    const orderItem = await this.findByIdWithOptions(orderItemId);
+
+    if (!orderItem || !Array.isArray(orderItem.licenses)) {
+      this.logger.warn(
+        `Order item ${orderItemId} not found or has no licenses`,
+      );
+
+      return;
+    }
+
+    const licenses = orderItem.licenses as OrderItemLicenseInfo[];
+    const updatedLicenses = licenses.map((license) => {
+      if (license.id === licenseId) {
+        return { ...license, ...updates };
+      }
+
+      return license;
+    });
+
+    await this.updateOrderItem(
+      orderItemId,
+      { licenses: updatedLicenses },
+      workspaceId,
+    );
+
+    this.logger.debug(
+      `Updated license ${licenseId} in order item ${orderItemId}`,
+    );
+  }
+
+  /**
+   * Get all licenses from an order item.
+   *
+   * @param orderItemId - Order item ID
+   * @returns Array of license info
+   */
+  async getLicensesFromOrderItem(
+    orderItemId: string,
+  ): Promise<OrderItemLicenseInfo[]> {
+    const orderItem = await this.findByIdWithOptions(orderItemId);
+
+    if (!orderItem || !Array.isArray(orderItem.licenses)) {
+      return [];
+    }
+
+    return orderItem.licenses as OrderItemLicenseInfo[];
+  }
+
+  /**
+   * Find all items for an order that need license processing.
+   *
+   * Filters items by licenseStatus being PENDING or PROCESSING.
+   *
+   * @param workspaceId - Workspace ID
+   * @param orderId - Order ID
+   * @returns Array of order items needing license processing
+   */
+  async findItemsNeedingLicenseProcessing(
+    workspaceId: string,
+    orderId: string,
+  ): Promise<MktOrderItemWorkspaceEntity[]> {
+    const items = await this.findByOrderId(orderId);
+
+    return items.filter(
+      (item) =>
+        item.licenseStatus === 'PENDING' || item.licenseStatus === 'PROCESSING',
+    );
+  }
 }
+
+// ============================================
+// LICENSE INFO TYPE
+// ============================================
+
+/**
+ * License info stored in order item's licenses JSON field.
+ */
+type OrderItemLicenseInfo = {
+  id: string;
+  licenseKey: string;
+  deviceIndex: number;
+  createdAt: string;
+  snapshot?: {
+    type?: string;
+    productId?: string;
+    expiresAt?: string;
+    maxDevices?: number;
+  };
+};

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import {
+  MKT_EVENT_TYPE,
   MKT_ORDER_EVENT_TYPES,
   RefundOrderInput,
   RefundOrderResponse,
@@ -167,6 +168,7 @@ export class RefundOrderSaga {
       const order = await this.mktOrderRepository.findByIdWithOptions(
         input.orderId,
         { relations: { orderItems: true } },
+        context.workspaceId,
       );
 
       if (!order) {
@@ -243,12 +245,16 @@ export class RefundOrderSaga {
         reason: input.reason,
       };
 
-      await this.mktOrderRepository.update(input.orderId, {
-        status: newStatus,
-        refundAmount,
-        updatedAt: nowISO,
-        metadata: safeJsonStringify(refundMetadata) as unknown as JSON,
-      });
+      await this.mktOrderRepository.updateOrder(
+        input.orderId,
+        {
+          status: newStatus,
+          refundAmount,
+          updatedAt: nowISO,
+          metadata: safeJsonStringify(refundMetadata) as unknown as JSON,
+        },
+        context.workspaceId,
+      );
 
       context.metadata.set('newStatus', newStatus);
       context.metadata.set('refundAmount', refundAmount);
@@ -274,7 +280,7 @@ export class RefundOrderSaga {
   ): void {
     if (!context.orderId) return;
 
-    this.eventEmitter.emit(MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED, {
+    this.eventEmitter.emit(MKT_EVENT_TYPE.MKT_ORDER, {
       name: MKT_ORDER_EVENT_TYPES.ORDER_REFUNDED,
       workspaceId: context.workspaceId,
       events: [

@@ -162,19 +162,11 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
       // Đã quá hạn - lock order
       this.logger.log('Order deadline passed, locking order', { orderId });
 
-      // Lấy license IDs từ order items
-      const licenses = await this.orderRepository.getOrderLicenses(
-        orderId,
+      // Enqueue license revocation jobs via async queue
+      const enqueueResult = await this.orderLockService.lockLicenses(
         workspaceId,
+        orderId,
       );
-
-      // Extract license IDs directly - simplified for basic license data
-      const licenseIds = (licenses ?? []).map((l) => l.id);
-
-      // Lock licenses trên MKT Server
-      if (licenseIds.length > 0) {
-        await this.orderLockService.lockLicenses(licenseIds);
-      }
 
       // Update order status và fields
       const lockUpdateData = this.orderLockService.getLockUpdateData();
@@ -188,7 +180,7 @@ export class PaymentDeadlineProcessor implements OnModuleInit {
       this.logger.log('Order locked due to payment overdue', {
         orderId,
         orderCode,
-        licensesLocked: licenseIds.length,
+        licensesEnqueued: enqueueResult.count,
       });
     } catch (error) {
       const errorMessage =
