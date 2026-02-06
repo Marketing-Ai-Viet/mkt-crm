@@ -124,6 +124,9 @@ export class UserOutput {
   startDate: Date;
 
   @Field(() => Date, { nullable: true })
+  officialStartDate?: Date | null;
+
+  @Field(() => Date, { nullable: true })
   endDate?: Date | null;
 
   @Field(() => String)

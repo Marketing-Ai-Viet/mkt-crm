@@ -58,6 +58,7 @@ export type CreateWorkspaceMemberData = Partial<
     | 'dateFormat'
     | 'timeFormat'
     | 'startDate'
+    | 'officialStartDate'
     | 'endDate'
   >
 > & {
@@ -100,6 +101,7 @@ export type UpdateWorkspaceMemberData = Partial<
     | 'locale'
     | 'timeZone'
     | 'startDate'
+    | 'officialStartDate'
     | 'endDate'
     | 'position'
     | 'calendarStartDay'
