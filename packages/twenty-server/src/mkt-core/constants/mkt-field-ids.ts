@@ -810,6 +810,7 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   grade: '5ffe14ec-94b9-4c49-b61e-e99493b18f5f',
   address: 'a2312a29-32d9-4ea7-b411-7df882d3562d',
   memberCode: 'bdcdd342-8d54-4686-9725-4c18df2f4977',
+  officialStartDate: '375a6108-fbad-4974-b705-d6fff920b939',
   //options
   accountOwnerForMktOptions: '688c5537-77aa-4b1f-a557-d4d0d124c904',
   accountOwnerForMktReports: 'a55048e3-30c5-4a74-a5e0-70c41b159c00',

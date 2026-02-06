@@ -97,6 +97,16 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   memberCode: string | null;
 
   @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.officialStartDate,
+    type: FieldMetadataType.DATE,
+    label: msg`Official Start Date`,
+    description: msg`The official start date after probation period`,
+    icon: 'IconCalendarCheck',
+  })
+  @WorkspaceIsNullable()
+  officialStartDate: Date | null;
+
+  @WorkspaceField({
     standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.supportForMemberId,
     type: FieldMetadataType.TEXT,
     label: msg`Support For Member ID`,

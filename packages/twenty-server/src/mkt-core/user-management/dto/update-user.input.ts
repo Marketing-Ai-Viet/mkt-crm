@@ -1,6 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsDate,
   IsEmail,
@@ -37,11 +37,19 @@ export class UpdateUserInput {
 
   @Field(() => Date, { nullable: true })
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   startDate?: Date;
 
   @Field(() => Date, { nullable: true })
   @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  officialStartDate?: Date | null;
+
+  @Field(() => Date, { nullable: true })
+  @IsOptional()
+  @Type(() => Date)
   @IsDate()
   endDate?: Date | null;
 

@@ -8,6 +8,7 @@ type WorkspaceMemberDataSeed = {
   nameFirstName: string;
   nameLastName: string;
   startDate: Date;
+  officialStartDate: Date | null;
   locale: string;
   colorScheme: string;
   userEmail: string;
@@ -23,6 +24,7 @@ export const WORKSPACE_MEMBER_DATA_SEED_COLUMNS: (keyof WorkspaceMemberDataSeed)
     'nameFirstName',
     'nameLastName',
     'startDate',
+    'officialStartDate',
     'locale',
     'colorScheme',
     'userEmail',
@@ -45,6 +47,7 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     nameFirstName: 'Tim',
     nameLastName: 'Apple',
     startDate: new Date('2015-01-15'),
+    officialStartDate: new Date('2015-03-15'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'tim@apple.dev',
@@ -58,6 +61,7 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     nameFirstName: 'Jony',
     nameLastName: 'Ive',
     startDate: new Date('2017-06-01'),
+    officialStartDate: null,
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'jony.ive@apple.dev',
@@ -71,6 +75,7 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     nameFirstName: 'Phil',
     nameLastName: 'Schiler',
     startDate: new Date('2019-09-10'),
+    officialStartDate: new Date('2019-12-10'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'phil.schiler@apple.dev',
@@ -84,6 +89,7 @@ export const WORKSPACE_MEMBER_DATA_SEEDS: WorkspaceMemberDataSeed[] = [
     nameFirstName: 'Jane',
     nameLastName: 'Austen',
     startDate: new Date('2020-11-20'),
+    officialStartDate: new Date('2021-02-20'),
     locale: 'en',
     colorScheme: 'Light',
     userEmail: 'jane.austen@apple.dev',
