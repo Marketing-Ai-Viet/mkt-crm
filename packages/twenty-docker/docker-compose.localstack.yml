@@ -1,0 +1,47 @@
+# =============================================================================
+# Twenty CRM - LocalStack (AWS S3 Emulator for Local Development)
+# =============================================================================
+# Usage:
+#   make localstack-start    # Start LocalStack
+#   make localstack-stop     # Stop LocalStack
+#   make localstack-status   # Check health
+#   make localstack-reset    # Delete data and restart
+#
+# Twenty server .env config to use LocalStack:
+#   STORAGE_TYPE=s3
+#   STORAGE_S3_REGION=ap-southeast-1
+#   STORAGE_S3_NAME=crm-files-local
+#   STORAGE_S3_ENDPOINT=http://localhost:4566
+#   STORAGE_S3_ACCESS_KEY_ID=test
+#   STORAGE_S3_SECRET_ACCESS_KEY=test
+# =============================================================================
+
+name: twenty-localstack
+
+services:
+  localstack:
+    container_name: twenty-localstack
+    image: localstack/localstack:4
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: ap-southeast-1
+      AWS_DEFAULT_REGION: ap-southeast-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      PERSISTENCE: 1
+    volumes:
+      - "./localstack-init:/etc/localstack/init/ready.d:ro"
+      - "localstack-data:/var/lib/localstack"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  localstack-data:
+    name: twenty-localstack-data
