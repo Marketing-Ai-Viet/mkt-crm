@@ -299,6 +299,39 @@ export const LOCK_CACHE_PREFIX = {
 } as const;
 
 // ============================================
+// DASHBOARD DOMAIN
+// ============================================
+
+export const DASHBOARD_CACHE_PREFIX = {
+  /** Dashboard summary data: mkt:dashboard:summary:{workspaceId}:{period}:{filterHash} */
+  SUMMARY: 'mkt:dashboard:summary',
+
+  /** Dashboard stats data: mkt:dashboard:stats:{workspaceId}:{dataSource}:{period} */
+  STATS: 'mkt:dashboard:stats',
+
+  /** Dashboard alerts: mkt:dashboard:alerts:{workspaceId} */
+  ALERTS: 'mkt:dashboard:alerts',
+
+  /** Dashboard leaderboard: mkt:dashboard:leaderboard:{workspaceId}:{period} */
+  LEADERBOARD: 'mkt:dashboard:leaderboard',
+
+  /** Widget config: mkt:dashboard:widget:{widgetId} */
+  WIDGET: 'mkt:dashboard:widget',
+
+  /** User layout: mkt:dashboard:layout:{userId} */
+  LAYOUT: 'mkt:dashboard:layout',
+} as const;
+
+export const DASHBOARD_CACHE_TTL = {
+  SUMMARY: 300,
+  STATS: 300,
+  ALERTS: 120,
+  LEADERBOARD: 600,
+  WIDGET: 3600,
+  LAYOUT: 3600,
+} as const;
+
+// ============================================
 // RBAC DOMAIN
 // ============================================
 
@@ -378,6 +411,7 @@ export const MKT_CACHE_PREFIX = {
   SYNC_LOCK: SYNC_LOCK_CACHE_PREFIX,
   LOCK: LOCK_CACHE_PREFIX,
   RBAC: RBAC_CACHE_PREFIX,
+  DASHBOARD: DASHBOARD_CACHE_PREFIX,
 } as const;
 
 /**
@@ -398,4 +432,5 @@ export type MktCachePrefix =
   | (typeof PROMOTION_CACHE_PREFIX)[keyof typeof PROMOTION_CACHE_PREFIX]
   | (typeof COMBO_CACHE_PREFIX)[keyof typeof COMBO_CACHE_PREFIX]
   | (typeof EXTERNAL_PRODUCT_CACHE_PREFIX)[keyof typeof EXTERNAL_PRODUCT_CACHE_PREFIX]
-  | (typeof RBAC_CACHE_PREFIX)[keyof typeof RBAC_CACHE_PREFIX];
+  | (typeof RBAC_CACHE_PREFIX)[keyof typeof RBAC_CACHE_PREFIX]
+  | (typeof DASHBOARD_CACHE_PREFIX)[keyof typeof DASHBOARD_CACHE_PREFIX];

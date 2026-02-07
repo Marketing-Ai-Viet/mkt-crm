@@ -885,6 +885,9 @@ export const WORKSPACE_MEMBER_MKT_FIELD_IDS = {
   createdPermissionTemplates: 'b0b0b0b0-3a4b-5c6d-7e8f-9a0b1c2d3e4f',
 
   accountOwnerForMktEmails: '66a1da50-b66a-439a-99f2-aced752fc864',
+  // dashboard module
+  dashboardWidgets: '90c62b41-c552-4f68-890f-b87db148d252',
+  dashboardLayouts: '81ba6108-78b3-42d6-9dae-88e39204cd0a',
 };
 
 export const MKT_PERSON_FIELD_IDS = {
@@ -1613,4 +1616,57 @@ export const MKT_PAYMENT_DEADLINE_CONFIG_FIELD_IDS = {
   // standard fields
   position: 'd9e0f1a2-3459-0124-5678-901234567892',
   createdBy: 'e0f1a2b3-4560-1235-6789-012345678903',
+};
+
+// Dashboard Widget entity
+export const MKT_DASHBOARD_WIDGET_FIELD_IDS = {
+  widgetName: '7e1f5ebe-c33b-471f-b8da-2c880609a05e',
+  widgetCode: '5912812e-8360-4944-b005-cfb633d2905d',
+  widgetType: '86d764cf-db3b-4ef8-87fe-3d9f15a79f78',
+  dataSource: '218d41e8-c244-4675-8a5f-9d3b8f6c4982',
+  defaultColSpan: '53ee294f-57bd-464d-ba22-b1975f641196',
+  defaultRowSpan: '9172f23f-c281-4948-8b73-4d5fb6eabed2',
+  defaultPeriod: '8668a04c-19b2-4114-9da9-4c6ddbaaf717',
+  filterConfig: 'd7044a7a-8632-4fea-8679-07dbf6fbed0a',
+  visibility: '6725ad21-a5af-4d47-9e67-c6c7b09407ee',
+  isActive: '8f3ac6ab-0d14-4033-9232-938ed77c7c4d',
+  isSystemDefault: '0478bb71-776e-47b0-be37-6c7ea9a9c406',
+  displayOrder: '47a639ca-c8ef-4ac2-a70d-9287c9cbacfc',
+  cacheTtlSeconds: '4348f4c5-86f5-4a74-a64a-66e7c1c30cc1',
+  widgetConfig: '2f2e5941-9434-40bd-897e-b891f5a1546b',
+  description: '9161a07e-73e6-4ade-a207-fe03f4a34c57',
+  position: '9ff5a3fc-517d-477b-992a-d090d253421c',
+  createdBy: '7e9ea2b4-74ad-4a80-b129-c194cd6d6c97',
+  searchVector: 'e97e1cbf-56e4-4529-b968-94134c6d5076',
+  owner: '2dbc7739-4afc-4838-a0c8-e53a104b3cbe',
+  snapshots: 'abebf9dc-88e3-4b38-bc29-a1a52fbccbc5',
+};
+
+// Dashboard Snapshot entity
+export const MKT_DASHBOARD_SNAPSHOT_FIELD_IDS = {
+  name: 'a7994b60-b376-4468-84ac-9d21b1cc51e6',
+  snapshotType: 'c0af4dcb-3d1b-407a-905f-f80d29acd2d1',
+  dataSource: 'f0732ae7-9505-4b5a-b214-0c00fc5265df',
+  snapshotAt: 'e33a174e-12ed-4ff4-918a-d58d1f12e633',
+  periodStart: '4bebec38-506c-4f13-b426-d631e73e46f2',
+  periodEnd: 'aaf47f6f-892d-48b9-bdb5-9162036f335d',
+  snapshotData: '94482b31-eca0-4b9b-b0d2-228d60d81b98',
+  comparisonData: '0c1fb203-30f4-4bb3-9902-510afcd9f33d',
+  checksum: 'ace17e87-9830-4aa4-8364-c9c84da4c870',
+  position: '40cf5012-aa7e-4085-bd92-3b140fa70c10',
+  createdBy: 'f1f64232-98d7-4fae-8c19-627a6e4d8fd1',
+  widget: 'c0ca7d94-16f4-473c-b97f-1d34e0bac07a',
+};
+
+// Dashboard Layout entity
+export const MKT_DASHBOARD_LAYOUT_FIELD_IDS = {
+  name: '890465b1-8e39-4571-8527-8034844c355a',
+  layoutType: '02b07c40-5a8a-43aa-b255-2835dc9ad151',
+  widgetOrder: '75b16d9a-784e-4ee7-9929-63c4e0778408',
+  globalFilters: '300c1010-1ac5-4aa8-b0d3-9a0c50da02c2',
+  isDefault: 'bc5d50ed-3e4b-4161-8d2a-7fac36ecfe09',
+  isActive: '67154a0c-b26b-4270-94d8-129501871a18',
+  position: 'e10de6c3-b4af-4bd1-9ed5-be2a5e800d6c',
+  createdBy: '421e5e63-1943-4d12-a78e-4ea046712588',
+  owner: '05624129-9174-4e53-9f3a-7b045203a67e',
 };

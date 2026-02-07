@@ -51,6 +51,10 @@ import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-paym
 import { MktReportWorkspaceEntity } from 'src/mkt-core/report/objects/mkt-report.workspace-entity';
 import { MktOptionWorkspaceEntity } from 'src/mkt-core/setting/objects/mkt-option.workspace-entity';
 import { MktGenericComboWorkspaceEntity } from 'src/mkt-core/mkt-combo/objects/mkt-generic-combo.workspace-entity';
+import {
+  MktDashboardWidgetWorkspaceEntity,
+  MktDashboardLayoutWorkspaceEntity,
+} from 'src/mkt-core/mkt-dashboard/workspace-entity';
 import { WorkspaceIsUnique } from 'src/engine/twenty-orm/decorators/workspace-is-unique.decorator';
 
 export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
@@ -731,4 +735,27 @@ export class WorkspaceMemberMktEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsSystem()
   createdPermissionTemplates: Relation<MktPermissionTemplateWorkspaceEntity[]>;
+
+  // === DASHBOARD MODULE ===
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.dashboardWidgets,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Dashboard Widgets`,
+    description: msg`Dashboard widgets owned by this member`,
+    icon: 'IconLayoutDashboard',
+    inverseSideTarget: () => MktDashboardWidgetWorkspaceEntity,
+    inverseSideFieldKey: 'owner',
+  })
+  dashboardWidgets: Relation<MktDashboardWidgetWorkspaceEntity[]>;
+
+  @WorkspaceRelation({
+    standardId: WORKSPACE_MEMBER_MKT_FIELD_IDS.dashboardLayouts,
+    type: RelationType.ONE_TO_MANY,
+    label: msg`Dashboard Layouts`,
+    description: msg`Dashboard layouts owned by this member`,
+    icon: 'IconLayout',
+    inverseSideTarget: () => MktDashboardLayoutWorkspaceEntity,
+    inverseSideFieldKey: 'owner',
+  })
+  dashboardLayouts: Relation<MktDashboardLayoutWorkspaceEntity[]>;
 }
