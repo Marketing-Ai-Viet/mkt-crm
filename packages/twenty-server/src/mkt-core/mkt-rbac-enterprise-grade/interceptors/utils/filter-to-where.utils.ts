@@ -1,7 +1,7 @@
 /**
  * Filter to Where Clause Converter
  *
- * Utility functions to convert RBAC FilterCondition to TypeORM where clauses
+ * Utility functions to convert RBAC RbacFilterCondition to TypeORM where clauses
  * and raw SQL conditions for use in repository queries.
  */
 
@@ -17,9 +17,9 @@ import {
 } from 'typeorm';
 
 import {
-  FilterCondition,
-  FilterConditionItem,
-  FilterOperator,
+  RbacFilterCondition,
+  RbacFilterConditionItem,
+  RbacFilterOperator,
   TypeOrmWhereClause,
   FilterToWhereResult,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/types';
@@ -32,7 +32,7 @@ import {
  * Map filter operators to TypeORM operators
  */
 const operatorToTypeOrm = (
-  operator: FilterOperator,
+  operator: RbacFilterOperator,
   value: unknown,
 ): unknown => {
   switch (operator) {
@@ -81,7 +81,7 @@ const operatorToTypeOrm = (
 /**
  * Map filter operators to SQL operators
  */
-const operatorToSql = (operator: FilterOperator): string => {
+const operatorToSql = (operator: RbacFilterOperator): string => {
   switch (operator) {
     case '=':
       return '=';
@@ -132,7 +132,7 @@ const operatorToSql = (operator: FilterOperator): string => {
  * Convert a single condition item to TypeORM where clause
  */
 export const conditionItemToWhere = (
-  condition: FilterConditionItem,
+  condition: RbacFilterConditionItem,
 ): TypeOrmWhereClause => {
   const { field, operator, value } = condition;
 
@@ -154,14 +154,14 @@ export const conditionItemToWhere = (
 };
 
 /**
- * Convert FilterCondition to TypeORM where clause array
+ * Convert RbacFilterCondition to TypeORM where clause array
  *
  * For AND conditions: Returns single where object
  * For OR conditions: Returns array of where objects (TypeORM OR syntax)
  *
  * @example
  * ```typescript
- * const filter: FilterCondition = {
+ * const filter: RbacFilterCondition = {
  *   type: 'OR',
  *   conditions: [
  *     { field: 'departmentId', operator: 'IN', value: ['dept1', 'dept2'] },
@@ -177,7 +177,7 @@ export const conditionItemToWhere = (
  * ```
  */
 export const filterToWhere = (
-  filter: FilterCondition | null,
+  filter: RbacFilterCondition | null,
 ): TypeOrmWhereClause | TypeOrmWhereClause[] | undefined => {
   if (!filter || !filter.conditions || filter.conditions.length === 0) {
     return undefined;
@@ -205,13 +205,13 @@ export const filterToWhere = (
 };
 
 /**
- * Convert FilterCondition to SQL WHERE clause with parameters
+ * Convert RbacFilterCondition to SQL WHERE clause with parameters
  *
  * Useful for raw queries and complex JOIN conditions.
  *
  * @example
  * ```typescript
- * const filter: FilterCondition = {
+ * const filter: RbacFilterCondition = {
  *   type: 'OR',
  *   conditions: [
  *     { field: 'departmentId', operator: 'IN', value: ['dept1', 'dept2'] },
@@ -225,7 +225,7 @@ export const filterToWhere = (
  * ```
  */
 export const filterToSql = (
-  filter: FilterCondition | null,
+  filter: RbacFilterCondition | null,
   tableAlias = 'entity',
 ): FilterToWhereResult => {
   if (!filter || !filter.conditions || filter.conditions.length === 0) {
@@ -313,7 +313,7 @@ export const applyFilterToQueryBuilder = <T>(
     andWhere: (condition: string, parameters?: Record<string, unknown>) => T;
     orWhere: (condition: string, parameters?: Record<string, unknown>) => T;
   },
-  filter: FilterCondition | null,
+  filter: RbacFilterCondition | null,
   tableAlias = 'entity',
 ): void => {
   if (!filter || !filter.conditions || filter.conditions.length === 0) {
@@ -332,17 +332,17 @@ export const applyFilterToQueryBuilder = <T>(
  *
  * @example
  * ```typescript
- * const filter1: FilterCondition = { type: 'AND', conditions: [...] };
- * const filter2: FilterCondition = { type: 'OR', conditions: [...] };
+ * const filter1: RbacFilterCondition = { type: 'AND', conditions: [...] };
+ * const filter2: RbacFilterCondition = { type: 'OR', conditions: [...] };
  * const merged = mergeFilters([filter1, filter2], 'AND');
  * ```
  */
 export const mergeFilters = (
-  filters: (FilterCondition | null | undefined)[],
+  filters: (RbacFilterCondition | null | undefined)[],
   joinType: 'AND' | 'OR' = 'AND',
-): FilterCondition | null => {
+): RbacFilterCondition | null => {
   const validFilters = filters.filter(
-    (f): f is FilterCondition =>
+    (f): f is RbacFilterCondition =>
       f !== null && f !== undefined && f.conditions.length > 0,
   );
 
@@ -355,7 +355,7 @@ export const mergeFilters = (
   }
 
   // Flatten conditions from all filters
-  const allConditions: FilterConditionItem[] = [];
+  const allConditions: RbacFilterConditionItem[] = [];
 
   for (const filter of validFilters) {
     allConditions.push(...filter.conditions);
@@ -371,7 +371,7 @@ export const mergeFilters = (
  * Check if filter has any effective conditions
  */
 export const hasEffectiveConditions = (
-  filter: FilterCondition | null | undefined,
+  filter: RbacFilterCondition | null | undefined,
 ): boolean => {
   if (!filter || !filter.conditions) {
     return false;
@@ -384,7 +384,7 @@ export const hasEffectiveConditions = (
  * Get human-readable description of filter
  */
 export const describeFilter = (
-  filter: FilterCondition | null | undefined,
+  filter: RbacFilterCondition | null | undefined,
 ): string => {
   if (!filter || !filter.conditions || filter.conditions.length === 0) {
     return 'No filter applied';

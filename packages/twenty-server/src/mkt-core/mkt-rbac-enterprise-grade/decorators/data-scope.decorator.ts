@@ -14,8 +14,9 @@ import {
   DataScopeMetadata,
   DATA_SCOPE_METADATA_KEY,
   DATA_SCOPE_DEFAULTS,
-  FilterConditionItem,
+  RbacFilterConditionItem,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/types';
+import { ResourceEntityName } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 // Note: DataScopeInterceptor is registered as a global interceptor via APP_INTERCEPTOR
 // in MktRbacEnterpriseGradeModule, so we don't need to use UseInterceptors here
 
@@ -146,7 +147,7 @@ export class DataScopeBuilder {
   /**
    * Set resource name
    */
-  forResource(resource: string): this {
+  forResource(resource: ResourceEntityName): this {
     this.options.resource = resource;
 
     return this;
@@ -212,7 +213,7 @@ export class DataScopeBuilder {
   /**
    * Add additional condition
    */
-  withAdditionalCondition(condition: FilterConditionItem): this {
+  withAdditionalCondition(condition: RbacFilterConditionItem): this {
     this.options.additionalConditions = [
       ...(this.options.additionalConditions ?? []),
       condition,
@@ -224,7 +225,7 @@ export class DataScopeBuilder {
   /**
    * Set additional conditions
    */
-  withAdditionalConditions(conditions: FilterConditionItem[]): this {
+  withAdditionalConditions(conditions: RbacFilterConditionItem[]): this {
     this.options.additionalConditions = conditions;
 
     return this;
@@ -253,5 +254,5 @@ export class DataScopeBuilder {
  *   .build()
  * ```
  */
-export const DataScopeFor = (resource: string): DataScopeBuilder =>
+export const DataScopeFor = (resource: ResourceEntityName): DataScopeBuilder =>
   new DataScopeBuilder().forResource(resource);

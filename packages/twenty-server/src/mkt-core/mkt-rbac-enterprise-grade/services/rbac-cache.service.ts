@@ -12,13 +12,11 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   CacheStats,
   LocalCacheEntry,
+  RbacCheckPermissionResult,
+  RbacFilterCondition,
+  RbacPermissionSummary,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
-import {
-  CheckPermissionResult,
-  FilterCondition,
-  PermissionSummary,
-} from './rbac-enforcer.service';
 import { UserContext } from './rbac-context.service';
 
 /**
@@ -78,15 +76,15 @@ export class RbacCacheService {
   >();
   private readonly checkResultCache = new Map<
     string,
-    LocalCacheEntry<CheckPermissionResult>
+    LocalCacheEntry<RbacCheckPermissionResult>
   >();
   private readonly summaryCache = new Map<
     string,
-    LocalCacheEntry<PermissionSummary>
+    LocalCacheEntry<RbacPermissionSummary>
   >();
   private readonly filterCache = new Map<
     string,
-    LocalCacheEntry<FilterCondition>
+    LocalCacheEntry<RbacFilterCondition>
   >();
 
   // Statistics tracking
@@ -199,7 +197,7 @@ export class RbacCacheService {
     workspaceId: string,
     resource: string,
     action: string,
-  ): Promise<CheckPermissionResult | null> {
+  ): Promise<RbacCheckPermissionResult | null> {
     const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_CHECK(
       workspaceId,
       userId,
@@ -224,7 +222,9 @@ export class RbacCacheService {
     }
 
     const redisResult =
-      await this.permissionCacheStorage.get<CheckPermissionResult>(cacheKey);
+      await this.permissionCacheStorage.get<RbacCheckPermissionResult>(
+        cacheKey,
+      );
 
     if (redisResult) {
       this.stats.hits++;
@@ -253,7 +253,7 @@ export class RbacCacheService {
     workspaceId: string,
     resource: string,
     action: string,
-    result: CheckPermissionResult,
+    result: RbacCheckPermissionResult,
     ttl?: number,
   ): Promise<void> {
     const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_CHECK(
@@ -287,7 +287,7 @@ export class RbacCacheService {
   async getSummary(
     userId: string,
     workspaceId: string,
-  ): Promise<PermissionSummary | null> {
+  ): Promise<RbacPermissionSummary | null> {
     const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
 
     // Check local cache first
@@ -307,7 +307,7 @@ export class RbacCacheService {
     }
 
     const redisResult =
-      await this.permissionCacheStorage.get<PermissionSummary>(cacheKey);
+      await this.permissionCacheStorage.get<RbacPermissionSummary>(cacheKey);
 
     if (redisResult) {
       this.stats.hits++;
@@ -332,7 +332,7 @@ export class RbacCacheService {
   async setSummary(
     userId: string,
     workspaceId: string,
-    summary: PermissionSummary,
+    summary: RbacPermissionSummary,
     ttl?: number,
   ): Promise<void> {
     const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
@@ -368,7 +368,7 @@ export class RbacCacheService {
     userId: string,
     workspaceId: string,
     resource: string,
-  ): Promise<FilterCondition | null> {
+  ): Promise<RbacFilterCondition | null> {
     const cacheKey = CASBIN_CACHE_KEYS.DATA_FILTER(
       workspaceId,
       userId,
@@ -393,7 +393,7 @@ export class RbacCacheService {
     }
 
     const redisResult =
-      await this.permissionCacheStorage.get<FilterCondition>(cacheKey);
+      await this.permissionCacheStorage.get<RbacFilterCondition>(cacheKey);
 
     if (redisResult) {
       this.stats.hits++;
@@ -420,7 +420,7 @@ export class RbacCacheService {
     userId: string,
     workspaceId: string,
     resource: string,
-    filter: FilterCondition,
+    filter: RbacFilterCondition,
     ttl?: number,
   ): Promise<void> {
     const cacheKey = CASBIN_CACHE_KEYS.DATA_FILTER(

@@ -8,17 +8,17 @@ export {
   UserContext,
   DepartmentTree,
 } from './rbac-context.service';
-export {
-  RbacEnforcerService,
-  CheckPermissionResult,
-  PermissionSummary,
-  FilterCondition,
-  FilterConditionItem,
-  FilterOperator,
-  AppliedPolicy,
-  ResourcePermission,
-  ActivePolicy,
-} from './rbac-enforcer.service';
+export { RbacEnforcerService } from './rbac-enforcer.service';
+export type {
+  RbacCheckPermissionResult,
+  RbacPermissionSummary,
+  RbacFilterCondition,
+  RbacFilterConditionItem,
+  RbacFilterOperator,
+  RbacAppliedPolicy,
+  RbacResourcePermission,
+  RbacActivePolicy,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 export { RbacCacheService } from './rbac-cache.service';
 
 // Base Services

@@ -37,6 +37,17 @@ export class MktPermissionResourceRepository extends BaseWorkspaceRepository<Mkt
     return this.findOne({ resourceKey, isActive: true });
   }
 
+  async findByResourceKeyInWorkspace(
+    workspaceId: string,
+    resourceKey: string,
+  ): Promise<MktPermissionResourceWorkspaceEntity | null> {
+    const repository = await this.getRepository(workspaceId);
+
+    return repository.findOne({
+      where: { resourceKey, isActive: true },
+    });
+  }
+
   async findByResourceKeys(
     workspaceId: string,
     resourceKeys: string[],

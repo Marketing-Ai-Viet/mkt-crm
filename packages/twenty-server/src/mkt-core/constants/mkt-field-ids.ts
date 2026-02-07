@@ -1235,6 +1235,10 @@ export const MKT_PERMISSION_RESOURCE_FIELD_IDS = {
   isSystemResource: 'f9b4d6e7-8a0c-9d2f-3b4a-5c6d7e8f9a0b',
   isActive: 'a0c5e7f8-9b1d-0e3a-4c5b-6d7e8f9a0b1c',
 
+  // data classification
+  dataClassification: '843fcb9b-c1e4-4e88-b5da-356414a68d2a',
+  classificationNote: '5938d28b-e1dd-4945-ba93-fe682a515618',
+
   // relations
   templatePermissions: 'b1d6f8a9-0c2e-1f4b-5d6c-7e8f9a0b1c2d',
   userOverrides: 'c2e7a9b0-1d3f-2a5c-6e7d-8f9a0b1c2d3e',

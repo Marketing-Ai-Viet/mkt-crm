@@ -85,7 +85,36 @@ export type RbacResourceKey =
  * Resource Entity Name Mapping
  * Maps resource keys to actual entity names in the database
  */
-export const RESOURCE_ENTITY_MAP: Record<string, string> = {
+/**
+ * Union type of all entity names used in RESOURCE_ENTITY_MAP.
+ * Must be kept in sync when adding new resource mappings.
+ */
+export type ResourceEntityName =
+  | 'mktCustomer'
+  | 'mktOrder'
+  | 'mktOrderItem'
+  | 'mktInvoice'
+  | 'mktLicense'
+  | 'mktPayment'
+  | 'mktProduct'
+  | 'mktProductVariant'
+  | 'mktCombo'
+  | 'mktContract'
+  | 'mktDepartment'
+  | 'mktOrganizationLevel'
+  | 'workspaceMember'
+  | 'mktReseller'
+  | 'mktPermissionTemplate'
+  | 'mktUserPermissionTemplate'
+  | 'mktTemporaryPermission'
+  | 'mktDataAccessPolicy'
+  | 'mktPermissionAudit'
+  | 'mktKpi'
+  | 'mktKpiTemplate'
+  | 'auditLog'
+  | 'systemConfig';
+
+export const RESOURCE_ENTITY_MAP: Record<string, ResourceEntityName> = {
   [RBAC_RESOURCE_KEY.CUSTOMER]: 'mktCustomer',
   [RBAC_RESOURCE_KEY.ORDER]: 'mktOrder',
   [RBAC_RESOURCE_KEY.ORDER_ITEM]: 'mktOrderItem',

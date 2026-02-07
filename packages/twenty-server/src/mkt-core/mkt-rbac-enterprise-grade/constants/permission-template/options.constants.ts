@@ -42,6 +42,48 @@ export const PERMISSION_RESOURCE_CATEGORY_OPTIONS = [
   },
 ];
 
+// Data Classification Levels
+export enum DATA_CLASSIFICATION {
+  PUBLIC = 'PUBLIC',
+  INTERNAL = 'INTERNAL',
+  CONFIDENTIAL = 'CONFIDENTIAL',
+  RESTRICTED = 'RESTRICTED',
+  TOP_SECRET = 'TOP_SECRET',
+}
+
+export const DATA_CLASSIFICATION_OPTIONS = [
+  {
+    value: DATA_CLASSIFICATION.PUBLIC,
+    label: 'Công khai',
+    color: 'green' as TagColor,
+    position: 0,
+  },
+  {
+    value: DATA_CLASSIFICATION.INTERNAL,
+    label: 'Nội bộ',
+    color: 'blue' as TagColor,
+    position: 1,
+  },
+  {
+    value: DATA_CLASSIFICATION.CONFIDENTIAL,
+    label: 'Bảo mật',
+    color: 'yellow' as TagColor,
+    position: 2,
+  },
+  {
+    value: DATA_CLASSIFICATION.RESTRICTED,
+    label: 'Hạn chế',
+    color: 'orange' as TagColor,
+    position: 3,
+  },
+  {
+    value: DATA_CLASSIFICATION.TOP_SECRET,
+    label: 'Tối mật',
+    color: 'red' as TagColor,
+    position: 4,
+  },
+];
+
 // Permission Action Categories (expanded for CRM-specific operations and Enterprise requirements)
 export enum PERMISSION_ACTION_CATEGORY {
   // Core Operations

@@ -6,17 +6,18 @@
  */
 
 import {
-  FilterCondition,
-  FilterOperator,
-  FilterConditionItem,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-enforcer.service';
+  RbacFilterCondition,
+  RbacFilterOperator,
+  RbacFilterConditionItem,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 import { UserContext } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-context.service';
+import { ResourceEntityName } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 // ============================================
 // RE-EXPORTS
 // ============================================
 
-export { FilterCondition, FilterOperator, FilterConditionItem };
+export { RbacFilterCondition, RbacFilterOperator, RbacFilterConditionItem };
 
 // ============================================
 // DECORATOR METADATA TYPES
@@ -40,10 +41,10 @@ export type DataScopeFilterMode =
  */
 export type DataScopeOptions = {
   /**
-   * Resource type for data filtering (e.g., 'mktOrder', 'mktCustomer')
-   * This should match the resource name in data access policies
+   * Resource entity name for data filtering (e.g., 'mktOrder', 'mktCustomer')
+   * Must match a value from RESOURCE_ENTITY_MAP
    */
-  resource: string;
+  resource: ResourceEntityName;
 
   /**
    * Filter mode (default: AUTO)
@@ -87,7 +88,7 @@ export type DataScopeOptions = {
   /**
    * Additional static filter conditions to always apply
    */
-  additionalConditions?: FilterConditionItem[];
+  additionalConditions?: RbacFilterConditionItem[];
 };
 
 /**
@@ -114,7 +115,7 @@ export type DataScopeContext = {
   /**
    * Data filter conditions to apply
    */
-  filter: FilterCondition | null;
+  filter: RbacFilterCondition | null;
 
   /**
    * User context used for filtering
