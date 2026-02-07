@@ -1,5 +1,6 @@
 export {
   DashboardCacheService,
+  DashboardCronRegistrationService,
   DashboardDateRangeService,
   DashboardWidgetService,
   DashboardSnapshotService,

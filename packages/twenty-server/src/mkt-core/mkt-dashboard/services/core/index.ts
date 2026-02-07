@@ -1,4 +1,5 @@
 export { DashboardCacheService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-cache.service';
+export { DashboardCronRegistrationService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-cron-registration.service';
 export {
   DashboardDateRangeService,
   type DateRange,
