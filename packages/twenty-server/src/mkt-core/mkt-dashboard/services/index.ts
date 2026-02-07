@@ -16,3 +16,5 @@ export {
   DashboardAlertsService,
   StaffLeaderboardService,
 } from 'src/mkt-core/mkt-dashboard/services/domain';
+
+export { DashboardOrchestratorService } from 'src/mkt-core/mkt-dashboard/services/application';
