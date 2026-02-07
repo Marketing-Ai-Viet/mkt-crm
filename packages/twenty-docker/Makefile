@@ -179,6 +179,41 @@ db-seed:
 	@cd ../.. && npx nx command twenty-server -- workspace:seed:dev && cd -
 
 # =============================================================================
+# LocalStack - AWS S3 Emulator for Local Development
+# =============================================================================
+
+# Configuration
+LOCALSTACK_COMPOSE_FILE := docker-compose.localstack.yml
+LOCALSTACK_BUCKET       := crm-files-local
+LOCALSTACK_ENDPOINT     := http://localhost:4566
+
+localstack-start: ## Start LocalStack
+	@docker compose -f $(LOCALSTACK_COMPOSE_FILE) up -d
+	@sleep 5
+	@make localstack-status
+
+localstack-stop: ## Stop LocalStack
+	@docker compose -f $(LOCALSTACK_COMPOSE_FILE) stop
+
+localstack-down: ## Stop and remove LocalStack containers
+	@docker compose -f $(LOCALSTACK_COMPOSE_FILE) down
+
+localstack-restart: ## Restart LocalStack
+	@make localstack-stop
+	@make localstack-start
+
+localstack-logs: ## Show LocalStack logs
+	@docker compose -f $(LOCALSTACK_COMPOSE_FILE) logs -f localstack
+
+localstack-status: ## Check LocalStack status
+	@curl -s $(LOCALSTACK_ENDPOINT)/_localstack/health | jq . 2>/dev/null || echo "LocalStack not responding"
+
+localstack-reset: ## Reset LocalStack (delete data and restart)
+	$(call confirm,Reset LocalStack? This will DELETE all data!)
+	@docker compose -f $(LOCALSTACK_COMPOSE_FILE) down -v
+	@make localstack-start
+
+# =============================================================================
 # Help
 # =============================================================================
 help:
@@ -206,6 +241,14 @@ help:
 	@echo "  make mkt-restart        Restart all"
 	@echo "  make mkt-clean          Remove containers and volumes"
 	@echo "  make mkt-status         Show status"
+	@echo ""
+	@echo "=== LocalStack (AWS S3 Emulator) ==="
+	@echo "  make localstack-start        Start LocalStack"
+	@echo "  make localstack-stop         Stop LocalStack"
+	@echo "  make localstack-restart      Restart LocalStack"
+	@echo "  make localstack-logs         View logs"
+	@echo "  make localstack-status       Check status"
+	@echo "  make localstack-reset        Complete reset"
 	@echo ""
 	@echo "=== Production ==="
 	@echo "  make prod-server-build  Build server image"
