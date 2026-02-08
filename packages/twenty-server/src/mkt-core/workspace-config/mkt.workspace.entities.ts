@@ -65,6 +65,11 @@ import {
   MktPromotionUsageWorkspaceEntity,
   MktPromotionAuditWorkspaceEntity,
 } from 'src/mkt-core/mkt-promotion/workspace-entities';
+import {
+  MktDashboardWidgetWorkspaceEntity,
+  MktDashboardSnapshotWorkspaceEntity,
+  MktDashboardLayoutWorkspaceEntity,
+} from 'src/mkt-core/mkt-dashboard/workspace-entity';
 import { MktDepartmentSubManagerWorkspaceEntity } from 'src/mkt-core/mkt-department/objects';
 
 export const MKT_WORKSPACE_ENTITIES = [
@@ -120,6 +125,10 @@ export const MKT_WORKSPACE_ENTITIES = [
 
 export const MKT_FINAL_WORKSPACE_ENTITIES = [
   MktEmploymentStatusHistoryWorkspaceEntity,
+  // Dashboard
+  MktDashboardWidgetWorkspaceEntity,
+  MktDashboardSnapshotWorkspaceEntity,
+  MktDashboardLayoutWorkspaceEntity,
   // KPI System
   MktKpiWorkspaceEntity,
   MktKpiTemplateWorkspaceEntity,

@@ -68,9 +68,11 @@ export class OrderStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawOrderStatusRow[] = await dataSource.query(
       `SELECT
@@ -92,9 +94,11 @@ export class OrderStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawOrderTrendRow[] = await dataSource.query(
       `SELECT
@@ -121,9 +125,11 @@ export class OrderStatsService {
     dateRange: { startDate: string; endDate: string },
     limit: number,
   ) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawTopProductRow[] = await dataSource.query(
       `SELECT
@@ -153,9 +159,11 @@ export class OrderStatsService {
     averageProcessingTime: number;
     conversionRate: number;
   }> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT
@@ -184,7 +192,6 @@ export class OrderStatsService {
       ).toNumber(),
       averageProcessingTime: MoneyUtils.round(
         Number(row?.avg_processing_days ?? 0),
-        1,
       ).toNumber(),
       conversionRate:
         totalOrders > 0

@@ -64,9 +64,11 @@ export class StaffLeaderboardService {
     limit: number,
     offset: number,
   ) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawLeaderboardRow[] = await dataSource.query(
       `SELECT

@@ -62,9 +62,11 @@ export class KpiStatsService {
   }
 
   private async getKpiByCategory(year: number, category?: string) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     // SQL from design doc 7.5
     const params: (number | string)[] = [year];
@@ -109,9 +111,11 @@ export class KpiStatsService {
       }>;
     }>
   > {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const params: (number | string)[] = [
       year,
@@ -184,9 +188,11 @@ export class KpiStatsService {
   private async getKpiTrends(
     year: number,
   ): Promise<Array<{ period: string; achievementRate: number }>> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT

@@ -83,9 +83,11 @@ export class PaymentStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     // SQL from design doc 7.4
     const rows: RawPaymentStatusRow[] = await dataSource.query(
@@ -104,9 +106,11 @@ export class PaymentStatsService {
   }
 
   private async getOverduePaymentCount(): Promise<number> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT COUNT(*) AS count

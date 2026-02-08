@@ -1,6 +1,6 @@
 import { Field, InputType, Int, ID } from '@nestjs/graphql';
 
-import { IsString, IsNumber, Min, Max } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, Max } from 'class-validator';
 
 @InputType()
 export class UpdateWidgetPositionInput {
@@ -30,4 +30,10 @@ export class UpdateWidgetPositionInput {
   @Min(1)
   @Max(4)
   rowSpan: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  displayOrder?: number;
 }

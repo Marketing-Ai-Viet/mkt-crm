@@ -68,9 +68,11 @@ export class CustomerStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawCustomerTierRow[] = await dataSource.query(
       `SELECT
@@ -92,9 +94,11 @@ export class CustomerStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     // SQL from design doc 7.3
     const newCustomerRows: RawCustomerGrowthRow[] = await dataSource.query(
@@ -121,9 +125,11 @@ export class CustomerStatsService {
     churnRate: number;
     engagementDistribution: Array<{ range: string; count: number }>;
   }> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT
@@ -180,9 +186,11 @@ export class CustomerStatsService {
     dateRange: { startDate: string; endDate: string },
     limit: number,
   ) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT

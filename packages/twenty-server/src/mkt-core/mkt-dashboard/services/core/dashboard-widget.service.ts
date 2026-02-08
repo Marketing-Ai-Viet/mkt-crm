@@ -67,7 +67,7 @@ export class DashboardWidgetService {
 
   async createWidget(
     input: CreateDashboardWidgetInput,
-    workspaceMemberId: string | undefined,
+    _workspaceMemberId: string | undefined,
   ): Promise<MktDashboardWidgetWorkspaceEntity> {
     // Validate Zod schemas for JSON fields
     if (input.filterConfig) {
@@ -86,7 +86,6 @@ export class DashboardWidgetService {
         description: input.description,
         filterConfig: input.filterConfig,
         widgetConfig: input.widgetConfig,
-        refreshInterval: input.refreshInterval,
         visibility: input.visibility ?? 'ALL',
         isActive: true,
         isSystemDefault: false,

@@ -52,9 +52,9 @@ export class WidgetOutput {
   @Field(() => String, { nullable: true })
   description: string | null;
 
-  @Field(() => Date)
-  createdAt: Date;
+  @Field(() => String)
+  createdAt: string;
 
-  @Field(() => Date)
-  updatedAt: Date;
+  @Field(() => String)
+  updatedAt: string;
 }

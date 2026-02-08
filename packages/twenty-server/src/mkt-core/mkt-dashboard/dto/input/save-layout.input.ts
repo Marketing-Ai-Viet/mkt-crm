@@ -14,7 +14,7 @@ export class SaveDashboardLayoutInput {
   layoutType: string;
 
   @Field(() => GraphQLJSON)
-  widgetOrder: unknown;
+  widgetOrder: object;
 
   @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()

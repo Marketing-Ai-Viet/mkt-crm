@@ -50,9 +50,11 @@ export class ContractStatsService {
   }
 
   private async getTotalActiveContracts(): Promise<number> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT COUNT(*) AS count
@@ -66,9 +68,11 @@ export class ContractStatsService {
   }
 
   private async getExpiringThisMonth(): Promise<number> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     // SQL from design doc 7.7
     const rows = await dataSource.query(
@@ -86,9 +90,11 @@ export class ContractStatsService {
     startDate: string;
     endDate: string;
   }): Promise<number> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT COUNT(*) AS count

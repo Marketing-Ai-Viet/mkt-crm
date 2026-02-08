@@ -112,7 +112,8 @@ export type ResourceEntityName =
   | 'mktKpi'
   | 'mktKpiTemplate'
   | 'auditLog'
-  | 'systemConfig';
+  | 'systemConfig'
+  | 'DASHBOARD';
 
 export const RESOURCE_ENTITY_MAP: Record<string, ResourceEntityName> = {
   [RBAC_RESOURCE_KEY.CUSTOMER]: 'mktCustomer',

@@ -29,6 +29,11 @@ export class CreateSnapshotInput {
   @IsString()
   widgetId?: string;
 
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  snapshotAt?: string;
+
   @Field(() => String, { defaultValue: 'THIS_MONTH' })
   @IsEnum([
     'TODAY',

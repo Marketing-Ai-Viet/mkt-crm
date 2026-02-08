@@ -112,9 +112,11 @@ export class RevenueStatsService {
     //   AND "createdAt" BETWEEN :startDate AND :endDate
     // GROUP BY DATE_TRUNC('month', "createdAt") ORDER BY period
 
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawRevenueRow[] = await dataSource.query(
       `SELECT
@@ -141,9 +143,11 @@ export class RevenueStatsService {
 
   private async getRevenueByStaff(dateRange: DateRange, limit: number) {
     // SQL from design doc 7.2
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows: RawRevenueByStaffRow[] = await dataSource.query(
       `SELECT
@@ -170,9 +174,11 @@ export class RevenueStatsService {
   private async getRevenueByDepartment(
     dateRange: DateRange,
   ): Promise<RawRevenueByDepartmentRow[]> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     return dataSource.query(
       `SELECT
@@ -202,9 +208,11 @@ export class RevenueStatsService {
       currentRange,
     );
 
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId;
+    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
     const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace(wsId);
+      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
+        workspaceId: wsId,
+      });
 
     const rows = await dataSource.query(
       `SELECT COALESCE(SUM("totalAmount"), 0) AS total_revenue
