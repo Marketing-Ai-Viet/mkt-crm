@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -68,11 +69,10 @@ export class OrderStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows: RawOrderStatusRow[] = await dataSource.query(
       `SELECT
@@ -85,6 +85,8 @@ export class OrderStatsService {
       GROUP BY status
       ORDER BY count DESC`,
       [dateRange.startDate, dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformOrdersByStatus(rows);
@@ -94,11 +96,10 @@ export class OrderStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows: RawOrderTrendRow[] = await dataSource.query(
       `SELECT
@@ -116,6 +117,8 @@ export class OrderStatsService {
         dateRange.endDate,
         DASHBOARD_LIMITS.REVENUE_BY_PERIOD_MAX,
       ],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformOrderTrend(rows);
@@ -125,27 +128,28 @@ export class OrderStatsService {
     dateRange: { startDate: string; endDate: string },
     limit: number,
   ) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows: RawTopProductRow[] = await dataSource.query(
       `SELECT
-        oi."productName" AS product_name,
-        oi."productId" AS product_id,
+        oi."snapshotProductName" AS product_name,
+        oi."externalMktProductId" AS product_id,
         SUM(oi.quantity) AS quantity,
         SUM(oi."totalPrice") AS revenue
       FROM "mktOrderItem" oi
-      JOIN "mktOrder" o ON oi."orderId" = o.id
+      JOIN "mktOrder" o ON oi."mktOrderId" = o.id
       WHERE o."deletedAt" IS NULL
         AND oi."deletedAt" IS NULL
         AND o."createdAt" BETWEEN $1 AND $2
-      GROUP BY oi."productId", oi."productName"
+      GROUP BY oi."externalMktProductId", oi."snapshotProductName"
       ORDER BY revenue DESC
       LIMIT $3`,
       [dateRange.startDate, dateRange.endDate, limit],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformTopProducts(rows);
@@ -159,11 +163,10 @@ export class OrderStatsService {
     averageProcessingTime: number;
     conversionRate: number;
   }> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows = await dataSource.query(
       `SELECT
@@ -180,6 +183,8 @@ export class OrderStatsService {
       WHERE "deletedAt" IS NULL
         AND "createdAt" BETWEEN $1 AND $2`,
       [dateRange.startDate, dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     const row = rows[0];

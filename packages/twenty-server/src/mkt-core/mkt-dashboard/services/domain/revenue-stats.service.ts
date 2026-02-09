@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
 import {
   DashboardDateRangeService,
   DateRange,
@@ -112,11 +113,10 @@ export class RevenueStatsService {
     //   AND "createdAt" BETWEEN :startDate AND :endDate
     // GROUP BY DATE_TRUNC('month', "createdAt") ORDER BY period
 
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows: RawRevenueRow[] = await dataSource.query(
       `SELECT
@@ -136,6 +136,8 @@ export class RevenueStatsService {
         dateRange.endDate,
         DASHBOARD_LIMITS.REVENUE_BY_PERIOD_MAX,
       ],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformRevenueByPeriod(rows);
@@ -143,11 +145,10 @@ export class RevenueStatsService {
 
   private async getRevenueByStaff(dateRange: DateRange, limit: number) {
     // SQL from design doc 7.2
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows: RawRevenueByStaffRow[] = await dataSource.query(
       `SELECT
@@ -155,17 +156,19 @@ export class RevenueStatsService {
         wm.id AS staff_id,
         COUNT(o.id) AS order_count,
         SUM(o."totalAmount") AS total_revenue,
-        COALESCE(d.name, '') AS department_name
+        COALESCE(d."departmentName", '') AS department_name
       FROM "mktOrder" o
       JOIN "workspaceMember" wm ON o."accountOwnerId" = wm.id
-      LEFT JOIN "mktDepartment" d ON wm."mktDepartmentId" = d.id
+      LEFT JOIN "mktDepartment" d ON wm."departmentId" = d.id
       WHERE o."deletedAt" IS NULL
         AND o.status = 'COMPLETED'
         AND o."createdAt" BETWEEN $1 AND $2
-      GROUP BY wm.id, wm."nameFirstName", wm."nameLastName", d.name
+      GROUP BY wm.id, wm."nameFirstName", wm."nameLastName", d."departmentName"
       ORDER BY total_revenue DESC
       LIMIT $3`,
       [dateRange.startDate, dateRange.endDate, limit],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformRevenueByStaff(rows);
@@ -174,28 +177,29 @@ export class RevenueStatsService {
   private async getRevenueByDepartment(
     dateRange: DateRange,
   ): Promise<RawRevenueByDepartmentRow[]> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     return dataSource.query(
       `SELECT
-        d.name AS department_name,
+        d."departmentName" AS department_name,
         d.id AS department_id,
         COALESCE(SUM(o."totalAmount"), 0) AS amount
       FROM "mktDepartment" d
-      LEFT JOIN "workspaceMember" wm ON wm."mktDepartmentId" = d.id
+      LEFT JOIN "workspaceMember" wm ON wm."departmentId" = d.id
       LEFT JOIN "mktOrder" o ON o."accountOwnerId" = wm.id
         AND o."deletedAt" IS NULL
         AND o.status = 'COMPLETED'
         AND o."createdAt" BETWEEN $1 AND $2
       WHERE d."deletedAt" IS NULL
-      GROUP BY d.id, d.name
+      GROUP BY d.id, d."departmentName"
       HAVING COALESCE(SUM(o."totalAmount"), 0) > 0
       ORDER BY amount DESC`,
       [dateRange.startDate, dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
   }
 
@@ -208,11 +212,10 @@ export class RevenueStatsService {
       currentRange,
     );
 
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows = await dataSource.query(
       `SELECT COALESCE(SUM("totalAmount"), 0) AS total_revenue
@@ -221,6 +224,8 @@ export class RevenueStatsService {
         AND status = 'COMPLETED'
         AND "createdAt" BETWEEN $1 AND $2`,
       [previousRange.startDate, previousRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return MoneyUtils.from(rows[0]?.total_revenue ?? '0').toNumber();

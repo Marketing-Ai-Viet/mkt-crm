@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -62,11 +63,10 @@ export class KpiStatsService {
   }
 
   private async getKpiByCategory(year: number, category?: string) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     // SQL from design doc 7.5
     const params: (number | string)[] = [year];
@@ -91,6 +91,8 @@ export class KpiStatsService {
         AND "periodYear" = $1${categoryFilter}
       GROUP BY "kpiCategory"`,
       params,
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformKpiCategories(rows);
@@ -111,11 +113,10 @@ export class KpiStatsService {
       }>;
     }>
   > {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const params: (number | string)[] = [
       year,
@@ -131,21 +132,23 @@ export class KpiStatsService {
     const rows = await dataSource.query(
       `SELECT
         "kpiCategory",
-        name,
+        "kpiName" AS name,
         "targetValue",
         "actualValue",
         CASE
           WHEN "targetValue" > 0
-          THEN ROUND("actualValue"::numeric / "targetValue" * 100, 2)
+          THEN ROUND("actualValue"::numeric / "targetValue"::numeric * 100, 2)
           ELSE 0
         END AS progress,
         status
       FROM "mktKpi"
       WHERE "deletedAt" IS NULL
         AND "periodYear" = $1${categoryFilter}
-      ORDER BY "kpiCategory", name
+      ORDER BY "kpiCategory", "kpiName"
       LIMIT $2`,
       params,
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     // Group by category
@@ -188,11 +191,10 @@ export class KpiStatsService {
   private async getKpiTrends(
     year: number,
   ): Promise<Array<{ period: string; achievementRate: number }>> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows = await dataSource.query(
       `SELECT
@@ -208,6 +210,8 @@ export class KpiStatsService {
       GROUP BY "periodQuarter"
       ORDER BY "periodQuarter"`,
       [year],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return rows.map((r: { period: string; achievement_rate: string }) => ({

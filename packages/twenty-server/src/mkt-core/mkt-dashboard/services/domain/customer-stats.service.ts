@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -68,23 +69,24 @@ export class CustomerStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows: RawCustomerTierRow[] = await dataSource.query(
       `SELECT
-        COALESCE(c."customerTier", 'NONE') AS tier,
+        COALESCE(c."tier"::text, 'NONE') AS tier,
         COUNT(*) AS count,
-        COALESCE(SUM(c."lifetimeValue"), 0) AS total_ltv
+        COALESCE(SUM(c."customerLtv"), 0) AS total_ltv
       FROM "mktCustomer" c
       WHERE c."deletedAt" IS NULL
-        AND c."createdAt" <= $2
-      GROUP BY c."customerTier"
+        AND c."createdAt" <= $1
+      GROUP BY c."tier"
       ORDER BY total_ltv DESC`,
-      [dateRange.startDate, dateRange.endDate],
+      [dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformCustomerTierStats(rows);
@@ -94,11 +96,10 @@ export class CustomerStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     // SQL from design doc 7.3
     const newCustomerRows: RawCustomerGrowthRow[] = await dataSource.query(
@@ -112,6 +113,8 @@ export class CustomerStatsService {
       GROUP BY DATE_TRUNC('month', "createdAt")
       ORDER BY period`,
       [dateRange.startDate, dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformCustomerGrowth(newCustomerRows);
@@ -125,21 +128,22 @@ export class CustomerStatsService {
     churnRate: number;
     engagementDistribution: Array<{ range: string; count: number }>;
   }> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows = await dataSource.query(
       `SELECT
-        COALESCE(AVG("lifetimeValue"), 0) AS avg_ltv,
+        COALESCE(AVG("customerLtv"), 0) AS avg_ltv,
         COUNT(*) AS total_customers,
-        COUNT(*) FILTER (WHERE "customerLifecycleStage" = 'CHURNED') AS churned_customers
+        COUNT(*) FILTER (WHERE "lifecycleStage" = 'CHURNED') AS churned_customers
       FROM "mktCustomer"
       WHERE "deletedAt" IS NULL
         AND "createdAt" <= $1`,
       [dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     const row = rows[0];
@@ -159,12 +163,15 @@ export class CustomerStatsService {
       FROM (
         SELECT c.id, COUNT(o.id) AS order_count
         FROM "mktCustomer" c
-        LEFT JOIN "mktOrder" o ON o."customerId" = c.id AND o."deletedAt" IS NULL
+        LEFT JOIN "mktOrder" o ON o."mktCustomerId" = c.id AND o."deletedAt" IS NULL
         WHERE c."deletedAt" IS NULL
         GROUP BY c.id
       ) sub
       GROUP BY range
       ORDER BY MIN(order_count)`,
+      [],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return {
@@ -186,11 +193,10 @@ export class CustomerStatsService {
     dateRange: { startDate: string; endDate: string },
     limit: number,
   ) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows = await dataSource.query(
       `SELECT
@@ -198,7 +204,7 @@ export class CustomerStatsService {
         COALESCE(SUM(o."totalAmount"), 0) AS revenue,
         COUNT(o.id) AS order_count
       FROM "mktCustomer" c
-      JOIN "mktOrder" o ON o."customerId" = c.id
+      JOIN "mktOrder" o ON o."mktCustomerId" = c.id
       WHERE c."deletedAt" IS NULL
         AND o."deletedAt" IS NULL
         AND o.status = 'COMPLETED'
@@ -207,6 +213,8 @@ export class CustomerStatsService {
       ORDER BY revenue DESC
       LIMIT $3`,
       [dateRange.startDate, dateRange.endDate, limit],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return rows.map(

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -83,11 +84,10 @@ export class PaymentStatsService {
     startDate: string;
     endDate: string;
   }) {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     // SQL from design doc 7.4
     const rows: RawPaymentStatusRow[] = await dataSource.query(
@@ -100,24 +100,28 @@ export class PaymentStatsService {
         AND "createdAt" BETWEEN $1 AND $2
       GROUP BY status`,
       [dateRange.startDate, dateRange.endDate],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return DashboardDataTransformer.transformPaymentStatus(rows);
   }
 
   private async getOverduePaymentCount(): Promise<number> {
-    const wsId = this.scopedWorkspaceContextFactory.create().workspaceId ?? '';
-    const dataSource =
-      await this.twentyORMGlobalManager.getDataSourceForWorkspace({
-        workspaceId: wsId,
-      });
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
 
     const rows = await dataSource.query(
       `SELECT COUNT(*) AS count
       FROM "mktPayment"
       WHERE "deletedAt" IS NULL
         AND status IN ('PENDING', 'PROCESSING')
-        AND "dueDate" < NOW()`,
+        AND "expiredAt" < NOW()`,
+      [],
+      undefined,
+      { shouldBypassPermissionChecks: true },
     );
 
     return Number(rows[0]?.count ?? 0);
