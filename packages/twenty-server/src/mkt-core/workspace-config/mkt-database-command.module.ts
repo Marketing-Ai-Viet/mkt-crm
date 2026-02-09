@@ -1,4 +1,4 @@
-import { SeedContractModuleCommand } from 'src/mkt-core/seeder/commands/mkt-contract-data-seed-dev-workspace.command';
+import { SeedContractModuleCommand } from 'src/mkt-core/seeder/contract-seeder/mkt-contract-data-seed-dev-workspace.command';
 import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-data-seed-dev-workspace.command';
 import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/mkt-customer-tag-data-seed-dev-workspace.command';
 import { SeedCustomerTierHistoryModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-data-seed-dev-workspace.command';

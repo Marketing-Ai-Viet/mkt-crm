@@ -12,7 +12,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { mktContractsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-contract-all.view';
+import { mktContractsAllView } from 'src/mkt-core/seeder/contract-seeder/mkt-contract-all.view';
 import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
 
 interface SeedModuleOptions {

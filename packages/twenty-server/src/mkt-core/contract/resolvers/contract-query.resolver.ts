@@ -258,8 +258,14 @@ export class ContractQueryResolver {
       id: contract.id,
       name: contract.name,
       contractNumber: contract.contractNumber,
-      status: contract.status as MKT_CONTRACT_STATUS,
-      contractType: contract.contractType as MKT_CONTRACT_TYPE,
+      status: this.toEnumOrUndefined<MKT_CONTRACT_STATUS>(
+        contract.status,
+        MKT_CONTRACT_STATUS,
+      ),
+      contractType: this.toEnumOrUndefined<MKT_CONTRACT_TYPE>(
+        contract.contractType,
+        MKT_CONTRACT_TYPE,
+      ),
       startDate: contract.startDate?.toString(),
       endDate: contract.endDate?.toString(),
       signedDate: contract.signedDate?.toString(),
@@ -273,5 +279,25 @@ export class ContractQueryResolver {
       createdAt: contract.createdAt?.toString(),
       updatedAt: contract.updatedAt?.toString(),
     };
+  }
+
+  /**
+   * Safely cast a string value to an enum, returning undefined if invalid or empty
+   */
+  private toEnumOrUndefined<T>(
+    value: string | null | undefined,
+    enumObj: Record<string, string>,
+  ): T | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const validValues = Object.values(enumObj);
+
+    if (validValues.includes(value)) {
+      return value as T;
+    }
+
+    return undefined;
   }
 }

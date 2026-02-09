@@ -98,7 +98,7 @@ export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconCheckupList',
   })
   @WorkspaceIsNullable()
-  status?: string | null;
+  status: string | null;
 
   @WorkspaceField({
     standardId: MKT_CONTRACT_FIELD_IDS.contractType,
@@ -108,7 +108,7 @@ export class MktContractWorkspaceEntity extends BaseWorkspaceEntity {
     icon: 'IconFileType',
   })
   @WorkspaceIsNullable()
-  contractType?: string | null;
+  contractType: string | null;
 
   @WorkspaceField({
     standardId: MKT_CONTRACT_FIELD_IDS.signedDate,
