@@ -5,7 +5,7 @@
  * Sử dụng với @RequireDepartment decorator.
  *
  * Permission Resolution Flow (theo thứ tự ưu tiên):
- * 1. User Override (mktUserPermissionOverride) - TODO: implement
+ * 1. User Override (mktUserPermissionOverride) - priority 2000
  * 2. Assigned Templates (mktUserPermissionTemplate) - priority >= threshold
  * 3. Executive Level (hierarchyLevel <= 3)
  * 4. Manager Level (hierarchyLevel <= 7)
@@ -23,6 +23,8 @@ import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
 import { RbacContextService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-context.service';
+import { RbacCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache.service';
+import { MktUserPermissionOverrideRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import {
   DEPARTMENT_AUTH_KEY,
   DepartmentAuthOptions,
@@ -34,6 +36,8 @@ import {
   TEMPLATE_PRIORITY,
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { DEPARTMENT_AUTH_MESSAGES } from 'src/mkt-core/mkt-rbac-enterprise-grade/message';
+import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 // ============================================
 // GUARD
@@ -51,6 +55,9 @@ export class DepartmentAuthorizationGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly rbacContextService: RbacContextService,
+    private readonly overrideRepository: MktUserPermissionOverrideRepository,
+    private readonly cacheService: RbacCacheService,
+    private readonly departmentRepository: MktDepartmentRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -100,12 +107,17 @@ export class DepartmentAuthorizationGuard implements CanActivate {
     );
 
     // Build authorization context with all permission sources
+    const ancestorCodes = await this.extractAncestorCodes(
+      userContext,
+      workspaceId,
+    );
+
     const authContext: DepartmentAuthContext = {
       userId,
       workspaceId,
       workspaceMemberId: userContext.workspaceMemberId,
       departmentCode: userContext.departmentCode,
-      departmentAncestorCodes: this.extractAncestorCodes(userContext),
+      departmentAncestorCodes: ancestorCodes,
       hierarchyLevel: userContext.hierarchyLevel,
       isManager: userContext.isManager,
       templates: userContext.templates,
@@ -113,7 +125,7 @@ export class DepartmentAuthorizationGuard implements CanActivate {
     };
 
     // Kiểm tra authorization với multi-source resolution
-    const result = this.checkAuthorization(authContext, options);
+    const result = await this.checkAuthorization(authContext, options);
 
     if (!result.allowed) {
       this.logger.debug(
@@ -137,16 +149,16 @@ export class DepartmentAuthorizationGuard implements CanActivate {
    * Kiểm tra authorization dựa trên multi-source resolution
    *
    * Resolution order (theo priority):
-   * 1. User Override (TODO) - priority 2000
+   * 1. User Override - priority 2000 (mktUserPermissionOverride)
    * 2. Assigned Templates - priority from template
    * 3. Executive Level - hierarchyLevel <= 3
    * 4. Manager Level - hierarchyLevel <= 7
    * 5. Department Membership
    */
-  private checkAuthorization(
+  private async checkAuthorization(
     context: DepartmentAuthContext,
     options: DepartmentAuthOptions,
-  ): DepartmentAuthResult {
+  ): Promise<DepartmentAuthResult> {
     const {
       allowedDepartments = [],
       allowManagers = false,
@@ -155,9 +167,15 @@ export class DepartmentAuthorizationGuard implements CanActivate {
       minTemplatePriority = TEMPLATE_PRIORITY.MANAGER,
     } = options;
 
-    // Chain of responsibility pattern - return first allowed result
+    // 1. Check user override (priority 2000 - highest)
+    const overrideResult = await this.checkUserOverride(context);
+
+    if (overrideResult) {
+      return overrideResult;
+    }
+
+    // 2-5. Synchronous checks via chain of responsibility
     const checks: Array<() => DepartmentAuthResult | null> = [
-      // 1. TODO: Check user override (mktUserPermissionOverride) - priority 2000
       // 2. Check assigned templates
       () =>
         this.checkHighPriorityTemplates(
@@ -182,6 +200,126 @@ export class DepartmentAuthorizationGuard implements CanActivate {
     }
 
     return this.createDeniedResult(context);
+  }
+
+  /**
+   * RBAC-002: Check user permission override (priority 2000)
+   *
+   * Queries mktUserPermissionOverride for active, non-expired overrides.
+   * Deny overrides take precedence over allow overrides.
+   * Results are cached in RbacCacheService.
+   */
+  private async checkUserOverride(
+    context: DepartmentAuthContext,
+  ): Promise<DepartmentAuthResult | null> {
+    const cacheResource = '__dept_override';
+    const cacheAction = '__access';
+
+    // Check cache first
+    const cached = await this.cacheService.getCheckResult(
+      context.userId,
+      context.workspaceId,
+      cacheResource,
+      cacheAction,
+    );
+
+    if (cached) {
+      this.logger.debug(
+        DEPARTMENT_AUTH_MESSAGES.OVERRIDE_CACHE_HIT(context.userId),
+      );
+
+      if (cached.allowed) {
+        return this.createAllowedResult(
+          context,
+          cached.reason,
+          'user_override',
+        );
+      }
+
+      return {
+        ...this.createDeniedResult(context),
+        reason: cached.reason,
+        checkedBy: 'user_override',
+      };
+    }
+
+    // Query active, non-expired overrides for this user
+    const referenceDate =
+      DateTimeUtils.toDate(DateTimeUtils.now()) ?? new Date();
+    const overrides =
+      await this.overrideRepository.findActiveByWorkspaceMemberId(
+        context.workspaceId,
+        context.workspaceMemberId,
+        referenceDate,
+      );
+
+    if (overrides.length === 0) {
+      return null;
+    }
+
+    // Deny overrides take precedence
+    const denyOverride = overrides.find((o) => !o.isAllowed);
+
+    if (denyOverride) {
+      const reason = `Access denied by user override: ${denyOverride.reason ?? 'N/A'}`;
+
+      this.logger.debug(
+        DEPARTMENT_AUTH_MESSAGES.OVERRIDE_DENIED(context.userId, reason),
+      );
+
+      // Cache the deny result
+      await this.cacheService.setCheckResult(
+        context.userId,
+        context.workspaceId,
+        cacheResource,
+        cacheAction,
+        {
+          allowed: false,
+          reason,
+          latencyMs: 0,
+          cached: false,
+          appliedPolicies: [],
+          dataFilter: null,
+        },
+      );
+
+      return {
+        ...this.createDeniedResult(context),
+        reason,
+        checkedBy: 'user_override',
+      };
+    }
+
+    // Allow overrides
+    const allowOverride = overrides.find((o) => o.isAllowed);
+
+    if (allowOverride) {
+      const reason = `Access granted by user override: ${allowOverride.reason ?? 'N/A'}`;
+
+      this.logger.debug(
+        DEPARTMENT_AUTH_MESSAGES.OVERRIDE_GRANTED(context.userId, reason),
+      );
+
+      // Cache the allow result
+      await this.cacheService.setCheckResult(
+        context.userId,
+        context.workspaceId,
+        cacheResource,
+        cacheAction,
+        {
+          allowed: true,
+          reason,
+          latencyMs: 0,
+          cached: false,
+          appliedPolicies: [],
+          dataFilter: null,
+        },
+      );
+
+      return this.createAllowedResult(context, reason, 'user_override');
+    }
+
+    return null;
   }
 
   /**
@@ -418,17 +556,79 @@ export class DepartmentAuthorizationGuard implements CanActivate {
   }
 
   /**
-   * Extract ancestor department codes từ userContext
-   * (Cần implement thêm logic để lấy ancestor codes từ ancestor IDs)
+   * RBAC-004: Extract ancestor department codes from userContext
+   *
+   * Maps departmentAncestorIds to department codes via MktDepartmentRepository.
+   * Results are cached in RbacCacheService to avoid repeated DB queries.
    */
-  private extractAncestorCodes(_userContext: {
-    departmentCode: string | null;
-    departmentAncestorIds: string[];
-  }): string[] {
-    // TODO: Implement logic để map ancestor IDs sang ancestor codes
-    // Hiện tại return empty array, sẽ chỉ check departmentCode trực tiếp
-    // Trong tương lai có thể cache ancestor codes trong userContext
-    return [];
+  private async extractAncestorCodes(
+    userContext: {
+      departmentCode: string | null;
+      departmentAncestorIds: string[];
+    },
+    workspaceId: string,
+  ): Promise<string[]> {
+    if (userContext.departmentAncestorIds.length === 0) {
+      return [];
+    }
+
+    // Check cache first
+    const cacheKey = `__ancestor_codes:${userContext.departmentAncestorIds.join(',')}`;
+    const cached = await this.cacheService.getCheckResult(
+      cacheKey,
+      workspaceId,
+      '__dept_ancestor',
+      '__codes',
+    );
+
+    if (cached?.reason) {
+      this.logger.debug(
+        DEPARTMENT_AUTH_MESSAGES.ANCESTOR_CODES_CACHE_HIT(
+          userContext.departmentAncestorIds.length,
+        ),
+      );
+
+      return cached.reason.split(',').filter(Boolean);
+    }
+
+    // Map ancestor IDs to department codes
+    const codes: string[] = [];
+
+    for (const ancestorId of userContext.departmentAncestorIds) {
+      const department = await this.departmentRepository.findByIdInWorkspace(
+        ancestorId,
+        workspaceId,
+      );
+
+      if (department?.departmentCode) {
+        codes.push(department.departmentCode);
+      }
+    }
+
+    // Cache the resolved codes
+    await this.cacheService.setCheckResult(
+      cacheKey,
+      workspaceId,
+      '__dept_ancestor',
+      '__codes',
+      {
+        allowed: true,
+        reason: codes.join(','),
+        latencyMs: 0,
+        cached: false,
+        appliedPolicies: [],
+        dataFilter: null,
+      },
+    );
+
+    this.logger.debug(
+      DEPARTMENT_AUTH_MESSAGES.ANCESTOR_CODES_RESOLVED(
+        userContext.departmentAncestorIds.length,
+        codes.length,
+      ),
+    );
+
+    return codes;
   }
 
   /**

@@ -312,6 +312,26 @@ export const TEMP_PERMISSION_SERVICE_MESSAGES = {
     'At least one permission (read, update, delete) must be granted',
   CACHE_INVALIDATED: (workspaceId: string) =>
     `Temporary permission cache invalidated for workspace: ${workspaceId}`,
+  // Grant validation messages (RBAC-001)
+  GRANTER_NOT_FOUND: 'Granter workspace member not found',
+  GRANTEE_NOT_FOUND: 'Grantee workspace member not found',
+  GRANTER_CONTEXT_NOT_RESOLVED: 'Failed to resolve granter permission context',
+  GRANT_DENIED_NO_PERMISSION: (
+    granter: string,
+    object: string,
+    action: string,
+  ) =>
+    `Grant denied: granter ${granter} lacks '${action}' permission on '${object}'`,
+  GRANT_DENIED_HIERARCHY: (
+    granter: string,
+    granterLevel: number,
+    grantee: string,
+    granteeLevel: number,
+  ) =>
+    `Grant denied: granter ${granter} (level ${granterLevel}) cannot grant to ${grantee} (level ${granteeLevel})`,
+  GRANT_ALLOWED: (granter: string, object: string) =>
+    `Grant permission validated: ${granter} authorized to grant on ${object}`,
+  UNAUTHORIZED_GRANT: 'Unauthorized to grant temporary permissions',
 } as const;
 
 // ============================================
@@ -364,6 +384,18 @@ export const DEPARTMENT_AUTH_MESSAGES = {
     `Access granted: user=${userId} belongs to allowed department=${dept}`,
   DENIED: (userId: string, userDept: string | null, allowed: string[]) =>
     `Access denied: user=${userId}, department=${userDept}, allowedDepartments=${allowed.join(',')}`,
+  // User Override messages (RBAC-002)
+  OVERRIDE_GRANTED: (userId: string, reason: string) =>
+    `Access granted by user override: user=${userId}, reason=${reason}`,
+  OVERRIDE_DENIED: (userId: string, reason: string) =>
+    `Access denied by user override: user=${userId}, reason=${reason}`,
+  OVERRIDE_CACHE_HIT: (userId: string) =>
+    `User override cache hit for user=${userId}`,
+  // Ancestor code mapping messages (RBAC-004)
+  ANCESTOR_CODES_CACHE_HIT: (count: number) =>
+    `Ancestor codes cache hit for ${count} ancestor(s)`,
+  ANCESTOR_CODES_RESOLVED: (ancestorCount: number, codeCount: number) =>
+    `Resolved ${codeCount} ancestor code(s) from ${ancestorCount} ancestor ID(s)`,
 } as const;
 
 // ============================================
@@ -387,6 +419,13 @@ export const HIERARCHICAL_ACCESS_MESSAGES = {
   DENIED_NO_APPLICABLE_RULE:
     'Từ chối truy cập: Không có quy tắc phù hợp với cấp bậc của bạn',
   ERROR_MISSING_CONTEXT: 'Lỗi: Thiếu thông tin context để đánh giá quyền',
+  // Peer manager resolution messages (RBAC-003)
+  PEER_NO_DEPARTMENT: (memberId: string) =>
+    `Cannot resolve peer managers: member ${memberId} has no department`,
+  PEER_NO_PARENT: (departmentId: string) =>
+    `Cannot resolve peer managers: department ${departmentId} has no parent`,
+  PEER_RESOLVED: (memberId: string, count: number) =>
+    `Resolved ${count} peer manager(s) for member ${memberId}`,
 } as const;
 
 /**

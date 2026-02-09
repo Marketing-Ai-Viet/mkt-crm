@@ -106,4 +106,8 @@ export const MKT_OBJECT_IDS = {
   mktPaymentDeadlineConfig: '7a8b9c0d-e1f2-3456-0123-456789012346',
   // virtual account
   mktVirtualAccount: '8b9c0d1e-f2a3-4567-1234-567890123457',
+  // dashboard module
+  mktDashboardWidget: '9684cf74-f01d-4a04-b0a8-b081c3d6f474',
+  mktDashboardSnapshot: '9ba23ffe-c49a-4db1-b1cd-51d76102a816',
+  mktDashboardLayout: '6265b3be-62a7-4e26-a2f5-4caf96d062f8',
 };

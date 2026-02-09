@@ -9,6 +9,7 @@ import {
   ORDER_GRAPHQL_DESCRIPTIONS,
   PAYMENT_STATUS,
   ORDER_STATUS,
+  ORDER_DATA_SCOPE,
 } from 'src/mkt-core/order/constants';
 import {
   toPaginationOptions,
@@ -27,6 +28,7 @@ import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
 import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 import { DataScopeContext } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/types';
 import { OrderQueryService } from 'src/mkt-core/order/services/domain/order-query.service';
+import { RequireOrderReadAccess } from 'src/mkt-core/order/decorators/require-order-access.decorator';
 
 // ============================================
 // TYPES
@@ -37,12 +39,6 @@ type GraphQLContext = {
     dataScope?: DataScopeContext;
   };
 };
-
-// ============================================
-// CONSTANTS
-// ============================================
-
-const ORDER_RESOURCE = 'mktOrder';
 
 /**
  * OrderQueryResolver - GraphQL resolver for order queries with hierarchical access filtering
@@ -77,11 +73,8 @@ export class OrderQueryResolver {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDER_BY_ID,
     nullable: true,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'AUTO',
-    auditLevel: 'medium',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_SINGLE)
   async getOrderById(
     @Args('orderId', { type: () => String }) orderId: string,
     @Context() ctx: GraphQLContext,
@@ -110,11 +103,8 @@ export class OrderQueryResolver {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDER_BY_CODE,
     nullable: true,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'AUTO',
-    auditLevel: 'medium',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_SINGLE)
   async getOrderByCode(
     @Args('orderCode', { type: () => String }) orderCode: string,
     @Context() ctx: GraphQLContext,
@@ -148,11 +138,8 @@ export class OrderQueryResolver {
   @Query(() => PaginatedOrdersOutput, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDERS,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'AUTO',
-    auditLevel: 'low',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_LIST)
   async getOrders(
     @Args('input', { type: () => GetOrdersInput, nullable: true })
     input: GetOrdersInput | null,
@@ -222,11 +209,8 @@ export class OrderQueryResolver {
   @Query(() => OrderListOutput, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDERS_BY_CUSTOMER,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'AUTO',
-    auditLevel: 'low',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_BY_CUSTOMER)
   async getOrdersByCustomer(
     @Args('customerId', { type: () => String }) customerId: string,
     @Context() ctx: GraphQLContext,
@@ -255,11 +239,8 @@ export class OrderQueryResolver {
   @Query(() => OrderListOutput, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDERS_BY_STATUS,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'AUTO',
-    auditLevel: 'low',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_LIST)
   async getOrdersByStatus(
     @Args('status', { type: () => ORDER_STATUS }) status: ORDER_STATUS,
     @Context() ctx: GraphQLContext,
@@ -296,11 +277,8 @@ export class OrderQueryResolver {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_ORDER_PAYMENT_SUMMARY,
     nullable: true,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'AUTO',
-    auditLevel: 'medium',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_PAYMENT_SUMMARY)
   async getOrderPaymentSummary(
     @Args('orderId', { type: () => String }) orderId: string,
     @Context() ctx: GraphQLContext,
@@ -355,11 +333,8 @@ export class OrderQueryResolver {
   @Query(() => CustomerOrderStatsOutput, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.GET_CUSTOMER_ORDER_STATS,
   })
-  @DataScope({
-    resource: ORDER_RESOURCE,
-    mode: 'SKIP', // Skip filtering for aggregation query
-    auditLevel: 'low',
-  })
+  @RequireOrderReadAccess()
+  @DataScope(ORDER_DATA_SCOPE.QUERY_AGGREGATION)
   async getCustomerOrderStats(
     @Args('customerId', { type: () => String }) customerId: string,
     @AuthWorkspace() workspace: Workspace,

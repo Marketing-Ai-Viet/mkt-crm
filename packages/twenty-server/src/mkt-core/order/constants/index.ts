@@ -5,6 +5,7 @@ export * from './payment-status.constants';
 export * from './payment-deadline.constants';
 export * from './order-graphql.constants';
 export * from './order-authorization.constants';
+export * from './order-data-scope.constants';
 export * from './editable-fields.constant';
 export * from './confirmation-rules.constants';
 export * from './payment-reminder.constants';

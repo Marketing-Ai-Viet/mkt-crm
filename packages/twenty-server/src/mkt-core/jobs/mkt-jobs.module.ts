@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
+// import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 // import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
@@ -72,7 +72,7 @@ import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
     // MktPromotionModule,
 
     // RBAC cache warmer jobs (cronQueue)
-    CasbinModule,
+    // CasbinModule,
   ],
 })
 export class MktJobsModule {}

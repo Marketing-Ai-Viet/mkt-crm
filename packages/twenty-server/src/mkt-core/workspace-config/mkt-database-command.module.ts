@@ -1,4 +1,4 @@
-import { SeedContractModuleCommand } from 'src/mkt-core/seeder/commands/mkt-contract-data-seed-dev-workspace.command';
+import { SeedContractModuleCommand } from 'src/mkt-core/seeder/contract-seeder/mkt-contract-data-seed-dev-workspace.command';
 import { SeedCustomerModuleCommand } from 'src/mkt-core/seeder/customer-seeder/customer/mkt-customer-data-seed-dev-workspace.command';
 import { SeedCustomerTagModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tag/mkt-customer-tag-data-seed-dev-workspace.command';
 import { SeedCustomerTierHistoryModuleCommand } from 'src/mkt-core/seeder/customer-seeder/mkt-customer-tier-histories/mkt-customer-tier-history-data-seed-dev-workspace.command';
@@ -50,6 +50,8 @@ import { MktPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/s
 import { MktTemplateResourcePermissionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-data-seed-dev-workspace.command';
 import { MktTemplateSystemActionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-data-seed-dev-workspace.command';
 import { MktUserPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seed-dev-workspace.command';
+// Dashboard seeder command
+import { SeedDashboardModuleCommand } from 'src/mkt-core/seeder/mkt-dashboard/mkt-dashboard-data-seed-dev-workspace.command';
 // Casbin seeder command imports
 import { MktCasbinRuleDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/mkt-casbin-rule-data-seed-dev-workspace.command';
 import { MktPolicyVersionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/mkt-policy-version-data-seed-dev-workspace.command';
@@ -130,4 +132,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   MktCasbinRuleDataSeedDevWorkspaceCommand,
   MktPolicyChangeRequestDataSeedDevWorkspaceCommand,
   MktPolicyApprovalDataSeedDevWorkspaceCommand,
+  // dashboard commands
+  SeedDashboardModuleCommand,
 ];

@@ -21,8 +21,13 @@ import { DEFAULT_OWNERSHIP_FIELD } from 'src/mkt-core/mkt-rbac-enterprise-grade/
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonParse } from 'src/mkt-core/utils/json.util';
 import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
-import { MktDataAccessPolicyRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+import {
+  MktDataAccessPolicyRepository,
+  MktPermissionResourceRepository,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
+import { DATA_CLASSIFICATION } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
+import { ClassificationCheckResult } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/data-classification.types';
 import {
   TemplateFilterExpression,
   ResolvedFilterConditions,
@@ -47,16 +52,6 @@ import { FilterExpressionResolverService } from './filter-expression-resolver.se
 
 import { PermissionContextService } from './bases/permission-context.service';
 import { DataAccessPolicyService } from './bases/data-access-policy.service';
-
-// Re-export types for external consumers (with aliases for backward compatibility)
-export type FilterCondition = RbacFilterCondition;
-export type CheckPermissionResult = RbacCheckPermissionResult;
-export type ResourcePermission = RbacResourcePermission;
-export type ActivePolicy = RbacActivePolicy;
-export type PermissionSummary = RbacPermissionSummary;
-export type FilterOperator = RbacFilterOperator;
-export type FilterConditionItem = RbacFilterConditionItem;
-export type AppliedPolicy = RbacAppliedPolicy;
 
 @Injectable()
 export class RbacEnforcerService {
@@ -86,7 +81,7 @@ export class RbacEnforcerService {
   private static createFailedResult(
     reason: string,
     startTime: ReturnType<typeof DateTimeUtils.now>,
-  ): CheckPermissionResult {
+  ): RbacCheckPermissionResult {
     return {
       allowed: false,
       reason,
@@ -191,6 +186,7 @@ export class RbacEnforcerService {
     private readonly casbinEnforcerService: CasbinEnforcerService,
     private readonly rbacContextService: RbacContextService,
     private readonly dataAccessPolicyRepository: MktDataAccessPolicyRepository,
+    private readonly permissionResourceRepository: MktPermissionResourceRepository,
     // NEW: Services cho PermissionContext flow
     private readonly permissionContextService: PermissionContextService,
     private readonly filterExpressionResolver: FilterExpressionResolverService,
@@ -206,7 +202,7 @@ export class RbacEnforcerService {
     workspaceId: string,
     resource: string,
     action: string,
-  ): Promise<CheckPermissionResult> {
+  ): Promise<RbacCheckPermissionResult> {
     const startTime = DateTimeUtils.now();
 
     try {
@@ -222,6 +218,51 @@ export class RbacEnforcerService {
           'User context not found',
           startTime,
         );
+      }
+
+      // Kiểm tra Data Classification trước Casbin
+      const classificationResult = await this.checkDataClassification(
+        workspaceId,
+        resource,
+        action,
+      );
+
+      if (classificationResult.bypass) {
+        const classificationFilter: RbacFilterCondition | null =
+          classificationResult.dataFilter
+            ? {
+                type: classificationResult.dataFilter.type ?? 'AND',
+                conditions: (classificationResult.dataFilter.conditions ??
+                  []) as RbacFilterConditionItem[],
+              }
+            : null;
+
+        return {
+          allowed: classificationResult.allowed ?? false,
+          reason: classificationResult.reason ?? '',
+          latencyMs: RbacEnforcerService.calculateLatency(startTime),
+          cached: false,
+          appliedPolicies: [],
+          dataFilter: classificationFilter,
+        };
+      }
+
+      // Nếu TOP_SECRET yêu cầu minimum priority, kiểm tra trước khi vào Casbin
+      if (classificationResult.minimumTemplatePriority) {
+        const userHierarchyLevel = userContext.hierarchyLevel ?? 11;
+
+        // hierarchyLevel thấp = priority cao (1=CEO, 2=VP)
+        // minimumTemplatePriority 900 ~ hierarchyLevel <= 2
+        if (userHierarchyLevel > 2) {
+          return {
+            allowed: false,
+            reason: `Resource requires minimum template priority ${classificationResult.minimumTemplatePriority} (TOP_SECRET)`,
+            latencyMs: RbacEnforcerService.calculateLatency(startTime),
+            cached: false,
+            appliedPolicies: [],
+            dataFilter: null,
+          };
+        }
       }
 
       // Kiểm tra quyền qua Casbin
@@ -279,7 +320,7 @@ export class RbacEnforcerService {
     workspaceId: string,
     userContext: UserContext,
     resource: string,
-  ): Promise<AppliedPolicy[]> {
+  ): Promise<RbacAppliedPolicy[]> {
     const policies = await this.getAppliedPolicies(
       workspaceId,
       userContext,
@@ -302,7 +343,7 @@ export class RbacEnforcerService {
     userId: string,
     workspaceId: string,
     checks: Array<{ resource: string; action: string }>,
-  ): Promise<CheckPermissionResult[]> {
+  ): Promise<RbacCheckPermissionResult[]> {
     // Chạy tất cả checks song song
     const promises = checks.map((check) =>
       this.checkPermission(userId, workspaceId, check.resource, check.action),
@@ -321,7 +362,9 @@ export class RbacEnforcerService {
   /**
    * Tạo kết quả check permission cho rejected promise
    */
-  private createRejectedCheckResult(reason: unknown): CheckPermissionResult {
+  private createRejectedCheckResult(
+    reason: unknown,
+  ): RbacCheckPermissionResult {
     return {
       allowed: false,
       reason: `Check failed: ${reason}`,
@@ -339,7 +382,7 @@ export class RbacEnforcerService {
   async getUserPermissionSummary(
     userId: string,
     workspaceId: string,
-  ): Promise<PermissionSummary | null> {
+  ): Promise<RbacPermissionSummary | null> {
     const userContext = await this.rbacContextService.resolveContext(
       userId,
       workspaceId,
@@ -384,8 +427,8 @@ export class RbacEnforcerService {
   private buildResourcePermissions(
     resourceMap: Map<string, RbacResourcePermissionData>,
     hasFilter: boolean,
-  ): ResourcePermission[] {
-    const resources: ResourcePermission[] = [];
+  ): RbacResourcePermission[] {
+    const resources: RbacResourcePermission[] = [];
 
     for (const [resourceKey, data] of resourceMap.entries()) {
       resources.push({
@@ -405,7 +448,7 @@ export class RbacEnforcerService {
    */
   private mapPoliciesToActivePolicy(
     policies: MktDataAccessPolicyWorkspaceEntity[],
-  ): ActivePolicy[] {
+  ): RbacActivePolicy[] {
     return policies.map((p) => ({
       policyId: p.id,
       policyName: p.name,
@@ -421,7 +464,7 @@ export class RbacEnforcerService {
     userId: string,
     workspaceId: string,
     resource: string,
-  ): Promise<FilterCondition | null> {
+  ): Promise<RbacFilterCondition | null> {
     const userContext = await this.rbacContextService.resolveContext(
       userId,
       workspaceId,
@@ -437,6 +480,86 @@ export class RbacEnforcerService {
   // ============================================
   // PRIVATE METHODS
   // ============================================
+
+  /**
+   * Kiểm tra Data Classification trước khi vào Casbin
+   *
+   * - PUBLIC + READ → bypass Casbin, cho phép ngay
+   * - INTERNAL + READ → bypass Casbin, cho phép ngay
+   * - CONFIDENTIAL → đi tiếp pipeline bình thường
+   * - RESTRICTED → đi tiếp pipeline + bắt buộc audit log
+   * - TOP_SECRET → đi tiếp pipeline + kiểm tra minimum priority
+   */
+  private async checkDataClassification(
+    workspaceId: string,
+    resource: string,
+    action: string,
+  ): Promise<ClassificationCheckResult> {
+    try {
+      const resourceEntity =
+        await this.permissionResourceRepository.findByResourceKeyInWorkspace(
+          workspaceId,
+          resource,
+        );
+
+      if (!resourceEntity?.dataClassification) {
+        return { bypass: false };
+      }
+
+      const classification = resourceEntity.dataClassification;
+
+      // PUBLIC: cho phép READ cho tất cả user active
+      if (classification === DATA_CLASSIFICATION.PUBLIC && action === 'READ') {
+        return {
+          bypass: true,
+          allowed: true,
+          reason:
+            'Resource classified as PUBLIC - READ allowed for all active users',
+          dataFilter: null,
+        };
+      }
+
+      // INTERNAL: cho phép READ cho tất cả user active
+      if (
+        classification === DATA_CLASSIFICATION.INTERNAL &&
+        action === 'READ'
+      ) {
+        return {
+          bypass: true,
+          allowed: true,
+          reason:
+            'Resource classified as INTERNAL - READ allowed for all active users',
+          dataFilter: null,
+        };
+      }
+
+      // RESTRICTED: thêm audit requirement
+      if (classification === DATA_CLASSIFICATION.RESTRICTED) {
+        return {
+          bypass: false,
+          requireAudit: true,
+        };
+      }
+
+      // TOP_SECRET: kiểm tra minimum template priority
+      if (classification === DATA_CLASSIFICATION.TOP_SECRET) {
+        return {
+          bypass: false,
+          requireAudit: true,
+          minimumTemplatePriority: 900,
+        };
+      }
+
+      // CONFIDENTIAL hoặc khác: đi tiếp pipeline bình thường
+      return { bypass: false };
+    } catch (error) {
+      this.logger.warn(
+        `Data classification check failed for ${resource}: ${error}`,
+      );
+
+      return { bypass: false };
+    }
+  }
 
   /**
    * Build attributes for Casbin from user context
@@ -468,7 +591,7 @@ export class RbacEnforcerService {
     workspaceId: string,
     userContext: UserContext,
     resource: string,
-  ): Promise<FilterCondition | null> {
+  ): Promise<RbacFilterCondition | null> {
     // Users with full access (level 1-3) have no filter
     if (userContext.hasFullAccess) {
       return null;
@@ -519,7 +642,7 @@ export class RbacEnforcerService {
     workspaceId: string,
     userContext: UserContext,
     resource: string,
-  ): Promise<FilterCondition | null> {
+  ): Promise<RbacFilterCondition | null> {
     // ============================================
     // STEP 1: Check DataAccessPolicy (Override Layer)
     // ============================================
@@ -613,7 +736,7 @@ export class RbacEnforcerService {
     workspaceId: string,
     userContext: UserContext,
     resource: string,
-  ): Promise<FilterCondition | null> {
+  ): Promise<RbacFilterCondition | null> {
     // Get applicable policies
     const policies = await this.getAppliedPolicies(
       workspaceId,
@@ -622,7 +745,7 @@ export class RbacEnforcerService {
     );
 
     // Build filter from policies and user context
-    const conditions: FilterConditionItem[] = [];
+    const conditions: RbacFilterConditionItem[] = [];
 
     // Add scope-based conditions
     switch (userContext.dataAccessScope) {
@@ -736,7 +859,7 @@ export class RbacEnforcerService {
    */
   private convertPolicyToFilterCondition(
     policy: MktDataAccessPolicyWorkspaceEntity,
-  ): FilterCondition | null {
+  ): RbacFilterCondition | null {
     const filterConditions = policy.filterConditions as Record<string, unknown>;
 
     // Early return nếu không có filter conditions
@@ -744,7 +867,7 @@ export class RbacEnforcerService {
       return null;
     }
 
-    const conditions: FilterConditionItem[] = [
+    const conditions: RbacFilterConditionItem[] = [
       ...this.extractOwnershipConditions(filterConditions),
       ...this.extractStatusConditions(filterConditions),
       ...this.extractExplicitConditions(filterConditions),
@@ -758,7 +881,7 @@ export class RbacEnforcerService {
    */
   private extractOwnershipConditions(
     filterConditions: Record<string, unknown>,
-  ): FilterConditionItem[] {
+  ): RbacFilterConditionItem[] {
     const ownership = filterConditions.ownership as
       | Record<string, unknown>
       | undefined;
@@ -782,7 +905,7 @@ export class RbacEnforcerService {
    */
   private extractStatusConditions(
     filterConditions: Record<string, unknown>,
-  ): FilterConditionItem[] {
+  ): RbacFilterConditionItem[] {
     const status = filterConditions.status as
       | Record<string, unknown>
       | undefined;
@@ -791,7 +914,7 @@ export class RbacEnforcerService {
       return [];
     }
 
-    const conditions: FilterConditionItem[] = [];
+    const conditions: RbacFilterConditionItem[] = [];
 
     if (status.allowedValues && Array.isArray(status.allowedValues)) {
       conditions.push({
@@ -819,7 +942,7 @@ export class RbacEnforcerService {
    */
   private extractExplicitConditions(
     filterConditions: Record<string, unknown>,
-  ): FilterConditionItem[] {
+  ): RbacFilterConditionItem[] {
     const conditions = filterConditions.conditions;
 
     if (!conditions || !Array.isArray(conditions)) {
@@ -828,7 +951,7 @@ export class RbacEnforcerService {
 
     return (conditions as Array<Record<string, unknown>>).map((cond) => ({
       field: cond.field as string,
-      operator: cond.operator as FilterOperator,
+      operator: cond.operator as RbacFilterOperator,
       value: cond.value,
       description: cond.description as string | undefined,
     }));
@@ -839,7 +962,7 @@ export class RbacEnforcerService {
    */
   private convertResolvedFilterToCondition(
     resolvedFilter: ResolvedFilterConditions,
-  ): FilterCondition {
+  ): RbacFilterCondition {
     // Handle $or operator
     if (resolvedFilter.$or && Array.isArray(resolvedFilter.$or)) {
       return {
@@ -869,8 +992,8 @@ export class RbacEnforcerService {
    */
   private extractConditionsFromArray(
     conditionArray: unknown[],
-  ): FilterConditionItem[] {
-    const conditions: FilterConditionItem[] = [];
+  ): RbacFilterConditionItem[] {
+    const conditions: RbacFilterConditionItem[] = [];
 
     for (const condition of conditionArray) {
       if (!this.isValidFilterObject(condition)) {
@@ -900,8 +1023,8 @@ export class RbacEnforcerService {
    */
   private flattenFilterObject(
     obj: Record<string, unknown>,
-  ): FilterConditionItem[] {
-    const conditions: FilterConditionItem[] = [];
+  ): RbacFilterConditionItem[] {
+    const conditions: RbacFilterConditionItem[] = [];
 
     for (const [field, value] of Object.entries(obj)) {
       // Skip special operators tại root level ($or, $and, etc.)
@@ -933,7 +1056,7 @@ export class RbacEnforcerService {
   private extractOperatorConditions(
     field: string,
     operatorObj: Record<string, unknown>,
-  ): FilterConditionItem[] {
+  ): RbacFilterConditionItem[] {
     return Object.entries(operatorObj).map(([op, opValue]) => ({
       field,
       operator: RbacEnforcerService.mapOperator(op),
@@ -945,7 +1068,7 @@ export class RbacEnforcerService {
    * Fallback filter for OWN_RECORDS
    * Dùng khi không tìm thấy PermissionContext hoặc resolve failed
    */
-  private buildOwnRecordsFilter(userContext: UserContext): FilterCondition {
+  private buildOwnRecordsFilter(userContext: UserContext): RbacFilterCondition {
     return {
       type: 'OR',
       conditions: [
@@ -972,7 +1095,7 @@ export class RbacEnforcerService {
   private parseFilterConditions(
     filterConditions: string | Record<string, unknown>,
     userContext: UserContext,
-  ): FilterConditionItem[] {
+  ): RbacFilterConditionItem[] {
     // Parse JSON string nếu cần
     const parsed = this.parseFilterConditionsInput(filterConditions);
 

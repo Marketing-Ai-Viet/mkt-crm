@@ -400,10 +400,73 @@ export class PermissionTemplateService {
       createdById,
     });
 
-    // TODO: Clone resource permissions and system actions
-    // This can be implemented when those services are added
+    // RBAC-006: Clone resource permissions and system actions
+    await this.cloneResourcePermissions(workspaceId, sourceId, cloned.id);
+    await this.cloneSystemActions(sourceId, cloned.id);
 
     return cloned;
+  }
+
+  // ============================================
+  // PRIVATE: CLONE HELPERS
+  // ============================================
+
+  /**
+   * RBAC-006: Clone resource permissions from source template to new template
+   */
+  private async cloneResourcePermissions(
+    workspaceId: string,
+    sourceTemplateId: string,
+    newTemplateId: string,
+  ): Promise<void> {
+    const sourcePermissions =
+      await this.resourcePermissionRepository.findByTemplateId(
+        workspaceId,
+        sourceTemplateId,
+      );
+
+    for (const permission of sourcePermissions) {
+      await this.resourcePermissionRepository.create({
+        templateId: newTemplateId,
+        resourceId: permission.resourceId,
+        contextId: permission.contextId,
+        allowedActions: permission.allowedActions,
+        deniedActions: permission.deniedActions,
+        conditions: permission.conditions,
+        restrictions: permission.restrictions,
+        isActive: permission.isActive,
+      });
+    }
+
+    this.logger.debug(
+      `Cloned ${sourcePermissions.length} resource permission(s) from template ${sourceTemplateId} to ${newTemplateId}`,
+    );
+  }
+
+  /**
+   * RBAC-006: Clone system actions from source template to new template
+   */
+  private async cloneSystemActions(
+    sourceTemplateId: string,
+    newTemplateId: string,
+  ): Promise<void> {
+    const sourceActions =
+      await this.systemActionRepository.findByTemplateId(sourceTemplateId);
+
+    for (const action of sourceActions) {
+      await this.systemActionRepository.create({
+        templateId: newTemplateId,
+        actionKey: action.actionKey,
+        isAllowed: action.isAllowed,
+        configuration: action.configuration,
+        restrictions: action.restrictions,
+        isActive: action.isActive,
+      });
+    }
+
+    this.logger.debug(
+      `Cloned ${sourceActions.length} system action(s) from template ${sourceTemplateId} to ${newTemplateId}`,
+    );
   }
 
   // ============================================

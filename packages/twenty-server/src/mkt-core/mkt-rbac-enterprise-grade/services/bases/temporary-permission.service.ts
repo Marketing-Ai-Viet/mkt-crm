@@ -10,6 +10,10 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { MktTemporaryPermissionRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { RbacCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache.service';
+import { RbacContextService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-context.service';
+import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
+import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories/mkt-workspace-member.repository';
+import { RBAC_ACTION } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { TEMP_PERMISSION_SERVICE_MESSAGES } from 'src/mkt-core/mkt-rbac-enterprise-grade/message';
 import {
@@ -38,6 +42,9 @@ export class TemporaryPermissionService {
   constructor(
     private readonly permissionRepository: MktTemporaryPermissionRepository,
     private readonly cacheService: RbacCacheService,
+    private readonly rbacContextService: RbacContextService,
+    private readonly casbinEnforcerService: CasbinEnforcerService,
+    private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
   // ============================================
@@ -54,6 +61,30 @@ export class TemporaryPermissionService {
     // Validate at least one permission is granted
     if (!input.canRead && !input.canUpdate && !input.canDelete) {
       throw new Error(TEMP_PERMISSION_SERVICE_MESSAGES.NO_PERMISSIONS_GRANTED);
+    }
+
+    // RBAC-001: Validate granter has sufficient permissions
+    if (input.granterWorkspaceMemberId) {
+      const actions: string[] = [];
+
+      if (input.canRead) actions.push(RBAC_ACTION.READ);
+      if (input.canUpdate) actions.push(RBAC_ACTION.UPDATE);
+      if (input.canDelete) actions.push(RBAC_ACTION.DELETE);
+
+      const grantCheck = await this.canGrantPermissions(
+        workspaceId,
+        input.granterWorkspaceMemberId,
+        input.objectName,
+        input.granteeWorkspaceMemberId,
+        actions,
+      );
+
+      if (!grantCheck.canGrant) {
+        throw new Error(
+          grantCheck.reason ??
+            TEMP_PERMISSION_SERVICE_MESSAGES.UNAUTHORIZED_GRANT,
+        );
+      }
     }
 
     const permission = await this.permissionRepository.create({
@@ -331,55 +362,86 @@ export class TemporaryPermissionService {
     );
 
     const now = DateTimeUtils.toDate(DateTimeUtils.now()) ?? new Date();
+    const statusCounts = this.countByStatus(allPermissions, now);
+    const expiryRange = this.getActiveExpiryRange(allPermissions, now);
+
+    return {
+      userId: '', // Would need to join with user table
+      workspaceMemberId: granteeWorkspaceMemberId,
+      ...statusCounts,
+      permissionsByObject: this.countByField(allPermissions, 'objectName'),
+      permissionsByPurpose: this.countByField(allPermissions, 'purpose'),
+      ...expiryRange,
+    };
+  }
+
+  /**
+   * Count permissions by status: active, expired, revoked
+   */
+  private countByStatus(
+    permissions: MktTemporaryPermissionWorkspaceEntity[],
+    now: Date,
+  ): {
+    activePermissions: number;
+    expiredPermissions: number;
+    revokedPermissions: number;
+  } {
     let activePermissions = 0;
     let expiredPermissions = 0;
     let revokedPermissions = 0;
-    const permissionsByObject: Record<string, number> = {};
-    const permissionsByPurpose: Record<string, number> = {};
-    let earliestExpiry: Date | undefined;
-    let latestExpiry: Date | undefined;
 
-    for (const p of allPermissions) {
-      // Count by status
+    for (const p of permissions) {
       if (p.revokedAt) {
         revokedPermissions++;
       } else if (p.expiresAt < now) {
         expiredPermissions++;
       } else if (p.isActive) {
         activePermissions++;
-
-        // Track expiry dates for active permissions
-        if (!earliestExpiry || p.expiresAt < earliestExpiry) {
-          earliestExpiry = p.expiresAt;
-        }
-
-        if (!latestExpiry || p.expiresAt > latestExpiry) {
-          latestExpiry = p.expiresAt;
-        }
-      }
-
-      // Count by object
-      permissionsByObject[p.objectName] =
-        (permissionsByObject[p.objectName] ?? 0) + 1;
-
-      // Count by purpose
-      if (p.purpose) {
-        permissionsByPurpose[p.purpose] =
-          (permissionsByPurpose[p.purpose] ?? 0) + 1;
       }
     }
 
+    return { activePermissions, expiredPermissions, revokedPermissions };
+  }
+
+  /**
+   * Get earliest and latest expiry dates among active permissions
+   */
+  private getActiveExpiryRange(
+    permissions: MktTemporaryPermissionWorkspaceEntity[],
+    now: Date,
+  ): { earliestExpiry?: Date; latestExpiry?: Date } {
+    const activeExpiries = permissions
+      .filter((p) => !p.revokedAt && p.expiresAt >= now && p.isActive)
+      .map((p) => p.expiresAt);
+
+    if (activeExpiries.length === 0) {
+      return {};
+    }
+
     return {
-      userId: '', // Would need to join with user table
-      workspaceMemberId: granteeWorkspaceMemberId,
-      activePermissions,
-      expiredPermissions,
-      revokedPermissions,
-      permissionsByObject,
-      permissionsByPurpose,
-      earliestExpiry,
-      latestExpiry,
+      earliestExpiry: activeExpiries.reduce((min, d) => (d < min ? d : min)),
+      latestExpiry: activeExpiries.reduce((max, d) => (d > max ? d : max)),
     };
+  }
+
+  /**
+   * Count permissions grouped by a string field
+   */
+  private countByField(
+    permissions: MktTemporaryPermissionWorkspaceEntity[],
+    field: keyof MktTemporaryPermissionWorkspaceEntity,
+  ): Record<string, number> {
+    const counts: Record<string, number> = {};
+
+    for (const p of permissions) {
+      const value = p[field];
+
+      if (typeof value === 'string' && value) {
+        counts[value] = (counts[value] ?? 0) + 1;
+      }
+    }
+
+    return counts;
   }
 
   // ============================================
@@ -681,15 +743,128 @@ export class TemporaryPermissionService {
 
   /**
    * Validate if a user can grant temporary permissions
+   *
+   * Checks:
+   * 1. Granter exists as workspace member
+   * 2. Granter's RBAC context can be resolved
+   * 3. Granter has the requested permissions on the object (can only grant what you have)
+   * 4. Granter's hierarchy level >= grantee's level (if grantee provided)
    */
   async canGrantPermissions(
-    _workspaceId: string,
-    _granterWorkspaceMemberId: string,
-    _objectName: string,
+    workspaceId: string,
+    granterWorkspaceMemberId: string,
+    objectName: string,
+    granteeWorkspaceMemberId?: string,
+    actions?: string[],
   ): Promise<{ canGrant: boolean; reason?: string }> {
-    // TODO: Implement actual permission check
-    // This would check if the granter has sufficient permissions to grant
-    // temporary access to the specified object
+    // 1. Resolve granter workspace member to get userId
+    const granterMember = await this.workspaceMemberRepository.findMemberById(
+      granterWorkspaceMemberId,
+    );
+
+    if (!granterMember) {
+      return {
+        canGrant: false,
+        reason: TEMP_PERMISSION_SERVICE_MESSAGES.GRANTER_NOT_FOUND,
+      };
+    }
+
+    // 2. Resolve granter's RBAC context (hierarchy, templates, etc.)
+    const granterContext = await this.rbacContextService.resolveContext(
+      granterMember.userId,
+      workspaceId,
+    );
+
+    if (!granterContext) {
+      return {
+        canGrant: false,
+        reason: TEMP_PERMISSION_SERVICE_MESSAGES.GRANTER_CONTEXT_NOT_RESOLVED,
+      };
+    }
+
+    // 3. Check granter has each requested permission on the object
+    // Enforce rule: can only grant permissions you currently have
+    const actionsToCheck =
+      actions && actions.length > 0 ? actions : [RBAC_ACTION.READ];
+
+    for (const action of actionsToCheck) {
+      const result = await this.casbinEnforcerService.checkPermission({
+        userId: granterMember.userId,
+        workspaceId,
+        resource: objectName,
+        action,
+      });
+
+      if (!result.allowed) {
+        this.logger.warn(
+          TEMP_PERMISSION_SERVICE_MESSAGES.GRANT_DENIED_NO_PERMISSION(
+            granterWorkspaceMemberId,
+            objectName,
+            action,
+          ),
+        );
+
+        return {
+          canGrant: false,
+          reason: TEMP_PERMISSION_SERVICE_MESSAGES.GRANT_DENIED_NO_PERMISSION(
+            granterWorkspaceMemberId,
+            objectName,
+            action,
+          ),
+        };
+      }
+    }
+
+    // 4. Hierarchy check: granter level must be <= grantee level
+    // (lower number = higher rank: CEO=1, Intern=11)
+    if (granteeWorkspaceMemberId) {
+      const granteeMember = await this.workspaceMemberRepository.findMemberById(
+        granteeWorkspaceMemberId,
+      );
+
+      if (!granteeMember) {
+        return {
+          canGrant: false,
+          reason: TEMP_PERMISSION_SERVICE_MESSAGES.GRANTEE_NOT_FOUND,
+        };
+      }
+
+      const granteeContext = await this.rbacContextService.resolveContext(
+        granteeMember.userId,
+        workspaceId,
+      );
+
+      if (
+        granteeContext &&
+        granterContext.hierarchyLevel > granteeContext.hierarchyLevel
+      ) {
+        this.logger.warn(
+          TEMP_PERMISSION_SERVICE_MESSAGES.GRANT_DENIED_HIERARCHY(
+            granterWorkspaceMemberId,
+            granterContext.hierarchyLevel,
+            granteeWorkspaceMemberId,
+            granteeContext.hierarchyLevel,
+          ),
+        );
+
+        return {
+          canGrant: false,
+          reason: TEMP_PERMISSION_SERVICE_MESSAGES.GRANT_DENIED_HIERARCHY(
+            granterWorkspaceMemberId,
+            granterContext.hierarchyLevel,
+            granteeWorkspaceMemberId,
+            granteeContext.hierarchyLevel,
+          ),
+        };
+      }
+    }
+
+    this.logger.log(
+      TEMP_PERMISSION_SERVICE_MESSAGES.GRANT_ALLOWED(
+        granterWorkspaceMemberId,
+        objectName,
+      ),
+    );
 
     return { canGrant: true };
   }

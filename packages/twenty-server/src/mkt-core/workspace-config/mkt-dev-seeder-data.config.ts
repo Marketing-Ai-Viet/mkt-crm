@@ -2,7 +2,7 @@
 import {
   MKT_CONTRACT_DATA_SEED_COLUMNS,
   MKT_CONTRACT_DATA_SEEDS,
-} from 'src/mkt-core/seeder/constants/mkt-contract-data-seeds.constants';
+} from 'src/mkt-core/seeder/contract-seeder/mkt-contract-data-seeds.constants';
 import {
   MKT_CUSTOMER_DATA_SEED_COLUMNS,
   MKT_CUSTOMER_DATA_SEEDS,

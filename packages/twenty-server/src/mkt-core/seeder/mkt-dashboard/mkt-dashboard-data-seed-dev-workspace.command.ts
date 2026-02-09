@@ -2,8 +2,8 @@ import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
-import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { Repository } from 'typeorm';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -12,21 +12,24 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { mktContractsAllView } from 'src/mkt-core/seeder/prefill-data/mkt-contract-all.view';
-import { prefillMktContracts } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-contracts';
+import { mktDashboardWidgetsAllView } from 'src/mkt-core/seeder/mkt-dashboard/mkt-dashboard-widget/mkt-dashboard-widget-all.view';
+import { prefillMktDashboardWidgets } from 'src/mkt-core/seeder/mkt-dashboard/mkt-dashboard-widget/prefill-mkt-dashboard-widgets';
+import { prefillMktDashboardLayouts } from 'src/mkt-core/seeder/mkt-dashboard/mkt-dashboard-layout/prefill-mkt-dashboard-layouts';
+import { prefillMktDashboardSnapshots } from 'src/mkt-core/seeder/mkt-dashboard/mkt-dashboard-snapshot/prefill-mkt-dashboard-snapshots';
 
-interface SeedModuleOptions {
+interface SeedDashboardModuleOptions {
   workspaceId?: string;
 }
 
-type ContractViewDefinition = ReturnType<typeof mktContractsAllView>;
+type DashboardViewDefinition = ReturnType<typeof mktDashboardWidgetsAllView>;
 
 @Command({
-  name: 'workspace:seed:contract-module',
-  description: 'Seed contract module views and data for existing workspace',
+  name: 'workspace:seed:dashboard-module',
+  description:
+    'Seed dashboard module widgets, layouts, snapshots and views for existing workspace',
 })
-export class SeedContractModuleCommand extends CommandRunner {
-  private readonly logger = new Logger(SeedContractModuleCommand.name);
+export class SeedDashboardModuleCommand extends CommandRunner {
+  private readonly logger = new Logger(SeedDashboardModuleCommand.name);
 
   constructor(
     @InjectRepository(Workspace, 'core')
@@ -40,13 +43,16 @@ export class SeedContractModuleCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id to seed contract module for',
+    description: 'workspace id to seed dashboard module for',
   })
   parseWorkspaceId(value: string): string {
     return value;
   }
 
-  async run(passedParam: string[], options: SeedModuleOptions): Promise<void> {
+  async run(
+    _passedParam: string[],
+    options: SeedDashboardModuleOptions,
+  ): Promise<void> {
     let workspaces: Workspace[] = [];
 
     if (options.workspaceId) {
@@ -62,7 +68,6 @@ export class SeedContractModuleCommand extends CommandRunner {
         return;
       }
     } else {
-      // Seed for all active workspaces
       workspaces = await this.workspaceRepository.find({
         where: {
           activationStatus: WorkspaceActivationStatus.ACTIVE,
@@ -72,52 +77,56 @@ export class SeedContractModuleCommand extends CommandRunner {
 
     for (const workspace of workspaces) {
       try {
-        await this.seedModuleForWorkspace(workspace.id);
-        // Lấy viewId của view 'All Contract' sau khi seed
+        await this.seedDashboardModuleForWorkspace(workspace.id);
+
         const mainDataSource =
           await this.workspaceDataSourceService.connectToMainDataSource();
         const schemaName = getWorkspaceSchemaName(workspace.id);
+
         const viewRow = await mainDataSource
           .createQueryBuilder()
           .select('id')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Contracts' })
+          .where('view.name = :name', { name: 'All Dashboard Widgets' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
-        const ViewId = viewRow?.id;
 
-        if (ViewId) {
-          // Insert mới Favorite với viewId này
+        const dashboardViewId = viewRow?.id;
+
+        if (dashboardViewId) {
           await mainDataSource
             .createQueryBuilder()
             .insert()
             .into(`${schemaName}.favorite`, ['viewId'])
-            .values([{ viewId: ViewId }])
+            .values([{ viewId: dashboardViewId }])
             .execute();
           this.logger.log(
-            `✅ Inserted new Favorite record with viewId: ${ViewId}`,
+            `Inserted Favorite record with viewId: ${dashboardViewId}`,
           );
         } else {
           this.logger.warn(
-            '⚠️ Could not find viewId for All Contracts view to update Favorite records',
+            'Could not find viewId for All Dashboard Widgets view to create Favorite',
           );
         }
+
         this.logger.log(
-          `✅ Contract module seeded for workspace: ${workspace.id}`,
+          `Dashboard module seeded for workspace: ${workspace.id}`,
         );
         await this.workspaceCacheStorageService.flush(workspace.id, undefined);
       } catch (error) {
         this.logger.error(
-          `❌ Failed to seed contract module for workspace ${workspace.id}:`,
+          `Failed to seed dashboard module for workspace ${workspace.id}:`,
           error,
         );
       }
     }
   }
 
-  private async seedModuleForWorkspace(workspaceId: string): Promise<void> {
+  private async seedDashboardModuleForWorkspace(
+    workspaceId: string,
+  ): Promise<void> {
     this.logger.log(
-      `🚀 Starting contract module seeding for workspace ${workspaceId}`,
+      `Starting dashboard module seeding for workspace ${workspaceId}`,
     );
 
     const mainDataSource =
@@ -130,24 +139,13 @@ export class SeedContractModuleCommand extends CommandRunner {
     const objectMetadataItems =
       await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
 
-    // Find contract object metadata
-    const itemObjectMetadata = objectMetadataItems.find(
-      (item) => item.nameSingular === 'mktContract',
+    const widgetObjectMetadata = objectMetadataItems.find(
+      (item) => item.nameSingular === 'mktDashboardWidget',
     );
 
-    this.logger.log(
-      `🔍 Debug - All objects in workspace: ${objectMetadataItems.map((item) => `${item.nameSingular}(${item.standardId})`).join(', ')}`,
-    );
-    this.logger.log(
-      `🔍 Debug - Looking for contract object with nameSingular: 'mktContract'`,
-    );
-    this.logger.log(
-      `🔍 Debug - Contract object found: ${itemObjectMetadata ? 'YES' : 'NO'}`,
-    );
-
-    if (!itemObjectMetadata) {
+    if (!widgetObjectMetadata) {
       this.logger.log(
-        `Contract object not found in workspace ${workspaceId}, skipping...`,
+        `Dashboard widget object not found in workspace ${workspaceId}, skipping...`,
       );
 
       return;
@@ -157,55 +155,59 @@ export class SeedContractModuleCommand extends CommandRunner {
 
     await mainDataSource.transaction(
       async (entityManager: WorkspaceEntityManager) => {
-        // Check if contract view already exists by looking for a view with name 'All Contracts'
+        // Delete existing view if exists
         const existingView = await entityManager
           .createQueryBuilder(undefined, undefined, undefined, {
             shouldBypassPermissionChecks: true,
           })
           .select('*')
           .from(`${schemaName}.view`, 'view')
-          .where('view.name = :name', { name: 'All Contracts' })
+          .where('view.name = :name', { name: 'All Dashboard Widgets' })
           .andWhere('view.key = :key', { key: 'INDEX' })
           .getRawOne();
 
         if (existingView) {
           this.logger.log(
-            `Contract view already exists for workspace ${workspaceId}. Deleting and recreating...`,
+            `Dashboard widget view already exists for workspace ${workspaceId}. Deleting and recreating...`,
           );
 
-          // Delete existing view (cascade will delete viewFields)
           await entityManager
             .createQueryBuilder(undefined, undefined, undefined, {
               shouldBypassPermissionChecks: true,
             })
             .delete()
             .from(`${schemaName}.view`)
-            .where('name = :name', { name: 'All Contracts' })
+            .where('name = :name', { name: 'All Dashboard Widgets' })
             .andWhere('key = :key', { key: 'INDEX' })
             .execute();
         }
 
-        // Create contract view
-        const contractViewDefinition: ContractViewDefinition =
-          mktContractsAllView(objectMetadataItems);
+        // Seed dashboard widgets
+        await prefillMktDashboardWidgets(entityManager, schemaName);
+        this.logger.log('Dashboard widgets seeded');
 
-        // Seed mkt contracts
-        await prefillMktContracts(entityManager, schemaName);
+        // Seed dashboard layouts
+        await prefillMktDashboardLayouts(entityManager, schemaName);
+        this.logger.log('Dashboard layouts seeded');
 
-        if (!contractViewDefinition) {
+        // Seed dashboard snapshots
+        await prefillMktDashboardSnapshots(entityManager, schemaName);
+        this.logger.log('Dashboard snapshots seeded');
+
+        // Create view
+        const dashboardViewDefinition: DashboardViewDefinition =
+          mktDashboardWidgetsAllView(objectMetadataItems);
+
+        if (!dashboardViewDefinition) {
           this.logger.log(
-            `Could not create contract view definition for workspace ${workspaceId}`,
+            `Could not create dashboard view definition for workspace ${workspaceId}`,
           );
 
           return;
         }
 
-        this.logger.log(
-          `🔍 Debug - View definition created with ${contractViewDefinition.fields?.length || 0} fields`,
-        );
-
         const viewDefinitionWithId = {
-          ...contractViewDefinition,
+          ...dashboardViewDefinition,
           id: uuidv4(),
         };
 
@@ -244,9 +246,6 @@ export class SeedContractModuleCommand extends CommandRunner {
           viewDefinitionWithId.fields &&
           viewDefinitionWithId.fields.length > 0
         ) {
-          this.logger.log(
-            `🔍 Debug - Creating ${viewDefinitionWithId.fields.length} view fields`,
-          );
           await entityManager
             .createQueryBuilder(undefined, undefined, undefined, {
               shouldBypassPermissionChecks: true,
@@ -271,7 +270,6 @@ export class SeedContractModuleCommand extends CommandRunner {
               })),
             )
             .execute();
-          this.logger.log(`✅ View fields created successfully`);
         }
 
         // Insert view filters if any
@@ -310,9 +308,7 @@ export class SeedContractModuleCommand extends CommandRunner {
             .execute();
         }
 
-        this.logger.log(
-          `✅ Contract view created for workspace ${workspaceId}`,
-        );
+        this.logger.log(`Dashboard view created for workspace ${workspaceId}`);
       },
     );
   }

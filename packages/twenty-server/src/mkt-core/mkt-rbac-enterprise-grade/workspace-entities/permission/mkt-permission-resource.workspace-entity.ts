@@ -11,7 +11,10 @@ import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-
 import { WorkspaceIsSearchable } from 'src/engine/twenty-orm/decorators/workspace-is-searchable.decorator';
 import { MKT_PERMISSION_RESOURCE_FIELD_IDS } from 'src/mkt-core/constants/mkt-field-ids';
 import { MKT_OBJECT_IDS } from 'src/mkt-core/constants/mkt-object-ids';
-import { PERMISSION_RESOURCE_CATEGORY_OPTIONS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
+import {
+  DATA_CLASSIFICATION_OPTIONS,
+  PERMISSION_RESOURCE_CATEGORY_OPTIONS,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
 import {
   MktTemplateResourcePermissionWorkspaceEntity,
@@ -128,6 +131,28 @@ export class MktPermissionResourceWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   position?: number;
+
+  // Data Classification
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_RESOURCE_FIELD_IDS.dataClassification,
+    type: FieldMetadataType.SELECT,
+    label: msg`Data Classification`,
+    description: msg`Cấp độ phân loại dữ liệu (PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED, TOP_SECRET)`,
+    icon: 'IconShield',
+    options: DATA_CLASSIFICATION_OPTIONS,
+    defaultValue: "'CONFIDENTIAL'",
+  })
+  dataClassification: string;
+
+  @WorkspaceField({
+    standardId: MKT_PERMISSION_RESOURCE_FIELD_IDS.classificationNote,
+    type: FieldMetadataType.TEXT,
+    label: msg`Classification Note`,
+    description: msg`Ghi chú về lý do phân loại`,
+    icon: 'IconNote',
+  })
+  @WorkspaceIsNullable()
+  classificationNote?: string;
 
   // Relationships
   @WorkspaceRelation({

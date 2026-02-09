@@ -37,7 +37,7 @@ import {
   DATA_SCOPE_METADATA_KEY,
   DATA_SCOPE_LOG_CONTEXT,
   DATA_SCOPE_MESSAGES,
-  FilterCondition,
+  RbacFilterCondition,
 } from './types';
 
 /**
@@ -344,9 +344,9 @@ export class DataScopeInterceptor implements NestInterceptor {
    * Merge base filter with additional conditions
    */
   private mergeFilters(
-    baseFilter: FilterCondition | null,
+    baseFilter: RbacFilterCondition | null,
     additionalConditions?: DataScopeMetadata['additionalConditions'],
-  ): FilterCondition | null {
+  ): RbacFilterCondition | null {
     // No additional conditions
     if (!additionalConditions || additionalConditions.length === 0) {
       return baseFilter;
@@ -372,7 +372,7 @@ export class DataScopeInterceptor implements NestInterceptor {
    */
   private buildFilterFromAdditional(
     additionalConditions?: DataScopeMetadata['additionalConditions'],
-  ): FilterCondition | null {
+  ): RbacFilterCondition | null {
     if (!additionalConditions || additionalConditions.length === 0) {
       return null;
     }

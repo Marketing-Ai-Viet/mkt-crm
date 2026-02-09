@@ -7,7 +7,10 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
-import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
+import {
+  ORDER_GRAPHQL_DESCRIPTIONS,
+  ORDER_DATA_SCOPE,
+} from 'src/mkt-core/order/constants';
 import {
   CreateOrderWithItemsInputDto,
   UpdateOrderStatusInputDto,
@@ -32,6 +35,15 @@ import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
+import {
+  RequireOrderCreateAccess,
+  RequireOrderUpdateAccess,
+  RequireOrderConfirmAccess,
+  RequireOrderPaymentAccess,
+  RequireOrderRefundAccess,
+  RequireOrderUnlockAccess,
+} from 'src/mkt-core/order/decorators/require-order-access.decorator';
 
 /**
  * OrderMutationResolver - GraphQL resolver for order mutations
@@ -73,7 +85,8 @@ export class OrderMutationResolver {
    *
    * Authorization: SALES department + Manager + Executives
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.CREATE_ORDER) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderCreateAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => CreateOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CREATE_ORDER_WITH_ITEMS,
   })
@@ -96,7 +109,8 @@ export class OrderMutationResolver {
    *
    * Authorization: SALES + ACCOUNTING department + Manager + Executives
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.UPDATE_STATUS) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderUpdateAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => UpdateOrderStatusResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_STATUS,
   })
@@ -122,7 +136,8 @@ export class OrderMutationResolver {
    *
    * Authorization: ACCOUNTING department + Executives only
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.REFUND_ORDER) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderRefundAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_REFUND)
   @Mutation(() => RefundOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.REFUND_ORDER,
   })
@@ -150,7 +165,8 @@ export class OrderMutationResolver {
    *
    * Authorization: SALES department + Manager + Executives
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.PUBLISH_DRAFT) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderUpdateAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => PublishDraftOrderResponseDto, {
     description:
       'Publish a draft order to create payment and start the payment flow',
@@ -192,7 +208,8 @@ export class OrderMutationResolver {
    *
    * Authorization: SALES department + Executives
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.CONFIRM_ORDER_WITH_LICENSE) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderConfirmAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM)
   @Mutation(() => ConfirmOrderWithLicenseOutputDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER_WITH_LICENSE,
   })
@@ -228,7 +245,8 @@ export class OrderMutationResolver {
    *
    * Authorization: SALES (bank transfer) + ACCOUNTING (cash) + Executives
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.CONFIRM_PAYMENT) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderPaymentAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM_PAYMENT)
   @Mutation(() => PaymentConfirmOutputDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_PAYMENT,
   })
@@ -265,7 +283,8 @@ export class OrderMutationResolver {
    *
    * Authorization: ACCOUNTING department only + Executives
    */
-  // @RequireDepartment(ORDER_AUTHORIZATION.UNLOCK_ORDER) // TEMPORARILY DISABLED FOR TESTING
+  @RequireOrderUnlockAccess()
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UNLOCK)
   @Mutation(() => UnlockOrderOutputDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UNLOCK_ORDER,
   })

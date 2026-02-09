@@ -5,7 +5,10 @@
  * Resources: CUSTOMERS, ORDERS, PRODUCTS, LICENSES, etc.
  */
 
-import { PERMISSION_RESOURCE_CATEGORY } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
+import {
+  DATA_CLASSIFICATION,
+  PERMISSION_RESOURCE_CATEGORY,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
 
 type MktPermissionResourceDataSeed = {
   id: string;
@@ -19,6 +22,8 @@ type MktPermissionResourceDataSeed = {
   icon: string | null;
   colorCode: string | null;
   position: number;
+  dataClassification: string;
+  classificationNote: string | null;
 };
 
 export const MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS: (keyof MktPermissionResourceDataSeed)[] =
@@ -34,6 +39,8 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEED_COLUMNS: (keyof MktPermissionReso
     'icon',
     'colorCode',
     'position',
+    'dataClassification',
+    'classificationNote',
   ];
 
 export const MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS = {
@@ -66,6 +73,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconUsers',
       colorCode: '#3B82F6',
       position: 1,
+      dataClassification: DATA_CLASSIFICATION.CONFIDENTIAL,
+      classificationNote:
+        'Dữ liệu khách hàng cần phân quyền theo ownership/phòng ban',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CONTRACTS,
@@ -79,6 +89,8 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconFileText',
       colorCode: '#8B5CF6',
       position: 2,
+      dataClassification: DATA_CLASSIFICATION.CONFIDENTIAL,
+      classificationNote: 'Hợp đồng cần bảo mật theo phân quyền template',
     },
 
     // Sales Resources
@@ -94,6 +106,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconShoppingCart',
       colorCode: '#10B981',
       position: 3,
+      dataClassification: DATA_CLASSIFICATION.CONFIDENTIAL,
+      classificationNote:
+        'Đơn hàng cần phân quyền theo phòng ban/cá nhân sở hữu',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
@@ -107,6 +122,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconPackage',
       colorCode: '#F59E0B',
       position: 4,
+      dataClassification: DATA_CLASSIFICATION.PUBLIC,
+      classificationNote:
+        'Danh mục sản phẩm công khai cho toàn công ty xem được',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
@@ -120,6 +138,8 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconKey',
       colorCode: '#6366F1',
       position: 5,
+      dataClassification: DATA_CLASSIFICATION.CONFIDENTIAL,
+      classificationNote: 'Giấy phép cần phân quyền theo template',
     },
 
     // Finance Resources
@@ -135,6 +155,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconFileInvoice',
       colorCode: '#EC4899',
       position: 6,
+      dataClassification: DATA_CLASSIFICATION.RESTRICTED,
+      classificationNote:
+        'Dữ liệu tài chính nhạy cảm, cần audit log khi truy cập',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
@@ -148,6 +171,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconCreditCard',
       colorCode: '#14B8A6',
       position: 7,
+      dataClassification: DATA_CLASSIFICATION.RESTRICTED,
+      classificationNote:
+        'Dữ liệu thanh toán nhạy cảm, cần audit log khi truy cập',
     },
 
     // System Resources
@@ -163,6 +189,8 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconBuilding',
       colorCode: '#64748B',
       position: 8,
+      dataClassification: DATA_CLASSIFICATION.INTERNAL,
+      classificationNote: 'Sơ đồ tổ chức nội bộ, toàn công ty có thể xem được',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.USERS,
@@ -176,6 +204,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconUser',
       colorCode: '#EF4444',
       position: 9,
+      dataClassification: DATA_CLASSIFICATION.RESTRICTED,
+      classificationNote:
+        'Thông tin nhân sự nhạy cảm (lương, đánh giá), cần audit log',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.SETTINGS,
@@ -189,6 +220,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconSettings',
       colorCode: '#78716C',
       position: 10,
+      dataClassification: DATA_CLASSIFICATION.TOP_SECRET,
+      classificationNote:
+        'Cấu hình hệ thống tối mật, chỉ CEO/VP (priority >= 900)',
     },
 
     // Analytics Resources
@@ -204,6 +238,9 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconChartBar',
       colorCode: '#0EA5E9',
       position: 11,
+      dataClassification: DATA_CLASSIFICATION.INTERNAL,
+      classificationNote:
+        'Báo cáo tổng quan nội bộ, toàn công ty có thể xem được',
     },
     {
       id: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.DASHBOARD,
@@ -217,5 +254,7 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconDashboard',
       colorCode: '#7C3AED',
       position: 12,
+      dataClassification: DATA_CLASSIFICATION.INTERNAL,
+      classificationNote: 'Bảng điều khiển tổng quan nội bộ toàn công ty',
     },
   ];

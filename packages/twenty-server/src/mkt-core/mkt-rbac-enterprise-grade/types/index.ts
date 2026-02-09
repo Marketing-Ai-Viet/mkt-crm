@@ -132,3 +132,6 @@ export * from './rbac-enforcer.types';
 
 // Permission Context types
 export * from './permission-context.types';
+
+// Data Classification types
+export * from './data-classification.types';

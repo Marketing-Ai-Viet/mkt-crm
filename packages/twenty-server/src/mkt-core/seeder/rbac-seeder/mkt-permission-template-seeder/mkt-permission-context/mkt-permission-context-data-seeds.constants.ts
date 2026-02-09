@@ -47,6 +47,8 @@ export const MKT_PERMISSION_CONTEXT_DATA_SEED_IDS = {
   HIERARCHICAL_RECORDS: 'abcd2107-b8c4-448d-a5ec-d63097b85284',
   DEPARTMENT_RECORDS: '9cb0b9a2-3bcc-49ff-ab92-4895cefcdd01',
   ALL_RECORDS: 'ca257a1d-232f-42fd-b374-9a1c71e0fe7c',
+  // Data classification contexts
+  INTERNAL_COMPANY: 'e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b',
 } as const;
 
 /**
@@ -204,6 +206,30 @@ export const MKT_PERMISSION_CONTEXT_DATA_SEEDS: MktPermissionContextDataSeed[] =
         includeDescendants: true,
         description:
           'User sees all records from own department and child departments',
+      },
+    },
+
+    // ============================================
+    // INTERNAL_COMPANY - Toàn công ty xem được (READ only)
+    // Dùng cho resource có dataClassification = PUBLIC hoặc INTERNAL
+    // ============================================
+    {
+      id: MKT_PERMISSION_CONTEXT_DATA_SEED_IDS.INTERNAL_COMPANY,
+      name: 'Internal Company Records',
+      description:
+        'All active employees can read PUBLIC and INTERNAL classified resources',
+      contextType: CONTEXT_TYPE.ALL_RECORDS,
+      contextKey: 'internal_company',
+      filterExpression: {}, // Không lọc - tất cả records đều truy cập được
+      priority: 50, // Giữa DEPARTMENT (20) và ALL (100)
+      isActive: true,
+      isSystemDefault: true,
+      position: 7,
+      validationRules: {
+        description:
+          'Company-wide read access for PUBLIC and INTERNAL classified resources',
+        requiresActiveAccount: true,
+        allowedActions: ['READ'],
       },
     },
 

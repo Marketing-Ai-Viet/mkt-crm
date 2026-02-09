@@ -81,3 +81,89 @@ export const EMAIL_MESSAGES = {
     EMAIL_FAILED: (emailId: string) => `Email ${emailId} failed to send`,
   },
 } as const;
+
+// ============================================================================
+// GRAPHQL DESCRIPTIONS
+// ============================================================================
+
+/**
+ * GraphQL operation descriptions for Email queries
+ */
+export const EMAIL_QUERY_DESCRIPTIONS = {
+  GET_EMAIL_BY_ID: 'Get email by ID',
+  GET_ALL_EMAILS: 'Get all emails with pagination',
+  GET_EMAILS_BY_STATUS: 'Get emails by status',
+  GET_EMAILS_BY_RECIPIENT: 'Get emails by recipient address',
+  GET_EMAIL_STATUS_DISTRIBUTION: 'Get email status distribution statistics',
+} as const;
+
+/**
+ * GraphQL operation descriptions for Email mutations
+ */
+export const EMAIL_MUTATION_DESCRIPTIONS = {
+  CREATE_EMAIL: 'Create a new email',
+  UPDATE_EMAIL: 'Update an existing email',
+  DELETE_EMAIL: 'Soft delete an email',
+} as const;
+
+/**
+ * Success/error response messages for Email operations
+ */
+export const EMAIL_RESPONSE_MESSAGES = {
+  SUCCESS: {
+    EMAIL_CREATED: 'Email created successfully',
+    EMAIL_UPDATED: 'Email updated successfully',
+    EMAIL_DELETED: 'Email has been soft deleted',
+  },
+  FAILURE: {
+    CREATE_FAILED: 'Failed to create email',
+    UPDATE_FAILED: 'Failed to update email',
+    DELETE_FAILED: 'Failed to delete email',
+    NOT_FOUND: (emailId: string) => `Email with ID ${emailId} not found`,
+  },
+} as const;
+
+// ============================================================================
+// TEMPLATE GRAPHQL DESCRIPTIONS
+// ============================================================================
+
+/**
+ * GraphQL operation descriptions for Template queries
+ */
+export const TEMPLATE_QUERY_DESCRIPTIONS = {
+  GET_TEMPLATE_BY_ID: 'Get template by ID',
+  GET_ALL_TEMPLATES: 'Get all templates with pagination',
+  GET_TEMPLATES_BY_TYPE: 'Get templates by type',
+  GET_TEMPLATE_BY_KEY: 'Get template by template key',
+} as const;
+
+/**
+ * GraphQL operation descriptions for Template mutations
+ */
+export const TEMPLATE_MUTATION_DESCRIPTIONS = {
+  CREATE_TEMPLATE: 'Create a new template',
+  UPDATE_TEMPLATE: 'Update an existing template',
+  TOGGLE_TEMPLATE_ACTIVE: 'Toggle template active status',
+  DELETE_TEMPLATE: 'Soft delete a template',
+} as const;
+
+/**
+ * Success/error response messages for Template operations
+ */
+export const TEMPLATE_RESPONSE_MESSAGES = {
+  SUCCESS: {
+    TEMPLATE_CREATED: 'Template created successfully',
+    TEMPLATE_UPDATED: 'Template updated successfully',
+    TEMPLATE_DELETED: 'Template has been soft deleted',
+    TEMPLATE_ACTIVATED: 'Template has been activated',
+    TEMPLATE_DEACTIVATED: 'Template has been deactivated',
+  },
+  FAILURE: {
+    CREATE_FAILED: 'Failed to create template',
+    UPDATE_FAILED: 'Failed to update template',
+    DELETE_FAILED: 'Failed to delete template',
+    TOGGLE_FAILED: 'Failed to toggle template active status',
+    NOT_FOUND: (templateId: string) =>
+      `Template with ID ${templateId} not found`,
+  },
+} as const;
