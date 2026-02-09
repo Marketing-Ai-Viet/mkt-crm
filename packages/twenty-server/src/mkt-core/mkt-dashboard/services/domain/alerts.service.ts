@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import {
   DashboardDataTransformer,
   RawOverdueOrderRow,
@@ -24,18 +25,28 @@ export class DashboardAlertsService {
     private readonly scopedWorkspaceContextFactory: ScopedWorkspaceContextFactory,
   ) {}
 
-  async getAlerts(): Promise<AlertsOutput> {
+  async getAlerts(departmentId?: string): Promise<AlertsOutput> {
     try {
+      const dataSource = await getWorkspaceDataSourceWithSchema(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        departmentId,
+      );
+
       const [
         overdueOrders,
         expiringContracts,
         pendingPayments,
         underperformingKpis,
       ] = await Promise.all([
-        this.getOverdueOrders(),
-        this.getExpiringContracts(),
-        this.getPendingPayments(),
-        this.getUnderperformingKpis(),
+        this.getOverdueOrders(departmentIds),
+        this.getExpiringContracts(departmentIds),
+        this.getPendingPayments(departmentIds),
+        this.getUnderperformingKpis(departmentIds),
       ]);
 
       return {
@@ -52,11 +63,23 @@ export class DashboardAlertsService {
     }
   }
 
-  private async getOverdueOrders() {
+  private async getOverdueOrders(departmentIds?: string[]) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (number | string[])[] = [DASHBOARD_LIMITS.OVERDUE_ORDERS];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      2,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string[]);
+    }
 
     // SQL from design doc 7.6
     const rows: RawOverdueOrderRow[] = await dataSource.query(
@@ -68,9 +91,10 @@ export class DashboardAlertsService {
       WHERE "deletedAt" IS NULL
         AND status IN ('LOCKED', 'PROCESSING')
         AND "paymentDeadline" < NOW()
+        ${deptFilter?.clause ?? ''}
       ORDER BY days_overdue DESC
       LIMIT $1`,
-      [DASHBOARD_LIMITS.OVERDUE_ORDERS],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -78,11 +102,23 @@ export class DashboardAlertsService {
     return DashboardDataTransformer.transformOverdueOrders(rows);
   }
 
-  private async getExpiringContracts() {
+  private async getExpiringContracts(departmentIds?: string[]) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (number | string[])[] = [DASHBOARD_LIMITS.EXPIRING_CONTRACTS];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      2,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string[]);
+    }
 
     // SQL from design doc 7.7
     const rows: RawExpiringContractRow[] = await dataSource.query(
@@ -94,9 +130,10 @@ export class DashboardAlertsService {
       WHERE "deletedAt" IS NULL
         AND status != 'TERMINATED'
         AND "endDate" BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
+        ${deptFilter?.clause ?? ''}
       ORDER BY "endDate"
       LIMIT $1`,
-      [DASHBOARD_LIMITS.EXPIRING_CONTRACTS],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -104,13 +141,27 @@ export class DashboardAlertsService {
     return DashboardDataTransformer.transformExpiringContracts(rows);
   }
 
-  private async getPendingPayments(): Promise<
+  private async getPendingPayments(
+    departmentIds?: string[],
+  ): Promise<
     Array<{ id: string; name: string; amount: number; daysPending: number }>
   > {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (number | string[])[] = [DASHBOARD_LIMITS.PENDING_PAYMENTS];
+
+    let deptClause = '';
+
+    if (departmentIds) {
+      params.push(departmentIds as unknown as string[]);
+      deptClause = `AND o."accountOwnerId" IN (
+          SELECT wm.id FROM "workspaceMember" wm
+          WHERE wm."deletedAt" IS NULL AND wm."departmentId" = ANY($2)
+        )`;
+    }
 
     const rows = await dataSource.query(
       `SELECT
@@ -122,9 +173,10 @@ export class DashboardAlertsService {
       LEFT JOIN "mktOrder" o ON p."mktOrderId" = o.id
       WHERE p."deletedAt" IS NULL
         AND p.status IN ('PENDING', 'PROCESSING')
+        ${deptClause}
       ORDER BY days_pending DESC
       LIMIT $1`,
-      [DASHBOARD_LIMITS.PENDING_PAYMENTS],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -144,13 +196,27 @@ export class DashboardAlertsService {
     );
   }
 
-  private async getUnderperformingKpis(): Promise<
-    Array<{ kpiName: string; progress: number; target: number }>
-  > {
+  private async getUnderperformingKpis(
+    departmentIds?: string[],
+  ): Promise<Array<{ kpiName: string; progress: number; target: number }>> {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (number | string[])[] = [
+      DASHBOARD_LIMITS.UNDERPERFORMING_KPIS,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"assignedToId"',
+      departmentIds,
+      2,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string[]);
+    }
 
     const rows = await dataSource.query(
       `SELECT
@@ -166,9 +232,10 @@ export class DashboardAlertsService {
         AND status IN ('IN_PROGRESS', 'DRAFT')
         AND "periodYear" = EXTRACT(YEAR FROM NOW())
         AND ("targetValue" > 0 AND "actualValue"::numeric / "targetValue" < 0.5)
+        ${deptFilter?.clause ?? ''}
       ORDER BY progress ASC
       LIMIT $1`,
-      [DASHBOARD_LIMITS.UNDERPERFORMING_KPIS],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );

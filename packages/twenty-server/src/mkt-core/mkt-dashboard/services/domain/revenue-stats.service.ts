@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import {
   DashboardDateRangeService,
   DateRange,
@@ -35,12 +36,24 @@ export class RevenueStatsService {
 
   async getStats(input: RevenueStatsInput): Promise<RevenueStatsOutput> {
     const dateRange = this.dateRangeService.resolve(
-      input.period as DashboardPeriod,
+      input.period,
       input.startDate,
       input.endDate,
     );
 
     try {
+      const dataSource = await getWorkspaceDataSourceWithSchema(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+      );
+
+      const { staffId } = input;
+
       // Execute all queries in parallel
       const [
         revenueByPeriod,
@@ -48,15 +61,24 @@ export class RevenueStatsService {
         revenueByDepartment,
         previousPeriodTotal,
       ] = await Promise.all([
-        this.getRevenueByPeriod(dateRange),
+        this.getRevenueByPeriod(
+          dateRange,
+          input.period,
+          departmentIds,
+          staffId,
+        ),
         this.getRevenueByStaff(
           dateRange,
           input.limit ?? DASHBOARD_LIMITS.TOP_CUSTOMERS,
+          departmentIds,
+          staffId,
         ),
-        this.getRevenueByDepartment(dateRange),
+        this.getRevenueByDepartment(dateRange, departmentIds),
         this.getPreviousPeriodRevenue(
-          input.period as DashboardPeriod,
+          input.period,
           dateRange,
+          departmentIds,
+          staffId,
         ),
       ]);
 
@@ -104,23 +126,47 @@ export class RevenueStatsService {
     }
   }
 
-  private async getRevenueByPeriod(dateRange: DateRange) {
-    // Uses raw SQL query via repository's query method
-    // SQL from design doc 7.1:
-    // SELECT DATE_TRUNC('month', "createdAt") AS period, COUNT(*) AS order_count,
-    //   SUM("totalAmount") AS total_revenue, AVG("totalAmount") AS avg_order_value
-    // FROM "mktOrder" WHERE "deletedAt" IS NULL AND status = 'COMPLETED'
-    //   AND "createdAt" BETWEEN :startDate AND :endDate
-    // GROUP BY DATE_TRUNC('month', "createdAt") ORDER BY period
-
+  private async getRevenueByPeriod(
+    dateRange: DateRange,
+    period: DashboardPeriod,
+    departmentIds?: string[],
+    staffId?: string,
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
 
+    const params: (string | number)[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+      DASHBOARD_LIMITS.REVENUE_BY_PERIOD_MAX,
+    ];
+
+    let nextParam = 4;
+    let staffClause = '';
+
+    if (staffId) {
+      params.push(staffId);
+      staffClause = `AND "accountOwnerId" = $${nextParam}`;
+      nextParam++;
+    }
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      nextParam,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string);
+    }
+
+    const truncInterval = this.dateRangeService.getDateTruncInterval(period);
+
     const rows: RawRevenueRow[] = await dataSource.query(
       `SELECT
-        DATE_TRUNC('month', "createdAt") AS period,
+        DATE_TRUNC('${truncInterval}', "createdAt") AS period,
         COUNT(*) AS order_count,
         SUM("totalAmount") AS total_revenue,
         AVG("totalAmount") AS avg_order_value
@@ -128,14 +174,12 @@ export class RevenueStatsService {
       WHERE "deletedAt" IS NULL
         AND status = 'COMPLETED'
         AND "createdAt" BETWEEN $1 AND $2
-      GROUP BY DATE_TRUNC('month', "createdAt")
+        ${staffClause}
+        ${deptFilter?.clause ?? ''}
+      GROUP BY DATE_TRUNC('${truncInterval}', "createdAt")
       ORDER BY period
       LIMIT $3`,
-      [
-        dateRange.startDate,
-        dateRange.endDate,
-        DASHBOARD_LIMITS.REVENUE_BY_PERIOD_MAX,
-      ],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -143,12 +187,37 @@ export class RevenueStatsService {
     return DashboardDataTransformer.transformRevenueByPeriod(rows);
   }
 
-  private async getRevenueByStaff(dateRange: DateRange, limit: number) {
-    // SQL from design doc 7.2
+  private async getRevenueByStaff(
+    dateRange: DateRange,
+    limit: number,
+    departmentIds?: string[],
+    staffId?: string,
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | number)[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+      limit,
+    ];
+
+    let nextParam = 4;
+    let staffClause = '';
+    let deptClause = '';
+
+    if (staffId) {
+      params.push(staffId);
+      staffClause = `AND wm.id = $${nextParam}`;
+      nextParam++;
+    }
+
+    if (departmentIds) {
+      params.push(departmentIds as unknown as string);
+      deptClause = `AND wm."departmentId" = ANY($${nextParam})`;
+    }
 
     const rows: RawRevenueByStaffRow[] = await dataSource.query(
       `SELECT
@@ -163,10 +232,12 @@ export class RevenueStatsService {
       WHERE o."deletedAt" IS NULL
         AND o.status = 'COMPLETED'
         AND o."createdAt" BETWEEN $1 AND $2
+        ${staffClause}
+        ${deptClause}
       GROUP BY wm.id, wm."nameFirstName", wm."nameLastName", d."departmentName"
       ORDER BY total_revenue DESC
       LIMIT $3`,
-      [dateRange.startDate, dateRange.endDate, limit],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -176,11 +247,20 @@ export class RevenueStatsService {
 
   private async getRevenueByDepartment(
     dateRange: DateRange,
+    departmentIds?: string[],
   ): Promise<RawRevenueByDepartmentRow[]> {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: string[] = [dateRange.startDate, dateRange.endDate];
+    let deptClause = '';
+
+    if (departmentIds) {
+      params.push(departmentIds as unknown as string);
+      deptClause = `AND d.id = ANY($3)`;
+    }
 
     return dataSource.query(
       `SELECT
@@ -194,10 +274,11 @@ export class RevenueStatsService {
         AND o.status = 'COMPLETED'
         AND o."createdAt" BETWEEN $1 AND $2
       WHERE d."deletedAt" IS NULL
+        ${deptClause}
       GROUP BY d.id, d."departmentName"
       HAVING COALESCE(SUM(o."totalAmount"), 0) > 0
       ORDER BY amount DESC`,
-      [dateRange.startDate, dateRange.endDate],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -206,6 +287,8 @@ export class RevenueStatsService {
   private async getPreviousPeriodRevenue(
     period: DashboardPeriod,
     currentRange: DateRange,
+    departmentIds?: string[],
+    staffId?: string,
   ): Promise<number> {
     const previousRange = this.dateRangeService.getPreviousPeriod(
       period,
@@ -217,13 +300,36 @@ export class RevenueStatsService {
       this.twentyORMGlobalManager,
     );
 
+    const params: string[] = [previousRange.startDate, previousRange.endDate];
+
+    let nextParam = 3;
+    let staffClause = '';
+
+    if (staffId) {
+      params.push(staffId);
+      staffClause = `AND "accountOwnerId" = $${nextParam}`;
+      nextParam++;
+    }
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      nextParam,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string);
+    }
+
     const rows = await dataSource.query(
       `SELECT COALESCE(SUM("totalAmount"), 0) AS total_revenue
       FROM "mktOrder"
       WHERE "deletedAt" IS NULL
         AND status = 'COMPLETED'
-        AND "createdAt" BETWEEN $1 AND $2`,
-      [previousRange.startDate, previousRange.endDate],
+        AND "createdAt" BETWEEN $1 AND $2
+        ${staffClause}
+        ${deptFilter?.clause ?? ''}`,
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );

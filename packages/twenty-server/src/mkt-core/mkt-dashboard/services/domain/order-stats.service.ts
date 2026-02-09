@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -31,22 +32,39 @@ export class OrderStatsService {
 
   async getStats(input: OrderStatsInput): Promise<OrderStatsOutput> {
     const dateRange = this.dateRangeService.resolve(
-      input.period as DashboardPeriod,
+      input.period,
       input.startDate,
       input.endDate,
     );
 
     try {
-      const [ordersByStatus, orderTrend, topProducts, avgValues] =
-        await Promise.all([
-          this.getOrdersByStatus(dateRange),
-          this.getOrderTrend(dateRange),
-          this.getTopProducts(
-            dateRange,
-            input.topProductsLimit ?? DASHBOARD_LIMITS.TOP_PRODUCTS,
-          ),
-          this.getAverageValues(dateRange),
-        ]);
+      const dataSource = await getWorkspaceDataSourceWithSchema(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+      );
+
+      const [
+        ordersByStatus,
+        orderTrend,
+        topProducts,
+        avgValues,
+        productRevenueTrend,
+      ] = await Promise.all([
+        this.getOrdersByStatus(dateRange, departmentIds),
+        this.getOrderTrend(dateRange, input.period, departmentIds),
+        this.getTopProducts(
+          dateRange,
+          input.topProductsLimit ?? DASHBOARD_LIMITS.TOP_PRODUCTS,
+          departmentIds,
+        ),
+        this.getAverageValues(dateRange, departmentIds),
+        this.getProductRevenueTrend(dateRange, input.period, departmentIds),
+      ]);
 
       return {
         ordersByStatus,
@@ -55,6 +73,7 @@ export class OrderStatsService {
         averageProcessingTime: avgValues.averageProcessingTime,
         conversionRate: avgValues.conversionRate,
         topProducts,
+        productRevenueTrend,
       };
     } catch (error) {
       this.logger.error('Failed to get order stats', {
@@ -65,14 +84,29 @@ export class OrderStatsService {
     }
   }
 
-  private async getOrdersByStatus(dateRange: {
-    startDate: string;
-    endDate: string;
-  }) {
+  private async getOrdersByStatus(
+    dateRange: { startDate: string; endDate: string },
+    departmentIds?: string[],
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      3,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
 
     const rows: RawOrderStatusRow[] = await dataSource.query(
       `SELECT
@@ -82,9 +116,10 @@ export class OrderStatsService {
       FROM "mktOrder"
       WHERE "deletedAt" IS NULL
         AND "createdAt" BETWEEN $1 AND $2
+        ${deptFilter?.clause ?? ''}
       GROUP BY status
       ORDER BY count DESC`,
-      [dateRange.startDate, dateRange.endDate],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -92,31 +127,47 @@ export class OrderStatsService {
     return DashboardDataTransformer.transformOrdersByStatus(rows);
   }
 
-  private async getOrderTrend(dateRange: {
-    startDate: string;
-    endDate: string;
-  }) {
+  private async getOrderTrend(
+    dateRange: { startDate: string; endDate: string },
+    period: DashboardPeriod,
+    departmentIds?: string[],
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
 
+    const params: (string | number | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+      DASHBOARD_LIMITS.REVENUE_BY_PERIOD_MAX,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      4,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
+
+    const truncInterval = this.dateRangeService.getDateTruncInterval(period);
+
     const rows: RawOrderTrendRow[] = await dataSource.query(
       `SELECT
-        DATE_TRUNC('month', "createdAt") AS period,
+        DATE_TRUNC('${truncInterval}', "createdAt") AS period,
         COUNT(*) AS count,
         COALESCE(SUM("totalAmount"), 0) AS amount
       FROM "mktOrder"
       WHERE "deletedAt" IS NULL
         AND "createdAt" BETWEEN $1 AND $2
-      GROUP BY DATE_TRUNC('month', "createdAt")
+        ${deptFilter?.clause ?? ''}
+      GROUP BY DATE_TRUNC('${truncInterval}', "createdAt")
       ORDER BY period
       LIMIT $3`,
-      [
-        dateRange.startDate,
-        dateRange.endDate,
-        DASHBOARD_LIMITS.REVENUE_BY_PERIOD_MAX,
-      ],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -127,11 +178,28 @@ export class OrderStatsService {
   private async getTopProducts(
     dateRange: { startDate: string; endDate: string },
     limit: number,
+    departmentIds?: string[],
   ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | number | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+      limit,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      'o."accountOwnerId"',
+      departmentIds,
+      4,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
 
     const rows: RawTopProductRow[] = await dataSource.query(
       `SELECT
@@ -144,10 +212,11 @@ export class OrderStatsService {
       WHERE o."deletedAt" IS NULL
         AND oi."deletedAt" IS NULL
         AND o."createdAt" BETWEEN $1 AND $2
+        ${deptFilter?.clause ?? ''}
       GROUP BY oi."externalMktProductId", oi."snapshotProductName"
       ORDER BY revenue DESC
       LIMIT $3`,
-      [dateRange.startDate, dateRange.endDate, limit],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -155,10 +224,77 @@ export class OrderStatsService {
     return DashboardDataTransformer.transformTopProducts(rows);
   }
 
-  private async getAverageValues(dateRange: {
-    startDate: string;
-    endDate: string;
-  }): Promise<{
+  private async getProductRevenueTrend(
+    dateRange: { startDate: string; endDate: string },
+    period: DashboardPeriod,
+    departmentIds?: string[],
+  ): Promise<
+    Array<{
+      period: string;
+      productName: string;
+      quantity: number;
+      revenue: number;
+    }>
+  > {
+    const dataSource = await getWorkspaceDataSourceWithSchema(
+      this.scopedWorkspaceContextFactory,
+      this.twentyORMGlobalManager,
+    );
+
+    const params: (string | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      'o."accountOwnerId"',
+      departmentIds,
+      3,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
+
+    const truncInterval = this.dateRangeService.getDateTruncInterval(period);
+
+    const rows: Array<{
+      period: Date;
+      product_name: string;
+      quantity: string;
+      revenue: string;
+    }> = await dataSource.query(
+      `SELECT
+        DATE_TRUNC('${truncInterval}', o."createdAt") AS period,
+        oi."snapshotProductName" AS product_name,
+        SUM(oi.quantity) AS quantity,
+        SUM(oi."totalPrice") AS revenue
+      FROM "mktOrderItem" oi
+      JOIN "mktOrder" o ON oi."mktOrderId" = o.id
+      WHERE o."deletedAt" IS NULL
+        AND oi."deletedAt" IS NULL
+        AND o."createdAt" BETWEEN $1 AND $2
+        ${deptFilter?.clause ?? ''}
+      GROUP BY DATE_TRUNC('${truncInterval}', o."createdAt"),
+               oi."snapshotProductName"
+      ORDER BY period, revenue DESC`,
+      params,
+      undefined,
+      { shouldBypassPermissionChecks: true },
+    );
+
+    return rows.map((r) => ({
+      period: String(new Date(r.period).getTime()),
+      productName: r.product_name,
+      quantity: Number(r.quantity),
+      revenue: MoneyUtils.from(r.revenue).toNumber(),
+    }));
+  }
+
+  private async getAverageValues(
+    dateRange: { startDate: string; endDate: string },
+    departmentIds?: string[],
+  ): Promise<{
     averageOrderValue: number;
     averageProcessingTime: number;
     conversionRate: number;
@@ -167,6 +303,21 @@ export class OrderStatsService {
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      3,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
 
     const rows = await dataSource.query(
       `SELECT
@@ -181,8 +332,9 @@ export class OrderStatsService {
         ) AS avg_processing_days
       FROM "mktOrder"
       WHERE "deletedAt" IS NULL
-        AND "createdAt" BETWEEN $1 AND $2`,
-      [dateRange.startDate, dateRange.endDate],
+        AND "createdAt" BETWEEN $1 AND $2
+        ${deptFilter?.clause ?? ''}`,
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );

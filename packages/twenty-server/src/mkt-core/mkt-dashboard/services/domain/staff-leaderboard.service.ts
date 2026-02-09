@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -11,7 +12,6 @@ import {
 import { LeaderboardInput } from 'src/mkt-core/mkt-dashboard/dto/input/leaderboard.input';
 import { StaffLeaderboardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/leaderboard.output';
 import { DASHBOARD_LIMITS } from 'src/mkt-core/mkt-dashboard/constants/dashboard-limits';
-import { DashboardPeriod } from 'src/mkt-core/mkt-dashboard/types/dashboard-period.type';
 import { getErrorMessage } from 'src/mkt-core/utils';
 
 const LOG_CONTEXT = 'StaffLeaderboardService';
@@ -30,7 +30,7 @@ export class StaffLeaderboardService {
     input: LeaderboardInput,
   ): Promise<StaffLeaderboardOutput> {
     const dateRange = this.dateRangeService.resolve(
-      input.period as DashboardPeriod,
+      input.period,
       input.startDate,
       input.endDate,
     );
@@ -42,7 +42,23 @@ export class StaffLeaderboardService {
     const offset = input.offset ?? 0;
 
     try {
-      const rankings = await this.getStaffRankings(dateRange, limit, offset);
+      const dataSource = await getWorkspaceDataSourceWithSchema(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+      );
+
+      const rankings = await this.getStaffRankings(
+        dateRange,
+        limit,
+        offset,
+        departmentIds,
+        input.staffId,
+      );
 
       return {
         rankings,
@@ -64,11 +80,35 @@ export class StaffLeaderboardService {
     dateRange: { startDate: string; endDate: string },
     limit: number,
     offset: number,
+    departmentIds?: string[],
+    staffId?: string,
   ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | number | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+      limit,
+      offset,
+    ];
+
+    let nextParam = 5;
+    let staffClause = '';
+    let deptClause = '';
+
+    if (staffId) {
+      params.push(staffId);
+      staffClause = `AND wm.id = $${nextParam}`;
+      nextParam++;
+    }
+
+    if (departmentIds) {
+      params.push(departmentIds as unknown as string);
+      deptClause = `AND wm."departmentId" = ANY($${nextParam})`;
+    }
 
     const rows: RawLeaderboardRow[] = await dataSource.query(
       `SELECT
@@ -114,6 +154,8 @@ export class StaffLeaderboardService {
         GROUP BY "assignedToId"
       ) kpi_stats ON kpi_stats."assignedToId" = wm.id
       WHERE wm."deletedAt" IS NULL
+        ${staffClause}
+        ${deptClause}
         AND (
           order_stats.order_count > 0
           OR customer_stats.new_customers > 0
@@ -121,7 +163,7 @@ export class StaffLeaderboardService {
         )
       ORDER BY COALESCE(order_stats.total_revenue, 0) DESC
       LIMIT $3 OFFSET $4`,
-      [dateRange.startDate, dateRange.endDate, limit, offset],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );

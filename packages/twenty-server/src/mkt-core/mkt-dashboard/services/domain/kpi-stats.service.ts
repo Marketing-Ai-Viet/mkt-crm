@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -31,10 +32,20 @@ export class KpiStatsService {
     const year = input.year ?? DateTimeUtils.now().year;
 
     try {
+      const dataSource = await getWorkspaceDataSourceWithSchema(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+      );
+
       const [categoryStats, kpiDetails, trends] = await Promise.all([
-        this.getKpiByCategory(year, input.category),
-        this.getKpiDetails(year, input.category),
-        this.getKpiTrends(year),
+        this.getKpiByCategory(year, input.category, departmentIds),
+        this.getKpiDetails(year, input.category, departmentIds),
+        this.getKpiTrends(year, departmentIds),
       ]);
 
       // Calculate overall achievement rate
@@ -62,19 +73,35 @@ export class KpiStatsService {
     }
   }
 
-  private async getKpiByCategory(year: number, category?: string) {
+  private async getKpiByCategory(
+    year: number,
+    category?: string,
+    departmentIds?: string[],
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
 
     // SQL from design doc 7.5
-    const params: (number | string)[] = [year];
+    const params: (number | string | string[])[] = [year];
     let categoryFilter = '';
+    let nextParam = 2;
 
     if (category) {
-      categoryFilter = ' AND "kpiCategory" = $2';
+      categoryFilter = ` AND "kpiCategory" = $${nextParam}`;
       params.push(category);
+      nextParam++;
+    }
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"assignedToId"',
+      departmentIds,
+      nextParam,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string);
     }
 
     const rows: RawKpiCategoryRow[] = await dataSource.query(
@@ -89,6 +116,7 @@ export class KpiStatsService {
       FROM "mktKpi"
       WHERE "deletedAt" IS NULL
         AND "periodYear" = $1${categoryFilter}
+        ${deptFilter?.clause ?? ''}
       GROUP BY "kpiCategory"`,
       params,
       undefined,
@@ -101,6 +129,7 @@ export class KpiStatsService {
   private async getKpiDetails(
     year: number,
     category?: string,
+    departmentIds?: string[],
   ): Promise<
     Array<{
       category: string;
@@ -118,15 +147,27 @@ export class KpiStatsService {
       this.twentyORMGlobalManager,
     );
 
-    const params: (number | string)[] = [
+    const params: (number | string | string[])[] = [
       year,
       DASHBOARD_LIMITS.KPIS_PER_CATEGORY,
     ];
     let categoryFilter = '';
+    let nextParam = 3;
 
     if (category) {
-      categoryFilter = ' AND "kpiCategory" = $3';
+      categoryFilter = ` AND "kpiCategory" = $${nextParam}`;
       params.push(category);
+      nextParam++;
+    }
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"assignedToId"',
+      departmentIds,
+      nextParam,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string);
     }
 
     const rows = await dataSource.query(
@@ -144,6 +185,7 @@ export class KpiStatsService {
       FROM "mktKpi"
       WHERE "deletedAt" IS NULL
         AND "periodYear" = $1${categoryFilter}
+        ${deptFilter?.clause ?? ''}
       ORDER BY "kpiCategory", "kpiName"
       LIMIT $2`,
       params,
@@ -190,11 +232,24 @@ export class KpiStatsService {
 
   private async getKpiTrends(
     year: number,
+    departmentIds?: string[],
   ): Promise<Array<{ period: string; achievementRate: number }>> {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (number | string[])[] = [year];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"assignedToId"',
+      departmentIds,
+      2,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params as unknown as string[]);
+    }
 
     const rows = await dataSource.query(
       `SELECT
@@ -207,9 +262,10 @@ export class KpiStatsService {
       WHERE "deletedAt" IS NULL
         AND "periodYear" = $1
         AND "periodQuarter" IS NOT NULL
+        ${deptFilter?.clause ?? ''}
       GROUP BY "periodQuarter"
       ORDER BY "periodQuarter"`,
-      [year],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );

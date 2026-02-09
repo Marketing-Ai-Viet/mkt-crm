@@ -25,6 +25,21 @@ export class TopProductItem {
 }
 
 @ObjectType()
+export class ProductRevenueTrendItem {
+  @Field(() => String)
+  period: string;
+
+  @Field(() => String)
+  productName: string;
+
+  @Field(() => Int)
+  quantity: number;
+
+  @Field(() => Float)
+  revenue: number;
+}
+
+@ObjectType()
 export class OrderStatusItem {
   @Field(() => String)
   status: string;
@@ -55,4 +70,7 @@ export class OrderStatsOutput {
 
   @Field(() => [TopProductItem])
   topProducts: TopProductItem[];
+
+  @Field(() => [ProductRevenueTrendItem])
+  productRevenueTrend: ProductRevenueTrendItem[];
 }

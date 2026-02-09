@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import { DashboardDateRangeService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-date-range.service';
 import {
   DashboardDataTransformer,
@@ -31,20 +32,31 @@ export class CustomerStatsService {
 
   async getStats(input: CustomerStatsInput): Promise<CustomerStatsOutput> {
     const dateRange = this.dateRangeService.resolve(
-      input.period as DashboardPeriod,
+      input.period,
       input.startDate,
       input.endDate,
     );
 
     try {
+      const dataSource = await getWorkspaceDataSourceWithSchema(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+      );
+
       const [customersByTier, customerGrowth, ltvStats, topCustomers] =
         await Promise.all([
-          this.getCustomersByTier(dateRange),
-          this.getCustomerGrowth(dateRange),
-          this.getLtvAndChurnStats(dateRange),
+          this.getCustomersByTier(dateRange, departmentIds),
+          this.getCustomerGrowth(dateRange, input.period, departmentIds),
+          this.getLtvAndChurnStats(dateRange, departmentIds),
           this.getTopCustomersByRevenue(
             dateRange,
             input.topCustomersLimit ?? DASHBOARD_LIMITS.TOP_CUSTOMERS,
+            departmentIds,
           ),
         ]);
 
@@ -65,14 +77,26 @@ export class CustomerStatsService {
     }
   }
 
-  private async getCustomersByTier(dateRange: {
-    startDate: string;
-    endDate: string;
-  }) {
+  private async getCustomersByTier(
+    dateRange: { startDate: string; endDate: string },
+    departmentIds?: string[],
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | string[])[] = [dateRange.endDate];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      'c."accountOwnerId"',
+      departmentIds,
+      2,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
 
     const rows: RawCustomerTierRow[] = await dataSource.query(
       `SELECT
@@ -82,9 +106,10 @@ export class CustomerStatsService {
       FROM "mktCustomer" c
       WHERE c."deletedAt" IS NULL
         AND c."createdAt" <= $1
+        ${deptFilter?.clause ?? ''}
       GROUP BY c."tier"
       ORDER BY total_ltv DESC`,
-      [dateRange.endDate],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -92,27 +117,45 @@ export class CustomerStatsService {
     return DashboardDataTransformer.transformCustomerTierStats(rows);
   }
 
-  private async getCustomerGrowth(dateRange: {
-    startDate: string;
-    endDate: string;
-  }) {
+  private async getCustomerGrowth(
+    dateRange: { startDate: string; endDate: string },
+    period: DashboardPeriod,
+    departmentIds?: string[],
+  ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
 
-    // SQL from design doc 7.3
+    const params: (string | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      3,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
+
+    const truncInterval = this.dateRangeService.getDateTruncInterval(period);
+
     const newCustomerRows: RawCustomerGrowthRow[] = await dataSource.query(
       `SELECT
-        DATE_TRUNC('month', "createdAt") AS period,
+        DATE_TRUNC('${truncInterval}', "createdAt") AS period,
         COUNT(*) AS new_customers,
         0 AS churned_customers
       FROM "mktCustomer"
       WHERE "deletedAt" IS NULL
         AND "createdAt" BETWEEN $1 AND $2
-      GROUP BY DATE_TRUNC('month', "createdAt")
+        ${deptFilter?.clause ?? ''}
+      GROUP BY DATE_TRUNC('${truncInterval}', "createdAt")
       ORDER BY period`,
-      [dateRange.startDate, dateRange.endDate],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -120,10 +163,10 @@ export class CustomerStatsService {
     return DashboardDataTransformer.transformCustomerGrowth(newCustomerRows);
   }
 
-  private async getLtvAndChurnStats(dateRange: {
-    startDate: string;
-    endDate: string;
-  }): Promise<{
+  private async getLtvAndChurnStats(
+    dateRange: { startDate: string; endDate: string },
+    departmentIds?: string[],
+  ): Promise<{
     averageLtv: number;
     churnRate: number;
     engagementDistribution: Array<{ range: string; count: number }>;
@@ -133,6 +176,18 @@ export class CustomerStatsService {
       this.twentyORMGlobalManager,
     );
 
+    const ltvParams: (string | string[])[] = [dateRange.endDate];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      '"accountOwnerId"',
+      departmentIds,
+      2,
+    );
+
+    if (deptFilter) {
+      ltvParams.push(deptFilter.params);
+    }
+
     const rows = await dataSource.query(
       `SELECT
         COALESCE(AVG("customerLtv"), 0) AS avg_ltv,
@@ -140,8 +195,9 @@ export class CustomerStatsService {
         COUNT(*) FILTER (WHERE "lifecycleStage" = 'CHURNED') AS churned_customers
       FROM "mktCustomer"
       WHERE "deletedAt" IS NULL
-        AND "createdAt" <= $1`,
-      [dateRange.endDate],
+        AND "createdAt" <= $1
+        ${deptFilter?.clause ?? ''}`,
+      ltvParams,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -151,6 +207,20 @@ export class CustomerStatsService {
     const churnedCustomers = Number(row?.churned_customers ?? 0);
 
     // Engagement distribution by order count ranges
+    const engDeptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      'c."accountOwnerId"',
+      departmentIds,
+      1,
+    );
+
+    const engParams: string[][] = [];
+    let engDeptClause = '';
+
+    if (engDeptFilter) {
+      engParams.push(engDeptFilter.params as unknown as string[]);
+      engDeptClause = engDeptFilter.clause;
+    }
+
     const engagementRows = await dataSource.query(
       `SELECT
         CASE
@@ -165,11 +235,12 @@ export class CustomerStatsService {
         FROM "mktCustomer" c
         LEFT JOIN "mktOrder" o ON o."mktCustomerId" = c.id AND o."deletedAt" IS NULL
         WHERE c."deletedAt" IS NULL
+          ${engDeptClause}
         GROUP BY c.id
       ) sub
       GROUP BY range
       ORDER BY MIN(order_count)`,
-      [],
+      engParams,
       undefined,
       { shouldBypassPermissionChecks: true },
     );
@@ -192,11 +263,28 @@ export class CustomerStatsService {
   private async getTopCustomersByRevenue(
     dateRange: { startDate: string; endDate: string },
     limit: number,
+    departmentIds?: string[],
   ) {
     const dataSource = await getWorkspaceDataSourceWithSchema(
       this.scopedWorkspaceContextFactory,
       this.twentyORMGlobalManager,
     );
+
+    const params: (string | number | string[])[] = [
+      dateRange.startDate,
+      dateRange.endDate,
+      limit,
+    ];
+
+    const deptFilter = DepartmentFilterHelper.buildOwnerFilter(
+      'o."accountOwnerId"',
+      departmentIds,
+      4,
+    );
+
+    if (deptFilter) {
+      params.push(deptFilter.params);
+    }
 
     const rows = await dataSource.query(
       `SELECT
@@ -209,10 +297,11 @@ export class CustomerStatsService {
         AND o."deletedAt" IS NULL
         AND o.status = 'COMPLETED'
         AND o."createdAt" BETWEEN $1 AND $2
+        ${deptFilter?.clause ?? ''}
       GROUP BY c.id, c."name"
       ORDER BY revenue DESC
       LIMIT $3`,
-      [dateRange.startDate, dateRange.endDate, limit],
+      params,
       undefined,
       { shouldBypassPermissionChecks: true },
     );

@@ -57,20 +57,23 @@ export class DashboardOrchestratorService {
     workspaceId: string,
     input: DashboardSummaryInput,
   ): Promise<DashboardSummaryOutput> {
-    // 1. Check cache
+    // 1. Check cache (include departmentId in cache key)
+    const cacheFilters: Record<string, unknown> = {
+      ...input.filters,
+      ...(input.departmentId ? { departmentId: input.departmentId } : {}),
+    };
     const cached = await this.cacheService.getSummary<DashboardSummaryOutput>(
       workspaceId,
       input.period,
-      input.filters,
+      cacheFilters,
     );
 
     if (cached) {
       return cached;
     }
 
-    const period = input.period as DashboardPeriod;
     const dateRange = this.dateRangeService.resolve(
-      period,
+      input.period,
       input.startDate,
       input.endDate,
     );
@@ -117,17 +120,19 @@ export class DashboardOrchestratorService {
         this.orderStatsService.getStats(orderInput),
         this.customerStatsService.getStats(customerInput),
         this.paymentStatsService.getStats(
-          period,
+          input.period,
           input.startDate,
           input.endDate,
+          input.departmentId,
         ),
         this.kpiStatsService.getStats(kpiInput),
         this.contractStatsService.getStats(
-          period,
+          input.period,
           input.startDate,
           input.endDate,
+          input.departmentId,
         ),
-        this.alertsService.getAlerts(),
+        this.alertsService.getAlerts(input.departmentId),
       ]);
 
       // 4. Map domain results to summary output structure
@@ -148,7 +153,7 @@ export class DashboardOrchestratorService {
         workspaceId,
         input.period,
         result,
-        input.filters,
+        cacheFilters,
       );
 
       this.logger.log('Dashboard summary generated', {
@@ -188,8 +193,14 @@ export class DashboardOrchestratorService {
     period: DashboardPeriod,
     startDate?: string,
     endDate?: string,
+    departmentId?: string,
   ): Promise<PaymentStatsOutput> {
-    return this.paymentStatsService.getStats(period, startDate, endDate);
+    return this.paymentStatsService.getStats(
+      period,
+      startDate,
+      endDate,
+      departmentId,
+    );
   }
 
   async getKpiStats(input: KpiScorecardInput): Promise<KpiScorecardOutput> {
@@ -200,12 +211,18 @@ export class DashboardOrchestratorService {
     period: DashboardPeriod,
     startDate?: string,
     endDate?: string,
+    departmentId?: string,
   ): Promise<ContractStatsOutput> {
-    return this.contractStatsService.getStats(period, startDate, endDate);
+    return this.contractStatsService.getStats(
+      period,
+      startDate,
+      endDate,
+      departmentId,
+    );
   }
 
-  async getAlerts(): Promise<AlertsOutput> {
-    return this.alertsService.getAlerts();
+  async getAlerts(departmentId?: string): Promise<AlertsOutput> {
+    return this.alertsService.getAlerts(departmentId);
   }
 
   async getLeaderboard(
