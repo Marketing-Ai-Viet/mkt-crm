@@ -6,6 +6,7 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { DashboardOrchestratorService } from 'src/mkt-core/mkt-dashboard/services/application/dashboard-orchestrator.service';
 import { DashboardSnapshotService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-snapshot.service';
 import { DashboardSnapshotJobData } from 'src/mkt-core/mkt-dashboard/types/dashboard-job.types';
+import { DashboardPeriod } from 'src/mkt-core/mkt-dashboard/types/dashboard-period.type';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { getErrorMessage } from 'src/mkt-core/utils';
 
@@ -34,7 +35,7 @@ export class DashboardSnapshotDailyJob {
 
     try {
       const summary = await this.orchestrator.getDashboardSummary(workspaceId, {
-        period: 'TODAY',
+        period: DashboardPeriod.TODAY,
       });
 
       await this.snapshotService.createSnapshot(
@@ -42,7 +43,7 @@ export class DashboardSnapshotDailyJob {
           name: `Daily Snapshot - ${DateTimeUtils.toISO(DateTimeUtils.now())}`,
           snapshotType: 'DAILY',
           dataSource: 'COMBINED',
-          period: 'TODAY',
+          period: DashboardPeriod.TODAY,
         },
         summary as unknown as Record<string, unknown>,
       );

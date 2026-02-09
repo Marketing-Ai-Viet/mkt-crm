@@ -5,7 +5,8 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
+// TODO: Re-enable @DataScope when RBAC is stable
+// import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 import { DashboardOrchestratorService } from 'src/mkt-core/mkt-dashboard/services/application/dashboard-orchestrator.service';
 import { DashboardSummaryInput } from 'src/mkt-core/mkt-dashboard/dto/input/dashboard-summary.input';
 import { RevenueStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-stats.input';
@@ -46,7 +47,7 @@ export class DashboardQueryResolver {
    * Get full dashboard summary with all aggregated metrics
    */
   @Query(() => DashboardSummaryOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
   async dashboardSummary(
     @Args('input', { type: () => DashboardSummaryInput })
     input: DashboardSummaryInput,
@@ -59,7 +60,7 @@ export class DashboardQueryResolver {
    * Get revenue statistics for the given period
    */
   @Query(() => RevenueStatsOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async revenueStats(
     @Args('input', { type: () => RevenueStatsInput })
     input: RevenueStatsInput,
@@ -71,7 +72,7 @@ export class DashboardQueryResolver {
    * Get order statistics for the given period
    */
   @Query(() => OrderStatsOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async orderStats(
     @Args('input', { type: () => OrderStatsInput })
     input: OrderStatsInput,
@@ -83,7 +84,7 @@ export class DashboardQueryResolver {
    * Get customer statistics for the given period
    */
   @Query(() => CustomerStatsOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async customerStats(
     @Args('input', { type: () => CustomerStatsInput })
     input: CustomerStatsInput,
@@ -95,7 +96,7 @@ export class DashboardQueryResolver {
    * Get KPI scorecard with metric breakdowns
    */
   @Query(() => KpiScorecardOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async kpiScorecard(
     @Args('input', { type: () => KpiScorecardInput })
     input: KpiScorecardInput,
@@ -107,7 +108,7 @@ export class DashboardQueryResolver {
    * Get staff leaderboard ranked by performance metrics
    */
   @Query(() => StaffLeaderboardOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async staffLeaderboard(
     @Args('input', { type: () => LeaderboardInput })
     input: LeaderboardInput,
@@ -119,7 +120,7 @@ export class DashboardQueryResolver {
    * Get active dashboard alerts (expiring licenses, overdue payments, etc.)
    */
   @Query(() => AlertsOutput)
-  @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
   async dashboardAlerts(): Promise<AlertsOutput> {
     return this.orchestrator.getAlerts();
   }

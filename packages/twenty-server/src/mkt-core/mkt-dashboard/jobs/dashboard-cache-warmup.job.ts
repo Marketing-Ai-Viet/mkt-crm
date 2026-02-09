@@ -8,7 +8,11 @@ import { DashboardCacheWarmupJobData } from 'src/mkt-core/mkt-dashboard/types/da
 import { DashboardPeriod } from 'src/mkt-core/mkt-dashboard/types/dashboard-period.type';
 import { getErrorMessage } from 'src/mkt-core/utils';
 
-const WARMUP_PERIODS: DashboardPeriod[] = ['TODAY', 'THIS_WEEK', 'THIS_MONTH'];
+const WARMUP_PERIODS: DashboardPeriod[] = [
+  DashboardPeriod.TODAY,
+  DashboardPeriod.THIS_WEEK,
+  DashboardPeriod.THIS_MONTH,
+];
 
 /**
  * Cache warmup job for the Dashboard module

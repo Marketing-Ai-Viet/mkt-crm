@@ -1,31 +1,26 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsNumber,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, Max } from 'class-validator';
+
+import { DashboardPeriod } from 'src/mkt-core/mkt-dashboard/types/dashboard-period.type';
 
 @InputType()
 export class LeaderboardInput {
-  @Field(() => String)
-  @IsEnum([
-    'TODAY',
-    'THIS_WEEK',
-    'THIS_MONTH',
-    'THIS_QUARTER',
-    'THIS_YEAR',
-    'CUSTOM',
-  ])
-  period: string;
+  @Field(() => DashboardPeriod)
+  period: DashboardPeriod;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   departmentId?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Filter by specific staff (workspaceMemberId)',
+  })
+  @IsOptional()
+  @IsString()
+  staffId?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

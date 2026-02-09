@@ -108,6 +108,28 @@ export class DashboardDateRangeService {
   }
 
   /**
+   * Map DashboardPeriod to SQL DATE_TRUNC interval for grouping
+   */
+  getDateTruncInterval(period: DashboardPeriod): string {
+    switch (period) {
+      case DashboardPeriod.TODAY:
+        return 'hour';
+      case DashboardPeriod.THIS_WEEK:
+        return 'day';
+      case DashboardPeriod.THIS_MONTH:
+        return 'week';
+      case DashboardPeriod.THIS_QUARTER:
+        return 'month';
+      case DashboardPeriod.THIS_YEAR:
+        return 'month';
+      case DashboardPeriod.CUSTOM:
+        return 'month';
+      default:
+        return 'month';
+    }
+  }
+
+  /**
    * Calculate elapsed and total days for current period (for projections)
    */
   getPeriodProgress(range: DateRange): {
