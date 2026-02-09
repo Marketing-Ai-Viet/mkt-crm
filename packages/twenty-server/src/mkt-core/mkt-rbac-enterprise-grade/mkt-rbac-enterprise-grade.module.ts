@@ -129,6 +129,9 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     // Export Casbin module (guards, decorators, services)
     CasbinModule,
 
+    // Re-export department module (needed by DepartmentAuthorizationGuard, HierarchicalAccessEvaluatorService)
+    MktDepartmentModule,
+
     // Export config token
     ENTERPRISE_RBAC_CONFIG_TOKEN,
 

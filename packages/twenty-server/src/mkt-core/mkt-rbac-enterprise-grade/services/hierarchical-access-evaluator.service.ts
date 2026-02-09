@@ -29,12 +29,20 @@ import {
   RbacContextService,
   UserContext,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-context.service';
+import {
+  MktDepartmentHierarchyRepository,
+  MktDepartmentRepository,
+} from 'src/mkt-core/mkt-department/repositories';
 
 @Injectable()
 export class HierarchicalAccessEvaluatorService {
   private readonly logger = new Logger(HierarchicalAccessEvaluatorService.name);
 
-  constructor(private readonly rbacContextService: RbacContextService) {}
+  constructor(
+    private readonly rbacContextService: RbacContextService,
+    private readonly departmentHierarchyRepository: MktDepartmentHierarchyRepository,
+    private readonly departmentRepository: MktDepartmentRepository,
+  ) {}
 
   // ============================================
   // MAIN EVALUATION METHOD
@@ -173,19 +181,34 @@ export class HierarchicalAccessEvaluatorService {
   /**
    * Build hierarchical access context from user context
    */
-  buildAccessContext(userContext: UserContext): HierarchicalAccessContext {
+  async buildAccessContext(
+    userContext: UserContext,
+    workspaceId?: string,
+  ): Promise<HierarchicalAccessContext> {
+    // Resolve currentManagerId from department entity (RBAC-007)
+    let currentManagerId: string | null = null;
+
+    if (userContext.departmentId && workspaceId) {
+      const department = await this.departmentRepository.findByIdInWorkspace(
+        userContext.departmentId,
+        workspaceId,
+      );
+
+      currentManagerId = department?.managerId ?? null;
+    }
+
     return {
       currentUserId: userContext.workspaceMemberId,
       currentHierarchyLevel: userContext.hierarchyLevel,
       currentDepartmentId: userContext.departmentId,
       currentDepartmentCode: userContext.departmentCode,
-      currentManagerId: null, // TODO: Resolve from department
+      currentManagerId,
       directSubordinateIds: userContext.subordinateMemberIds,
       reportingChainIds: [
         ...userContext.subordinateMemberIds,
         ...userContext.teamMemberIds,
       ],
-      peerManagerIds: [], // TODO: Resolve peer managers
+      peerManagerIds: [], // resolved via buildAccessContextWithPeers
       teamMemberIds: userContext.teamMemberIds,
     };
   }
@@ -197,7 +220,7 @@ export class HierarchicalAccessEvaluatorService {
     userContext: UserContext,
     workspaceId: string,
   ): Promise<HierarchicalAccessContext> {
-    const baseContext = this.buildAccessContext(userContext);
+    const baseContext = await this.buildAccessContext(userContext, workspaceId);
 
     // Resolve peer managers (same level, same parent department)
     const peerManagerIds = await this.resolvePeerManagers(
@@ -470,17 +493,85 @@ export class HierarchicalAccessEvaluatorService {
 
   /**
    * Resolve peer managers (same hierarchy level, same parent department)
+   *
+   * Algorithm:
+   * 1. Get user's departmentId from context
+   * 2. Find parent department via hierarchy
+   * 3. Find all sibling departments (children of the same parent)
+   * 4. Get managerId from each sibling department
+   * 5. Filter out current user and null values
    */
   private async resolvePeerManagers(
-    _workspaceId: string,
-    _userContext: UserContext,
+    workspaceId: string,
+    userContext: UserContext,
   ): Promise<string[]> {
-    // TODO: Implement peer manager resolution
-    // This requires:
-    // 1. Get current user's manager (from department.managerId or hierarchy)
-    // 2. Find other managers at same level reporting to same manager
-    // For now, return empty array
-    return [];
+    if (!userContext.departmentId) {
+      this.logger.debug(
+        HIERARCHICAL_ACCESS_MESSAGES.PEER_NO_DEPARTMENT(
+          userContext.workspaceMemberId,
+        ),
+      );
+
+      return [];
+    }
+
+    // Step 1: Find parent hierarchy for user's department
+    const parentHierarchy =
+      await this.departmentHierarchyRepository.findParentHierarchy(
+        userContext.departmentId,
+      );
+
+    if (!parentHierarchy?.parentDepartmentId) {
+      this.logger.debug(
+        HIERARCHICAL_ACCESS_MESSAGES.PEER_NO_PARENT(userContext.departmentId),
+      );
+
+      return [];
+    }
+
+    // Step 2: Find all sibling departments (children of the same parent)
+    const siblingHierarchies =
+      await this.departmentHierarchyRepository.findChildHierarchies(
+        parentHierarchy.parentDepartmentId,
+      );
+
+    // Step 3: Collect sibling department IDs, excluding current user's department
+    const siblingDepartmentIds = siblingHierarchies
+      .map((h) => h.childDepartmentId)
+      .filter(
+        (childId): childId is string =>
+          childId != null && childId !== userContext.departmentId,
+      );
+
+    if (siblingDepartmentIds.length === 0) {
+      return [];
+    }
+
+    // Step 4: Get managerId from each sibling department
+    const peerManagerIds: string[] = [];
+
+    for (const deptId of siblingDepartmentIds) {
+      const department = await this.departmentRepository.findByIdInWorkspace(
+        deptId,
+        workspaceId,
+      );
+
+      if (
+        department?.managerId &&
+        department.managerId !== userContext.workspaceMemberId
+      ) {
+        peerManagerIds.push(department.managerId);
+      }
+    }
+
+    this.logger.debug(
+      HIERARCHICAL_ACCESS_MESSAGES.PEER_RESOLVED(
+        userContext.workspaceMemberId,
+        peerManagerIds.length,
+      ),
+    );
+
+    return peerManagerIds;
   }
 
   // ============================================

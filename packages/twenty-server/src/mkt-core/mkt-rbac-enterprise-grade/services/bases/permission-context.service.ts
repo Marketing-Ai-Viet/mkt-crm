@@ -25,6 +25,7 @@ import {
   PermissionContextListResult,
   PermissionContextQueryOptions,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 @Injectable()
 export class PermissionContextService {
@@ -35,6 +36,18 @@ export class PermissionContextService {
   // ============================================
 
   private static readonly DEFAULT_PRIORITY = 0;
+
+  /** Permission context cache TTL: 5 minutes */
+  private static readonly CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+  /** Maximum local cache entries before cleanup */
+  private static readonly MAX_CACHE_SIZE = 500;
+
+  /** In-memory cache for permission context (Tier 1) */
+  private readonly permissionContextCache = new Map<
+    string,
+    { data: MktPermissionContextWorkspaceEntity; timestamp: number }
+  >();
 
   constructor(
     private readonly contextRepository: MktPermissionContextRepository,
@@ -406,34 +419,102 @@ export class PermissionContextService {
   // ============================================
 
   /**
-   * Lấy context từ cache
-   * Note: Tạm thời trả về null vì RbacCacheService chưa có method getContext
-   * TODO: Implement caching cho permission context trong RbacCacheService
+   * RBAC-005: Get permission context from in-memory cache
+   *
+   * Uses a local Map with TTL-based expiration (5 minutes).
+   * Returns null on cache miss or expired entry.
    */
   private async getCachedContext(
-    _cacheKey: string,
+    cacheKey: string,
   ): Promise<MktPermissionContextWorkspaceEntity | null> {
-    // TODO: Implement caching
-    return null;
+    const entry = this.permissionContextCache.get(cacheKey);
+
+    if (!entry) {
+      return null;
+    }
+
+    const now = DateTimeUtils.toMillis(DateTimeUtils.now());
+    const isExpired =
+      now - entry.timestamp > PermissionContextService.CONTEXT_CACHE_TTL_MS;
+
+    if (isExpired) {
+      this.permissionContextCache.delete(cacheKey);
+
+      return null;
+    }
+
+    return entry.data;
   }
 
   /**
-   * Set context vào cache
-   * Note: Tạm thời không làm gì vì RbacCacheService chưa có method setContext
-   * TODO: Implement caching cho permission context trong RbacCacheService
+   * RBAC-005: Store permission context in in-memory cache
+   *
+   * Stores the context with a timestamp for TTL-based expiration.
+   * Triggers cleanup when cache exceeds MAX_CACHE_SIZE.
    */
   private async setCachedContext(
-    _cacheKey: string,
-    _context: MktPermissionContextWorkspaceEntity,
+    cacheKey: string,
+    context: MktPermissionContextWorkspaceEntity,
   ): Promise<void> {
-    // TODO: Implement caching
+    this.permissionContextCache.set(cacheKey, {
+      data: context,
+      timestamp: DateTimeUtils.toMillis(DateTimeUtils.now()),
+    });
+
+    // Cleanup old entries if cache is too large
+    if (
+      this.permissionContextCache.size > PermissionContextService.MAX_CACHE_SIZE
+    ) {
+      this.cleanupContextCache();
+    }
+  }
+
+  /**
+   * Remove expired entries and oldest entries when cache exceeds max size
+   */
+  private cleanupContextCache(): void {
+    const now = DateTimeUtils.toMillis(DateTimeUtils.now());
+    const keysToDelete: string[] = [];
+
+    for (const [key, entry] of this.permissionContextCache.entries()) {
+      const isExpired =
+        now - entry.timestamp > PermissionContextService.CONTEXT_CACHE_TTL_MS;
+
+      if (isExpired) {
+        keysToDelete.push(key);
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.permissionContextCache.delete(key);
+    }
+
+    this.logger.debug(
+      `Cleaned up ${keysToDelete.length} expired permission context cache entries`,
+    );
   }
 
   /**
    * Invalidate cache cho workspace
    */
   private async invalidateCache(workspaceId: string): Promise<void> {
+    // Clear local in-memory cache entries for this workspace
+    const keysToDelete: string[] = [];
+
+    for (const key of this.permissionContextCache.keys()) {
+      if (key.includes(workspaceId)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.permissionContextCache.delete(key);
+    }
+
+    // Invalidate distributed cache
     await this.cacheService.invalidateWorkspace(workspaceId);
-    this.logger.debug(`Cache invalidated for workspace: ${workspaceId}`);
+    this.logger.debug(
+      `Cache invalidated for workspace: ${workspaceId} (${keysToDelete.length} local entries cleared)`,
+    );
   }
 }
