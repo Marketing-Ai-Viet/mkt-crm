@@ -2,7 +2,7 @@
 
 ## Overview
 
-API GraphQL de quan ly hop dong (contracts) trong he thong CRM. Module ho tro toan bo lifecycle cua hop dong: tao moi, cap nhat, chuyen trang thai, xoa mem va khoi phuc.
+API GraphQL để quản lý hợp đồng (contracts) trong hệ thống CRM. Module hỗ trợ toàn bộ lifecycle của hợp đồng: tạo mới, cập nhật, chuyển trạng thái, xóa mềm và khôi phục.
 
 **Base URL:** `/graphql`
 **Method:** `POST`
@@ -18,22 +18,22 @@ Authorization: Bearer <access_token>
 
 ## API Categories
 
-### Query APIs (Doc du lieu)
-- `getContracts` - Lay danh sach hop dong (co phan trang)
-- `getContractById` - Lay hop dong theo ID
-- `getContractByNumber` - Lay hop dong theo so hop dong
-- `getContractsByCustomer` - Lay danh sach hop dong theo khach hang
-- `getContractsByStatus` - Lay danh sach hop dong theo trang thai
-- `getContractStatusDistribution` - Thong ke phan bo trang thai hop dong
-- `getCustomerContractStats` - Thong ke hop dong cua khach hang
-- `getExpiringContracts` - Lay danh sach hop dong sap het han
+### Query APIs (Đọc dữ liệu)
+- `getContracts` - Lấy danh sách hợp đồng (có phân trang)
+- `getContractById` - Lấy hợp đồng theo ID
+- `getContractByNumber` - Lấy hợp đồng theo số hợp đồng
+- `getContractsByCustomer` - Lấy danh sách hợp đồng theo khách hàng
+- `getContractsByStatus` - Lấy danh sách hợp đồng theo trạng thái
+- `getContractStatusDistribution` - Thống kê phân bổ trạng thái hợp đồng
+- `getCustomerContractStats` - Thống kê hợp đồng của khách hàng
+- `getExpiringContracts` - Lấy danh sách hợp đồng sắp hết hạn
 
-### Mutation APIs (Ghi du lieu)
-- `createContract` - Tao hop dong moi
-- `updateContract` - Cap nhat thong tin hop dong
-- `updateContractStatus` - Chuyen trang thai hop dong
-- `deleteContract` - Xoa mem hop dong
-- `restoreContract` - Khoi phuc hop dong da xoa
+### Mutation APIs (Ghi dữ liệu)
+- `createContract` - Tạo hợp đồng mới
+- `updateContract` - Cập nhật thông tin hợp đồng
+- `updateContractStatus` - Chuyển trạng thái hợp đồng
+- `deleteContract` - Xóa mềm hợp đồng
+- `restoreContract` - Khôi phục hợp đồng đã xóa
 
 ---
 
@@ -41,7 +41,7 @@ Authorization: Bearer <access_token>
 
 ### 1. getContracts
 
-Lay danh sach hop dong voi phan trang. Du lieu duoc loc tu dong theo quyen truy cap cua user (Row-Level Security).
+Lấy danh sách hợp đồng với phân trang. Dữ liệu được lọc tự động theo quyền truy cập của user (Row-Level Security).
 
 **Query:**
 ```graphql
@@ -83,8 +83,8 @@ query GetContracts($take: Float, $skip: Float) {
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `take` | Float | No | `50` | So luong ban ghi toi da |
-| `skip` | Float | No | `0` | So ban ghi bo qua (offset) |
+| `take` | Float | No | `50` | Số lượng bản ghi tối đa |
+| `skip` | Float | No | `0` | Số bản ghi bỏ qua (offset) |
 
 **Response Success:**
 ```json
@@ -103,7 +103,7 @@ query GetContracts($take: Float, $skip: Float) {
           "signedDate": "2024-02-10",
           "filePath": null,
           "fileName": null,
-          "description": "Hop dong cap phep su dung bo MS Office 365...",
+          "description": "Hợp đồng cấp phép sử dụng bộ MS Office 365...",
           "position": 1,
           "customerId": "customer-uuid",
           "accountOwnerId": "member-uuid",
@@ -122,7 +122,7 @@ query GetContracts($take: Float, $skip: Float) {
 
 ### 2. getContractById
 
-Lay thong tin chi tiet mot hop dong theo ID.
+Lấy thông tin chi tiết một hợp đồng theo ID.
 
 **Query:**
 ```graphql
@@ -169,7 +169,7 @@ query GetContractById($contractId: String!) {
       "startDate": "2024-02-15",
       "endDate": "2025-02-15",
       "signedDate": "2024-02-10",
-      "description": "Hop dong cap phep su dung bo MS Office 365...",
+      "description": "Hợp đồng cấp phép sử dụng bộ MS Office 365...",
       "position": 1,
       "customerId": "customer-uuid",
       "accountOwnerId": "member-uuid",
@@ -181,7 +181,7 @@ query GetContractById($contractId: String!) {
 }
 ```
 
-**Response null (khong tim thay hoac khong co quyen):**
+**Response null (không tìm thấy hoặc không có quyền):**
 ```json
 {
   "data": {
@@ -194,7 +194,7 @@ query GetContractById($contractId: String!) {
 
 ### 3. getContractByNumber
 
-Lay thong tin hop dong theo so hop dong (contract number). So hop dong co dinh dang `CT{YYYYMMDD}{NNN}`.
+Lấy thông tin hợp đồng theo số hợp đồng (contract number). Số hợp đồng có định dạng `CT{YYYYMMDD}{NNN}`.
 
 **Query:**
 ```graphql
@@ -238,7 +238,7 @@ query GetContractByNumber($contractNumber: String!) {
       "startDate": "2024-03-10",
       "endDate": "2025-03-10",
       "signedDate": "2024-03-05",
-      "description": "Hop dong nang cap goi Slack Business+...",
+      "description": "Hợp đồng nâng cấp gói Slack Business+...",
       "customerId": "customer-uuid",
       "accountOwnerId": "member-uuid",
       "createdById": "member-uuid",
@@ -253,7 +253,7 @@ query GetContractByNumber($contractNumber: String!) {
 
 ### 4. getContractsByCustomer
 
-Lay danh sach hop dong cua mot khach hang. Ket qua duoc loc theo quyen cua user hien tai.
+Lấy danh sách hợp đồng của một khách hàng. Kết quả được lọc theo quyền của user hiện tại.
 
 **Query:**
 ```graphql
@@ -318,7 +318,7 @@ query GetContractsByCustomer($customerId: String!) {
 
 ### 5. getContractsByStatus
 
-Lay danh sach hop dong theo trang thai.
+Lấy danh sách hợp đồng theo trạng thái.
 
 **Query:**
 ```graphql
@@ -346,15 +346,15 @@ query GetContractsByStatus($status: ContractStatus!) {
 }
 ```
 
-**Cac gia tri ContractStatus hop le:**
+**Các giá trị ContractStatus hợp lệ:**
 
-| Value | Mau sac | Mo ta (VI) | Mo ta (EN) |
-|-------|---------|------------|------------|
-| `PENDING_CONVERSION` | Yellow | Cho chuyen doi | Pending Conversion |
-| `ACTIVE` | Green | Hoat dong | Active |
-| `INACTIVE` | Gray | Khong hoat dong | Inactive |
-| `EXPIRED` | Red | Het han | Expired |
-| `REVOKED` | Orange | Bi thu hoi | Revoked |
+| Value | Màu sắc | Mô tả (VI) | Mô tả (EN) |
+|-------|---------|-------------|-------------|
+| `PENDING_CONVERSION` | Yellow | Chờ chuyển đổi | Pending Conversion |
+| `ACTIVE` | Green | Hoạt động | Active |
+| `INACTIVE` | Gray | Không hoạt động | Inactive |
+| `EXPIRED` | Red | Hết hạn | Expired |
+| `REVOKED` | Orange | Bị thu hồi | Revoked |
 
 **Response Success:**
 ```json
@@ -383,7 +383,7 @@ query GetContractsByStatus($status: ContractStatus!) {
 
 ### 6. getContractStatusDistribution
 
-Thong ke phan bo hop dong theo trang thai. Huu ich de hien thi chart/dashboard.
+Thống kê phân bổ hợp đồng theo trạng thái. Hữu ích để hiển thị chart/dashboard.
 
 **Query:**
 ```graphql
@@ -420,7 +420,7 @@ query GetContractStatusDistribution {
 
 ### 7. getCustomerContractStats
 
-Thong ke hop dong cua mot khach hang cu the. Tra ve so luong hop dong, so active, so expired va ngay hop dong dau tien/cuoi cung.
+Thống kê hợp đồng của một khách hàng cụ thể. Trả về số lượng hợp đồng, số active, số expired và ngày hợp đồng đầu tiên/cuối cùng.
 
 **Query:**
 ```graphql
@@ -461,7 +461,7 @@ query GetCustomerContractStats($customerId: String!) {
 
 ### 8. getExpiringContracts
 
-Lay danh sach hop dong sap het han trong khoang thoi gian chi dinh. Huu ich de canh bao gia han.
+Lấy danh sách hợp đồng sắp hết hạn trong khoảng thời gian chỉ định. Hữu ích để cảnh báo gia hạn.
 
 **Query:**
 ```graphql
@@ -521,7 +521,7 @@ query GetExpiringContracts($startDate: String!, $endDate: String!) {
 
 ### 1. createContract
 
-Tao hop dong moi. So hop dong (`contractNumber`) se duoc tu dong sinh neu khong truyen vao, theo dinh dang `CT{YYYYMMDD}{NNN}`. Trang thai mac dinh la `PENDING_CONVERSION`. Truong `createdById` tu dong lay tu token cua user dang dang nhap.
+Tạo hợp đồng mới. Số hợp đồng (`contractNumber`) sẽ được tự động sinh nếu không truyền vào, theo định dạng `CT{YYYYMMDD}{NNN}`. Trạng thái mặc định là `PENDING_CONVERSION`. Trường `createdById` tự động lấy từ token của user đang đăng nhập.
 
 **Mutation:**
 ```graphql
@@ -545,7 +545,7 @@ mutation CreateContract($input: CreateContractInput!) {
     "startDate": "2026-03-01",
     "endDate": "2027-03-01",
     "signedDate": "2026-02-25",
-    "description": "Hop dong cap phep su dung SAP Business One",
+    "description": "Hợp đồng cấp phép sử dụng SAP Business One",
     "customerId": "customer-uuid",
     "accountOwnerId": "member-uuid"
   }
@@ -556,25 +556,25 @@ mutation CreateContract($input: CreateContractInput!) {
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `name` | String | **Yes** | - | Ten hop dong |
-| `contractNumber` | String | No | Tu dong sinh | So hop dong (CT{YYYYMMDD}{NNN}) |
-| `contractType` | ContractType | No | - | Loai hop dong (ORIGIN/RENEW/UPGRADE) |
-| `startDate` | String | No | - | Ngay bat dau (YYYY-MM-DD) |
-| `endDate` | String | No | - | Ngay ket thuc (YYYY-MM-DD) |
-| `signedDate` | String | No | - | Ngay ky (YYYY-MM-DD) |
-| `filePath` | String | No | - | Duong dan file hop dong |
-| `fileName` | String | No | - | Ten file hop dong |
-| `description` | String | No | - | Mo ta hop dong |
-| `customerId` | String (UUID) | No | - | ID khach hang |
-| `accountOwnerId` | String (UUID) | No | - | ID nguoi phu trach |
+| `name` | String | **Yes** | - | Tên hợp đồng |
+| `contractNumber` | String | No | Tự động sinh | Số hợp đồng (CT{YYYYMMDD}{NNN}) |
+| `contractType` | ContractType | No | - | Loại hợp đồng (ORIGIN/RENEW/UPGRADE) |
+| `startDate` | String | No | - | Ngày bắt đầu (YYYY-MM-DD) |
+| `endDate` | String | No | - | Ngày kết thúc (YYYY-MM-DD) |
+| `signedDate` | String | No | - | Ngày ký (YYYY-MM-DD) |
+| `filePath` | String | No | - | Đường dẫn file hợp đồng |
+| `fileName` | String | No | - | Tên file hợp đồng |
+| `description` | String | No | - | Mô tả hợp đồng |
+| `customerId` | String (UUID) | No | - | ID khách hàng |
+| `accountOwnerId` | String (UUID) | No | - | ID người phụ trách |
 
-**Cac gia tri ContractType hop le:**
+**Các giá trị ContractType hợp lệ:**
 
-| Value | Mo ta (VI) | Mo ta (EN) |
-|-------|------------|------------|
-| `ORIGIN` | Hop dong goc | Original Contract |
-| `RENEW` | Hop dong gia han | Renewal Contract |
-| `UPGRADE` | Hop dong nang cap | Upgrade Contract |
+| Value | Mô tả (VI) | Mô tả (EN) |
+|-------|-------------|-------------|
+| `ORIGIN` | Hợp đồng gốc | Original Contract |
+| `RENEW` | Hợp đồng gia hạn | Renewal Contract |
+| `UPGRADE` | Hợp đồng nâng cấp | Upgrade Contract |
 
 **Response Success:**
 ```json
@@ -610,7 +610,7 @@ mutation CreateContract($input: CreateContractInput!) {
 
 ### 2. updateContract
 
-Cap nhat thong tin hop dong. Chi cap nhat cac truong duoc truyen vao, cac truong khong truyen se giu nguyen.
+Cập nhật thông tin hợp đồng. Chỉ cập nhật các trường được truyền vào, các trường không truyền sẽ giữ nguyên.
 
 **Mutation:**
 ```graphql
@@ -631,7 +631,7 @@ mutation UpdateContract($input: UpdateContractInput!) {
   "input": {
     "id": "contract-uuid",
     "name": "SAP Business One - ABC Corp (Updated)",
-    "description": "Hop dong da cap nhat noi dung",
+    "description": "Hợp đồng đã cập nhật nội dung",
     "endDate": "2027-06-01"
   }
 }
@@ -641,19 +641,19 @@ mutation UpdateContract($input: UpdateContractInput!) {
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | String (UUID) | **Yes** | ID hop dong can cap nhat |
-| `name` | String | No | Ten hop dong |
-| `contractNumber` | String | No | So hop dong |
-| `status` | ContractStatus | No | Trang thai |
-| `contractType` | ContractType | No | Loai hop dong |
-| `startDate` | String | No | Ngay bat dau |
-| `endDate` | String | No | Ngay ket thuc |
-| `signedDate` | String | No | Ngay ky |
-| `filePath` | String | No | Duong dan file |
-| `fileName` | String | No | Ten file |
-| `description` | String | No | Mo ta |
-| `customerId` | String (UUID) | No | ID khach hang |
-| `accountOwnerId` | String (UUID) | No | ID nguoi phu trach |
+| `id` | String (UUID) | **Yes** | ID hợp đồng cần cập nhật |
+| `name` | String | No | Tên hợp đồng |
+| `contractNumber` | String | No | Số hợp đồng |
+| `status` | ContractStatus | No | Trạng thái |
+| `contractType` | ContractType | No | Loại hợp đồng |
+| `startDate` | String | No | Ngày bắt đầu |
+| `endDate` | String | No | Ngày kết thúc |
+| `signedDate` | String | No | Ngày ký |
+| `filePath` | String | No | Đường dẫn file |
+| `fileName` | String | No | Tên file |
+| `description` | String | No | Mô tả |
+| `customerId` | String (UUID) | No | ID khách hàng |
+| `accountOwnerId` | String (UUID) | No | ID người phụ trách |
 
 **Response Success:**
 ```json
@@ -670,7 +670,7 @@ mutation UpdateContract($input: UpdateContractInput!) {
 }
 ```
 
-**Response Error - Khong tim thay hop dong:**
+**Response Error - Không tìm thấy hợp đồng:**
 ```json
 {
   "data": {
@@ -689,7 +689,7 @@ mutation UpdateContract($input: UpdateContractInput!) {
 
 ### 3. updateContractStatus
 
-Chuyen trang thai hop dong. Tra ve trang thai truoc va sau khi chuyen, kem thong bao.
+Chuyển trạng thái hợp đồng. Trả về trạng thái trước và sau khi chuyển, kèm thông báo.
 
 **Mutation:**
 ```graphql
@@ -711,7 +711,7 @@ mutation UpdateContractStatus($input: UpdateContractStatusInput!) {
   "input": {
     "id": "contract-uuid",
     "status": "INACTIVE",
-    "reason": "Khach hang yeu cau tam ngung"
+    "reason": "Khách hàng yêu cầu tạm ngừng"
   }
 }
 ```
@@ -720,9 +720,9 @@ mutation UpdateContractStatus($input: UpdateContractStatusInput!) {
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | String (UUID) | **Yes** | ID hop dong |
-| `status` | ContractStatus | **Yes** | Trang thai moi |
-| `reason` | String | No | Ly do thay doi trang thai |
+| `id` | String (UUID) | **Yes** | ID hợp đồng |
+| `status` | ContractStatus | **Yes** | Trạng thái mới |
+| `reason` | String | No | Lý do thay đổi trạng thái |
 
 **Response Success:**
 ```json
@@ -740,7 +740,7 @@ mutation UpdateContractStatus($input: UpdateContractStatusInput!) {
 }
 ```
 
-**Response Error - Khong tim thay:**
+**Response Error - Không tìm thấy:**
 ```json
 {
   "data": {
@@ -760,7 +760,7 @@ mutation UpdateContractStatus($input: UpdateContractStatusInput!) {
 
 ### 4. deleteContract
 
-Xoa mem hop dong (soft delete). Hop dong bi xoa van co the khoi phuc bang `restoreContract`.
+Xóa mềm hợp đồng (soft delete). Hợp đồng bị xóa vẫn có thể khôi phục bằng `restoreContract`.
 
 **Mutation:**
 ```graphql
@@ -795,7 +795,7 @@ mutation DeleteContract($contractId: String!) {
 }
 ```
 
-**Response Error - Khong tim thay:**
+**Response Error - Không tìm thấy:**
 ```json
 {
   "data": {
@@ -813,7 +813,7 @@ mutation DeleteContract($contractId: String!) {
 
 ### 5. restoreContract
 
-Khoi phuc hop dong da xoa mem. Trang thai hop dong duoc giu nguyen nhu truoc khi xoa.
+Khôi phục hợp đồng đã xóa mềm. Trạng thái hợp đồng được giữ nguyên như trước khi xóa.
 
 **Mutation:**
 ```graphql
@@ -848,7 +848,7 @@ mutation RestoreContract($contractId: String!) {
 }
 ```
 
-**Response Error - Khong tim thay:**
+**Response Error - Không tìm thấy:**
 ```json
 {
   "data": {
@@ -871,109 +871,109 @@ mutation RestoreContract($contractId: String!) {
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
 | `id` | String | No | Contract ID (UUID) |
-| `name` | String | Yes | Ten hop dong |
-| `contractNumber` | String | Yes | So hop dong (CT{YYYYMMDD}{NNN}) |
-| `status` | ContractStatus | Yes | Trang thai hop dong |
-| `contractType` | ContractType | Yes | Loai hop dong |
-| `startDate` | String | Yes | Ngay bat dau |
-| `endDate` | String | Yes | Ngay ket thuc |
-| `signedDate` | String | Yes | Ngay ky hop dong |
-| `filePath` | String | Yes | Duong dan file hop dong |
-| `fileName` | String | Yes | Ten file hop dong |
-| `description` | String | Yes | Mo ta hop dong |
-| `position` | Number | Yes | Vi tri sap xep |
-| `customerId` | String | Yes | ID khach hang |
-| `accountOwnerId` | String | Yes | ID nguoi phu trach |
-| `createdById` | String | Yes | ID nguoi tao |
-| `createdAt` | String | Yes | Ngay tao |
-| `updatedAt` | String | Yes | Ngay cap nhat |
+| `name` | String | Yes | Tên hợp đồng |
+| `contractNumber` | String | Yes | Số hợp đồng (CT{YYYYMMDD}{NNN}) |
+| `status` | ContractStatus | Yes | Trạng thái hợp đồng |
+| `contractType` | ContractType | Yes | Loại hợp đồng |
+| `startDate` | String | Yes | Ngày bắt đầu |
+| `endDate` | String | Yes | Ngày kết thúc |
+| `signedDate` | String | Yes | Ngày ký hợp đồng |
+| `filePath` | String | Yes | Đường dẫn file hợp đồng |
+| `fileName` | String | Yes | Tên file hợp đồng |
+| `description` | String | Yes | Mô tả hợp đồng |
+| `position` | Number | Yes | Vị trí sắp xếp |
+| `customerId` | String | Yes | ID khách hàng |
+| `accountOwnerId` | String | Yes | ID người phụ trách |
+| `createdById` | String | Yes | ID người tạo |
+| `createdAt` | String | Yes | Ngày tạo |
+| `updatedAt` | String | Yes | Ngày cập nhật |
 
 ### ContractListOutput
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `contracts` | [ContractOutput] | Danh sach hop dong |
-| `totalCount` | Number | Tong so hop dong |
+| `contracts` | [ContractOutput] | Danh sách hợp đồng |
+| `totalCount` | Number | Tổng số hợp đồng |
 
 ### ContractStatusDistributionOutput
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `distribution` | [ContractStatusDistributionItem] | Danh sach phan bo |
-| `totalCount` | Number | Tong so hop dong |
+| `distribution` | [ContractStatusDistributionItem] | Danh sách phân bổ |
+| `totalCount` | Number | Tổng số hợp đồng |
 
 ### ContractStatusDistributionItem
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | String | Trang thai hop dong |
-| `count` | Number | So luong hop dong |
+| `status` | String | Trạng thái hợp đồng |
+| `count` | Number | Số lượng hợp đồng |
 
 ### CustomerContractStatsOutput
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `contractCount` | Number | No | Tong so hop dong |
-| `activeCount` | Number | No | So hop dong dang hoat dong |
-| `expiredCount` | Number | No | So hop dong het han |
-| `firstContractDate` | String | Yes | Ngay hop dong dau tien |
-| `lastContractDate` | String | Yes | Ngay hop dong moi nhat |
+| `contractCount` | Number | No | Tổng số hợp đồng |
+| `activeCount` | Number | No | Số hợp đồng đang hoạt động |
+| `expiredCount` | Number | No | Số hợp đồng hết hạn |
+| `firstContractDate` | String | Yes | Ngày hợp đồng đầu tiên |
+| `lastContractDate` | String | Yes | Ngày hợp đồng mới nhất |
 
 ### ExpiringContractsOutput
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `contracts` | [ContractOutput] | Danh sach hop dong sap het han |
-| `totalCount` | Number | Tong so hop dong sap het han |
+| `contracts` | [ContractOutput] | Danh sách hợp đồng sắp hết hạn |
+| `totalCount` | Number | Tổng số hợp đồng sắp hết hạn |
 
 ### CreateContractResponseDto
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `success` | Boolean | No | Ket qua thao tac |
-| `contractId` | String | Yes | ID hop dong da tao |
-| `contractNumber` | String | Yes | So hop dong da tao |
-| `status` | ContractStatus | Yes | Trang thai hop dong |
-| `error` | String | Yes | Thong bao loi (neu co) |
+| `success` | Boolean | No | Kết quả thao tác |
+| `contractId` | String | Yes | ID hợp đồng đã tạo |
+| `contractNumber` | String | Yes | Số hợp đồng đã tạo |
+| `status` | ContractStatus | Yes | Trạng thái hợp đồng |
+| `error` | String | Yes | Thông báo lỗi (nếu có) |
 
 ### UpdateContractResponseDto
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `success` | Boolean | No | Ket qua thao tac |
-| `contractId` | String | Yes | ID hop dong |
-| `previousStatus` | ContractStatus | Yes | Trang thai truoc |
-| `newStatus` | ContractStatus | Yes | Trang thai sau |
-| `error` | String | Yes | Thong bao loi (neu co) |
+| `success` | Boolean | No | Kết quả thao tác |
+| `contractId` | String | Yes | ID hợp đồng |
+| `previousStatus` | ContractStatus | Yes | Trạng thái trước |
+| `newStatus` | ContractStatus | Yes | Trạng thái sau |
+| `error` | String | Yes | Thông báo lỗi (nếu có) |
 
 ### UpdateContractStatusResponseDto
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `success` | Boolean | No | Ket qua thao tac |
-| `contractId` | String | Yes | ID hop dong |
-| `previousStatus` | ContractStatus | Yes | Trang thai truoc |
-| `newStatus` | ContractStatus | Yes | Trang thai sau |
-| `message` | String | Yes | Thong bao chi tiet |
-| `error` | String | Yes | Thong bao loi (neu co) |
+| `success` | Boolean | No | Kết quả thao tác |
+| `contractId` | String | Yes | ID hợp đồng |
+| `previousStatus` | ContractStatus | Yes | Trạng thái trước |
+| `newStatus` | ContractStatus | Yes | Trạng thái sau |
+| `message` | String | Yes | Thông báo chi tiết |
+| `error` | String | Yes | Thông báo lỗi (nếu có) |
 
 ### DeleteContractResponseDto
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `success` | Boolean | No | Ket qua thao tac |
-| `contractId` | String | Yes | ID hop dong |
-| `message` | String | Yes | Thong bao ket qua |
-| `error` | String | Yes | Thong bao loi (neu co) |
+| `success` | Boolean | No | Kết quả thao tác |
+| `contractId` | String | Yes | ID hợp đồng |
+| `message` | String | Yes | Thông báo kết quả |
+| `error` | String | Yes | Thông báo lỗi (nếu có) |
 
 ### RestoreContractResponseDto
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `success` | Boolean | No | Ket qua thao tac |
-| `contractId` | String | Yes | ID hop dong |
-| `status` | ContractStatus | Yes | Trang thai hop dong sau khi khoi phuc |
-| `error` | String | Yes | Thong bao loi (neu co) |
+| `success` | Boolean | No | Kết quả thao tác |
+| `contractId` | String | Yes | ID hợp đồng |
+| `status` | ContractStatus | Yes | Trạng thái hợp đồng sau khi khôi phục |
+| `error` | String | Yes | Thông báo lỗi (nếu có) |
 
 ### Enums
 
@@ -981,19 +981,19 @@ mutation RestoreContract($contractId: String!) {
 
 | Value | Color | Label (VI) | Label (EN) |
 |-------|-------|------------|------------|
-| `PENDING_CONVERSION` | Yellow | Cho chuyen doi | Pending Conversion |
-| `ACTIVE` | Green | Hoat dong | Active |
-| `INACTIVE` | Gray | Khong hoat dong | Inactive |
-| `EXPIRED` | Red | Het han | Expired |
-| `REVOKED` | Orange | Bi thu hoi | Revoked |
+| `PENDING_CONVERSION` | Yellow | Chờ chuyển đổi | Pending Conversion |
+| `ACTIVE` | Green | Hoạt động | Active |
+| `INACTIVE` | Gray | Không hoạt động | Inactive |
+| `EXPIRED` | Red | Hết hạn | Expired |
+| `REVOKED` | Orange | Bị thu hồi | Revoked |
 
 #### ContractType
 
 | Value | Color | Label (VI) | Label (EN) |
 |-------|-------|------------|------------|
-| `ORIGIN` | Blue | Hop dong goc | Original Contract |
-| `RENEW` | Green | Hop dong gia han | Renewal Contract |
-| `UPGRADE` | Purple | Hop dong nang cap | Upgrade Contract |
+| `ORIGIN` | Blue | Hợp đồng gốc | Original Contract |
+| `RENEW` | Green | Hợp đồng gia hạn | Renewal Contract |
+| `UPGRADE` | Purple | Hợp đồng nâng cấp | Upgrade Contract |
 
 ---
 
@@ -1001,52 +1001,52 @@ mutation RestoreContract($contractId: String!) {
 
 ### 3-Layer Access Control
 
-Module Contract ap dung 3 lop bao mat:
+Module Contract áp dụng 3 lớp bảo mật:
 
 ```
 Layer 1: Guards (WorkspaceAuthGuard + UserAuthGuard)
     |
-Layer 2: @RequireContractAccess (RBAC theo phong ban)
+Layer 2: @RequireContractAccess (RBAC theo phòng ban)
     |
-Layer 3: @DataScope (Row-Level Security theo cap bac)
+Layer 3: @DataScope (Row-Level Security theo cấp bậc)
 ```
 
 #### Layer 1 - Authentication Guards
 
-| Guard | Chuc nang |
+| Guard | Chức năng |
 |-------|-----------|
-| `WorkspaceAuthGuard` | Xac thuc workspace tu token |
-| `UserAuthGuard` | Xac thuc user tu token |
+| `WorkspaceAuthGuard` | Xác thực workspace từ token |
+| `UserAuthGuard` | Xác thực user từ token |
 
 #### Layer 2 - Department-Based Access (RBAC)
 
-| Phong ban / Cap bac | Quyen truy cap |
-|---------------------|---------------|
+| Phòng ban / Cấp bậc | Quyền truy cập |
+|----------------------|---------------|
 | Finance (FINANCE) | Full access |
 | Accounting (ACCOUNTING) | Full access |
 | Executive (level 1-3: CEO, C-Level, VP) | Full access |
-| Cac phong ban khac | 403 Forbidden |
+| Các phòng ban khác | 403 Forbidden |
 
 #### Layer 3 - Row-Level Security (DataScope)
 
-| Cap bac (Hierarchy Level) | Pham vi du lieu |
-|---------------------------|----------------|
-| Staff (level 8-11) | Chi thay hop dong do minh tao (`createdById = self`) |
-| Manager (level 7) | Thay hop dong cua cap duoi truc tiep |
-| Upper Management (level 4-6) | Thay hop dong trong chuoi bao cao |
-| Executive (level 1-3) | Thay tat ca hop dong |
+| Cấp bậc (Hierarchy Level) | Phạm vi dữ liệu |
+|---------------------------|------------------|
+| Staff (level 8-11) | Chỉ thấy hợp đồng do mình tạo (`createdById = self`) |
+| Manager (level 7) | Thấy hợp đồng của cấp dưới trực tiếp |
+| Upper Management (level 4-6) | Thấy hợp đồng trong chuỗi báo cáo |
+| Executive (level 1-3) | Thấy tất cả hợp đồng |
 
-#### Decorator su dung theo thao tac
+#### Decorator sử dụng theo thao tác
 
-| API | Decorator | Mo ta |
+| API | Decorator | Mô tả |
 |-----|-----------|-------|
-| Query (doc) | `@RequireContractReadAccess()` | Quyen doc hop dong |
-| Mutation (tao/sua) | `@RequireContractWriteAccess()` | Quyen ghi hop dong |
-| Mutation (xoa) | `@RequireContractDeleteAccess()` | Quyen xoa hop dong |
+| Query (đọc) | `@RequireContractReadAccess()` | Quyền đọc hợp đồng |
+| Mutation (tạo/sửa) | `@RequireContractWriteAccess()` | Quyền ghi hợp đồng |
+| Mutation (xóa) | `@RequireContractDeleteAccess()` | Quyền xóa hợp đồng |
 
 ### Block Hooks
 
-Module Contract **chan 13 GraphQL operations tu dong sinh** boi Twenty CRM engine (createMktContract, updateMktContract, deleteMktContract, findMktContract, v.v.). Tat ca thao tac voi hop dong **bat buoc** phai di qua cac custom resolver duoc bao ve boi RBAC.
+Module Contract **chặn 13 GraphQL operations tự động sinh** bởi Twenty CRM engine (createMktContract, updateMktContract, deleteMktContract, findMktContract, v.v.). Tất cả thao tác với hợp đồng **bắt buộc** phải đi qua các custom resolver được bảo vệ bởi RBAC.
 
 ---
 
@@ -1056,27 +1056,27 @@ Module Contract **chan 13 GraphQL operations tu dong sinh** boi Twenty CRM engin
 
 | Error Code | Message | Description |
 |------------|---------|-------------|
-| `UNAUTHENTICATED` | You must be authenticated | Chua dang nhap hoac token het han |
-| `FORBIDDEN` | Chi phong Tai chinh/Ke toan va Ban dieu hanh... | Khong co quyen truy cap module Contract |
-| - | Contract not found: {id} | Hop dong khong ton tai |
-| - | Contract with number {number} already exists | So hop dong da ton tai (khi tao moi) |
-| - | Contract not found or not deleted: {id} | Hop dong khong ton tai hoac chua bi xoa (khi restore) |
+| `UNAUTHENTICATED` | You must be authenticated | Chưa đăng nhập hoặc token hết hạn |
+| `FORBIDDEN` | Chỉ phòng Tài chính/Kế toán và Ban điều hành... | Không có quyền truy cập module Contract |
+| - | Contract not found: {id} | Hợp đồng không tồn tại |
+| - | Contract with number {number} already exists | Số hợp đồng đã tồn tại (khi tạo mới) |
+| - | Contract not found or not deleted: {id} | Hợp đồng không tồn tại hoặc chưa bị xóa (khi restore) |
 
 ### Mutation Response Pattern
 
-Tat ca mutation tra ve pattern `{ success, error }` thay vi throw exception:
+Tất cả mutation trả về pattern `{ success, error }` thay vì throw exception:
 
 ```typescript
-// Kiem tra ket qua
+// Kiểm tra kết quả
 const result = await createContract({ variables: { input } });
 const data = result.data.createContract;
 
 if (data.success) {
-  // Thanh cong
+  // Thành công
   console.log('Contract ID:', data.contractId);
   console.log('Contract Number:', data.contractNumber);
 } else {
-  // That bai - hien thi loi
+  // Thất bại - hiển thị lỗi
   showError(data.error);
 }
 ```
@@ -1085,17 +1085,17 @@ if (data.success) {
 
 ## Best Practices
 
-### 1. Su dung getContracts voi pagination
+### 1. Sử dụng getContracts với pagination
 
 ```graphql
-# Lay 10 hop dong dau tien
+# Lấy 10 hợp đồng đầu tiên
 query { getContracts(take: 10, skip: 0) { contracts { ... } totalCount } }
 
-# Lay trang tiep theo
+# Lấy trang tiếp theo
 query { getContracts(take: 10, skip: 10) { contracts { ... } totalCount } }
 ```
 
-### 2. Kiem tra ket qua mutation truoc khi xu ly
+### 2. Kiểm tra kết quả mutation trước khi xử lý
 
 ```typescript
 const result = await updateContractStatus({
@@ -1113,10 +1113,10 @@ if (data.success) {
 }
 ```
 
-### 3. Su dung getExpiringContracts de canh bao gia han
+### 3. Sử dụng getExpiringContracts để cảnh báo gia hạn
 
 ```typescript
-// Lay hop dong het han trong 30 ngay toi
+// Lấy hợp đồng hết hạn trong 30 ngày tới
 const today = new Date();
 const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -1128,30 +1128,30 @@ const result = await getExpiringContracts({
 });
 
 if (result.data.getExpiringContracts.totalCount > 0) {
-  showWarning(`Co ${result.data.getExpiringContracts.totalCount} hop dong sap het han`);
+  showWarning(`Có ${result.data.getExpiringContracts.totalCount} hợp đồng sắp hết hạn`);
 }
 ```
 
-### 4. Su dung getContractStatusDistribution cho dashboard
+### 4. Sử dụng getContractStatusDistribution cho dashboard
 
 ```typescript
 const result = await getContractStatusDistribution();
 const { distribution, totalCount } = result.data.getContractStatusDistribution;
 
-// Hien thi pie chart / bar chart
+// Hiển thị pie chart / bar chart
 distribution.forEach(item => {
   console.log(`${item.status}: ${item.count} (${(item.count / totalCount * 100).toFixed(1)}%)`);
 });
 ```
 
-### 5. Flow tao hop dong day du
+### 5. Flow tạo hợp đồng đầy đủ
 
 ```typescript
-// Buoc 1: Tao hop dong
+// Bước 1: Tạo hợp đồng
 const createResult = await createContract({
   variables: {
     input: {
-      name: 'Ten hop dong',
+      name: 'Tên hợp đồng',
       contractType: 'ORIGIN',
       startDate: '2026-03-01',
       endDate: '2027-03-01',
@@ -1167,33 +1167,33 @@ if (!createResult.data.createContract.success) {
 
 const contractId = createResult.data.createContract.contractId;
 
-// Buoc 2: Chuyen trang thai ACTIVE khi da ky
+// Bước 2: Chuyển trạng thái ACTIVE khi đã ký
 const statusResult = await updateContractStatus({
   variables: {
     input: {
       id: contractId,
       status: 'ACTIVE',
-      reason: 'Da ky hop dong'
+      reason: 'Đã ký hợp đồng'
     }
   }
 });
 ```
 
-### 6. Soft delete va restore
+### 6. Soft delete và restore
 
 ```typescript
-// Xoa mem
+// Xóa mềm
 const deleteResult = await deleteContract({
   variables: { contractId }
 });
 
-// Khoi phuc
+// Khôi phục
 const restoreResult = await restoreContract({
   variables: { contractId }
 });
 
-// Trang thai hop dong duoc giu nguyen sau khi restore
-console.log(restoreResult.data.restoreContract.status); // Trang thai truoc khi xoa
+// Trạng thái hợp đồng được giữ nguyên sau khi restore
+console.log(restoreResult.data.restoreContract.status); // Trạng thái trước khi xóa
 ```
 
 ---
@@ -1202,4 +1202,4 @@ console.log(restoreResult.data.restoreContract.status); // Trang thai truoc khi 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | 2026-02-09 | Initial release - 8 queries, 5 mutations with 3-layer RBAC |
+| 1.0.0 | 2026-02-09 | Initial release - 8 queries, 5 mutations với 3-layer RBAC |
