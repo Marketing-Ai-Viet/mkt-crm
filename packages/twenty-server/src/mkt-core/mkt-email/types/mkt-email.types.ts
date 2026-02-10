@@ -74,6 +74,12 @@ export type OrderEmailReplacements = {
   trial_duration: number;
 };
 
+// Configurable email sender
+export type EmailSenderConfig = {
+  fromName?: string;
+  fromAddress?: string;
+};
+
 // Status distribution statistics
 export type StatusDistributionItem = {
   status: string;

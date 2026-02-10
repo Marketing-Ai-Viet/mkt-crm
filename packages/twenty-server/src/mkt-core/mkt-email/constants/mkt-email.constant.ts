@@ -3,6 +3,7 @@ import { MktOrderWorkspaceEntity } from 'src/mkt-core/order/objects/mkt-order.wo
 
 export enum MKT_EMAIL_STATUS {
   DRAFT = 'DRAFT',
+  QUEUED = 'QUEUED',
   SENT = 'SENT',
   FAILED = 'FAILED',
 }
@@ -17,26 +18,34 @@ export const MKT_EMAIL_STATUS_OPTIONS = {
       color: 'gray',
     },
     {
+      value: MKT_EMAIL_STATUS.QUEUED,
+      label: 'Đang gửi',
+      position: 1,
+      color: 'yellow',
+    },
+    {
       value: MKT_EMAIL_STATUS.SENT,
       label: 'Đã gửi',
-      position: 1,
+      position: 2,
       color: 'green',
     },
     {
       value: MKT_EMAIL_STATUS.FAILED,
       label: 'Thất bại',
-      position: 2,
+      position: 3,
       color: 'red',
     },
   ],
   labels: {
     EN: {
       DRAFT: 'Draft',
+      QUEUED: 'Queued',
       SENT: 'Sent',
       FAILED: 'Failed',
     },
     VI: {
       DRAFT: 'Nháp',
+      QUEUED: 'Đang gửi',
       SENT: 'Đã gửi',
       FAILED: 'Thất bại',
     },

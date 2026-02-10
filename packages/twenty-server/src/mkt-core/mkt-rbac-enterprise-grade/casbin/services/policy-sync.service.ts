@@ -381,8 +381,8 @@ export class PolicySyncService implements OnModuleDestroy {
     for (const template of templates) {
       const templateWithRelations =
         await this.templateRepository.findWithRelations(
-          template.id,
           workspaceId,
+          template.id,
         );
 
       if (!templateWithRelations) continue;
