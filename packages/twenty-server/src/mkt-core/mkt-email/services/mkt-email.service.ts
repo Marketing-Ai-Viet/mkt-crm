@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import Handlebars from 'handlebars';
+
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
@@ -19,7 +21,10 @@ import {
   MktEmailRepository,
   MktTemplateRepository,
 } from 'src/mkt-core/mkt-email/repositories';
-import { OrderEmailReplacements } from 'src/mkt-core/mkt-email/types';
+import {
+  EmailSenderConfig,
+  OrderEmailReplacements,
+} from 'src/mkt-core/mkt-email/types';
 import {
   MktEmailWorkspaceEntity,
   MktTemplateWorkspaceEntity,
@@ -77,7 +82,10 @@ export class MktEmailService {
    * Send order notification email
    * Refactored để giảm complexity
    */
-  async sendOrderEmail(fullOrder: MktOrderWorkspaceEntity): Promise<void> {
+  async sendOrderEmail(
+    fullOrder: MktOrderWorkspaceEntity,
+    senderConfig?: EmailSenderConfig,
+  ): Promise<void> {
     try {
       // Bước 1: Xác định template key dựa trên status
       const templateKey = this.getTemplateKeyForOrderStatus(fullOrder);
@@ -111,8 +119,13 @@ export class MktEmailService {
       // Bước 4: Build template variables
       const replacements = await this.buildEmailTemplateVariables(fullOrder);
 
-      // Bước 5: Replace placeholders và gửi email
-      await this.processAndSendEmail(fullOrder, template, replacements);
+      // Bước 5: Compile template và gửi email
+      await this.processAndSendEmail(
+        fullOrder,
+        template,
+        replacements,
+        senderConfig,
+      );
     } catch (error) {
       this.logger.error(
         EMAIL_MESSAGES.ERROR.ORDER_EMAIL_FAILED(fullOrder?.id ?? 'unknown'),
@@ -267,74 +280,16 @@ export class MktEmailService {
   }
 
   /**
-   * Replace template placeholders với actual values
+   * Compile template string with Handlebars
+   * Uses noEscape since templates contain HTML content
    */
-  private replaceTemplatePlaceholders(
+  private compileTemplate(
     template: string,
     replacements: OrderEmailReplacements,
   ): string {
-    let result = template;
+    const compiled = Handlebars.compile(template, { noEscape: true });
 
-    // Bước 1: Xử lý conditionals - từ trong ra ngoài
-    result = this.processConditionals(result, replacements);
-
-    // Bước 2: Replace all placeholders
-    result = this.replacePlaceholderValues(result, replacements);
-
-    return result;
-  }
-
-  /**
-   * Xử lý các conditional blocks trong template
-   */
-  private processConditionals(
-    template: string,
-    replacements: OrderEmailReplacements,
-  ): string {
-    let result = template;
-
-    // Xử lý payment_page_url conditional (innermost)
-    result = result.replace(
-      /{{#if\s+payment_page_url\s*}}([\s\S]*?){{\/if\s*}}/g,
-      (_match, content) => (replacements.payment_page_url ? content : ''),
-    );
-
-    // Xử lý qr_code_url conditional
-    result = result.replace(
-      /{{#if\s+qr_code_url\s*}}([\s\S]*?){{\/if\s*}}/g,
-      (_match, content) => (replacements.qr_code_url ? content : ''),
-    );
-
-    // Xử lý order_notes conditional
-    result = result.replace(
-      /{{#if\s+order_notes\s*}}([\s\S]*?){{\/if\s*}}/g,
-      (_match, content) => (replacements.order_notes ? content : ''),
-    );
-
-    return result;
-  }
-
-  /**
-   * Replace placeholder values trong template
-   */
-  private replacePlaceholderValues(
-    template: string,
-    replacements: OrderEmailReplacements,
-  ): string {
-    let result = template;
-
-    for (const [key, value] of Object.entries(replacements)) {
-      const stringValue = String(value ?? '');
-      // Pattern cho {{ variable }} và { variable }
-      const pattern1 = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-      const pattern2 = new RegExp(`{\\s*${key}\\s*}`, 'g');
-
-      result = result
-        .replace(pattern1, stringValue)
-        .replace(pattern2, stringValue);
-    }
-
-    return result;
+    return compiled(replacements);
   }
 
   // ============================================
@@ -343,11 +298,13 @@ export class MktEmailService {
 
   /**
    * Process template và gửi email
+   * Status flow: QUEUED → SENT (success) / FAILED (error)
    */
   private async processAndSendEmail(
     order: MktOrderWorkspaceEntity,
     template: MktTemplateWorkspaceEntity,
     replacements: OrderEmailReplacements,
+    senderConfig?: EmailSenderConfig,
   ): Promise<void> {
     const customerEmail = order.mktCustomer?.email;
 
@@ -357,36 +314,52 @@ export class MktEmailService {
       return;
     }
 
-    const subject = this.replaceTemplatePlaceholders(
-      template.name || '',
-      replacements,
-    );
-    const html = this.replaceTemplatePlaceholders(
-      template.content || '',
-      replacements,
-    );
+    const subject = this.compileTemplate(template.name || '', replacements);
+    const html = this.compileTemplate(template.content || '', replacements);
+
+    const fromName =
+      senderConfig?.fromName || this.twentyConfigService.get('EMAIL_FROM_NAME');
+    const fromAddress =
+      senderConfig?.fromAddress ||
+      this.twentyConfigService.get('EMAIL_FROM_ADDRESS');
 
     const emailData = {
-      from: `${this.twentyConfigService.get('EMAIL_FROM_NAME')} <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,
+      from: `${fromName} <${fromAddress}>`,
       to: customerEmail,
       subject,
     };
 
-    // Gửi email
-    await this.emailService.send({ ...emailData, html });
-
-    // Lưu record
-    await this.save({
+    // Bước 1: Lưu record với status QUEUED
+    const savedEmail = await this.emailRepository.createEmail({
       ...emailData,
       body: html,
-      status: MKT_EMAIL_STATUS.SENT,
+      status: MKT_EMAIL_STATUS.QUEUED,
       emailType: MKT_TEMPLATE_TYPE.ORDER_EMAIL,
       sentAt: DateTimeUtils.now().toJSDate(),
     });
 
     this.logger.log(
-      EMAIL_MESSAGES.LOG.SEND_ORDER_EMAIL_SUCCESS(order.id, customerEmail),
+      EMAIL_MESSAGES.LOG.EMAIL_QUEUED(savedEmail.id, customerEmail),
     );
+
+    // Bước 2: Gửi email và cập nhật status
+    try {
+      await this.emailService.send({ ...emailData, html });
+
+      await this.emailRepository.updateEmail(savedEmail.id, {
+        status: MKT_EMAIL_STATUS.SENT,
+      });
+
+      this.logger.log(
+        EMAIL_MESSAGES.LOG.SEND_ORDER_EMAIL_SUCCESS(order.id, customerEmail),
+      );
+    } catch (error) {
+      await this.emailRepository.updateEmail(savedEmail.id, {
+        status: MKT_EMAIL_STATUS.FAILED,
+      });
+
+      this.logger.error(EMAIL_MESSAGES.ERROR.QUEUE_FAILED(customerEmail));
+    }
   }
 
   // ============================================

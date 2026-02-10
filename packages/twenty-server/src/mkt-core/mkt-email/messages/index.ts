@@ -31,6 +31,10 @@ export const EMAIL_MESSAGES = {
     SEND_SUCCESS: (to: string) => `Successfully sent email to: ${to}`,
     SEND_ORDER_EMAIL_SUCCESS: (orderId: string, to: string) =>
       `Sent order notification email for order ${orderId} to ${to}`,
+    EMAIL_QUEUED: (emailId: string, to: string) =>
+      `Email ${emailId} queued for delivery to ${to}`,
+    STATUS_UPDATED: (emailId: string, status: string) =>
+      `Email ${emailId} status updated to ${status}`,
 
     // Template operations
     TEMPLATE_FOUND: (templateKey: string) => `Found template: ${templateKey}`,
@@ -63,6 +67,9 @@ export const EMAIL_MESSAGES = {
     // Order email errors
     ORDER_EMAIL_FAILED: (orderId: string) =>
       `Failed to send order notification email for order: ${orderId}`,
+    QUEUE_FAILED: (to: string) => `Failed to queue email for: ${to}`,
+    STATUS_UPDATE_FAILED: (emailId: string) =>
+      `Failed to update email status for: ${emailId}`,
 
     // Template errors
     TEMPLATE_RENDER_FAILED: (templateKey: string) =>
