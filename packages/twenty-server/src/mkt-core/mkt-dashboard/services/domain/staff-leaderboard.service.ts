@@ -117,6 +117,7 @@ export class StaffLeaderboardService {
         COALESCE(d."departmentName", '') AS department_name,
         COALESCE(order_stats.order_count, 0) AS order_count,
         COALESCE(order_stats.total_revenue, 0) AS total_revenue,
+        COALESCE(prev_month_stats.prev_month_revenue, 0) AS prev_month_revenue,
         COALESCE(customer_stats.new_customers, 0) AS new_customers,
         COALESCE(kpi_stats.kpi_achievement, 0) AS kpi_achievement
       FROM "workspaceMember" wm
@@ -132,6 +133,17 @@ export class StaffLeaderboardService {
           AND "createdAt" BETWEEN $1 AND $2
         GROUP BY "accountOwnerId"
       ) order_stats ON order_stats."accountOwnerId" = wm.id
+      LEFT JOIN (
+        SELECT
+          "accountOwnerId",
+          SUM("totalAmount") AS prev_month_revenue
+        FROM "mktOrder"
+        WHERE "deletedAt" IS NULL
+          AND status = 'COMPLETED'
+          AND "createdAt" >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month'
+          AND "createdAt" < DATE_TRUNC('month', NOW())
+        GROUP BY "accountOwnerId"
+      ) prev_month_stats ON prev_month_stats."accountOwnerId" = wm.id
       LEFT JOIN (
         SELECT
           "accountOwnerId",

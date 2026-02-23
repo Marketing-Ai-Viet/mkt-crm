@@ -4,7 +4,7 @@ import { mktSInvoiceItemsAllView } from 'src/mkt-core/seeder/invoice-seeder/mkt-
 import { mktSInvoiceMetadataAllView } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-metadata-all.view';
 import { mktSInvoicePaymentsAllView } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-payment-all.view';
 import { mktSInvoiceTaxBreakdownsAllView } from 'src/mkt-core/seeder/invoice-seeder/mkt-sinvoice-tax-breakdown-all.view';
-import { mktOrderHistoryAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-history-all.view';
+import { mktOrderHistoryAllView } from 'src/mkt-core/seeder/order-seeder/mkt-order-history/mkt-order-history-all.view';
 import { mktContractsAllView } from 'src/mkt-core/seeder/contract-seeder/mkt-contract-all.view';
 // REMOVED: License module has been deleted
 // import { mktLicensesAllView } from 'src/mkt-core/seeder/prefill-data/mkt-license-all.view';

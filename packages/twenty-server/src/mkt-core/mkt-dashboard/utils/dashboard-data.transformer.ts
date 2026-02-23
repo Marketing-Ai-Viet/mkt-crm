@@ -90,6 +90,7 @@ export type RawLeaderboardRow = {
   department_name: string;
   order_count: string;
   total_revenue: string;
+  prev_month_revenue: string;
   new_customers: string;
   kpi_achievement: string;
 };
@@ -271,6 +272,7 @@ export class DashboardDataTransformer {
     staffName: string;
     departmentName: string;
     revenue: number;
+    previousMonthRevenue: number;
     orderCount: number;
     newCustomers: number;
     kpiAchievement: number;
@@ -278,6 +280,9 @@ export class DashboardDataTransformer {
   }> {
     return rows.map((row, index) => {
       const revenue = MoneyUtils.from(row.total_revenue).toNumber();
+      const previousMonthRevenue = MoneyUtils.from(
+        row.prev_month_revenue,
+      ).toNumber();
       const orderCount = Number(row.order_count);
       const newCustomers = Number(row.new_customers);
       const kpiAchievement = Number(row.kpi_achievement);
@@ -297,6 +302,7 @@ export class DashboardDataTransformer {
         staffName: row.staff_name,
         departmentName: row.department_name,
         revenue,
+        previousMonthRevenue,
         orderCount,
         newCustomers,
         kpiAchievement,

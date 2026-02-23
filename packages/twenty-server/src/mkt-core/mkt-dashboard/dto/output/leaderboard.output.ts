@@ -14,6 +14,9 @@ export class LeaderboardRankingItem {
   @Field(() => Float)
   revenue: number;
 
+  @Field(() => Float)
+  previousMonthRevenue: number;
+
   @Field(() => Int)
   orderCount: number;
 

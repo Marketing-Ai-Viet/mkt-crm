@@ -2,6 +2,7 @@ import { WorkspaceEntityManager } from 'src/engine/twenty-orm/entity-manager/wor
 import {
   MKT_ORDER_DATA_SEED_COLUMNS,
   MKT_ORDER_DATA_SEEDS,
+  MKT_ORDER_DATA_SEEDS_PREV_MONTH,
 } from 'src/mkt-core/seeder/order-seeder/order/mkt-order-data-seeds.constants';
 
 export const prefillMktOrders = async (
@@ -15,5 +16,27 @@ export const prefillMktOrders = async (
     .insert()
     .into(`${schemaName}.mktOrder`, MKT_ORDER_DATA_SEED_COLUMNS)
     .values(MKT_ORDER_DATA_SEEDS)
+    .orIgnore()
     .execute();
+
+  // Insert prev-month orders (without createdAt — TypeORM @CreateDateColumn blocks it in INSERT)
+  await entityManager
+    .createQueryBuilder(undefined, undefined, undefined, {
+      shouldBypassPermissionChecks: true,
+    })
+    .insert()
+    .into(`${schemaName}.mktOrder`, MKT_ORDER_DATA_SEED_COLUMNS)
+    .values(MKT_ORDER_DATA_SEEDS_PREV_MONTH)
+    .orIgnore()
+    .execute();
+
+  // Backfill createdAt via raw SQL UPDATE for each prev-month order
+  for (const order of MKT_ORDER_DATA_SEEDS_PREV_MONTH) {
+    if (order.createdAt) {
+      await entityManager.query(
+        `UPDATE "${schemaName}"."mktOrder" SET "createdAt" = $1 WHERE id = $2`,
+        [order.createdAt, order.id],
+      );
+    }
+  }
 };
