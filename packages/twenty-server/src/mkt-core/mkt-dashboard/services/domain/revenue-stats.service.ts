@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { QueryRunner } from 'typeorm';
+
 import { ScopedWorkspaceContextFactory } from 'src/engine/twenty-orm/factories/scoped-workspace-context.factory';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceDataSource } from 'src/engine/twenty-orm/datasource/workspace.datasource';
-import { getWorkspaceDataSourceWithSchema } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
+import { createWorkspaceScopedRunner } from 'src/mkt-core/mkt-dashboard/utils/workspace-query.helper';
 import { DepartmentFilterHelper } from 'src/mkt-core/mkt-dashboard/utils/department-filter.helper';
 import {
   DashboardDateRangeService,
@@ -46,15 +48,17 @@ export class RevenueStatsService {
       input.endDate,
     );
 
-    try {
-      const dataSource = await getWorkspaceDataSourceWithSchema(
+    const { dataSource, queryRunner, release } =
+      await createWorkspaceScopedRunner(
         this.scopedWorkspaceContextFactory,
         this.twentyORMGlobalManager,
       );
 
+    try {
       const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
         dataSource,
         input.departmentId,
+        queryRunner,
       );
 
       const { staffId } = input;
@@ -69,6 +73,7 @@ export class RevenueStatsService {
       if (mode === RevenueMode.CASH) {
         collected = await this.buildCashMetric(
           dataSource,
+          queryRunner,
           dateRange,
           input.period,
           periodProgress,
@@ -79,6 +84,7 @@ export class RevenueStatsService {
       } else if (mode === RevenueMode.ORDER) {
         order = await this.buildOrderMetric(
           dataSource,
+          queryRunner,
           dateRange,
           input.period,
           periodProgress,
@@ -91,6 +97,7 @@ export class RevenueStatsService {
         [collected, order] = await Promise.all([
           this.buildCashMetric(
             dataSource,
+            queryRunner,
             dateRange,
             input.period,
             periodProgress,
@@ -100,6 +107,7 @@ export class RevenueStatsService {
           ),
           this.buildOrderMetric(
             dataSource,
+            queryRunner,
             dateRange,
             input.period,
             periodProgress,
@@ -111,6 +119,7 @@ export class RevenueStatsService {
 
         const avgCollectionDays = await this.getAvgCollectionDays(
           dataSource,
+          queryRunner,
           dateRange,
           departmentIds,
           staffId,
@@ -152,6 +161,8 @@ export class RevenueStatsService {
         period: input.period,
       });
       throw error;
+    } finally {
+      await release();
     }
   }
 
@@ -159,6 +170,7 @@ export class RevenueStatsService {
 
   private async buildCashMetric(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     period: DashboardPeriod,
     periodProgress: { elapsedDays: number; totalDays: number },
@@ -169,6 +181,7 @@ export class RevenueStatsService {
     const [byPeriod, byStaff, rawByDept, previousTotal] = await Promise.all([
       this.getCashRevenueByPeriod(
         dataSource,
+        qr,
         dateRange,
         period,
         departmentIds,
@@ -176,14 +189,16 @@ export class RevenueStatsService {
       ),
       this.getCashRevenueByStaff(
         dataSource,
+        qr,
         dateRange,
         limit,
         departmentIds,
         staffId,
       ),
-      this.getCashRevenueByDepartment(dataSource, dateRange, departmentIds),
+      this.getCashRevenueByDepartment(dataSource, qr, dateRange, departmentIds),
       this.getCashPreviousPeriodRevenue(
         dataSource,
+        qr,
         period,
         dateRange,
         departmentIds,
@@ -222,6 +237,7 @@ export class RevenueStatsService {
 
   private async buildOrderMetric(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     period: DashboardPeriod,
     periodProgress: { elapsedDays: number; totalDays: number },
@@ -232,6 +248,7 @@ export class RevenueStatsService {
     const [byPeriod, byStaff, rawByDept, previousTotal] = await Promise.all([
       this.getOrderRevenueByPeriod(
         dataSource,
+        qr,
         dateRange,
         period,
         departmentIds,
@@ -239,14 +256,21 @@ export class RevenueStatsService {
       ),
       this.getOrderRevenueByStaff(
         dataSource,
+        qr,
         dateRange,
         limit,
         departmentIds,
         staffId,
       ),
-      this.getOrderRevenueByDepartment(dataSource, dateRange, departmentIds),
+      this.getOrderRevenueByDepartment(
+        dataSource,
+        qr,
+        dateRange,
+        departmentIds,
+      ),
       this.getOrderPreviousPeriodRevenue(
         dataSource,
+        qr,
         period,
         dateRange,
         departmentIds,
@@ -287,6 +311,7 @@ export class RevenueStatsService {
 
   private async getCashRevenueByPeriod(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     period: DashboardPeriod,
     departmentIds?: string[],
@@ -335,7 +360,7 @@ export class RevenueStatsService {
       ORDER BY period
       LIMIT $3`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 
@@ -344,6 +369,7 @@ export class RevenueStatsService {
 
   private async getCashRevenueByStaff(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     limit: number,
     departmentIds?: string[],
@@ -390,7 +416,7 @@ export class RevenueStatsService {
       ORDER BY total_revenue DESC
       LIMIT $3`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 
@@ -399,6 +425,7 @@ export class RevenueStatsService {
 
   private async getCashRevenueByDepartment(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     departmentIds?: string[],
   ): Promise<RawRevenueByDepartmentRow[]> {
@@ -429,13 +456,14 @@ export class RevenueStatsService {
       HAVING COALESCE(SUM(p.amount), 0) > 0
       ORDER BY amount DESC`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
   }
 
   private async getCashPreviousPeriodRevenue(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     period: DashboardPeriod,
     currentRange: DateRange,
     departmentIds?: string[],
@@ -479,7 +507,7 @@ export class RevenueStatsService {
         ${staffClause}
         ${deptFilter?.clause ?? ''}`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 
@@ -490,6 +518,7 @@ export class RevenueStatsService {
 
   private async getOrderRevenueByPeriod(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     period: DashboardPeriod,
     departmentIds?: string[],
@@ -539,7 +568,7 @@ export class RevenueStatsService {
       ORDER BY period
       LIMIT $3`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 
@@ -548,6 +577,7 @@ export class RevenueStatsService {
 
   private async getOrderRevenueByStaff(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     limit: number,
     departmentIds?: string[],
@@ -594,7 +624,7 @@ export class RevenueStatsService {
       ORDER BY total_revenue DESC
       LIMIT $3`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 
@@ -603,6 +633,7 @@ export class RevenueStatsService {
 
   private async getOrderRevenueByDepartment(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     departmentIds?: string[],
   ): Promise<RawRevenueByDepartmentRow[]> {
@@ -632,13 +663,14 @@ export class RevenueStatsService {
       HAVING COALESCE(SUM(o."totalAmount"), 0) > 0
       ORDER BY amount DESC`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
   }
 
   private async getOrderPreviousPeriodRevenue(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     period: DashboardPeriod,
     currentRange: DateRange,
     departmentIds?: string[],
@@ -682,7 +714,7 @@ export class RevenueStatsService {
         ${staffClause}
         ${deptFilter?.clause ?? ''}`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 
@@ -693,6 +725,7 @@ export class RevenueStatsService {
 
   private async getAvgCollectionDays(
     dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
     dateRange: DateRange,
     departmentIds?: string[],
     staffId?: string,
@@ -733,7 +766,7 @@ export class RevenueStatsService {
         ${staffClause}
         ${deptFilter?.clause ?? ''}`,
       params,
-      undefined,
+      qr,
       { shouldBypassPermissionChecks: true },
     );
 

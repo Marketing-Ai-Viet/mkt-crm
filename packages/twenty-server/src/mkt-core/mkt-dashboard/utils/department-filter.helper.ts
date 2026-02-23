@@ -1,3 +1,5 @@
+import { QueryRunner } from 'typeorm';
+
 import { WorkspaceDataSource } from 'src/engine/twenty-orm/datasource/workspace.datasource';
 
 /**
@@ -10,10 +12,13 @@ export class DepartmentFilterHelper {
   /**
    * Resolve a departmentId to an array of IDs (self + child departments).
    * Returns undefined if no departmentId provided (skip filtering).
+   *
+   * @param queryRunner - Optional QueryRunner to pin to a specific connection
    */
   static async resolveDepartmentIds(
     dataSource: WorkspaceDataSource,
     departmentId?: string,
+    queryRunner?: QueryRunner,
   ): Promise<string[] | undefined> {
     if (!departmentId) {
       return undefined;
@@ -25,7 +30,7 @@ export class DepartmentFilterHelper {
       WHERE "parentDepartmentId" = $1
         AND "deletedAt" IS NULL`,
       [departmentId],
-      undefined,
+      queryRunner,
       { shouldBypassPermissionChecks: true },
     );
 
