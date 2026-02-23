@@ -6,6 +6,7 @@ import { MktPaymentHistoryRepository } from 'src/mkt-core/payment/repositories/m
 import { MktOrderRepository } from 'src/mkt-core/order/repositories/mkt-order.repository';
 import { OrderPaymentCalculationService } from 'src/mkt-core/order/services/core/order-payment-calculation.service';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
+import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { PAYMENT_TRANSACTION_STATUS } from 'src/mkt-core/payment/constants/payment-status.constants';
 import { PAYMENT_ACTION } from 'src/mkt-core/payment/constants/payment-action.constants';
 import { PAYMENT_EVENTS } from 'src/mkt-core/payment/events';
@@ -137,6 +138,7 @@ export class PaymentRefundService {
     await this.mktPaymentRepository.updatePayment(paymentId, {
       status: newStatus,
       refundedAmount: newRefundedAmount,
+      refundedAt: DateTimeUtils.toISO(DateTimeUtils.now()),
     });
 
     // Step 3: Record history

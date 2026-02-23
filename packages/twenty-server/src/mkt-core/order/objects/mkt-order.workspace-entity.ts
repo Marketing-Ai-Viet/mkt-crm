@@ -426,6 +426,20 @@ export class MktOrderWorkspaceEntity extends BaseWorkspaceEntity {
   lastReminderAt?: Date | null;
 
   // ============================================
+  // DUAL-METRIC REVENUE
+  // ============================================
+
+  @WorkspaceField({
+    standardId: MKT_ORDER_FIELD_IDS.completedAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Completed At`,
+    description: msg`Thời điểm đơn hàng chuyển sang trạng thái COMPLETED`,
+    icon: 'IconCheckbox',
+  })
+  @WorkspaceIsNullable()
+  completedAt?: Date | null;
+
+  // ============================================
   // OPTIMISTIC LOCKING
   // ============================================
 

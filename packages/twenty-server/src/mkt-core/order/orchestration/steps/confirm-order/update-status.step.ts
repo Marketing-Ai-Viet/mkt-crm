@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { ORDER_ACTION } from 'src/mkt-core/order/constants/order-status.constants';
+import {
+  ORDER_ACTION,
+  ORDER_STATUS,
+} from 'src/mkt-core/order/constants/order-status.constants';
 import { PAYMENT_STATUS } from 'src/mkt-core/order/constants/payment-status.constants';
 import {
   ConfirmOrderInput,
@@ -95,6 +98,11 @@ export class UpdateStatusStep extends SagaStep<ConfirmOrderInput, void> {
           `Payment confirmed for order ${typedContext.orderId}: ` +
             `paymentStatus=PAID, paidAmount=${totalAmount}`,
         );
+      }
+
+      // Set completedAt when order transitions to COMPLETED
+      if (typedContext.targetStatus === ORDER_STATUS.COMPLETED) {
+        updateData.completedAt = nowISO;
       }
 
       // Handle note

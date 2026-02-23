@@ -238,6 +238,8 @@ export const MKT_ORDER_FIELD_IDS = {
   lockedReason: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
   remindersSent: 'e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b',
   lastReminderAt: 'f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c',
+  // Dual-Metric Revenue fields
+  completedAt: '7aa03cd8-7e02-4239-aa4b-deb0f62160e7',
   // Optimistic locking
   version: '0af4e91b-b1d5-4f7e-bffd-04e731c14802',
 };
@@ -652,6 +654,8 @@ export const MKT_PAYMENT_FIELD_IDS = {
   rejectedBy: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
   rejectionReason: 'e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b',
   refundedAmount: 'f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c',
+  // Dual-Metric Revenue fields
+  refundedAt: 'f27abc4e-00df-4c78-b594-8aa5f23d157e',
   metadata: 'a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d',
 
   // Multi-gateway provider fields (2026-01-30)
