@@ -14,6 +14,7 @@ import { OrderStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/order-stat
 import { CustomerStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/customer-stats.input';
 import { KpiScorecardInput } from 'src/mkt-core/mkt-dashboard/dto/input/kpi-scorecard.input';
 import { LeaderboardInput } from 'src/mkt-core/mkt-dashboard/dto/input/leaderboard.input';
+import { RevenueDailyInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
 import { DashboardSummaryOutput } from 'src/mkt-core/mkt-dashboard/dto/output/dashboard-summary.output';
 import { RevenueStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { OrderStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/order-stats.output';
@@ -21,6 +22,7 @@ import { CustomerStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/custo
 import { KpiScorecardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/kpi-scorecard.output';
 import { StaffLeaderboardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/leaderboard.output';
 import { AlertsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/alerts.output';
+import { RevenueDailyOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
 
 /**
  * DashboardQueryResolver - GraphQL resolver for Dashboard queries
@@ -123,5 +125,17 @@ export class DashboardQueryResolver {
   // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
   async dashboardAlerts(): Promise<AlertsOutput> {
     return this.orchestrator.getAlerts();
+  }
+
+  /**
+   * Get daily revenue breakdown for a specific ISO week
+   */
+  @Query(() => RevenueDailyOutput)
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  async revenueDailyByWeek(
+    @Args('input', { type: () => RevenueDailyInput })
+    input: RevenueDailyInput,
+  ): Promise<RevenueDailyOutput> {
+    return this.orchestrator.getRevenueDailyByWeek(input);
   }
 }

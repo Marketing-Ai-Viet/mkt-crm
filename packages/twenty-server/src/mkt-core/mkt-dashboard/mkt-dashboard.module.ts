@@ -28,6 +28,7 @@ import { KpiStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/kpi-
 import { OrderStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/order-stats.service';
 import { PaymentStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/payment-stats.service';
 import { RevenueStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/revenue-stats.service';
+import { RevenueDailyService } from 'src/mkt-core/mkt-dashboard/services/domain/revenue-daily.service';
 import { StaffLeaderboardService } from 'src/mkt-core/mkt-dashboard/services/domain/staff-leaderboard.service';
 
 @Module({
@@ -57,6 +58,7 @@ import { StaffLeaderboardService } from 'src/mkt-core/mkt-dashboard/services/dom
     DashboardCronRegistrationService,
 
     // Domain Services
+    RevenueDailyService,
     RevenueStatsService,
     OrderStatsService,
     CustomerStatsService,
