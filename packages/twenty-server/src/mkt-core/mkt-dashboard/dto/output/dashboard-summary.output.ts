@@ -1,6 +1,7 @@
 import { Field, ObjectType, Int, Float } from '@nestjs/graphql';
 
 import { AlertsOutput } from './alerts.output';
+import { RevenueByPeriodItem } from './revenue-stats.output';
 
 @ObjectType()
 export class PeriodOutput {
@@ -25,6 +26,8 @@ export class RevenueByMonthItem {
 
 @ObjectType()
 export class RevenueSummary {
+  // ─── Backward compatible fields (giữ nguyên) ───────────────────────────────
+
   @Field(() => Float)
   totalRevenue: number;
 
@@ -39,6 +42,44 @@ export class RevenueSummary {
 
   @Field(() => [RevenueByMonthItem])
   revenueByMonth: RevenueByMonthItem[];
+
+  // ─── Dual-Metric fields (mới) ───────────────────────────────────────────────
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Tổng doanh thu đã thu (Cash Basis)',
+  })
+  collectedRevenue: number | null;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Tổng doanh số đơn hàng (Accrual Basis)',
+  })
+  orderRevenue: number | null;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Tỷ lệ thu tiền (%) = collectedRevenue / orderRevenue * 100',
+  })
+  collectionRate: number | null;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Chênh lệch = orderRevenue - collectedRevenue',
+  })
+  revenueGap: number | null;
+
+  @Field(() => [RevenueByPeriodItem], {
+    nullable: true,
+    description: 'Cash revenue theo từng kỳ',
+  })
+  collectedByMonth: RevenueByPeriodItem[] | null;
+
+  @Field(() => [RevenueByPeriodItem], {
+    nullable: true,
+    description: 'Order revenue theo từng kỳ',
+  })
+  orderByMonth: RevenueByPeriodItem[] | null;
 }
 
 @ObjectType()

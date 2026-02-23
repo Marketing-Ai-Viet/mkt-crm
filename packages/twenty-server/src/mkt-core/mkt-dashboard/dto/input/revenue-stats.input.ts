@@ -1,13 +1,24 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 
-import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, IsEnum } from 'class-validator';
 
 import { DashboardPeriod } from 'src/mkt-core/mkt-dashboard/types/dashboard-period.type';
+import { RevenueMode } from 'src/mkt-core/mkt-dashboard/types/revenue-mode.type';
 
 @InputType()
 export class RevenueStatsInput {
   @Field(() => DashboardPeriod)
   period: DashboardPeriod;
+
+  @Field(() => RevenueMode, {
+    nullable: true,
+    defaultValue: RevenueMode.DUAL,
+    description:
+      'Chế độ tính doanh thu. Mặc định DUAL (cả hai). Frontend cũ không gửi field này vẫn hoạt động bình thường.',
+  })
+  @IsOptional()
+  @IsEnum(RevenueMode)
+  revenueMode?: RevenueMode;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

@@ -11,8 +11,14 @@ export class LeaderboardRankingItem {
   @Field(() => String)
   departmentName: string;
 
-  @Field(() => Float)
+  @Field(() => Float, { description: 'Doanh số đơn hàng (order basis)' })
   revenue: number;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Doanh thu đã thu (cash basis — mktPayment.confirmedAt)',
+  })
+  collectedRevenue: number | null;
 
   @Field(() => Float)
   previousMonthRevenue: number;

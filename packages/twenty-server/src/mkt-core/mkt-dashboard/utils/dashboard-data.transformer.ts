@@ -90,6 +90,7 @@ export type RawLeaderboardRow = {
   department_name: string;
   order_count: string;
   total_revenue: string;
+  collected_revenue?: string; // Cash basis — from cash_stats subquery (Phase 4)
   prev_month_revenue: string;
   new_customers: string;
   kpi_achievement: string;
@@ -272,6 +273,7 @@ export class DashboardDataTransformer {
     staffName: string;
     departmentName: string;
     revenue: number;
+    collectedRevenue: number | null;
     previousMonthRevenue: number;
     orderCount: number;
     newCustomers: number;
@@ -297,11 +299,17 @@ export class DashboardDataTransformer {
         2,
       ).toNumber();
 
+      const collectedRevenue =
+        row.collected_revenue != null
+          ? MoneyUtils.from(row.collected_revenue).toNumber()
+          : null;
+
       return {
         rank: index + 1,
         staffName: row.staff_name,
         departmentName: row.department_name,
         revenue,
+        collectedRevenue,
         previousMonthRevenue,
         orderCount,
         newCustomers,

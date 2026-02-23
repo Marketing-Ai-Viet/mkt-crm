@@ -116,6 +116,10 @@ export class RevenueStatsService {
         revenueByStaff,
         growthRate,
         projectedRevenue,
+        // Dual-Metric fields — will be populated in Phase 3 refactor
+        collected: null,
+        order: null,
+        gap: null,
       };
     } catch (error) {
       this.logger.error('Failed to get revenue stats', {
