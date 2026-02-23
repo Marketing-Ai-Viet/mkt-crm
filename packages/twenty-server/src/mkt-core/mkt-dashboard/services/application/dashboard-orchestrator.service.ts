@@ -308,7 +308,7 @@ export class DashboardOrchestratorService {
           period: r.period,
           amount: r.amount,
         })),
-        // Dual-Metric fields — will be populated in Phase 4 refactor
+        // Dual-Metric fields
         collectedRevenue: revenueStats.collected?.totalRevenue ?? null,
         orderRevenue: revenueStats.order?.totalRevenue ?? null,
         collectionRate: revenueStats.gap?.collectionRate ?? null,

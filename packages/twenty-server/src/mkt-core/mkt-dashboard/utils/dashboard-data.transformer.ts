@@ -289,20 +289,20 @@ export class DashboardDataTransformer {
       const newCustomers = Number(row.new_customers);
       const kpiAchievement = Number(row.kpi_achievement);
 
-      // Overall score = weighted combination
-      // Revenue weight: 40%, Orders: 20%, Customers: 20%, KPI: 20%
-      const overallScore = MoneyUtils.round(
-        revenue * 0.4 +
-          orderCount * 0.2 +
-          newCustomers * 0.2 +
-          kpiAchievement * 0.2,
-        2,
-      ).toNumber();
-
       const collectedRevenue =
         row.collected_revenue != null
           ? MoneyUtils.from(row.collected_revenue).toNumber()
           : null;
+
+      // Overall score = weighted combination
+      // Revenue weight: 40% (prefer collectedRevenue/cash), Orders: 20%, Customers: 20%, KPI: 20%
+      const revenueForScore = collectedRevenue ?? revenue;
+      const overallScore = MoneyUtils.round(
+        revenueForScore * 0.4 +
+          orderCount * 0.2 +
+          newCustomers * 0.2 +
+          kpiAchievement * 0.2,
+      ).toNumber();
 
       return {
         rank: index + 1,
