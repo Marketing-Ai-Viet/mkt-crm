@@ -327,7 +327,7 @@ export class RevenueStatsService {
       FROM "mktPayment" p
       JOIN "mktOrder" o ON p."mktOrderId" = o.id
       WHERE p."deletedAt" IS NULL
-        AND p.status IN ('COMPLETED', 'CONFIRMED')
+        AND p.status = 'CONFIRMED'
         AND p."confirmedAt" BETWEEN $1 AND $2
         ${staffClause}
         ${deptFilter?.clause ?? ''}
@@ -382,7 +382,7 @@ export class RevenueStatsService {
       JOIN "workspaceMember" wm ON o."accountOwnerId" = wm.id
       LEFT JOIN "mktDepartment" d ON wm."departmentId" = d.id
       WHERE p."deletedAt" IS NULL
-        AND p.status IN ('COMPLETED', 'CONFIRMED')
+        AND p.status = 'CONFIRMED'
         AND p."confirmedAt" BETWEEN $1 AND $2
         ${staffClause}
         ${deptClause}
@@ -421,7 +421,7 @@ export class RevenueStatsService {
         AND o."deletedAt" IS NULL
       LEFT JOIN "mktPayment" p ON p."mktOrderId" = o.id
         AND p."deletedAt" IS NULL
-        AND p.status IN ('COMPLETED', 'CONFIRMED')
+        AND p.status = 'CONFIRMED'
         AND p."confirmedAt" BETWEEN $1 AND $2
       WHERE d."deletedAt" IS NULL
         ${deptClause}
@@ -474,7 +474,7 @@ export class RevenueStatsService {
       FROM "mktPayment" p
       JOIN "mktOrder" o ON p."mktOrderId" = o.id
       WHERE p."deletedAt" IS NULL
-        AND p.status IN ('COMPLETED', 'CONFIRMED')
+        AND p.status = 'CONFIRMED'
         AND p."confirmedAt" BETWEEN $1 AND $2
         ${staffClause}
         ${deptFilter?.clause ?? ''}`,
@@ -727,7 +727,7 @@ export class RevenueStatsService {
       JOIN "mktOrder" o ON p."mktOrderId" = o.id
       WHERE p."deletedAt" IS NULL
         AND o."deletedAt" IS NULL
-        AND p.status IN ('COMPLETED', 'CONFIRMED')
+        AND p.status = 'CONFIRMED'
         AND o."completedAt" IS NOT NULL
         AND p."confirmedAt" BETWEEN $1 AND $2
         ${staffClause}

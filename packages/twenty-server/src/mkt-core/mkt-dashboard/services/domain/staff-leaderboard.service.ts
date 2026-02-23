@@ -142,7 +142,7 @@ export class StaffLeaderboardService {
         FROM "mktPayment" p
         JOIN "mktOrder" o ON p."mktOrderId" = o.id
         WHERE p."deletedAt" IS NULL
-          AND p.status IN ('COMPLETED', 'CONFIRMED')
+          AND p.status = 'CONFIRMED'
           AND p."confirmedAt" BETWEEN $1 AND $2
         GROUP BY o."accountOwnerId"
       ) cash_stats ON cash_stats."accountOwnerId" = wm.id

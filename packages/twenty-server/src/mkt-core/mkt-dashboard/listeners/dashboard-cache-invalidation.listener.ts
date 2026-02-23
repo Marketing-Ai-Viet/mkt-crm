@@ -64,6 +64,13 @@ export class DashboardCacheInvalidationListener {
         'THIS_QUARTER',
         'THIS_YEAR',
       ]);
+      await this.cacheService.invalidateLeaderboard(workspaceId, [
+        'TODAY',
+        'THIS_WEEK',
+        'THIS_MONTH',
+        'THIS_QUARTER',
+        'THIS_YEAR',
+      ]);
     } catch (error) {
       this.logger.error('Failed to invalidate order caches', {
         error: getErrorMessage(error),
@@ -96,6 +103,13 @@ export class DashboardCacheInvalidationListener {
         'THIS_YEAR',
       ]);
       await this.cacheService.invalidateStats(workspaceId, 'REVENUE', [
+        'TODAY',
+        'THIS_WEEK',
+        'THIS_MONTH',
+        'THIS_QUARTER',
+        'THIS_YEAR',
+      ]);
+      await this.cacheService.invalidateLeaderboard(workspaceId, [
         'TODAY',
         'THIS_WEEK',
         'THIS_MONTH',

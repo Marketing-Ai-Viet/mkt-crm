@@ -221,6 +221,20 @@ export class DashboardCacheService {
   }
 
   /**
+   * Invalidate leaderboard cache for a workspace across all periods
+   */
+  async invalidateLeaderboard(
+    workspaceId: string,
+    periods: string[],
+  ): Promise<void> {
+    for (const period of periods) {
+      const key = this.buildLeaderboardKey(workspaceId, period);
+
+      await this.del(key);
+    }
+  }
+
+  /**
    * Invalidate stats cache for specific data source
    */
   async invalidateStats(

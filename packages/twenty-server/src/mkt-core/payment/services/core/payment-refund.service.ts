@@ -11,6 +11,7 @@ import { PAYMENT_TRANSACTION_STATUS } from 'src/mkt-core/payment/constants/payme
 import { PAYMENT_ACTION } from 'src/mkt-core/payment/constants/payment-action.constants';
 import { PAYMENT_EVENTS } from 'src/mkt-core/payment/events';
 import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
+import { DASHBOARD_INVALIDATION_EVENTS } from 'src/mkt-core/mkt-dashboard/listeners/dashboard-cache-invalidation.listener';
 
 // ============================================
 // TYPES
@@ -173,6 +174,12 @@ export class PaymentRefundService {
       isFullRefund,
       refundedById,
       workspaceId,
+    });
+
+    // Invalidate dashboard caches (cash revenue affected by refund)
+    this.eventEmitter.emit(DASHBOARD_INVALIDATION_EVENTS.PAYMENT_CHANGED, {
+      workspaceId,
+      entityId: paymentId,
     });
 
     this.logger.log({

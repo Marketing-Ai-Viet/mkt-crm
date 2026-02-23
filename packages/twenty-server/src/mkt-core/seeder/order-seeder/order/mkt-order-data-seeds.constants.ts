@@ -67,6 +67,8 @@ type MktOrderDataSeed = {
   lockedReason: string | null;
   remindersSent: number;
   lastReminderAt: Date | null;
+  // Dual-metric revenue
+  completedAt: Date | null;
   // Optimistic locking
   version: number;
   // Override createdAt for historical seed data
@@ -115,6 +117,8 @@ export const MKT_ORDER_DATA_SEED_COLUMNS: (keyof MktOrderDataSeed)[] = [
   'lockedReason',
   'remindersSent',
   'lastReminderAt',
+  // Dual-metric revenue
+  'completedAt',
   // Optimistic locking
   'version',
 ];
@@ -147,6 +151,7 @@ const DEFAULT_PAYMENT_DEADLINE_FIELDS = {
   lockedReason: null,
   remindersSent: 0,
   lastReminderAt: null,
+  completedAt: null,
   version: 1,
 };
 
@@ -170,6 +175,7 @@ const CREATE_PROCESSING_DEADLINE_FIELDS = (
   | 'lockedReason'
   | 'remindersSent'
   | 'lastReminderAt'
+  | 'completedAt'
   | 'version'
 > => {
   const NOW = DateTimeUtils.now();
@@ -186,6 +192,7 @@ const CREATE_PROCESSING_DEADLINE_FIELDS = (
     lastReminderAt: LAST_REMINDER
       ? (DateTimeUtils.toDate(LAST_REMINDER) ?? null)
       : null,
+    completedAt: null,
     version: 1,
   };
 };
@@ -210,6 +217,7 @@ const CREATE_LOCKED_DEADLINE_FIELDS = (
   | 'lockedReason'
   | 'remindersSent'
   | 'lastReminderAt'
+  | 'completedAt'
   | 'version'
 > => {
   const NOW = DateTimeUtils.now();
@@ -226,6 +234,7 @@ const CREATE_LOCKED_DEADLINE_FIELDS = (
     lockedReason: reason,
     remindersSent: 3, // All 3 reminders were sent (6h, 2h, 30min)
     lastReminderAt: DateTimeUtils.toDate(LAST_REMINDER) ?? null,
+    completedAt: null,
     version: 1,
   };
 };
@@ -1590,6 +1599,7 @@ export const MKT_ORDER_DATA_SEED_PREV_MONTH_COLUMNS: (keyof MktOrderDataSeed)[] 
   'lockedReason',
   'remindersSent',
   'lastReminderAt',
+  'completedAt',
   'version',
   'createdAt',
 ];
@@ -1625,6 +1635,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(44000000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-07T10:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-05T09:00:00.000Z')) ?? undefined,
   },
   {
@@ -1655,6 +1666,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(30800000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-17T11:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-15T10:30:00.000Z')) ?? undefined,
   },
   {
@@ -1685,6 +1697,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(25300000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-27T15:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-25T14:00:00.000Z')) ?? undefined,
   },
 
@@ -1717,6 +1730,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(36300000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-10T10:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-08T09:30:00.000Z')) ?? undefined,
   },
   {
@@ -1747,6 +1761,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(19800000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-20T12:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-18T11:00:00.000Z')) ?? undefined,
   },
   {
@@ -1777,6 +1792,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(13200000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-30T16:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-28T15:00:00.000Z')) ?? undefined,
   },
 
@@ -1809,6 +1825,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(16500000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-12T09:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-10T08:00:00.000Z')) ?? undefined,
   },
   {
@@ -1839,6 +1856,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(12100000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-22T14:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-20T13:30:00.000Z')) ?? undefined,
   },
   {
@@ -1869,6 +1887,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(8800000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-30T17:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-28T16:00:00.000Z')) ?? undefined,
   },
 
@@ -1901,6 +1920,7 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(7700000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-14T11:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-12T10:00:00.000Z')) ?? undefined,
   },
   {
@@ -1931,6 +1951,72 @@ export const MKT_ORDER_DATA_SEEDS_PREV_MONTH: MktOrderDataSeed[] = [
     ...DEFAULT_COMBO_FIELDS,
     ...CREATE_PAYMENT_FIELDS(5500000, true),
     ...DEFAULT_PAYMENT_DEADLINE_FIELDS,
+    completedAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-24T12:00:00.000Z')) ?? null,
     createdAt: DateTimeUtils.toDate(DateTimeUtils.fromISO('2026-01-22T11:30:00.000Z')) ?? undefined,
   },
+];
+
+// ============================================
+// STAFF DISTRIBUTION & COMPLETED_AT OVERRIDES
+// Applied via SQL UPDATE in prefill after INSERT
+//
+// Distribution:
+// - Tim Apple: 10 orders (ID_1 to ID_10) — completedAt in January 2026
+// - Jony Ive: 10 orders (ID_11-14, GOLD_1-3, DIAMOND_1-3) — completedAt Jan-Feb bridge
+// - Jane Austen: 9 orders (DIAMOND_4-12) — completedAt Feb 2026
+// - Phil Schiler: 8 orders (DIAMOND_13-20) — completedAt Feb 2026
+// - PROCESSING/LOCKED orders: keep TIM, no completedAt
+// ============================================
+
+// prettier-ignore
+export const MKT_ORDER_SEED_OVERRIDES: {
+  orderId: string;
+  accountOwnerId: string;
+  createdById: string;
+  completedAt: string | null;
+}[] = [
+  // ── Tim Apple (10 orders) — completedAt January 2026 ──
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_1, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-05T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_2, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-07T11:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_3, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-09T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_4, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-11T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_5, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-13T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_6, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-15T15:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_7, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-17T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_8, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-20T11:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_9, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-24T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_10, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.TIM, completedAt: '2026-01-28T10:00:00.000Z' },
+
+  // ── Jony Ive (10 orders) — completedAt Jan 15 – Feb 10 ──
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_11, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-01-15T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_12, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-01-20T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_13, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-01-25T11:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.ID_14, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-01-30T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_1, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-02-01T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_2, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-02-03T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.GOLD_ORDER_3, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-02-05T11:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_1, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-02-07T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_2, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-02-09T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_3, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY, completedAt: '2026-02-10T10:00:00.000Z' },
+
+  // ── Jane Austen (9 orders) — completedAt Feb 1–18 ──
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_4, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-01T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_5, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-03T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_6, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-05T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_7, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-07T11:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_8, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-09T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_9, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-11T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_10, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-13T15:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_11, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-15T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_12, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.JANE, completedAt: '2026-02-18T14:00:00.000Z' },
+
+  // ── Phil Schiler (8 orders) — completedAt Feb 3–20 ──
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_13, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-03T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_14, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-05T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_15, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-07T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_16, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-10T09:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_17, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-13T11:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_18, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-15T10:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_19, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-18T14:00:00.000Z' },
+  { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_20, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-20T09:00:00.000Z' },
 ];

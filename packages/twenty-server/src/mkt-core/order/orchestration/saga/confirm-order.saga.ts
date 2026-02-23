@@ -25,6 +25,7 @@ import {
   SagaContext,
 } from 'src/mkt-core/order/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { DASHBOARD_INVALIDATION_EVENTS } from 'src/mkt-core/mkt-dashboard/listeners/dashboard-cache-invalidation.listener';
 
 import { BaseSaga } from './base/base-saga';
 
@@ -165,6 +166,12 @@ export class ConfirmOrderSaga
           timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         },
       ],
+    });
+
+    // Invalidate dashboard caches (order revenue affected)
+    this.eventEmitter.emit(DASHBOARD_INVALIDATION_EVENTS.ORDER_CHANGED, {
+      workspaceId: typedContext.workspaceId,
+      entityId: typedContext.orderId,
     });
 
     this.logger.log(`Emitted ${eventType} for order: ${typedContext.orderId}`);
