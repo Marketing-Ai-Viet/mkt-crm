@@ -117,6 +117,8 @@ export class StaffLeaderboardService {
         COALESCE(d."departmentName", '') AS department_name,
         COALESCE(order_stats.order_count, 0) AS order_count,
         COALESCE(order_stats.total_revenue, 0) AS total_revenue,
+        COALESCE(cash_stats.collected_revenue, 0) AS collected_revenue,
+        COALESCE(prev_month_stats.prev_month_revenue, 0) AS prev_month_revenue,
         COALESCE(customer_stats.new_customers, 0) AS new_customers,
         COALESCE(kpi_stats.kpi_achievement, 0) AS kpi_achievement
       FROM "workspaceMember" wm
@@ -125,13 +127,36 @@ export class StaffLeaderboardService {
         SELECT
           "accountOwnerId",
           COUNT(*) AS order_count,
-          SUM("totalAmount") AS total_revenue
+          SUM("totalAmount") - SUM(COALESCE("refundAmount", 0)) AS total_revenue
         FROM "mktOrder"
         WHERE "deletedAt" IS NULL
           AND status = 'COMPLETED'
-          AND "createdAt" BETWEEN $1 AND $2
+          AND "completedAt" IS NOT NULL
+          AND "completedAt" BETWEEN $1 AND $2
         GROUP BY "accountOwnerId"
       ) order_stats ON order_stats."accountOwnerId" = wm.id
+      LEFT JOIN (
+        SELECT
+          o."accountOwnerId",
+          SUM(p.amount) - SUM(COALESCE(p."refundedAmount", 0)) AS collected_revenue
+        FROM "mktPayment" p
+        JOIN "mktOrder" o ON p."mktOrderId" = o.id
+        WHERE p."deletedAt" IS NULL
+          AND p.status = 'CONFIRMED'
+          AND p."confirmedAt" BETWEEN $1 AND $2
+        GROUP BY o."accountOwnerId"
+      ) cash_stats ON cash_stats."accountOwnerId" = wm.id
+      LEFT JOIN (
+        SELECT
+          "accountOwnerId",
+          SUM("totalAmount") AS prev_month_revenue
+        FROM "mktOrder"
+        WHERE "deletedAt" IS NULL
+          AND status = 'COMPLETED'
+          AND "createdAt" >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month'
+          AND "createdAt" < DATE_TRUNC('month', NOW())
+        GROUP BY "accountOwnerId"
+      ) prev_month_stats ON prev_month_stats."accountOwnerId" = wm.id
       LEFT JOIN (
         SELECT
           "accountOwnerId",
@@ -158,10 +183,11 @@ export class StaffLeaderboardService {
         ${deptClause}
         AND (
           order_stats.order_count > 0
+          OR cash_stats.collected_revenue > 0
           OR customer_stats.new_customers > 0
           OR kpi_stats.kpi_achievement > 0
         )
-      ORDER BY COALESCE(order_stats.total_revenue, 0) DESC
+      ORDER BY COALESCE(cash_stats.collected_revenue, 0) DESC
       LIMIT $3 OFFSET $4`,
       params,
       undefined,

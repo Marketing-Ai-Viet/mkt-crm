@@ -59,7 +59,7 @@ export class PaymentStatsService {
       for (const item of paymentsByStatus) {
         totalAmount = MoneyUtils.add(totalAmount, item.amount).toNumber();
 
-        if (item.status === 'COMPLETED' || item.status === 'CONFIRMED') {
+        if (item.status === 'CONFIRMED') {
           totalCollected = MoneyUtils.add(
             totalCollected,
             item.amount,

@@ -18,6 +18,7 @@ import { MktOrderRepository } from 'src/mkt-core/order/repositories';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonStringify } from 'src/mkt-core/utils/json.util';
+import { DASHBOARD_INVALIDATION_EVENTS } from 'src/mkt-core/mkt-dashboard/listeners/dashboard-cache-invalidation.listener';
 
 /**
  * RefundOrderSaga - Saga for refunding orders
@@ -298,6 +299,12 @@ export class RefundOrderSaga {
           timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
         },
       ],
+    });
+
+    // Invalidate dashboard caches (order revenue affected by refund)
+    this.eventEmitter.emit(DASHBOARD_INVALIDATION_EVENTS.ORDER_CHANGED, {
+      workspaceId: context.workspaceId,
+      entityId: context.orderId,
     });
 
     this.logger.log(

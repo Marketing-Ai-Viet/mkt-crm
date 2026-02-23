@@ -312,6 +312,16 @@ export class MktPaymentWorkspaceEntity extends BaseWorkspaceEntity {
   @WorkspaceIsNullable()
   refundedAmount?: number;
 
+  @WorkspaceField({
+    standardId: MKT_PAYMENT_FIELD_IDS.refundedAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Refunded At`,
+    description: msg`Thời điểm hoàn tiền`,
+    icon: 'IconReceiptRefund',
+  })
+  @WorkspaceIsNullable()
+  refundedAt?: Date | null;
+
   // ============================================
   // VA SUPPORT & MATCHING FIELDS
   // ============================================

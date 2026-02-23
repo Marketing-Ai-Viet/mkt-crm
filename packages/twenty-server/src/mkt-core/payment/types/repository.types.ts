@@ -69,6 +69,9 @@ export type UpdatePaymentData = Partial<{
   rejectionReason: string;
   // Refund fields
   refundedAmount: number;
+  refundedAt: string;
+  // Relation fields
+  mktPaymentMethodId: string;
   // Metadata
   metadata: JSON | null;
 }>;

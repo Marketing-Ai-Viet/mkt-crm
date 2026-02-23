@@ -21,7 +21,7 @@ import { prefillMktEmploymentStatuses } from 'src/mkt-core/seeder/prefill-data/p
 import { prefillMktI18n } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-i18n';
 import { prefillMktKpiTemplates } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpi-templates';
 import { prefillMktKpis } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-kpis';
-import { prefillMktOrderHistories } from 'src/mkt-core/seeder/order-seeder/prefill-mkt-order-histories';
+import { prefillMktOrderHistories } from 'src/mkt-core/seeder/order-seeder/mkt-order-history/prefill-mkt-order-histories';
 import { prefillMktOrderItems } from 'src/mkt-core/seeder/order-seeder/mkt-order-item/prefill-mkt-order-items';
 import { prefillMktOrders } from 'src/mkt-core/seeder/order-seeder/order/prefill-mkt-orders';
 import { prefillMktOrganizationLevels } from 'src/mkt-core/seeder/prefill-data/prefill-mkt-organization-levels';

@@ -16,6 +16,7 @@ import {
 } from 'src/mkt-core/payment/constants/payment-action.constants';
 import { PAYMENT_EVENTS } from 'src/mkt-core/payment/events';
 import { PAYMENT_HISTORY_TYPE } from 'src/mkt-core/payment/types/payment.type';
+import { DASHBOARD_INVALIDATION_EVENTS } from 'src/mkt-core/mkt-dashboard/listeners/dashboard-cache-invalidation.listener';
 
 // ============================================
 // TYPES
@@ -161,6 +162,12 @@ export class PaymentConfirmationService {
       licensesCreated = true;
     }
 
+    // Invalidate dashboard caches (revenue depends on payment confirmation)
+    this.eventEmitter.emit(DASHBOARD_INVALIDATION_EVENTS.PAYMENT_CHANGED, {
+      workspaceId,
+      entityId: paymentId,
+    });
+
     this.logger.log({
       message: 'Payment confirmed',
       paymentId,
@@ -249,6 +256,12 @@ export class PaymentConfirmationService {
       rejectedById,
       rejectionReason,
       workspaceId,
+    });
+
+    // Invalidate dashboard caches
+    this.eventEmitter.emit(DASHBOARD_INVALIDATION_EVENTS.PAYMENT_CHANGED, {
+      workspaceId,
+      entityId: paymentId,
     });
 
     this.logger.log({

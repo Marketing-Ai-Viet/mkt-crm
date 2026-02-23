@@ -31,6 +31,7 @@ import { MktPaymentWorkspaceEntity } from 'src/mkt-core/payment/objects/mkt-paym
 import { MktPaymentRepository } from 'src/mkt-core/payment/repositories';
 import { MktPaymentPrepareService } from 'src/mkt-core/payment/services/core/mkt-payment-prepare.service';
 import { PaymentCurrency, PaymentStatus } from 'src/mkt-core/payment/types';
+import { UpdatePaymentData } from 'src/mkt-core/payment/types/repository.types';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories';
 
 const SEPAY_QR_METHOD_NAME = 'SEPay QR';
@@ -326,7 +327,7 @@ export class MktPaymentService {
     };
 
     await this.mktPaymentRepository.updatePayment(paymentId, {
-      ...updateData,
+      ...(updateData as UpdatePaymentData),
       createdBy,
     });
   }
@@ -418,7 +419,7 @@ export class MktPaymentService {
       }
 
       // Build update data
-      const updateData: Partial<MktPaymentWorkspaceEntity> = {};
+      const updateData: Partial<UpdatePaymentData> = {};
 
       if (input.name !== undefined) updateData.name = input.name;
       if (input.amount !== undefined) updateData.amount = input.amount;

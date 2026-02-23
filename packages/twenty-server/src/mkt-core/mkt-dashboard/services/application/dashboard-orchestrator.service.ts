@@ -308,6 +308,13 @@ export class DashboardOrchestratorService {
           period: r.period,
           amount: r.amount,
         })),
+        // Dual-Metric fields
+        collectedRevenue: revenueStats.collected?.totalRevenue ?? null,
+        orderRevenue: revenueStats.order?.totalRevenue ?? null,
+        collectionRate: revenueStats.gap?.collectionRate ?? null,
+        revenueGap: revenueStats.gap?.revenueGap ?? null,
+        collectedByMonth: revenueStats.collected?.revenueByPeriod ?? null,
+        orderByMonth: revenueStats.order?.revenueByPeriod ?? null,
       },
       orders: {
         totalOrders,

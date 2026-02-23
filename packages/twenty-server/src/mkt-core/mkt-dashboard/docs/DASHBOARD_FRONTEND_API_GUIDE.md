@@ -52,6 +52,22 @@ Tat ca 6/7 queries (tru `dashboardAlerts`) yeu cau tham so `period`:
 
 > **DATE_TRUNC Interval** quyet dinh do chi tiet cua du lieu time-series (revenueByPeriod, orderTrend, customerGrowth, productRevenueTrend). Vi du: period = `THIS_WEEK` se tra du lieu nhom theo **ngay**, period = `THIS_MONTH` se nhom theo **tuan**.
 
+### RevenueMode Enum (Dual-Metric)
+
+Query `revenueStats` ho tro tham so `revenueMode` de chon che do tinh doanh thu:
+
+| Value | Mo ta | Backward Compatible |
+|-------|-------|---------------------|
+| `DUAL` | Hien thi song song Cash + Order kem gap analysis | **Default** — frontend cu khong gui field nay van hoat dong |
+| `CASH` | Chi doanh thu da thu (mktPayment.confirmedAt) | |
+| `ORDER` | Chi doanh so don hang (mktOrder.completedAt) | |
+
+> **Dual-Metric Revenue:** He thong ho tro 2 goc nhin doanh thu:
+> - **Cash Basis (Collected):** Tien thuc te da thu — dua tren `mktPayment.confirmedAt`
+> - **Order Basis (Accrual):** Doanh so don hang hoan tat — dua tren `mktOrder.completedAt`
+>
+> Khi `revenueMode = DUAL`, response tra ve ca 2 bo chi so (`collected`, `order`) kem `gap` analysis (ty le thu tien, chenh lech, so ngay thu tien trung binh).
+
 ### Department Filtering
 
 Khi truyen `departmentId`, he thong tu dong resolve hierarchy (phong ban + tat ca team con) va loc du lieu tuong ung. Co mat o 6/7 endpoints (tru `dashboardAlerts`).
@@ -85,6 +101,21 @@ query DashboardSummary($input: DashboardSummaryInput!) {
       revenueByMonth {
         period
         amount
+      }
+      # ─── Dual-Metric fields (v1.1) ─────────────
+      collectedRevenue
+      orderRevenue
+      collectionRate
+      revenueGap
+      collectedByMonth {
+        period
+        amount
+        orderCount
+      }
+      orderByMonth {
+        period
+        amount
+        orderCount
       }
     }
     orders {
@@ -234,6 +265,20 @@ query DashboardSummary($input: DashboardSummaryInput!) {
           { "period": "1738368000000", "amount": 3500000000 },
           { "period": "1738972800000", "amount": 4200000000 },
           { "period": "1739577600000", "amount": 3300000000 }
+        ],
+        "collectedRevenue": 1046100000,
+        "orderRevenue": 6604000000,
+        "collectionRate": 15.84,
+        "revenueGap": 5557900000,
+        "collectedByMonth": [
+          { "period": "1738368000000", "amount": 0, "orderCount": 0 },
+          { "period": "1738972800000", "amount": 618100000, "orderCount": 8 },
+          { "period": "1739577600000", "amount": 428000000, "orderCount": 6 }
+        ],
+        "orderByMonth": [
+          { "period": "1738368000000", "amount": 4449950000, "orderCount": 10 },
+          { "period": "1738972800000", "amount": 2154050000, "orderCount": 11 },
+          { "period": "1739577600000", "amount": 0, "orderCount": 0 }
         ]
       },
       "orders": {
@@ -322,10 +367,11 @@ query DashboardSummary($input: DashboardSummaryInput!) {
 
 Lay chi tiet thong ke doanh thu: theo thoi gian, phong ban, nhan vien. Ho tro so sanh voi ky truoc va du bao doanh thu.
 
-**Query:**
+**Query (Dual-Metric — recommended):**
 ```graphql
 query RevenueStats($input: RevenueStatsInput!) {
   revenueStats(input: $input) {
+    # ─── Backward compatible fields ────────────────
     totalRevenue
     revenueByPeriod {
       period
@@ -345,15 +391,58 @@ query RevenueStats($input: RevenueStatsInput!) {
     }
     growthRate
     projectedRevenue
+
+    # ─── Dual-Metric fields (v1.1) ────────────────
+    collected {
+      totalRevenue
+      revenueByPeriod { period amount orderCount }
+      revenueByDepartment { departmentName amount percentage }
+      revenueByStaff { staffName amount orderCount rank }
+      growthRate
+      projectedRevenue
+    }
+    order {
+      totalRevenue
+      revenueByPeriod { period amount orderCount }
+      revenueByDepartment { departmentName amount percentage }
+      revenueByStaff { staffName amount orderCount rank }
+      growthRate
+      projectedRevenue
+    }
+    gap {
+      collectionRate
+      revenueGap
+      avgCollectionDays
+    }
   }
 }
 ```
 
-**Variables (toi thieu):**
+**Variables (toi thieu — backward compatible, revenueMode mac dinh = DUAL):**
 ```json
 {
   "input": {
     "period": "THIS_MONTH"
+  }
+}
+```
+
+**Variables (chi dinh revenueMode):**
+```json
+{
+  "input": {
+    "period": "THIS_MONTH",
+    "revenueMode": "DUAL"
+  }
+}
+```
+
+**Variables (chi xem doanh thu da thu):**
+```json
+{
+  "input": {
+    "period": "THIS_MONTH",
+    "revenueMode": "CASH"
   }
 }
 ```
@@ -396,59 +485,111 @@ query RevenueStats($input: RevenueStatsInput!) {
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `period` | DashboardPeriod | **Yes** | - | Ky bao cao |
+| `revenueMode` | RevenueMode | No | `DUAL` | Che do tinh doanh thu: `CASH`, `ORDER`, `DUAL` |
 | `departmentId` | String | No | `null` | Loc theo phong ban (+ team con) |
 | `staffId` | String | No | `null` | Loc theo nhan vien cu the (workspaceMemberId) |
 | `startDate` | String | No | `null` | Ngay bat dau (dung voi CUSTOM) |
 | `endDate` | String | No | `null` | Ngay ket thuc (dung voi CUSTOM) |
 | `limit` | Int | No | `10` | So luong top nhan vien tra ve (min: 1) |
 
-**Response Success:**
+**Response Success (revenueMode = DUAL — mac dinh):**
 ```json
 {
   "data": {
     "revenueStats": {
-      "totalRevenue": 11000000000,
+      "totalRevenue": 1046100000,
       "revenueByPeriod": [
-        { "period": "1738368000000", "amount": 3500000000, "orderCount": 28 },
-        { "period": "1738972800000", "amount": 4200000000, "orderCount": 35 },
-        { "period": "1739577600000", "amount": 3300000000, "orderCount": 22 }
+        { "period": "1738368000000", "amount": 0, "orderCount": 0 },
+        { "period": "1738972800000", "amount": 618100000, "orderCount": 8 },
+        { "period": "1739577600000", "amount": 428000000, "orderCount": 6 }
       ],
       "revenueByDepartment": [
-        { "departmentName": "Sales Team A", "amount": 5500000000, "percentage": 50.0 },
-        { "departmentName": "Sales Team B", "amount": 3300000000, "percentage": 30.0 },
-        { "departmentName": "Sales Team C", "amount": 2200000000, "percentage": 20.0 }
+        { "departmentName": "Frontend", "amount": 373100000, "percentage": 35.67 },
+        { "departmentName": "Kinh doanh", "amount": 345000000, "percentage": 32.98 }
       ],
       "revenueByStaff": [
-        { "staffName": "Jony Ive", "amount": 2800000000, "orderCount": 15, "rank": 1 },
-        { "staffName": "Tim Cook", "amount": 2200000000, "orderCount": 12, "rank": 2 },
-        { "staffName": "Craig Federighi", "amount": 1500000000, "orderCount": 8, "rank": 3 }
+        { "staffName": "Jony Ive", "amount": 373100000, "orderCount": 5, "rank": 1 },
+        { "staffName": "Tim Cook", "amount": 345000000, "orderCount": 4, "rank": 2 }
       ],
-      "growthRate": 15.79,
-      "projectedRevenue": 14500000000
+      "growthRate": 100,
+      "projectedRevenue": null,
+      "collected": {
+        "totalRevenue": 1046100000,
+        "revenueByPeriod": [
+          { "period": "1738368000000", "amount": 0, "orderCount": 0 },
+          { "period": "1738972800000", "amount": 618100000, "orderCount": 8 }
+        ],
+        "revenueByDepartment": [
+          { "departmentName": "Frontend", "amount": 373100000, "percentage": 35.67 }
+        ],
+        "revenueByStaff": [
+          { "staffName": "Jony Ive", "amount": 373100000, "orderCount": 5, "rank": 1 }
+        ],
+        "growthRate": 100,
+        "projectedRevenue": null
+      },
+      "order": {
+        "totalRevenue": 6604000000,
+        "revenueByPeriod": [
+          { "period": "1738368000000", "amount": 4449950000, "orderCount": 10 },
+          { "period": "1738972800000", "amount": 2154050000, "orderCount": 11 }
+        ],
+        "revenueByDepartment": [
+          { "departmentName": "Frontend", "amount": 2500000000, "percentage": 37.86 }
+        ],
+        "revenueByStaff": [
+          { "staffName": "Jony Ive", "amount": 2500000000, "orderCount": 8, "rank": 1 }
+        ],
+        "growthRate": 48.41,
+        "projectedRevenue": null
+      },
+      "gap": {
+        "collectionRate": 15.84,
+        "revenueGap": 5557900000,
+        "avgCollectionDays": 13.75
+      }
     }
   }
 }
 ```
 
-**Response Success (loc theo staffId - 1 nhan vien):**
+**Response Success (revenueMode = CASH — chi cash):**
 ```json
 {
   "data": {
     "revenueStats": {
-      "totalRevenue": 2800000000,
-      "revenueByPeriod": [
-        { "period": "1738368000000", "amount": 900000000, "orderCount": 5 },
-        { "period": "1738972800000", "amount": 1200000000, "orderCount": 7 },
-        { "period": "1739577600000", "amount": 700000000, "orderCount": 3 }
-      ],
-      "revenueByDepartment": [
-        { "departmentName": "Sales Team A", "amount": 2800000000, "percentage": 100.0 }
-      ],
-      "revenueByStaff": [
-        { "staffName": "Jony Ive", "amount": 2800000000, "orderCount": 15, "rank": 1 }
-      ],
-      "growthRate": 22.5,
-      "projectedRevenue": 3600000000
+      "totalRevenue": 1046100000,
+      "revenueByPeriod": [ ... ],
+      "growthRate": 100,
+      "collected": {
+        "totalRevenue": 1046100000,
+        "revenueByPeriod": [ ... ],
+        "growthRate": 100,
+        "projectedRevenue": null
+      },
+      "order": null,
+      "gap": null
+    }
+  }
+}
+```
+
+**Response Success (revenueMode = ORDER — chi order):**
+```json
+{
+  "data": {
+    "revenueStats": {
+      "totalRevenue": 6604000000,
+      "revenueByPeriod": [ ... ],
+      "growthRate": 48.41,
+      "collected": null,
+      "order": {
+        "totalRevenue": 6604000000,
+        "revenueByPeriod": [ ... ],
+        "growthRate": 48.41,
+        "projectedRevenue": null
+      },
+      "gap": null
     }
   }
 }
@@ -457,8 +598,12 @@ query RevenueStats($input: RevenueStatsInput!) {
 **Ghi chu:**
 - `period` trong `revenueByPeriod` la timestamp (milliseconds) dang string. Frontend can convert: `new Date(Number(period))`.
 - `projectedRevenue` co the la `null` neu da het ky (vi du: period = THIS_MONTH va hom nay la ngay cuoi thang).
-- `growthRate` la % thay doi so voi ky truoc. Gia tri am = giam.
+- `growthRate` la % thay doi so voi ky truoc. Gia tri am = giam. Gia tri `100` khi ky truoc = 0.
 - Khi truyen `departmentId`, `revenueByDepartment` chi hien thi cac team con (team revenue breakdown).
+- **Backward compatible:** Cac field goc (`totalRevenue`, `revenueByPeriod`, ...) van hoat dong. Khi mode = DUAL/CASH, chung tra du lieu cash basis. Khi mode = ORDER, chung tra du lieu order basis.
+- **`collected`** = null khi `revenueMode = ORDER`.
+- **`order`** = null khi `revenueMode = CASH`.
+- **`gap`** chi co khi `revenueMode = DUAL` (can ca 2 bo du lieu de so sanh).
 
 ---
 
@@ -781,6 +926,8 @@ query StaffLeaderboard($input: LeaderboardInput!) {
       staffName
       departmentName
       revenue
+      collectedRevenue
+      previousMonthRevenue
       orderCount
       newCustomers
       kpiAchievement
@@ -846,9 +993,11 @@ query StaffLeaderboard($input: LeaderboardInput!) {
         {
           "rank": 1,
           "staffName": "Jony Ive",
-          "departmentName": "Sales Team A",
-          "revenue": 2800000000,
-          "orderCount": 15,
+          "departmentName": "Frontend",
+          "revenue": 2500000000,
+          "collectedRevenue": 373100000,
+          "previousMonthRevenue": 1200000000,
+          "orderCount": 8,
           "newCustomers": 5,
           "kpiAchievement": 110.0,
           "overallScore": 95.5
@@ -856,9 +1005,11 @@ query StaffLeaderboard($input: LeaderboardInput!) {
         {
           "rank": 2,
           "staffName": "Tim Cook",
-          "departmentName": "Sales Team A",
+          "departmentName": "Kinh doanh",
           "revenue": 2200000000,
-          "orderCount": 12,
+          "collectedRevenue": 345000000,
+          "previousMonthRevenue": 900000000,
+          "orderCount": 6,
           "newCustomers": 3,
           "kpiAchievement": 95.0,
           "overallScore": 88.2
@@ -882,9 +1033,11 @@ query StaffLeaderboard($input: LeaderboardInput!) {
         {
           "rank": 1,
           "staffName": "Jony Ive",
-          "departmentName": "Sales Team A",
-          "revenue": 2800000000,
-          "orderCount": 15,
+          "departmentName": "Frontend",
+          "revenue": 2500000000,
+          "collectedRevenue": 373100000,
+          "previousMonthRevenue": 1200000000,
+          "orderCount": 8,
           "newCustomers": 5,
           "kpiAchievement": 110.0,
           "overallScore": 95.5
@@ -900,7 +1053,10 @@ query StaffLeaderboard($input: LeaderboardInput!) {
 ```
 
 **Ghi chu:**
-- `overallScore` la diem tong hop tu revenue, orderCount, newCustomers, kpiAchievement.
+- `revenue` = doanh so don hang (order basis — `mktOrder.completedAt`).
+- `collectedRevenue` = doanh thu da thu (cash basis — `mktPayment.confirmedAt`). Co the `null` neu nhan vien chua co payment nao confirmed.
+- `previousMonthRevenue` = doanh thu order basis cua thang truoc (dung de so sanh tang truong).
+- `overallScore` = diem tong hop. Cong thuc: `(collectedRevenue ?? revenue) * 0.4 + orderCount * 0.2 + newCustomers * 0.2 + kpiAchievement * 0.2`. Khi co `collectedRevenue`, score su dung doanh thu da thu de xep hang.
 - Khi dung `staffId`, tra ve dung 1 nhan vien voi rank cua ho trong phong ban/toan cong ty.
 - `limit` va `offset` dung cho phan trang khi so luong nhan vien lon.
 
@@ -1007,24 +1163,56 @@ query DashboardAlerts {
 
 ### RevenueSummary
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `totalRevenue` | Float | Tong doanh thu trong ky |
-| `previousPeriodRevenue` | Float | Doanh thu ky truoc |
-| `percentageChange` | Float | % thay doi so voi ky truoc |
-| `trend` | String | Xu huong: `UP`, `DOWN`, `STABLE` |
-| `revenueByMonth` | [RevenueByMonthItem] | Doanh thu theo thoi gian |
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `totalRevenue` | Float | No | Tong doanh thu trong ky (backward compat) |
+| `previousPeriodRevenue` | Float | No | Doanh thu ky truoc |
+| `percentageChange` | Float | No | % thay doi so voi ky truoc |
+| `trend` | String | No | Xu huong: `UP`, `DOWN`, `STABLE` |
+| `revenueByMonth` | [RevenueByMonthItem] | No | Doanh thu theo thoi gian |
+| `collectedRevenue` | Float | **Yes** | Tong doanh thu da thu (Cash Basis) |
+| `orderRevenue` | Float | **Yes** | Tong doanh so don hang (Order Basis) |
+| `collectionRate` | Float | **Yes** | Ty le thu tien (%) = collectedRevenue / orderRevenue * 100 |
+| `revenueGap` | Float | **Yes** | Chenh lech = orderRevenue - collectedRevenue |
+| `collectedByMonth` | [RevenueByPeriodItem] | **Yes** | Cash revenue theo tung ky |
+| `orderByMonth` | [RevenueByPeriodItem] | **Yes** | Order revenue theo tung ky |
 
 ### RevenueStatsOutput
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `totalRevenue` | Float | No | Tong doanh thu (chi COMPLETED orders) |
+| `totalRevenue` | Float | No | Tong doanh thu (backward compat: cash khi DUAL/CASH, order khi ORDER) |
 | `revenueByPeriod` | [RevenueByPeriodItem] | No | Doanh thu theo thoi gian (dynamic DATE_TRUNC) |
 | `revenueByDepartment` | [RevenueByDepartmentItem] | No | Doanh thu theo phong ban/team |
 | `revenueByStaff` | [RevenueByStaffItem] | No | Doanh thu theo nhan vien |
 | `growthRate` | Float | No | % tang truong so voi ky truoc |
 | `projectedRevenue` | Float | **Yes** | Doanh thu du kien (null neu da het ky) |
+| `collected` | RevenueMetricOutput | **Yes** | Bo chi so Cash Basis. Null khi mode = ORDER |
+| `order` | RevenueMetricOutput | **Yes** | Bo chi so Order Basis. Null khi mode = CASH |
+| `gap` | GapAnalysisOutput | **Yes** | Gap analysis. Chi co khi mode = DUAL |
+
+### RevenueMetricOutput (moi — v1.1)
+
+Mot bo chi so doanh thu day du, dung chung cho ca cash basis va order basis.
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `totalRevenue` | Float | No | Tong doanh thu |
+| `revenueByPeriod` | [RevenueByPeriodItem] | No | Doanh thu theo thoi gian |
+| `revenueByDepartment` | [RevenueByDepartmentItem] | No | Doanh thu theo phong ban |
+| `revenueByStaff` | [RevenueByStaffItem] | No | Doanh thu theo nhan vien |
+| `growthRate` | Float | No | % tang truong so voi ky truoc |
+| `projectedRevenue` | Float | **Yes** | Doanh thu du kien |
+
+### GapAnalysisOutput (moi — v1.1)
+
+Phan tich chenh lech giua doanh thu da thu va doanh so don hang.
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `collectionRate` | Float | No | Ty le thu tien (%) = collected / order * 100 |
+| `revenueGap` | Float | No | Chenh lech = order - collected |
+| `avgCollectionDays` | Float | **Yes** | So ngay thu tien trung binh sau khi don hoan tat |
 
 ### RevenueByPeriodItem
 
@@ -1158,16 +1346,18 @@ query DashboardAlerts {
 
 ### LeaderboardRankingItem
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `rank` | Int | Thu hang |
-| `staffName` | String | Ten nhan vien |
-| `departmentName` | String | Ten phong ban |
-| `revenue` | Float | Doanh thu |
-| `orderCount` | Int | So don hang |
-| `newCustomers` | Int | Khach hang moi |
-| `kpiAchievement` | Float | Ty le dat KPI (%) |
-| `overallScore` | Float | Diem tong hop |
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `rank` | Int | No | Thu hang |
+| `staffName` | String | No | Ten nhan vien |
+| `departmentName` | String | No | Ten phong ban |
+| `revenue` | Float | No | Doanh so don hang (order basis) |
+| `collectedRevenue` | Float | **Yes** | Doanh thu da thu (cash basis). Null neu chua co payment confirmed |
+| `previousMonthRevenue` | Float | No | Doanh thu order basis thang truoc |
+| `orderCount` | Int | No | So don hang |
+| `newCustomers` | Int | No | Khach hang moi |
+| `kpiAchievement` | Float | No | Ty le dat KPI (%) |
+| `overallScore` | Float | No | Diem tong hop: `(collectedRevenue ?? revenue) * 0.4 + orderCount * 0.2 + newCustomers * 0.2 + kpiAchievement * 0.2` |
 
 ### AlertsOutput
 
@@ -1403,7 +1593,31 @@ const label = date.toLocaleDateString('vi-VN', {
 });
 ```
 
-### 6. Xu ly projectedRevenue null
+### 6. Xu ly dual-metric revenue
+
+```typescript
+const { collected, order, gap } = revenueData;
+
+// Hien thi 2 cot song song
+if (collected && order) {
+  // Mode DUAL — hien thi ca 2
+  showDualChart({
+    cashRevenue: collected.totalRevenue,
+    orderRevenue: order.totalRevenue,
+    collectionRate: gap?.collectionRate,
+    revenueGap: gap?.revenueGap,
+    avgCollectionDays: gap?.avgCollectionDays,
+  });
+} else if (collected) {
+  // Mode CASH — chi cash
+  showSingleChart('Doanh thu da thu', collected.totalRevenue);
+} else if (order) {
+  // Mode ORDER — chi order
+  showSingleChart('Doanh so don hang', order.totalRevenue);
+}
+```
+
+### 7. Xu ly projectedRevenue null
 
 ```typescript
 const { totalRevenue, projectedRevenue } = revenueData;
@@ -1417,7 +1631,33 @@ if (projectedRevenue !== null) {
 }
 ```
 
-### 7. Phan trang leaderboard
+### 8. Hien thi leaderboard voi dual-metric
+
+```typescript
+const { rankings } = leaderboardData;
+
+for (const staff of rankings) {
+  // revenue = order basis (luon co)
+  // collectedRevenue = cash basis (co the null)
+  const displayRevenue = staff.collectedRevenue ?? staff.revenue;
+  const collectionRate = staff.collectedRevenue !== null
+    ? (staff.collectedRevenue / staff.revenue * 100).toFixed(1)
+    : 'N/A';
+
+  // So sanh voi thang truoc
+  const growth = staff.previousMonthRevenue > 0
+    ? ((staff.revenue - staff.previousMonthRevenue) / staff.previousMonthRevenue * 100).toFixed(1)
+    : 'N/A';
+
+  renderRow({
+    ...staff,
+    collectionRate: `${collectionRate}%`,
+    monthlyGrowth: `${growth}%`,
+  });
+}
+```
+
+### 9. Phan trang leaderboard
 
 ```typescript
 const PAGE_SIZE = 20;
@@ -1441,7 +1681,7 @@ async function loadLeaderboard(page: number) {
 const nextPage = await loadLeaderboard(currentPage + 1);
 ```
 
-### 8. So sanh doanh thu 2 phong ban
+### 10. So sanh doanh thu 2 phong ban
 
 ```typescript
 // Goi 2 query song song voi departmentId khac nhau
@@ -1468,4 +1708,5 @@ console.log('Team B:', teamB.data.revenueStats.totalRevenue);
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2026-02-23 | **Dual-Metric Revenue** — `revenueStats`: them `revenueMode` input (CASH/ORDER/DUAL), `collected`/`order`/`gap` output. `staffLeaderboard`: them `collectedRevenue`, `previousMonthRevenue`. `dashboardSummary.revenue`: them `collectedRevenue`, `orderRevenue`, `collectionRate`, `revenueGap`, `collectedByMonth`, `orderByMonth`. Backward compatible — frontend cu khong can thay doi. |
 | 1.0.0 | 2026-02-09 | Initial release - 7 queries, department filtering, staff filtering, dynamic DATE_TRUNC, productRevenueTrend |

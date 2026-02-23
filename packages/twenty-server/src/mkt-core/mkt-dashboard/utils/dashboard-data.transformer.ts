@@ -90,6 +90,8 @@ export type RawLeaderboardRow = {
   department_name: string;
   order_count: string;
   total_revenue: string;
+  collected_revenue?: string; // Cash basis — from cash_stats subquery (Phase 4)
+  prev_month_revenue: string;
   new_customers: string;
   kpi_achievement: string;
 };
@@ -271,6 +273,8 @@ export class DashboardDataTransformer {
     staffName: string;
     departmentName: string;
     revenue: number;
+    collectedRevenue: number | null;
+    previousMonthRevenue: number;
     orderCount: number;
     newCustomers: number;
     kpiAchievement: number;
@@ -278,18 +282,26 @@ export class DashboardDataTransformer {
   }> {
     return rows.map((row, index) => {
       const revenue = MoneyUtils.from(row.total_revenue).toNumber();
+      const previousMonthRevenue = MoneyUtils.from(
+        row.prev_month_revenue,
+      ).toNumber();
       const orderCount = Number(row.order_count);
       const newCustomers = Number(row.new_customers);
       const kpiAchievement = Number(row.kpi_achievement);
 
+      const collectedRevenue =
+        row.collected_revenue != null
+          ? MoneyUtils.from(row.collected_revenue).toNumber()
+          : null;
+
       // Overall score = weighted combination
-      // Revenue weight: 40%, Orders: 20%, Customers: 20%, KPI: 20%
+      // Revenue weight: 40% (prefer collectedRevenue/cash), Orders: 20%, Customers: 20%, KPI: 20%
+      const revenueForScore = collectedRevenue ?? revenue;
       const overallScore = MoneyUtils.round(
-        revenue * 0.4 +
+        revenueForScore * 0.4 +
           orderCount * 0.2 +
           newCustomers * 0.2 +
           kpiAchievement * 0.2,
-        2,
       ).toNumber();
 
       return {
@@ -297,6 +309,8 @@ export class DashboardDataTransformer {
         staffName: row.staff_name,
         departmentName: row.department_name,
         revenue,
+        collectedRevenue,
+        previousMonthRevenue,
         orderCount,
         newCustomers,
         kpiAchievement,
