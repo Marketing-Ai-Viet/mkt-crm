@@ -17,6 +17,7 @@ import { LeaderboardInput } from 'src/mkt-core/mkt-dashboard/dto/input/leaderboa
 import { RevenueDailyInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
 import { RevenueDailyByMonthInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-month.input';
 import { RevenueDailyByQuarterInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-quarter.input';
+import { StaffRevenueInput } from 'src/mkt-core/mkt-dashboard/dto/input/staff-revenue.input';
 import { DashboardSummaryOutput } from 'src/mkt-core/mkt-dashboard/dto/output/dashboard-summary.output';
 import { RevenueStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { OrderStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/order-stats.output';
@@ -27,6 +28,7 @@ import { AlertsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/alerts.outpu
 import { RevenueDailyOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
 import { RevenueDailyByMonthOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-month.output';
 import { RevenueDailyByQuarterOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-quarter.output';
+import { StaffRevenueOutput } from 'src/mkt-core/mkt-dashboard/dto/output/staff-revenue.output';
 
 /**
  * DashboardQueryResolver - GraphQL resolver for Dashboard queries
@@ -167,5 +169,17 @@ export class DashboardQueryResolver {
     input: RevenueDailyByQuarterInput,
   ): Promise<RevenueDailyByQuarterOutput> {
     return this.orchestrator.getRevenueDailyByQuarter(input);
+  }
+
+  /**
+   * Get per-staff revenue with department hierarchy info
+   */
+  @Query(() => StaffRevenueOutput)
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  async staffRevenue(
+    @Args('input', { type: () => StaffRevenueInput })
+    input: StaffRevenueInput,
+  ): Promise<StaffRevenueOutput> {
+    return this.orchestrator.getStaffRevenue(input);
   }
 }

@@ -30,6 +30,7 @@ import { PaymentStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/
 import { RevenueStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/revenue-stats.service';
 import { RevenueDailyService } from 'src/mkt-core/mkt-dashboard/services/domain/revenue-daily.service';
 import { StaffLeaderboardService } from 'src/mkt-core/mkt-dashboard/services/domain/staff-leaderboard.service';
+import { StaffRevenueService } from 'src/mkt-core/mkt-dashboard/services/domain/staff-revenue.service';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { StaffLeaderboardService } from 'src/mkt-core/mkt-dashboard/services/dom
     ContractStatsService,
     DashboardAlertsService,
     StaffLeaderboardService,
+    StaffRevenueService,
 
     // Application Services
     DashboardOrchestratorService,
