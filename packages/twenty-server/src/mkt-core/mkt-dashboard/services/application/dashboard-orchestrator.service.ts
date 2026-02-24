@@ -10,6 +10,7 @@ import { KpiStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/kpi-
 import { ContractStatsService } from 'src/mkt-core/mkt-dashboard/services/domain/contract-stats.service';
 import { DashboardAlertsService } from 'src/mkt-core/mkt-dashboard/services/domain/alerts.service';
 import { StaffLeaderboardService } from 'src/mkt-core/mkt-dashboard/services/domain/staff-leaderboard.service';
+import { StaffRevenueService } from 'src/mkt-core/mkt-dashboard/services/domain/staff-revenue.service';
 import { RevenueDailyService } from 'src/mkt-core/mkt-dashboard/services/domain/revenue-daily.service';
 import { DashboardSummaryInput } from 'src/mkt-core/mkt-dashboard/dto/input/dashboard-summary.input';
 import { DashboardSummaryOutput } from 'src/mkt-core/mkt-dashboard/dto/output/dashboard-summary.output';
@@ -18,6 +19,7 @@ import { OrderStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/order-stat
 import { CustomerStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/customer-stats.input';
 import { KpiScorecardInput } from 'src/mkt-core/mkt-dashboard/dto/input/kpi-scorecard.input';
 import { LeaderboardInput } from 'src/mkt-core/mkt-dashboard/dto/input/leaderboard.input';
+import { StaffRevenueInput } from 'src/mkt-core/mkt-dashboard/dto/input/staff-revenue.input';
 import { RevenueDailyInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
 import { RevenueDailyByMonthInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-month.input';
 import { RevenueDailyByQuarterInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-quarter.input';
@@ -29,6 +31,7 @@ import { KpiScorecardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/kpi-sc
 import { ContractStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/contract-stats.output';
 import { AlertsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/alerts.output';
 import { StaffLeaderboardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/leaderboard.output';
+import { StaffRevenueOutput } from 'src/mkt-core/mkt-dashboard/dto/output/staff-revenue.output';
 import { RevenueDailyOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
 import { RevenueDailyByMonthOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-month.output';
 import { RevenueDailyByQuarterOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-quarter.output';
@@ -55,6 +58,7 @@ export class DashboardOrchestratorService {
     private readonly alertsService: DashboardAlertsService,
     private readonly leaderboardService: StaffLeaderboardService,
     private readonly revenueDailyService: RevenueDailyService,
+    private readonly staffRevenueService: StaffRevenueService,
   ) {}
 
   /**
@@ -255,6 +259,10 @@ export class DashboardOrchestratorService {
     input: RevenueDailyByQuarterInput,
   ): Promise<RevenueDailyByQuarterOutput> {
     return this.revenueDailyService.getStatsByQuarter(input);
+  }
+
+  async getStaffRevenue(input: StaffRevenueInput): Promise<StaffRevenueOutput> {
+    return this.staffRevenueService.getStaffRevenue(input);
   }
 
   /**
