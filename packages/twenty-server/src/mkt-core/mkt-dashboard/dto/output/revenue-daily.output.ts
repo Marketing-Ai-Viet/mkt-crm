@@ -59,6 +59,48 @@ export class DepartmentDailyRevenue {
 }
 
 // ============================================
+// WEEKLY BREAKDOWN ITEM (for week range queries)
+// ============================================
+
+@ObjectType()
+export class RevenueDailyWeekItem {
+  @Field(() => Int, { description: 'Số tuần ISO' })
+  week: number;
+
+  @Field(() => String, { description: 'Ngày bắt đầu tuần (Monday)' })
+  weekStart: string;
+
+  @Field(() => String, { description: 'Ngày kết thúc tuần (Sunday)' })
+  weekEnd: string;
+
+  @Field(() => Float, { description: 'Tổng doanh thu trong tuần' })
+  totalRevenue: number;
+
+  @Field(() => [DailyRevenueItem], {
+    description: 'Doanh thu chi tiết 7 ngày (Thứ 2-Chủ nhật)',
+  })
+  dailyRevenue: DailyRevenueItem[];
+
+  @Field(() => DailyRevenueMetric, {
+    nullable: true,
+    description: 'Doanh thu đã thu (Cash Basis). Null khi mode = ORDER.',
+  })
+  collected: DailyRevenueMetric | null;
+
+  @Field(() => DailyRevenueMetric, {
+    nullable: true,
+    description: 'Doanh số đơn hàng (Order Basis). Null khi mode = CASH.',
+  })
+  order: DailyRevenueMetric | null;
+
+  @Field(() => GapAnalysisOutput, {
+    nullable: true,
+    description: 'Gap analysis. Chỉ có khi mode = DUAL.',
+  })
+  gap: GapAnalysisOutput | null;
+}
+
+// ============================================
 // MAIN OUTPUT
 // ============================================
 
@@ -105,6 +147,14 @@ export class RevenueDailyOutput {
     description: 'Gap analysis giữa cash và order. Chỉ có khi mode = DUAL.',
   })
   gap: GapAnalysisOutput | null;
+
+  // ─── Weekly breakdown (for week range queries) ───────────────────────
+  @Field(() => [RevenueDailyWeekItem], {
+    nullable: true,
+    description:
+      'Chi tiết từng tuần khi query khoảng tuần (weekEnd được truyền). Null khi query 1 tuần.',
+  })
+  weeklyBreakdown: RevenueDailyWeekItem[] | null;
 
   // ─── Department breakdown ─────────────────────────────────────────────
   @Field(() => [DepartmentDailyRevenue], {

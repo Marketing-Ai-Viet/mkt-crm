@@ -7,9 +7,15 @@ import {
   IsString,
   Max,
   Min,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
 } from 'class-validator';
 
 import { RevenueMode } from 'src/mkt-core/mkt-dashboard/types/revenue-mode.type';
+
+const MAX_WEEK_RANGE = 12;
 
 export enum DepartmentScope {
   ALL = 'ALL',
@@ -30,6 +36,30 @@ registerEnumType(DepartmentScope, {
   },
 });
 
+@ValidatorConstraint({ name: 'weekEndRange', async: false })
+export class WeekEndRangeConstraint implements ValidatorConstraintInterface {
+  validate(weekEnd: number, args: ValidationArguments): boolean {
+    const obj = args.object as RevenueDailyInput;
+
+    if (weekEnd == null) return true;
+    if (obj.week != null && weekEnd < obj.week) return false;
+    if (obj.week != null && weekEnd - obj.week + 1 > MAX_WEEK_RANGE)
+      return false;
+
+    return true;
+  }
+
+  defaultMessage(args: ValidationArguments): string {
+    const obj = args.object as RevenueDailyInput;
+
+    if (obj.week != null && (args.value as number) < obj.week) {
+      return `weekEnd ($value) must be >= week (${obj.week})`;
+    }
+
+    return `Week range must not exceed ${MAX_WEEK_RANGE} weeks`;
+  }
+}
+
 @InputType()
 export class RevenueDailyInput {
   @Field(() => Int, { description: 'Năm (ISO week year)' })
@@ -46,6 +76,18 @@ export class RevenueDailyInput {
   @Min(1)
   @Max(53)
   week?: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      'Tuần kết thúc (ISO week number 1-53). Khi truyền, query trả dữ liệu từ week→weekEnd. Max range: 12 tuần.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(53)
+  @Validate(WeekEndRangeConstraint)
+  weekEnd?: number;
 
   @Field(() => DepartmentScope, {
     nullable: true,

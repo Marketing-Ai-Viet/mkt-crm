@@ -17,6 +17,7 @@ import {
   DailyRevenueItem,
   DailyRevenueMetric,
   DepartmentDailyRevenue,
+  RevenueDailyWeekItem,
 } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
 import { GapAnalysisOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { RevenueMode } from 'src/mkt-core/mkt-dashboard/types/revenue-mode.type';
@@ -67,6 +68,11 @@ export class RevenueDailyService {
     const week = input.week ?? now.weekNumber;
     const mode = input.revenueMode ?? RevenueMode.DUAL;
     const scope = input.departmentScope ?? DepartmentScope.ALL;
+
+    // Delegate to range handler when weekEnd is provided
+    if (input.weekEnd != null && input.weekEnd > week) {
+      return this.getStatsRange({ ...input, week }, input.weekEnd);
+    }
 
     // Resolve week → date range (Mon-Sun)
     const weekStart = DateTime.fromObject(
@@ -141,17 +147,11 @@ export class RevenueDailyService {
           departmentIds,
         );
 
-        gap = {
-          collectionRate: StatisticsUtils.collectionRate(
-            collected.totalRevenue,
-            order.totalRevenue,
-          ),
-          revenueGap: MoneyUtils.subtract(
-            order.totalRevenue,
-            collected.totalRevenue,
-          ).toNumber(),
+        gap = this.buildGapAnalysis(
+          collected.totalRevenue,
+          order.totalRevenue,
           avgCollectionDays,
-        };
+        );
       }
 
       // Department breakdown (only when scope != ALL)
@@ -174,9 +174,7 @@ export class RevenueDailyService {
       }
 
       // Primary metric for backward compat
-      const primary = (
-        mode === RevenueMode.ORDER ? order : collected
-      ) as DailyRevenueMetric;
+      const primary = this.selectPrimary(mode, collected, order);
 
       return {
         year,
@@ -188,6 +186,7 @@ export class RevenueDailyService {
         collected,
         order,
         gap,
+        weeklyBreakdown: null,
         departmentBreakdown,
       };
     } catch (error) {
@@ -200,6 +199,447 @@ export class RevenueDailyService {
     } finally {
       await release();
     }
+  }
+
+  // ─── Week Range Handler ────────────────────────────────────────────
+
+  private async getStatsRange(
+    input: RevenueDailyInput & { week: number },
+    inputWeekEnd: number,
+  ): Promise<RevenueDailyOutput> {
+    const { year } = input;
+    const weekStartNum = input.week;
+    const mode = input.revenueMode ?? RevenueMode.DUAL;
+    const scope = input.departmentScope ?? DepartmentScope.ALL;
+
+    const rangeStart = this.weekToMonday(year, weekStartNum);
+    const rangeEnd = this.weekToSunday(year, inputWeekEnd);
+    const startDate = rangeStart.toISO() as string;
+    const endDate = rangeEnd.toISO() as string;
+
+    const { dataSource, queryRunner, release } =
+      await createWorkspaceScopedRunner(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+    try {
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+        queryRunner,
+      );
+
+      // 1. Fetch raw data (1 SQL per metric type for entire range)
+      const { cashRows, orderRows } = await this.fetchRawDailyRows(
+        dataSource,
+        queryRunner,
+        startDate,
+        endDate,
+        mode,
+        departmentIds,
+      );
+
+      // 2. Build per-week breakdown
+      const weeklyBreakdown: RevenueDailyWeekItem[] = [];
+
+      for (let wk = weekStartNum; wk <= inputWeekEnd; wk++) {
+        weeklyBreakdown.push(
+          await this.buildWeekItem(
+            year,
+            wk,
+            cashRows,
+            orderRows,
+            mode,
+            dataSource,
+            queryRunner,
+            departmentIds,
+          ),
+        );
+      }
+
+      // 3. Aggregate metrics from breakdown
+      const { collected, order, gap } = await this.aggregateFromBreakdown(
+        weeklyBreakdown,
+        mode,
+        dataSource,
+        queryRunner,
+        startDate,
+        endDate,
+        departmentIds,
+      );
+
+      // 4. Department breakdown (aggregated across full range)
+      const departmentBreakdown =
+        scope !== DepartmentScope.ALL
+          ? await this.getDepartmentBreakdownRange(
+              dataSource,
+              queryRunner,
+              startDate,
+              endDate,
+              rangeStart,
+              rangeEnd,
+              scope === DepartmentScope.BY_TEAM ? 'TEAM' : 'DEPARTMENT',
+              mode,
+              departmentIds,
+            )
+          : null;
+
+      // 5. Primary metric for backward compat
+      const primary = this.selectPrimary(mode, collected, order);
+
+      return {
+        year,
+        week: weekStartNum,
+        weekStart: rangeStart.toISODate() as string,
+        weekEnd: rangeEnd.toISODate() as string,
+        totalRevenue: primary.totalRevenue,
+        dailyRevenue: primary.dailyRevenue,
+        collected,
+        order,
+        gap,
+        weeklyBreakdown,
+        departmentBreakdown,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get revenue daily stats (range)', {
+        error: getErrorMessage(error),
+        year,
+        weekStart: weekStartNum,
+        weekEnd: inputWeekEnd,
+      });
+      throw error;
+    } finally {
+      await release();
+    }
+  }
+
+  // ─── Shared Helpers ─────────────────────────────────────────────────
+
+  private includesCash(mode: RevenueMode): boolean {
+    return mode !== RevenueMode.ORDER;
+  }
+
+  private includesOrder(mode: RevenueMode): boolean {
+    return mode !== RevenueMode.CASH;
+  }
+
+  private weekToMonday(year: number, week: number): DateTime {
+    return DateTime.fromObject(
+      { weekYear: year, weekNumber: week, weekday: 1 },
+      { zone: 'utc' },
+    ).startOf('day');
+  }
+
+  private weekToSunday(year: number, week: number): DateTime {
+    return this.weekToMonday(year, week).plus({ days: 6 }).endOf('day');
+  }
+
+  private selectPrimary(
+    mode: RevenueMode,
+    collected: DailyRevenueMetric | null,
+    order: DailyRevenueMetric | null,
+  ): DailyRevenueMetric {
+    return (
+      mode === RevenueMode.ORDER ? order : collected
+    ) as DailyRevenueMetric;
+  }
+
+  private buildMetricFromRows(
+    rows: RawDailyRow[],
+    weekStart: DateTime,
+  ): DailyRevenueMetric {
+    const dailyRevenue = this.fillDailyGaps(rows, weekStart);
+
+    return {
+      totalRevenue: MoneyUtils.sumBy(dailyRevenue, 'amount').toNumber(),
+      dailyRevenue,
+    };
+  }
+
+  private buildGapAnalysis(
+    collectedTotal: number,
+    orderTotal: number,
+    avgCollectionDays: number | null,
+  ): GapAnalysisOutput {
+    return {
+      collectionRate: StatisticsUtils.collectionRate(
+        collectedTotal,
+        orderTotal,
+      ),
+      revenueGap: MoneyUtils.subtract(orderTotal, collectedTotal).toNumber(),
+      avgCollectionDays,
+    };
+  }
+
+  // ─── Range Sub-Methods ──────────────────────────────────────────────
+
+  private async fetchRawDailyRows(
+    dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
+    startDate: string,
+    endDate: string,
+    mode: RevenueMode,
+    departmentIds?: string[],
+  ): Promise<{ cashRows: RawDailyRow[]; orderRows: RawDailyRow[] }> {
+    const cashRows = this.includesCash(mode)
+      ? await this.getCashRevenueByDay(
+          dataSource,
+          qr,
+          startDate,
+          endDate,
+          departmentIds,
+        )
+      : [];
+    const orderRows = this.includesOrder(mode)
+      ? await this.getOrderRevenueByDay(
+          dataSource,
+          qr,
+          startDate,
+          endDate,
+          departmentIds,
+        )
+      : [];
+
+    return { cashRows, orderRows };
+  }
+
+  private async buildWeekItem(
+    year: number,
+    wk: number,
+    cashRows: RawDailyRow[],
+    orderRows: RawDailyRow[],
+    mode: RevenueMode,
+    dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
+    departmentIds?: string[],
+  ): Promise<RevenueDailyWeekItem> {
+    const wkStart = this.weekToMonday(year, wk);
+    const wkEnd = wkStart.plus({ days: 6 }).endOf('day');
+
+    const collected = this.includesCash(mode)
+      ? this.buildMetricFromRows(
+          this.filterRowsByWeek(cashRows, wkStart, wkEnd),
+          wkStart,
+        )
+      : null;
+    const order = this.includesOrder(mode)
+      ? this.buildMetricFromRows(
+          this.filterRowsByWeek(orderRows, wkStart, wkEnd),
+          wkStart,
+        )
+      : null;
+
+    let gap: GapAnalysisOutput | null = null;
+
+    if (mode === RevenueMode.DUAL && collected && order) {
+      const avgDays = await this.getAvgCollectionDays(
+        dataSource,
+        qr,
+        wkStart.toISO() as string,
+        wkEnd.toISO() as string,
+        departmentIds,
+      );
+
+      gap = this.buildGapAnalysis(
+        collected.totalRevenue,
+        order.totalRevenue,
+        avgDays,
+      );
+    }
+
+    const primary = this.selectPrimary(mode, collected, order);
+
+    return {
+      week: wk,
+      weekStart: wkStart.toISODate() as string,
+      weekEnd: wkEnd.toISODate() as string,
+      totalRevenue: primary.totalRevenue,
+      dailyRevenue: primary.dailyRevenue,
+      collected,
+      order,
+      gap,
+    };
+  }
+
+  private async aggregateFromBreakdown(
+    breakdown: RevenueDailyWeekItem[],
+    mode: RevenueMode,
+    dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
+    startDate: string,
+    endDate: string,
+    departmentIds?: string[],
+  ): Promise<{
+    collected: DailyRevenueMetric | null;
+    order: DailyRevenueMetric | null;
+    gap: GapAnalysisOutput | null;
+  }> {
+    const collected = this.includesCash(mode)
+      ? {
+          totalRevenue: MoneyUtils.sumBy(
+            breakdown.map((w) => ({
+              amount: w.collected?.totalRevenue ?? 0,
+            })),
+            'amount',
+          ).toNumber(),
+          dailyRevenue: breakdown.flatMap(
+            (w) => w.collected?.dailyRevenue ?? [],
+          ),
+        }
+      : null;
+
+    const order = this.includesOrder(mode)
+      ? {
+          totalRevenue: MoneyUtils.sumBy(
+            breakdown.map((w) => ({ amount: w.order?.totalRevenue ?? 0 })),
+            'amount',
+          ).toNumber(),
+          dailyRevenue: breakdown.flatMap((w) => w.order?.dailyRevenue ?? []),
+        }
+      : null;
+
+    let gap: GapAnalysisOutput | null = null;
+
+    if (mode === RevenueMode.DUAL && collected && order) {
+      const avgDays = await this.getAvgCollectionDays(
+        dataSource,
+        qr,
+        startDate,
+        endDate,
+        departmentIds,
+      );
+
+      gap = this.buildGapAnalysis(
+        collected.totalRevenue,
+        order.totalRevenue,
+        avgDays,
+      );
+    }
+
+    return { collected, order, gap };
+  }
+
+  // ─── Range Data Helpers ─────────────────────────────────────────────
+
+  private filterRowsByWeek(
+    rows: RawDailyRow[],
+    wkStart: DateTime,
+    wkEnd: DateTime,
+  ): RawDailyRow[] {
+    return rows.filter((row) => {
+      const rowDate = DateTime.fromJSDate(new Date(row.period), {
+        zone: 'utc',
+      });
+
+      return rowDate >= wkStart && rowDate <= wkEnd;
+    });
+  }
+
+  private async getDepartmentBreakdownRange(
+    dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
+    startDate: string,
+    endDate: string,
+    rangeStart: DateTime,
+    rangeEnd: DateTime,
+    departmentType: string,
+    mode: RevenueMode,
+    departmentIds?: string[],
+  ): Promise<DepartmentDailyRevenue[]> {
+    const rows =
+      mode === RevenueMode.ORDER
+        ? await this.getOrderDeptDailyRows(
+            dataSource,
+            qr,
+            startDate,
+            endDate,
+            departmentType,
+            departmentIds,
+          )
+        : await this.getCashDeptDailyRows(
+            dataSource,
+            qr,
+            startDate,
+            endDate,
+            departmentType,
+            departmentIds,
+          );
+
+    return this.groupDepartmentRowsRange(rows, rangeStart, rangeEnd);
+  }
+
+  private groupDepartmentRowsRange(
+    rows: RawDepartmentDailyRow[],
+    rangeStart: DateTime,
+    rangeEnd: DateTime,
+  ): DepartmentDailyRevenue[] {
+    const totalDays = Math.ceil(rangeEnd.diff(rangeStart, 'days').days);
+
+    const deptMap = new Map<
+      string,
+      {
+        departmentId: string;
+        departmentName: string;
+        departmentType: string;
+        rowMap: Map<string, RawDailyRow>;
+      }
+    >();
+
+    for (const row of rows) {
+      let entry = deptMap.get(row.department_id);
+
+      if (!entry) {
+        entry = {
+          departmentId: row.department_id,
+          departmentName: row.department_name,
+          departmentType: row.department_type,
+          rowMap: new Map(),
+        };
+        deptMap.set(row.department_id, entry);
+      }
+
+      const dateKey = DateTime.fromJSDate(new Date(row.period), {
+        zone: 'utc',
+      }).toISODate() as string;
+
+      entry.rowMap.set(dateKey, {
+        period: row.period,
+        order_count: row.order_count,
+        total_revenue: row.total_revenue,
+      });
+    }
+
+    const result: DepartmentDailyRevenue[] = [];
+
+    for (const entry of deptMap.values()) {
+      const dailyRevenue: DailyRevenueItem[] = [];
+
+      for (let i = 0; i <= totalDays; i++) {
+        const day = rangeStart.plus({ days: i });
+        const dateKey = day.toISODate() as string;
+        const row = entry.rowMap.get(dateKey);
+
+        dailyRevenue.push({
+          date: dateKey,
+          dayOfWeek: DAY_NAMES[(day.weekday - 1) % 7],
+          amount: row ? MoneyUtils.from(row.total_revenue).toNumber() : 0,
+          orderCount: row ? Number(row.order_count) : 0,
+        });
+      }
+
+      const totalRevenue = MoneyUtils.sumBy(dailyRevenue, 'amount').toNumber();
+
+      result.push({
+        departmentId: entry.departmentId,
+        departmentName: entry.departmentName,
+        departmentType: entry.departmentType,
+        totalRevenue,
+        dailyRevenue,
+      });
+    }
+
+    return result;
   }
 
   // ─── Metric Builders ────────────────────────────────────────────────
@@ -220,10 +660,7 @@ export class RevenueDailyService {
       departmentIds,
     );
 
-    const dailyRevenue = this.fillDailyGaps(rows, weekStart);
-    const totalRevenue = MoneyUtils.sumBy(dailyRevenue, 'amount').toNumber();
-
-    return { totalRevenue, dailyRevenue };
+    return this.buildMetricFromRows(rows, weekStart);
   }
 
   private async buildOrderDailyMetric(
@@ -242,10 +679,7 @@ export class RevenueDailyService {
       departmentIds,
     );
 
-    const dailyRevenue = this.fillDailyGaps(rows, weekStart);
-    const totalRevenue = MoneyUtils.sumBy(dailyRevenue, 'amount').toNumber();
-
-    return { totalRevenue, dailyRevenue };
+    return this.buildMetricFromRows(rows, weekStart);
   }
 
   // ─── Cash (Payment-based) Queries ───────────────────────────────────
