@@ -13,6 +13,7 @@ import {
   DepartmentScope,
 } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
 import { RevenueDailyByMonthInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-month.input';
+import { RevenueDailyByQuarterInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-quarter.input';
 import {
   RevenueDailyOutput,
   DailyRevenueItem,
@@ -21,6 +22,11 @@ import {
   RevenueDailyWeekItem,
 } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
 import { RevenueDailyByMonthOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-month.output';
+import {
+  QuarterBreakdownItem,
+  QuarterMonthItem,
+  RevenueDailyByQuarterOutput,
+} from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-quarter.output';
 import { GapAnalysisOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { RevenueMode } from 'src/mkt-core/mkt-dashboard/types/revenue-mode.type';
 import { StatisticsUtils } from 'src/mkt-core/mkt-dashboard/utils/statistics.utils';
@@ -324,6 +330,330 @@ export class RevenueDailyService {
     }
   }
 
+  // ─── Quarter Handler ─────────────────────────────────────────────
+
+  async getStatsByQuarter(
+    input: RevenueDailyByQuarterInput,
+  ): Promise<RevenueDailyByQuarterOutput> {
+    const { year } = input;
+    const quarter = input.quarter ?? null;
+    const mode = input.revenueMode ?? RevenueMode.DUAL;
+    const scope = input.departmentScope ?? DepartmentScope.ALL;
+
+    // Determine date range: single quarter or full year
+    const rangeStart = quarter
+      ? DateTime.fromObject(
+          { year, month: (quarter - 1) * 3 + 1, day: 1 },
+          { zone: 'utc' },
+        ).startOf('day')
+      : DateTime.fromObject(
+          { year, month: 1, day: 1 },
+          { zone: 'utc' },
+        ).startOf('day');
+    const rangeEnd = quarter
+      ? DateTime.fromObject(
+          { year, month: (quarter - 1) * 3 + 3, day: 1 },
+          { zone: 'utc' },
+        ).endOf('month')
+      : DateTime.fromObject({ year, month: 12, day: 1 }, { zone: 'utc' }).endOf(
+          'month',
+        );
+
+    const startDate = rangeStart.toISO() as string;
+    const endDate = rangeEnd.toISO() as string;
+
+    const { dataSource, queryRunner, release } =
+      await createWorkspaceScopedRunner(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+    try {
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+        queryRunner,
+      );
+
+      // Fetch raw daily rows for the entire range (1 SQL per metric type)
+      const { cashRows, orderRows } = await this.fetchRawDailyRows(
+        dataSource,
+        queryRunner,
+        startDate,
+        endDate,
+        mode,
+        departmentIds,
+      );
+
+      const quarters = quarter ? [quarter] : [1, 2, 3, 4];
+      const quarterItems: QuarterBreakdownItem[] = [];
+
+      for (const q of quarters) {
+        quarterItems.push(
+          await this.buildQuarterItem(
+            year,
+            q,
+            cashRows,
+            orderRows,
+            mode,
+            dataSource,
+            queryRunner,
+            departmentIds,
+          ),
+        );
+      }
+
+      // Aggregate top-level metrics from quarter items
+      const collected = this.includesCash(mode)
+        ? {
+            totalRevenue: MoneyUtils.sumBy(
+              quarterItems.map((qi) => ({
+                amount: qi.collected?.totalRevenue ?? 0,
+              })),
+              'amount',
+            ).toNumber(),
+            dailyRevenue: quarterItems.flatMap(
+              (qi) => qi.collected?.dailyRevenue ?? [],
+            ),
+          }
+        : null;
+
+      const order = this.includesOrder(mode)
+        ? {
+            totalRevenue: MoneyUtils.sumBy(
+              quarterItems.map((qi) => ({
+                amount: qi.order?.totalRevenue ?? 0,
+              })),
+              'amount',
+            ).toNumber(),
+            dailyRevenue: quarterItems.flatMap(
+              (qi) => qi.order?.dailyRevenue ?? [],
+            ),
+          }
+        : null;
+
+      let gap: GapAnalysisOutput | null = null;
+
+      if (mode === RevenueMode.DUAL && collected && order) {
+        const avgDays = await this.getAvgCollectionDays(
+          dataSource,
+          queryRunner,
+          startDate,
+          endDate,
+          departmentIds,
+        );
+
+        gap = this.buildGapAnalysis(
+          collected.totalRevenue,
+          order.totalRevenue,
+          avgDays,
+        );
+      }
+
+      const primary = this.selectPrimary(mode, collected, order);
+
+      const totalDays = quarterItems.reduce((sum, qi) => sum + qi.totalDays, 0);
+
+      // monthlyBreakdown: flatten from all quarter items
+      const monthlyBreakdown = quarterItems.flatMap(
+        (qi) => qi.monthlyBreakdown,
+      );
+
+      // quarterlyBreakdown: null for single quarter, array for all quarters
+      const quarterlyBreakdown = quarter ? null : quarterItems;
+
+      // Department breakdown for the full range
+      const departmentBreakdown =
+        scope !== DepartmentScope.ALL
+          ? await this.getDepartmentBreakdownRange(
+              dataSource,
+              queryRunner,
+              startDate,
+              endDate,
+              rangeStart,
+              rangeEnd,
+              scope === DepartmentScope.BY_TEAM ? 'TEAM' : 'DEPARTMENT',
+              mode,
+              departmentIds,
+            )
+          : null;
+
+      return {
+        year,
+        quarter,
+        quarterStart: rangeStart.toISODate() as string,
+        quarterEnd: rangeEnd.toISODate() as string,
+        totalDays,
+        totalRevenue: primary.totalRevenue,
+        dailyRevenue: primary.dailyRevenue,
+        collected,
+        order,
+        gap,
+        monthlyBreakdown,
+        quarterlyBreakdown,
+        departmentBreakdown,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get revenue daily stats by quarter', {
+        error: getErrorMessage(error),
+        year,
+        quarter,
+      });
+      throw error;
+    } finally {
+      await release();
+    }
+  }
+
+  private async buildQuarterItem(
+    year: number,
+    quarter: number,
+    cashRows: RawDailyRow[],
+    orderRows: RawDailyRow[],
+    mode: RevenueMode,
+    dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
+    departmentIds?: string[],
+  ): Promise<QuarterBreakdownItem> {
+    const months = this.quarterToMonths(quarter);
+    const qStart = DateTime.fromObject(
+      { year, month: months[0], day: 1 },
+      { zone: 'utc' },
+    ).startOf('day');
+    const qEnd = DateTime.fromObject(
+      { year, month: months[2], day: 1 },
+      { zone: 'utc' },
+    ).endOf('month');
+
+    const monthlyBreakdown: QuarterMonthItem[] = [];
+
+    for (const m of months) {
+      const mStart = DateTime.fromObject(
+        { year, month: m, day: 1 },
+        { zone: 'utc' },
+      ).startOf('day');
+      const mEnd = mStart.endOf('month');
+
+      const filteredCash = this.filterRowsByWeek(cashRows, mStart, mEnd);
+      const filteredOrder = this.filterRowsByWeek(orderRows, mStart, mEnd);
+
+      const buildMonthMetric = (rows: RawDailyRow[]): DailyRevenueMetric => {
+        const dailyRevenue = this.fillDailyGapsPartial(rows, mStart, mEnd);
+
+        return {
+          totalRevenue: MoneyUtils.sumBy(dailyRevenue, 'amount').toNumber(),
+          dailyRevenue,
+        };
+      };
+
+      const collected = this.includesCash(mode)
+        ? buildMonthMetric(filteredCash)
+        : null;
+      const order = this.includesOrder(mode)
+        ? buildMonthMetric(filteredOrder)
+        : null;
+
+      let gap: GapAnalysisOutput | null = null;
+
+      if (mode === RevenueMode.DUAL && collected && order) {
+        const avgDays = await this.getAvgCollectionDays(
+          dataSource,
+          qr,
+          mStart.toISO() as string,
+          mEnd.toISO() as string,
+          departmentIds,
+        );
+
+        gap = this.buildGapAnalysis(
+          collected.totalRevenue,
+          order.totalRevenue,
+          avgDays,
+        );
+      }
+
+      const primary = this.selectPrimary(mode, collected, order);
+
+      monthlyBreakdown.push({
+        month: m,
+        monthStart: mStart.toISODate() as string,
+        monthEnd: mEnd.toISODate() as string,
+        daysInMonth: mEnd.day,
+        totalRevenue: primary.totalRevenue,
+        dailyRevenue: primary.dailyRevenue,
+        collected,
+        order,
+        gap,
+      });
+    }
+
+    // Aggregate quarter-level metrics
+    const collected = this.includesCash(mode)
+      ? {
+          totalRevenue: MoneyUtils.sumBy(
+            monthlyBreakdown.map((m) => ({
+              amount: m.collected?.totalRevenue ?? 0,
+            })),
+            'amount',
+          ).toNumber(),
+          dailyRevenue: monthlyBreakdown.flatMap(
+            (m) => m.collected?.dailyRevenue ?? [],
+          ),
+        }
+      : null;
+
+    const order = this.includesOrder(mode)
+      ? {
+          totalRevenue: MoneyUtils.sumBy(
+            monthlyBreakdown.map((m) => ({
+              amount: m.order?.totalRevenue ?? 0,
+            })),
+            'amount',
+          ).toNumber(),
+          dailyRevenue: monthlyBreakdown.flatMap(
+            (m) => m.order?.dailyRevenue ?? [],
+          ),
+        }
+      : null;
+
+    let gap: GapAnalysisOutput | null = null;
+
+    if (mode === RevenueMode.DUAL && collected && order) {
+      const avgDays = await this.getAvgCollectionDays(
+        dataSource,
+        qr,
+        qStart.toISO() as string,
+        qEnd.toISO() as string,
+        departmentIds,
+      );
+
+      gap = this.buildGapAnalysis(
+        collected.totalRevenue,
+        order.totalRevenue,
+        avgDays,
+      );
+    }
+
+    const primary = this.selectPrimary(mode, collected, order);
+
+    const totalDays = monthlyBreakdown.reduce(
+      (sum, m) => sum + m.daysInMonth,
+      0,
+    );
+
+    return {
+      quarter,
+      quarterStart: qStart.toISODate() as string,
+      quarterEnd: qEnd.toISODate() as string,
+      totalDays,
+      totalRevenue: primary.totalRevenue,
+      dailyRevenue: primary.dailyRevenue,
+      collected,
+      order,
+      gap,
+      monthlyBreakdown,
+    };
+  }
+
   // ─── Week Range Handler ────────────────────────────────────────────
 
   private async getStatsRange(
@@ -466,6 +796,12 @@ export class RevenueDailyService {
     return (
       mode === RevenueMode.ORDER ? order : collected
     ) as DailyRevenueMetric;
+  }
+
+  private quarterToMonths(quarter: number): [number, number, number] {
+    const startMonth = (quarter - 1) * 3 + 1;
+
+    return [startMonth, startMonth + 1, startMonth + 2];
   }
 
   private buildMetricFromRows(

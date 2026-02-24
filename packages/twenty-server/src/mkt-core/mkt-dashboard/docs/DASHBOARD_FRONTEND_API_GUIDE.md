@@ -2,7 +2,7 @@
 
 ## Overview
 
-API GraphQL cung cấp dữ liệu tổng hợp cho bảng điều khiển (Dashboard) của hệ thống CRM. Module bao gồm 8 query endpoints cung cấp các chỉ số về doanh thu, đơn hàng, khách hàng, KPI, xếp hạng nhân viên, cảnh báo và doanh thu theo ngày/tuần.
+API GraphQL cung cấp dữ liệu tổng hợp cho bảng điều khiển (Dashboard) của hệ thống CRM. Module bao gồm 10 query endpoints cung cấp các chỉ số về doanh thu, đơn hàng, khách hàng, KPI, xếp hạng nhân viên, cảnh báo và doanh thu theo ngày/tuần/tháng/quý.
 
 **Base URL:** `/graphql`
 **Method:** `POST`
@@ -34,6 +34,7 @@ Authorization: Bearer <access_token>
 | 7 | `dashboardAlerts` | `low` | Cảnh báo: đơn hàng quá hạn, hợp đồng sắp hết, thanh toán chờ xử lý, KPI kém |
 | 8 | `revenueDailyByWeek` | `medium` | Doanh thu chi tiết theo ngày trong tuần (ISO week). Hỗ trợ CASH/ORDER/DUAL, phân tách theo team/phòng ban |
 | 9 | `revenueDailyByMonth` | `medium` | Doanh thu theo thang, breakdown theo tuan. Tuan bien chi gom ngay thuoc thang. Ho tro CASH/ORDER/DUAL, phan tach theo team/phong ban |
+| 10 | `revenueDailyByQuarter` | `medium` | Doanh thu theo quy, breakdown theo 3 thang. Moi thang co totalRevenue + dailyRevenue. Ho tro CASH/ORDER/DUAL, phan tach theo team/phong ban |
 
 ---
 
@@ -1668,6 +1669,270 @@ query RevenueDailyByMonth($input: RevenueDailyByMonthInput!) {
 - `collected`, `order`, `gap` hoat dong giong `revenueDailyByWeek`.
 - `departmentBreakdown` chi co khi `departmentScope != ALL`.
 
+### 10. revenueDailyByQuarter
+
+Lay doanh thu chi tiet theo quy, breakdown theo 3 thang. Moi thang co `totalRevenue` + `dailyRevenue` cho tat ca ngay trong thang.
+
+**2 che do:**
+- **Single quarter** (`quarter` = 1-4): tra ve 1 quy, `monthlyBreakdown` 3 items, `quarterlyBreakdown = null`.
+- **All quarters** (khong truyen `quarter`): tra ve ca nam, `monthlyBreakdown` 12 items, `quarterlyBreakdown` 4 items (moi item co `monthlyBreakdown` 3 items).
+
+Vi du Q1/2026:
+- monthlyBreakdown[0]: Jan (31 ngay, dailyRevenue 31 items)
+- monthlyBreakdown[1]: Feb (28 ngay, dailyRevenue 28 items)
+- monthlyBreakdown[2]: Mar (31 ngay, dailyRevenue 31 items)
+
+Neu can chi tiet tuan trong 1 thang, frontend goi `revenueDailyByMonth` rieng.
+
+**Query (Dual-Metric + Monthly breakdown):**
+```graphql
+query RevenueDailyByQuarter($input: RevenueDailyByQuarterInput!) {
+  revenueDailyByQuarter(input: $input) {
+    year
+    quarter
+    quarterStart
+    quarterEnd
+    totalDays
+    totalRevenue
+    dailyRevenue {
+      date
+      dayOfWeek
+      amount
+      orderCount
+    }
+    collected {
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+    }
+    order {
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+    }
+    gap {
+      collectionRate
+      revenueGap
+      avgCollectionDays
+    }
+    monthlyBreakdown {
+      month
+      monthStart
+      monthEnd
+      daysInMonth
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+      collected { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+      order { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+      gap { collectionRate revenueGap avgCollectionDays }
+    }
+    quarterlyBreakdown {
+      quarter
+      quarterStart
+      quarterEnd
+      totalDays
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+      collected { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+      order { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+      gap { collectionRate revenueGap avgCollectionDays }
+      monthlyBreakdown {
+        month monthStart monthEnd daysInMonth totalRevenue
+        dailyRevenue { date dayOfWeek amount orderCount }
+        collected { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+        order { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+        gap { collectionRate revenueGap avgCollectionDays }
+      }
+    }
+    departmentBreakdown {
+      departmentId
+      departmentName
+      departmentType
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+    }
+  }
+}
+```
+
+**Bien (Q1/2026, DUAL mode):**
+```json
+{
+  "input": {
+    "year": 2026,
+    "quarter": 1,
+    "revenueMode": "DUAL"
+  }
+}
+```
+
+**Bien (CASH + phan tach theo team):**
+```json
+{
+  "input": {
+    "year": 2026,
+    "quarter": 2,
+    "revenueMode": "CASH",
+    "departmentScope": "BY_TEAM"
+  }
+}
+```
+
+**Bien (tat ca 4 quy — khong truyen quarter):**
+```json
+{
+  "input": {
+    "year": 2026,
+    "revenueMode": "DUAL"
+  }
+}
+```
+> Khi khong truyen `quarter`, response tra ve `quarterlyBreakdown` voi 4 items (Q1-Q4), `monthlyBreakdown` 12 items (tat ca thang trong nam), `quarter = null`.
+
+**Tham so dau vao:**
+
+| Truong | Kieu | Bat buoc | Mac dinh | Mo ta |
+|--------|------|---------|---------|-------|
+| `year` | Int | **Co** | - | Nam (calendar year, >= 2020) |
+| `quarter` | Int | Khong | `null` | Quy (1-4). Neu khong truyen, tra ve tat ca 4 quy voi `quarterlyBreakdown` |
+| `departmentScope` | DepartmentScope | Khong | `ALL` | Cach nhom: `ALL`, `BY_TEAM`, `BY_DEPARTMENT` |
+| `departmentId` | String | Khong | `null` | Loc theo phong ban cu the (+ team con) |
+| `revenueMode` | RevenueMode | Khong | `DUAL` | Che do tinh doanh thu: `CASH`, `ORDER`, `DUAL` |
+
+**Phan hoi thanh cong (Q1/2026, revenueMode = DUAL):**
+```json
+{
+  "data": {
+    "revenueDailyByQuarter": {
+      "year": 2026,
+      "quarter": 1,
+      "quarterStart": "2026-01-01",
+      "quarterEnd": "2026-03-31",
+      "totalDays": 90,
+      "totalRevenue": 4500000000,
+      "dailyRevenue": [ "...90 items (Jan 1–Mar 31)..." ],
+      "collected": {
+        "totalRevenue": 4500000000,
+        "dailyRevenue": [ "...90 items..." ]
+      },
+      "order": {
+        "totalRevenue": 25000000000,
+        "dailyRevenue": [ "...90 items..." ]
+      },
+      "gap": {
+        "collectionRate": 18.0,
+        "revenueGap": 20500000000,
+        "avgCollectionDays": 13.2
+      },
+      "monthlyBreakdown": [
+        {
+          "month": 1,
+          "monthStart": "2026-01-01",
+          "monthEnd": "2026-01-31",
+          "daysInMonth": 31,
+          "totalRevenue": 1500000000,
+          "dailyRevenue": [ "...31 items..." ],
+          "collected": { "totalRevenue": 1500000000, "dailyRevenue": [ "...31 items..." ] },
+          "order": { "totalRevenue": 8000000000, "dailyRevenue": [ "...31 items..." ] },
+          "gap": { "collectionRate": 18.75, "revenueGap": 6500000000, "avgCollectionDays": 14.0 }
+        },
+        {
+          "month": 2,
+          "monthStart": "2026-02-01",
+          "monthEnd": "2026-02-28",
+          "daysInMonth": 28,
+          "totalRevenue": 1200000000,
+          "dailyRevenue": [ "...28 items..." ],
+          "collected": { "totalRevenue": 1200000000, "dailyRevenue": [ "...28 items..." ] },
+          "order": { "totalRevenue": 7000000000, "dailyRevenue": [ "...28 items..." ] },
+          "gap": { "collectionRate": 17.14, "revenueGap": 5800000000, "avgCollectionDays": 12.5 }
+        },
+        {
+          "month": 3,
+          "monthStart": "2026-03-01",
+          "monthEnd": "2026-03-31",
+          "daysInMonth": 31,
+          "totalRevenue": 1800000000,
+          "dailyRevenue": [ "...31 items..." ],
+          "collected": { "totalRevenue": 1800000000, "dailyRevenue": [ "...31 items..." ] },
+          "order": { "totalRevenue": 10000000000, "dailyRevenue": [ "...31 items..." ] },
+          "gap": { "collectionRate": 18.0, "revenueGap": 8200000000, "avgCollectionDays": 13.0 }
+        }
+      ],
+      "quarterlyBreakdown": null,
+      "departmentBreakdown": null
+    }
+  }
+}
+```
+
+> **Xac minh cheo:** `sum(monthlyBreakdown[].totalRevenue) == totalRevenue` tong. `sum(monthlyBreakdown[].daysInMonth) == totalDays`. Khi query tat ca quy: `sum(quarterlyBreakdown[].totalRevenue) == totalRevenue`.
+
+**Ghi chu:**
+- `quarterStart`/`quarterEnd` la chuoi ngay ISO `yyyy-MM-dd`.
+- `totalDays` = tong so ngay trong quy (90 cho Q1/2026, 91 cho Q2, etc). Khi query ca nam: 365 hoac 366.
+- `dailyRevenue` top-level co dung `totalDays` items (tat ca ngay trong pham vi).
+- **Single quarter** (truyen `quarter`): `monthlyBreakdown` = 3 items, `quarterlyBreakdown = null`.
+- **All quarters** (khong truyen `quarter`): `monthlyBreakdown` = 12 items, `quarterlyBreakdown` = 4 items. `quarter` trong response = `null`.
+- Moi `QuarterBreakdownItem` co `monthlyBreakdown` 3 items va du lieu tong hop rieng (totalRevenue, dailyRevenue, collected, order, gap).
+- Moi `QuarterMonthItem` co `daysInMonth` items trong `dailyRevenue`.
+- `collected`, `order`, `gap` hoat dong giong `revenueDailyByWeek` va `revenueDailyByMonth`.
+- `departmentBreakdown` chi co khi `departmentScope != ALL`. Breakdown cho toan pham vi (khong tach theo thang/quy).
+- Neu can breakdown theo tuan trong 1 thang cu the, frontend goi `revenueDailyByMonth` rieng.
+
+---
+
+### RevenueDailyByQuarterOutput (moi — v1.5)
+
+Doanh thu chi tiet theo quy, breakdown theo 3 thang.
+
+| Truong | Kieu | Co the null | Mo ta |
+|--------|------|----------|-------|
+| `year` | Int | Khong | Nam (calendar year) |
+| `quarter` | Int | **Co** | Quy (1-4). Null khi query tat ca quy |
+| `quarterStart` | String | Khong | Ngay dau pham vi (yyyy-MM-dd) |
+| `quarterEnd` | String | Khong | Ngay cuoi pham vi (yyyy-MM-dd) |
+| `totalDays` | Int | Khong | Tong so ngay trong pham vi |
+| `totalRevenue` | Float | Khong | Tong doanh thu chinh |
+| `dailyRevenue` | [DailyRevenueItem] | Khong | Doanh thu tung ngay (totalDays items) |
+| `collected` | DailyRevenueMetric | **Co** | Cash Basis. Null khi mode = ORDER |
+| `order` | DailyRevenueMetric | **Co** | Order Basis. Null khi mode = CASH |
+| `gap` | GapAnalysisOutput | **Co** | Gap analysis. Chi co khi mode = DUAL |
+| `monthlyBreakdown` | [QuarterMonthItem] | Khong | 3 items (single quarter) hoac 12 items (all quarters) |
+| `quarterlyBreakdown` | [QuarterBreakdownItem] | **Co** | 4 items khi query ca nam. Null khi query 1 quy |
+| `departmentBreakdown` | [DepartmentDailyRevenue] | **Co** | Phan tach theo phong ban/team. Null khi departmentScope = ALL |
+
+### QuarterMonthItem (moi — v1.5)
+
+Chi tiet doanh thu cho 1 thang trong quy.
+
+| Truong | Kieu | Co the null | Mo ta |
+|--------|------|----------|-------|
+| `month` | Int | Khong | Thang (1-12) |
+| `monthStart` | String | Khong | Ngay dau thang (yyyy-MM-dd) |
+| `monthEnd` | String | Khong | Ngay cuoi thang (yyyy-MM-dd) |
+| `daysInMonth` | Int | Khong | So ngay trong thang |
+| `totalRevenue` | Float | Khong | Tong doanh thu chinh trong thang |
+| `dailyRevenue` | [DailyRevenueItem] | Khong | daysInMonth items — doanh thu tung ngay |
+| `collected` | DailyRevenueMetric | **Co** | Cash Basis. Null khi mode = ORDER |
+| `order` | DailyRevenueMetric | **Co** | Order Basis. Null khi mode = CASH |
+| `gap` | GapAnalysisOutput | **Co** | Gap analysis. Chi co khi mode = DUAL |
+
+### QuarterBreakdownItem (moi — v1.6)
+
+Chi tiet doanh thu cho 1 quy. Chi co trong `quarterlyBreakdown` khi query ca nam.
+
+| Truong | Kieu | Co the null | Mo ta |
+|--------|------|----------|-------|
+| `quarter` | Int | Khong | Quy (1-4) |
+| `quarterStart` | String | Khong | Ngay dau quy (yyyy-MM-dd) |
+| `quarterEnd` | String | Khong | Ngay cuoi quy (yyyy-MM-dd) |
+| `totalDays` | Int | Khong | Tong so ngay trong quy |
+| `totalRevenue` | Float | Khong | Tong doanh thu chinh trong quy |
+| `dailyRevenue` | [DailyRevenueItem] | Khong | totalDays items — doanh thu tung ngay |
+| `collected` | DailyRevenueMetric | **Co** | Cash Basis. Null khi mode = ORDER |
+| `order` | DailyRevenueMetric | **Co** | Order Basis. Null khi mode = CASH |
+| `gap` | GapAnalysisOutput | **Co** | Gap analysis. Chi co khi mode = DUAL |
+| `monthlyBreakdown` | [QuarterMonthItem] | Khong | 3 items — breakdown theo thang trong quy |
+
 ---
 
 ## Types
@@ -2025,6 +2290,8 @@ Layer 2: @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' | '
 | `kpiScorecard` | `medium` | Dữ liệu KPI chi tiết |
 | `staffLeaderboard` | `medium` | Dữ liệu xếp hạng nhân viên |
 | `revenueDailyByWeek` | `medium` | Dữ liệu doanh thu theo ngày/tuần |
+| `revenueDailyByMonth` | `medium` | Dữ liệu doanh thu theo thang |
+| `revenueDailyByQuarter` | `medium` | Dữ liệu doanh thu theo quy |
 
 > **Lưu ý:** DASHBOARD được phân loại `INTERNAL` (Data Classification). Tất cả nhân viên có tài khoản active đều có thể READ. Tuy nhiên, user cần có casbin rule `ptype='g'` gán role để truy cập được. Nếu không có rule sẽ bị lỗi `Forbidden resource`.
 
@@ -2333,6 +2600,8 @@ console.log('Team B:', teamB.data.revenueStats.totalRevenue);
 
 | Phiên bản | Ngày | Thay đổi |
 |----------|------|--------|
+| 1.6.0 | 2026-02-24 | **Optional Quarter** — `revenueDailyByQuarter`: `quarter` tro thanh optional. Khi khong truyen, tra ve tat ca 4 quy cua nam voi `quarterlyBreakdown[]` (4 items `QuarterBreakdownItem`), `monthlyBreakdown` 12 items, `quarter = null` trong response. Type moi: `QuarterBreakdownItem`. Backward compatible — truyen `quarter` hoat dong y het v1.5. |
+| 1.5.0 | 2026-02-24 | **Revenue Daily By Quarter** — them query `revenueDailyByQuarter`: doanh thu theo quy, breakdown theo 3 thang. Moi thang co `totalRevenue` + `dailyRevenue`. Input moi: `RevenueDailyByQuarterInput` (year, quarter). Output moi: `RevenueDailyByQuarterOutput` voi `quarterStart`, `quarterEnd`, `totalDays`, `monthlyBreakdown[]` (3 items `QuarterMonthItem`). Tai su dung `DailyRevenueItem`, `DailyRevenueMetric`, `GapAnalysisOutput`, `DepartmentDailyRevenue`. |
 | 1.4.0 | 2026-02-24 | **Revenue Daily By Month** — them query `revenueDailyByMonth`: doanh thu theo thang, breakdown theo tuan ISO. Tuan bien (dau/cuoi thang) chi gom ngay thuoc thang. Input moi: `RevenueDailyByMonthInput` (year, month). Output moi: `RevenueDailyByMonthOutput` voi `monthStart`, `monthEnd`, `daysInMonth`, `weeklyBreakdown[]`. Tai su dung `RevenueDailyWeekItem`, `DailyRevenueItem`, `GapAnalysisOutput`. |
 | 1.3.0 | 2026-02-24 | **Week Range Support** — `revenueDailyByWeek`: thêm input `weekEnd` (query khoảng tuần, max 12 tuần). Output mới: `weeklyBreakdown[]` (`RevenueDailyWeekItem`) với chi tiết từng tuần. Top-level fields tổng hợp toàn khoảng. Backward compatible — không truyền `weekEnd` hoạt động y hệt v1.2. |
 | 1.2.0 | 2026-02-24 | **Revenue Daily By Week** — thêm query `revenueDailyByWeek`: doanh thu chi tiết 7 ngày trong tuần theo ISO week. Hỗ trợ CASH/ORDER/DUAL, enum `DepartmentScope` (ALL/BY_TEAM/BY_DEPARTMENT), lọc theo `departmentId`. Output mới: `RevenueDailyOutput`, `DailyRevenueItem`, `DailyRevenueMetric`, `DepartmentDailyRevenue`. Tái sử dụng `GapAnalysisOutput` từ v1.1. |
