@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
@@ -13,7 +13,11 @@ import {
   ENTERPRISE_RBAC_CONFIG,
   ENTERPRISE_RBAC_CONFIG_TOKEN,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
-import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+import {
+  RBAC_REPOSITORIES,
+  MktUserPermissionOverrideRepository,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
 import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
 import {
   RbacCacheService,
@@ -91,8 +95,33 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     FilterExpressionResolverService,
     DataAccessPolicyService,
 
-    // Guards
-    DepartmentAuthorizationGuard,
+    // Global Guard for @RequireDepartment decorator
+    // Using APP_GUARD with factory to ensure proper dependency injection
+    // The guard checks for DEPARTMENT_AUTH_KEY metadata and skips if not present
+    {
+      provide: APP_GUARD,
+      useFactory: (
+        reflector: Reflector,
+        rbacContextService: RbacContextService,
+        overrideRepository: MktUserPermissionOverrideRepository,
+        cacheService: RbacCacheService,
+        departmentRepository: MktDepartmentRepository,
+      ) =>
+        new DepartmentAuthorizationGuard(
+          reflector,
+          rbacContextService,
+          overrideRepository,
+          cacheService,
+          departmentRepository,
+        ),
+      inject: [
+        Reflector,
+        RbacContextService,
+        MktUserPermissionOverrideRepository,
+        RbacCacheService,
+        MktDepartmentRepository,
+      ],
+    },
 
     // Global Interceptor for @DataScope decorator
     // Using factory provider to explicitly inject all dependencies
@@ -149,9 +178,7 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     FilterExpressionResolverService,
     DataAccessPolicyService,
 
-    // Export guards
-    DepartmentAuthorizationGuard,
-
+    // Note: DepartmentAuthorizationGuard is now a global guard via APP_GUARD
     // Note: DataScopeInterceptor is now a global interceptor via APP_INTERCEPTOR
     // No need to export it - it will automatically run for methods with @DataScope decorator
   ],

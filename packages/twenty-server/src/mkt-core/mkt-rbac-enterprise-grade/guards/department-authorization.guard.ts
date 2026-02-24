@@ -61,10 +61,10 @@ export class DepartmentAuthorizationGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Lấy metadata từ @RequireDepartment decorator
-    const options = this.reflector.get<DepartmentAuthOptions>(
+    // Lấy metadata từ @RequireDepartment decorator (check cả handler và class level)
+    const options = this.reflector.getAllAndOverride<DepartmentAuthOptions>(
       DEPARTMENT_AUTH_KEY,
-      context.getHandler(),
+      [context.getHandler(), context.getClass()],
     );
 
     // Không có decorator → cho phép truy cập
