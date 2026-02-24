@@ -19,6 +19,7 @@ import { CustomerStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/custome
 import { KpiScorecardInput } from 'src/mkt-core/mkt-dashboard/dto/input/kpi-scorecard.input';
 import { LeaderboardInput } from 'src/mkt-core/mkt-dashboard/dto/input/leaderboard.input';
 import { RevenueDailyInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
+import { RevenueDailyByMonthInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-month.input';
 import { RevenueStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { OrderStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/order-stats.output';
 import { CustomerStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/customer-stats.output';
@@ -28,6 +29,7 @@ import { ContractStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/contr
 import { AlertsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/alerts.output';
 import { StaffLeaderboardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/leaderboard.output';
 import { RevenueDailyOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
+import { RevenueDailyByMonthOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-month.output';
 import { DashboardPeriod } from 'src/mkt-core/mkt-dashboard/types/dashboard-period.type';
 import { StatisticsUtils } from 'src/mkt-core/mkt-dashboard/utils/statistics.utils';
 import { MoneyUtils } from 'src/mkt-core/utils/money.utils';
@@ -239,6 +241,12 @@ export class DashboardOrchestratorService {
     input: RevenueDailyInput,
   ): Promise<RevenueDailyOutput> {
     return this.revenueDailyService.getStats(input);
+  }
+
+  async getRevenueDailyByMonth(
+    input: RevenueDailyByMonthInput,
+  ): Promise<RevenueDailyByMonthOutput> {
+    return this.revenueDailyService.getStatsByMonth(input);
   }
 
   /**

@@ -12,6 +12,7 @@ import {
   RevenueDailyInput,
   DepartmentScope,
 } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
+import { RevenueDailyByMonthInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-month.input';
 import {
   RevenueDailyOutput,
   DailyRevenueItem,
@@ -19,6 +20,7 @@ import {
   DepartmentDailyRevenue,
   RevenueDailyWeekItem,
 } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
+import { RevenueDailyByMonthOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-month.output';
 import { GapAnalysisOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { RevenueMode } from 'src/mkt-core/mkt-dashboard/types/revenue-mode.type';
 import { StatisticsUtils } from 'src/mkt-core/mkt-dashboard/utils/statistics.utils';
@@ -194,6 +196,127 @@ export class RevenueDailyService {
         error: getErrorMessage(error),
         year,
         week,
+      });
+      throw error;
+    } finally {
+      await release();
+    }
+  }
+
+  // ─── Month Handler ────────────────────────────────────────────────
+
+  async getStatsByMonth(
+    input: RevenueDailyByMonthInput,
+  ): Promise<RevenueDailyByMonthOutput> {
+    const { year, month } = input;
+    const mode = input.revenueMode ?? RevenueMode.DUAL;
+    const scope = input.departmentScope ?? DepartmentScope.ALL;
+
+    const monthStart = DateTime.fromObject(
+      { year, month, day: 1 },
+      { zone: 'utc' },
+    ).startOf('day');
+    const monthEnd = monthStart.endOf('month');
+    const daysInMonth = monthEnd.day;
+
+    const startDate = monthStart.toISO() as string;
+    const endDate = monthEnd.toISO() as string;
+
+    const { dataSource, queryRunner, release } =
+      await createWorkspaceScopedRunner(
+        this.scopedWorkspaceContextFactory,
+        this.twentyORMGlobalManager,
+      );
+
+    try {
+      const departmentIds = await DepartmentFilterHelper.resolveDepartmentIds(
+        dataSource,
+        input.departmentId,
+        queryRunner,
+      );
+
+      // 1. Fetch raw daily rows for the entire month (1 SQL per metric type)
+      const { cashRows, orderRows } = await this.fetchRawDailyRows(
+        dataSource,
+        queryRunner,
+        startDate,
+        endDate,
+        mode,
+        departmentIds,
+      );
+
+      // 2. Get ISO weeks that overlap this month
+      const weeks = this.getWeeksInMonth(year, month);
+
+      // 3. Build per-week breakdown with month boundary clamping
+      const weeklyBreakdown: RevenueDailyWeekItem[] = [];
+
+      for (const { weekYear, weekNumber } of weeks) {
+        weeklyBreakdown.push(
+          await this.buildWeekItemPartial(
+            weekYear,
+            weekNumber,
+            cashRows,
+            orderRows,
+            mode,
+            monthStart,
+            monthEnd,
+            dataSource,
+            queryRunner,
+            departmentIds,
+          ),
+        );
+      }
+
+      // 4. Aggregate month-level metrics from weekly breakdown
+      const { collected, order, gap } = await this.aggregateFromBreakdown(
+        weeklyBreakdown,
+        mode,
+        dataSource,
+        queryRunner,
+        startDate,
+        endDate,
+        departmentIds,
+      );
+
+      // 5. Build month-level daily revenue (all days in month)
+      const primary = this.selectPrimary(mode, collected, order);
+
+      // 6. Department breakdown for the full month
+      const departmentBreakdown =
+        scope !== DepartmentScope.ALL
+          ? await this.getDepartmentBreakdownRange(
+              dataSource,
+              queryRunner,
+              startDate,
+              endDate,
+              monthStart,
+              monthEnd,
+              scope === DepartmentScope.BY_TEAM ? 'TEAM' : 'DEPARTMENT',
+              mode,
+              departmentIds,
+            )
+          : null;
+
+      return {
+        year,
+        month,
+        monthStart: monthStart.toISODate() as string,
+        monthEnd: monthEnd.toISODate() as string,
+        daysInMonth,
+        totalRevenue: primary.totalRevenue,
+        dailyRevenue: primary.dailyRevenue,
+        collected,
+        order,
+        gap,
+        weeklyBreakdown,
+        departmentBreakdown,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get revenue daily stats by month', {
+        error: getErrorMessage(error),
+        year,
+        month,
       });
       throw error;
     } finally {
@@ -969,6 +1092,166 @@ export class RevenueDailyService {
     }
 
     return result;
+  }
+
+  /**
+   * Get all ISO weeks that overlap a given calendar month.
+   * Returns unique (weekYear, weekNumber) pairs in order.
+   * Handles cross-year: Jan 1 may belong to week 52/53 of prev year,
+   * Dec 31 may belong to week 1 of next year.
+   */
+  private getWeeksInMonth(
+    year: number,
+    month: number,
+  ): Array<{ weekYear: number; weekNumber: number }> {
+    const monthStart = DateTime.fromObject(
+      { year, month, day: 1 },
+      { zone: 'utc' },
+    );
+    const daysInMonth = monthStart.endOf('month').day;
+    const seen = new Set<string>();
+    const result: Array<{ weekYear: number; weekNumber: number }> = [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const day = DateTime.fromObject({ year, month, day: d }, { zone: 'utc' });
+      const key = `${day.weekYear}:${day.weekNumber}`;
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push({ weekYear: day.weekYear, weekNumber: day.weekNumber });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Like fillDailyGaps but fills from rangeStart to rangeEnd (variable number of days).
+   * Uses day.weekday to map dayOfWeek name.
+   */
+  private fillDailyGapsPartial(
+    rows: RawDailyRow[],
+    rangeStart: DateTime,
+    rangeEnd: DateTime,
+  ): DailyRevenueItem[] {
+    const rowMap = new Map<string, RawDailyRow>();
+
+    for (const row of rows) {
+      const dateKey = DateTime.fromJSDate(new Date(row.period), {
+        zone: 'utc',
+      }).toISODate() as string;
+
+      rowMap.set(dateKey, row);
+    }
+
+    const totalDays = Math.ceil(
+      rangeEnd.startOf('day').diff(rangeStart.startOf('day'), 'days').days,
+    );
+    const result: DailyRevenueItem[] = [];
+
+    for (let i = 0; i <= totalDays; i++) {
+      const day = rangeStart.plus({ days: i });
+      const dateKey = day.toISODate() as string;
+      const row = rowMap.get(dateKey);
+
+      result.push({
+        date: dateKey,
+        dayOfWeek: DAY_NAMES[(day.weekday - 1) % 7],
+        amount: row ? MoneyUtils.from(row.total_revenue).toNumber() : 0,
+        orderCount: row ? Number(row.order_count) : 0,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Build a RevenueDailyWeekItem for a month context.
+   * Clamps the week's Mon-Sun range to [monthStart, monthEnd].
+   */
+  private async buildWeekItemPartial(
+    weekYear: number,
+    weekNumber: number,
+    cashRows: RawDailyRow[],
+    orderRows: RawDailyRow[],
+    mode: RevenueMode,
+    monthStart: DateTime,
+    monthEnd: DateTime,
+    dataSource: WorkspaceDataSource,
+    qr: QueryRunner,
+    departmentIds?: string[],
+  ): Promise<RevenueDailyWeekItem> {
+    const wkMonday = DateTime.fromObject(
+      { weekYear, weekNumber, weekday: 1 },
+      { zone: 'utc' },
+    ).startOf('day');
+    const wkSunday = wkMonday.plus({ days: 6 }).endOf('day');
+
+    // Clamp to month boundaries
+    const effectiveStart = wkMonday < monthStart ? monthStart : wkMonday;
+    const effectiveEnd = wkSunday > monthEnd ? monthEnd : wkSunday;
+
+    const filteredCash = this.filterRowsByWeek(
+      cashRows,
+      effectiveStart,
+      effectiveEnd,
+    );
+    const filteredOrder = this.filterRowsByWeek(
+      orderRows,
+      effectiveStart,
+      effectiveEnd,
+    );
+
+    const buildPartialMetric = (rows: RawDailyRow[]): DailyRevenueMetric => {
+      const dailyRevenue = this.fillDailyGapsPartial(
+        rows,
+        effectiveStart,
+        effectiveEnd,
+      );
+
+      return {
+        totalRevenue: MoneyUtils.sumBy(dailyRevenue, 'amount').toNumber(),
+        dailyRevenue,
+      };
+    };
+
+    const collected = this.includesCash(mode)
+      ? buildPartialMetric(filteredCash)
+      : null;
+    const order = this.includesOrder(mode)
+      ? buildPartialMetric(filteredOrder)
+      : null;
+
+    let gap: GapAnalysisOutput | null = null;
+
+    if (mode === RevenueMode.DUAL && collected && order) {
+      const avgDays = await this.getAvgCollectionDays(
+        dataSource,
+        qr,
+        effectiveStart.toISO() as string,
+        effectiveEnd.endOf('day').toISO() as string,
+        departmentIds,
+      );
+
+      gap = this.buildGapAnalysis(
+        collected.totalRevenue,
+        order.totalRevenue,
+        avgDays,
+      );
+    }
+
+    const primary = this.selectPrimary(mode, collected, order);
+
+    return {
+      week: weekNumber,
+      weekStart: effectiveStart.toISODate() as string,
+      weekEnd: effectiveEnd.toISODate() as string,
+      totalRevenue: primary.totalRevenue,
+      dailyRevenue: primary.dailyRevenue,
+      collected,
+      order,
+      gap,
+    };
   }
 
   /**

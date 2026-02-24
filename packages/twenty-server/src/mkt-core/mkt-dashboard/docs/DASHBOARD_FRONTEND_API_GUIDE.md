@@ -33,6 +33,7 @@ Authorization: Bearer <access_token>
 | 6 | `staffLeaderboard` | `medium` | Xếp hạng nhân viên theo doanh thu, đơn hàng, khách hàng |
 | 7 | `dashboardAlerts` | `low` | Cảnh báo: đơn hàng quá hạn, hợp đồng sắp hết, thanh toán chờ xử lý, KPI kém |
 | 8 | `revenueDailyByWeek` | `medium` | Doanh thu chi tiết theo ngày trong tuần (ISO week). Hỗ trợ CASH/ORDER/DUAL, phân tách theo team/phòng ban |
+| 9 | `revenueDailyByMonth` | `medium` | Doanh thu theo thang, breakdown theo tuan. Tuan bien chi gom ngay thuoc thang. Ho tro CASH/ORDER/DUAL, phan tach theo team/phong ban |
 
 ---
 
@@ -1498,6 +1499,175 @@ query RevenueDailyByWeek($input: RevenueDailyInput!) {
 - Khi truyền `departmentId`, dữ liệu tự động lọc theo phòng ban đó (+ team con). `departmentBreakdown` = null trong trường hợp này.
 - Tổng của `departmentBreakdown[].totalRevenue` luôn bằng `totalRevenue` tổng.
 
+### 9. revenueDailyByMonth
+
+Lay doanh thu chi tiet theo thang, breakdown theo tuan ISO. Tuan bien (dau/cuoi thang) chi gom ngay thuoc thang — loai bo ngay cua thang khac.
+
+Vi du thang 2/2026 (Feb 1 = Sunday, Feb 28 = Saturday):
+- Tuan 5 (Jan 26–Feb 1): chi tra Feb 1 (1 ngay)
+- Tuan 6–8: day du 7 ngay
+- Tuan 9 (Feb 23–Mar 1): chi tra Feb 23–28 (6 ngay)
+
+**Query (Dual-Metric + Weekly breakdown):**
+```graphql
+query RevenueDailyByMonth($input: RevenueDailyByMonthInput!) {
+  revenueDailyByMonth(input: $input) {
+    year
+    month
+    monthStart
+    monthEnd
+    daysInMonth
+    totalRevenue
+    dailyRevenue {
+      date
+      dayOfWeek
+      amount
+      orderCount
+    }
+    collected {
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+    }
+    order {
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+    }
+    gap {
+      collectionRate
+      revenueGap
+      avgCollectionDays
+    }
+    weeklyBreakdown {
+      week
+      weekStart
+      weekEnd
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+      collected { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+      order { totalRevenue dailyRevenue { date dayOfWeek amount orderCount } }
+      gap { collectionRate revenueGap avgCollectionDays }
+    }
+    departmentBreakdown {
+      departmentId
+      departmentName
+      departmentType
+      totalRevenue
+      dailyRevenue { date dayOfWeek amount orderCount }
+    }
+  }
+}
+```
+
+**Bien (thang 2/2026, DUAL mode):**
+```json
+{
+  "input": {
+    "year": 2026,
+    "month": 2,
+    "revenueMode": "DUAL"
+  }
+}
+```
+
+**Bien (CASH + phan tach theo team):**
+```json
+{
+  "input": {
+    "year": 2026,
+    "month": 2,
+    "revenueMode": "CASH",
+    "departmentScope": "BY_TEAM"
+  }
+}
+```
+
+**Tham so dau vao:**
+
+| Truong | Kieu | Bat buoc | Mac dinh | Mo ta |
+|--------|------|---------|---------|-------|
+| `year` | Int | **Co** | - | Nam (calendar year, >= 2020) |
+| `month` | Int | **Co** | - | Thang (1-12) |
+| `departmentScope` | DepartmentScope | Khong | `ALL` | Cach nhom: `ALL`, `BY_TEAM`, `BY_DEPARTMENT` |
+| `departmentId` | String | Khong | `null` | Loc theo phong ban cu the (+ team con) |
+| `revenueMode` | RevenueMode | Khong | `DUAL` | Che do tinh doanh thu: `CASH`, `ORDER`, `DUAL` |
+
+**Phan hoi thanh cong (Feb 2026, revenueMode = DUAL):**
+```json
+{
+  "data": {
+    "revenueDailyByMonth": {
+      "year": 2026,
+      "month": 2,
+      "monthStart": "2026-02-01",
+      "monthEnd": "2026-02-28",
+      "daysInMonth": 28,
+      "totalRevenue": 1500000000,
+      "dailyRevenue": [ "...28 items (Feb 1–28)..." ],
+      "collected": {
+        "totalRevenue": 1500000000,
+        "dailyRevenue": [ "...28 items..." ]
+      },
+      "order": {
+        "totalRevenue": 8500000000,
+        "dailyRevenue": [ "...28 items..." ]
+      },
+      "gap": {
+        "collectionRate": 17.65,
+        "revenueGap": 7000000000,
+        "avgCollectionDays": 12.5
+      },
+      "weeklyBreakdown": [
+        {
+          "week": 5,
+          "weekStart": "2026-02-01",
+          "weekEnd": "2026-02-01",
+          "totalRevenue": 50000000,
+          "dailyRevenue": [ "...1 item (Feb 1, Sunday)..." ],
+          "collected": { "totalRevenue": 50000000 },
+          "order": { "totalRevenue": 300000000 },
+          "gap": { "collectionRate": 16.67, "revenueGap": 250000000, "avgCollectionDays": 10 }
+        },
+        {
+          "week": 6,
+          "weekStart": "2026-02-02",
+          "weekEnd": "2026-02-08",
+          "totalRevenue": 400000000,
+          "dailyRevenue": [ "...7 items (Mon–Sun)..." ],
+          "collected": { "totalRevenue": 400000000 },
+          "order": { "totalRevenue": 2200000000 },
+          "gap": { "collectionRate": 18.18, "revenueGap": 1800000000, "avgCollectionDays": 13 }
+        },
+        "...week 7, 8...",
+        {
+          "week": 9,
+          "weekStart": "2026-02-23",
+          "weekEnd": "2026-02-28",
+          "totalRevenue": 350000000,
+          "dailyRevenue": [ "...6 items (Feb 23–28, Mon–Sat)..." ],
+          "collected": { "totalRevenue": 350000000 },
+          "order": { "totalRevenue": 1800000000 },
+          "gap": { "collectionRate": 19.44, "revenueGap": 1450000000, "avgCollectionDays": 11 }
+        }
+      ],
+      "departmentBreakdown": null
+    }
+  }
+}
+```
+
+> **Xac minh cheo:** `sum(weeklyBreakdown[].totalRevenue) == totalRevenue` tong.
+
+**Ghi chu:**
+- `monthStart`/`monthEnd` la chuoi ngay ISO `yyyy-MM-dd`.
+- `daysInMonth` = so ngay trong thang (28/29/30/31).
+- `dailyRevenue` top-level co dung `daysInMonth` items (tat ca ngay trong thang).
+- `weeklyBreakdown` luon co (khong nullable). Tuan bien chi chua ngay thuoc thang.
+- Tuan 5 (Feb 2026): chi 1 ngay (Feb 1, Sunday) — vi Jan 26–31 khong thuoc thang 2.
+- Tuan 9 (Feb 2026): chi 6 ngay (Feb 23–28, Mon–Sat) — vi Mar 1 khong thuoc thang 2.
+- `weekStart`/`weekEnd` trong `weeklyBreakdown` phan anh effective range (da clamp), khong phai full Mon–Sun.
+- `collected`, `order`, `gap` hoat dong giong `revenueDailyByWeek`.
+- `departmentBreakdown` chi co khi `departmentScope != ALL`.
+
 ---
 
 ## Types
@@ -2163,6 +2333,7 @@ console.log('Team B:', teamB.data.revenueStats.totalRevenue);
 
 | Phiên bản | Ngày | Thay đổi |
 |----------|------|--------|
+| 1.4.0 | 2026-02-24 | **Revenue Daily By Month** — them query `revenueDailyByMonth`: doanh thu theo thang, breakdown theo tuan ISO. Tuan bien (dau/cuoi thang) chi gom ngay thuoc thang. Input moi: `RevenueDailyByMonthInput` (year, month). Output moi: `RevenueDailyByMonthOutput` voi `monthStart`, `monthEnd`, `daysInMonth`, `weeklyBreakdown[]`. Tai su dung `RevenueDailyWeekItem`, `DailyRevenueItem`, `GapAnalysisOutput`. |
 | 1.3.0 | 2026-02-24 | **Week Range Support** — `revenueDailyByWeek`: thêm input `weekEnd` (query khoảng tuần, max 12 tuần). Output mới: `weeklyBreakdown[]` (`RevenueDailyWeekItem`) với chi tiết từng tuần. Top-level fields tổng hợp toàn khoảng. Backward compatible — không truyền `weekEnd` hoạt động y hệt v1.2. |
 | 1.2.0 | 2026-02-24 | **Revenue Daily By Week** — thêm query `revenueDailyByWeek`: doanh thu chi tiết 7 ngày trong tuần theo ISO week. Hỗ trợ CASH/ORDER/DUAL, enum `DepartmentScope` (ALL/BY_TEAM/BY_DEPARTMENT), lọc theo `departmentId`. Output mới: `RevenueDailyOutput`, `DailyRevenueItem`, `DailyRevenueMetric`, `DepartmentDailyRevenue`. Tái sử dụng `GapAnalysisOutput` từ v1.1. |
 | 1.1.0 | 2026-02-23 | **Dual-Metric Revenue** — `revenueStats`: thêm input `revenueMode` (CASH/ORDER/DUAL), output `collected`/`order`/`gap`. `staffLeaderboard`: thêm `collectedRevenue`, `previousMonthRevenue`. `dashboardSummary.revenue`: thêm `collectedRevenue`, `orderRevenue`, `collectionRate`, `revenueGap`, `collectedByMonth`, `orderByMonth`. Tương thích ngược — frontend cũ không cần thay đổi. |

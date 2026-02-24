@@ -15,6 +15,7 @@ import { CustomerStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/custome
 import { KpiScorecardInput } from 'src/mkt-core/mkt-dashboard/dto/input/kpi-scorecard.input';
 import { LeaderboardInput } from 'src/mkt-core/mkt-dashboard/dto/input/leaderboard.input';
 import { RevenueDailyInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily.input';
+import { RevenueDailyByMonthInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-daily-by-month.input';
 import { DashboardSummaryOutput } from 'src/mkt-core/mkt-dashboard/dto/output/dashboard-summary.output';
 import { RevenueStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-stats.output';
 import { OrderStatsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/order-stats.output';
@@ -23,6 +24,7 @@ import { KpiScorecardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/kpi-sc
 import { StaffLeaderboardOutput } from 'src/mkt-core/mkt-dashboard/dto/output/leaderboard.output';
 import { AlertsOutput } from 'src/mkt-core/mkt-dashboard/dto/output/alerts.output';
 import { RevenueDailyOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily.output';
+import { RevenueDailyByMonthOutput } from 'src/mkt-core/mkt-dashboard/dto/output/revenue-daily-by-month.output';
 
 /**
  * DashboardQueryResolver - GraphQL resolver for Dashboard queries
@@ -137,5 +139,18 @@ export class DashboardQueryResolver {
     input: RevenueDailyInput,
   ): Promise<RevenueDailyOutput> {
     return this.orchestrator.getRevenueDailyByWeek(input);
+  }
+
+  /**
+   * Get daily revenue breakdown for a calendar month, grouped by ISO weeks.
+   * Edge weeks (start/end of month) only include days belonging to the month.
+   */
+  @Query(() => RevenueDailyByMonthOutput)
+  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  async revenueDailyByMonth(
+    @Args('input', { type: () => RevenueDailyByMonthInput })
+    input: RevenueDailyByMonthInput,
+  ): Promise<RevenueDailyByMonthOutput> {
+    return this.orchestrator.getRevenueDailyByMonth(input);
   }
 }
