@@ -11,27 +11,22 @@ import { CACHE_TTL } from 'src/mkt-core/infrastructure/redis/constants';
 /**
  * MKT Product API Endpoints
  *
- * IMPORTANT: Endpoints must match MKT Server controllers:
- * - ProductOAuthController: `/api/oauth/products`
- * - ProductPackageOAuthController: `/api/oauth/product-packages`
+ * IMPORTANT: Endpoints must match MKT Admin Backend API:
+ * - Products: `/api/v1/products`
+ * - Plans (Packages): `/api/v1/plans`
+ *
+ * Uses MktAuthHttpService (Better Auth) for authentication.
  */
 export const MKT_PRODUCT_ENDPOINTS = {
-  // Product endpoints (từ ProductOAuthController)
-  LIST: '/api/oauth/products',
-  GET_BY_ID: '/api/oauth/products/:id',
-  GET_BY_CODE: '/api/oauth/products/by-code/:code',
-  GET_LOCALIZED: '/api/oauth/products/:id/localized',
-  LIST_LOCALIZED: '/api/oauth/products/localized',
-  SEARCH: '/api/oauth/products/search/:lang',
+  // Product endpoints (Admin API via mkt-auth-client)
+  LIST: '/api/v1/products',
+  GET_BY_ID: '/api/v1/products/:id',
+  SEARCH: '/api/v1/products/search',
 
-  // Package endpoints (từ ProductPackageOAuthController)
-  // FIX: Changed from /api/oauth/packages to /api/oauth/product-packages
-  PACKAGES_LIST: '/api/oauth/product-packages',
-  GET_PACKAGE: '/api/oauth/product-packages/:id',
-  GET_PACKAGE_BY_CODE: '/api/oauth/product-packages/by-code/:code',
-  GET_PACKAGES_BY_PRODUCT: '/api/oauth/product-packages/by-product/:productId',
-  GET_PACKAGES_BY_LICENSE_TYPE:
-    '/api/oauth/product-packages/by-license-type/:licenseType',
+  // Plan (Package) endpoints (Admin API via mkt-auth-client)
+  PLANS_LIST: '/api/v1/plans',
+  GET_PLAN: '/api/v1/plans/:id',
+  GET_PLANS_BY_PRODUCT: '/api/v1/products/:productId/plans',
 } as const;
 
 export type MktProductEndpointsType =

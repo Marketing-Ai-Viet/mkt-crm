@@ -1,28 +1,76 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
-import { OAuth2HttpService } from 'src/mkt-core/oauth2-client/services/oauth2-http.service';
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
+import { MktAuthHttpService } from 'src/mkt-core/mkt-auth-client';
 import {
-  MktApiResponse,
+  AdminProductDto,
+  AdminProductStatus,
   MktPaginatedData,
   MktProduct,
   MktProductQueryParams,
+  MktProductStatus,
 } from 'src/mkt-core/mkt-product-integration/types';
 import {
   MKT_PRODUCT_ENDPOINTS,
   MKT_PRODUCT_ERROR_BUILDER,
   MKT_PRODUCT_LOG_CONTEXT,
+  MKT_PRODUCT_QUERY_DEFAULTS,
 } from 'src/mkt-core/mkt-product-integration/constants';
 import { MKT_PRODUCT_MESSAGES } from 'src/mkt-core/mkt-product-integration/message';
-import { buildUrl, getErrorMessage } from 'src/mkt-core/utils';
+import { getErrorMessage } from 'src/mkt-core/utils';
+
+// ============================================
+// STATUS MAPPING
+// ============================================
+
+const ADMIN_STATUS_MAP: Record<AdminProductStatus, MktProductStatus> = {
+  Draft: 'inactive',
+  Active: 'active',
+  Deprecated: 'deprecated',
+  Archived: 'inactive',
+};
+
+// ============================================
+// MAPPER
+// ============================================
+
+/**
+ * Map AdminProductDto (Admin API) -> MktProduct (internal type)
+ */
+const mapAdminProductToMktProduct = (dto: AdminProductDto): MktProduct => ({
+  id: dto.id,
+  productName: dto.name,
+  productDescription: dto.description ?? null,
+  productOverview: null,
+  code: dto.code,
+  status: ADMIN_STATUS_MAP[dto.status] ?? 'inactive',
+  version: dto.version ?? null,
+  basePrice: null,
+  iconUrl: dto.icon ?? null,
+  bannerUrl: dto.banner ?? null,
+  gallery: [],
+  sortOrder: 0,
+  metadata: dto.metadata ?? {},
+  createdAt: dto.createdAt,
+  updatedAt: dto.updatedAt,
+});
+
+// ============================================
+// REPOSITORY
+// ============================================
 
 /**
  * MktProductRepository - Data access layer for MKT Product API
  *
+ * Uses MktAuthHttpService (Better Auth) to call MKT Admin Backend API.
+ *
+ * NOTE: MktAuthHttpService.unwrapResponse() auto-unwraps { data: T } responses.
+ * For paginated endpoints returning { data: T[], pagination: {...} },
+ * the unwrapped result is T[] (array only, pagination is lost).
+ * Repositories must type the response as T[] and build pagination locally.
+ *
  * Responsibilities:
  * - HTTP calls to MKT Server for products
- * - URL building
+ * - Response mapping (AdminProductDto -> MktProduct)
  * - Error handling for API calls
  *
  * Does NOT handle:
@@ -32,45 +80,26 @@ import { buildUrl, getErrorMessage } from 'src/mkt-core/utils';
 @Injectable()
 export class MktProductRepository {
   private readonly logger = new Logger(`${MKT_PRODUCT_LOG_CONTEXT}:Repository`);
-  private readonly apiBaseUrl: string;
 
-  constructor(
-    private readonly oauth2Http: OAuth2HttpService,
-    private readonly configService: ConfigService,
-  ) {
-    this.apiBaseUrl =
-      this.configService.get<string>('oauth2Client.serverUrl') ?? '';
-  }
+  constructor(private readonly authHttp: MktAuthHttpService) {}
 
   /**
    * Fetch product by ID from MKT Server
    */
-  async findById(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async findById(productId: string): Promise<MktProduct | null> {
     this.logger.debug(MKT_PRODUCT_MESSAGES.OPERATION.FETCH_FROM_MKT, {
       productId,
     });
 
     try {
-      const url = buildUrl(
-        MKT_PRODUCT_ENDPOINTS.GET_BY_ID,
-        { id: productId },
-        this.apiBaseUrl,
+      const endpoint = MKT_PRODUCT_ENDPOINTS.GET_BY_ID.replace(
+        ':id',
+        productId,
       );
 
-      const response = await this.oauth2Http.get<MktApiResponse<MktProduct>>(
-        url,
-        undefined,
-        userContext,
-      );
+      const dto = await this.authHttp.get<AdminProductDto>(endpoint);
 
-      if (!response.success || !response.data) {
-        return null;
-      }
-
-      return response.data;
+      return mapAdminProductToMktProduct(dto);
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(getErrorMessage(error)),
@@ -83,31 +112,28 @@ export class MktProductRepository {
 
   /**
    * Fetch product by code from MKT Server
+   * Uses search endpoint since Admin API doesn't have a direct by-code endpoint
+   *
+   * NOTE: unwrapResponse auto-unwraps { data: [...] } -> returns AdminProductDto[]
    */
-  async findByCode(
-    code: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async findByCode(code: string): Promise<MktProduct | null> {
     this.logger.debug(MKT_PRODUCT_MESSAGES.OPERATION.FETCH_BY_CODE, { code });
 
     try {
-      const url = buildUrl(
-        MKT_PRODUCT_ENDPOINTS.GET_BY_CODE,
-        { code },
-        this.apiBaseUrl,
+      // unwrapResponse unwraps { data: [...], pagination } -> AdminProductDto[]
+      const items = await this.authHttp.get<AdminProductDto[]>(
+        MKT_PRODUCT_ENDPOINTS.SEARCH,
+        { params: { q: code, limit: 10 } },
       );
 
-      const response = await this.oauth2Http.get<MktApiResponse<MktProduct>>(
-        url,
-        undefined,
-        userContext,
-      );
+      // Find exact code match from search results
+      const matched = items.find((p) => p.code === code);
 
-      if (!response.success || !response.data) {
+      if (!matched) {
         return null;
       }
 
-      return response.data;
+      return mapAdminProductToMktProduct(matched);
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(getErrorMessage(error)),
@@ -120,27 +146,46 @@ export class MktProductRepository {
 
   /**
    * Fetch products list with pagination from MKT Server
+   *
+   * NOTE: unwrapResponse auto-unwraps { data: [...], pagination } -> AdminProductDto[]
+   * Pagination info is lost, so we build it from request params and result count.
    */
   async findAll(
     params: MktProductQueryParams = {},
-    userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProduct>> {
     this.logger.debug(MKT_PRODUCT_MESSAGES.OPERATION.FETCH_LIST_FROM_MKT, {
       params,
     });
 
+    const page = params.page ?? MKT_PRODUCT_QUERY_DEFAULTS.PAGE;
+    const limit = params.limit ?? MKT_PRODUCT_QUERY_DEFAULTS.LIMIT;
+
     try {
-      const url = buildUrl(
+      // unwrapResponse unwraps { data: [...], pagination } -> AdminProductDto[]
+      const items = await this.authHttp.get<AdminProductDto[]>(
         MKT_PRODUCT_ENDPOINTS.LIST,
-        undefined,
-        this.apiBaseUrl,
+        {
+          params: {
+            page,
+            limit,
+            q: params.search,
+            order: params.sortOrder?.toLowerCase(),
+            status: params.status
+              ? mapMktStatusToAdminStatus(params.status)
+              : undefined,
+          },
+        },
       );
 
-      const response = await this.oauth2Http.get<
-        MktApiResponse<MktPaginatedData<MktProduct>>
-      >(url, { params }, userContext);
+      const data = items.map(mapAdminProductToMktProduct);
 
-      return response.data;
+      return {
+        data,
+        total: data.length,
+        page,
+        limit,
+        totalPages: data.length < limit ? page : page + 1,
+      };
     } catch (error) {
       this.logger.error(
         MKT_PRODUCT_ERROR_BUILDER.fetchFailed(getErrorMessage(error)),
@@ -151,3 +196,23 @@ export class MktProductRepository {
     }
   }
 }
+
+// ============================================
+// HELPER
+// ============================================
+
+/**
+ * Map internal status filter -> Admin API status enum
+ */
+const mapMktStatusToAdminStatus = (
+  status: MktProductStatus,
+): AdminProductStatus | undefined => {
+  const reverseMap: Record<MktProductStatus, AdminProductStatus | undefined> = {
+    active: 'Active',
+    inactive: 'Draft',
+    deprecated: 'Deprecated',
+    beta: undefined, // Admin API doesn't have beta status
+  };
+
+  return reverseMap[status];
+};

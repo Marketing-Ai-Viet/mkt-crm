@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import {
   MktOrderValidationItem,
   MktPackageSnapshot,
@@ -39,7 +38,8 @@ import { MktValidationService } from './mkt-validation.service';
  * - Delegate snapshots to MktSnapshotService
  *
  * Architecture:
- * - Uses Repository layer for data access (HTTP calls)
+ * - Product operations use MktAuthHttpService (via MktProductRepository)
+ * - Package operations use MktAuthHttpService (via MktPackageRepository)
  * - Uses CacheService for caching
  * - Uses ValidationService for order validation
  * - Uses SnapshotService for creating immutable snapshots
@@ -57,17 +57,14 @@ export class MktProductProxyService {
   ) {}
 
   // ============================================
-  // PRODUCT OPERATIONS
+  // PRODUCT OPERATIONS (via mkt-auth-client)
   // ============================================
 
   /**
    * Get product by ID with caching
-   * Gracefully handles OAuth2 server unavailability by returning cached data or null
+   * Gracefully handles server unavailability by returning cached data or null
    */
-  async getProduct(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async getProduct(productId: string): Promise<MktProduct | null> {
     // Check cache first
     const cached = await this.cacheService.getProduct(productId);
 
@@ -79,10 +76,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const product = await this.productRepository.findById(
-        productId,
-        userContext,
-      );
+      const product = await this.productRepository.findById(productId);
 
       if (!product) {
         return null;
@@ -93,9 +87,8 @@ export class MktProductProxyService {
 
       return this.attachPackagesToProduct(product);
     } catch (error) {
-      // OAuth2 server unavailable - return null instead of crashing
       this.logger.warn(
-        `Failed to fetch product from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        `Failed to fetch product from server: ${getErrorMessage(error)}`,
         { productId },
       );
 
@@ -105,12 +98,9 @@ export class MktProductProxyService {
 
   /**
    * Get product by code with caching
-   * Gracefully handles OAuth2 server unavailability by returning cached data or null
+   * Gracefully handles server unavailability by returning cached data or null
    */
-  async getProductByCode(
-    code: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
+  async getProductByCode(code: string): Promise<MktProduct | null> {
     // Check cache first
     const cached = await this.cacheService.getProductByCode(code);
 
@@ -122,10 +112,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const product = await this.productRepository.findByCode(
-        code,
-        userContext,
-      );
+      const product = await this.productRepository.findByCode(code);
 
       if (!product) {
         return null;
@@ -137,9 +124,8 @@ export class MktProductProxyService {
 
       return this.attachPackagesToProduct(product);
     } catch (error) {
-      // OAuth2 server unavailable - return null instead of crashing
       this.logger.warn(
-        `Failed to fetch product by code from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        `Failed to fetch product by code from server: ${getErrorMessage(error)}`,
         { code },
       );
 
@@ -149,14 +135,13 @@ export class MktProductProxyService {
 
   /**
    * Get products list with pagination
-   * Gracefully handles OAuth2 server unavailability by returning empty result
+   * Gracefully handles server unavailability by returning empty result
    */
   async getProducts(
     params: MktProductQueryParams = {},
-    userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProduct>> {
     try {
-      const result = await this.productRepository.findAll(params, userContext);
+      const result = await this.productRepository.findAll(params);
 
       // Cache products and attach packages
       if (result.data.length > 0) {
@@ -165,9 +150,8 @@ export class MktProductProxyService {
 
       return result;
     } catch (error) {
-      // OAuth2 server unavailable - return empty result instead of crashing
       this.logger.warn(
-        `Failed to fetch products list from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        `Failed to fetch products list from server: ${getErrorMessage(error)}`,
         { params },
       );
 
@@ -184,37 +168,30 @@ export class MktProductProxyService {
   /**
    * Get product with packages (ensures packages are loaded)
    */
-  async getProductWithPackages(
-    productId: string,
-    userContext?: UserContext,
-  ): Promise<MktProduct | null> {
-    const product = await this.getProduct(productId, userContext);
+  async getProductWithPackages(productId: string): Promise<MktProduct | null> {
+    const product = await this.getProduct(productId);
 
     if (!product) {
       return null;
     }
 
     if (!product.packages || product.packages.length === 0) {
-      product.packages = await this.getPackagesByProductId(
-        productId,
-        userContext,
-      );
+      product.packages = await this.getPackagesByProductId(productId);
     }
 
     return product;
   }
 
   // ============================================
-  // PACKAGE OPERATIONS
+  // PACKAGE OPERATIONS (via mkt-auth-client)
   // ============================================
 
   /**
    * Get package by ID with caching
-   * Gracefully handles OAuth2 server unavailability by returning cached data or null
+   * Gracefully handles server unavailability by returning cached data or null
    */
   async getPackage(
     packageId: string,
-    userContext?: UserContext,
     productId?: string,
   ): Promise<MktProductPackage | null> {
     // Check cache first (if productId provided)
@@ -233,7 +210,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const pkg = await this.packageRepository.findById(packageId, userContext);
+      const pkg = await this.packageRepository.findById(packageId);
 
       if (!pkg) {
         return null;
@@ -246,9 +223,8 @@ export class MktProductProxyService {
 
       return pkg;
     } catch (error) {
-      // OAuth2 server unavailable - return null instead of crashing
       this.logger.warn(
-        `Failed to fetch package from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        `Failed to fetch package from server: ${getErrorMessage(error)}`,
         { packageId, productId },
       );
 
@@ -259,18 +235,16 @@ export class MktProductProxyService {
   /**
    * Get packages list with pagination
    * Used by sync service for bulk operations
-   * Gracefully handles OAuth2 server unavailability by returning empty result
+   * Gracefully handles server unavailability by returning empty result
    */
   async getPackages(
     params: { page?: number; limit?: number } = {},
-    userContext?: UserContext,
   ): Promise<MktPaginatedData<MktProductPackage>> {
     try {
-      return await this.packageRepository.findAll(params, userContext);
+      return await this.packageRepository.findAll(params);
     } catch (error) {
-      // OAuth2 server unavailable - return empty result instead of crashing
       this.logger.warn(
-        `Failed to fetch packages list from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        `Failed to fetch packages list from server: ${getErrorMessage(error)}`,
         { params },
       );
 
@@ -286,11 +260,10 @@ export class MktProductProxyService {
 
   /**
    * Get packages by product ID with caching
-   * Gracefully handles OAuth2 server unavailability by returning cached data or empty array
+   * Gracefully handles server unavailability by returning cached data or empty array
    */
   async getPackagesByProductId(
     productId: string,
-    userContext?: UserContext,
   ): Promise<MktProductPackage[]> {
     // Check cache first
     const cached = await this.cacheService.getPackagesByProductId(productId);
@@ -306,10 +279,7 @@ export class MktProductProxyService {
 
     // Fetch from repository with graceful error handling
     try {
-      const packages = await this.packageRepository.findByProductId(
-        productId,
-        userContext,
-      );
+      const packages = await this.packageRepository.findByProductId(productId);
 
       // Cache result
       if (packages.length > 0) {
@@ -318,9 +288,8 @@ export class MktProductProxyService {
 
       return packages;
     } catch (error) {
-      // OAuth2 server unavailable - return empty array instead of crashing
       this.logger.warn(
-        `Failed to fetch packages by product from server, OAuth2 may be unavailable: ${getErrorMessage(error)}`,
+        `Failed to fetch packages by product from server: ${getErrorMessage(error)}`,
         { productId },
       );
 
@@ -369,16 +338,15 @@ export class MktProductProxyService {
 
   /**
    * Validate products and packages for order creation
+   * Both product and package fetchers use mkt-auth-client
    */
   async validateForOrder(
     items: MktOrderValidationItem[],
-    userContext?: UserContext,
   ): Promise<MktValidationResult> {
     return this.validationService.validateForOrder(
       items,
-      (productId, ctx) => this.getProduct(productId, ctx),
-      (packageId, ctx, prodId) => this.getPackage(packageId, ctx, prodId),
-      userContext,
+      (productId) => this.getProduct(productId),
+      (packageId, prodId) => this.getPackage(packageId, prodId),
     );
   }
 
@@ -391,12 +359,10 @@ export class MktProductProxyService {
    * Uses Promise.all to prevent N+1 sequential calls
    *
    * @param productIds - Array of product IDs to fetch
-   * @param userContext - OAuth2 user context
    * @returns Map of productId -> product (null if not found)
    */
   async getProductsByIds(
     productIds: string[],
-    userContext?: UserContext,
   ): Promise<Map<string, MktProduct | null>> {
     const uniqueIds = [...new Set(productIds)];
     const results = new Map<string, MktProduct | null>();
@@ -407,7 +373,7 @@ export class MktProductProxyService {
 
     // Fetch all products in parallel
     const promises = uniqueIds.map(async (productId) => {
-      const product = await this.getProduct(productId, userContext);
+      const product = await this.getProduct(productId);
 
       return { productId, product };
     });
@@ -426,12 +392,10 @@ export class MktProductProxyService {
    * Uses Promise.all to prevent N+1 sequential calls
    *
    * @param items - Array of { packageId, productId } to fetch
-   * @param userContext - OAuth2 user context
    * @returns Map of packageId -> package (null if not found)
    */
   async getPackagesByIds(
     items: Array<{ packageId: string; productId?: string }>,
-    userContext?: UserContext,
   ): Promise<Map<string, MktProductPackage | null>> {
     const results = new Map<string, MktProductPackage | null>();
 
@@ -453,7 +417,7 @@ export class MktProductProxyService {
 
     // Fetch all packages in parallel
     const promises = uniqueItems.map(async ({ packageId, productId }) => {
-      const pkg = await this.getPackage(packageId, userContext, productId);
+      const pkg = await this.getPackage(packageId, productId);
 
       return { packageId, pkg };
     });

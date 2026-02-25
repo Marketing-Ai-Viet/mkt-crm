@@ -7,13 +7,12 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import {
-  OAUTH2_EVENTS,
-  OAuth2TokenAcquiredEvent,
-} from 'src/mkt-core/oauth2-client/types';
+  MKT_AUTH_EVENTS,
+  MktAuthTokenAcquiredEvent,
+} from 'src/mkt-core/mkt-auth-client';
 import {
   MKT_SYNC_CONFIG,
   MKT_SYNC_LOCK_CONFIG,
-  MKT_SYNC_REQUIRED_SCOPES,
   MKT_PRODUCT_LOG_CONTEXT,
 } from 'src/mkt-core/mkt-product-integration/constants';
 import {
@@ -37,7 +36,7 @@ import { MktProductCacheService } from './mkt-product-cache.service';
 /**
  * MktProductSyncService
  *
- * Automatically syncs products and packages from MKT Server when OAuth2 token is acquired.
+ * Automatically syncs products and packages from MKT Server when auth token is acquired.
  *
  * Features:
  * - Event-driven sync on token acquisition
@@ -74,26 +73,17 @@ export class MktProductSyncService implements OnModuleInit {
   // ============================================
 
   /**
-   * Event handler: Called when OAuth2 token is acquired
+   * Event handler: Called when mkt-auth-client token is acquired
    */
-  @OnEvent(OAUTH2_EVENTS.TOKEN_ACQUIRED)
-  async onTokenAcquired(event: OAuth2TokenAcquiredEvent): Promise<void> {
+  @OnEvent(MKT_AUTH_EVENTS.TOKEN_ACQUIRED)
+  async onTokenAcquired(_event: MktAuthTokenAcquiredEvent): Promise<void> {
     if (!MKT_SYNC_CONFIG.AUTO_SYNC_ENABLED) {
       this.logger.debug('Auto sync disabled, skipping');
 
       return;
     }
 
-    this.logger.log('OAuth2 token acquired, checking if sync needed...');
-
-    // Check if scopes include required product scopes (EXACT match)
-    if (!this.hasRequiredScopes(event.scopes)) {
-      this.logger.debug(
-        `Missing required product scopes (required: ${MKT_SYNC_REQUIRED_SCOPES.join(', ')}), skipping sync`,
-      );
-
-      return;
-    }
+    this.logger.log('MKT auth token acquired, checking if sync needed...');
 
     // Check if sync needed (not synced recently)
     if (this.shouldSkipSync()) {
@@ -430,15 +420,6 @@ export class MktProductSyncService implements OnModuleInit {
   // ============================================
   // HELPERS
   // ============================================
-
-  /**
-   * Check if token has all required scopes (EXACT match)
-   */
-  private hasRequiredScopes(scopes: string[]): boolean {
-    return MKT_SYNC_REQUIRED_SCOPES.every(
-      (required) => scopes.includes(required) || scopes.includes('admin:all'),
-    );
-  }
 
   /**
    * Check if sync should be skipped based on interval

@@ -391,7 +391,6 @@ export class GenericComboValidationService {
       // Validate package tồn tại và active
       const pkg = await this.mktProductProxy.getPackage(
         item.externalPackageId,
-        undefined,
         item.externalProductId ?? undefined,
       );
 

@@ -8,8 +8,6 @@
 // MULTI-LANGUAGE SUPPORT
 // ============================================
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
-
 /**
  * Multi-language field từ MKT Server
  * Hỗ trợ 3 ngôn ngữ: Vietnamese, English, Korean
@@ -229,13 +227,70 @@ export type SyncItemResult = {
  * Product/Package fetcher interface for dependency injection
  * This allows the validation service to be decoupled from the data fetching logic
  */
-export type ProductFetcher = (
-  productId: string,
-  userContext?: UserContext,
-) => Promise<MktProduct | null>;
+export type ProductFetcher = (productId: string) => Promise<MktProduct | null>;
 
 export type PackageFetcher = (
   packageId: string,
-  userContext?: UserContext,
   productId?: string,
 ) => Promise<MktProductPackage | null>;
+
+// ============================================
+// ADMIN API DTO TYPES
+// ============================================
+
+export type AdminProductStatus = 'Draft' | 'Active' | 'Deprecated' | 'Archived';
+
+export type AdminProductDto = {
+  id: string;
+  name: string;
+  description: string | null;
+  code: string;
+  status: AdminProductStatus;
+  version: string | null;
+  icon: string | null;
+  banner: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminPlanTier = 'Free' | 'Pro' | 'Enterprise';
+export type AdminPlanBillingPeriod = 'Monthly';
+
+export type AdminPlanDto = {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  tier: AdminPlanTier;
+  status: AdminProductStatus;
+  price: number;
+  currency: string;
+  billingPeriod: AdminPlanBillingPeriod;
+  trialDays: number;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminPlanWithFeaturesDto = AdminPlanDto & {
+  planFeatures: Array<{
+    id: string;
+    planId: string;
+    featureId: string;
+    limitType: 'Numeric' | 'Boolean' | 'Tiered';
+    limitValue: number | null;
+    booleanValue: boolean | null;
+    tierLevel: 'Basic' | 'Advanced' | 'Full' | null;
+    isUnlimited: boolean;
+    metadata: Record<string, unknown> | null;
+  }>;
+};
+
+export type AdminProductPlansDto = {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  plans: AdminPlanWithFeaturesDto[];
+};

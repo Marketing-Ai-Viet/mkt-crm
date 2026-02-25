@@ -112,6 +112,14 @@ export class MktAuthClientService
   // LIFECYCLE
   // ============================================
 
+  /**
+   * Called after all modules have been initialized and all event listeners registered.
+   * Uses setImmediate to defer token acquisition to next event loop tick,
+   * ensuring ALL modules (including MktProductSyncService's @OnEvent listener)
+   * have completed their onApplicationBootstrap before TOKEN_ACQUIRED is emitted.
+   *
+   * @see OAuth2ClientService.onApplicationBootstrap for reference pattern
+   */
   async onApplicationBootstrap(): Promise<void> {
     // Skip if not configured
     if (!this.config.baseUrl || !this.config.credentials.email) {
@@ -130,15 +138,21 @@ export class MktAuthClientService
       return;
     }
 
-    try {
-      await this.bootstrap();
-      this.isInitialized = true;
-      this.logger.log('MKT Auth Client initialized successfully');
-    } catch (error) {
-      this.initializationError =
-        error instanceof Error ? error : new Error(String(error));
-      this.logger.error('Failed to initialize MKT Auth Client', error);
-    }
+    // Delay token initialization to next event loop iteration
+    // This ensures ALL modules have completed their onApplicationBootstrap
+    // before we emit TOKEN_ACQUIRED event (triggers product sync)
+    setImmediate(() => {
+      this.bootstrap()
+        .then(() => {
+          this.isInitialized = true;
+          this.logger.log('MKT Auth Client initialized successfully');
+        })
+        .catch((error) => {
+          this.initializationError =
+            error instanceof Error ? error : new Error(String(error));
+          this.logger.error('Failed to initialize MKT Auth Client', error);
+        });
+    });
   }
 
   onModuleDestroy(): void {
@@ -337,6 +351,38 @@ export class MktAuthClientService
 
   private async bootstrap(): Promise<void> {
     this.logger.log('Bootstrapping MKT Auth Client...');
+
+    // Check if we have a valid cached token from a previous run.
+    // If so, emit TOKEN_ACQUIRED directly and skip fetchTokenWithLock.
+    // This fixes the issue where fetchTokenWithLock returns the cached token
+    // without calling fetchToken/onFetchSuccess/emitTokenAcquiredEvent,
+    // leaving downstream services (MktProductSyncService) unnotified.
+    const cached = await this.cacheService.get();
+
+    if (
+      cached &&
+      !this.cacheService.isExpiringSoon(cached, this.config.token.bufferMs)
+    ) {
+      this.isInitialized = true;
+      this.initializationError = null;
+
+      const event: MktAuthTokenAcquiredEvent = {
+        userEmail: cached.userEmail,
+        source: 'bootstrap',
+        expiresAt: cached.expiresAt,
+        timestamp: DateTimeUtils.toISO(DateTimeUtils.now()),
+      };
+
+      this.eventEmitter.emit(MKT_AUTH_EVENTS.TOKEN_ACQUIRED, event);
+      this.logger.log(
+        'Using cached token from previous session, emitted TOKEN_ACQUIRED',
+      );
+
+      return;
+    }
+
+    // No cached token or token expiring soon — fetch new one.
+    // fetchToken -> onFetchSuccess -> emitTokenAcquiredEvent handles the event.
     await this.fetchTokenWithLock(false);
   }
 
