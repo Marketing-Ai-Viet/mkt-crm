@@ -1,55 +1,64 @@
 /**
  * MKT User Integration Types
  *
- * Type definitions for MKT Server User API integration
+ * Type definitions for MKT Admin Backend User API integration.
+ * Uses Better Auth (mkt-auth-client) instead of OAuth2.
  */
 
-import {
-  MktAuthMethodType,
-  MktUserStatusType,
-} from 'src/mkt-core/mkt-user-integration/constants';
+import { MktAdminUserRoleType } from 'src/mkt-core/mkt-user-integration/constants';
 
 // ============================================
-// USER TYPES
+// ADMIN API DTO TYPES (from Swagger)
 // ============================================
 
 /**
- * User từ MKT Server API response
+ * AdminUserDto - Direct mapping from MKT Admin Backend API (Swagger)
+ *
+ * This is the shape returned by the Admin API endpoints.
+ * MktAuthHttpService.unwrapResponse() auto-unwraps { data: T } -> T
  */
-export type MktUser = {
+export type AdminUserDto = {
   id: string;
+  role: MktAdminUserRoleType;
+  username: string;
   email: string;
-  username: string | null;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  code: string | null;
-  phone: string | null;
-  avatarUrl: string | null;
-  roleId: string | null;
-  status: MktUserStatusType;
-  authMethod: MktAuthMethodType;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  twoFactorEnabled: boolean;
-  crmCustomerId: string | null;
-  crmSyncEnabled: boolean;
-  preferences: Record<string, unknown>;
-  settings: Record<string, unknown>;
-  lastLoginAt: string | null;
-  lastLoginIp: string | null;
+  firstName?: string;
+  lastName?: string;
+  image?: string;
+  bio?: string;
   createdAt: string;
   updatedAt: string;
 };
 
 /**
- * Login history từ MKT Server API response
+ * AdminUpdateUserProfileDto - Input for PATCH /api/v1/user/profile
  */
-export type MktUserLoginHistory = {
-  userId: string;
-  lastLoginAt: string | null;
-  lastLoginIp: string | null;
-  lockedUntil: string | null;
+export type AdminUpdateUserProfileDto = {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  image?: string;
+};
+
+// ============================================
+// INTERNAL USER TYPES
+// ============================================
+
+/**
+ * Internal user type mapped from AdminUserDto
+ * Provides backward-compatible structure for CRM usage
+ */
+export type MktUser = {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  role: MktAdminUserRoleType;
+  image: string | null;
+  bio: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 // ============================================
@@ -57,56 +66,42 @@ export type MktUserLoginHistory = {
 // ============================================
 
 /**
- * Create user input cho API
+ * Create user input - maps to Better Auth sign-up endpoint
+ * POST /api/auth/sign-up/email
  */
 export type MktCreateUserInput = {
   email: string;
-  password?: string;
-  firstName: string;
-  lastName: string;
-  fullName?: string;
-  phone?: string;
-  code?: string;
-  roleId?: string;
-  status?: MktUserStatusType;
+  password: string;
+  name: string;
 };
 
 /**
- * Update user input cho API
+ * Update user profile input - maps to PATCH /api/v1/user/profile
  */
 export type MktUpdateUserInput = {
-  email?: string;
   username?: string;
-  fullName?: string;
-  phone?: string;
-  role?: string;
-  status?: MktUserStatusType;
-  avatarUrl?: string;
-  preferences?: Record<string, unknown>;
-  settings?: Record<string, unknown>;
+  firstName?: string;
+  lastName?: string;
+  image?: string;
 };
 
 // ============================================
-// API RESPONSE TYPES
+// PAGINATED RESPONSE TYPES
 // ============================================
 
 /**
- * API Response wrapper (matching MKT Server format)
- */
-export type MktUserApiResponse<T> = {
-  success: boolean;
-  data: T;
-  message: string;
-};
-
-/**
- * Paginated users response từ MKT Server
+ * Paginated users response (built locally from unwrapped API response)
+ *
+ * NOTE: MktAuthHttpService.unwrapResponse() auto-unwraps { data: [...], pagination }
+ * -> returns AdminUserDto[] (pagination info is lost).
+ * Repository must build pagination locally.
  */
 export type MktPaginatedUsers = {
-  users: MktUser[];
+  data: MktUser[];
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 };
 
 // ============================================
@@ -114,13 +109,11 @@ export type MktPaginatedUsers = {
 // ============================================
 
 /**
- * Query params cho users list
+ * Query params for users list
  */
 export type MktUserQueryParams = {
   page?: number;
   limit?: number;
-  role?: string;
-  status?: MktUserStatusType;
   search?: string;
 };
 

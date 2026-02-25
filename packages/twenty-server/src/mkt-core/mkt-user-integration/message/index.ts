@@ -10,21 +10,19 @@ export const MKT_USER_MESSAGES = createModuleMessages({
   customSuccess: {
     LIST_FETCHED: 'Users list fetched successfully',
     LIST_EMPTY: 'No users found',
-    LOGIN_HISTORY_FETCHED: 'Login history fetched successfully',
   },
   customError: {
     NOT_FOUND_BY_EMAIL: 'User not found with email: {email}',
     EMAIL_ALREADY_EXISTS: 'User with email {email} already exists',
     UNAUTHORIZED: 'Unauthorized to access user data',
     INVALID_INPUT: 'Invalid input data',
-    LOGIN_HISTORY_NOT_FOUND: 'Login history not found for user: {userId}',
   },
   customOperation: {
     FETCH_FROM_MKT: 'Fetching user from MKT Server',
     FETCH_LIST_FROM_MKT: 'Fetching users list from MKT Server',
     CREATE_ON_MKT: 'Creating user on MKT Server',
     UPDATE_ON_MKT: 'Updating user on MKT Server',
-    FETCH_LOGIN_HISTORY: 'Fetching login history from MKT Server',
+    DELETE_ON_MKT: 'Deleting user on MKT Server',
   },
 });
 
@@ -60,10 +58,9 @@ export const MKT_USER_LOG_MESSAGES = {
   UPDATE_USER_FAILED: (userId: string, error: string) =>
     `Failed to update user ${userId}: ${error}`,
 
-  FETCH_LOGIN_HISTORY_START: (email: string) =>
-    `Fetching login history for user: ${email}`,
-  FETCH_LOGIN_HISTORY_SUCCESS: (email: string) =>
-    `Login history fetched for user: ${email}`,
-  FETCH_LOGIN_HISTORY_NOT_FOUND: (email: string) =>
-    `Login history not found for user: ${email}`,
+  DELETE_USER_START: (userId: string) => `Deleting user: ${userId}`,
+  DELETE_USER_SUCCESS: (userId: string) =>
+    `User deleted successfully: ${userId}`,
+  DELETE_USER_FAILED: (userId: string, error: string) =>
+    `Failed to delete user ${userId}: ${error}`,
 } as const;

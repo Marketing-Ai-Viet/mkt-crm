@@ -1,104 +1,40 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 
-import GraphQLJSON from 'graphql-type-json';
-
 // ============================================
 // USER OUTPUT
 // ============================================
 
-@ObjectType({ description: 'User from MKT Server' })
+@ObjectType({ description: 'User from MKT Admin Backend' })
 export class MktUserDto {
   @Field(() => String)
   id: string;
+
+  @Field(() => String, { description: 'Role: User or Admin' })
+  role: string;
+
+  @Field(() => String)
+  username: string;
 
   @Field(() => String)
   email: string;
 
   @Field(() => String, { nullable: true })
-  username?: string;
-
-  @Field(() => String)
-  firstName: string;
-
-  @Field(() => String)
-  lastName: string;
-
-  @Field(() => String)
-  fullName: string;
+  firstName?: string;
 
   @Field(() => String, { nullable: true })
-  code?: string;
+  lastName?: string;
 
   @Field(() => String, { nullable: true })
-  phone?: string;
+  image?: string;
 
   @Field(() => String, { nullable: true })
-  avatarUrl?: string;
-
-  @Field(() => String, { nullable: true })
-  roleId?: string;
-
-  @Field(() => String, {
-    description: 'Status: active, pending, suspended, inactive',
-  })
-  status: string;
-
-  @Field(() => String, {
-    description: 'Auth method: local, google, facebook, apple',
-  })
-  authMethod: string;
-
-  @Field(() => Boolean)
-  emailVerified: boolean;
-
-  @Field(() => Boolean)
-  phoneVerified: boolean;
-
-  @Field(() => Boolean)
-  twoFactorEnabled: boolean;
-
-  @Field(() => String, { nullable: true })
-  crmCustomerId?: string;
-
-  @Field(() => Boolean)
-  crmSyncEnabled: boolean;
-
-  @Field(() => GraphQLJSON, { nullable: true })
-  preferences?: Record<string, unknown>;
-
-  @Field(() => GraphQLJSON, { nullable: true })
-  settings?: Record<string, unknown>;
-
-  @Field(() => String, { nullable: true })
-  lastLoginAt?: string;
-
-  @Field(() => String, { nullable: true })
-  lastLoginIp?: string;
+  bio?: string;
 
   @Field(() => String)
   createdAt: string;
 
   @Field(() => String)
   updatedAt: string;
-}
-
-// ============================================
-// LOGIN HISTORY OUTPUT
-// ============================================
-
-@ObjectType({ description: 'User login history from MKT Server' })
-export class MktUserLoginHistoryDto {
-  @Field(() => String)
-  userId: string;
-
-  @Field(() => String, { nullable: true })
-  lastLoginAt?: string;
-
-  @Field(() => String, { nullable: true })
-  lastLoginIp?: string;
-
-  @Field(() => String, { nullable: true })
-  lockedUntil?: string;
 }
 
 // ============================================
@@ -126,7 +62,7 @@ export class MktUserListResponseDto {
   success: boolean;
 
   @Field(() => [MktUserDto])
-  users: MktUserDto[];
+  data: MktUserDto[];
 
   @Field(() => Int)
   total: number;
@@ -137,20 +73,8 @@ export class MktUserListResponseDto {
   @Field(() => Int)
   limit: number;
 
-  @Field(() => String, { nullable: true })
-  message?: string;
-
-  @Field(() => String, { nullable: true })
-  error?: string;
-}
-
-@ObjectType({ description: 'User login history response' })
-export class MktUserLoginHistoryResponseDto {
-  @Field(() => Boolean)
-  success: boolean;
-
-  @Field(() => MktUserLoginHistoryDto, { nullable: true })
-  data?: MktUserLoginHistoryDto;
+  @Field(() => Int)
+  totalPages: number;
 
   @Field(() => String, { nullable: true })
   message?: string;

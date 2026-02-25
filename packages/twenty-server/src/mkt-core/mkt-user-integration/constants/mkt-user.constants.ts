@@ -5,73 +5,43 @@
 /**
  * MKT User API Endpoints
  *
- * IMPORTANT: Endpoints must match MKT Server controllers:
- * - OauthUserController: `/api/oauth/users`
+ * IMPORTANT: Endpoints must match MKT Admin Backend API:
+ * - User: `/api/v1/user`
+ * - Auth: `/api/auth/sign-up/email`
+ *
+ * Uses MktAuthHttpService (Better Auth) for authentication.
  */
 export const MKT_USER_ENDPOINTS = {
-  // User endpoints (từ OauthUserController)
-  LIST: '/api/oauth/users',
-  GET_BY_ID: '/api/oauth/users/:id',
-  GET_BY_EMAIL: '/api/oauth/users/by-email/:email',
-  CREATE: '/api/oauth/users/register',
-  UPDATE: '/api/oauth/users/:id',
-  LOGIN_HISTORY_BY_EMAIL: '/api/oauth/users/by-email/:email/login-history',
+  // User endpoints (Admin API via mkt-auth-client)
+  WHOAMI: '/api/v1/user/whoami',
+  LIST: '/api/v1/user/all',
+  LIST_CURSOR: '/api/v1/user/all/cursor',
+  GET_BY_ID: '/api/v1/user/:id',
+  UPDATE_PROFILE: '/api/v1/user/profile',
+  DELETE: '/api/v1/user/:id',
+
+  // Auth endpoint for user creation (Better Auth sign-up)
+  SIGN_UP: '/api/auth/sign-up/email',
 } as const;
 
 export type MktUserEndpointsType =
   (typeof MKT_USER_ENDPOINTS)[keyof typeof MKT_USER_ENDPOINTS];
 
 // ============================================
-// USER STATUS
+// ADMIN USER ROLE
 // ============================================
 
 /**
- * User status enum
- * Matches UserStatus from MKT Server
+ * Admin user role enum
+ * Matches role values from MKT Admin Backend API (Swagger)
  */
-export const MKT_USER_STATUS = {
-  ACTIVE: 'active',
-  PENDING: 'pending',
-  SUSPENDED: 'suspended',
-  INACTIVE: 'inactive',
+export const MKT_ADMIN_USER_ROLE = {
+  USER: 'User',
+  ADMIN: 'Admin',
 } as const;
 
-export type MktUserStatusType =
-  (typeof MKT_USER_STATUS)[keyof typeof MKT_USER_STATUS];
-
-// ============================================
-// AUTH METHOD
-// ============================================
-
-/**
- * Authentication method enum
- * Matches AuthMethod from MKT Server
- */
-export const MKT_AUTH_METHOD = {
-  LOCAL: 'local',
-  GOOGLE: 'google',
-  FACEBOOK: 'facebook',
-  APPLE: 'apple',
-} as const;
-
-export type MktAuthMethodType =
-  (typeof MKT_AUTH_METHOD)[keyof typeof MKT_AUTH_METHOD];
-
-// ============================================
-// REQUIRED SCOPES
-// ============================================
-
-/**
- * Required OAuth2 scopes for user operations
- */
-export const MKT_USER_REQUIRED_SCOPES = {
-  READ: 'users:read',
-  WRITE: 'users:write',
-  MANAGE: 'users:manage',
-} as const;
-
-export type MktUserScopeType =
-  (typeof MKT_USER_REQUIRED_SCOPES)[keyof typeof MKT_USER_REQUIRED_SCOPES];
+export type MktAdminUserRoleType =
+  (typeof MKT_ADMIN_USER_ROLE)[keyof typeof MKT_ADMIN_USER_ROLE];
 
 // ============================================
 // QUERY DEFAULTS
@@ -93,48 +63,14 @@ export const MKT_USER_QUERY_DEFAULTS = {
 export const MKT_USER_LOG_CONTEXT = 'MktUserIntegration' as const;
 
 // ============================================
-// URL BUILDER HELPERS
+// ERROR BUILDER
 // ============================================
 
-/**
- * URL builder functions for MKT User API
- */
-export const MKT_USER_URL_BUILDER = {
-  /**
-   * Build URL for getting user by ID
-   * @param userId - User ID
-   * @returns Full URL path
-   */
-  getById: (userId: string): string =>
-    MKT_USER_ENDPOINTS.GET_BY_ID.replace(':id', userId),
-
-  /**
-   * Build URL for getting user by email
-   * @param email - User email
-   * @returns Full URL path
-   */
-  getByEmail: (email: string): string =>
-    MKT_USER_ENDPOINTS.GET_BY_EMAIL.replace(
-      ':email',
-      encodeURIComponent(email),
-    ),
-
-  /**
-   * Build URL for updating user
-   * @param userId - User ID
-   * @returns Full URL path
-   */
-  update: (userId: string): string =>
-    MKT_USER_ENDPOINTS.UPDATE.replace(':id', userId),
-
-  /**
-   * Build URL for getting login history by email
-   * @param email - User email
-   * @returns Full URL path
-   */
-  loginHistoryByEmail: (email: string): string =>
-    MKT_USER_ENDPOINTS.LOGIN_HISTORY_BY_EMAIL.replace(
-      ':email',
-      encodeURIComponent(email),
-    ),
+export const MKT_USER_ERROR_BUILDER = {
+  fetchFailed: (error: string) => `Failed to fetch user: ${error}`,
+  fetchByEmailFailed: (error: string) =>
+    `Failed to fetch user by email: ${error}`,
+  createFailed: (error: string) => `Failed to create user: ${error}`,
+  updateFailed: (error: string) => `Failed to update user: ${error}`,
+  deleteFailed: (error: string) => `Failed to delete user: ${error}`,
 } as const;

@@ -17,10 +17,10 @@ import {
 } from 'src/mkt-core/mkt-product-integration/constants';
 import {
   MktProduct,
-  MktProductPackage,
   SyncItemResult,
   SyncResult,
 } from 'src/mkt-core/mkt-product-integration/types';
+import { MktPackageRepository } from 'src/mkt-core/mkt-product-integration/repositories';
 
 import { MktProductProxyService } from './mkt-product-proxy.service';
 import { MktProductCacheService } from './mkt-product-cache.service';
@@ -58,6 +58,7 @@ export class MktProductSyncService implements OnModuleInit {
     private readonly cacheStorage: CacheStorageService,
     private readonly productProxy: MktProductProxyService,
     private readonly cacheService: MktProductCacheService,
+    private readonly packageRepository: MktPackageRepository,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -138,8 +139,10 @@ export class MktProductSyncService implements OnModuleInit {
       productsCount = productsResult.count;
       errors.push(...productsResult.errors);
 
-      // 2. Sync packages using streaming pagination
-      const packagesResult = await this.syncPackagesWithStreaming();
+      // 2. Sync packages (plans) per product using GET /products/{productId}/plans
+      const packagesResult = await this.syncPackagesWithStreaming(
+        productsResult.productIds,
+      );
 
       packagesCount = packagesResult.count;
       errors.push(...packagesResult.errors);
@@ -211,43 +214,15 @@ export class MktProductSyncService implements OnModuleInit {
   }
 
   /**
-   * Stream packages from API (AsyncGenerator)
-   */
-  private async *streamPackages(): AsyncGenerator<
-    MktProductPackage[],
-    void,
-    unknown
-  > {
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      try {
-        const result = await this.productProxy.getPackages({
-          page,
-          limit: MKT_SYNC_CONFIG.BATCH_SIZE,
-        });
-
-        if (result.data && result.data.length > 0) {
-          yield result.data;
-          hasMore = result.data.length >= MKT_SYNC_CONFIG.BATCH_SIZE;
-          page++;
-        } else {
-          hasMore = false;
-        }
-      } catch (error) {
-        this.logger.error(`Failed to fetch packages page ${page}`, error);
-        hasMore = false;
-      }
-    }
-  }
-
-  /**
    * Sync products using streaming (memory-efficient)
+   * Returns synced product IDs for subsequent package sync
    */
-  private async syncProductsWithStreaming(): Promise<SyncItemResult> {
+  private async syncProductsWithStreaming(): Promise<
+    SyncItemResult & { productIds: string[] }
+  > {
     let count = 0;
     const errors: string[] = [];
+    const productIds: string[] = [];
 
     try {
       for await (const productBatch of this.streamProducts()) {
@@ -263,6 +238,7 @@ export class MktProductSyncService implements OnModuleInit {
 
           if (result.status === 'fulfilled') {
             count++;
+            productIds.push(productBatch[i].id);
           } else {
             const productId = productBatch[i]?.id ?? 'unknown';
 
@@ -279,40 +255,54 @@ export class MktProductSyncService implements OnModuleInit {
       this.logger.error('Products sync failed', error);
     }
 
-    return { count, errors };
+    return { count, errors, productIds };
   }
 
   /**
-   * Sync packages using streaming (memory-efficient)
-   * Stores packages grouped by productId only (no individual pkg caching)
+   * Sync packages (plans) per product using GET /api/v1/products/{productId}/plans
+   *
+   * For each synced product, fetches its plans from MKT Admin Backend
+   * and caches them grouped by productId.
    */
-  private async syncPackagesWithStreaming(): Promise<SyncItemResult> {
+  private async syncPackagesWithStreaming(
+    productIds: string[],
+  ): Promise<SyncItemResult> {
     let count = 0;
     const errors: string[] = [];
-    // Group packages by productId for efficient lookup
-    const packagesByProduct = new Map<string, MktProductPackage[]>();
+
+    if (productIds.length === 0) {
+      this.logger.debug('No products to sync packages for');
+
+      return { count, errors };
+    }
 
     try {
-      for await (const packageBatch of this.streamPackages()) {
-        // Group packages by productId (no individual caching)
-        for (const pkg of packageBatch) {
-          if (pkg?.productId) {
-            const existing = packagesByProduct.get(pkg.productId) ?? [];
+      // Fetch plans per product in parallel batches
+      const results = await Promise.allSettled(
+        productIds.map(async (productId) => {
+          const packages =
+            await this.packageRepository.findByProductId(productId);
 
-            existing.push(pkg);
-            packagesByProduct.set(pkg.productId, existing);
-            count++;
-          } else {
-            errors.push(`Package ${pkg?.id ?? 'unknown'}: missing productId`);
-          }
+          await this.cacheService.setPackagesByProductId(productId, packages);
+
+          return { productId, packageCount: packages.length };
+        }),
+      );
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+
+        if (result.status === 'fulfilled') {
+          count += result.value.packageCount;
+        } else {
+          const productId = productIds[i] ?? 'unknown';
+
+          errors.push(`Plans for product ${productId}: ${result.reason}`);
         }
       }
 
-      // Cache packages grouped by productId
-      await this.cachePackagesByProductId(packagesByProduct, errors);
-
       this.logger.log(
-        `Synced ${count} packages for ${packagesByProduct.size} products`,
+        `Synced ${count} plans (packages) for ${productIds.length} products`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -322,29 +312,6 @@ export class MktProductSyncService implements OnModuleInit {
     }
 
     return { count, errors };
-  }
-
-  /**
-   * Cache packages grouped by productId for efficient lookup
-   */
-  private async cachePackagesByProductId(
-    packagesByProduct: Map<string, MktProductPackage[]>,
-    errors: string[],
-  ): Promise<void> {
-    const cachePromises = Array.from(packagesByProduct.entries()).map(
-      async ([productId, packages]) => {
-        try {
-          await this.cacheService.setPackagesByProductId(productId, packages);
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Unknown error';
-
-          errors.push(`PackagesByProduct ${productId}: ${message}`);
-        }
-      },
-    );
-
-    await Promise.allSettled(cachePromises);
   }
 
   // ============================================

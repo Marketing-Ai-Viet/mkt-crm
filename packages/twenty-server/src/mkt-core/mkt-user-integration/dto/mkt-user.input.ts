@@ -1,20 +1,4 @@
-import { Field, InputType, Int, registerEnumType } from '@nestjs/graphql';
-
-// ============================================
-// ENUMS
-// ============================================
-
-export enum MktUserStatusFilter {
-  ACTIVE = 'active',
-  PENDING = 'pending',
-  SUSPENDED = 'suspended',
-  INACTIVE = 'inactive',
-}
-
-registerEnumType(MktUserStatusFilter, {
-  name: 'MktUserStatusFilter',
-  description: 'User status filter values',
-});
+import { Field, InputType, Int } from '@nestjs/graphql';
 
 // ============================================
 // INPUT TYPES
@@ -36,81 +20,38 @@ export class MktUserQueryInput {
   })
   limit?: number;
 
-  @Field(() => String, { nullable: true, description: 'Filter by role' })
-  role?: string;
-
-  @Field(() => MktUserStatusFilter, {
-    nullable: true,
-    description: 'Filter by status',
-  })
-  status?: MktUserStatusFilter;
-
   @Field(() => String, {
     nullable: true,
-    description: 'Search by name, email, or code',
+    description: 'Search by name, email, or username',
   })
   search?: string;
 }
 
-@InputType({ description: 'Input for creating a new user' })
+@InputType({
+  description: 'Input for creating a new user via Better Auth sign-up',
+})
 export class MktCreateUserInputDto {
   @Field(() => String, { description: 'User email address' })
   email: string;
 
-  @Field(() => String, {
-    nullable: true,
-    description: 'User password (optional, will generate if not provided)',
-  })
-  password?: string;
+  @Field(() => String, { description: 'User password' })
+  password: string;
 
-  @Field(() => String, { description: 'First name' })
-  firstName: string;
-
-  @Field(() => String, { description: 'Last name' })
-  lastName: string;
-
-  @Field(() => String, {
-    nullable: true,
-    description: 'Full name (optional, will be generated from first + last)',
-  })
-  fullName?: string;
-
-  @Field(() => String, { nullable: true, description: 'Phone number' })
-  phone?: string;
-
-  @Field(() => String, { nullable: true, description: 'User code' })
-  code?: string;
-
-  @Field(() => String, { nullable: true, description: 'Role ID' })
-  roleId?: string;
-
-  @Field(() => MktUserStatusFilter, {
-    nullable: true,
-    description: 'Initial status (default: pending)',
-  })
-  status?: MktUserStatusFilter;
+  @Field(() => String, { description: 'User display name' })
+  name: string;
 }
 
-@InputType({ description: 'Input for updating an existing user' })
+@InputType({ description: 'Input for updating user profile' })
 export class MktUpdateUserInputDto {
-  @Field(() => String, { nullable: true, description: 'User email' })
-  email?: string;
-
   @Field(() => String, { nullable: true, description: 'Username' })
   username?: string;
 
-  @Field(() => String, { nullable: true, description: 'Full name' })
-  fullName?: string;
+  @Field(() => String, { nullable: true, description: 'First name' })
+  firstName?: string;
 
-  @Field(() => String, { nullable: true, description: 'Phone number' })
-  phone?: string;
+  @Field(() => String, { nullable: true, description: 'Last name' })
+  lastName?: string;
 
-  @Field(() => String, { nullable: true, description: 'Role' })
-  role?: string;
-
-  @Field(() => MktUserStatusFilter, { nullable: true, description: 'Status' })
-  status?: MktUserStatusFilter;
-
-  @Field(() => String, { nullable: true, description: 'Avatar URL' })
-  avatarUrl?: string;
+  @Field(() => String, { nullable: true, description: 'Profile image URL' })
+  image?: string;
 }

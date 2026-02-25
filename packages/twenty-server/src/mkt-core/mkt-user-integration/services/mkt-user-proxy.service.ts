@@ -1,12 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
-import { UserContext } from 'src/mkt-core/oauth2-client/types';
 import {
   MktCreateUserInput,
   MktPaginatedUsers,
   MktUpdateUserInput,
   MktUser,
-  MktUserLoginHistory,
   MktUserQueryParams,
 } from 'src/mkt-core/mkt-user-integration/types';
 import { MKT_USER_LOG_CONTEXT } from 'src/mkt-core/mkt-user-integration/constants';
@@ -25,8 +23,9 @@ import { MktUserRepository } from 'src/mkt-core/mkt-user-integration/repositorie
  * - Handle business logic validation
  *
  * Architecture:
- * - Uses Repository layer for data access (HTTP calls)
+ * - Uses Repository layer for data access (HTTP calls via mkt-auth-client)
  * - No caching (user data needs real-time accuracy)
+ * - No UserContext needed (auth is centrally managed by MktAuthHttpService)
  */
 @Injectable()
 export class MktUserProxyService {
@@ -42,10 +41,10 @@ export class MktUserProxyService {
    * Get user by ID
    * @throws NotFoundException if user not found
    */
-  async getUser(userId: string, userContext?: UserContext): Promise<MktUser> {
+  async getUser(userId: string): Promise<MktUser> {
     this.logger.debug(MKT_USER_LOG_MESSAGES.FETCH_USER_START(userId));
 
-    const user = await this.userRepository.findById(userId, userContext);
+    const user = await this.userRepository.findById(userId);
 
     if (!user) {
       throw new NotFoundException(
@@ -60,24 +59,18 @@ export class MktUserProxyService {
    * Get user by ID (nullable version - no exception)
    * Returns null if user not found
    */
-  async getUserOrNull(
-    userId: string,
-    userContext?: UserContext,
-  ): Promise<MktUser | null> {
-    return this.userRepository.findById(userId, userContext);
+  async getUserOrNull(userId: string): Promise<MktUser | null> {
+    return this.userRepository.findById(userId);
   }
 
   /**
    * Get user by email
    * @throws NotFoundException if user not found
    */
-  async getUserByEmail(
-    email: string,
-    userContext?: UserContext,
-  ): Promise<MktUser> {
+  async getUserByEmail(email: string): Promise<MktUser> {
     this.logger.debug(MKT_USER_LOG_MESSAGES.FETCH_USER_BY_EMAIL_START(email));
 
-    const user = await this.userRepository.findByEmail(email, userContext);
+    const user = await this.userRepository.findByEmail(email);
 
     if (!user) {
       throw new NotFoundException(
@@ -92,41 +85,32 @@ export class MktUserProxyService {
    * Get user by email (nullable version - no exception)
    * Returns null if user not found
    */
-  async getUserByEmailOrNull(
-    email: string,
-    userContext?: UserContext,
-  ): Promise<MktUser | null> {
-    return this.userRepository.findByEmail(email, userContext);
+  async getUserByEmailOrNull(email: string): Promise<MktUser | null> {
+    return this.userRepository.findByEmail(email);
   }
 
   /**
    * Get paginated users list
    */
-  async getUsers(
-    params: MktUserQueryParams = {},
-    userContext?: UserContext,
-  ): Promise<MktPaginatedUsers> {
+  async getUsers(params: MktUserQueryParams = {}): Promise<MktPaginatedUsers> {
     this.logger.debug(MKT_USER_LOG_MESSAGES.FETCH_USERS_START, { params });
 
-    const result = await this.userRepository.findAll(params, userContext);
+    const result = await this.userRepository.findAll(params);
 
     this.logger.debug(
-      MKT_USER_LOG_MESSAGES.FETCH_USERS_SUCCESS(result.users.length),
+      MKT_USER_LOG_MESSAGES.FETCH_USERS_SUCCESS(result.data.length),
     );
 
     return result;
   }
 
   /**
-   * Create new user
+   * Create new user via Better Auth sign-up
    */
-  async createUser(
-    input: MktCreateUserInput,
-    userContext?: UserContext,
-  ): Promise<MktUser> {
+  async createUser(input: MktCreateUserInput): Promise<MktUser> {
     this.logger.debug(MKT_USER_LOG_MESSAGES.CREATE_USER_START(input.email));
 
-    const user = await this.userRepository.create(input, userContext);
+    const user = await this.userRepository.create(input);
 
     this.logger.log(MKT_USER_LOG_MESSAGES.CREATE_USER_SUCCESS(user.id));
 
@@ -134,78 +118,31 @@ export class MktUserProxyService {
   }
 
   /**
-   * Update user
-   * @throws NotFoundException if user not found
+   * Update user profile
    */
-  async updateUser(
-    userId: string,
-    input: MktUpdateUserInput,
-    userContext?: UserContext,
-  ): Promise<MktUser> {
-    this.logger.debug(MKT_USER_LOG_MESSAGES.UPDATE_USER_START(userId));
+  async updateUser(input: MktUpdateUserInput): Promise<MktUser> {
+    this.logger.debug('Updating user profile');
 
-    // Verify user exists first
-    await this.getUser(userId, userContext);
+    const user = await this.userRepository.update(input);
 
-    const user = await this.userRepository.update(userId, input, userContext);
-
-    this.logger.log(MKT_USER_LOG_MESSAGES.UPDATE_USER_SUCCESS(userId));
+    this.logger.log(MKT_USER_LOG_MESSAGES.UPDATE_USER_SUCCESS(user.id));
 
     return user;
   }
 
-  // ============================================
-  // LOGIN HISTORY OPERATIONS
-  // ============================================
-
   /**
-   * Get user login history by email
-   * @throws NotFoundException if user or login history not found
+   * Delete user by ID
+   * @throws NotFoundException if user not found
    */
-  async getUserLoginHistoryByEmail(
-    email: string,
-    userContext?: UserContext,
-  ): Promise<MktUserLoginHistory> {
-    this.logger.debug(MKT_USER_LOG_MESSAGES.FETCH_LOGIN_HISTORY_START(email));
+  async deleteUser(userId: string): Promise<void> {
+    this.logger.debug(MKT_USER_LOG_MESSAGES.DELETE_USER_START(userId));
 
     // Verify user exists first
-    await this.getUserByEmail(email, userContext);
+    await this.getUser(userId);
 
-    const history = await this.userRepository.getLoginHistoryByEmail(
-      email,
-      userContext,
-    );
+    await this.userRepository.delete(userId);
 
-    if (!history) {
-      throw new NotFoundException(
-        MKT_USER_MESSAGES.ERROR.LOGIN_HISTORY_NOT_FOUND.replace(
-          '{userId}',
-          email,
-        ),
-      );
-    }
-
-    this.logger.debug(MKT_USER_LOG_MESSAGES.FETCH_LOGIN_HISTORY_SUCCESS(email));
-
-    return history;
-  }
-
-  /**
-   * Get user login history by email (nullable version - no exception)
-   * Returns null if not found
-   */
-  async getUserLoginHistoryByEmailOrNull(
-    email: string,
-    userContext?: UserContext,
-  ): Promise<MktUserLoginHistory | null> {
-    // First check if user exists
-    const user = await this.getUserByEmailOrNull(email, userContext);
-
-    if (!user) {
-      return null;
-    }
-
-    return this.userRepository.getLoginHistoryByEmail(email, userContext);
+    this.logger.log(MKT_USER_LOG_MESSAGES.DELETE_USER_SUCCESS(userId));
   }
 
   // ============================================
@@ -215,11 +152,8 @@ export class MktUserProxyService {
   /**
    * Check if user exists by ID
    */
-  async userExists(
-    userId: string,
-    userContext?: UserContext,
-  ): Promise<boolean> {
-    const user = await this.userRepository.findById(userId, userContext);
+  async userExists(userId: string): Promise<boolean> {
+    const user = await this.userRepository.findById(userId);
 
     return user !== null;
   }
@@ -227,11 +161,8 @@ export class MktUserProxyService {
   /**
    * Check if user exists by email
    */
-  async userExistsByEmail(
-    email: string,
-    userContext?: UserContext,
-  ): Promise<boolean> {
-    const user = await this.userRepository.findByEmail(email, userContext);
+  async userExistsByEmail(email: string): Promise<boolean> {
+    const user = await this.userRepository.findByEmail(email);
 
     return user !== null;
   }
