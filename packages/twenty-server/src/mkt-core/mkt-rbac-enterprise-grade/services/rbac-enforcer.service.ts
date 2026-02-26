@@ -1,14 +1,19 @@
 /**
  * RbacEnforcerService - Permission check service with data filter support
  *
- * Integrates Casbin enforcer with user context and data access policies
+ * Uses template-based permission checks (replacing Casbin) + data access policies
  * to provide comprehensive permission checking and data filtering.
  *
- * REFACTORED để support 2 flow:
- * 1. Legacy flow (RBAC_USE_PERMISSION_CONTEXT=false): Dùng hard-coded switch logic
- * 2. New flow (RBAC_USE_PERMISSION_CONTEXT=true): Dùng PermissionContext + FilterExpressionResolver
+ * Permission check flow:
+ * 1. checkDataClassification() - bypass for PUBLIC/INTERNAL resources
+ * 2. checkTemplatePermission() - template-based allow/deny via mktTemplateResourcePermission
+ * 3. buildDataFilter() - row-level filter based on dataAccessScope
  *
- * @see /docs/RBAC-REFACTOR-PLAN.md
+ * Data filter flow:
+ * 1. Legacy (RBAC_USE_PERMISSION_CONTEXT=false): hard-coded switch on dataAccessScope
+ * 2. New (RBAC_USE_PERMISSION_CONTEXT=true): PermissionContext + FilterExpressionResolver
+ *
+ * @see /docs/rbac-refactor-plan.md
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -20,10 +25,10 @@ import { MKT_RBAC_CONFIG } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs'
 import { DEFAULT_OWNERSHIP_FIELD } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { safeJsonParse } from 'src/mkt-core/utils/json.util';
-import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
 import {
   MktDataAccessPolicyRepository,
   MktPermissionResourceRepository,
+  MktTemplateResourcePermissionRepository,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { MktDataAccessPolicyWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { DATA_CLASSIFICATION } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/permission-template/options.constants';
@@ -43,7 +48,6 @@ import {
   RbacActivePolicy,
   RbacPermissionSummary,
   RbacResourcePermissionData,
-  RbacPermissionEntry,
   RBAC_FILTER_OPERATOR_MAP,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types';
 
@@ -56,20 +60,6 @@ import { DataAccessPolicyService } from './bases/data-access-policy.service';
 @Injectable()
 export class RbacEnforcerService {
   private readonly logger = new Logger(RbacEnforcerService.name);
-
-  // ============================================
-  // STATIC CONSTANTS
-  // ============================================
-
-  /**
-   * Permission entry indices
-   * Format: [subject, object, action, effect?, condition?]
-   */
-  private static readonly PERM_INDEX = {
-    RESOURCE: 1,
-    ACTION: 2,
-    EFFECT: 3,
-  } as const;
 
   // ============================================
   // STATIC HELPER METHODS
@@ -99,24 +89,6 @@ export class RbacEnforcerService {
     startTime: ReturnType<typeof DateTimeUtils.now>,
   ): number {
     return DateTimeUtils.diffInMillis(startTime, DateTimeUtils.now());
-  }
-
-  /**
-   * Parse permission entry để extract resource, action, effect
-   */
-  private static parsePermissionEntry(perm: RbacPermissionEntry): {
-    resource: string;
-    action: string;
-    effect: 'allow' | 'deny';
-  } {
-    return {
-      resource: perm[RbacEnforcerService.PERM_INDEX.RESOURCE],
-      action: perm[RbacEnforcerService.PERM_INDEX.ACTION],
-      effect:
-        perm[RbacEnforcerService.PERM_INDEX.EFFECT] === 'deny'
-          ? 'deny'
-          : 'allow',
-    };
   }
 
   /**
@@ -154,28 +126,6 @@ export class RbacEnforcerService {
   }
 
   /**
-   * Group permissions by resource và phân loại allow/deny
-   */
-  private static groupPermissionsByResource(
-    permissions: RbacPermissionEntry[],
-  ): Map<string, RbacResourcePermissionData> {
-    const resourceMap = new Map<string, RbacResourcePermissionData>();
-
-    for (const perm of permissions) {
-      const { resource, action, effect } =
-        RbacEnforcerService.parsePermissionEntry(perm);
-      const resourceData = RbacEnforcerService.getOrInitResourceData(
-        resourceMap,
-        resource,
-      );
-
-      RbacEnforcerService.addActionToResourceData(resourceData, action, effect);
-    }
-
-    return resourceMap;
-  }
-
-  /**
    * Map filter expression operator sang FilterOperator
    */
   private static mapOperator(op: string): RbacFilterOperator {
@@ -183,10 +133,10 @@ export class RbacEnforcerService {
   }
 
   constructor(
-    private readonly casbinEnforcerService: CasbinEnforcerService,
     private readonly rbacContextService: RbacContextService,
     private readonly dataAccessPolicyRepository: MktDataAccessPolicyRepository,
     private readonly permissionResourceRepository: MktPermissionResourceRepository,
+    private readonly templateResourcePermissionRepository: MktTemplateResourcePermissionRepository,
     // NEW: Services cho PermissionContext flow
     private readonly permissionContextService: PermissionContextService,
     private readonly filterExpressionResolver: FilterExpressionResolverService,
@@ -265,22 +215,21 @@ export class RbacEnforcerService {
         }
       }
 
-      // Kiểm tra quyền qua Casbin
-      const casbinResult = await this.casbinEnforcerService.checkPermission({
-        userId,
+      // Kiểm tra quyền qua template-based permission check (thay Casbin)
+      const templateResult = await this.checkTemplatePermission(
         workspaceId,
+        userContext,
         resource,
         action,
-        attributes: this.buildAttributes(userContext),
-      });
+      );
 
       // Nếu không được phép, trả về kết quả ngay
-      if (!casbinResult.allowed) {
+      if (!templateResult.allowed) {
         return {
           allowed: false,
-          reason: casbinResult.reason ?? '',
+          reason: templateResult.reason,
           latencyMs: RbacEnforcerService.calculateLatency(startTime),
-          cached: casbinResult.cached ?? false,
+          cached: false,
           appliedPolicies: [],
           dataFilter: null,
         };
@@ -294,9 +243,9 @@ export class RbacEnforcerService {
 
       return {
         allowed: true,
-        reason: casbinResult.reason ?? '',
+        reason: templateResult.reason,
         latencyMs: RbacEnforcerService.calculateLatency(startTime),
-        cached: casbinResult.cached ?? false,
+        cached: false,
         appliedPolicies,
         dataFilter,
       };
@@ -392,20 +341,18 @@ export class RbacEnforcerService {
       return null;
     }
 
-    // Lấy roles và permissions song song
-    const [roles, permissions, activePolicies] = await Promise.all([
-      this.casbinEnforcerService.getUserRoles(userId, workspaceId),
-      this.casbinEnforcerService.getUserPermissions(userId, workspaceId),
+    // Lấy template permissions và active policies song song
+    const [templateResourcePerms, activePolicies] = await Promise.all([
+      this.getTemplateResourcePermissions(workspaceId, userContext),
       this.getActivePoliciesForUser(workspaceId, userContext),
     ]);
 
-    // Group permissions by resource
-    const resourceMap =
-      RbacEnforcerService.groupPermissionsByResource(permissions);
-
-    // Build resource permissions với hasFilter check
+    // Build resource permissions từ template data
     const hasFilter = await this.hasDataFilter(userContext);
-    const resources = this.buildResourcePermissions(resourceMap, hasFilter);
+    const resources = this.buildResourcePermissionsFromTemplates(
+      templateResourcePerms,
+      hasFilter,
+    );
 
     return {
       userId,
@@ -414,33 +361,14 @@ export class RbacEnforcerService {
       departmentName: userContext.departmentName,
       hierarchyLevel: userContext.hierarchyLevel,
       levelCode: userContext.levelCode,
-      roles,
-      permissionCount: permissions.length,
+      roles: userContext.templateKeys,
+      permissionCount: resources.reduce(
+        (sum, r) => sum + r.allowedActions.length,
+        0,
+      ),
       resources,
       activePolicies: this.mapPoliciesToActivePolicy(activePolicies),
     };
-  }
-
-  /**
-   * Build resource permissions từ grouped data
-   */
-  private buildResourcePermissions(
-    resourceMap: Map<string, RbacResourcePermissionData>,
-    hasFilter: boolean,
-  ): RbacResourcePermission[] {
-    const resources: RbacResourcePermission[] = [];
-
-    for (const [resourceKey, data] of resourceMap.entries()) {
-      resources.push({
-        resourceKey,
-        resourceName: resourceKey,
-        allowedActions: [...new Set(data.allowed)],
-        deniedActions: [...new Set(data.denied)],
-        hasDataFilter: hasFilter,
-      });
-    }
-
-    return resources;
   }
 
   /**
@@ -562,22 +490,141 @@ export class RbacEnforcerService {
   }
 
   /**
-   * Build attributes for Casbin from user context
+   * Check permission via template-based logic (replaces Casbin)
+   *
+   * Algorithm:
+   * 1. CEO/full-access users (level 1-3): allow all non-TOP_SECRET actions
+   * 2. Load templateResourcePermissions for user's assigned templates
+   * 3. Find permission entry matching the requested resource
+   * 4. Check allowedActions contains action AND deniedActions does not
    */
-  private buildAttributes(userContext: UserContext): Record<string, unknown> {
+  private async checkTemplatePermission(
+    workspaceId: string,
+    userContext: UserContext,
+    resource: string,
+    action: string,
+  ): Promise<{ allowed: boolean; reason: string }> {
+    // Full-access users bypass template check
+    if (userContext.hasFullAccess) {
+      return {
+        allowed: true,
+        reason: 'Full access granted by hierarchy level',
+      };
+    }
+
+    const templateIds = userContext.templates.map((t) => t.id);
+
+    if (templateIds.length === 0) {
+      return {
+        allowed: false,
+        reason: 'No permission templates assigned to user',
+      };
+    }
+
+    const templatePerms =
+      await this.templateResourcePermissionRepository.findActiveByTemplateIds(
+        workspaceId,
+        templateIds,
+      );
+
+    // Find the matching resource permission (resource key match)
+    const matchingPerm = templatePerms.find(
+      (trp) => trp.resource?.resourceKey === resource,
+    );
+
+    if (!matchingPerm) {
+      return {
+        allowed: false,
+        reason: `No permission entry found for resource: ${resource}`,
+      };
+    }
+
+    // Explicit deny takes priority
+    if (
+      matchingPerm.deniedActions &&
+      matchingPerm.deniedActions.includes(action)
+    ) {
+      return {
+        allowed: false,
+        reason: `Action '${action}' is explicitly denied for resource '${resource}'`,
+      };
+    }
+
+    // Check if action is in allowed list
+    if (matchingPerm.allowedActions.includes(action)) {
+      return {
+        allowed: true,
+        reason: `Action '${action}' allowed by template permission for resource '${resource}'`,
+      };
+    }
+
     return {
-      hierarchyLevel: userContext.hierarchyLevel,
-      departmentId: userContext.departmentId,
-      departmentType: userContext.departmentType,
-      organizationLevelId: userContext.organizationLevelId,
-      isManager: userContext.isManager,
-      isSubManager: userContext.isSubManager,
-      hasFullAccess: userContext.hasFullAccess,
-      canManageTeam: userContext.canManageTeam,
-      canViewSubordinates: userContext.canViewSubordinates,
-      dataAccessScope: userContext.dataAccessScope,
-      currentTime: DateTimeUtils.toISO(DateTimeUtils.now()),
+      allowed: false,
+      reason: `Action '${action}' not in allowed actions for resource '${resource}'`,
     };
+  }
+
+  /**
+   * Get all template resource permissions for user's assigned templates
+   */
+  private async getTemplateResourcePermissions(
+    workspaceId: string,
+    userContext: UserContext,
+  ) {
+    const templateIds = userContext.templates.map((t) => t.id);
+
+    if (templateIds.length === 0) {
+      return [];
+    }
+
+    return this.templateResourcePermissionRepository.findActiveByTemplateIds(
+      workspaceId,
+      templateIds,
+    );
+  }
+
+  /**
+   * Build resource permissions từ template resource permission data
+   */
+  private buildResourcePermissionsFromTemplates(
+    templatePerms: Awaited<
+      ReturnType<
+        MktTemplateResourcePermissionRepository['findActiveByTemplateIds']
+      >
+    >,
+    hasFilter: boolean,
+  ): RbacResourcePermission[] {
+    const resourceMap = new Map<string, RbacResourcePermissionData>();
+
+    for (const trp of templatePerms) {
+      const resourceKey = trp.resource?.resourceKey ?? trp.resourceId;
+      const data = RbacEnforcerService.getOrInitResourceData(
+        resourceMap,
+        resourceKey,
+      );
+
+      for (const action of trp.allowedActions ?? []) {
+        RbacEnforcerService.addActionToResourceData(data, action, 'allow');
+      }
+
+      for (const action of trp.deniedActions ?? []) {
+        RbacEnforcerService.addActionToResourceData(data, action, 'deny');
+      }
+    }
+
+    const resources: RbacResourcePermission[] = [];
+
+    for (const [resourceKey, data] of resourceMap.entries()) {
+      resources.push({
+        resourceKey,
+        resourceName: resourceKey,
+        allowedActions: [...new Set(data.allowed)],
+        deniedActions: [...new Set(data.denied)],
+        hasDataFilter: hasFilter,
+      });
+    }
+
+    return resources;
   }
 
   /**
