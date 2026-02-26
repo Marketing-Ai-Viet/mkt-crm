@@ -22,6 +22,8 @@ import {
   ExportFileOutput,
   AsyncExportOutput,
 } from 'src/mkt-core/order/dto/order-export.dto';
+import { ORDER_DATA_SCOPE } from 'src/mkt-core/order/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 // ============================================
 // CONSTANTS
@@ -75,6 +77,7 @@ export class OrderExportResolver {
    * - Support xlsx và csv format
    * - Audit log được tạo sau khi export thành công
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_LIST)
   @Mutation(() => ExportFileOutput, {
     description:
       'Export danh sách đơn hàng theo filter (customerId, salesStaffId). Trả về download URL.',
@@ -142,6 +145,7 @@ export class OrderExportResolver {
    * - Trả về downloadUrl, frontend redirect đến URL này để tải file
    * - URL chứa one-time token, hết hạn sau 5 phút
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_LIST)
   @Mutation(() => ExportFileOutput, {
     description:
       'Export đơn hàng theo danh sách IDs đã chọn. Trả về download URL.',
@@ -209,6 +213,7 @@ export class OrderExportResolver {
    * - File được upload lên storage, client download qua URL
    * - URL có thời hạn 24 giờ
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_LIST)
   @Mutation(() => AsyncExportOutput, {
     description:
       'Request async export cho dataset lớn (> 10K rows). Returns job ID để track progress.',
@@ -272,6 +277,7 @@ export class OrderExportResolver {
    * - Khi completed, downloadUrl sẽ có giá trị
    * - URL có thời hạn, check expiresAt trước khi download
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => AsyncExportOutput, {
     description: 'Check status của async export job',
   })

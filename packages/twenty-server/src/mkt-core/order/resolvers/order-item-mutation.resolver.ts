@@ -3,7 +3,11 @@ import { UseGuards } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { ORDER_GRAPHQL_DESCRIPTIONS } from 'src/mkt-core/order/constants';
+import {
+  ORDER_GRAPHQL_DESCRIPTIONS,
+  ORDER_DATA_SCOPE,
+} from 'src/mkt-core/order/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 import { UpdateOrderItemInputDto } from 'src/mkt-core/order/dto/create-order.input';
 import {
   RecalculateOrderItemsResponseDto,
@@ -30,6 +34,7 @@ export class OrderItemMutationResolver {
    * Update an order item
    * Supports optimistic locking via updatedAt field
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => UpdateOrderItemResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_ITEM,
   })
@@ -51,6 +56,7 @@ export class OrderItemMutationResolver {
    * Recalculate all order items for an order
    * Useful when variant prices change
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => RecalculateOrderItemsResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.RECALCULATE_ORDER_ITEMS,
   })

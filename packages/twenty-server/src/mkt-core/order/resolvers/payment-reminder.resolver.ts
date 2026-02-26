@@ -30,6 +30,8 @@ import {
 } from 'src/mkt-core/order/dto/payment-reminder.dto';
 import { PaymentReminderService } from 'src/mkt-core/order/services/domain/payment-reminder.service';
 import { PaymentReminderContext } from 'src/mkt-core/order/types/payment-reminder.types';
+import { ORDER_DATA_SCOPE } from 'src/mkt-core/order/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * PaymentReminderResolver
@@ -52,6 +54,7 @@ export class PaymentReminderResolver {
    *
    * @throws GraphQLError với error code trong extensions
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => SendPaymentReminderOutput, {
     description: 'Send payment reminder email for a single order',
   })
@@ -91,6 +94,7 @@ export class PaymentReminderResolver {
    * - Filter-based selection
    * - Dry run preview mode
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => SendBulkPaymentRemindersOutput, {
     description:
       'Send payment reminders to multiple orders. Supports dry run preview.',
@@ -151,6 +155,7 @@ export class PaymentReminderResolver {
    * - Not confirmed by sale or accounting
    * - remindersSent < MAX_REMINDERS
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_LIST)
   @Query(() => GetOrdersNeedingReminderOutput, {
     description: 'Get paginated list of orders needing payment reminder',
   })

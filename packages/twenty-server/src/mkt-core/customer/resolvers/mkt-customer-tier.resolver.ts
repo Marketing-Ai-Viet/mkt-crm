@@ -10,6 +10,8 @@ import {
   CustomerUpgradeEligibilityOutput,
 } from 'src/mkt-core/customer/dto/customer-tier.output';
 import { MktCustomerTierService } from 'src/mkt-core/customer/services/tier/mkt-customer-tier.service';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * MktCustomerTierResolver - GraphQL resolver for customer tier operations
@@ -24,6 +26,7 @@ export class MktCustomerTierResolver {
    * Get customer tier statistics
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_AGGREGATION)
   @Query(() => CustomerTierStatisticsOutput, {
     name: 'mktCustomerTierStatistics',
     description: 'Get customer tier distribution and statistics',
@@ -49,6 +52,7 @@ export class MktCustomerTierResolver {
    * Check customer upgrade eligibility
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerUpgradeEligibilityOutput, {
     name: 'mktCustomerUpgradeEligibility',
     description: 'Check if a customer is eligible for tier upgrade',

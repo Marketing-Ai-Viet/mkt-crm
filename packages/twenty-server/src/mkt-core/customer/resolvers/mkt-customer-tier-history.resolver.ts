@@ -15,6 +15,8 @@ import {
 import { MktCustomerTierHistoryWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-tier-history.workspace-entity';
 import { MktCustomerTierHistoryService } from 'src/mkt-core/customer/services/tier/mkt-customer-tier-history.service';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * MktCustomerTierHistoryResolver - GraphQL resolver for tier history queries
@@ -59,6 +61,7 @@ export class MktCustomerTierHistoryResolver {
    * Get tier history for a specific customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => CustomerTierHistoryListOutput, {
     name: 'mktCustomerTierHistoryList',
     description: 'Get tier change history for a specific customer',
@@ -94,6 +97,7 @@ export class MktCustomerTierHistoryResolver {
    * Get the most recent tier change for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerTierHistoryOutput, {
     name: 'mktCustomerLatestTierChange',
     nullable: true,
@@ -123,6 +127,7 @@ export class MktCustomerTierHistoryResolver {
    * Get tier history within a date range
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => [CustomerTierHistoryOutput], {
     name: 'mktTierHistoryByDateRange',
     description: 'Get tier changes within a date range',
@@ -152,6 +157,7 @@ export class MktCustomerTierHistoryResolver {
    * Get tier change statistics for the workspace
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_AGGREGATION)
   @Query(() => TierChangeStatisticsOutput, {
     name: 'mktTierChangeStatistics',
     description: 'Get overall tier change statistics for the workspace',

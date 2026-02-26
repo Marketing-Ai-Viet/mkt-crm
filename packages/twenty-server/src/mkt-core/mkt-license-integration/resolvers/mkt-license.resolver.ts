@@ -33,6 +33,8 @@ import {
   mapLicenseToOutput,
   emptyToUndefined,
 } from 'src/mkt-core/mkt-license-integration/utils';
+import { LICENSE_DATA_SCOPE } from 'src/mkt-core/mkt-license-integration/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 @Resolver()
 @UseGuards(UserAuthGuard)
@@ -41,6 +43,7 @@ export class MktLicenseResolver {
 
   // ==================== QUERIES ====================
 
+  @DataScope(LICENSE_DATA_SCOPE.QUERY_LIST)
   @Query(() => MktPaginatedLicenseOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.LICENSES_QUERY,
   })
@@ -66,6 +69,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => MktLicenseOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.LICENSE_BY_ID_QUERY,
   })
@@ -75,6 +79,7 @@ export class MktLicenseResolver {
     return mapLicenseToOutput(license);
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => MktLicenseOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.LICENSE_BY_KEY_QUERY,
   })
@@ -86,6 +91,7 @@ export class MktLicenseResolver {
     return mapLicenseToOutput(license);
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => MktLicenseValidationOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.VALIDATE_LICENSE_QUERY,
   })
@@ -106,6 +112,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.QUERY_AGGREGATION)
   @Query(() => MktLicenseAnalyticsOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.LICENSE_ANALYTICS_QUERY,
   })
@@ -130,6 +137,7 @@ export class MktLicenseResolver {
 
   // ==================== MUTATIONS ====================
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => MktLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.CREATE_LICENSE_MUTATION,
   })
@@ -160,6 +168,7 @@ export class MktLicenseResolver {
    * - Reuses existing trial if found
    * - Creates new trial license if not found
    */
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => MktTrialLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.CREATE_TRIAL_LICENSE_MUTATION,
   })
@@ -196,6 +205,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_UPDATE)
   @Mutation(() => MktLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.UPDATE_LICENSE_MUTATION,
   })
@@ -222,6 +232,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_DELETE)
   @Mutation(() => MktLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.DELETE_LICENSE_MUTATION,
   })
@@ -236,6 +247,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_STATE_CHANGE)
   @Mutation(() => MktLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.ACTIVATE_LICENSE_MUTATION,
   })
@@ -251,6 +263,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_STATE_CHANGE)
   @Mutation(() => MktLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.REVOKE_LICENSE_MUTATION,
   })
@@ -268,6 +281,7 @@ export class MktLicenseResolver {
 
   // ==================== BULK MUTATIONS ====================
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_BULK_CREATE)
   @Mutation(() => MktBulkLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.BULK_CREATE_LICENSE_MUTATION,
   })
@@ -293,6 +307,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_BULK_UPDATE)
   @Mutation(() => MktBulkLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.BULK_UPDATE_LICENSE_MUTATION,
   })
@@ -324,6 +339,7 @@ export class MktLicenseResolver {
     };
   }
 
+  @DataScope(LICENSE_DATA_SCOPE.MUTATION_BULK_DELETE)
   @Mutation(() => MktBulkLicenseActionOutput, {
     description: MKT_LICENSE_GRAPHQL_DESCRIPTIONS.BULK_DELETE_LICENSE_MUTATION,
   })

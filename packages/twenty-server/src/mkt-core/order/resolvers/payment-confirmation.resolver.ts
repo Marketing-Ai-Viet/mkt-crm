@@ -30,6 +30,8 @@ import {
   ActorInfoOutput,
 } from 'src/mkt-core/order/dto/payment-confirmation.dto';
 import { ConfirmationActorMetadata } from 'src/mkt-core/order/types/payment-confirmation.types';
+import { ORDER_DATA_SCOPE } from 'src/mkt-core/order/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * PaymentConfirmationResolver
@@ -45,6 +47,7 @@ export class PaymentConfirmationResolver {
    * Sale confirms payment
    * Protects license from being auto-locked
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM_PAYMENT)
   @Mutation(() => ConfirmationResultOutput, {
     description:
       'Confirm payment by sale staff. Protects license from auto-lock.',
@@ -74,6 +77,7 @@ export class PaymentConfirmationResolver {
    * Accounting confirms payment
    * May complete the order if payment is PAID
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM_PAYMENT)
   @Mutation(() => ConfirmationResultOutput, {
     description:
       'Confirm payment by accounting. May complete the order if payment is PAID.',
@@ -104,6 +108,7 @@ export class PaymentConfirmationResolver {
    *
    * WARNING: Revoking may cause order to be auto-locked if past deadline!
    */
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM_PAYMENT)
   @Mutation(() => ConfirmationResultOutput, {
     description:
       'Revoke payment confirmation. WARNING: May cause auto-lock if past deadline!',
@@ -132,6 +137,7 @@ export class PaymentConfirmationResolver {
   /**
    * Get current confirmation status
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => OrderConfirmationStatusOutput, {
     description: 'Get current confirmation status of an order',
   })
@@ -164,6 +170,7 @@ export class PaymentConfirmationResolver {
   /**
    * Get confirmation history
    */
+  @DataScope(ORDER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => ConfirmationHistoryOutput, {
     description: 'Get confirmation history of an order',
   })

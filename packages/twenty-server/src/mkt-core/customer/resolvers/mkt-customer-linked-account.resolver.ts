@@ -16,6 +16,8 @@ import {
 } from 'src/mkt-core/customer/dto/customer-account.output';
 import { MktCustomerAccountService } from 'src/mkt-core/customer/services/account/mkt-customer-account.service';
 import { LinkedAccount, AccountProvider } from 'src/mkt-core/customer/types';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * MktCustomerLinkedAccountResolver - GraphQL resolver for customer linked account CRUD
@@ -40,6 +42,7 @@ export class MktCustomerLinkedAccountResolver {
    * Get all linked accounts for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => CustomerAccountsOutput, {
     name: 'mktCustomerAccounts',
     description: 'Get all linked accounts for a customer',
@@ -74,6 +77,7 @@ export class MktCustomerLinkedAccountResolver {
    * Get primary account for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => LinkedAccountOutput, {
     name: 'mktCustomerPrimaryAccount',
     description: 'Get primary linked account for a customer',
@@ -102,6 +106,7 @@ export class MktCustomerLinkedAccountResolver {
    * Find customer by external account ID
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => String, {
     name: 'mktFindCustomerByExternalId',
     description: 'Find customer ID by external account ID',
@@ -125,6 +130,7 @@ export class MktCustomerLinkedAccountResolver {
    * Link an external account to a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => LinkAccountOutput, {
     name: 'mktLinkAccount',
     description: 'Link an external account to a customer',
@@ -159,6 +165,7 @@ export class MktCustomerLinkedAccountResolver {
    * Unlink an account from a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_DELETE)
   @Mutation(() => UnlinkAccountOutput, {
     name: 'mktUnlinkAccount',
     description: 'Unlink an account from a customer',
@@ -194,6 +201,7 @@ export class MktCustomerLinkedAccountResolver {
    * Set an account as primary for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_UPDATE)
   @Mutation(() => UnlinkAccountOutput, {
     name: 'mktSetPrimaryAccount',
     description: 'Set an account as the primary account for a customer',

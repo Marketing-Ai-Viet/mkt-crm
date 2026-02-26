@@ -18,6 +18,8 @@ import {
 import { MktCustomerNoteWorkspaceEntity } from 'src/mkt-core/customer/objects/mkt-customer-note.workspace-entity';
 import { MktCustomerNoteService } from 'src/mkt-core/customer/services/note/mkt-customer-note.service';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * MktCustomerNoteResolver - GraphQL resolver for customer note CRUD operations
@@ -72,6 +74,7 @@ export class MktCustomerNoteResolver {
    * Get paginated notes for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => CustomerNoteListOutput, {
     name: 'customerNoteList',
     description: 'Get paginated notes for a customer',
@@ -110,6 +113,7 @@ export class MktCustomerNoteResolver {
    * Get a single note by ID
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerNoteOutput, {
     name: 'customerNoteById',
     nullable: true,
@@ -137,6 +141,7 @@ export class MktCustomerNoteResolver {
    * Get latest note for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerNoteOutput, {
     name: 'customerNoteLatest',
     nullable: true,
@@ -166,6 +171,7 @@ export class MktCustomerNoteResolver {
    * Get note statistics for a customer
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_AGGREGATION)
   @Query(() => CustomerNoteStatisticsOutput, {
     name: 'customerNoteStats',
     description: 'Get note statistics for a customer',
@@ -200,6 +206,7 @@ export class MktCustomerNoteResolver {
    * Create a new customer note
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => CustomerNoteOutput, {
     name: 'customerNoteCreate',
     description: 'Create a new customer note',
@@ -225,6 +232,7 @@ export class MktCustomerNoteResolver {
    * Update an existing customer note
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_UPDATE)
   @Mutation(() => CustomerNoteOutput, {
     name: 'customerNoteUpdate',
     description: 'Update an existing customer note',
@@ -260,6 +268,7 @@ export class MktCustomerNoteResolver {
    * Delete a customer note
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_DELETE)
   @Mutation(() => DeleteCustomerNoteOutput, {
     name: 'customerNoteDelete',
     description: 'Delete a customer note',

@@ -9,7 +9,7 @@ import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import {
   ORDER_GRAPHQL_DESCRIPTIONS,
-  // ORDER_DATA_SCOPE,
+  ORDER_DATA_SCOPE,
 } from 'src/mkt-core/order/constants';
 import {
   CreateOrderWithItemsInputDto,
@@ -35,16 +35,7 @@ import { OrderInputMapper } from 'src/mkt-core/order/mappers';
 import { OrderOrchestrationService } from 'src/mkt-core/order/services/application';
 import { OrderStatusService } from 'src/mkt-core/order/services/core';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-// TEMPORARILY DISABLED: RBAC decorators for workflow testing
-// import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
-// import {
-//   RequireOrderCreateAccess,
-//   RequireOrderUpdateAccess,
-//   RequireOrderConfirmAccess,
-//   RequireOrderPaymentAccess,
-//   RequireOrderRefundAccess,
-//   RequireOrderUnlockAccess,
-// } from 'src/mkt-core/order/decorators/require-order-access.decorator';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * OrderMutationResolver - GraphQL resolver for order mutations
@@ -79,10 +70,8 @@ export class OrderMutationResolver {
    * Create a new order with items using the saga pattern
    *
    * Authorization: SALES department + Manager + Executives
-   * TODO: Re-enable @RequireOrderCreateAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderCreateAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_CREATE)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => CreateOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CREATE_ORDER_WITH_ITEMS,
   })
@@ -104,10 +93,8 @@ export class OrderMutationResolver {
    * Update order status using state machine validation
    *
    * Authorization: SALES + ACCOUNTING department + Manager + Executives
-   * TODO: Re-enable @RequireOrderUpdateAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderUpdateAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => UpdateOrderStatusResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UPDATE_ORDER_STATUS,
   })
@@ -132,10 +119,8 @@ export class OrderMutationResolver {
    * Refund an order (full or partial)
    *
    * Authorization: ACCOUNTING department + Executives only
-   * TODO: Re-enable @RequireOrderRefundAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderRefundAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_REFUND)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_REFUND)
   @Mutation(() => RefundOrderResponseDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.REFUND_ORDER,
   })
@@ -157,10 +142,8 @@ export class OrderMutationResolver {
    * Publish a draft order - converts DRAFT to PENDING_PAYMENT
    *
    * Authorization: SALES department + Manager + Executives
-   * TODO: Re-enable @RequireOrderUpdateAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderUpdateAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UPDATE_STATUS)
   @Mutation(() => PublishDraftOrderResponseDto, {
     description:
       'Publish a draft order to create payment and start the payment flow',
@@ -195,10 +178,8 @@ export class OrderMutationResolver {
    * Confirm order with license creation (New Payment Flow)
    *
    * Authorization: SALES department + Executives
-   * TODO: Re-enable @RequireOrderConfirmAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderConfirmAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM)
   @Mutation(() => ConfirmOrderWithLicenseOutputDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_ORDER_WITH_LICENSE,
   })
@@ -223,10 +204,8 @@ export class OrderMutationResolver {
    * Confirm payment for an order (New Payment Flow)
    *
    * Authorization: SALES (bank transfer) + ACCOUNTING (cash) + Executives
-   * TODO: Re-enable @RequireOrderPaymentAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderPaymentAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM_PAYMENT)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_CONFIRM_PAYMENT)
   @Mutation(() => PaymentConfirmOutputDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.CONFIRM_PAYMENT,
   })
@@ -257,10 +236,8 @@ export class OrderMutationResolver {
    * Unlock order after late payment (New Payment Flow)
    *
    * Authorization: ACCOUNTING department only + Executives
-   * TODO: Re-enable @RequireOrderUnlockAccess() and @DataScope after RBAC testing
    */
-  // @RequireOrderUnlockAccess()
-  // @DataScope(ORDER_DATA_SCOPE.MUTATION_UNLOCK)
+  @DataScope(ORDER_DATA_SCOPE.MUTATION_UNLOCK)
   @Mutation(() => UnlockOrderOutputDto, {
     description: ORDER_GRAPHQL_DESCRIPTIONS.UNLOCK_ORDER,
   })

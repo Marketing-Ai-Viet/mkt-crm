@@ -44,6 +44,8 @@ import {
 } from 'src/mkt-core/customer/dto/purchase-history.dto';
 import { MktCustomerPurchaseHistoryService } from 'src/mkt-core/customer/services/core/mkt-customer-purchase-history.service';
 import { MktCustomerService } from 'src/mkt-core/customer/services/mkt-customer.service';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 @Resolver(() => CustomerOutput)
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
@@ -60,6 +62,7 @@ export class MktCustomerResolver {
   /**
    * Get customer by ID with customerNotes
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerOutput, {
     description: 'Get customer by ID',
     nullable: true,
@@ -83,6 +86,7 @@ export class MktCustomerResolver {
   /**
    * Get customer by customer code with customerNotes
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerOutput, {
     description: 'Get customer by customer code',
     nullable: true,
@@ -106,6 +110,7 @@ export class MktCustomerResolver {
   /**
    * Get customer by email with customerNotes
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => CustomerOutput, {
     description: 'Get customer by email',
     nullable: true,
@@ -129,6 +134,7 @@ export class MktCustomerResolver {
   /**
    * Get all customers with pagination and customerNotes
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => CustomerListOutput, {
     description: 'Get all customers with pagination',
   })
@@ -155,6 +161,7 @@ export class MktCustomerResolver {
   /**
    * Get customers by status with customerNotes
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => CustomerListOutput, {
     description: 'Get customers by status',
   })
@@ -182,6 +189,7 @@ export class MktCustomerResolver {
   /**
    * Get customers by tier with customerNotes
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => CustomerListOutput, {
     description: 'Get customers by tier',
   })
@@ -209,6 +217,7 @@ export class MktCustomerResolver {
   /**
    * Get customer purchase history with pagination and filters
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_PURCHASE_HISTORY)
   @Query(() => PurchaseHistoryOutput, {
     description: 'Get customer purchase history with pagination and filters',
   })
@@ -250,6 +259,7 @@ export class MktCustomerResolver {
   /**
    * Create a new customer
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => CreateCustomerResponseDto, {
     description: 'Create a new customer',
   })
@@ -282,6 +292,7 @@ export class MktCustomerResolver {
   /**
    * Update an existing customer
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_UPDATE)
   @Mutation(() => UpdateCustomerResponseDto, {
     description: 'Update an existing customer',
   })
@@ -312,6 +323,7 @@ export class MktCustomerResolver {
   /**
    * Soft delete a customer
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_DELETE)
   @Mutation(() => DeleteCustomerResponseDto, {
     description: 'Soft delete a customer',
   })
@@ -344,6 +356,7 @@ export class MktCustomerResolver {
   /**
    * Restore a soft deleted customer
    */
+  @DataScope(CUSTOMER_DATA_SCOPE.MUTATION_RESTORE)
   @Mutation(() => RestoreCustomerResponseDto, {
     description: 'Restore a soft deleted customer',
   })

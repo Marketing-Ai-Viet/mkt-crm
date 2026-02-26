@@ -42,3 +42,6 @@ export * from './linked-account.constants';
 
 // Customer note constants
 export * from './mkt-customer-note.constants';
+
+// DataScope constants
+export * from './customer-data-scope.constants';

@@ -12,6 +12,8 @@ import {
   UserLicensesResponseDto,
 } from 'src/mkt-core/customer/dto/get-user-licenses.dto';
 import { MktCustomerLicenseService } from 'src/mkt-core/customer/services/license/mkt-customer-license.service';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * MktCustomerLicenseResolver - GraphQL resolver for customer license operations
@@ -27,6 +29,7 @@ export class MktCustomerLicenseResolver {
   ) {}
 
   @UseGuards(UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_LIST)
   @Query(() => UserLicensesResponseDto, {
     name: 'mktGetMyLicenses',
     description: 'Get all licenses for the currently logged-in user',
@@ -42,6 +45,7 @@ export class MktCustomerLicenseResolver {
   }
 
   @UseGuards(WorkspaceAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_SINGLE)
   @Query(() => UserLicenseDto, {
     name: 'mktGetLicenseByKey',
     nullable: true,

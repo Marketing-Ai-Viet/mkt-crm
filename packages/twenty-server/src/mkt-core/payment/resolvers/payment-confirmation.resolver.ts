@@ -16,6 +16,8 @@ import {
   PaymentConfirmationService,
   PaymentRefundService,
 } from 'src/mkt-core/payment/services/core';
+import { PAYMENT_DATA_SCOPE } from 'src/mkt-core/payment/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * PaymentConfirmationResolver - GraphQL resolver for payment confirmation mutations
@@ -36,6 +38,7 @@ export class PaymentConfirmationResolver {
    * Manually confirm a pending payment
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_CONFIRM)
   @Mutation(() => PaymentActionResponseDto, {
     description: 'Manually confirm a pending payment',
   })
@@ -64,6 +67,7 @@ export class PaymentConfirmationResolver {
    * Reject a pending payment
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_REJECT)
   @Mutation(() => PaymentActionResponseDto, {
     description: 'Reject a pending payment with reason',
   })
@@ -92,6 +96,7 @@ export class PaymentConfirmationResolver {
    * Refund a confirmed payment (full or partial)
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_REFUND)
   @Mutation(() => PaymentActionResponseDto, {
     description: 'Refund a confirmed payment (full or partial)',
   })

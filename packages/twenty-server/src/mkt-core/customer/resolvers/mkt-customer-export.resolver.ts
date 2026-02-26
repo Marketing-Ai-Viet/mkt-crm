@@ -17,6 +17,8 @@ import { CUSTOMER_MESSAGES } from 'src/mkt-core/customer/messages';
 import { MktCustomerExportService } from 'src/mkt-core/customer/services/export/mkt-customer-export.service';
 import { CustomerExportFilter } from 'src/mkt-core/customer/types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
+import { CUSTOMER_DATA_SCOPE } from 'src/mkt-core/customer/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * MktCustomerExportResolver - GraphQL resolver for customer export operations
@@ -38,6 +40,7 @@ export class MktCustomerExportResolver {
    * Replaces GET /api/mkt/customer/export-csv
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_EXPORT)
   @Query(() => CustomerExportOutput, {
     name: 'mktCustomerExportCsv',
     description: 'Export customers to CSV format',
@@ -73,6 +76,7 @@ export class MktCustomerExportResolver {
    * Replaces GET /api/mkt/customer/export-statistics
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(CUSTOMER_DATA_SCOPE.QUERY_AGGREGATION)
   @Query(() => CustomerExportStatisticsOutput, {
     name: 'mktCustomerExportStatistics',
     description: 'Get customer export statistics without exporting',

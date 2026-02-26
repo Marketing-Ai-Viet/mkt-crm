@@ -15,6 +15,8 @@ import {
   UpdatePaymentResponseDto,
 } from 'src/mkt-core/payment/dto/payment.output';
 import { MktPaymentService } from 'src/mkt-core/payment/services/core';
+import { PAYMENT_DATA_SCOPE } from 'src/mkt-core/payment/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * PaymentMutationResolver - GraphQL resolver for payment mutations
@@ -37,6 +39,7 @@ export class PaymentMutationResolver {
    * Create a new payment
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_CREATE)
   @Mutation(() => CreatePaymentResponseDto, {
     description: 'Create a new payment with auto-prepared data from order',
   })
@@ -52,6 +55,7 @@ export class PaymentMutationResolver {
    * Update a payment
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_UPDATE)
   @Mutation(() => UpdatePaymentResponseDto, {
     description: 'Update a payment with QR code regeneration logic',
   })

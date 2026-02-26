@@ -22,6 +22,8 @@ import {
 } from 'src/mkt-core/payment/dto/va.output';
 import { CreateVAUseCase } from 'src/mkt-core/payment/application/use-cases';
 import { MktVirtualAccountRepository } from 'src/mkt-core/payment/repositories';
+import { PAYMENT_DATA_SCOPE } from 'src/mkt-core/payment/constants';
+import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 
 /**
  * VAMutationResolver
@@ -48,6 +50,7 @@ export class VAMutationResolver {
    * (unless forceCreate is true).
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_VA_CREATE)
   @Mutation(() => CreateVAOutputDto, {
     description: 'Create a new Virtual Account for an order',
   })
@@ -91,6 +94,7 @@ export class VAMutationResolver {
    * Use this to manually deactivate a VA before it expires.
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_VA_DEACTIVATE)
   @Mutation(() => DeactivateVAOutputDto, {
     description: 'Deactivate a Virtual Account',
   })
@@ -137,6 +141,7 @@ export class VAMutationResolver {
    * Deactivate VA by ID (simplified mutation)
    */
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  @DataScope(PAYMENT_DATA_SCOPE.MUTATION_VA_DEACTIVATE)
   @Mutation(() => Boolean, {
     description: 'Deactivate a Virtual Account by ID',
   })
