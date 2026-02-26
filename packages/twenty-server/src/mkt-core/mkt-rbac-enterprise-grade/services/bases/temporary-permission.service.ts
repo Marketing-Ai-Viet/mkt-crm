@@ -11,7 +11,7 @@ import { MktTemporaryPermissionRepository } from 'src/mkt-core/mkt-rbac-enterpri
 import { MktTemporaryPermissionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { RbacCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache.service';
 import { RbacContextService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-context.service';
-import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
+import { RbacEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-enforcer.service';
 import { MktWorkspaceMemberRepository } from 'src/mkt-core/workspace-member/repositories/mkt-workspace-member.repository';
 import { RBAC_ACTION } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
@@ -43,7 +43,7 @@ export class TemporaryPermissionService {
     private readonly permissionRepository: MktTemporaryPermissionRepository,
     private readonly cacheService: RbacCacheService,
     private readonly rbacContextService: RbacContextService,
-    private readonly casbinEnforcerService: CasbinEnforcerService,
+    private readonly rbacEnforcerService: RbacEnforcerService,
     private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,
   ) {}
 
@@ -788,12 +788,12 @@ export class TemporaryPermissionService {
       actions && actions.length > 0 ? actions : [RBAC_ACTION.READ];
 
     for (const action of actionsToCheck) {
-      const result = await this.casbinEnforcerService.checkPermission({
-        userId: granterMember.userId,
+      const result = await this.rbacEnforcerService.checkPermission(
+        granterMember.userId,
         workspaceId,
-        resource: objectName,
+        objectName,
         action,
-      });
+      );
 
       if (!result.allowed) {
         this.logger.warn(

@@ -7,7 +7,6 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
-import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { RBAC_COMMANDS } from 'src/mkt-core/mkt-rbac-enterprise-grade/commands';
 import {
   ENTERPRISE_RBAC_CONFIG,
@@ -37,14 +36,13 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
 /**
  * Enterprise RBAC Module
  *
- * Provides comprehensive role-based access control powered by Casbin:
+ * Provides template-based role access control (Casbin removed):
  * - Multi-tenant authorization with workspace isolation
- * - Role-based and attribute-based access control
- * - Policy sync from permission templates
- * - Real-time policy updates via PostgreSQL NOTIFY
- * - Permission caching for performance
- * - Audit logging and metrics
- * - CLI commands for management
+ * - Template-based permission checks via mktTemplateResourcePermission
+ * - Hierarchy-based data scope filtering
+ * - Department authorization guard (@RequireDepartment)
+ * - Row-level data scope interceptor (@DataScope)
+ * - Permission caching via RbacCacheService
  *
  * Configuration:
  * Uses ENTERPRISE_RBAC_CONFIG_TOKEN (Symbol) for type-safe injection:
@@ -54,13 +52,6 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
  *   private readonly config: EnterpriseRbacConfigType,
  * ) {}
  * ```
- *
- * Usage:
- * ```typescript
- * // In resolver
- * @RequirePermission('mktCustomer', 'read')
- * async mktCustomers(): Promise<MktCustomer[]> { ... }
- * ```
  */
 @Global()
 @Module({
@@ -69,7 +60,6 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     CacheStorageModule,
     WorkspaceCacheStorageModule, // For JwtAuthGuard (WorkspaceCacheStorageService)
     TokenModule, // For JwtAuthGuard (AccessTokenService)
-    CasbinModule,
     MktDepartmentModule,
     MktOrganizationLevelModule,
     UserManagementModule,
@@ -155,9 +145,6 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     ...RBAC_COMMANDS,
   ],
   exports: [
-    // Export Casbin module (guards, decorators, services)
-    CasbinModule,
-
     // Re-export department module (needed by DepartmentAuthorizationGuard, HierarchicalAccessEvaluatorService)
     MktDepartmentModule,
 

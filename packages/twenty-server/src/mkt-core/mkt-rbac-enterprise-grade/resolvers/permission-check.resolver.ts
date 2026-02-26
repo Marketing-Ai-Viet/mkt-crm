@@ -6,7 +6,8 @@ import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
-import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
+import { RbacEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-enforcer.service';
+import { RbacCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache.service';
 import {
   CheckPermissionInput,
   BatchPermissionCheckInput,
@@ -28,12 +29,13 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * Permission Check Resolver
  *
  * GraphQL resolver for permission checking operations.
+ * Uses template-based RBAC (CasbinEnforcerService removed).
  *
  * Queries:
  * - rbacCheckPermission: Check single permission
  * - rbacCheckPermissionBatch: Check multiple permissions
  * - rbacUserPermissions: Get user's effective permissions
- * - rbacUserRoles: Get user's assigned roles
+ * - rbacUserRoles: Get user's assigned template keys (roles)
  * - rbacUserPermissionSummary: Get comprehensive user permission summary
  */
 @Resolver()
@@ -42,7 +44,8 @@ export class PermissionCheckResolver {
   private readonly logger = new Logger(PermissionCheckResolver.name);
 
   constructor(
-    private readonly enforcerService: CasbinEnforcerService,
+    private readonly rbacEnforcerService: RbacEnforcerService,
+    private readonly rbacCacheService: RbacCacheService,
     private readonly userTemplateRepository: MktUserPermissionTemplateRepository,
     private readonly temporaryPermissionRepository: MktTemporaryPermissionRepository,
   ) {}
@@ -61,16 +64,14 @@ export class PermissionCheckResolver {
   ): Promise<PermissionResultOutput> {
     const startTime = DateTimeUtils.now();
 
-    // Use provided userId or fallback to current workspaceMemberId
     const targetUserId = input.userId ?? workspaceMemberId;
 
-    const result = await this.enforcerService.checkPermission({
-      userId: targetUserId,
-      workspaceId: workspace.id,
-      resource: input.resourceType,
-      action: input.action,
-      attributes: input.context as Record<string, unknown> | undefined,
-    });
+    const result = await this.rbacEnforcerService.checkPermission(
+      targetUserId,
+      workspace.id,
+      input.resourceType,
+      input.action,
+    );
 
     const executionTimeMs = DateTimeUtils.diffInMillis(
       startTime,
@@ -79,10 +80,10 @@ export class PermissionCheckResolver {
 
     return {
       granted: result.allowed,
-      source: 'CASBIN',
+      source: 'TEMPLATE',
       reason: result.reason,
       executionTimeMs,
-      fromCache: false,
+      fromCache: result.cached,
     };
   }
 
@@ -103,44 +104,35 @@ export class PermissionCheckResolver {
     const checks = input.checks.map((check) => ({
       resource: check.resourceType,
       action: check.action,
-      resourceId: check.resourceId,
-      attributes: check.context as Record<string, unknown> | undefined,
     }));
 
-    const batchResult = await this.enforcerService.checkPermissionBatch({
-      userId: workspaceMemberId,
-      workspaceId: workspace.id,
+    const batchResults = await this.rbacEnforcerService.checkPermissions(
+      workspaceMemberId,
+      workspace.id,
       checks,
-    });
+    );
 
-    const results: PermissionResultOutput[] = [];
-
-    for (const [key, allowed] of batchResult.results.entries()) {
-      results.push({
-        granted: allowed,
-        source: 'CASBIN',
-        reason: allowed ? 'Permission granted' : 'Permission denied',
-        metadata: { key },
-      });
-    }
+    const results: PermissionResultOutput[] = batchResults.map((r, index) => ({
+      granted: r.allowed,
+      source: 'TEMPLATE',
+      reason: r.reason,
+      metadata: { key: `${checks[index].resource}:${checks[index].action}` },
+    }));
 
     const totalTimeMs = DateTimeUtils.diffInMillis(
       startTime,
       DateTimeUtils.now(),
     );
 
-    return {
-      results,
-      totalTimeMs,
-    };
+    return { results, totalTimeMs };
   }
 
   /**
-   * Get user's roles in current workspace
+   * Get user's assigned template keys (replaces Casbin roles)
    */
   @Query(() => [String], {
     name: 'rbacUserRoles',
-    description: 'Get all roles assigned to the user',
+    description: 'Get all permission template keys assigned to the user',
   })
   async getUserRoles(
     @Args('workspaceMemberId', { type: () => String, nullable: true })
@@ -150,11 +142,16 @@ export class PermissionCheckResolver {
   ): Promise<string[]> {
     const targetId = targetWorkspaceMemberId ?? workspaceMemberId;
 
-    return this.enforcerService.getUserRoles(targetId, workspace.id);
+    const summary = await this.rbacEnforcerService.getUserPermissionSummary(
+      targetId,
+      workspace.id,
+    );
+
+    return summary?.roles ?? [];
   }
 
   /**
-   * Get user's effective permissions
+   * Get user's effective permissions as string arrays
    */
   @Query(() => [[String]], {
     name: 'rbacUserPermissions',
@@ -168,7 +165,28 @@ export class PermissionCheckResolver {
   ): Promise<string[][]> {
     const targetId = targetWorkspaceMemberId ?? workspaceMemberId;
 
-    return this.enforcerService.getUserPermissions(targetId, workspace.id);
+    const summary = await this.rbacEnforcerService.getUserPermissionSummary(
+      targetId,
+      workspace.id,
+    );
+
+    if (!summary) {
+      return [];
+    }
+
+    // Convert resources to [[resource, action, 'allow'], ...] format
+    const permissions: string[][] = [];
+
+    for (const resource of summary.resources) {
+      for (const action of resource.allowedActions) {
+        permissions.push([resource.resourceKey, action, 'allow']);
+      }
+      for (const action of resource.deniedActions) {
+        permissions.push([resource.resourceKey, action, 'deny']);
+      }
+    }
+
+    return permissions;
   }
 
   /**
@@ -232,11 +250,11 @@ export class PermissionCheckResolver {
   }
 
   /**
-   * Check if user has specific role
+   * Check if user has specific role (template key)
    */
   @Query(() => Boolean, {
     name: 'rbacHasRole',
-    description: 'Check if user has a specific role',
+    description: 'Check if user has a specific permission template key',
   })
   async hasRole(
     @Args('roleName') roleName: string,
@@ -247,22 +265,27 @@ export class PermissionCheckResolver {
   ): Promise<boolean> {
     const targetId = targetWorkspaceMemberId ?? workspaceMemberId;
 
-    return this.enforcerService.hasRole(targetId, workspace.id, roleName);
+    const summary = await this.rbacEnforcerService.getUserPermissionSummary(
+      targetId,
+      workspace.id,
+    );
+
+    return summary?.roles.includes(roleName) ?? false;
   }
 
   /**
-   * Reload policies for current workspace (admin only)
+   * Invalidate RBAC context cache for current workspace
    */
   @Mutation(() => Boolean, {
     name: 'rbacReloadPolicies',
-    description: 'Reload policies for current workspace (admin operation)',
+    description: 'Invalidate RBAC context cache for current workspace',
   })
   async reloadPolicies(
     @AuthWorkspace() workspace: Workspace,
   ): Promise<boolean> {
-    await this.enforcerService.reloadPolicies(workspace.id);
+    await this.rbacCacheService.invalidateWorkspace(workspace.id);
 
-    this.logger.log(`Policies reloaded for workspace: ${workspace.id}`);
+    this.logger.log(`RBAC cache invalidated for workspace: ${workspace.id}`);
 
     return true;
   }
@@ -277,7 +300,7 @@ export class PermissionCheckResolver {
   async invalidateCache(
     @AuthWorkspace() workspace: Workspace,
   ): Promise<boolean> {
-    await this.enforcerService.invalidateCache(workspace.id);
+    await this.rbacCacheService.invalidateWorkspace(workspace.id);
 
     this.logger.log(`Cache invalidated for workspace: ${workspace.id}`);
 
@@ -286,9 +309,6 @@ export class PermissionCheckResolver {
 
   // ==================== Private Methods ====================
 
-  /**
-   * Build action string from permission flags
-   */
   private buildActionString(
     canRead: boolean,
     canUpdate: boolean,
@@ -296,15 +316,9 @@ export class PermissionCheckResolver {
   ): string {
     const actions: string[] = [];
 
-    if (canRead) {
-      actions.push('read');
-    }
-    if (canUpdate) {
-      actions.push('update');
-    }
-    if (canDelete) {
-      actions.push('delete');
-    }
+    if (canRead) actions.push('read');
+    if (canUpdate) actions.push('update');
+    if (canDelete) actions.push('delete');
 
     return actions.length > 0 ? actions.join(',') : 'none';
   }

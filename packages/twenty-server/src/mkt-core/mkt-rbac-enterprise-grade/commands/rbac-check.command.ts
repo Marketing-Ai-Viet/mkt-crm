@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
 
-import { CasbinEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/services/casbin-enforcer.service';
+import { RbacEnforcerService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-enforcer.service';
 
 /**
  * Options for rbac-seeder:check command
@@ -18,20 +18,15 @@ type CheckCommandOptions = {
 /**
  * RBAC Check Command
  *
- * Check permission for user on resource/action.
+ * Check permission for user on resource/action using template-based RBAC.
  *
  * Usage:
  * ```bash
- * # Check permission
  * npx nx run twenty-server:command rbac-seeder:check -- \
  *   --user=550e8400-e29b-41d4-a716-446655440000 \
  *   --workspace=123e4567-e89b-12d3-a456-426614174000 \
  *   --resource=mktCustomer \
- *   --action=read
- *
- * # Verbose mode
- * npx nx run twenty-server:command rbac-seeder:check -- \
- *   --user=... --workspace=... --resource=... --action=... --verbose
+ *   --action=READ
  * ```
  */
 @Command({
@@ -41,7 +36,7 @@ type CheckCommandOptions = {
 export class RbacCheckCommand extends CommandRunner {
   private readonly logger = new Logger(RbacCheckCommand.name);
 
-  constructor(private readonly enforcerService: CasbinEnforcerService) {
+  constructor(private readonly rbacEnforcerService: RbacEnforcerService) {
     super();
   }
 
@@ -49,7 +44,6 @@ export class RbacCheckCommand extends CommandRunner {
     _passedParams: string[],
     options?: CheckCommandOptions,
   ): Promise<void> {
-    // Validate required options
     if (
       !options?.user ||
       !options?.workspace ||
@@ -59,22 +53,18 @@ export class RbacCheckCommand extends CommandRunner {
       this.logger.error(
         'All options required: --user, --workspace, --resource, --action',
       );
-      this.logger.log('');
-      this.logger.log('Example:');
       this.logger.log(
-        '  rbac-seeder:check --user=550e8400-... --workspace=123e4567-... --resource=mktCustomer --action=read',
+        'Example: rbac-seeder:check --user=550e8400-... --workspace=123e4567-... --resource=mktCustomer --action=READ',
       );
 
       return;
     }
 
-    const verbose = options.verbose ?? false;
-
-    // Clean up prefixes if provided
     const userId = options.user.replace('user:', '');
     const workspaceId = options.workspace.replace('ws:', '');
     const resource = options.resource;
     const action = options.action;
+    const verbose = options.verbose ?? false;
 
     this.logger.log('');
     this.logger.log('=== PERMISSION CHECK ===');
@@ -85,18 +75,13 @@ export class RbacCheckCommand extends CommandRunner {
     this.logger.log('');
 
     try {
-      const startTime = Date.now();
-
-      const result = await this.enforcerService.checkPermission({
+      const result = await this.rbacEnforcerService.checkPermission(
         userId,
         workspaceId,
         resource,
         action,
-      });
+      );
 
-      const latencyMs = Date.now() - startTime;
-
-      // Display result
       this.logger.log('=== RESULT ===');
       this.logger.log(`Decision: ${result.allowed ? '✅ ALLOW' : '❌ DENY'}`);
       this.logger.log(`Latency:  ${result.latencyMs}ms`);
@@ -105,72 +90,46 @@ export class RbacCheckCommand extends CommandRunner {
         this.logger.log(`Reason:   ${result.reason}`);
       }
 
-      if (result.cached) {
-        this.logger.log(`Cached:   ${result.cached}`);
-      }
-
-      // Verbose mode - get more info
       if (verbose) {
         this.logger.log('');
         this.logger.log('=== VERBOSE INFO ===');
 
-        // Get user roles
-        const roles = await this.enforcerService.getUserRoles(
+        const summary = await this.rbacEnforcerService.getUserPermissionSummary(
           userId,
           workspaceId,
         );
 
-        this.logger.log(
-          `User roles: ${roles.length > 0 ? roles.join(', ') : '(none)'}`,
-        );
+        if (summary) {
+          this.logger.log(
+            `Templates (roles): ${summary.roles.length > 0 ? summary.roles.join(', ') : '(none)'}`,
+          );
+          this.logger.log(`Hierarchy level: ${summary.hierarchyLevel}`);
+          this.logger.log(`Department: ${summary.departmentName ?? '(none)'}`);
+          this.logger.log(`Total allowed actions: ${summary.permissionCount}`);
 
-        // Get user permissions
-        const permissions = await this.enforcerService.getUserPermissions(
-          userId,
-          workspaceId,
-        );
-
-        this.logger.log(`Total permissions: ${permissions.length}`);
-
-        if (permissions.length > 0 && permissions.length <= 20) {
-          this.logger.log('Permissions:');
-          for (const perm of permissions) {
-            this.logger.log(`  ${JSON.stringify(perm)}`);
+          if (summary.resources.length > 0) {
+            this.logger.log('Resources:');
+            for (const r of summary.resources) {
+              this.logger.log(
+                `  ${r.resourceKey}: allowed=[${r.allowedActions.join(',')}] denied=[${r.deniedActions.join(',')}]`,
+              );
+            }
           }
-        } else if (permissions.length > 20) {
-          this.logger.log('First 20 permissions:');
-          for (const perm of permissions.slice(0, 20)) {
-            this.logger.log(`  ${JSON.stringify(perm)}`);
-          }
-          this.logger.log(`  ... and ${permissions.length - 20} more`);
         }
-
-        // Get enforcer stats
-        const stats = this.enforcerService.getStats();
-
-        this.logger.log('');
-        this.logger.log('Enforcer stats:');
-        this.logger.log(`  Cached enforcers: ${stats.cachedEnforcers}`);
-        this.logger.log(`  Watcher connected: ${stats.watcherConnected}`);
       }
 
       this.logger.log('');
-      this.logger.log(`Total time: ${latencyMs}ms`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
       this.logger.error(`Check failed: ${errorMessage}`);
-
-      if (error instanceof Error && error.stack) {
-        this.logger.debug(error.stack);
-      }
     }
   }
 
   @Option({
     flags: '-u, --user <user>',
-    description: 'User ID (UUID format, with or without "user:" prefix)',
+    description: 'User ID (UUID format)',
   })
   parseUser(val: string): string {
     return val;
@@ -178,7 +137,7 @@ export class RbacCheckCommand extends CommandRunner {
 
   @Option({
     flags: '-w, --workspace <workspace>',
-    description: 'Workspace ID (UUID format, with or without "ws:" prefix)',
+    description: 'Workspace ID (UUID format)',
   })
   parseWorkspace(val: string): string {
     return val;
@@ -186,7 +145,7 @@ export class RbacCheckCommand extends CommandRunner {
 
   @Option({
     flags: '-r, --resource <resource>',
-    description: 'Resource name (e.g., mktCustomer, mktOrder, mktInvoice)',
+    description: 'Resource name (e.g., mktCustomer, mktOrder)',
   })
   parseResource(val: string): string {
     return val;
@@ -194,7 +153,7 @@ export class RbacCheckCommand extends CommandRunner {
 
   @Option({
     flags: '-a, --action <action>',
-    description: 'Action name (e.g., read, create, update, delete)',
+    description: 'Action name (e.g., READ, CREATE, UPDATE, DELETE)',
   })
   parseAction(val: string): string {
     return val;
@@ -202,7 +161,7 @@ export class RbacCheckCommand extends CommandRunner {
 
   @Option({
     flags: '-v, --verbose',
-    description: 'Show detailed information (user roles, permissions)',
+    description: 'Show detailed information (templates, hierarchy, resources)',
   })
   parseVerbose(): boolean {
     return true;
