@@ -492,7 +492,7 @@ export type DepartmentTeamContext = {
 
 /**
  * Enhanced Permission Context
- * Main context object used throughout the Casbin-based authorization process
+ * Main context object used throughout the template-based authorization process
  */
 export type EnhancedPermissionContext = {
   // Basic validation data
@@ -593,7 +593,7 @@ export type EnhancedPermissionContext = {
 
 /**
  * Enhanced Permission Result
- * Contains comprehensive result data from Casbin-based authorization
+ * Contains comprehensive result data from template-based authorization
  */
 export type EnhancedPermissionResult = {
   // Final result

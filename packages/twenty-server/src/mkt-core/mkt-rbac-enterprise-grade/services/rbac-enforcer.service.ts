@@ -1,7 +1,7 @@
 /**
  * RbacEnforcerService - Permission check service with data filter support
  *
- * Uses template-based permission checks (replacing Casbin) + data access policies
+ * Uses template-based permission checks + data access policies
  * to provide comprehensive permission checking and data filtering.
  *
  * Permission check flow:
@@ -170,7 +170,7 @@ export class RbacEnforcerService {
         );
       }
 
-      // Kiểm tra Data Classification trước Casbin
+      // Kiểm tra Data Classification trước permission check
       const classificationResult = await this.checkDataClassification(
         workspaceId,
         resource,
@@ -197,7 +197,7 @@ export class RbacEnforcerService {
         };
       }
 
-      // Nếu TOP_SECRET yêu cầu minimum priority, kiểm tra trước khi vào Casbin
+      // Nếu TOP_SECRET yêu cầu minimum priority, kiểm tra hierarchy level
       if (classificationResult.minimumTemplatePriority) {
         const userHierarchyLevel = userContext.hierarchyLevel ?? 11;
 
@@ -215,7 +215,7 @@ export class RbacEnforcerService {
         }
       }
 
-      // Kiểm tra quyền qua template-based permission check (thay Casbin)
+      // Kiểm tra quyền qua template-based permission check
       const templateResult = await this.checkTemplatePermission(
         workspaceId,
         userContext,
@@ -410,10 +410,10 @@ export class RbacEnforcerService {
   // ============================================
 
   /**
-   * Kiểm tra Data Classification trước khi vào Casbin
+   * Kiểm tra Data Classification trước khi vào permission check
    *
-   * - PUBLIC + READ → bypass Casbin, cho phép ngay
-   * - INTERNAL + READ → bypass Casbin, cho phép ngay
+   * - PUBLIC + READ → bypass, cho phép ngay
+   * - INTERNAL + READ → bypass, cho phép ngay
    * - CONFIDENTIAL → đi tiếp pipeline bình thường
    * - RESTRICTED → đi tiếp pipeline + bắt buộc audit log
    * - TOP_SECRET → đi tiếp pipeline + kiểm tra minimum priority
@@ -490,7 +490,7 @@ export class RbacEnforcerService {
   }
 
   /**
-   * Check permission via template-based logic (replaces Casbin)
+   * Check permission via template-based logic
    *
    * Algorithm:
    * 1. CEO/full-access users (level 1-3): allow all non-TOP_SECRET actions

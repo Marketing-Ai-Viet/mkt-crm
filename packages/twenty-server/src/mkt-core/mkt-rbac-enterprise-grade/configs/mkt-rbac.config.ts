@@ -34,7 +34,7 @@ const DEFAULT_AUDIT_CLEANUP_CRON = '0 0 2 * * *'; // Every day at 2 AM
 const DEFAULT_TEMPORARY_PERMISSION_CLEANUP_CRON = '0 */15 * * * *'; // Every 15 min
 
 // Phase 2: Feature flags cho PermissionContext flow
-const DEFAULT_USE_PERMISSION_CONTEXT = false; // Gradual rollout - default off
+const DEFAULT_USE_PERMISSION_CONTEXT = true; // Enabled - PermissionContext flow active
 const DEFAULT_FALLBACK_ON_ERROR = true; // Fallback to legacy if new flow fails
 const DEFAULT_DEBUG_FILTER_RESOLUTION = false; // Log chi tiết filter resolution
 
@@ -86,7 +86,7 @@ const cronEnvSchema = (defaultValue: string) =>
  * - RBAC_TEMPORARY_PERMISSION_CLEANUP_CRON: Temporary permission cleanup cron (default: every 15 min)
  *
  * Phase 2 - PermissionContext Feature Flags:
- * - RBAC_USE_PERMISSION_CONTEXT: Enable new PermissionContext flow (default: false)
+ * - RBAC_USE_PERMISSION_CONTEXT: Enable new PermissionContext flow (default: true)
  * - RBAC_FALLBACK_ON_ERROR: Fallback to legacy if new flow fails (default: true)
  * - RBAC_DEBUG_FILTER_RESOLUTION: Log chi tiết filter resolution (default: false)
  */
@@ -186,7 +186,7 @@ export const MKT_RBAC_CONFIG = {
   // ============================================
 
   /**
-   * Enable new PermissionContext flow (default: false)
+   * Enable new PermissionContext flow (default: true)
    * - false: Dùng hard-coded switch logic (legacy)
    * - true: Dùng PermissionContext + FilterExpressionResolver (new)
    */
@@ -217,14 +217,10 @@ export type MktRbacConfigType = typeof MKT_RBAC_CONFIG;
  * Feature flags and settings for the Enterprise RBAC module.
  *
  * Environment variables:
- * - RBAC_ENABLE_CASBIN_AUTHORIZATION: Enable Casbin authorization (default: true)
  * - RBAC_ENABLE_METRICS: Enable RBAC metrics (default: true)
  * - RBAC_DEBUG_MODE: Enable debug mode (default: false)
  */
 const enterpriseRbacConfigSchema = z.object({
-  /** Enable Casbin-based authorization */
-  enableCasbinAuthorization: z.boolean().default(true),
-
   /** Enable audit logging */
   enableAuditLogging: z.boolean().default(true),
 
@@ -243,8 +239,6 @@ const enterpriseRbacConfigSchema = z.object({
  */
 const buildEnterpriseRbacConfig = () => {
   const envConfig = {
-    enableCasbinAuthorization:
-      process.env.RBAC_ENABLE_CASBIN_AUTHORIZATION !== 'false',
     enableAuditLogging: process.env.RBAC_ENABLE_AUDIT_LOGGING !== 'false',
     enableMetrics: process.env.RBAC_ENABLE_METRICS !== 'false',
     enableCaching: process.env.RBAC_ENABLE_CACHING !== 'false',

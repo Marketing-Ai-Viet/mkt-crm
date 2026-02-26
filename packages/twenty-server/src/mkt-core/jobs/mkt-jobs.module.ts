@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 
-// import { CasbinModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/casbin.module';
 import { CustomerModule } from 'src/mkt-core/customer/customer.module';
 // import { MktInvoiceModule } from 'src/mkt-core/invoice/mkt-invoice.module';
 import { MktOrderModule } from 'src/mkt-core/order/mkt-order.module';
@@ -41,10 +40,6 @@ import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
  * - PromotionUsageCleanupJob: Dọn dẹp usage records cũ
  * - PromotionCacheWarmupJob: Làm nóng cache promotions
  *
- * @CasbinModule (cronQueue)
- * - CacheWarmerJob: Làm nóng cache RBAC policies
- * - CrossRegionReloadJob: Sync policies cross-region
- *
  * Architecture:
  * - Worker imports JobsModule
  * - JobsModule imports MktJobsModule
@@ -70,9 +65,6 @@ import { MktPaymentModule } from 'src/mkt-core/payment/mkt-payment.module';
 
     // Promotion expiration jobs (cronQueue)
     // MktPromotionModule,
-
-    // RBAC cache warmer jobs (cronQueue)
-    // CasbinModule,
   ],
 })
 export class MktJobsModule {}

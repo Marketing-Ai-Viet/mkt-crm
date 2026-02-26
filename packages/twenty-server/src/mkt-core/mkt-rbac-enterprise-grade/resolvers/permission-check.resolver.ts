@@ -29,7 +29,7 @@ import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
  * Permission Check Resolver
  *
  * GraphQL resolver for permission checking operations.
- * Uses template-based RBAC (CasbinEnforcerService removed).
+ * Uses template-based RBAC.
  *
  * Queries:
  * - rbacCheckPermission: Check single permission
@@ -128,7 +128,7 @@ export class PermissionCheckResolver {
   }
 
   /**
-   * Get user's assigned template keys (replaces Casbin roles)
+   * Get user's assigned template keys
    */
   @Query(() => [String], {
     name: 'rbacUserRoles',

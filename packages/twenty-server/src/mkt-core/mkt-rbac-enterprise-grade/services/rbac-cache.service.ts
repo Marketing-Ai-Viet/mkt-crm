@@ -4,10 +4,10 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import {
-  CASBIN_CACHE_KEYS,
-  CASBIN_CACHE_TTL,
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL,
 } from 'src/mkt-core/infrastructure/redis/constants/rbac';
-import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
+import { RBAC_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   CacheStats,
@@ -54,7 +54,7 @@ export class RbacCacheService {
 
   /** Default cache TTLs in milliseconds */
   private static readonly DEFAULT_CACHE_TTL = {
-    USER_CONTEXT: CASBIN_CACHE_TTL.USER_ROLES * 1000, // 15 minutes
+    USER_CONTEXT: RBAC_CACHE_TTL.USER_ROLES * 1000, // 15 minutes
     PERMISSION_CHECK: 5 * 60 * 1000, // 5 minutes
     PERMISSION_SUMMARY: 5 * 60 * 1000, // 5 minutes
     DATA_FILTER: 5 * 60 * 1000, // 5 minutes
@@ -67,7 +67,7 @@ export class RbacCacheService {
   // PROPERTIES
   // ============================================
 
-  private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:RbacCache`);
+  private readonly logger = new Logger(`${RBAC_LOG_CONTEXT}:RbacCache`);
 
   // In-memory cache for hot data
   private readonly contextCache = new Map<
@@ -116,7 +116,7 @@ export class RbacCacheService {
     userId: string,
     workspaceId: string,
   ): Promise<UserContext | null> {
-    const cacheKey = CASBIN_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
+    const cacheKey = RBAC_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
 
     // Check local cache first
     const localResult = this.getFromLocalCache(this.contextCache, cacheKey);
@@ -163,7 +163,7 @@ export class RbacCacheService {
     context: UserContext,
     ttl?: number,
   ): Promise<void> {
-    const cacheKey = CASBIN_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
+    const cacheKey = RBAC_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
     const cacheTtl = ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.USER_CONTEXT;
 
     // Set Redis cache (with null safety)
@@ -198,7 +198,7 @@ export class RbacCacheService {
     resource: string,
     action: string,
   ): Promise<RbacCheckPermissionResult | null> {
-    const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_CHECK(
+    const cacheKey = RBAC_CACHE_KEYS.PERMISSION_CHECK(
       workspaceId,
       userId,
       resource,
@@ -256,7 +256,7 @@ export class RbacCacheService {
     result: RbacCheckPermissionResult,
     ttl?: number,
   ): Promise<void> {
-    const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_CHECK(
+    const cacheKey = RBAC_CACHE_KEYS.PERMISSION_CHECK(
       workspaceId,
       userId,
       resource,
@@ -288,7 +288,7 @@ export class RbacCacheService {
     userId: string,
     workspaceId: string,
   ): Promise<RbacPermissionSummary | null> {
-    const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
+    const cacheKey = RBAC_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
 
     // Check local cache first
     const localResult = this.getFromLocalCache(this.summaryCache, cacheKey);
@@ -335,7 +335,7 @@ export class RbacCacheService {
     summary: RbacPermissionSummary,
     ttl?: number,
   ): Promise<void> {
-    const cacheKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
+    const cacheKey = RBAC_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
     const cacheTtl =
       ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.PERMISSION_SUMMARY;
 
@@ -369,11 +369,7 @@ export class RbacCacheService {
     workspaceId: string,
     resource: string,
   ): Promise<RbacFilterCondition | null> {
-    const cacheKey = CASBIN_CACHE_KEYS.DATA_FILTER(
-      workspaceId,
-      userId,
-      resource,
-    );
+    const cacheKey = RBAC_CACHE_KEYS.DATA_FILTER(workspaceId, userId, resource);
 
     // Check local cache first
     const localResult = this.getFromLocalCache(this.filterCache, cacheKey);
@@ -423,11 +419,7 @@ export class RbacCacheService {
     filter: RbacFilterCondition,
     ttl?: number,
   ): Promise<void> {
-    const cacheKey = CASBIN_CACHE_KEYS.DATA_FILTER(
-      workspaceId,
-      userId,
-      resource,
-    );
+    const cacheKey = RBAC_CACHE_KEYS.DATA_FILTER(workspaceId, userId, resource);
     const cacheTtl = ttl ?? RbacCacheService.DEFAULT_CACHE_TTL.DATA_FILTER;
 
     // Set Redis cache (with null safety)
@@ -471,11 +463,8 @@ export class RbacCacheService {
     );
 
     // Clear Redis caches using pattern (with null safety)
-    const userContextKey = CASBIN_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
-    const summaryKey = CASBIN_CACHE_KEYS.PERMISSION_SUMMARY(
-      workspaceId,
-      userId,
-    );
+    const userContextKey = RBAC_CACHE_KEYS.USER_CONTEXT(workspaceId, userId);
+    const summaryKey = RBAC_CACHE_KEYS.PERMISSION_SUMMARY(workspaceId, userId);
 
     const promises: Promise<unknown>[] = [];
 

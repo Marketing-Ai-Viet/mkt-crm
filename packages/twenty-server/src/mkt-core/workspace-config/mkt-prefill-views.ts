@@ -52,11 +52,6 @@ import { mktPermissionTemplatesAllView } from 'src/mkt-core/seeder/rbac-seeder/m
 import { mktTemplateResourcePermissionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/mkt-template-resource-permission-all.view';
 import { mktTemplateSystemActionsAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/mkt-template-system-action-all.view';
 import { mktUserPermissionTemplatesAllView } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-all.view';
-// Casbin seeder view imports
-import { mktCasbinRulesAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/mkt-casbin-rule-all.view';
-import { mktPolicyVersionsAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/mkt-policy-version-all.view';
-import { mktPolicyChangeRequestsAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/mkt-policy-change-request-all.view';
-import { mktPolicyApprovalsAllView } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/mkt-policy-approval-all.view';
 
 export const MKT_ALL_VIEWS = [
   // core views
@@ -127,9 +122,4 @@ export const MKT_ALL_VIEWS = [
   mktTemplateResourcePermissionsAllView,
   mktTemplateSystemActionsAllView,
   mktUserPermissionTemplatesAllView,
-  // casbin views
-  mktPolicyVersionsAllView,
-  mktCasbinRulesAllView,
-  mktPolicyChangeRequestsAllView,
-  mktPolicyApprovalsAllView,
 ];

@@ -27,9 +27,3 @@ export * from './audit';
 
 // Config workspace entities
 export * from './config';
-
-// Casbin RBAC Entities (from casbin module)
-export { MktCasbinRuleWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-casbin-rule.workspace-entity';
-export { MktPolicyVersionWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-version.workspace-entity';
-export { MktPolicyChangeRequestWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-change-request.workspace-entity';
-export { MktPolicyApprovalWorkspaceEntity } from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/entities/mkt-policy-approval.workspace-entity';

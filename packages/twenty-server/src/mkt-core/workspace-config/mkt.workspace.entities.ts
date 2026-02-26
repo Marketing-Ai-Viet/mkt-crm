@@ -30,10 +30,6 @@ import {
   MktTemplateAccessLimitationWorkspaceEntity,
   MktPermissionContextWorkspaceEntity,
   MktPermissionPriorityConfigWorkspaceEntity,
-  MktCasbinRuleWorkspaceEntity,
-  MktPolicyVersionWorkspaceEntity,
-  MktPolicyChangeRequestWorkspaceEntity,
-  MktPolicyApprovalWorkspaceEntity,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/workspace-entities';
 import { MktDepartmentAncestryWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-ancestry.workspace-entity';
 import { MktDepartmentHierarchyWorkspaceEntity } from 'src/mkt-core/mkt-department/objects/mkt-department-hierarchy.workspace-entity';
@@ -151,9 +147,4 @@ export const MKT_FINAL_WORKSPACE_ENTITIES = [
   MktTemplateAccessLimitationWorkspaceEntity,
   MktPermissionContextWorkspaceEntity,
   MktPermissionPriorityConfigWorkspaceEntity,
-  // Casbin RBAC
-  MktCasbinRuleWorkspaceEntity,
-  MktPolicyVersionWorkspaceEntity,
-  MktPolicyChangeRequestWorkspaceEntity,
-  MktPolicyApprovalWorkspaceEntity,
 ];

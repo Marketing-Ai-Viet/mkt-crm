@@ -52,11 +52,6 @@ import { MktTemplateSystemActionDataSeedDevWorkspaceCommand } from 'src/mkt-core
 import { MktUserPermissionTemplateDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seed-dev-workspace.command';
 // Dashboard seeder command
 import { SeedDashboardModuleCommand } from 'src/mkt-core/seeder/mkt-dashboard/mkt-dashboard-data-seed-dev-workspace.command';
-// Casbin seeder command imports
-import { MktCasbinRuleDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/mkt-casbin-rule-data-seed-dev-workspace.command';
-import { MktPolicyVersionDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/mkt-policy-version-data-seed-dev-workspace.command';
-import { MktPolicyChangeRequestDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/mkt-policy-change-request-data-seed-dev-workspace.command';
-import { MktPolicyApprovalDataSeedDevWorkspaceCommand } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/mkt-policy-approval-data-seed-dev-workspace.command';
 
 export const MKT_DATABASE_COMMAND_MODULES = [
   // core commands
@@ -127,11 +122,6 @@ export const MKT_DATABASE_COMMAND_MODULES = [
   MktTemplateResourcePermissionDataSeedDevWorkspaceCommand,
   MktTemplateSystemActionDataSeedDevWorkspaceCommand,
   MktUserPermissionTemplateDataSeedDevWorkspaceCommand,
-  // casbin commands (order matters: policy version -> casbin rules -> change requests -> approvals)
-  MktPolicyVersionDataSeedDevWorkspaceCommand,
-  MktCasbinRuleDataSeedDevWorkspaceCommand,
-  MktPolicyChangeRequestDataSeedDevWorkspaceCommand,
-  MktPolicyApprovalDataSeedDevWorkspaceCommand,
   // dashboard commands
   SeedDashboardModuleCommand,
 ];

@@ -4,11 +4,10 @@
  * Types cho phân quyền dựa trên department, hierarchy level, và assigned templates.
  *
  * Permission Resolution Flow:
- * 1. User Override (highest priority) - mktUserPermissionOverride
- * 2. Assigned Templates - mktUserPermissionTemplate
- * 3. Executive Level (hierarchyLevel <= 3)
- * 4. Manager Level (hierarchyLevel <= 7)
- * 5. Department Membership (departmentCode)
+ * 1. Assigned Templates - mktUserPermissionTemplate
+ * 2. Executive Level (hierarchyLevel <= 3)
+ * 3. Manager Level (hierarchyLevel <= 7)
+ * 4. Department Membership (departmentCode)
  */
 
 import { DepartmentCode } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
@@ -26,7 +25,6 @@ export const DEPARTMENT_AUTH_KEY = 'department_authorization';
  * Permission source types for tracking which source granted access
  */
 export type PermissionSourceType =
-  | 'user_override'
   | 'template'
   | 'executive'
   | 'manager'

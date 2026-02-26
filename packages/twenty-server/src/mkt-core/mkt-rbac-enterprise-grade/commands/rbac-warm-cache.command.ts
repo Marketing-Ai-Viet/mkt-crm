@@ -16,7 +16,7 @@ type WarmCacheCommandOptions = {
  * RBAC Warm Cache Command
  *
  * Invalidates the RBAC context/permission cache so fresh data is resolved
- * on the next request. Replaces the previous Casbin enforcer cache warming.
+ * on the next request.
  *
  * Usage:
  * ```bash

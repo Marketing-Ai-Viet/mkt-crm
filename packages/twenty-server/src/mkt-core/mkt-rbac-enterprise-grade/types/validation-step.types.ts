@@ -2,7 +2,7 @@
  * Validation Step Types for Enterprise RBAC
  *
  * Data types for permission validation results and supporting information.
- * Note: The 15-step orchestrator pattern has been removed in favor of Casbin-based authorization.
+ * Note: The 15-step orchestrator pattern has been removed in favor of template-based authorization.
  */
 
 import { EnhancedPermissionContext } from './enhanced-permission-context.type';

@@ -129,7 +129,7 @@ export type RbacResourcePermissionData = {
 };
 
 /**
- * Permission entry format từ Casbin - [subject, object, action, effect?, condition?]
+ * Permission entry format - [subject, object, action, effect?, condition?]
  */
 export type RbacPermissionEntry = string[];
 

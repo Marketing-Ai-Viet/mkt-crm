@@ -3,7 +3,7 @@
  *
  * Types for data classification check in RBAC pipeline.
  * Used by RbacEnforcerService to determine if a resource can bypass
- * Casbin permission check based on its classification level.
+ * permission check based on its classification level.
  */
 
 import { FilterConditions } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/data-access-policy.types';
@@ -11,11 +11,11 @@ import { FilterConditions } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/d
 /**
  * Result of data classification check in the RBAC pipeline.
  *
- * - bypass=true: Skip Casbin check, use `allowed` directly
- * - bypass=false: Continue normal Casbin pipeline
+ * - bypass=true: Skip detailed permission check, use `allowed` directly
+ * - bypass=false: Continue normal RBAC pipeline
  */
 export type ClassificationCheckResult = {
-  /** Whether to bypass Casbin permission check */
+  /** Whether to bypass detailed permission check */
   bypass: boolean;
   /** Permission result when bypass=true */
   allowed?: boolean;

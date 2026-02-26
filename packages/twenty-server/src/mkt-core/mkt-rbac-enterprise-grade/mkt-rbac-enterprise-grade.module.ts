@@ -12,10 +12,7 @@ import {
   ENTERPRISE_RBAC_CONFIG,
   ENTERPRISE_RBAC_CONFIG_TOKEN,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
-import {
-  RBAC_REPOSITORIES,
-  MktUserPermissionOverrideRepository,
-} from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
+import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
 import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
 import {
@@ -36,7 +33,7 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
 /**
  * Enterprise RBAC Module
  *
- * Provides template-based role access control (Casbin removed):
+ * Provides template-based role access control:
  * - Multi-tenant authorization with workspace isolation
  * - Template-based permission checks via mktTemplateResourcePermission
  * - Hierarchy-based data scope filtering
@@ -93,21 +90,18 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
       useFactory: (
         reflector: Reflector,
         rbacContextService: RbacContextService,
-        overrideRepository: MktUserPermissionOverrideRepository,
         cacheService: RbacCacheService,
         departmentRepository: MktDepartmentRepository,
       ) =>
         new DepartmentAuthorizationGuard(
           reflector,
           rbacContextService,
-          overrideRepository,
           cacheService,
           departmentRepository,
         ),
       inject: [
         Reflector,
         RbacContextService,
-        MktUserPermissionOverrideRepository,
         RbacCacheService,
         MktDepartmentRepository,
       ],

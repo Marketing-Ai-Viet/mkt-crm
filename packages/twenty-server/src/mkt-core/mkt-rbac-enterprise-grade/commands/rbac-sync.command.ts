@@ -5,15 +5,15 @@ import { Command, CommandRunner, Option } from 'nest-commander';
 /**
  * RBAC Sync Command (deprecated)
  *
- * Previously synced permission templates to Casbin policies.
- * With Casbin removed, template-based permissions are resolved directly
+ * Previously synced permission templates to external policy engine.
+ * Template-based permissions are now resolved directly
  * from mktTemplateResourcePermission at runtime — no sync needed.
  *
  * This command is kept for backward compatibility but is now a no-op.
  */
 @Command({
   name: 'rbac-seeder:sync',
-  description: '[Deprecated] Policy sync to Casbin is no longer needed',
+  description: '[Deprecated] Policy sync is no longer needed',
 })
 export class RbacSyncCommand extends CommandRunner {
   private readonly logger = new Logger(RbacSyncCommand.name);
@@ -23,7 +23,7 @@ export class RbacSyncCommand extends CommandRunner {
     _options?: { workspace?: string; dryRun?: boolean; force?: boolean },
   ): Promise<void> {
     this.logger.warn(
-      'rbac-seeder:sync is deprecated. Casbin has been removed — template-based permissions are resolved directly at runtime.',
+      'rbac-seeder:sync is deprecated. Template-based permissions are resolved directly at runtime.',
     );
     this.logger.log(
       'To verify permissions, use: rbac-seeder:check --user=<id> --workspace=<id> --resource=<resource> --action=<action>',

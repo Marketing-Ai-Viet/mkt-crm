@@ -1,9 +1,9 @@
 import { VALIDATION_STEPS } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
 
 /**
- * Cache key patterns for RBAC system
+ * Cache key patterns for RBAC validation steps
  */
-export const RBAC_CACHE_KEYS = {
+export const RBAC_STEP_CACHE_KEYS = {
   PERMISSION_RESULT: 'rbac-seeder:permission:result',
   USER_CONTEXT: 'rbac-seeder:user:context',
   TEMPLATE_PERMISSIONS: 'rbac-seeder:template:permissions',
@@ -46,7 +46,7 @@ export const HIERARCHY_CACHE_KEYS = {
 /**
  * TTL configurations for different cache types (in milliseconds)
  */
-export const RBAC_CACHE_TTL = {
+export const RBAC_STEP_CACHE_TTL = {
   SHORT: 5 * 60 * 1000, // 5 minutes - for dynamic data
   MEDIUM: 30 * 60 * 1000, // 30 minutes - for user contexts
   LONG: 2 * 60 * 60 * 1000, // 2 hours - for permission templates

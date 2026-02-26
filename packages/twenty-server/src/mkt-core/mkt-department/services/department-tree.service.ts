@@ -5,10 +5,10 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { DepartmentService } from 'src/mkt-core/mkt-department/services/department.service';
 import {
-  CASBIN_CACHE_KEYS,
-  CASBIN_CACHE_TTL_MS,
+  RBAC_CACHE_KEYS,
+  RBAC_CACHE_TTL_MS,
 } from 'src/mkt-core/infrastructure/redis/constants/rbac';
-import { CASBIN_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
+import { RBAC_LOG_CONTEXT } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/messages';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import {
   LocalCacheEntry,
@@ -20,8 +20,8 @@ import {
 /**
  * Cache TTL constants - imported from centralized location
  */
-const TREE_CACHE_TTL_MS = CASBIN_CACHE_TTL_MS.DEPT_TREE;
-const LOCAL_CACHE_TTL_MS = CASBIN_CACHE_TTL_MS.LOCAL_CACHE;
+const TREE_CACHE_TTL_MS = RBAC_CACHE_TTL_MS.DEPT_TREE;
+const LOCAL_CACHE_TTL_MS = RBAC_CACHE_TTL_MS.LOCAL_CACHE;
 
 /**
  * Department Tree Service for RBAC
@@ -45,7 +45,7 @@ const LOCAL_CACHE_TTL_MS = CASBIN_CACHE_TTL_MS.LOCAL_CACHE;
  */
 @Injectable()
 export class DepartmentTreeService {
-  private readonly logger = new Logger(`${CASBIN_LOG_CONTEXT}:DepartmentTree`);
+  private readonly logger = new Logger(`${RBAC_LOG_CONTEXT}:DepartmentTree`);
 
   // Local caches for hot data
   private readonly ancestorCache = new Map<string, LocalCacheEntry<string[]>>();
@@ -79,7 +79,7 @@ export class DepartmentTreeService {
     departmentId: string,
     workspaceId: string,
   ): Promise<string[]> {
-    const cacheKey = CASBIN_CACHE_KEYS.DEPT_ANCESTORS(departmentId);
+    const cacheKey = RBAC_CACHE_KEYS.DEPT_ANCESTORS(departmentId);
 
     // Check local cache
     const localResult = this.getFromLocalCache(this.ancestorCache, cacheKey);
@@ -140,7 +140,7 @@ export class DepartmentTreeService {
     departmentId: string,
     workspaceId: string,
   ): Promise<string[]> {
-    const cacheKey = CASBIN_CACHE_KEYS.DEPT_DESCENDANTS(departmentId);
+    const cacheKey = RBAC_CACHE_KEYS.DEPT_DESCENDANTS(departmentId);
 
     // Check local cache
     const localResult = this.getFromLocalCache(this.descendantCache, cacheKey);
@@ -224,7 +224,7 @@ export class DepartmentTreeService {
   async getDepartmentTree(
     workspaceId: string,
   ): Promise<WorkspaceDepartmentTree> {
-    const cacheKey = CASBIN_CACHE_KEYS.DEPT_TREE(workspaceId);
+    const cacheKey = RBAC_CACHE_KEYS.DEPT_TREE(workspaceId);
 
     // Check local cache
     const localResult = this.getFromLocalCache(this.treeCache, cacheKey);
@@ -277,8 +277,8 @@ export class DepartmentTreeService {
    * Invalidate cache for a specific department
    */
   async invalidateDepartment(departmentId: string): Promise<void> {
-    const ancestorKey = CASBIN_CACHE_KEYS.DEPT_ANCESTORS(departmentId);
-    const descendantKey = CASBIN_CACHE_KEYS.DEPT_DESCENDANTS(departmentId);
+    const ancestorKey = RBAC_CACHE_KEYS.DEPT_ANCESTORS(departmentId);
+    const descendantKey = RBAC_CACHE_KEYS.DEPT_DESCENDANTS(departmentId);
 
     // Clear local caches
     this.ancestorCache.delete(ancestorKey);
@@ -297,7 +297,7 @@ export class DepartmentTreeService {
    * Invalidate tree cache for workspace
    */
   async invalidateWorkspaceTree(workspaceId: string): Promise<void> {
-    const treeKey = CASBIN_CACHE_KEYS.DEPT_TREE(workspaceId);
+    const treeKey = RBAC_CACHE_KEYS.DEPT_TREE(workspaceId);
 
     // Clear local cache
     this.treeCache.delete(treeKey);

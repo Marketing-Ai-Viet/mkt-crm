@@ -1,9 +1,8 @@
 /**
- * Casbin Cache Key Patterns and TTL Configurations
+ * RBAC Cache Key Patterns and TTL Configurations
  *
- * Centralized constants for Casbin RBAC caching in Redis.
- * Used by: CasbinEnforcerService, PolicyVersionRepository, RbacCacheService,
- * DepartmentTreeService, RoleInheritanceCacheService
+ * Centralized constants for RBAC caching in Redis.
+ * Used by: RbacCacheService, DepartmentTreeService
  */
 
 // ============================================
@@ -11,11 +10,11 @@
 // ============================================
 
 /**
- * Cache key patterns for Casbin RBAC
+ * Cache key patterns for RBAC
  *
  * Consistent key naming convention: rbac:{domain}:{identifier}
  */
-export const CASBIN_CACHE_KEYS = {
+export const RBAC_CACHE_KEYS = {
   // ===== Enforcer Cache =====
   /**
    * Cache key for enforcer per workspace
@@ -163,7 +162,7 @@ export const CASBIN_CACHE_KEYS = {
  * - Dynamic data (permissions, contexts): 5min - 15min
  * - Locks: 5min (auto-expire safety)
  */
-export const CASBIN_CACHE_TTL = {
+export const RBAC_CACHE_TTL = {
   // ===== Enforcer (1 hour) =====
   // Enforcer instance is expensive to create, cache longer
   ENFORCER: 3600,
@@ -226,10 +225,10 @@ export const CASBIN_CACHE_TTL = {
  *
  * For use cases requiring milliseconds (e.g., setInterval, setTimeout, in-memory caches)
  */
-export const CASBIN_CACHE_TTL_MS = {
+export const RBAC_CACHE_TTL_MS = {
   // ===== Department Tree (1 hour) =====
   // Tree structure cached in Redis
-  DEPT_TREE: CASBIN_CACHE_TTL.DEPT_HIERARCHY * 1000,
+  DEPT_TREE: RBAC_CACHE_TTL.DEPT_HIERARCHY * 1000,
 
   // ===== Local In-Memory Cache (5 minutes) =====
   // Short-lived local cache for hot data (ancestors, descendants)
@@ -237,21 +236,21 @@ export const CASBIN_CACHE_TTL_MS = {
 
   // ===== Enforcer (1 hour) =====
   // Enforcer instance TTL in memory
-  ENFORCER: CASBIN_CACHE_TTL.ENFORCER * 1000,
+  ENFORCER: RBAC_CACHE_TTL.ENFORCER * 1000,
 
   // ===== User Context (15 minutes) =====
   // User context TTL
-  USER_CONTEXT: CASBIN_CACHE_TTL.USER_CONTEXT * 1000,
+  USER_CONTEXT: RBAC_CACHE_TTL.USER_CONTEXT * 1000,
 
   // ===== Permission Check (5 minutes) =====
   // Permission check result TTL
-  PERMISSION_CHECK: CASBIN_CACHE_TTL.PERMISSION_CHECK * 1000,
+  PERMISSION_CHECK: RBAC_CACHE_TTL.PERMISSION_CHECK * 1000,
 } as const;
 
 // ============================================
 // TYPE EXPORTS
 // ============================================
 
-export type CasbinCacheKey = keyof typeof CASBIN_CACHE_KEYS;
-export type CasbinCacheTTL = keyof typeof CASBIN_CACHE_TTL;
-export type CasbinCacheTTLMs = keyof typeof CASBIN_CACHE_TTL_MS;
+export type RbacCacheKey = keyof typeof RBAC_CACHE_KEYS;
+export type RbacCacheTTL = keyof typeof RBAC_CACHE_TTL;
+export type RbacCacheTTLMs = keyof typeof RBAC_CACHE_TTL_MS;

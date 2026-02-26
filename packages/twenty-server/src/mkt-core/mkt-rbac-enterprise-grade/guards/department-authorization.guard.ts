@@ -5,11 +5,10 @@
  * Sử dụng với @RequireDepartment decorator.
  *
  * Permission Resolution Flow (theo thứ tự ưu tiên):
- * 1. User Override (mktUserPermissionOverride) - priority 2000
- * 2. Assigned Templates (mktUserPermissionTemplate) - priority >= threshold
- * 3. Executive Level (hierarchyLevel <= 3)
- * 4. Manager Level (hierarchyLevel <= 7)
- * 5. Department Membership (departmentCode hoặc ancestors)
+ * 1. Assigned Templates (mktUserPermissionTemplate) - priority >= threshold
+ * 2. Executive Level (hierarchyLevel <= 3)
+ * 3. Manager Level (hierarchyLevel <= 7)
+ * 4. Department Membership (departmentCode hoặc ancestors)
  */
 
 import {
@@ -24,7 +23,6 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 
 import { RbacContextService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-context.service';
 import { RbacCacheService } from 'src/mkt-core/mkt-rbac-enterprise-grade/services/rbac-cache.service';
-import { MktUserPermissionOverrideRepository } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
 import {
   DEPARTMENT_AUTH_KEY,
   DepartmentAuthOptions,
@@ -37,7 +35,6 @@ import {
 } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import { DEPARTMENT_AUTH_MESSAGES } from 'src/mkt-core/mkt-rbac-enterprise-grade/message';
 import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
-import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
 // ============================================
 // GUARD
@@ -55,7 +52,6 @@ export class DepartmentAuthorizationGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly rbacContextService: RbacContextService,
-    private readonly overrideRepository: MktUserPermissionOverrideRepository,
     private readonly cacheService: RbacCacheService,
     private readonly departmentRepository: MktDepartmentRepository,
   ) {}
@@ -125,7 +121,7 @@ export class DepartmentAuthorizationGuard implements CanActivate {
     };
 
     // Kiểm tra authorization với multi-source resolution
-    const result = await this.checkAuthorization(authContext, options);
+    const result = this.checkAuthorization(authContext, options);
 
     if (!result.allowed) {
       this.logger.debug(
@@ -149,16 +145,15 @@ export class DepartmentAuthorizationGuard implements CanActivate {
    * Kiểm tra authorization dựa trên multi-source resolution
    *
    * Resolution order (theo priority):
-   * 1. User Override - priority 2000 (mktUserPermissionOverride)
-   * 2. Assigned Templates - priority from template
-   * 3. Executive Level - hierarchyLevel <= 3
-   * 4. Manager Level - hierarchyLevel <= 7
-   * 5. Department Membership
+   * 1. Assigned Templates - priority from template
+   * 2. Executive Level - hierarchyLevel <= 3
+   * 3. Manager Level - hierarchyLevel <= 7
+   * 4. Department Membership
    */
-  private async checkAuthorization(
+  private checkAuthorization(
     context: DepartmentAuthContext,
     options: DepartmentAuthOptions,
-  ): Promise<DepartmentAuthResult> {
+  ): DepartmentAuthResult {
     const {
       allowedDepartments = [],
       allowManagers = false,
@@ -167,27 +162,19 @@ export class DepartmentAuthorizationGuard implements CanActivate {
       minTemplatePriority = TEMPLATE_PRIORITY.MANAGER,
     } = options;
 
-    // 1. Check user override (priority 2000 - highest)
-    const overrideResult = await this.checkUserOverride(context);
-
-    if (overrideResult) {
-      return overrideResult;
-    }
-
-    // 2-5. Synchronous checks via chain of responsibility
     const checks: Array<() => DepartmentAuthResult | null> = [
-      // 2. Check assigned templates
+      // 1. Check assigned templates
       () =>
         this.checkHighPriorityTemplates(
           context,
           allowHighPriorityTemplates,
           minTemplatePriority,
         ),
-      // 3. Check executives
+      // 2. Check executives
       () => this.checkExecutiveAccess(context, allowExecutives),
-      // 4. Check managers
+      // 3. Check managers
       () => this.checkManagerAccess(context, allowManagers),
-      // 5. Check department membership
+      // 4. Check department membership
       () => this.checkDepartmentAccess(context, allowedDepartments),
     ];
 
@@ -200,126 +187,6 @@ export class DepartmentAuthorizationGuard implements CanActivate {
     }
 
     return this.createDeniedResult(context);
-  }
-
-  /**
-   * RBAC-002: Check user permission override (priority 2000)
-   *
-   * Queries mktUserPermissionOverride for active, non-expired overrides.
-   * Deny overrides take precedence over allow overrides.
-   * Results are cached in RbacCacheService.
-   */
-  private async checkUserOverride(
-    context: DepartmentAuthContext,
-  ): Promise<DepartmentAuthResult | null> {
-    const cacheResource = '__dept_override';
-    const cacheAction = '__access';
-
-    // Check cache first
-    const cached = await this.cacheService.getCheckResult(
-      context.userId,
-      context.workspaceId,
-      cacheResource,
-      cacheAction,
-    );
-
-    if (cached) {
-      this.logger.debug(
-        DEPARTMENT_AUTH_MESSAGES.OVERRIDE_CACHE_HIT(context.userId),
-      );
-
-      if (cached.allowed) {
-        return this.createAllowedResult(
-          context,
-          cached.reason,
-          'user_override',
-        );
-      }
-
-      return {
-        ...this.createDeniedResult(context),
-        reason: cached.reason,
-        checkedBy: 'user_override',
-      };
-    }
-
-    // Query active, non-expired overrides for this user
-    const referenceDate =
-      DateTimeUtils.toDate(DateTimeUtils.now()) ?? new Date();
-    const overrides =
-      await this.overrideRepository.findActiveByWorkspaceMemberId(
-        context.workspaceId,
-        context.workspaceMemberId,
-        referenceDate,
-      );
-
-    if (overrides.length === 0) {
-      return null;
-    }
-
-    // Deny overrides take precedence
-    const denyOverride = overrides.find((o) => !o.isAllowed);
-
-    if (denyOverride) {
-      const reason = `Access denied by user override: ${denyOverride.reason ?? 'N/A'}`;
-
-      this.logger.debug(
-        DEPARTMENT_AUTH_MESSAGES.OVERRIDE_DENIED(context.userId, reason),
-      );
-
-      // Cache the deny result
-      await this.cacheService.setCheckResult(
-        context.userId,
-        context.workspaceId,
-        cacheResource,
-        cacheAction,
-        {
-          allowed: false,
-          reason,
-          latencyMs: 0,
-          cached: false,
-          appliedPolicies: [],
-          dataFilter: null,
-        },
-      );
-
-      return {
-        ...this.createDeniedResult(context),
-        reason,
-        checkedBy: 'user_override',
-      };
-    }
-
-    // Allow overrides
-    const allowOverride = overrides.find((o) => o.isAllowed);
-
-    if (allowOverride) {
-      const reason = `Access granted by user override: ${allowOverride.reason ?? 'N/A'}`;
-
-      this.logger.debug(
-        DEPARTMENT_AUTH_MESSAGES.OVERRIDE_GRANTED(context.userId, reason),
-      );
-
-      // Cache the allow result
-      await this.cacheService.setCheckResult(
-        context.userId,
-        context.workspaceId,
-        cacheResource,
-        cacheAction,
-        {
-          allowed: true,
-          reason,
-          latencyMs: 0,
-          cached: false,
-          appliedPolicies: [],
-          dataFilter: null,
-        },
-      );
-
-      return this.createAllowedResult(context, reason, 'user_override');
-    }
-
-    return null;
   }
 
   /**

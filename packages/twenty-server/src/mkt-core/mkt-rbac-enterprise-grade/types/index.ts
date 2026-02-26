@@ -75,9 +75,6 @@ export {
   type ConflictResolutionResult,
 } from './validation-step.types';
 
-// Casbin-specific types (re-export from casbin/types for backward compatibility)
-export * from 'src/mkt-core/mkt-rbac-enterprise-grade/casbin/types';
-
 // Permission template types
 export * from './mkt-template-access-limitation.type';
 export * from './permissions.type';

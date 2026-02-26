@@ -48,11 +48,6 @@ import { prefillMktPermissionTemplates } from 'src/mkt-core/seeder/rbac-seeder/m
 import { prefillMktTemplateResourcePermissions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-resource-permission/prefill-mkt-template-resource-permissions';
 import { prefillMktTemplateSystemActions } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-template-system-action/prefill-mkt-template-system-actions';
 import { prefillMktUserPermissionTemplates } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/prefill-mkt-user-permission-templates';
-// Casbin seeder imports
-import { prefillMktCasbinRules } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-casbin-rule/prefill-mkt-casbin-rules';
-import { prefillMktPolicyVersions } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-version/prefill-mkt-policy-versions';
-import { prefillMktPolicyChangeRequests } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-change-request/prefill-mkt-policy-change-requests';
-import { prefillMktPolicyApprovals } from 'src/mkt-core/seeder/rbac-seeder/casbin-seeder/mkt-policy-approval/prefill-mkt-policy-approvals';
 
 export const MKT_PREFILLS = [
   // core prefills
@@ -122,9 +117,4 @@ export const MKT_PREFILLS = [
   prefillMktTemplateResourcePermissions,
   prefillMktTemplateSystemActions,
   prefillMktUserPermissionTemplates,
-  // casbin prefills (order matters: policy version -> casbin rules -> change requests -> approvals)
-  prefillMktPolicyVersions,
-  prefillMktCasbinRules,
-  prefillMktPolicyChangeRequests,
-  prefillMktPolicyApprovals,
 ];
