@@ -7,7 +7,10 @@ import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
+import {
+  DataScope,
+  RequireExecutive,
+} from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 import { DashboardWidgetService } from 'src/mkt-core/mkt-dashboard/services/core/dashboard-widget.service';
 import { DashboardLayoutRepository } from 'src/mkt-core/mkt-dashboard/repositories/dashboard-layout.repository';
 import { CreateDashboardWidgetInput } from 'src/mkt-core/mkt-dashboard/dto/input/create-widget.input';
@@ -27,6 +30,7 @@ import { MktDashboardWidgetWorkspaceEntity } from 'src/mkt-core/mkt-dashboard/wo
  *
  * Access Control:
  * - All operations require WorkspaceAuth + UserAuth
+ * - @RequireExecutive: Only hierarchy level ≤ 3 (CEO, C_LEVEL, VP) can access
  * - Row-level security enforced via @DataScope decorator
  * - Mutations emit cache invalidation events
  */
@@ -47,6 +51,7 @@ export class DashboardWidgetResolver {
    * Get all active dashboard widgets
    */
   @Query(() => [WidgetOutput])
+  @RequireExecutive()
   @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
   async dashboardWidgets(): Promise<WidgetOutput[]> {
     const widgets = await this.widgetService.getActiveWidgets();
@@ -58,6 +63,7 @@ export class DashboardWidgetResolver {
    * Get a single dashboard widget by ID
    */
   @Query(() => WidgetOutput)
+  @RequireExecutive()
   @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
   async dashboardWidget(
     @Args('widgetId', { type: () => String }) widgetId: string,
@@ -75,6 +81,7 @@ export class DashboardWidgetResolver {
    * Create a new dashboard widget
    */
   @Mutation(() => WidgetOutput)
+  @RequireExecutive()
   @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'high' })
   async createDashboardWidget(
     @Args('input', { type: () => CreateDashboardWidgetInput })
@@ -99,6 +106,7 @@ export class DashboardWidgetResolver {
    * Update widget position and layout within the dashboard grid
    */
   @Mutation(() => WidgetOutput, { nullable: true })
+  @RequireExecutive()
   @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async updateWidgetPosition(
     @Args('input', { type: () => UpdateWidgetPositionInput })
@@ -121,6 +129,7 @@ export class DashboardWidgetResolver {
    * Deactivate a widget (soft delete)
    */
   @Mutation(() => Boolean)
+  @RequireExecutive()
   @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'high' })
   async deactivateWidget(
     @Args('widgetId', { type: () => String }) widgetId: string,
@@ -140,6 +149,7 @@ export class DashboardWidgetResolver {
    * Save dashboard layout configuration for the current user
    */
   @Mutation(() => Boolean)
+  @RequireExecutive()
   @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
   async saveDashboardLayout(
     @Args('input', { type: () => SaveDashboardLayoutInput })

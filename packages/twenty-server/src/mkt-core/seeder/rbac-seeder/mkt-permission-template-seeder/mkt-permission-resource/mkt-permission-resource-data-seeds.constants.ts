@@ -254,7 +254,8 @@ export const MKT_PERMISSION_RESOURCE_DATA_SEEDS: MktPermissionResourceDataSeed[]
       icon: 'IconDashboard',
       colorCode: '#7C3AED',
       position: 12,
-      dataClassification: DATA_CLASSIFICATION.INTERNAL,
-      classificationNote: 'Bảng điều khiển tổng quan nội bộ toàn công ty',
+      dataClassification: DATA_CLASSIFICATION.CONFIDENTIAL,
+      classificationNote:
+        'Dashboard chỉ dành cho executives (level ≤ 3: CEO, C_LEVEL, VP)',
     },
   ];

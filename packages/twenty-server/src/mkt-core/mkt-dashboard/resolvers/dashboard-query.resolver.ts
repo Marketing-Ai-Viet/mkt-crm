@@ -5,8 +5,7 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-// TODO: Re-enable @DataScope when RBAC is stable
-// import { DataScope } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
+import { RequireExecutive } from 'src/mkt-core/mkt-rbac-enterprise-grade/decorators';
 import { DashboardOrchestratorService } from 'src/mkt-core/mkt-dashboard/services/application/dashboard-orchestrator.service';
 import { DashboardSummaryInput } from 'src/mkt-core/mkt-dashboard/dto/input/dashboard-summary.input';
 import { RevenueStatsInput } from 'src/mkt-core/mkt-dashboard/dto/input/revenue-stats.input';
@@ -44,7 +43,7 @@ import { StaffRevenueOutput } from 'src/mkt-core/mkt-dashboard/dto/output/staff-
  *
  * Access Control:
  * - All queries require WorkspaceAuth + UserAuth
- * - Row-level security enforced via @DataScope decorator
+ * - @RequireExecutive: Only hierarchy level ≤ 3 (CEO, C_LEVEL, VP) can access
  */
 @Resolver()
 @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
@@ -55,7 +54,7 @@ export class DashboardQueryResolver {
    * Get full dashboard summary with all aggregated metrics
    */
   @Query(() => DashboardSummaryOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
+  @RequireExecutive()
   async dashboardSummary(
     @Args('input', { type: () => DashboardSummaryInput })
     input: DashboardSummaryInput,
@@ -68,7 +67,7 @@ export class DashboardQueryResolver {
    * Get revenue statistics for the given period
    */
   @Query(() => RevenueStatsOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async revenueStats(
     @Args('input', { type: () => RevenueStatsInput })
     input: RevenueStatsInput,
@@ -80,7 +79,7 @@ export class DashboardQueryResolver {
    * Get order statistics for the given period
    */
   @Query(() => OrderStatsOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async orderStats(
     @Args('input', { type: () => OrderStatsInput })
     input: OrderStatsInput,
@@ -92,7 +91,7 @@ export class DashboardQueryResolver {
    * Get customer statistics for the given period
    */
   @Query(() => CustomerStatsOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async customerStats(
     @Args('input', { type: () => CustomerStatsInput })
     input: CustomerStatsInput,
@@ -104,7 +103,7 @@ export class DashboardQueryResolver {
    * Get KPI scorecard with metric breakdowns
    */
   @Query(() => KpiScorecardOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async kpiScorecard(
     @Args('input', { type: () => KpiScorecardInput })
     input: KpiScorecardInput,
@@ -116,7 +115,7 @@ export class DashboardQueryResolver {
    * Get staff leaderboard ranked by performance metrics
    */
   @Query(() => StaffLeaderboardOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async staffLeaderboard(
     @Args('input', { type: () => LeaderboardInput })
     input: LeaderboardInput,
@@ -128,7 +127,7 @@ export class DashboardQueryResolver {
    * Get active dashboard alerts (expiring licenses, overdue payments, etc.)
    */
   @Query(() => AlertsOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'low' })
+  @RequireExecutive()
   async dashboardAlerts(): Promise<AlertsOutput> {
     return this.orchestrator.getAlerts();
   }
@@ -137,7 +136,7 @@ export class DashboardQueryResolver {
    * Get daily revenue breakdown for a specific ISO week
    */
   @Query(() => RevenueDailyOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async revenueDailyByWeek(
     @Args('input', { type: () => RevenueDailyInput })
     input: RevenueDailyInput,
@@ -150,7 +149,7 @@ export class DashboardQueryResolver {
    * Edge weeks (start/end of month) only include days belonging to the month.
    */
   @Query(() => RevenueDailyByMonthOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async revenueDailyByMonth(
     @Args('input', { type: () => RevenueDailyByMonthInput })
     input: RevenueDailyByMonthInput,
@@ -163,7 +162,7 @@ export class DashboardQueryResolver {
    * Each month has totalRevenue + dailyRevenue for all days in that month.
    */
   @Query(() => RevenueDailyByQuarterOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async revenueDailyByQuarter(
     @Args('input', { type: () => RevenueDailyByQuarterInput })
     input: RevenueDailyByQuarterInput,
@@ -175,7 +174,7 @@ export class DashboardQueryResolver {
    * Get per-staff revenue with department hierarchy info
    */
   @Query(() => StaffRevenueOutput)
-  // @DataScope({ resource: 'DASHBOARD', mode: 'AUTO', auditLevel: 'medium' })
+  @RequireExecutive()
   async staffRevenue(
     @Args('input', { type: () => StaffRevenueInput })
     input: StaffRevenueInput,
