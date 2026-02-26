@@ -4,16 +4,17 @@
  * Maps permission templates to specific resources with allowed/denied actions
  */
 
-import { MKT_PERMISSION_ACTION_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-action/mkt-permission-action-data-seeds.constants';
 import { MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-resource/mkt-permission-resource-data-seeds.constants';
 import { MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-template/mkt-permission-template-data-seeds.constants';
+import { MKT_PERMISSION_CONTEXT_DATA_SEED_IDS } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-permission-context/mkt-permission-context-data-seeds.constants';
 
 type MktTemplateResourcePermissionDataSeed = {
   id: string;
   templateId: string;
   resourceId: string;
-  allowedActions: string; // JSON string of action IDs array
-  deniedActions: string | null; // JSON string of action IDs array
+  contextId: string | null; // Links to mktPermissionContext for data scope
+  allowedActions: string; // JSON string of action key strings array
+  deniedActions: string | null; // JSON string of action key strings array
   conditions: string | null; // JSON string of conditions object
   restrictions: string | null; // JSON string of restrictions object
   isActive: boolean;
@@ -24,6 +25,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEED_COLUMNS: (keyof MktTempl
     'id',
     'templateId',
     'resourceId',
+    'contextId',
     'allowedActions',
     'deniedActions',
     'conditions',
@@ -31,42 +33,43 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEED_COLUMNS: (keyof MktTempl
     'isActive',
   ];
 
-// All actions for full access (JSON stringified)
+/**
+ * Context ID mapping based on template hierarchy level:
+ * - Level 1-3 (CEO, VP, DIRECTOR): ALL_RECORDS → no data filter
+ * - Level 4-6 (MANAGER, TEAM_LEAD, SENIOR, FINANCE_ANALYST, SALES_DIRECTOR): DEPARTMENT → own + child departments
+ * - Level 7 (JUNIOR, SALES_MANAGER): TEAM → own department + team
+ * - Level 8+ (SALES_STAFF, ACCOUNTANT_STAFF, SUPPORT_STAFF): OWN → own records only
+ */
+const CONTEXT = MKT_PERMISSION_CONTEXT_DATA_SEED_IDS;
+
+// All actions for full access (JSON stringified with action KEY strings)
 const ALL_ACTIONS = JSON.stringify([
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.MANAGE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.IMPORT,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.REJECT,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.ARCHIVE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.RESTORE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.ASSIGN,
+  'READ',
+  'CREATE',
+  'UPDATE',
+  'DELETE',
+  'MANAGE',
+  'EXPORT',
+  'IMPORT',
+  'APPROVE',
+  'REJECT',
+  'ARCHIVE',
+  'RESTORE',
+  'ASSIGN',
 ]);
 
 // CRUD actions (JSON stringified)
-const CRUD_ACTIONS = JSON.stringify([
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-]);
+const CRUD_ACTIONS = JSON.stringify(['READ', 'CREATE', 'UPDATE', 'DELETE']);
 
 // Read-only actions (JSON stringified)
-const READ_ONLY_ACTIONS = JSON.stringify([
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-]);
+const READ_ONLY_ACTIONS = JSON.stringify(['READ', 'EXPORT']);
 
 // Basic edit actions (no delete) (JSON stringified)
 const BASIC_EDIT_ACTIONS = JSON.stringify([
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-  MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
+  'READ',
+  'CREATE',
+  'UPDATE',
+  'EXPORT',
 ]);
 
 export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS = {
@@ -152,11 +155,13 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
   [
     // ===========================================
     // CEO Permissions - Full access to all resources
+    // Template hierarchyLevel=1 → contextId='all' (ALL_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -167,6 +172,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -177,6 +183,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -187,6 +194,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -197,6 +205,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_INVOICES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -207,6 +216,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_PAYMENTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -217,6 +227,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_DEPARTMENTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.DEPARTMENTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -227,6 +238,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_USERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.USERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -237,6 +249,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_REPORTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.REPORTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -247,6 +260,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.CEO_SETTINGS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.CEO,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.SETTINGS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: ALL_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -256,11 +270,13 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // VP Permissions - High-level access, no system settings
+    // Template hierarchyLevel=2 → contextId='all' (ALL_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.VP_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.VP,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: CRUD_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -271,6 +287,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.VP_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.VP,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: CRUD_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -281,6 +298,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.VP_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.VP,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: CRUD_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -291,6 +309,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.VP_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.VP,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: CRUD_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -301,6 +320,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.VP_REPORTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.VP,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.REPORTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: READ_ONLY_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -310,15 +330,15 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // Director Permissions - Department-level access
+    // Template hierarchyLevel=3 → contextId='all' (ALL_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.DIRECTOR_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: BASIC_EDIT_ACTIONS,
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -327,10 +347,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.DIRECTOR_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: BASIC_EDIT_ACTIONS,
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -339,6 +358,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.DIRECTOR_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: READ_ONLY_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -349,6 +369,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.DIRECTOR_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
+      contextId: CONTEXT.ALL_RECORDS,
       allowedActions: READ_ONLY_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -357,16 +378,16 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
     },
 
     // ===========================================
-    // Manager Permissions - Team-level access
+    // Manager Permissions - Department + child departments access
+    // Template hierarchyLevel=4 → contextId='department' (DEPARTMENT_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.MANAGER_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
       allowedActions: BASIC_EDIT_ACTIONS,
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: JSON.stringify({ ownRecordsOnly: false }),
       restrictions: null,
       isActive: true,
@@ -375,10 +396,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.MANAGER_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
       allowedActions: BASIC_EDIT_ACTIONS,
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: JSON.stringify({ ownRecordsOnly: false }),
       restrictions: null,
       isActive: true,
@@ -387,6 +407,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.MANAGER_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
       allowedActions: READ_ONLY_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -396,22 +417,20 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // SALES_DIRECTOR Permissions - Full department access
-    // Customer: ALL CRUD + EXPORT + ASSIGN
-    // Order: ALL CRUD + APPROVE
-    // License: READ only
-    // Invoice: READ + EXPORT (team scope)
+    // Template hierarchyLevel=5 → contextId='department' (DEPARTMENT_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
       allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.ASSIGN,
+        'READ',
+        'CREATE',
+        'UPDATE',
+        'DELETE',
+        'EXPORT',
+        'ASSIGN',
       ]),
       deniedActions: null,
       conditions: JSON.stringify({ scope: 'DEPARTMENT' }),
@@ -422,12 +441,13 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
       allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+        'READ',
+        'CREATE',
+        'UPDATE',
+        'DELETE',
+        'APPROVE',
       ]),
       deniedActions: null,
       conditions: JSON.stringify({ scope: 'DEPARTMENT' }),
@@ -438,14 +458,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: JSON.stringify({ scope: 'DEPARTMENT' }),
       restrictions: null,
       isActive: true,
@@ -454,15 +469,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_INVOICES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'EXPORT']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: JSON.stringify({ scope: 'TEAM' }),
       restrictions: null,
       isActive: true,
@@ -471,6 +480,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
       allowedActions: READ_ONLY_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -481,14 +491,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_DIRECTOR_PAYMENTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_DIRECTOR,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.DEPARTMENT_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: JSON.stringify({ scope: 'TEAM', viewStatusOnly: true }),
       restrictions: null,
       isActive: true,
@@ -496,25 +501,21 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // SALES_MANAGER Permissions - Team-level access
-    // Customer: TEAM CRU + EXPORT + ASSIGN (no DELETE)
-    // Order: TEAM CRU + APPROVE (no DELETE)
-    // License: TEAM READ + UPDATE
-    // Invoice: TEAM READ
+    // Template hierarchyLevel=7 → contextId='team' (TEAM_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
+      contextId: CONTEXT.TEAM_RECORDS,
       allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.ASSIGN,
+        'READ',
+        'CREATE',
+        'UPDATE',
+        'EXPORT',
+        'ASSIGN',
       ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: JSON.stringify({ scope: 'TEAM' }),
       restrictions: null,
       isActive: true,
@@ -523,15 +524,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.TEAM_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'CREATE', 'UPDATE', 'APPROVE']),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: JSON.stringify({ scope: 'TEAM' }),
       restrictions: null,
       isActive: true,
@@ -540,14 +535,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.TEAM_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'UPDATE']),
+      deniedActions: JSON.stringify(['CREATE', 'DELETE']),
       conditions: JSON.stringify({ scope: 'TEAM' }),
       restrictions: null,
       isActive: true,
@@ -556,15 +546,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_INVOICES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
+      contextId: CONTEXT.TEAM_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE', 'EXPORT']),
       conditions: JSON.stringify({ scope: 'TEAM' }),
       restrictions: null,
       isActive: true,
@@ -573,6 +557,7 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
+      contextId: CONTEXT.TEAM_RECORDS,
       allowedActions: READ_ONLY_ACTIONS,
       deniedActions: null,
       conditions: null,
@@ -583,14 +568,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_MANAGER_PAYMENTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_MANAGER,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.TEAM_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: JSON.stringify({ scope: 'TEAM', viewStatusOnly: true }),
       restrictions: null,
       isActive: true,
@@ -598,24 +578,15 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // SALES_STAFF Permissions - Own record access
-    // Customer: OWN CRU (no DELETE, no EXPORT)
-    // Order: OWN CRU (no DELETE, no APPROVE)
-    // License: OWN READ only
-    // Invoice: OWN READ only
+    // Template hierarchyLevel=9 → contextId='own' (OWN_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'CREATE', 'UPDATE']),
+      deniedActions: JSON.stringify(['DELETE', 'EXPORT']),
       conditions: JSON.stringify({ scope: 'OWN', filterBy: 'accountOwnerId' }),
       restrictions: null,
       isActive: true,
@@ -624,15 +595,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'CREATE', 'UPDATE']),
+      deniedActions: JSON.stringify(['DELETE', 'APPROVE']),
       conditions: JSON.stringify({ scope: 'OWN', filterBy: 'createdById' }),
       restrictions: null,
       isActive: true,
@@ -641,14 +606,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: JSON.stringify({ scope: 'OWN' }),
       restrictions: null,
       isActive: true,
@@ -657,15 +617,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_INVOICES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE', 'EXPORT']),
       conditions: JSON.stringify({ scope: 'OWN_ORDERS' }),
       restrictions: null,
       isActive: true,
@@ -674,9 +628,8 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SALES_STAFF_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SALES_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
       deniedActions: null,
       conditions: null,
       restrictions: null,
@@ -685,23 +638,21 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // ACCOUNTANT_STAFF Permissions
-    // Full access to Invoices and Payments for financial operations
-    // Read access to Orders, Customers, Licenses for reconciliation
+    // Template hierarchyLevel=8 → contextId='own' (OWN_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_INVOICES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
+      contextId: CONTEXT.OWN_RECORDS,
       allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+        'READ',
+        'CREATE',
+        'UPDATE',
+        'EXPORT',
+        'APPROVE',
       ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -710,16 +661,15 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_PAYMENTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
+      contextId: CONTEXT.OWN_RECORDS,
       allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
+        'READ',
+        'CREATE',
+        'UPDATE',
+        'EXPORT',
+        'APPROVE',
       ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      deniedActions: JSON.stringify(['DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -728,15 +678,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'EXPORT']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -745,14 +689,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -761,14 +700,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -777,10 +711,8 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_REPORTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.REPORTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'EXPORT']),
       deniedActions: null,
       conditions: JSON.stringify({
         reportTypes: ['FINANCIAL', 'INVOICE', 'PAYMENT'],
@@ -792,9 +724,8 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.ACCOUNTANT_STAFF_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.ACCOUNTANT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
       deniedActions: null,
       conditions: null,
       restrictions: null,
@@ -803,22 +734,15 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
 
     // ===========================================
     // SUPPORT_STAFF Permissions
-    // Read access to most resources for customer support
-    // Update Order status for support case handling
+    // Template hierarchyLevel=8 → contextId='own' (OWN_RECORDS)
     // ===========================================
     {
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_CUSTOMERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.CUSTOMERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'UPDATE']),
+      deniedActions: JSON.stringify(['CREATE', 'DELETE', 'EXPORT']),
       conditions: JSON.stringify({
         updateFields: ['notes', 'supportNotes', 'tags'],
       }),
@@ -829,15 +753,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_ORDERS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.ORDERS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.APPROVE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ', 'UPDATE']),
+      deniedActions: JSON.stringify(['CREATE', 'DELETE', 'APPROVE']),
       conditions: JSON.stringify({
         updateFields: ['supportStatus', 'supportNotes', 'priority'],
       }),
@@ -848,14 +766,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_LICENSES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.LICENSES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: null,
       restrictions: null,
       isActive: true,
@@ -864,9 +777,8 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_PRODUCTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PRODUCTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
       deniedActions: null,
       conditions: null,
       restrictions: null,
@@ -876,15 +788,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_INVOICES,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.INVOICES,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.EXPORT,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE', 'EXPORT']),
       conditions: JSON.stringify({ viewStatusOnly: true }),
       restrictions: null,
       isActive: true,
@@ -893,14 +799,9 @@ export const MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS: MktTemplateResourcePer
       id: MKT_TEMPLATE_RESOURCE_PERMISSION_DATA_SEEDS_IDS.SUPPORT_STAFF_PAYMENTS,
       templateId: MKT_PERMISSION_TEMPLATE_DATA_SEEDS_IDS.SUPPORT_STAFF,
       resourceId: MKT_PERMISSION_RESOURCE_DATA_SEEDS_IDS.PAYMENTS,
-      allowedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.READ,
-      ]),
-      deniedActions: JSON.stringify([
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.CREATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.UPDATE,
-        MKT_PERMISSION_ACTION_DATA_SEEDS_IDS.DELETE,
-      ]),
+      contextId: CONTEXT.OWN_RECORDS,
+      allowedActions: JSON.stringify(['READ']),
+      deniedActions: JSON.stringify(['CREATE', 'UPDATE', 'DELETE']),
       conditions: JSON.stringify({ viewStatusOnly: true }),
       restrictions: null,
       isActive: true,
