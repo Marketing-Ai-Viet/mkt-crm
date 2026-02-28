@@ -203,6 +203,8 @@ import {
 } from 'src/mkt-core/seeder/rbac-seeder/mkt-permission-template-seeder/mkt-user-permission-template/mkt-user-permission-template-data-seeds.constants';
 // Department manager update (Phase 3 - after workspace members are seeded)
 import { updateMktDepartmentManagers } from 'src/mkt-core/seeder/department-seeder/mkt-department/update-mkt-department-managers';
+// Order owner redistribution (after orders are seeded with Tim as default owner)
+import { updateMktOrderOwners } from 'src/mkt-core/seeder/order-seeder/order/update-mkt-order-owners';
 
 export const MKT_RECORD_SEEDS_CONFIGS_FIRST_PHASE_TABLES = [
   // Organization configs
@@ -485,4 +487,7 @@ export const MKT_RECORD_SEEDS_CONFIGS = [
  * Post-standard-seeds update functions
  * Chạy SAU khi workspace members đã được seed để giải quyết circular dependency
  */
-export const MKT_POST_STANDARD_SEEDS_UPDATES = [updateMktDepartmentManagers];
+export const MKT_POST_STANDARD_SEEDS_UPDATES = [
+  updateMktDepartmentManagers,
+  updateMktOrderOwners,
+];

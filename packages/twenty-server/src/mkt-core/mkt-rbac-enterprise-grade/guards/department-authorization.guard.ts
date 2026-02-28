@@ -9,6 +9,11 @@
  * 2. Executive Level (hierarchyLevel <= 3)
  * 3. Manager Level (hierarchyLevel <= 7)
  * 4. Department Membership (departmentCode hoặc ancestors)
+ *
+ * DI Delegation Pattern:
+ * GraphQL Yoga tạo instance mới khi dùng @UseGuards() mà không resolve DI.
+ * Guard sử dụng static singleton pattern: instance DI-resolved lưu vào static field,
+ * instance không có DI sẽ delegate sang instance đã resolve.
  */
 
 import {
@@ -17,6 +22,7 @@ import {
   ExecutionContext,
   Logger,
   ForbiddenException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
@@ -36,16 +42,21 @@ import {
 import { DEPARTMENT_AUTH_MESSAGES } from 'src/mkt-core/mkt-rbac-enterprise-grade/message';
 import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
 
-// ============================================
-// GUARD
-// ============================================
-
 @Injectable()
-export class DepartmentAuthorizationGuard implements CanActivate {
+export class DepartmentAuthorizationGuard implements CanActivate, OnModuleInit {
   private static readonly HIERARCHY_LEVELS = {
     EXECUTIVE_MAX: HierarchyLevel.VP, // CEO=1, C_LEVEL=2, VP=3
     MANAGER_MAX: HierarchyLevel.MANAGER, // Includes MANAGER level
   } as const;
+
+  /**
+   * DI-resolved singleton instance.
+   *
+   * NestJS external-context-creator (GraphQL Yoga) tạo instance mới qua @UseGuards()
+   * với dependencies "broken" (service có nhưng logger undefined).
+   * OnModuleInit chỉ được gọi cho DI instance → đánh dấu chính xác instance nào hợp lệ.
+   */
+  private static resolvedInstance: DepartmentAuthorizationGuard | null = null;
 
   private readonly logger = new Logger(DepartmentAuthorizationGuard.name);
 
@@ -56,7 +67,23 @@ export class DepartmentAuthorizationGuard implements CanActivate {
     private readonly departmentRepository: MktDepartmentRepository,
   ) {}
 
+  /**
+   * OnModuleInit chỉ được NestJS gọi cho instance tạo bởi DI container.
+   * Instance tạo bởi external-context-creator (GraphQL Yoga) sẽ KHÔNG trigger hook này.
+   */
+  onModuleInit() {
+    DepartmentAuthorizationGuard.resolvedInstance = this;
+    this.logger.log('DepartmentAuthorizationGuard DI instance initialized');
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Delegate sang DI instance nếu instance này không phải DI-resolved
+    const resolved = DepartmentAuthorizationGuard.resolvedInstance;
+
+    if (resolved && resolved !== this) {
+      return resolved.canActivate(context);
+    }
+
     // Lấy metadata từ @RequireDepartment decorator (check cả handler và class level)
     const options = this.reflector.getAllAndOverride<DepartmentAuthOptions>(
       DEPARTMENT_AUTH_KEY,
@@ -83,7 +110,6 @@ export class DepartmentAuthorizationGuard implements CanActivate {
         DEPARTMENT_AUTH_MESSAGES.WORKSPACE_NOT_FOUND,
       );
     }
-
     // Resolve user context từ RbacContextService
     const userContext = await this.rbacContextService.resolveContext(
       userId,

@@ -19,6 +19,7 @@ import {
   CallHandler,
   Logger,
   ForbiddenException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
@@ -68,7 +69,13 @@ import {
  * ```
  */
 @Injectable()
-export class DataScopeInterceptor implements NestInterceptor {
+export class DataScopeInterceptor implements NestInterceptor, OnModuleInit {
+  /**
+   * DI-resolved singleton instance.
+   * OnModuleInit chỉ được gọi cho DI instance, đảm bảo đánh dấu chính xác.
+   */
+  private static resolvedInstance: DataScopeInterceptor | null = null;
+
   private readonly logger = new Logger(DATA_SCOPE_LOG_CONTEXT);
 
   constructor(
@@ -78,10 +85,22 @@ export class DataScopeInterceptor implements NestInterceptor {
     private readonly rbacCacheService: RbacCacheService,
   ) {}
 
+  onModuleInit() {
+    DataScopeInterceptor.resolvedInstance = this;
+    this.logger.log('DataScopeInterceptor DI instance initialized');
+  }
+
   async intercept(
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<unknown>> {
+    // Delegate sang DI instance nếu instance này không phải DI-resolved
+    const resolved = DataScopeInterceptor.resolvedInstance;
+
+    if (resolved && resolved !== this) {
+      return resolved.intercept(context, next);
+    }
+
     const startTime = DateTimeUtils.now();
 
     // Get metadata from decorator

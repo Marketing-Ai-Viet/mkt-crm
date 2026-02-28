@@ -137,7 +137,7 @@ import {
     MktContractModule,
     CustomerModule,
     IdempotencyModule.register(), // Idempotency protection for order operations
-    MktRbacEnterpriseGradeModule, // RBAC authorization for order operations
+    MktRbacEnterpriseGradeModule,
     TokenModule,
     MktExcelModule, // Excel export functionality
   ],

@@ -1,11 +1,12 @@
 import { Global, Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.module';
+import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { RBAC_COMMANDS } from 'src/mkt-core/mkt-rbac-enterprise-grade/commands';
 import {
@@ -13,7 +14,6 @@ import {
   ENTERPRISE_RBAC_CONFIG_TOKEN,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/configs';
 import { RBAC_REPOSITORIES } from 'src/mkt-core/mkt-rbac-enterprise-grade/repositories';
-import { MktDepartmentRepository } from 'src/mkt-core/mkt-department/repositories';
 import { RBAC_RESOLVERS } from 'src/mkt-core/mkt-rbac-enterprise-grade/resolvers';
 import {
   RbacCacheService,
@@ -82,11 +82,14 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     FilterExpressionResolverService,
     DataAccessPolicyService,
 
-    // Global Guard for @RequireDepartment decorator
-    // Using APP_GUARD with factory to ensure proper dependency injection
-    // The guard checks for DEPARTMENT_AUTH_KEY metadata and skips if not present
+    // DepartmentAuthorizationGuard - Custom token factory
+    //
+    // MUST use custom token (not class token) so external-context-creator
+    // cannot find the DI instance when @UseGuards(DepartmentAuthorizationGuard).
+    // This forces Yoga to create a NEW instance → resolved !== this → delegates
+    // to the factory-created instance with fully working DI dependencies.
     {
-      provide: APP_GUARD,
+      provide: 'DEPARTMENT_AUTHORIZATION_GUARD_INIT',
       useFactory: (
         reflector: Reflector,
         rbacContextService: RbacContextService,
@@ -107,11 +110,12 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
       ],
     },
 
-    // Global Interceptor for @DataScope decorator
-    // Using factory provider to explicitly inject all dependencies
-    // The interceptor checks for @DataScope metadata and skips if not present
+    // DataScopeInterceptor - Custom token factory
+    //
+    // Same pattern as guard: custom token prevents external-context-creator
+    // from reusing this instance. @UseInterceptors creates new → delegates.
     {
-      provide: APP_INTERCEPTOR,
+      provide: 'DATA_SCOPE_INTERCEPTOR_INIT',
       useFactory: (
         reflector: Reflector,
         rbacEnforcerService: RbacEnforcerService,
@@ -159,9 +163,10 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     FilterExpressionResolverService,
     DataAccessPolicyService,
 
-    // Note: DepartmentAuthorizationGuard is now a global guard via APP_GUARD
-    // Note: DataScopeInterceptor is now a global interceptor via APP_INTERCEPTOR
-    // No need to export it - it will automatically run for methods with @DataScope decorator
+    // Guard & Interceptor: NOT exported as class tokens.
+    // They use static singleton delegation pattern - no class token needed.
+    // Factory instances (custom tokens) handle OnModuleInit → static field.
+    // @UseGuards/@UseInterceptors create new instances that delegate to static.
   ],
 })
 export class MktRbacEnterpriseGradeModule {}

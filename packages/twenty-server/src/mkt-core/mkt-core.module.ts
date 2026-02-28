@@ -13,6 +13,7 @@ import { MktDepartmentModule } from 'src/mkt-core/mkt-department/mkt-department.
 import { MktPromotionModule } from 'src/mkt-core/mkt-promotion/mkt-promotion.module';
 import { MktOrganizationLevelModule } from 'src/mkt-core/mkt-organization-level/mkt-organization-level.module';
 import { MktProductIntegrationModule } from 'src/mkt-core/mkt-product-integration/mkt-product-integration.module';
+import { MktRbacEnterpriseGradeModule } from 'src/mkt-core/mkt-rbac-enterprise-grade/mkt-rbac-enterprise-grade.module';
 import { MktEmailModule } from 'src/mkt-core/mkt-email/mkt-email.module';
 import { MktSettingModule } from 'src/mkt-core/setting/mkt-setting.module';
 import { MktAuthClientModule } from 'src/mkt-core/mkt-auth-client/mkt-auth-client.module';
@@ -29,6 +30,7 @@ import { MktUserIntegrationModule } from 'src/mkt-core/mkt-user-integration/mkt-
     // Global infrastructure modules (must be first)
     TransactionModule,
     MktAuthClientModule, // MKT Server authentication
+    MktRbacEnterpriseGradeModule, // RBAC (APP_GUARD + APP_INTERCEPTOR) - must be before feature modules
 
     // Feature modules
     MktOrderModule,

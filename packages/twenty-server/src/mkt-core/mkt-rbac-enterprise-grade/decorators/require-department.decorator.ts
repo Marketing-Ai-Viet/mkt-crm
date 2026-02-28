@@ -7,13 +7,14 @@
  * Works with DepartmentAuthorizationGuard.
  */
 
-import { SetMetadata, applyDecorators } from '@nestjs/common';
+import { SetMetadata, applyDecorators, UseGuards } from '@nestjs/common';
 
 import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
 import {
   DEPARTMENT_AUTH_KEY,
   DepartmentAuthOptions,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/types/department-authorization.types';
+import { DepartmentAuthorizationGuard } from 'src/mkt-core/mkt-rbac-enterprise-grade/guards/department-authorization.guard';
 
 /**
  * @RequireDepartment decorator for department-based authorization
@@ -109,9 +110,13 @@ export const RequireDepartment = (
     );
   }
 
-  // DepartmentAuthorizationGuard is registered as APP_GUARD globally
-  // It automatically checks for DEPARTMENT_AUTH_KEY metadata and skips if not present
-  return applyDecorators(SetMetadata(DEPARTMENT_AUTH_KEY, options));
+  // Sets metadata AND applies guard. UseGuards triggers the guard even with
+  // GraphQL Yoga, which doesn't support APP_GUARD. The guard uses static
+  // singleton delegation to work around Yoga creating instances without DI.
+  return applyDecorators(
+    SetMetadata(DEPARTMENT_AUTH_KEY, options),
+    UseGuards(DepartmentAuthorizationGuard),
+  );
 };
 
 /**

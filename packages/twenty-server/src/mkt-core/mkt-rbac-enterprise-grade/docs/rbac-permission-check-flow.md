@@ -649,7 +649,7 @@ Cơ chế: Policy-based override cho data filtering
 Nếu DataAccessPolicy tồn tại → SKIP PermissionContext template.
 ```
 
-### 11.3 TemporaryPermission (Time-Limited)
+### 11.2 TemporaryPermission (Time-Limited)
 
 **Entity:** `mktTemporaryPermission`
 **Service:** `services/bases/temporary-permission.service.ts`
@@ -793,7 +793,6 @@ type DataScopeOptions = {
 
 | Config | Env Var | Default | Mô tả |
 |--------|---------|---------|-------|
-| `enableCasbinAuthorization` | `RBAC_ENABLE_CASBIN_AUTHORIZATION` | `false` | Đã tắt (Casbin removed Phase 1-2) |
 | `enableMetrics` | `RBAC_ENABLE_METRICS` | `true` | RBAC metrics |
 | `enableDebugMode` | `RBAC_DEBUG_MODE` | `false` | Debug mode |
 
@@ -820,11 +819,6 @@ type DataScopeOptions = {
    │            │              ├──────────────┼─────────────►│              │              │
    │            │              │              │              │  UserContext  │              │
    │            │              │◄─────────────┼──────────────┤              │              │
-   │            │              │              │              │              │              │
-   │            │              │ checkOverride │              │              │              │
-   │            │              ├──┐           │              │              │              │
-   │            │              │  │ query DB  │              │              │              │
-   │            │              │◄─┘           │              │              │              │
    │            │              │              │              │              │              │
    │            │              │ checkHierarchy              │              │              │
    │            │              ├──┐           │              │              │              │

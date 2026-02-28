@@ -6,6 +6,11 @@ import { WORKSPACE_MEMBER_DATA_SEED_IDS } from 'src/engine/workspace-manager/dev
 import { PromotionSnapshot } from 'src/mkt-core/mkt-promotion/types/promotion.types';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 
+import {
+  MKT_ORDER_RBAC_TEST_OVERRIDES,
+  MKT_ORDER_RBAC_TEST_SEEDS,
+} from './mkt-order-rbac-test-seeds.constants';
+
 // ============================================
 // PAYMENT DEADLINE SOURCE CONSTANTS
 // ============================================
@@ -1553,6 +1558,8 @@ export const MKT_ORDER_DATA_SEEDS: MktOrderDataSeed[] = [
     ...CREATE_PAYMENT_FIELDS(26500000, false),
     ...CREATE_LOCKED_DEADLINE_FIELDS(168, PAYMENT_DEADLINE_SOURCE.CUSTOMER_TYPE, 'Payment overdue - customer requested extension but did not pay'),
   },
+  // RBAC test orders (16 orders across 8 users in different departments)
+  ...MKT_ORDER_RBAC_TEST_SEEDS,
 ];
 
 // ============================================
@@ -2019,4 +2026,9 @@ export const MKT_ORDER_SEED_OVERRIDES: {
   { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_18, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-15T10:00:00.000Z' },
   { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_19, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-18T14:00:00.000Z' },
   { orderId: MKT_ORDER_DATA_SEEDS_IDS.DIAMOND_ORDER_20, accountOwnerId: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, createdById: WORKSPACE_MEMBER_DATA_SEED_IDS.PHIL, completedAt: '2026-02-20T09:00:00.000Z' },
+  // RBAC test overrides (redistribute 16 orders to 8 different users)
+  ...MKT_ORDER_RBAC_TEST_OVERRIDES,
 ];
+
+// Re-export RBAC test IDs for external reference
+export { MKT_ORDER_RBAC_TEST_IDS } from './mkt-order-rbac-test-seeds.constants';

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import sortBy from 'lodash.sortby';
 
@@ -18,6 +18,8 @@ import { DataScopeContext } from 'src/mkt-core/mkt-rbac-enterprise-grade/interce
 import { filterToWhere } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/utils';
 import { DateTimeUtils } from 'src/mkt-core/utils/date-time.utils';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { DEPARTMENT } from 'src/mkt-core/mkt-department/constants/mkt-department.constant';
+import { isTeamOfDepartment } from 'src/mkt-core/mkt-department/utils/department-auth.util';
 
 // ============================================
 // TYPES
@@ -39,8 +41,14 @@ type GraphQLContext = {
  */
 @Injectable()
 export class OrderQueryService {
+  private readonly logger = new Logger(OrderQueryService.name);
+
   /**
    * Build TypeORM where clause combining base conditions with hierarchical filter
+   *
+   * Full access (no hierarchical filter) when:
+   * - User has full access (level 1-3: CEO, C-Level, VP)
+   * - User is in ACCOUNTING department (needs to see all orders for financial reconciliation)
    */
   buildWhereClause(
     baseWhere: Record<string, unknown>,
@@ -50,6 +58,11 @@ export class OrderQueryService {
 
     // No filter or full access - return base where only
     if (!dataScope?.filter || dataScope.hasFullAccess) {
+      return baseWhere;
+    }
+
+    // Accounting department has full access to all orders (financial reconciliation)
+    if (this.isAccountingDepartment(dataScope)) {
       return baseWhere;
     }
 
@@ -63,6 +76,19 @@ export class OrderQueryService {
 
     // Merge base where with hierarchical filter
     return this.mergeWhereConditions(baseWhere, hierarchicalWhere);
+  }
+
+  /**
+   * Check if user belongs to ACCOUNTING department (including child teams)
+   */
+  private isAccountingDepartment(dataScope: DataScopeContext): boolean {
+    const departmentCode = dataScope.userContext?.departmentCode;
+
+    if (!departmentCode) {
+      return false;
+    }
+
+    return isTeamOfDepartment(departmentCode, DEPARTMENT.ACCOUNTING);
   }
 
   /**

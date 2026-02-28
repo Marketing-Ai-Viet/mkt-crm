@@ -7,7 +7,7 @@
  * Works with DataScopeInterceptor to apply row-level security.
  */
 
-import { SetMetadata, applyDecorators } from '@nestjs/common';
+import { SetMetadata, applyDecorators, UseInterceptors } from '@nestjs/common';
 
 import {
   DataScopeOptions,
@@ -17,8 +17,7 @@ import {
   RbacFilterConditionItem,
 } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/types';
 import { ResourceEntityName } from 'src/mkt-core/mkt-rbac-enterprise-grade/constants/core/enterprise-rbac.constants';
-// Note: DataScopeInterceptor is registered as a global interceptor via APP_INTERCEPTOR
-// in MktRbacEnterpriseGradeModule, so we don't need to use UseInterceptors here
+import { DataScopeInterceptor } from 'src/mkt-core/mkt-rbac-enterprise-grade/interceptors/data-scope.interceptor';
 
 /**
  * @DataScope decorator for row-level security
@@ -122,9 +121,13 @@ export const DataScope = (options: DataScopeOptions): MethodDecorator => {
     additionalConditions: options.additionalConditions,
   };
 
-  // Only set metadata - the global DataScopeInterceptor will check for this
-  // and apply row-level security filters automatically
-  return applyDecorators(SetMetadata(DATA_SCOPE_METADATA_KEY, metadata));
+  // Sets metadata AND applies interceptor. UseInterceptors triggers the
+  // interceptor even with GraphQL Yoga, which doesn't support APP_INTERCEPTOR.
+  // The interceptor uses static singleton delegation for DI workaround.
+  return applyDecorators(
+    SetMetadata(DATA_SCOPE_METADATA_KEY, metadata),
+    UseInterceptors(DataScopeInterceptor),
+  );
 };
 
 /**
