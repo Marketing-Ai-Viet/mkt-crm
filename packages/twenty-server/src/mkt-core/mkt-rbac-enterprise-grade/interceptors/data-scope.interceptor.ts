@@ -85,9 +85,15 @@ export class DataScopeInterceptor implements NestInterceptor, OnModuleInit {
     private readonly rbacCacheService: RbacCacheService,
   ) {}
 
+  /**
+   * First-writer-wins: chỉ factory instance (từ MktRbacEnterpriseGradeModule)
+   * được set làm resolvedInstance. Injectable instances không overwrite.
+   */
   onModuleInit() {
-    DataScopeInterceptor.resolvedInstance = this;
-    this.logger.log('DataScopeInterceptor DI instance initialized');
+    if (!DataScopeInterceptor.resolvedInstance) {
+      DataScopeInterceptor.resolvedInstance = this;
+      this.logger.log('DataScopeInterceptor DI instance initialized');
+    }
   }
 
   async intercept(

@@ -68,12 +68,20 @@ export class DepartmentAuthorizationGuard implements CanActivate, OnModuleInit {
   ) {}
 
   /**
-   * OnModuleInit chỉ được NestJS gọi cho instance tạo bởi DI container.
-   * Instance tạo bởi external-context-creator (GraphQL Yoga) sẽ KHÔNG trigger hook này.
+   * OnModuleInit lifecycle hook.
+   *
+   * NestJS gọi OnModuleInit cho MỌI instance implement OnModuleInit,
+   * bao gồm cả injectable instances tạo bởi @UseGuards() trong các module khác.
+   *
+   * First-writer-wins: chỉ factory instance (tạo đầu tiên trong MktRbacEnterpriseGradeModule)
+   * được set làm resolvedInstance. Injectable instances (có thể broken dependencies
+   * do SWC/NestJS injectable DI) KHÔNG overwrite.
    */
   onModuleInit() {
-    DepartmentAuthorizationGuard.resolvedInstance = this;
-    this.logger.log('DepartmentAuthorizationGuard DI instance initialized');
+    if (!DepartmentAuthorizationGuard.resolvedInstance) {
+      DepartmentAuthorizationGuard.resolvedInstance = this;
+      this.logger.log('DepartmentAuthorizationGuard DI instance initialized');
+    }
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
