@@ -64,7 +64,21 @@ export class RbacContextService {
   // PROPERTIES
   // ============================================
 
-  private readonly logger = new Logger(RbacContextService.name);
+  /**
+   * Logger instance. Uses lazy initialization as a defensive measure against
+   * NestJS creating instances via Object.create(prototype) pattern where
+   * class field initializers don't run (e.g., injectable guard dependencies
+   * during parallel module initialization).
+   */
+  private _logger?: Logger;
+
+  private get logger(): Logger {
+    if (!this._logger) {
+      this._logger = new Logger(RbacContextService.name);
+    }
+
+    return this._logger;
+  }
 
   constructor(
     private readonly workspaceMemberRepository: MktWorkspaceMemberRepository,

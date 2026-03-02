@@ -53,8 +53,11 @@ export class DepartmentAuthorizationGuard implements CanActivate, OnModuleInit {
    * DI-resolved singleton instance.
    *
    * NestJS external-context-creator (GraphQL Yoga) tạo instance mới qua @UseGuards()
-   * với dependencies "broken" (service có nhưng logger undefined).
-   * OnModuleInit chỉ được gọi cho DI instance → đánh dấu chính xác instance nào hợp lệ.
+   * mà instance này có thể bị broken (Object.create pattern - class field initializers
+   * không chạy, dẫn đến logger và dependencies undefined).
+   *
+   * Factory trong MktRbacEnterpriseGradeModule gọi setFactoryInstance() ngay khi tạo,
+   * TRƯỚC bất kỳ onModuleInit nào, đảm bảo factory instance luôn được sử dụng.
    */
   private static resolvedInstance: DepartmentAuthorizationGuard | null = null;
 
@@ -68,19 +71,36 @@ export class DepartmentAuthorizationGuard implements CanActivate, OnModuleInit {
   ) {}
 
   /**
+   * Set factory-created instance as the resolved singleton.
+   *
+   * Called from the factory in MktRbacEnterpriseGradeModule IMMEDIATELY after
+   * construction, before any onModuleInit calls. This bypasses the race condition
+   * where NestJS creates module instances in parallel (Promise.all in InstanceLoader)
+   * and injectable instances from other modules may call onModuleInit first.
+   */
+  static setFactoryInstance(instance: DepartmentAuthorizationGuard): void {
+    DepartmentAuthorizationGuard.resolvedInstance = instance;
+    instance.logger.log(
+      'DepartmentAuthorizationGuard factory instance registered',
+    );
+  }
+
+  /**
    * OnModuleInit lifecycle hook.
    *
    * NestJS gọi OnModuleInit cho MỌI instance implement OnModuleInit,
    * bao gồm cả injectable instances tạo bởi @UseGuards() trong các module khác.
    *
-   * First-writer-wins: chỉ factory instance (tạo đầu tiên trong MktRbacEnterpriseGradeModule)
-   * được set làm resolvedInstance. Injectable instances (có thể broken dependencies
-   * do SWC/NestJS injectable DI) KHÔNG overwrite.
+   * Factory instance đã được set qua setFactoryInstance() trước khi onModuleInit chạy.
+   * Chỉ set resolvedInstance ở đây nếu factory chưa set (fallback).
+   * Validate instance có logger hoạt động trước khi chấp nhận.
    */
   onModuleInit() {
-    if (!DepartmentAuthorizationGuard.resolvedInstance) {
+    if (!DepartmentAuthorizationGuard.resolvedInstance && this.logger) {
       DepartmentAuthorizationGuard.resolvedInstance = this;
-      this.logger.log('DepartmentAuthorizationGuard DI instance initialized');
+      this.logger.log(
+        'DepartmentAuthorizationGuard DI instance initialized (fallback)',
+      );
     }
   }
 

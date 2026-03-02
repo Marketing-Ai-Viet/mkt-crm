@@ -88,6 +88,12 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
     // cannot find the DI instance when @UseGuards(DepartmentAuthorizationGuard).
     // This forces Yoga to create a NEW instance → resolved !== this → delegates
     // to the factory-created instance with fully working DI dependencies.
+    //
+    // IMPORTANT: Factory sets resolvedInstance IMMEDIATELY at creation time,
+    // bypassing onModuleInit timing issues. NestJS creates module instances
+    // in parallel (Promise.all), so onModuleInit order is non-deterministic.
+    // Injectable instances from other modules' @UseGuards() may call
+    // onModuleInit before this factory's instance.
     {
       provide: 'DEPARTMENT_AUTHORIZATION_GUARD_INIT',
       useFactory: (
@@ -95,13 +101,21 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
         rbacContextService: RbacContextService,
         cacheService: RbacCacheService,
         departmentRepository: MktDepartmentRepository,
-      ) =>
-        new DepartmentAuthorizationGuard(
+      ) => {
+        const guard = new DepartmentAuthorizationGuard(
           reflector,
           rbacContextService,
           cacheService,
           departmentRepository,
-        ),
+        );
+
+        // Set resolvedInstance immediately - before any onModuleInit calls.
+        // This guarantees the factory instance (with fully resolved DI deps)
+        // is always used, regardless of module initialization order.
+        DepartmentAuthorizationGuard.setFactoryInstance(guard);
+
+        return guard;
+      },
       inject: [
         Reflector,
         RbacContextService,
@@ -112,8 +126,7 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
 
     // DataScopeInterceptor - Custom token factory
     //
-    // Same pattern as guard: custom token prevents external-context-creator
-    // from reusing this instance. @UseInterceptors creates new → delegates.
+    // Same pattern as guard: factory sets resolvedInstance immediately.
     {
       provide: 'DATA_SCOPE_INTERCEPTOR_INIT',
       useFactory: (
@@ -121,13 +134,18 @@ import { DepartmentTreeService } from 'src/mkt-core/mkt-department/services/depa
         rbacEnforcerService: RbacEnforcerService,
         rbacContextService: RbacContextService,
         rbacCacheService: RbacCacheService,
-      ) =>
-        new DataScopeInterceptor(
+      ) => {
+        const interceptor = new DataScopeInterceptor(
           reflector,
           rbacEnforcerService,
           rbacContextService,
           rbacCacheService,
-        ),
+        );
+
+        DataScopeInterceptor.setFactoryInstance(interceptor);
+
+        return interceptor;
+      },
       inject: [
         Reflector,
         RbacEnforcerService,

@@ -72,7 +72,9 @@ import {
 export class DataScopeInterceptor implements NestInterceptor, OnModuleInit {
   /**
    * DI-resolved singleton instance.
-   * OnModuleInit chỉ được gọi cho DI instance, đảm bảo đánh dấu chính xác.
+   *
+   * Factory trong MktRbacEnterpriseGradeModule gọi setFactoryInstance() ngay khi tạo,
+   * TRƯỚC bất kỳ onModuleInit nào, đảm bảo factory instance luôn được sử dụng.
    */
   private static resolvedInstance: DataScopeInterceptor | null = null;
 
@@ -86,13 +88,24 @@ export class DataScopeInterceptor implements NestInterceptor, OnModuleInit {
   ) {}
 
   /**
-   * First-writer-wins: chỉ factory instance (từ MktRbacEnterpriseGradeModule)
-   * được set làm resolvedInstance. Injectable instances không overwrite.
+   * Set factory-created instance as the resolved singleton.
+   * Called from factory IMMEDIATELY after construction, before any onModuleInit.
+   */
+  static setFactoryInstance(instance: DataScopeInterceptor): void {
+    DataScopeInterceptor.resolvedInstance = instance;
+    instance.logger.log('DataScopeInterceptor factory instance registered');
+  }
+
+  /**
+   * OnModuleInit - fallback nếu factory chưa set resolvedInstance.
+   * Validate instance có logger trước khi chấp nhận.
    */
   onModuleInit() {
-    if (!DataScopeInterceptor.resolvedInstance) {
+    if (!DataScopeInterceptor.resolvedInstance && this.logger) {
       DataScopeInterceptor.resolvedInstance = this;
-      this.logger.log('DataScopeInterceptor DI instance initialized');
+      this.logger.log(
+        'DataScopeInterceptor DI instance initialized (fallback)',
+      );
     }
   }
 
